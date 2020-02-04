@@ -1,0 +1,42 @@
+variables:
+  GO111MODULE: "on"
+  GOSUMDB: "off"
+  GOPROXY: http://athens-proxy.services
+  GOPATH: ${CI_PROJECT_DIR}/.go
+  GOCACHE: ${CI_PROJECT_DIR}/.go/golang-cache
+  CGO_ENABLED: "0"
+  GOOS: linux
+
+include:
+  - project: 'abp/ci-templates'
+    ref: samples
+    file: '/samples/.go_lint.yml'
+
+stages:
+  - lint
+  - tests
+
+lint:
+  stage: lint
+  allow_failure: true
+  image: golangci/golangci-lint:v1.17
+  script:
+    - go mod download
+    - golangci-lint --version
+    - golangci-lint run
+
+test:
+  stage: tests
+  allow_failure: true
+  #  image: registry.services.mts.ru/docker/oracle-instantclient/go-1.12.6-build:12.2.0.1
+  #  FIXME: не знаю, какой image
+  script:
+    - go mod download
+    - go test ./...
+
+.go_cache:
+  cache:
+    key: ${CI_PROJECT_NAME}
+    paths:
+      - $GOPATH
+      - $GOCACHE
