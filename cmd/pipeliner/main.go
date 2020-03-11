@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/app"
+	db2 "gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,7 +26,7 @@ import (
 
 func main() {
 	configPath := flag.String(
-		"config",
+		"c",
 		"./config.yaml",
 		"path to config",
 	)
@@ -34,7 +36,7 @@ func main() {
 
 	metrics.InitMetricsAuth()
 
-	cfg := &configs.Manager{}
+	cfg := &configs.Pipeliner{}
 	err := configs.Read(*configPath, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("can't read config")
@@ -43,19 +45,29 @@ func main() {
 
 	log = logger.CreateLogger(cfg.Log)
 
+	database, err := db2.DBConnect(cfg.DB)
+	if err != nil {
+		return
+	}
+
+	pipeliner := app.Pipeliner{
+		DBConnection: database,
+		Logger:       log,
+	}
+
 	jr, err := jaeger.NewExporter(jaeger.Options{
 		CollectorEndpoint: cfg.Tracing.URL,
 		Process: jaeger.Process{
-			ServiceName: "fuck-auth",
-			Tags:        []jaeger.Tag{jaeger.StringTag("system", "bratishka")},
+			ServiceName: "no-auth",
+			Tags:        []jaeger.Tag{jaeger.StringTag("system", "pipeliner")},
 		},
 	})
 	if err != nil {
-		log.WithError(err).Fatal("can't create new exporter jaeger")
+		log.WithError(err).Error("can't create new exporter jaeger")
+	} else {
+		trace.RegisterExporter(jr)
+		trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(cfg.Tracing.SampleFraction)})
 	}
-
-	trace.RegisterExporter(jr)
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(cfg.Tracing.SampleFraction)})
 
 	metrics.InitMetricsAuth()
 
@@ -82,8 +94,12 @@ func main() {
 		MaxAge:           300,
 	}).Handler)
 
-	mux.Route("/api", func(r chi.Router) {
-		//	FIXME implement
+	mux.Route("/api/v1", func(r chi.Router) {
+		r.Get("/pipeline/all", pipeliner.ListPipelines)
+		r.Post("/pipeline/", pipeliner.AddPipeline)
+		r.Put("/pipeline/{id}", pipeliner.EditPipeline)
+		r.Get("/pipeline/{id}", pipeliner.GetPipeline)
+		r.Post("/pipeline/run/{id}", pipeliner.RunPipeline)
 	})
 
 	server := http.Server{
@@ -92,7 +108,7 @@ func main() {
 	}
 
 	go func() {
-		log.Infof("script manager service started on port %s", cfg.ServeAddr)
+		log.Infof("script manager service started on port %s", server.Addr)
 		if err = server.ListenAndServe(); err != nil {
 			if err == http.ErrServerClosed {
 				log.Info("graceful shutdown")

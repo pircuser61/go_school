@@ -1,0 +1,11 @@
+serve_addr: ":8181"
+
+database:
+  kind: postgres
+  host: localhost
+  port: 5432
+  user: postgres
+  pass: ""
+  dbname: postgres
+  max_connections: 10
+  timeout: 10
