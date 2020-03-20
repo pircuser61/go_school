@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/app"
-	db2 "gitlab.services.mts.ru/erius/pipeliner/internal/db"
+	db2 "gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"net/http"
 	"os"
 	"os/signal"

@@ -1,5 +1,6 @@
 package model
 
 type Runner interface {
-	Run() error
+	Run(ctx *Context) error
+	Next() string
 }

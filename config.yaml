@@ -9,3 +9,4 @@ database:
   dbname: postgres
   max_connections: 10
   timeout: 10
+

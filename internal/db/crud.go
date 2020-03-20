@@ -2,33 +2,16 @@ package db
 
 import (
 	"context"
+
 	"github.com/google/uuid"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/ctx"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/model"
 	"go.opencensus.io/trace"
-	"strconv"
-
-	"gitlab.services.mts.ru/erius/pipeliner/internal/ctx"
-
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type PGConnection struct {
-	Pool *pgxpool.Pool
-}
 
-func ConnectPostgres(host, port, database, user, pass string, maxConn, timeout int) (*PGConnection, error) {
-	maxConnections := strconv.Itoa(maxConn)
-	connString := "postgres://" + user + ":" + pass + "@" + host + ":" + port + "/" + database +
-		"?sslmode=disable&pool_max_conns=" + maxConnections
-	conn, err := pgxpool.Connect(ctx.Context(timeout), connString)
-	if err != nil {
-		return nil, err
-	}
-	pg := PGConnection{conn}
-	return &pg, nil
-}
-
-func (pc *PGConnection) ListPipelines(c context.Context) ([]model.Pipeline, error) {
+func ListPipelines(c context.Context, pc *dbconn.PGConnection) ([]model.Pipeline, error) {
 	_, span := trace.StartSpan(c, "pg_list_pipelines")
 	defer span.End()
 	pipelines := make([]model.Pipeline, 0)
@@ -55,7 +38,28 @@ func (pc *PGConnection) ListPipelines(c context.Context) ([]model.Pipeline, erro
 	return pipelines, nil
 }
 
-func (pc *PGConnection) AddPipeline(c context.Context) (*uuid.UUID, error) {
+func AddPipeline(c context.Context, pc *dbconn.PGConnection, pipeline []byte, name string) error {
+	c, span := trace.StartSpan(c, "pg_add_pipeline")
+	defer span.End()
+	conn, err := pc.Pool.Acquire(c)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	id := uuid.New()
+	q := `
+INSERT INTO public.pipelines(
+	id, name, pipe)
+	VALUES ($1, $2, $3);
+`
+	_, err = conn.Exec(c, q, id, name, pipeline)
+	if err != nil {
+		return nil
+	}
+	return nil
+}
+
+func GetPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) (*model.Pipeline, error) {
 	c, span := trace.StartSpan(c, "pg_add_pipeline")
 	defer span.End()
 	conn, err := pc.Pool.Acquire(c)
@@ -67,20 +71,19 @@ func (pc *PGConnection) AddPipeline(c context.Context) (*uuid.UUID, error) {
 	return nil, nil
 }
 
-
-func (pc *PGConnection) GetPipeline(c context.Context, id uuid.UUID) (*model.Pipeline, error) {
+func EditPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_add_pipeline")
 	defer span.End()
-	conn, err := pc.Pool.Acquire(c)
+	conn, err := pc.Pool.Acquire(ctx.Context(60))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer conn.Release()
 
-	return nil, nil
+	return nil
 }
 
-func (pc *PGConnection) EditPipeline(c context.Context, id uuid.UUID) error {
+func WriteContext(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_add_pipeline")
 	defer span.End()
 	conn, err := pc.Pool.Acquire(ctx.Context(60))

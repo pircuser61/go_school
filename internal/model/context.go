@@ -3,11 +3,11 @@ package model
 import "sync"
 
 type Context struct {
-	mut sync.Mutex
+	mut    sync.Mutex
 	values map[string]interface{}
 }
 
-func NewContext() Context  {
+func NewContext() Context {
 	return Context{mut: sync.Mutex{}, values: make(map[string]interface{})}
 }
 
@@ -20,7 +20,7 @@ func (c Context) GetValue(name string) interface{} {
 	return nil
 }
 
-func (c *Context) SetValue(name string, value interface{})  {
+func (c *Context) SetValue(name string, value interface{}) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	c.values[name] = value

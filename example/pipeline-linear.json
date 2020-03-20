@@ -1,0 +1,35 @@
+{
+  "name": "test-linear",
+  "pipeline": {
+    "id": "b8340d70-a667-4f6f-b3bb-b87b6c1b0012",
+    "entrypoint": "parse.1",
+    "blocks": {
+      "parse_1": {
+        "kind": "faas",
+        "name": "parse",
+        "input": {
+          "alert": "string"
+        },
+        "output": {
+          "kind": "string",
+          "nioss_id": "string",
+          "event_id": "string"
+        },
+        "next": "connect.1"
+      },
+      "connect_1": {
+        "kind": "faas",
+        "name": "connect",
+        "input": {
+          "parse_1.kind": "string",
+          "parse_1.nioss_id": "string",
+          "parse_1.event_id": "string"
+        },
+        "output": {
+          "alert": "string"
+        },
+        "next": ""
+      }
+    }
+  }
+}

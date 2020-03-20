@@ -6,10 +6,10 @@ import (
 )
 
 type Pipeline struct {
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	Pipeline string    `json:"pipeline"`
-	Context  Context
+	ID            uuid.UUID          `json:"id,omitempty"`
+	Name          string             `json:"name"`
+	Pipeline      ExecutablePipeline `json:"pipeline"`
+	FunctionInput map[string]interface{}
 }
 
 func NewPipeline(data []byte) (*Pipeline, error) {
@@ -18,10 +18,9 @@ func NewPipeline(data []byte) (*Pipeline, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.Context = NewContext()
 	return &p, nil
 }
 
-func (p *Pipeline) Run() error {
+func (p *Pipeline) Run(ctx Context) error {
 	return nil
 }
