@@ -25,7 +25,7 @@ func (p Pipeliner) AddPipeline(w http.ResponseWriter, req *http.Request) {
 		p.Logger.Error("can't unmarshal pipeline", err)
 		return
 	}
-	err = db.AddPipeline(c, p.DBConnection,  b,pipe.Name)
+	err = db.AddPipeline(c, p.DBConnection, pipe.Name, b)
 	if err != nil {
 		p.Logger.Error("can't add pipeline to db", err)
 		return

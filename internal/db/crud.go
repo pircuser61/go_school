@@ -10,6 +10,11 @@ import (
 	"go.opencensus.io/trace"
 )
 
+type PipelineStorageModel struct {
+	ID       uuid.UUID
+	Name     string
+	Pipeline []byte
+}
 
 func ListPipelines(c context.Context, pc *dbconn.PGConnection) ([]model.Pipeline, error) {
 	_, span := trace.StartSpan(c, "pg_list_pipelines")
@@ -38,7 +43,7 @@ func ListPipelines(c context.Context, pc *dbconn.PGConnection) ([]model.Pipeline
 	return pipelines, nil
 }
 
-func AddPipeline(c context.Context, pc *dbconn.PGConnection, pipeline []byte, name string) error {
+func AddPipeline(c context.Context, pc *dbconn.PGConnection, name string, pipeline []byte) error {
 	c, span := trace.StartSpan(c, "pg_add_pipeline")
 	defer span.End()
 	conn, err := pc.Pool.Acquire(c)
@@ -59,7 +64,7 @@ INSERT INTO public.pipelines(
 	return nil
 }
 
-func GetPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) (*model.Pipeline, error) {
+func GetPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) (*PipelineStorageModel, error) {
 	c, span := trace.StartSpan(c, "pg_add_pipeline")
 	defer span.End()
 	conn, err := pc.Pool.Acquire(c)
@@ -68,10 +73,24 @@ func GetPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) (*mod
 	}
 	defer conn.Release()
 
-	return nil, nil
+	q := `SELECT id, name, pipe
+	FROM public.pipelines
+	WHERE id = $1 LIMIT 1;`
+	pipe := PipelineStorageModel{}
+	rows, err := conn.Query(c, q, id)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		err := rows.Scan(&pipe.ID, &pipe.Name, &pipe.Pipeline)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &pipe, nil
 }
 
-func EditPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) error {
+func EditPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID, pipeline []byte) error {
 	c, span := trace.StartSpan(c, "pg_add_pipeline")
 	defer span.End()
 	conn, err := pc.Pool.Acquire(ctx.Context(60))
@@ -80,6 +99,13 @@ func EditPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) erro
 	}
 	defer conn.Release()
 
+	q := `UPDATE public.pipelines
+	SET pipe=$1
+	WHERE id=$2;`
+	_, err = conn.Exec(c, q, pipeline, id)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

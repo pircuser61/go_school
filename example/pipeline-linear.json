@@ -1,33 +1,56 @@
 {
   "name": "test-linear",
   "pipeline": {
-    "id": "b8340d70-a667-4f6f-b3bb-b87b6c1b0012",
     "entrypoint": "parse.1",
     "blocks": {
       "parse_1": {
         "kind": "faas",
         "name": "parse",
-        "input": {
-          "alert": "string"
-        },
-        "output": {
-          "kind": "string",
-          "nioss_id": "string",
-          "event_id": "string"
-        },
+        "input": [
+          {
+            "name": "alert",
+            "type": "string"
+          }
+        ],
+        "output": [
+          {
+            "name": "kind",
+            "type": "string"
+          },
+          {
+            "name": "nioss_id",
+            "type": "string"
+          },
+          {
+            "event_id": "event_id",
+            "type": "string"
+          }
+        ],
         "next": "connect.1"
       },
       "connect_1": {
         "kind": "faas",
         "name": "connect",
-        "input": {
-          "parse_1.kind": "string",
-          "parse_1.nioss_id": "string",
-          "parse_1.event_id": "string"
-        },
-        "output": {
-          "alert": "string"
-        },
+        "input": [
+          {
+            "parse_1.name": "kind",
+            "type": "string"
+          },
+          {
+            "parse_1.name": "nioss_id",
+            "type": "string"
+          },
+          {
+            "parse_1.event_id": "event_id",
+            "type": "string"
+          }
+        ],
+        "output": [
+          {
+            "name": "alert",
+            "type": "string"
+          }
+        ],
         "next": ""
       }
     }

@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/google/uuid"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"go.opencensus.io/trace"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -12,6 +14,21 @@ func (p Pipeliner) EditPipeline(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "edit_pipeline")
 	defer s.End()
 
-	id := chi.URLParam(req, "id")
-	fmt.Println(c, id)
+	idparam := chi.URLParam(req, "id")
+	b, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
+	if err != nil {
+		p.Logger.Error("can't get pipeline from request body", err)
+		return
+	}
+	id, err := uuid.Parse(idparam)
+	if err != nil {
+		p.Logger.Error("can't parse id", err)
+		return
+	}
+	err = db.EditPipeline(c, p.DBConnection, id, b)
+	if err != nil {
+		p.Logger.Error("can't add pipeline to db", err)
+		return
+	}
 }
