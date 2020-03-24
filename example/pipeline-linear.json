@@ -1,7 +1,19 @@
 {
   "name": "test-linear",
+  "return_values": [
+    {
+      "name": "alert",
+      "type": "string",
+      "global": "connect_1.alert"
+    },
+    {
+      "event_id": "event_id",
+      "type": "string",
+      "global": "parse_1.event_id"
+    }
+  ],
   "pipeline": {
-    "entrypoint": "parse.1",
+    "entrypoint": "parse_1",
     "blocks": {
       "parse_1": {
         "kind": "faas",
@@ -9,46 +21,57 @@
         "input": [
           {
             "name": "alert",
-            "type": "string"
+            "type": "string",
+            "global": "=)alert",
+
+
           }
         ],
+
         "output": [
           {
             "name": "kind",
-            "type": "string"
+            "type": "string",
+            "global": "parse_1.kind"
           },
           {
             "name": "nioss_id",
-            "type": "string"
+            "type": "string",
+            "global": "parse_1.nioss_id"
           },
           {
             "event_id": "event_id",
-            "type": "string"
+            "type": "string",
+            "global": "parse_1.event_id"
           }
         ],
-        "next": "connect.1"
+        "next": "connect_1"
       },
       "connect_1": {
         "kind": "faas",
         "name": "connect",
         "input": [
           {
-            "parse_1.name": "kind",
-            "type": "string"
+            "name": "kind",
+            "type": "string",
+            "global": "parse_1.kind"
           },
           {
-            "parse_1.name": "nioss_id",
-            "type": "string"
+            "name": "nioss_id",
+            "type": "string",
+            "global": "parse_1.nioss_id"
           },
           {
-            "parse_1.event_id": "event_id",
-            "type": "string"
+            "event_id": "event_id",
+            "type": "string",
+            "global": "parse_1.event_id"
           }
         ],
         "output": [
           {
             "name": "alert",
-            "type": "string"
+            "type": "string",
+            "global": "connect_1.alert"
           }
         ],
         "next": ""
