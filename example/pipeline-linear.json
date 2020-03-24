@@ -22,9 +22,7 @@
           {
             "name": "alert",
             "type": "string",
-            "global": "=)alert",
-
-
+            "global": "alert"
           }
         ],
 
