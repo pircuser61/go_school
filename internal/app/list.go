@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"go.opencensus.io/trace"
 	"net/http"
@@ -14,7 +13,13 @@ func (p Pipeliner) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	pipelines, err := db.ListPipelines(ctx, p.DBConnection)
 	if err != nil {
 		p.Logger.Error("can't get pipelines from DB", err)
+		sendError(w, err)
 		return
 	}
-	_ = json.NewEncoder(w).Encode(pipelines)
+	err = sendResponse(w, http.StatusOK, pipelines)
+	if err != nil {
+		p.Logger.Error("can't send response", err)
+		return
+	}
+
 }

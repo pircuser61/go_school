@@ -1,13 +1,20 @@
 {
   "name": "test-linear",
-  "return_values": [
+  "input":[
+    {
+      "name": "alert",
+      "type": "string",
+      "global": "input.alert"
+    }
+  ],
+  "output": [
     {
       "name": "alert",
       "type": "string",
       "global": "connect_1.alert"
     },
     {
-      "event_id": "event_id",
+      "name": "event_id",
       "type": "string",
       "global": "parse_1.event_id"
     }
@@ -22,7 +29,7 @@
           {
             "name": "alert",
             "type": "string",
-            "global": "alert"
+            "global": "input.alert"
           }
         ],
 
@@ -38,7 +45,7 @@
             "global": "parse_1.nioss_id"
           },
           {
-            "event_id": "event_id",
+            "name": "event_id",
             "type": "string",
             "global": "parse_1.event_id"
           }
@@ -60,7 +67,7 @@
             "global": "parse_1.nioss_id"
           },
           {
-            "event_id": "event_id",
+            "name": "event_id",
             "type": "string",
             "global": "parse_1.event_id"
           }

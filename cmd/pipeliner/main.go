@@ -99,7 +99,7 @@ func main() {
 		r.Post("/pipeline/", pipeliner.AddPipeline)
 		r.Put("/pipeline/{id}", pipeliner.EditPipeline)
 		r.Get("/pipeline/{id}", pipeliner.GetPipeline)
-		r.Post("/pipeline/run/{id}", pipeliner.RunPipeline)
+		r.Post("/pipeline/run", pipeliner.RunPipeline)
 	})
 
 	server := http.Server{

@@ -1,26 +1,75 @@
 package model
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
+	"go.opencensus.io/trace"
 )
 
 type Pipeline struct {
-	ID            uuid.UUID          `json:"id,omitempty"`
-	Name          string             `json:"name"`
-	Pipeline      ExecutablePipeline `json:"pipeline"`
-	FunctionInput map[string]interface{}
+	ID       uuid.UUID           `json:"id,omitempty"`
+	Name     string              `json:"name"`
+	Input    []map[string]string `json:"input"`
+	Output   []map[string]string `json:"output"`
+	Pipeline *ExecutablePipeline `json:"pipeline"`
 }
 
-func NewPipeline(data []byte) (*Pipeline, error) {
+func NewPipeline(model db.PipelineStorageModel, connection *dbconn.PGConnection) (*Pipeline, error) {
 	p := Pipeline{}
-	err := json.Unmarshal(data, &p)
+	err := json.Unmarshal([]byte(model.Pipeline), &p)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("can't unmarshal pipeline: %s", err.Error())
 	}
+	p.ID, p.Pipeline.PipelineID = model.ID, model.ID
+	p.Pipeline.Storage = connection
 	return &p, nil
 }
 
-func (p *Pipeline) Run(ctx Context) error {
-	return nil
+func (p *Pipeline) Run(ctx context.Context, runCtx *VariableStore) error {
+	ctx, s := trace.StartSpan(ctx, "run_pipeline")
+	defer s.End()
+	startContext := NewContext()
+	for _, inputValue := range p.Input {
+		glob, ok := inputValue["global"]
+		if !ok {
+			return errors.New("can't find global variable name")
+		}
+		loc, ok := inputValue["name"]
+		if !ok {
+			return errors.New("can't find variable name")
+		}
+		inputVal, err := runCtx.GetString(loc)
+		if err != nil {
+			return err
+		}
+		startContext.SetValue(glob, inputVal)
+	}
+	return p.Pipeline.Run(ctx, &startContext)
+}
+
+func (p *Pipeline) ReturnOutput() (map[string]interface{}, error) {
+	out := make(map[string]interface{})
+	for _, v := range p.Output {
+		globalKey, ok := v["global"]
+		if !ok {
+			return nil, errors.New("can't find global variable name")
+		}
+
+		val, err := p.Pipeline.VarStore.GetValue(globalKey)
+		if err != nil {
+			return nil, errors.Errorf("can't find returning variable value: %s", err.Error())
+		}
+
+		name, ok := v["name"]
+		if !ok {
+			return nil, errors.New("can't find global variable name")
+		}
+
+		out[name] = val
+	}
+	return out, nil
 }

@@ -1,0 +1,177 @@
+{
+  "name": "test-with-if",
+  "input":[
+    {
+      "name": "alert",
+      "type": "string",
+      "global": "input.alert"
+    }
+  ],
+  "output": [
+    {
+      "name": "address",
+      "type": "string",
+      "global": "address_1.address"
+    },
+    {
+      "name": "result",
+      "type": "string",
+      "global": "output.result"
+    }
+  ],
+  "pipeline": {
+    "entrypoint": "parse_1",
+    "blocks": {
+      "parse_1": {
+        "kind": "faas",
+        "name": "parse",
+        "input": [
+          {
+            "name": "alert",
+            "type": "string",
+            "global": "input.alert"
+          }
+        ],
+        "output": [
+          {
+            "name": "kind",
+            "type": "string",
+            "global": "parse_1.kind"
+          },
+          {
+            "name": "nioss_id",
+            "type": "string",
+            "global": "parse_1.nioss_id"
+          },
+          {
+            "name": "event_id",
+            "type": "string",
+            "global": "parse_1.event_id"
+          }
+        ],
+        "next": "address_1"
+      },
+      "address_1": {
+        "kind": "faas",
+        "name": "address",
+        "input": [
+          {
+            "name": "nioss_id",
+            "type": "string",
+            "global": "parse_1.nioss_id"
+          }
+        ],
+        "output": [
+          {
+            "name": "address",
+            "type": "string",
+            "global": "address_1.address"
+          }
+        ],
+        "next": "check_1"
+      },
+      "lock_1": {
+        "kind": "faas",
+        "name": "lock",
+        "input": [
+          {
+            "name": "nioss_id",
+            "type": "string",
+            "global": "parse_1.nioss_id"
+          }
+        ],
+        "output": [
+          {
+            "name": "result",
+            "type": "string",
+            "global": "output.result"
+          }
+        ],
+        "next": ""
+      },
+      "unlock_1": {
+        "kind": "faas",
+        "name": "unlock",
+        "input": [
+          {
+            "name": "nioss_id",
+            "type": "string",
+            "global": "parse_1.nioss_id"
+          }
+        ],
+        "output": [
+          {
+            "name": "result",
+            "type": "string",
+            "global": "output.result"
+          }
+        ],
+        "next": ""
+      },
+      "check_1": {
+        "kind": "faas",
+        "name": "check_lock",
+        "input": [
+          {
+            "name": "event_id",
+            "type": "string",
+            "global": "parse_1.event_id"
+          }
+        ],
+        "output": [
+          {
+            "name": "lock",
+            "type": "bool",
+            "global": "check_1.lock"
+          }
+        ],
+        "next": "if_1"
+      },
+      "check_2": {
+        "kind": "faas",
+        "name": "check_unlock",
+        "input": [
+          {
+            "name": "event_id",
+            "type": "string",
+            "global": "parse_1.event_id"
+          }
+        ],
+        "output": [
+          {
+            "name": "unlock",
+            "type": "bool",
+            "global": "check_2.unlock"
+          }
+        ],
+        "next": "if_2"
+      },
+      "if_1": {
+        "kind": "if",
+        "name": "if",
+        "input": [
+          {
+            "name": "var",
+            "type": "string",
+            "global": "check_1.lock"
+          }
+        ],
+        "on_true": "lock_1",
+        "on_false": "check_2"
+      },
+      "if_2": {
+        "kind": "if",
+        "name": "if",
+        "input": [
+          {
+            "name": "var",
+            "type": "string",
+            "global": "check_2.unlock"
+          }
+        ],
+        "on_true": "unlock_1",
+        "on_false": ""
+      }
+    }
+  }
+}

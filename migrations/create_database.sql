@@ -27,11 +27,13 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 
+DROP TABLE IF EXISTS public.pipelines;
+DROP TABLE IF EXISTS public.storage;
 
 CREATE TABLE public.pipelines
 (
-    id uuid NOT NULL,
-    name character varying COLLATE pg_catalog."default" NOT NULL,
+    id uuid NOT NULL UNIQUE,
+    name character varying COLLATE pg_catalog."default" NOT NULL UNIQUE,
     pipe jsonb NOT NULL,
     CONSTRAINT pipelines_pkey PRIMARY KEY (id)
 )
@@ -41,4 +43,22 @@ CREATE TABLE public.pipelines
     TABLESPACE pg_default;
 
 ALTER TABLE public.pipelines
+    OWNER to postgres;
+
+
+CREATE TABLE public.storage
+(
+    id uuid NOT NULL,
+    work_id uuid,
+    pipeline_id uuid,
+    stage character varying COLLATE pg_catalog."default",
+    vars jsonb,
+    CONSTRAINT storage_pkey PRIMARY KEY (id)
+)
+    WITH (
+        OIDS = FALSE
+    )
+    TABLESPACE pg_default;
+
+ALTER TABLE public.storage
     OWNER to postgres;

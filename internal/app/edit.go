@@ -19,16 +19,25 @@ func (p Pipeliner) EditPipeline(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	if err != nil {
 		p.Logger.Error("can't get pipeline from request body", err)
+		sendError(w, err)
 		return
 	}
 	id, err := uuid.Parse(idparam)
 	if err != nil {
 		p.Logger.Error("can't parse id", err)
+		sendError(w, err)
 		return
 	}
 	err = db.EditPipeline(c, p.DBConnection, id, b)
 	if err != nil {
 		p.Logger.Error("can't add pipeline to db", err)
+		sendError(w, err)
+		return
+	}
+	err = sendResponse(w, 200, nil)
+	if err != nil {
+		p.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 }

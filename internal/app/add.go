@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/model"
 	"go.opencensus.io/trace"
@@ -19,15 +18,24 @@ func (p Pipeliner) AddPipeline(w http.ResponseWriter, req *http.Request) {
 		p.Logger.Error("can't get pipeline from request body", err)
 		return
 	}
-	pipe := model.Pipeline{}
-	err = json.Unmarshal(b, &pipe)
+
+	pipe, err := model.NewPipeline(db.PipelineStorageModel{Pipeline: string(b)}, p.DBConnection)
 	if err != nil {
-		p.Logger.Error("can't unmarshal pipeline", err)
+		p.Logger.Error("can't unmarshal pipeline: ", err)
+		sendError(w, err)
 		return
 	}
+
 	err = db.AddPipeline(c, p.DBConnection, pipe.Name, b)
 	if err != nil {
-		p.Logger.Error("can't add pipeline to db", err)
+		p.Logger.Error("can't add pipeline to db: ", err)
+		sendError(w, err)
+		return
+	}
+	err = sendResponse(w, 200, nil)
+	if err != nil {
+		p.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 }

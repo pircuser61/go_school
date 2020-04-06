@@ -1,4 +1,5 @@
 serve_addr: ":8181"
+timeout: "30s"
 
 database:
   kind: postgres

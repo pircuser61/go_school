@@ -23,4 +23,3 @@ func ConnectPostgres(host, port, database, user, pass string, maxConn, timeout i
 	pg := PGConnection{conn}
 	return &pg, nil
 }
-

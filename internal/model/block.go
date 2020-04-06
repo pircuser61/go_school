@@ -1,23 +1,111 @@
 package model
 
 import (
-	"errors"
-	"fmt"
-	"strings"
+	"context"
+	"github.com/pkg/errors"
+	"go.opencensus.io/trace"
 )
 
 type FunctionBlock struct {
 	BlockName      string
-	ScriptServer   string
 	FunctionName   string
-	FunctionInput  Context
-	FunctionOutput Context
+	FunctionInput  map[string]string
+	FunctionOutput map[string]string
 	NextStep       string
 }
 
-func (fb *FunctionBlock) Run(ctx *Context) error {
-	if fb.ScriptServer == "go-inside" {
-		return fb.RunInGo(ctx)
+func (fb *FunctionBlock) Run(ctx context.Context, store *VariableStore) error {
+	ctx, s := trace.StartSpan(ctx, "run_function_block")
+	defer s.End()
+
+	switch fb.FunctionName {
+	case "parse":
+		alert, err := store.GetStringWithInput(fb.FunctionInput, "alert")
+		if err != nil {
+			return err
+		}
+
+		k, niossid, eventid := RunParse(alert)
+		err = store.SetStringWithOutput(fb.FunctionOutput, "kind", k)
+		if err != nil {
+			return err
+		}
+		err = store.SetStringWithOutput(fb.FunctionOutput, "nioss_id", niossid)
+		if err != nil {
+			return err
+		}
+		err = store.SetStringWithOutput(fb.FunctionOutput, "event_id", eventid)
+		if err != nil {
+			return err
+		}
+	case "connect":
+		k, err := store.GetStringWithInput(fb.FunctionInput, "kind")
+		if err != nil {
+			return err
+		}
+		event, err := store.GetStringWithInput(fb.FunctionInput, "event_id")
+		if err != nil {
+			return err
+		}
+		nioss, err := store.GetStringWithInput(fb.FunctionInput, "nioss_id")
+		if err != nil {
+			return err
+		}
+		alert := RunConnect(event, k, nioss)
+		err = store.SetStringWithOutput(fb.FunctionOutput, "alert", alert)
+		if err != nil {
+			return err
+		}
+	case "check_lock":
+		event, err := store.GetStringWithInput(fb.FunctionInput, "event_id")
+		if err != nil {
+			return err
+		}
+		result := CheckLock(event)
+		err = store.SetBoolWithOutput(fb.FunctionOutput, "lock", result)
+		if err != nil {
+			return err
+		}
+	case "check_unlock":
+		event, err := store.GetStringWithInput(fb.FunctionInput, "event_id")
+		if err != nil {
+			return err
+		}
+		result := CheckUnlock(event)
+		err = store.SetBoolWithOutput(fb.FunctionOutput, "unlock", result)
+		if err != nil {
+			return err
+		}
+	case "lock":
+		nioss, err := store.GetStringWithInput(fb.FunctionInput, "nioss_id")
+		if err != nil {
+			return err
+		}
+		result := datastore.Lock(nioss)
+		err = store.SetStringWithOutput(fb.FunctionOutput, "result", result)
+		if err != nil {
+			return err
+		}
+	case "unlock":
+		nioss, err := store.GetStringWithInput(fb.FunctionInput, "nioss_id")
+		if err != nil {
+			return err
+		}
+		result := datastore.Unlock(nioss)
+		err = store.SetStringWithOutput(fb.FunctionOutput, "result", result)
+		if err != nil {
+			return err
+		}
+	case "address":
+		nioss, err := store.GetStringWithInput(fb.FunctionInput, "nioss_id")
+		if err != nil {
+			return err
+		}
+		result := datastore.Address(nioss)
+		err = store.SetStringWithOutput(fb.FunctionOutput, "address", result)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -26,22 +114,6 @@ func (fb *FunctionBlock) Next() string {
 	return fb.NextStep
 }
 
-func (fb *FunctionBlock) RunInGo(ctx *Context) error {
-	switch fb.FunctionName {
-	case "parse":
-		alert, ok := ctx.GetValue("alert").(string)
-		if !ok {
-			return errors.New("can't get alert")
-		}
-		alertKind, niossID, eventId := RunParse(alert)
-		ctx.SetValue("kind", alertKind)
-		ctx.SetValue("nioss_id", niossID)
-		ctx.SetValue("event_id", eventId)
-	case "connect":
-
-	}
-	return nil
-}
 func get(alertSlice []string, i int) string {
 	if len(alertSlice) <= i {
 		return ""
@@ -49,12 +121,7 @@ func get(alertSlice []string, i int) string {
 	return alertSlice[i]
 }
 
-func RunParse(alert string) (string, string, string) {
-	alertSlice := strings.Split(alert, "__")
-	return get(alertSlice, 0), get(alertSlice, 1), get(alertSlice, 2)
-}
-
-func NewFunction(name string, content map[string]interface{}) FunctionBlock {
+func NewFunction(name string, content map[string]interface{}) (*FunctionBlock, error) {
 	fname, ok := content["name"].(string)
 	if !ok {
 		fname = ""
@@ -63,13 +130,18 @@ func NewFunction(name string, content map[string]interface{}) FunctionBlock {
 	if !ok {
 		next = ""
 	}
-	finput := Context{}
-	for k, v := range content["input"].(map[string]interface{}) {
-		fmt.Println("  in   - ", k, v)
+	inputs, ok := content["input"].([]interface{})
+	if !ok {
+		return nil, errors.New("invalid input format")
 	}
-	foutput := Context{}
-	for k, v := range content["output"].(map[string]interface{}) {
-		fmt.Println("  out  - ", k, v)
+	finput, err := createFuncParams(inputs)
+	if err != nil {
+		return nil, errors.Errorf("invalid input format: %s", err.Error())
+	}
+	outputs, ok := content["output"].([]interface{})
+	foutput, err := createFuncParams(outputs)
+	if err != nil {
+		return nil, errors.Errorf("invalid output format: %s", err.Error())
 	}
 	fb := FunctionBlock{
 		BlockName:      name,
@@ -78,5 +150,33 @@ func NewFunction(name string, content map[string]interface{}) FunctionBlock {
 		FunctionOutput: foutput,
 		NextStep:       next,
 	}
-	return fb
+	return &fb, nil
+}
+
+func createFuncParams(inp []interface{}) (map[string]string, error) {
+	out := make(map[string]string)
+	for _, v := range inp {
+		inputParams, ok := v.(map[string]interface{})
+		if !ok {
+			return nil, errors.Errorf("can't convert %v to map", v)
+		}
+		varN, ok := inputParams["name"]
+		if !ok {
+			return nil, errors.New("can't get variable name")
+		}
+		varGN, ok := inputParams["global"]
+		if !ok {
+			return nil, errors.New("can't get variable global name")
+		}
+		varName, ok := varN.(string)
+		if !ok {
+			return nil, errors.Errorf("can't convert %v to string", varN)
+		}
+		varGlobalName, ok := varGN.(string)
+		if !ok {
+			return nil, errors.Errorf("can't convert %v to string", varGN)
+		}
+		out[varName] = varGlobalName
+	}
+	return out, nil
 }
