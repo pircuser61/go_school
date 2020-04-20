@@ -47,6 +47,7 @@ func main() {
 
 	database, err := db2.DBConnect(cfg.DB)
 	if err != nil {
+		log.WithError(err).Error("can't connect database")
 		return
 	}
 
