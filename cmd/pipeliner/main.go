@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"flag"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/app"
 	db2 "gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
 	"net/http"
 	"os"
 	"os/signal"
@@ -50,7 +50,7 @@ func main() {
 		return
 	}
 
-	pipeliner := app.Pipeliner{
+	pipeliner := handlers.ApiEnv{
 		DBConnection: database,
 		Logger:       log,
 	}
@@ -71,39 +71,8 @@ func main() {
 
 	metrics.InitMetricsAuth()
 
-	mux := chi.NewRouter()
-	mux.Use(middleware.NoCache)
-	mux.Use(func(next http.Handler) http.Handler {
-		return ochttp.Handler{
-			Handler: http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-				ctx := logger.WithLogger(req.Context(), log)
-
-				next.ServeHTTP(res, req.WithContext(ctx))
-			}),
-		}.Handler
-	})
-
-	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
-	mux.Use(middleware.SetHeader("Content-Type", "text/json"))
-	mux.Use(cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{http.MethodPost, http.MethodGet, http.MethodHead, http.MethodPatch, http.MethodPut},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "metadata"},
-		ExposedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "metadata"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}).Handler)
-
-	mux.Route("/api/v1", func(r chi.Router) {
-		r.Get("/pipeline/all", pipeliner.ListPipelines)
-		r.Post("/pipeline/", pipeliner.AddPipeline)
-		r.Put("/pipeline/{id}", pipeliner.EditPipeline)
-		r.Get("/pipeline/{id}", pipeliner.GetPipeline)
-		r.Post("/pipeline/run", pipeliner.RunPipeline)
-	})
-
 	server := http.Server{
-		Handler: mux,
+		Handler: registerRouter(log, *cfg, pipeliner),
 		Addr:    cfg.ServeAddr,
 	}
 
@@ -146,4 +115,50 @@ func main() {
 
 	log.WithField("signal", stop).Info("stopping")
 
+}
+
+func registerRouter(log logger.Logger, cfg configs.Pipeliner, pipeliner handlers.ApiEnv) *chi.Mux {
+	mux := chi.NewRouter()
+	mux.Use(middleware.NoCache)
+	mux.Use(func(next http.Handler) http.Handler {
+		return ochttp.Handler{
+			Handler: http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+				ctx := logger.WithLogger(req.Context(), log)
+
+				next.ServeHTTP(res, req.WithContext(ctx))
+			}),
+		}.Handler
+	})
+
+	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
+	mux.Use(middleware.SetHeader("Content-Type", "text/json"))
+	mux.Use(cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{http.MethodPost, http.MethodGet, http.MethodHead, http.MethodPatch, http.MethodPut},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "metadata"},
+		ExposedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "metadata"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}).Handler)
+
+	mux.Route("/api/v1", func(r chi.Router) {
+		r.Get("/pipelines", pipeliner.ListPipelines)            // list all pipelines + approve requests for admin
+		r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline) // one pipeline
+		r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
+		r.Post("/pipelines", pipeliner.CreatePipeline)
+		r.Post("/pipelines/version/{pipelineID}", pipeliner.CreateDraft)
+		r.Put("/pipelines/version/{versionID}", pipeliner.EditDraft)
+		r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteDraft)
+		r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
+
+		r.Get("/modules", pipeliner.GetModules)
+
+		r.Get("/tags", pipeliner.GetTags)
+		r.Post("/tags", pipeliner.CreateTag)
+		r.Put("/tags/{ID}", pipeliner.EditTag)
+		r.Delete("/tags/{ID}", pipeliner.RemoveTag)
+
+		r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
+	})
+	return mux
 }

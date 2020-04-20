@@ -1,4 +1,4 @@
-package model
+package pipeline
 
 import (
 	"context"
@@ -20,7 +20,11 @@ type Pipeline struct {
 
 func NewPipeline(model db.PipelineStorageModel, connection *dbconn.PGConnection) (*Pipeline, error) {
 	p := Pipeline{}
-	err := json.Unmarshal([]byte(model.Pipeline), &p)
+	b := []byte(model.Pipeline)
+	if len(b) == 0 {
+		return nil, errors.New("unknown pipeline")
+	}
+	err := json.Unmarshal(b, &p)
 	if err != nil {
 		return nil, errors.Errorf("can't unmarshal pipeline: %s", err.Error())
 	}
@@ -32,7 +36,7 @@ func NewPipeline(model db.PipelineStorageModel, connection *dbconn.PGConnection)
 func (p *Pipeline) Run(ctx context.Context, runCtx *VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_pipeline")
 	defer s.End()
-	startContext := NewContext()
+	startContext := NewStore()
 	for _, inputValue := range p.Input {
 		glob, ok := inputValue["global"]
 		if !ok {

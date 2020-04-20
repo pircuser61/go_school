@@ -170,7 +170,26 @@
           }
         ],
         "on_true": "unlock_1",
-        "on_false": ""
+        "on_false": "unknown_1"
+      },
+      "unknown_1": {
+        "kind": "faas",
+        "name": "unknown",
+        "input": [
+          {
+            "name": "event_id",
+            "type": "string",
+            "global": "parse_1.event_id"
+          }
+        ],
+        "output": [
+          {
+            "name": "result",
+            "type": "string",
+            "global": "output.result"
+          }
+        ],
+        "next": ""
       }
     }
   }

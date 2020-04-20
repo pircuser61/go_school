@@ -6,6 +6,7 @@ import (
 	"gitlab.services.mts.ru/erius/pipeliner/internal/ctx"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"go.opencensus.io/trace"
+	"time"
 )
 
 type PipelineStorageModel struct {
@@ -24,8 +25,8 @@ func ListPipelines(c context.Context, pc *dbconn.PGConnection) ([]PipelineStorag
 	}
 	defer conn.Release()
 
-	q := `SELECT id, name
-	FROM public.pipelines;`
+	q := `SELECT id, name, created_at, 
+	FROM p public.pipelines;`
 	rows, err := conn.Query(ctx.Context(60), q)
 	if err != nil {
 		return nil, err
@@ -152,12 +153,34 @@ func WriteContext(c context.Context, pc *dbconn.PGConnection, workId, pipelineID
 	}
 	defer conn.Release()
 	id := uuid.New()
+	timestamp := time.Now()
 	q := `
 INSERT INTO public.storage(
-	id, work_id, pipeline_id, stage, vars)
-	VALUES ($1, $2, $3, $4, $5);
+	id, work_id, pipeline_id, stage, vars, date)
+	VALUES ($1, $2, $3, $4, $5, $6);
 `
-	_, err = conn.Exec(c, q, id, workId, pipelineID, stage, data)
+	_, err = conn.Exec(c, q, id, workId, pipelineID, stage, data, timestamp)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func WriteTask(c context.Context, pc *dbconn.PGConnection, workId uuid.UUID) error {
+	c, span := trace.StartSpan(c, "pg_write_context")
+	defer span.End()
+	conn, err := pc.Pool.Acquire(c)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	timestamp := time.Now()
+	q := `
+INSERT INTO public.tasks(
+	work_id, date)
+	VALUES ($1, $2);
+`
+	_, err = conn.Exec(c, q, workId, timestamp)
 	if err != nil {
 		return err
 	}

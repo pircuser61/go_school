@@ -1,4 +1,4 @@
-package model
+package pipeline
 
 import (
 	"context"
@@ -29,6 +29,10 @@ type ExecutablePipeline struct {
 
 func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
+	err := db.WriteTask(ctx, ep.Storage, ep.WorkId)
+	if err != nil {
+		return err
+	}
 	defer s.End()
 	ep.WorkId = uuid.New()
 	ep.VarStore = runCtx

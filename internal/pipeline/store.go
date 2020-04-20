@@ -1,4 +1,4 @@
-package model
+package pipeline
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ type VariableStore struct {
 	Values map[string]interface{}
 }
 
-func NewContext() VariableStore {
+func NewStore() VariableStore {
 	return VariableStore{mut: sync.Mutex{}, Values: make(map[string]interface{})}
 }
 
