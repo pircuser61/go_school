@@ -1,6 +1,9 @@
 package configs
 
-import "gitlab.services.mts.ru/libs/logger"
+import (
+	"fmt"
+	"gitlab.services.mts.ru/libs/logger"
+)
 
 type Pipeliner struct {
 	Tracing     TracingConfig  `yaml:"tracing"`
@@ -21,4 +24,14 @@ type Database struct {
 	DBName         string `yaml:"dbname"`
 	MaxConnections int    `yaml:"max_connections"`
 	Timeout        int    `yaml:"timeout"`
+}
+
+func (d Database) String() string {
+	pass := ""
+	for _, _ = range d.Pass {
+		pass = pass + "*"
+	}
+	return fmt.Sprintf(
+		"DB: (Kind: %s, Host: %s, Port: %s, User: %s, Pass: %s, DBName: %s, MaxConn: %d, Timeout: %d)",
+	d.Kind, d.Host, d.Port, d.User, pass, d.DBName, d.MaxConnections, d.Timeout)
 }
