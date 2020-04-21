@@ -14,7 +14,7 @@ type IF struct {
 }
 
 func (e *IF) Run(ctx context.Context, runCtx *VariableStore) error {
-	r, err := runCtx.GetBoolWithInput(e.FunctionInput, "var")
+	r, err := runCtx.GetBoolWithInput(e.FunctionInput, "check")
 	if err != nil {
 		return err
 	}

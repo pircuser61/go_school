@@ -13,7 +13,6 @@ import (
 const (
 	kind         = "kind"
 	faas         = "faas"
-	stringsEqual = "strings_equal"
 )
 
 type ExecutablePipeline struct {

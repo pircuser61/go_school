@@ -13,7 +13,7 @@ import (
 )
 
 type RunContext struct {
-	Id         string            `json:"id"`
+	ID         string            `json:"id"`
 	Parameters map[string]string `json:"parameters"`
 }
 
@@ -33,7 +33,7 @@ func (ae ApiEnv) RunPipelineDepricated(w http.ResponseWriter, req *http.Request)
 		sendError(w, err)
 		return
 	}
-	pipe, err := db.GetPipelineByName(c, ae.DBConnection, rc.Id)
+	pipe, err := db.GetPipelineByName(c, ae.DBConnection, rc.ID)
 	if err != nil {
 		ae.Logger.Error("can't get pipelineRunneble from db ", err)
 		sendError(w, err)

@@ -144,7 +144,7 @@ func EditPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID, pipe
 	return nil
 }
 
-func WriteContext(c context.Context, pc *dbconn.PGConnection, workId, pipelineID uuid.UUID, stage string, data []byte) error {
+func WriteContext(c context.Context, pc *dbconn.PGConnection, workID, pipelineID uuid.UUID, stage string, data []byte) error {
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
 	conn, err := pc.Pool.Acquire(c)
@@ -159,14 +159,14 @@ INSERT INTO public.storage(
 	id, work_id, pipeline_id, stage, vars, date)
 	VALUES ($1, $2, $3, $4, $5, $6);
 `
-	_, err = conn.Exec(c, q, id, workId, pipelineID, stage, data, timestamp)
+	_, err = conn.Exec(c, q, id, workID, pipelineID, stage, data, timestamp)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func WriteTask(c context.Context, pc *dbconn.PGConnection, workId uuid.UUID) error {
+func WriteTask(c context.Context, pc *dbconn.PGConnection, workID uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
 	conn, err := pc.Pool.Acquire(c)
@@ -180,7 +180,7 @@ INSERT INTO public.tasks(
 	work_id, date)
 	VALUES ($1, $2);
 `
-	_, err = conn.Exec(c, q, workId, timestamp)
+	_, err = conn.Exec(c, q, workID, timestamp)
 	if err != nil {
 		return err
 	}

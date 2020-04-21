@@ -26,7 +26,7 @@ type Database struct {
 	Timeout        int    `yaml:"timeout"`
 }
 
-func (d Database) String() string {
+func (d *Database) String() string {
 	pass := ""
 	for _, _ = range d.Pass {
 		pass = pass + "*"

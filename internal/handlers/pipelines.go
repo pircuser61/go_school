@@ -95,7 +95,7 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request){
 		return
 	}
 
-	p := Pipeline{}
+	p := EriusScenario{}
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		ae.Logger.Error("can't unmarshal pipeline ", err)
