@@ -6,13 +6,14 @@ import (
 )
 
 type Pipeliner struct {
-	Tracing     TracingConfig  `yaml:"tracing"`
-	Timeout     Duration       `yaml:"timeout"`
-	Proxy       string         `yaml:"proxy"`
-	Log         *logger.Config `yaml:"log"`
-	ServeAddr   string         `yaml:"serve_addr"`
-	MetricsAddr string         `yaml:"metrics_addr"`
-	DB          Database       `yaml:"database"`
+	Tracing       TracingConfig  `yaml:"tracing"`
+	Timeout       Duration       `yaml:"timeout"`
+	Proxy         string         `yaml:"proxy"`
+	Log           *logger.Config `yaml:"log"`
+	ServeAddr     string         `yaml:"serve_addr"`
+	MetricsAddr   string         `yaml:"metrics_addr"`
+	DB            Database       `yaml:"database"`
+	ScriptManager string         `yaml:"script_manager"`
 }
 
 type Database struct {
@@ -33,5 +34,5 @@ func (d *Database) String() string {
 	}
 	return fmt.Sprintf(
 		"DB: (Kind: %s, Host: %s, Port: %s, User: %s, Pass: %s, DBName: %s, MaxConn: %d, Timeout: %d)",
-	d.Kind, d.Host, d.Port, d.User, pass, d.DBName, d.MaxConnections, d.Timeout)
+		d.Kind, d.Host, d.Port, d.User, pass, d.DBName, d.MaxConnections, d.Timeout)
 }

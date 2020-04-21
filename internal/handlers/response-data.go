@@ -47,7 +47,8 @@ type EriusScenario struct {
 }
 
 type EriusFunctionList struct {
-	Functions []script.SMFunc `json:"functions"`
+	Functions []script.SMFunc `json:"funcs"`
+	Shapes []script.Shape `json:"shapes"`
 }
 
 type EriusFunc struct {

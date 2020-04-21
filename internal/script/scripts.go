@@ -11,6 +11,7 @@ const (
 	onFalse string = "OnFalse"
 	next string = "Next"
 	checkVarName string = "check"
+
 	testVarNameString string = "teststring"
 	testVarNameInt string = "testint"
 
@@ -32,6 +33,13 @@ type SMFunc struct {
 type SMFuncValue struct {
 	Name   string `json:"name"`
 	Type   string `json:"type"`
+}
+
+type Shape struct {
+	ID int
+	Title string
+	Color string
+	Icon string
 }
 
 func GetReadyFuncs(scriptManager string) ([]SMFunc, error)  {
@@ -71,4 +79,40 @@ func GetReadyFuncs(scriptManager string) ([]SMFunc, error)  {
 	funcs = append(funcs, ifstate, testBlock)
 
 	return funcs, nil
+}
+
+func GetShapes() ([]Shape,error) {
+	shapes := []Shape{
+		{
+			ID: shapeRectangle,
+			Title: "rectangle",
+			Color: "#123456",
+			Icon: "rectangle",
+		},
+		{
+			ID: shapeRhombus,
+			Title: "rhombus",
+			Color: "#7890AB",
+			Icon: "rhombus",
+		},
+		{
+			ID: shapeIntegration,
+			Title: "integration",
+			Color: "#CDEF12",
+			Icon: "integration",
+		},
+		{
+			ID: shapeCircle,
+			Title: "circle",
+			Color: "#345678",
+			Icon: "circle",
+		},
+		{
+			ID: shapeTriangle,
+			Title: "triangle",
+			Color: "#90ABCD",
+			Icon: "triangle",
+		},
+	}
+	return shapes, nil
 }

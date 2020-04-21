@@ -17,7 +17,13 @@ func (ae ApiEnv) GetModules(w http.ResponseWriter, req *http.Request){
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, EriusFunctionList{Functions: eriusFunctions})
+	eriusShapes, err := script.GetShapes()
+	if err != nil  {
+		ae.Logger.WithError(err).Error("can't get erius functions from script manager")
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, EriusFunctionList{Functions: eriusFunctions, Shapes:eriusShapes})
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
 		return

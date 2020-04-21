@@ -54,6 +54,7 @@ func main() {
 	pipeliner := handlers.ApiEnv{
 		DBConnection: database,
 		Logger:       log,
+		ScriptManager: cfg.ScriptManager,
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
@@ -142,7 +143,7 @@ func registerRouter(log logger.Logger, cfg configs.Pipeliner, pipeliner handlers
 		MaxAge:           300,
 	}).Handler)
 
-	mux.Route("/api/v1", func(r chi.Router) {
+	mux.Route("/api/pipeliner/v1", func(r chi.Router) {
 		r.Get("/pipelines/", pipeliner.ListPipelines)            // list all pipelines + approve requests for admin
 		r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline) // one pipeline
 		r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
