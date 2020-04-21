@@ -21,17 +21,17 @@ const (
 )
 
 type SMFunc struct {
-	BlockType string
-	Title string
-	Inputs []SMFuncValue
-	Outputs []SMFuncValue
-	ShapeType int
-	NextFuncs []string
+	BlockType string `json:"block_type"`
+	Title string `json:"title"`
+	Inputs []SMFuncValue `json:"inputs"`
+	Outputs []SMFuncValue `json:"outputs"`
+	ShapeType int `json:"shape_type"`
+	NextFuncs []string `json:"next_funcs"`
 }
 
 type SMFuncValue struct {
-	Name   string
-	Type   string
+	Name   string `json:"name"`
+	Type   string `json:"type"`
 }
 
 func GetReadyFuncs(scriptManager string) ([]SMFunc, error)  {
