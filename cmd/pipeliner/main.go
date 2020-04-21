@@ -143,19 +143,19 @@ func registerRouter(log logger.Logger, cfg configs.Pipeliner, pipeliner handlers
 	}).Handler)
 
 	mux.Route("/api/v1", func(r chi.Router) {
-		r.Get("/pipelines", pipeliner.ListPipelines)            // list all pipelines + approve requests for admin
+		r.Get("/pipelines/", pipeliner.ListPipelines)            // list all pipelines + approve requests for admin
 		r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline) // one pipeline
 		r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
-		r.Post("/pipelines", pipeliner.CreatePipeline)
+		r.Post("/pipelines/", pipeliner.CreatePipeline)
 		r.Post("/pipelines/version/{pipelineID}", pipeliner.CreateDraft)
 		r.Put("/pipelines/version/{versionID}", pipeliner.EditDraft)
 		r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteDraft)
 		r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
 
-		r.Get("/modules", pipeliner.GetModules)
+		r.Get("/modules/", pipeliner.GetModules)
 
-		r.Get("/tags", pipeliner.GetTags)
-		r.Post("/tags", pipeliner.CreateTag)
+		r.Get("/tags/", pipeliner.GetTags)
+		r.Post("/tags/", pipeliner.CreateTag)
 		r.Put("/tags/{ID}", pipeliner.EditTag)
 		r.Delete("/tags/{ID}", pipeliner.RemoveTag)
 

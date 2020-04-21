@@ -10,7 +10,7 @@ import (
 func (ae ApiEnv) GetModules(w http.ResponseWriter, req *http.Request){
 	_, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
-
+	ae.Logger.Info("get modules")
 	eriusFunctions, err := script.GetReadyFuncs(ae.ScriptManager)
 	if err != nil  {
 		ae.Logger.WithError(err).Error("can't get erius functions from script manager")
