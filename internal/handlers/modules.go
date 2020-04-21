@@ -8,10 +8,10 @@ import (
 )
 
 func (ae ApiEnv) GetModules(w http.ResponseWriter, req *http.Request){
-	_, s := trace.StartSpan(context.Background(), "list_pipelines")
+	ctx, s := trace.StartSpan(context.Background(), "list_modules")
 	defer s.End()
 
-	eriusFunctions, err := script.GetReadyFuncs(ae.ScriptManager)
+	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager)
 	if err != nil  {
 		ae.Logger.WithError(err).Error("can't get erius functions from script manager")
 		return
