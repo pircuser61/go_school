@@ -36,10 +36,10 @@ type SMFuncValue struct {
 }
 
 type Shape struct {
-	ID int
-	Title string
-	Color string
-	Icon string
+	ID int  `json:"id"`
+	Title string `json:"title"`
+	Color string `json:"color"`
+	Icon string `json:"icon"`
 }
 
 func GetReadyFuncs(scriptManager string) ([]SMFunc, error)  {
