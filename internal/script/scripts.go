@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	shapeRectangle int = iota
+	shapeFunction int = iota
 	shapeRhombus
 	shapeScenario
 	shapeIntegration
@@ -126,7 +126,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 			},
 		},
 		NextFuncs: []string{next},
-		ShapeType: shapeRectangle,
+		ShapeType: shapeFunction,
 	}
 	funcs = append(funcs, ifstate, testBlock)
 	for _, v := range smf {
@@ -136,7 +136,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				Title:     v.Name,
 				Inputs:    v.Input.Fields,
 				Outputs:   v.Output.Fields,
-				ShapeType: shapeRectangle,
+				ShapeType: shapeFunction,
 				NextFuncs: []string{next},
 			}
 			funcs = append(funcs, b)
@@ -149,7 +149,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 func GetShapes() ([]ShapeModel, error) {
 	shapes := []ShapeModel{
 		{
-			ID:    shapeRectangle,
+			ID:    shapeFunction,
 			Title: "X24function",
 			Color: "#123456",
 			Icon:  "X24function",
