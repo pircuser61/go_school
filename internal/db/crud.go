@@ -90,7 +90,7 @@ func getVersionsByStatusAndAuthor(c context.Context, pc *dbconn.PGConnection,
 from pipeliner.versions
 where 
 	status = $1
-ande author = $2
+and author = $2
 order by created_at `
 	rows, err := pc.Pool.Query(c, q, status, author)
 	if err != nil {
