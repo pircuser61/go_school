@@ -151,27 +151,27 @@ func GetShapes() ([]ShapeModel, error) {
 	shapes := []ShapeModel{
 		{
 			ID:    shapeRectangle,
-			Title: "rectangle",
+			Title: "X24function",
 			Color: "#123456",
-			Icon:  "rectangle",
+			Icon:  "X24function",
 		},
 		{
 			ID:    shapeRhombus,
-			Title: "rhombus",
+			Title: "X24terms",
 			Color: "#7890AB",
-			Icon:  "rhombus",
+			Icon:  "X24terms",
 		},
 		{
 			ID:    shapeIntegration,
-			Title: "integration",
+			Title: "X24external",
 			Color: "#CDEF12",
-			Icon:  "integration",
+			Icon:  "X24external",
 		},
 		{
 			ID:    shapeCircle,
-			Title: "circle",
+			Title: "X24scenario",
 			Color: "#345678",
-			Icon:  "circle",
+			Icon:  "X24function",
 		},
 		{
 			ID:    shapeTriangle,
