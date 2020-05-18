@@ -1,4 +1,4 @@
-package handlers
+package entity
 
 import (
 	"github.com/google/uuid"
@@ -36,7 +36,7 @@ type EriusScenario struct {
 	ID        uuid.UUID            `json:"id"`
 	VersionID uuid.UUID            `json:"version_id"`
 	Status    int                  `json:"status"`
-	HasDraft  bool                 `json:"hasDraft"`
+	HasDraft  bool                 `json:"hasDraft,omitempty"`
 	Name      string               `json:"name"`
 	Input     []EriusFunctionValue `json:"input"`
 	Output    []EriusFunctionValue `json:"output"`
@@ -68,3 +68,4 @@ type EriusFunctionValue struct {
 	Type   string `json:"type"`
 	Global string `json:"global,omitempty"`
 }
+

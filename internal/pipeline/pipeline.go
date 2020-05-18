@@ -18,7 +18,7 @@ type Pipeline struct {
 	Pipeline *ExecutablePipeline `json:"pipeline"`
 }
 
-func NewPipeline(model db.PipelineStorageModel, connection *dbconn.PGConnection) (*Pipeline, error) {
+func NewPipeline(model db.PipelineStorageModelDepricated, connection *dbconn.PGConnection) (*Pipeline, error) {
 	p := Pipeline{}
 	b := []byte(model.Pipeline)
 	if len(b) == 0 {
