@@ -245,12 +245,6 @@ func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 func (ae ApiEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
-	err := sendResponse(w, http.StatusOK, nil)
-	if err != nil {
-		ae.Logger.Error("can't send response", err)
-		sendError(w, err)
-		return
-	}
 	idparam := chi.URLParam(req, "pipelineID")
 	id, err := uuid.Parse(idparam)
 	if err != nil {
