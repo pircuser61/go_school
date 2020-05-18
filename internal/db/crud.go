@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -35,10 +36,12 @@ func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScena
 	versionInfoList := make([]entity.EriusScenarioInfo, 0, 0)
 	for rows.Next() {
 		e := entity.EriusScenarioInfo{}
-		err := rows.Scan(&e.VersionID, &e.Status, &e.ID, &e.CreatedAt, &e.Author, &e.Approver)
+		var approver sql.NullString
+		err := rows.Scan(&e.VersionID, &e.Status, &e.ID, &e.CreatedAt, &e.Author, &approver, &e.Name)
 		if err != nil {
 			return nil, err
 		}
+		e.Approver = approver.String
 		versionInfoList = append(versionInfoList, e)
 	}
 	return versionInfoList, nil
@@ -55,10 +58,11 @@ func getVersionsByStatus(c context.Context, pc *dbconn.PGConnection, status int)
 	c, span := trace.StartSpan(c, "pg_get_versions_by_status")
 	defer span.End()
 	q := `SELECT 
-	id, status, pipeline_id, created_at, author, approver
-from pipeliner.versions
+	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name
+from pipeliner.versions pv
+join pipeliner.pipelines pp on pv.pipeline_id = pp.id
 where 
-	status = $1
+	pv.status = $1
 order by created_at `
 	rows, err := pc.Pool.Query(c, q, status)
 	if err != nil {
@@ -86,11 +90,12 @@ func getVersionsByStatusAndAuthor(c context.Context, pc *dbconn.PGConnection,
 	c, span := trace.StartSpan(c, "pg_get_version_by_status_and_author")
 	defer span.End()
 	q := `SELECT 
-	id, status, pipeline_id, created_at, author, approver
-from pipeliner.versions
+	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name
+from pipeliner.versions pv
+join pipeliner.pipelines pp on pv.pipeline_id = pp.id
 where 
-	status = $1
-and author = $2
+	pv.status = $1
+and pv.author = $2
 order by created_at `
 	rows, err := pc.Pool.Query(c, q, status, author)
 	if err != nil {
@@ -320,6 +325,14 @@ func GetPipelineVersion(c context.Context, pc *dbconn.PGConnection, id uuid.UUID
 
 func UpdateDraft(c context.Context, pc *dbconn.PGConnection,
 	p *entity.EriusScenario, pipelineData []byte) error {
+
+	q := `UPDATE pipeliner.versions SET
+	 status = $1, content =$2 WHERE id = $3;`
+
+	_, err := pc.Pool.Exec(c, q, p.Status,  pipelineData, p.VersionID)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

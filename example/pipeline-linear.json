@@ -1,5 +1,8 @@
 {
   "name": "test-linear",
+  "id": "151b2f26-2f15-4da0-9d25-77fafdf73167",
+  "version_id": "3426b75d-0092-47ae-a93a-38950c10280e",
+  "status": 5,
   "input":[
     {
       "name": "alert",

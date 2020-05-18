@@ -4,9 +4,9 @@ timeout: "30s"
 database:
   kind: postgres
   host: localhost
-  port: 5432
-  user: postgres
-  pass: "postgres"
+  port: 5433
+  user: erius
+  pass: "4L7Npbjee4s2XvTe"
   dbname: postgres
   max_connections: 10
   timeout: 10

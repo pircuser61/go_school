@@ -5,10 +5,10 @@ script_manager: "manager"
 database:
   kind: postgres
   host: localhost
-  port: 5432
-  user: postgres
-  pass: ""
-  dbname: postgres
+  port: 5433
+  user: erius
+  pass: "4L7Npbjee4s2XvTe"
+  dbname: pipeliner
   max_connections: 10
   timeout: 10
 
