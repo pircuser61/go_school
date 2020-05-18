@@ -20,14 +20,24 @@ const (
 	next         string = "Next"
 	checkVarName string = "check"
 
-	testVarNameString string = "teststring"
-	testVarNameInt    string = "testint"
+	firstStringName string = "first_string"
+	secondStringName string = "second_string"
+	isEqualName string = "is_equal"
 
 	typeBool   string = "bool"
 	typeString string = "string"
 	typeInt    string = "int"
 
 	functionDeployed string = "deployed"
+
+	TypeIF       = "term"
+	TypePython   = "python3"
+	TypeInternal = "internal"
+
+	IconFunction     = "X24function"
+	IconTerms        = "X24terms"
+	IconIntegrations = "X24external"
+	IconScenario     = "X24scenario"
 )
 
 type FunctionModel struct {
@@ -98,7 +108,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 
 	funcs := make([]FunctionModel, 0)
 	ifstate := FunctionModel{
-		BlockType: "if-statement",
+		BlockType: TypeIF,
 		Title:     "if",
 		Inputs: []FunctionValueModel{
 			{
@@ -111,18 +121,22 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 	}
 
 	testBlock := FunctionModel{
-		BlockType: "testblock",
-		Title:     "testblock",
+		BlockType: TypeInternal,
+		Title:     "stings_is_equal",
 		Inputs: []FunctionValueModel{
 			{
-				Name: testVarNameString,
+				Name: firstStringName,
+				Type: typeString,
+			},
+			{
+				Name: secondStringName,
 				Type: typeString,
 			},
 		},
 		Outputs: []FunctionValueModel{
 			{
-				Name: testVarNameInt,
-				Type: typeInt,
+				Name: isEqualName,
+				Type: typeBool,
 			},
 		},
 		NextFuncs: []string{next},
@@ -136,7 +150,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				Title:     v.Name,
 				Inputs:    v.Input.Fields,
 				Outputs:   v.Output.Fields,
-				ShapeType: shapeFunction,
+				ShapeType: shapeIntegration,
 				NextFuncs: []string{next},
 			}
 			funcs = append(funcs, b)
@@ -148,29 +162,30 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 
 func GetShapes() ([]ShapeModel, error) {
 	shapes := []ShapeModel{
+
 		{
 			ID:    shapeFunction,
-			Title: "X24function",
+			Title: IconFunction,
 			Color: "#123456",
-			Icon:  "X24function",
+			Icon:  IconFunction,
 		},
 		{
 			ID:    shapeRhombus,
-			Title: "X24terms",
+			Title: IconTerms,
 			Color: "#7890AB",
-			Icon:  "X24terms",
+			Icon:  IconTerms,
 		},
 		{
 			ID:    shapeIntegration,
-			Title: "X24external",
+			Title: IconIntegrations,
 			Color: "#CDEF12",
-			Icon:  "X24external",
+			Icon: IconIntegrations,
 		},
 		{
 			ID:    shapeScenario,
-			Title: "X24scenario",
+			Title: IconScenario,
 			Color: "#345678",
-			Icon:  "X24scenario",
+			Icon:  IconScenario,
 		},
 	}
 	return shapes, nil
