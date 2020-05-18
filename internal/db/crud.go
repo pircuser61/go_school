@@ -54,7 +54,7 @@ func GetApprovedVersions(c context.Context, pc *dbconn.PGConnection) ([]entity.E
 func getVersionsByStatus(c context.Context, pc *dbconn.PGConnection, status int) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_versions_by_status")
 	defer span.End()
-	q := `SELECT select 
+	q := `SELECT 
 	id, status, pipeline_id, created_at, author, approver
 from pipeliner.versions
 where 
@@ -85,7 +85,7 @@ func getVersionsByStatusAndAuthor(c context.Context, pc *dbconn.PGConnection,
 	status int, author string) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_version_by_status_and_author")
 	defer span.End()
-	q := `SELECT select 
+	q := `SELECT 
 	id, status, pipeline_id, created_at, author, approver
 from pipeliner.versions
 where 

@@ -24,18 +24,21 @@ func (ae ApiEnv) ListPipelines(w http.ResponseWriter, req *http.Request){
 	approved, err := db.GetApprovedVersions(c, ae.DBConnection)
 	if err != nil {
 		ae.Logger.Error("can't get approved versions: ", err)
+		sendError(w, err)
 		return
 	}
 
 	onApprove, err := db.GetOnApproveVersions(c, ae.DBConnection)
 	if err != nil {
-		ae.Logger.Error("can't get versionson approve: ", err)
+		ae.Logger.Error("can't get versions on approve: ", err)
+		sendError(w, err)
 		return
 	}
 	author := "testuser"
 	drafts, err := db.GetDraftVersions(c, ae.DBConnection, author)
 	if err != nil {
 		ae.Logger.Error("can't get draft versions: ", err)
+		sendError(w, err)
 		return
 	}
 
@@ -49,6 +52,7 @@ func (ae ApiEnv) ListPipelines(w http.ResponseWriter, req *http.Request){
 	err = sendResponse(w, http.StatusOK, resp)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 
@@ -63,18 +67,21 @@ func (ae ApiEnv) GetPipeline(w http.ResponseWriter, req *http.Request){
 	id, err := uuid.Parse(idparam)
 	if err != nil {
 		ae.Logger.Error("can't parse version ID: ", err)
+		sendError(w, err)
 		return
 	}
 
 	pipeline, err := db.GetPipeline(c, ae.DBConnection, id)
 	if err != nil {
 		ae.Logger.Error("can't get pipeline: ", err)
+		sendError(w, err)
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, pipeline)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 }
@@ -87,16 +94,19 @@ func (ae ApiEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request){
 	id, err := uuid.Parse(idparam)
 	if err != nil {
 		ae.Logger.Error("can't parse version ID: ", err)
+		sendError(w, err)
 		return
 	}
 	version, err := db.GetPipelineVersion(ctx, ae.DBConnection, id)
 	if err != nil {
 		ae.Logger.Error("can't get pipeline: ", err)
+		sendError(w, err)
 		return
 	}
 	err = sendResponse(w, http.StatusOK, version)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 }
@@ -127,6 +137,7 @@ func (ae ApiEnv) CreateDraft(w http.ResponseWriter, req *http.Request){
 	err = db.CreateVersion(ctx, ae.DBConnection, &p, author, b)
 	if err != nil {
 		ae.Logger.Error("can't write created to database ", err)
+		sendError(w, err)
 		return
 	}
 	created, err := db.GetPipelineVersion(ctx, ae.DBConnection, p.VersionID)
@@ -139,6 +150,7 @@ func (ae ApiEnv) CreateDraft(w http.ResponseWriter, req *http.Request){
 	err = sendResponse(w, http.StatusOK, created)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 }
@@ -203,6 +215,7 @@ func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request){
 	err = sendResponse(w, http.StatusOK, edited)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 }
@@ -215,18 +228,21 @@ func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request){
 	versionID, err := uuid.Parse(idparam)
 	if err != nil {
 		ae.Logger.Error("can't parse version ID: ", err)
+		sendError(w, err)
 		return
 	}
 
 	err = db.DeleteVersion(c, ae.DBConnection, versionID)
 	if err != nil {
 		ae.Logger.Error("can't delete version: ", err)
+		sendError(w, err)
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 }
@@ -238,24 +254,28 @@ func (ae ApiEnv) DeletePipeline(w http.ResponseWriter, req *http.Request){
 	err := sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 	idparam := chi.URLParam(req, "pipelineID")
 	id, err := uuid.Parse(idparam)
 	if err != nil {
 		ae.Logger.Error("can't parse version ID: ", err)
+		sendError(w, err)
 		return
 	}
 
 	err = db.DeletePipeline(c, ae.DBConnection, id)
 	if err != nil {
 		ae.Logger.Error("can't delete version: ", err)
+		sendError(w, err)
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 
@@ -286,6 +306,7 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request){
 	err = db.CreatePipeline(ctx, ae.DBConnection, &p, author, b)
 	if err != nil {
 		ae.Logger.Error("can't write created to database ", err)
+		sendError(w, err)
 		return
 	}
 	created, err := db.GetPipelineVersion(ctx, ae.DBConnection, p.VersionID)
@@ -309,6 +330,7 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request){
 	err := sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 }
@@ -319,6 +341,7 @@ func (ae ApiEnv) ModuleUsage(w http.ResponseWriter, req *http.Request){
 	err := sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
+		sendError(w, err)
 		return
 	}
 }
