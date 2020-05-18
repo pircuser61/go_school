@@ -63,6 +63,7 @@ from pipeliner.versions pv
 join pipeliner.pipelines pp on pv.pipeline_id = pp.id
 where 
 	pv.status = $1
+and pp.deleted_at is NULL
 order by created_at `
 	rows, err := pc.Pool.Query(c, q, status)
 	if err != nil {
@@ -96,6 +97,7 @@ join pipeliner.pipelines pp on pv.pipeline_id = pp.id
 where 
 	pv.status = $1
 and pv.author = $2
+and pp.deleted_at is NULL
 order by created_at `
 	rows, err := pc.Pool.Query(c, q, status, author)
 	if err != nil {

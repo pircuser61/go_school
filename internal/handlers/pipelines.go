@@ -269,7 +269,6 @@ func (ae ApiEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
-		sendError(w, err)
 		return
 	}
 
