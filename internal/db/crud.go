@@ -35,7 +35,7 @@ func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScena
 	versionInfoList := make([]entity.EriusScenarioInfo, 0, 0)
 	for rows.Next() {
 		e := entity.EriusScenarioInfo{}
-		err := rows.Scan(&e.VersionID, &e.Status, &e.ID, &e.CreatedAt, e.Author, e.Approver)
+		err := rows.Scan(&e.VersionID, &e.Status, &e.ID, &e.CreatedAt, &e.Author, &e.Approver)
 		if err != nil {
 			return nil, err
 		}
