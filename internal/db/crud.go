@@ -265,7 +265,7 @@ func GetPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) (*ent
 SELECT pv.id, pv.status, pv.pipeline_id, pv.content
 	FROM pipeliner.versions pv
 JOIN pipeliner.pipeline_history pph on pph.version_id = pv.id
-	WHERE pv.id = $1 order by pph.date desc LIMIT 1
+	WHERE pv.pipeline_id = $1 order by pph.date desc LIMIT 1
 `
 	rows, err := conn.Query(c, q, id)
 	if err != nil {
