@@ -12,8 +12,7 @@ import (
 const (
 	shapeRectangle int = iota
 	shapeRhombus
-	shapeCircle
-	shapeTriangle
+	shapeScenario
 	shapeIntegration
 
 	onTrue       string = "OnTrue"
@@ -168,16 +167,10 @@ func GetShapes() ([]ShapeModel, error) {
 			Icon:  "X24external",
 		},
 		{
-			ID:    shapeCircle,
+			ID:    shapeScenario,
 			Title: "X24scenario",
 			Color: "#345678",
-			Icon:  "X24function",
-		},
-		{
-			ID:    shapeTriangle,
-			Title: "triangle",
-			Color: "#90ABCD",
-			Icon:  "triangle",
+			Icon:  "X24scenario",
 		},
 	}
 	return shapes, nil
