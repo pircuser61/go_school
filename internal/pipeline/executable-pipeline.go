@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	kind         = "kind"
-	faas         = "faas"
+	kind = "kind"
+	faas = "faas"
 )
 
 type ExecutablePipeline struct {

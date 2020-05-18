@@ -23,7 +23,7 @@ type EriusScenarioInfo struct {
 	Tags          []time.Time `json:"tags"`
 	LastRun       time.Time   `json:"last_run"`
 	LastRunStatus string      `json:"last_run_status"`
-	Status        string      `json:"status"`
+	Status        int         `json:"status"`
 }
 
 type EriusTagInfo struct {
@@ -41,26 +41,26 @@ type EriusScenario struct {
 	Input     []EriusFunctionValue `json:"input"`
 	Output    []EriusFunctionValue `json:"output"`
 	Pipeline  struct {
-		Entrypoint string `json:"entrypoint"`
+		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
 	} `json:"pipeline"`
 }
 
 type EriusFunctionList struct {
 	Functions []script.FunctionModel `json:"funcs"`
-	Shapes []script.ShapeModel       `json:"shapes"`
+	Shapes    []script.ShapeModel    `json:"shapes"`
 }
 
 type EriusFunc struct {
-	X int                        `json:"x,omitempty"`
-	Y int                        `json:"y,omitempty"`
-	BlockType string             `json:"block_type"`
-	Title string                 `json:"title"`
-	Input   []EriusFunctionValue `json:"input"`
-	Output  []EriusFunctionValue `json:"output,omitempty"`
-	OnTrue  string               `json:"on_true,omitempty"`
-	OnFalse string               `json:"on_false,omitempty"`
-	Next string                  `json:"next,omitempty"`
+	X         int                  `json:"x,omitempty"`
+	Y         int                  `json:"y,omitempty"`
+	BlockType string               `json:"block_type"`
+	Title     string               `json:"title"`
+	Input     []EriusFunctionValue `json:"input"`
+	Output    []EriusFunctionValue `json:"output,omitempty"`
+	OnTrue    string               `json:"on_true,omitempty"`
+	OnFalse   string               `json:"on_false,omitempty"`
+	Next      string               `json:"next,omitempty"`
 }
 
 type EriusFunctionValue struct {
@@ -68,4 +68,3 @@ type EriusFunctionValue struct {
 	Type   string `json:"type"`
 	Global string `json:"global,omitempty"`
 }
-

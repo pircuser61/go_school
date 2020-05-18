@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func (ae ApiEnv) GetTags(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 	_, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	err := sendResponse(w, http.StatusOK, nil)
@@ -16,8 +16,7 @@ func (ae ApiEnv) GetTags(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-
-func (ae ApiEnv) CreateTag(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	_, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	err := sendResponse(w, http.StatusOK, nil)
@@ -27,8 +26,7 @@ func (ae ApiEnv) CreateTag(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-
-func (ae ApiEnv) EditTag(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	_, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	err := sendResponse(w, http.StatusOK, nil)
@@ -38,8 +36,7 @@ func (ae ApiEnv) EditTag(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-
-func (ae ApiEnv) RemoveTag(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 	_, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	err := sendResponse(w, http.StatusOK, nil)
@@ -48,4 +45,3 @@ func (ae ApiEnv) RemoveTag(w http.ResponseWriter, req *http.Request){
 		return
 	}
 }
-

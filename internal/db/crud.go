@@ -246,7 +246,7 @@ func DeletePipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) er
 	return nil
 }
 
-func GetPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID)  (*entity.EriusScenario, error)   {
+func GetPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) (*entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline")
 	defer span.End()
 	conn, err := pc.Pool.Acquire(c)
@@ -254,7 +254,6 @@ func GetPipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID)  (*en
 		return nil, err
 	}
 	defer conn.Release()
-
 
 	p := entity.EriusScenario{}
 	q := `

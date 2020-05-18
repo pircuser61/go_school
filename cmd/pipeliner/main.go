@@ -52,8 +52,8 @@ func main() {
 	}
 
 	pipeliner := handlers.ApiEnv{
-		DBConnection: database,
-		Logger:       log,
+		DBConnection:  database,
+		Logger:        log,
 		ScriptManager: cfg.ScriptManager,
 	}
 

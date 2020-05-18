@@ -6,8 +6,7 @@ import (
 )
 
 type ApiEnv struct {
-	DBConnection *dbconn.PGConnection
-	Logger       logger.Logger
+	DBConnection  *dbconn.PGConnection
+	Logger        logger.Logger
 	ScriptManager string
 }
-

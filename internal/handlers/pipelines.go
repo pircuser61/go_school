@@ -12,13 +12,13 @@ import (
 	"io/ioutil"
 	"net/http"
 )
+
 type RunContext struct {
 	ID         string            `json:"id"`
 	Parameters map[string]string `json:"parameters"`
 }
 
-
-func (ae ApiEnv) ListPipelines(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	approved, err := db.GetApprovedVersions(c, ae.DBConnection)
@@ -58,8 +58,7 @@ func (ae ApiEnv) ListPipelines(w http.ResponseWriter, req *http.Request){
 
 }
 
-
-func (ae ApiEnv) GetPipeline(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 
@@ -86,8 +85,7 @@ func (ae ApiEnv) GetPipeline(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-
-func (ae ApiEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	idparam := chi.URLParam(req, "versionID")
@@ -111,8 +109,7 @@ func (ae ApiEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-
-func (ae ApiEnv) CreateDraft(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) CreateDraft(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(context.Background(), "create_draft")
 	defer s.End()
 
@@ -155,8 +152,7 @@ func (ae ApiEnv) CreateDraft(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-
-func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	b, err := ioutil.ReadAll(req.Body)
@@ -220,8 +216,7 @@ func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-
-func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	idparam := chi.URLParam(req, "versionID")
@@ -247,8 +242,7 @@ func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-
-func (ae ApiEnv) DeletePipeline(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	err := sendResponse(w, http.StatusOK, nil)
@@ -281,7 +275,7 @@ func (ae ApiEnv) DeletePipeline(w http.ResponseWriter, req *http.Request){
 
 }
 
-func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 
@@ -323,8 +317,7 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-
-func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	_, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 	err := sendResponse(w, http.StatusOK, nil)
@@ -335,9 +328,10 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request){
 	}
 }
 
-func (ae ApiEnv) ModuleUsage(w http.ResponseWriter, req *http.Request){
+func (ae ApiEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	_, s := trace.StartSpan(context.Background(), "list_usage")
 	defer s.End()
+
 	err := sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)

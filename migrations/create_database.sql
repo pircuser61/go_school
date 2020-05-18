@@ -27,8 +27,9 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 
-DROP TABLE IF EXISTS public.pipelines;
-DROP TABLE IF EXISTS public.storage;
+DROP TABLE IF EXISTS pipeliner.pipelines;
+DROP TABLE IF EXISTS pipeliner.storage;
+DROP TABLE IF EXISTS pipeliner.versions;
 
 CREATE TABLE public.pipelines
 (
@@ -61,4 +62,25 @@ CREATE TABLE public.storage
     TABLESPACE pg_default;
 
 ALTER TABLE public.storage
+    OWNER to postgres;
+
+
+CREATE TABLE pipeliner.versions
+(
+    id uuid NOT NULL,
+    status smallint NOT NULL,
+    pipeline_id uuid NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    content jsonb NOT NULL,
+    author character varying COLLATE pg_catalog."default",
+    approver character varying COLLATE pg_catalog."default",
+    deleted_at timestamp with time zone,
+    CONSTRAINT versions_pk PRIMARY KEY (id)
+)
+    WITH (
+        OIDS = FALSE
+    )
+    TABLESPACE pg_default;
+
+ALTER TABLE pipeliner.versions
     OWNER to postgres;
