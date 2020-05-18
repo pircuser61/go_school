@@ -240,7 +240,7 @@ func DeletePipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) er
 
 	_, span := trace.StartSpan(c, "pg_list_pipelines")
 	defer span.End()
-	q := `UPDATE pipeliner.pipeline SET deleted_at=$1 WHERE id = $2`
+	q := `UPDATE pipeliner.pipelines SET deleted_at=$1 WHERE id = $2`
 
 	t := time.Now()
 	_, err := pc.Pool.Exec(c, q, t, id)

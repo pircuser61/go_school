@@ -27,7 +27,7 @@
     "blocks": {
       "parse_1": {
         "kind": "faas",
-        "name": "parse",
+        "title": "parse",
         "input": [
           {
             "name": "alert",
@@ -57,7 +57,7 @@
       },
       "connect_1": {
         "kind": "faas",
-        "name": "connect",
+        "title": "connect",
         "input": [
           {
             "name": "kind",
