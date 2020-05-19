@@ -1,7 +1,5 @@
 include:
   - project: 'abp/ci-templates'
-    ref: v3.0.3
+    ref: v3
     file: '/templates/go_base_auto_mr.yml'
 
-variables:
-  GOSUMDB: "off"
