@@ -150,8 +150,11 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				Title:     v.Name,
 				Inputs:    v.Input.Fields,
 				Outputs:   v.Output.Fields,
-				ShapeType: shapeIntegration,
+				ShapeType: shapeFunction,
 				NextFuncs: []string{next},
+			}
+			if b.Title == "cedar-test-1" {
+				b.ShapeType = shapeIntegration
 			}
 			funcs = append(funcs, b)
 		}
@@ -166,25 +169,25 @@ func GetShapes() ([]ShapeModel, error) {
 		{
 			ID:    shapeFunction,
 			Title: IconFunction,
-			Color: "#123456",
+			Color: "#D31BB8",
 			Icon:  IconFunction,
 		},
 		{
 			ID:    shapeRhombus,
 			Title: IconTerms,
-			Color: "#7890AB",
+			Color: "#1B6B54",
 			Icon:  IconTerms,
 		},
 		{
 			ID:    shapeIntegration,
 			Title: IconIntegrations,
-			Color: "#CDEF12",
+			Color: "#685C0F",
 			Icon: IconIntegrations,
 		},
 		{
 			ID:    shapeScenario,
 			Title: IconScenario,
-			Color: "#345678",
+			Color: "#3F4568",
 			Icon:  IconScenario,
 		},
 	}

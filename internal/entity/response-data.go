@@ -68,3 +68,8 @@ type EriusFunctionValue struct {
 	Type   string `json:"type"`
 	Global string `json:"global,omitempty"`
 }
+
+type UsageResponse struct {
+	Name string `json:"name"`
+	UsedBy []uuid.UUID `json:"used_by"`
+}

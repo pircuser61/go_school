@@ -1,5 +1,8 @@
 {
   "name": "test-with-if",
+  "id": "9b3a31fe-184f-4aab-bbaf-f31eab5f6489",
+  "version_id": "c763cd4b-9a8f-41a5-89fa-12a0d6981e2d",
+  "status": 2,
   "input":[
     {
       "name": "first_string",

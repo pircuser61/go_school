@@ -381,3 +381,19 @@ INSERT INTO public.tasks(
 	}
 	return nil
 }
+
+func CheckModuleUsage(c context.Context, pc *dbconn.PGConnection, name string) ([]uuid.UUID, error) {
+	c, span := trace.StartSpan(c, "pg_write_context")
+	defer span.End()
+	l := make([]uuid.UUID, 0, 0)
+	q := `
+select pp.id from 
+	pipeliner.pipelines pp
+	join pipeliner.versions pv on pv.pipeline_id = pp.id
+where 
+	pp.deleted_at is NULL 
+and pv.content ?| 'pipeline,entrypoint''"
+`
+
+		return l, nil
+}

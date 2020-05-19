@@ -324,8 +324,16 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 func (ae ApiEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	_, s := trace.StartSpan(context.Background(), "list_usage")
 	defer s.End()
+	name := chi.URLParam(req, "moduleName")
 
-	err := sendResponse(w, http.StatusOK, nil)
+	r := entity.UsageResponse{
+		Name: name,
+	}
+
+
+
+
+	err := sendResponse(w, http.StatusOK, r)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
 		sendError(w, err)
