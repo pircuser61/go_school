@@ -3,7 +3,9 @@ package script
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"go.opencensus.io/trace"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -62,7 +64,9 @@ type ShapeModel struct {
 	Icon  string `json:"icon"`
 }
 
-type ScriptManagerResponse []SMFunc
+type ScriptManagerResponse struct {
+	Function []SMFunc `json:"function"`
+}
 
 type SMFunc struct {
 	ID       string `json:"id"`
@@ -77,6 +81,7 @@ type SMFunc struct {
 		Fields []FunctionValueModel `json:"fields"`
 	} `json:"output"`
 	Status string `json:"status"`
+	Tags []string `json:"tags"`
 }
 
 func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, error) {
@@ -99,9 +104,15 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 	if err != nil {
 		return nil, err
 	}
+	b, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(string(b))
 	smf := ScriptManagerResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&smf)
+	err = json.Unmarshal(b, &smf)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +154,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		ShapeType: shapeFunction,
 	}
 	funcs = append(funcs, ifstate, testBlock)
-	for _, v := range smf {
+	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{
 				BlockType: v.Template,
