@@ -89,7 +89,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 	if u.Scheme == "" {
 		u.Scheme = "http"
 	}
-	u.Path = path.Join(u.Path, "/api/manager/faas/list")
+	u.Path = path.Join(u.Path, "/api/manager/function/list")
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
