@@ -12,7 +12,7 @@
     {
       "name": "second_string",
       "type": "string",
-      "global": "input.first_string"
+      "global": "input.second_string"
     }
   ],
   "output": [

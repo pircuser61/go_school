@@ -73,3 +73,7 @@ type UsageResponse struct {
 	Name string `json:"name"`
 	UsedBy []uuid.UUID `json:"used_by"`
 }
+
+type Shapes struct {
+	Shapes []script.ShapeModel `json:"shapes"`
+}

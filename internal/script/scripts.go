@@ -3,7 +3,6 @@ package script
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"go.opencensus.io/trace"
 	"io/ioutil"
 	"net/http"
@@ -16,6 +15,8 @@ const (
 	shapeRhombus
 	shapeScenario
 	shapeIntegration
+	shapeConnector
+	shapeVariable
 
 	onTrue       string = "OnTrue"
 	onFalse      string = "OnFalse"
@@ -40,6 +41,8 @@ const (
 	IconTerms        = "X24terms"
 	IconIntegrations = "X24external"
 	IconScenario     = "X24scenario"
+	IconConnector = "X24connector"
+	IconVariable = "X24VarDefiner"
 )
 
 type FunctionModel struct {
@@ -60,7 +63,6 @@ type FunctionValueModel struct {
 type ShapeModel struct {
 	ID    int    `json:"id"`
 	Title string `json:"title"`
-	Color string `json:"color"`
 	Icon  string `json:"icon"`
 }
 
@@ -110,7 +112,6 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		return nil, err
 	}
 
-	fmt.Println(string(b))
 	smf := ScriptManagerResponse{}
 	err = json.Unmarshal(b, &smf)
 	if err != nil {
@@ -180,26 +181,32 @@ func GetShapes() ([]ShapeModel, error) {
 		{
 			ID:    shapeFunction,
 			Title: IconFunction,
-			Color: "#D31BB8",
 			Icon:  IconFunction,
 		},
 		{
 			ID:    shapeRhombus,
 			Title: IconTerms,
-			Color: "#1B6B54",
 			Icon:  IconTerms,
 		},
 		{
 			ID:    shapeIntegration,
 			Title: IconIntegrations,
-			Color: "#685C0F",
 			Icon: IconIntegrations,
 		},
 		{
 			ID:    shapeScenario,
 			Title: IconScenario,
-			Color: "#3F4568",
 			Icon:  IconScenario,
+		},
+		{
+			ID: shapeConnector,
+			Title:IconConnector,
+			Icon:IconConnector,
+		},
+		{
+			ID: shapeVariable,
+			Title:IconVariable,
+			Icon:IconVariable,
 		},
 	}
 	return shapes, nil
