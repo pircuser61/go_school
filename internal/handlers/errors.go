@@ -65,9 +65,9 @@ var errorDescription  = map[PipelinerErrorCode]string{
 
 
 type httpError struct {
-	StatusCode int
-	Error string
-	Description string
+	StatusCode int `json:"status_code""`
+	Error string `json:"error"`
+	Description string `json:"description"`
 }
 
 func (c PipelinerErrorCode) errorMessage(e error) string {
