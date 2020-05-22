@@ -12,6 +12,7 @@ type EriusScenarioList struct {
 	OnApprove []EriusScenarioInfo `json:"on_approve"`
 	Tags      []EriusTagInfo      `json:"tags"`
 }
+
 type EriusScenarioInfo struct {
 	ID            uuid.UUID   `json:"id"`
 	VersionID     uuid.UUID   `json:"version_id"`
