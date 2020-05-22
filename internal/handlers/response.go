@@ -23,7 +23,3 @@ func sendResponse(w http.ResponseWriter, statusCode int, body interface{}) error
 	return nil
 }
 
-func sendError(w http.ResponseWriter, e error) {
-	errorString := e.Error()
-	_ = sendResponse(w, 503, errorString)
-}

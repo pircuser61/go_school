@@ -16,22 +16,25 @@ func (ae ApiEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager)
 	if err != nil {
-		ae.Logger.WithError(err).Error("can't get erius functions from script manager")
-		sendError(w, err)
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 		return
 	}
 
 	eriusShapes, err := script.GetShapes()
 	if err != nil {
-		sendError(w, err)
-		ae.Logger.WithError(err).Error("can't get erius functions from script manager")
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 		return
 	}
 
 	err = sendResponse(w, http.StatusOK, entity.EriusFunctionList{Functions: eriusFunctions, Shapes: eriusShapes})
 	if err != nil {
-		ae.Logger.Error("can't send response", err)
-		sendError(w, err)
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 		return
 	}
 }
@@ -47,8 +50,9 @@ func (ae ApiEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 
 	err := sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, UsedBy: usedBy})
 	if err != nil {
-		ae.Logger.Error("can't send response", err)
-		sendError(w, err)
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 		return
 	}
 }
