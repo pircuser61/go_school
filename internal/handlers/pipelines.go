@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
@@ -196,6 +197,7 @@ func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 	}
 	if !canEdit {
 		e := PipelineIsDraft
+		errors.New("pipeline is not editable")
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
@@ -257,6 +259,7 @@ func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if !canEdit {
+		err := errors.New("pipeline is not editable")
 		e := PipelineIsDraft
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
