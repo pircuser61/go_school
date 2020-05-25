@@ -71,7 +71,7 @@ type httpError struct {
 }
 
 func (c PipelinerErrorCode) errorMessage(e error) string {
-	return fmt.Sprintf("%s: %s", errorText[c], e.Error())
+	return fmt.Sprintf("%s: %s", c.error(), e.Error())
 }
 
 func (c PipelinerErrorCode) error() string  {
@@ -94,8 +94,8 @@ func (c PipelinerErrorCode) sendError(w http.ResponseWriter) error {
 	statusCode := http.StatusInternalServerError
 	resp := httpError{
 		StatusCode: statusCode,
-		Error:       errorText[c],
-		Description: errorDescription[c],
+		Error:       c.error(),
+		Description: c.description(),
 	}
 	w.WriteHeader(statusCode)
 	err := json.NewEncoder(w).Encode(resp)
