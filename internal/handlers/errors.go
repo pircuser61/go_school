@@ -71,7 +71,9 @@ type httpError struct {
 }
 
 func (c PipelinerErrorCode) errorMessage(e error) string {
-	return fmt.Sprintf("%s: %s", c.error(), e.Error())
+	er := c.error()
+	em := e.Error()
+	return fmt.Sprintf("%s: %s", er, em)
 }
 
 func (c PipelinerErrorCode) error() string  {
