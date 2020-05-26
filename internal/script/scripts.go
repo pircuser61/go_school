@@ -204,9 +204,15 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 			},
 		},
 		NextFuncs: []string{next},
-		ShapeType: shapeVariable,
+		ShapeType: shapeIntegration,
 	}
-	funcs = append(funcs, ifstate, equal, input, vars, nioss)
+	ngsa := FunctionModel{
+		BlockType: TypeIntegration,
+		Title:     "send_ngsa",
+		NextFuncs: []string{next},
+		ShapeType: shapeIntegration,
+	}
+	funcs = append(funcs, ifstate, equal, input, vars, nioss, ngsa)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{
