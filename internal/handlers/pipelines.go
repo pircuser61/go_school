@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
@@ -136,6 +137,7 @@ func (ae ApiEnv) CreateDraft(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
+		fmt.Println(string(b))
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
@@ -183,6 +185,7 @@ func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
+		fmt.Println(string(b))
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
@@ -330,6 +333,7 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
+		fmt.Println(string(b))
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
