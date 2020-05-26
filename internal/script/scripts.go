@@ -157,14 +157,9 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				Type: typeString,
 			},
 		},
-		Outputs: []FunctionValueModel{
-			{
-				Name: isEqualName,
-				Type: typeBool,
-			},
-		},
-		NextFuncs: []string{next},
-		ShapeType: shapeFunction,
+		Outputs: nil,
+		NextFuncs: []string{onTrue, onFalse},
+		ShapeType: shapeRhombus,
 	}
 	vars := FunctionModel{
 		BlockType: TypeInternal,
