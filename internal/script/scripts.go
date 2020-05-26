@@ -141,8 +141,8 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				Type: typeString,
 			},
 		},
-		ShapeType: 0,
-		NextFuncs: nil,
+		ShapeType: shapeFunction,
+		NextFuncs: []string{next},
 	}
 	equal := FunctionModel{
 		BlockType: TypeInternal,
@@ -166,7 +166,26 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 		ShapeType: shapeFunction,
 	}
-	funcs = append(funcs, ifstate, equal, input)
+	vars := FunctionModel{
+		BlockType: TypeInternal,
+		Title:     "variables",
+		Inputs:    nil,
+		Outputs: []FunctionValueModel{
+				{
+					Name: "action_lock",
+					Type: typeString,
+				},{
+				Name: "action_manual_unlock",
+				Type: typeString,
+			},{
+				Name: "activity_none",
+				Type: typeString,
+			},
+		},
+		NextFuncs: []string{next},
+		ShapeType: shapeVariable,
+	}
+	funcs = append(funcs, ifstate, equal, input, vars)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{
