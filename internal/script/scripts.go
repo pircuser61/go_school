@@ -213,7 +213,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 	}
 	connect := FunctionModel{
 		BlockType: TypeInternal,
-		Title:     "connec††or",
+		Title:     "connec†or",
 		Inputs: []FunctionValueModel{
 			{
 				Name: "non_block",
