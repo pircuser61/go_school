@@ -23,9 +23,9 @@ const (
 	next         string = "Next"
 	checkVarName string = "check"
 
-	firstStringName string = "first_string"
+	firstStringName  string = "first_string"
 	secondStringName string = "second_string"
-	isEqualName string = "is_equal"
+	isEqualName      string = "is_equal"
 
 	typeBool   string = "bool"
 	typeString string = "string"
@@ -41,8 +41,8 @@ const (
 	IconTerms        = "X24terms"
 	IconIntegrations = "X24external"
 	IconScenario     = "X24scenario"
-	IconConnector = "X24connector"
-	IconVariable = "X24VarDefiner"
+	IconConnector    = "X24connector"
+	IconVariable     = "X24variable"
 )
 
 type FunctionModel struct {
@@ -82,8 +82,8 @@ type SMFunc struct {
 	Output struct {
 		Fields []FunctionValueModel `json:"fields"`
 	} `json:"output"`
-	Status string `json:"status"`
-	Tags []string `json:"tags"`
+	Status string   `json:"status"`
+	Tags   []string `json:"tags"`
 }
 
 func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, error) {
@@ -131,8 +131,20 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{onTrue, onFalse},
 		ShapeType: shapeRhombus,
 	}
-
-	testBlock := FunctionModel{
+	input := FunctionModel{
+		BlockType: TypeInternal,
+		Title:     "input",
+		Inputs:    nil,
+		Outputs: []FunctionValueModel{
+			{
+				Name: "notification",
+				Type: typeString,
+			},
+		},
+		ShapeType: 0,
+		NextFuncs: nil,
+	}
+	equal := FunctionModel{
 		BlockType: TypeInternal,
 		Title:     "stings_is_equal",
 		Inputs: []FunctionValueModel{
@@ -154,7 +166,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 		ShapeType: shapeFunction,
 	}
-	funcs = append(funcs, ifstate, testBlock)
+	funcs = append(funcs, ifstate, equal, input)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{
@@ -191,7 +203,7 @@ func GetShapes() ([]ShapeModel, error) {
 		{
 			ID:    shapeIntegration,
 			Title: IconIntegrations,
-			Icon: IconIntegrations,
+			Icon:  IconIntegrations,
 		},
 		{
 			ID:    shapeScenario,
@@ -199,14 +211,14 @@ func GetShapes() ([]ShapeModel, error) {
 			Icon:  IconScenario,
 		},
 		{
-			ID: shapeConnector,
-			Title:IconConnector,
-			Icon:IconConnector,
+			ID:    shapeConnector,
+			Title: IconConnector,
+			Icon:  IconConnector,
 		},
 		{
-			ID: shapeVariable,
-			Title:IconVariable,
-			Icon:IconVariable,
+			ID:    shapeVariable,
+			Title: IconVariable,
+			Icon:  IconVariable,
 		},
 	}
 	return shapes, nil
