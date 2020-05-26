@@ -36,7 +36,6 @@ const (
 	TypeIF          = "term"
 	TypePython      = "python3"
 	TypeInternal    = "internal"
-	TypeIntegration = "integration"
 
 	IconFunction     = "X24function"
 	IconTerms        = "X24terms"
@@ -186,7 +185,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		ShapeType: shapeVariable,
 	}
 	nioss := FunctionModel{
-		BlockType: TypeIntegration,
+		BlockType: TypeInternal,
 		Title:     "nioss_get",
 		Inputs: []FunctionValueModel{
 			{
@@ -207,12 +206,33 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		ShapeType: shapeIntegration,
 	}
 	ngsa := FunctionModel{
-		BlockType: TypeIntegration,
+		BlockType: TypeInternal,
 		Title:     "send_ngsa",
 		NextFuncs: []string{next},
 		ShapeType: shapeIntegration,
 	}
-	funcs = append(funcs, ifstate, equal, input, vars, nioss, ngsa)
+	connect := FunctionModel{
+		BlockType: TypeInternal,
+		Title:     "connec††or",
+		Inputs: []FunctionValueModel{
+			{
+				Name: "non_block",
+				Type: typeString,
+			}, {
+				Name: "block",
+				Type: typeString,
+			},
+		},
+		Outputs: []FunctionValueModel{
+			{
+				Name: "final_list",
+				Type: typeString,
+			},
+		},
+		NextFuncs: []string{next},
+		ShapeType: shapeConnector,
+	}
+	funcs = append(funcs, ifstate, equal, input, vars, nioss, ngsa, connect)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{
