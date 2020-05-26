@@ -232,7 +232,32 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 		ShapeType: shapeConnector,
 	}
-	funcs = append(funcs, ifstate, equal, input, vars, nioss, ngsa, connect)
+
+	needBlock := FunctionModel{
+		BlockType: TypeInternal,
+		Title:     "check_need_block",
+		Inputs: []FunctionValueModel{
+			{
+				Name: "pl_id",
+				Type: typeString,
+			}, {
+				Name: "source_bts",
+				Type: typeString,
+			},{
+				Name: "nioss_bts_list",
+				Type: typeString,
+			},
+		},
+		Outputs: []FunctionValueModel{
+			{
+				Name: "need_block",
+				Type: typeBool,
+			},
+		},
+		NextFuncs: []string{next},
+		ShapeType: shapeConnector,
+	}
+	funcs = append(funcs, ifstate, equal, input, vars, nioss, ngsa, connect, needBlock)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{
