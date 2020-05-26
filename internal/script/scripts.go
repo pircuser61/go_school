@@ -255,7 +255,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 			},
 		},
 		NextFuncs: []string{next},
-		ShapeType: shapeConnector,
+		ShapeType: shapeFunction,
 	}
 	funcs = append(funcs, ifstate, equal, input, vars, nioss, ngsa, connect, needBlock)
 	for _, v := range smf.Function {
