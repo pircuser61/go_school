@@ -268,7 +268,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				ShapeType: shapeFunction,
 				NextFuncs: []string{next},
 			}
-			if b.Title == "cedar-test-1" {
+			if b.Title == "cedar-test-1" || b.Title == "get-no-energy-action" {
 				b.ShapeType = shapeIntegration
 			}
 			funcs = append(funcs, b)
