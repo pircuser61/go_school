@@ -71,7 +71,7 @@ type EriusFunctionValue struct {
 }
 
 type UsageResponse struct {
-	Name string `json:"name"`
+	Name   string      `json:"name"`
 	UsedBy []uuid.UUID `json:"used_by"`
 }
 

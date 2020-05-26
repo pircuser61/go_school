@@ -33,9 +33,10 @@ const (
 
 	functionDeployed string = "deployed"
 
-	TypeIF       = "term"
-	TypePython   = "python3"
-	TypeInternal = "internal"
+	TypeIF          = "term"
+	TypePython      = "python3"
+	TypeInternal    = "internal"
+	TypeIntegration = "integration"
 
 	IconFunction     = "X24function"
 	IconTerms        = "X24terms"
@@ -149,7 +150,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 	}
 	equal := FunctionModel{
-		BlockType: TypeInternal,
+		BlockType: TypeIF,
 		Title:     "stings_is_equal",
 		Inputs: []FunctionValueModel{
 			{
@@ -161,7 +162,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				Type: typeString,
 			},
 		},
-		Outputs: nil,
+		Outputs:   nil,
 		NextFuncs: []string{onTrue, onFalse},
 		ShapeType: shapeRhombus,
 	}
@@ -170,13 +171,13 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		Title:     "variables",
 		Inputs:    nil,
 		Outputs: []FunctionValueModel{
-				{
-					Name: "action_lock",
-					Type: typeString,
-				},{
+			{
+				Name: "action_lock",
+				Type: typeString,
+			}, {
 				Name: "action_manual_unlock",
 				Type: typeString,
-			},{
+			}, {
 				Name: "activity_none",
 				Type: typeString,
 			},
@@ -184,7 +185,28 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 		ShapeType: shapeVariable,
 	}
-	funcs = append(funcs, ifstate, equal, input, vars)
+	nioss := FunctionModel{
+		BlockType: TypeIntegration,
+		Title:     "nioss_get",
+		Inputs: []FunctionValueModel{
+			{
+				Name: "source_bts",
+				Type: typeString,
+			},
+		},
+		Outputs: []FunctionValueModel{
+			{
+				Name: "pl_id",
+				Type: typeString,
+			}, {
+				Name: "nioss_bts_list",
+				Type: typeString,
+			},
+		},
+		NextFuncs: []string{next},
+		ShapeType: shapeVariable,
+	}
+	funcs = append(funcs, ifstate, equal, input, vars, nioss)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{

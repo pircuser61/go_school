@@ -331,7 +331,7 @@ func UpdateDraft(c context.Context, pc *dbconn.PGConnection,
 	q := `UPDATE pipeliner.versions SET
 	 status = $1, content =$2 WHERE id = $3;`
 
-	_, err := pc.Pool.Exec(c, q, p.Status,  pipelineData, p.VersionID)
+	_, err := pc.Pool.Exec(c, q, p.Status, pipelineData, p.VersionID)
 	if err != nil {
 		return err
 	}
@@ -386,14 +386,14 @@ func CheckModuleUsage(c context.Context, pc *dbconn.PGConnection, name string) (
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
 	l := make([]uuid.UUID, 0, 0)
-//	q := `
-//select pp.id from
-//	pipeliner.pipelines pp
-//	join pipeliner.versions pv on pv.pipeline_id = pp.id
-//where
-//	pp.deleted_at is NULL
-//and pv.content ?| 'pipeline,entrypoint''"
-//`
+	//	q := `
+	//select pp.id from
+	//	pipeliner.pipelines pp
+	//	join pipeliner.versions pv on pv.pipeline_id = pp.id
+	//where
+	//	pp.deleted_at is NULL
+	//and pv.content ?| 'pipeline,entrypoint''"
+	//`
 
-		return l, nil
+	return l, nil
 }

@@ -378,8 +378,6 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-
-
 	err = sendResponse(w, http.StatusOK, id)
 	if err != nil {
 		e := UnknownError

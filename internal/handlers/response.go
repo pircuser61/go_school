@@ -22,4 +22,3 @@ func sendResponse(w http.ResponseWriter, statusCode int, body interface{}) error
 	}
 	return nil
 }
-
