@@ -7,7 +7,7 @@ import (
 
 type httpResponse struct {
 	StatusCode int         `json:"status_code"`
-	Data       interface{} `json:"data"`
+	Data       interface{} `json:"data,omitempty"`
 }
 
 func sendResponse(w http.ResponseWriter, statusCode int, body interface{}) error {

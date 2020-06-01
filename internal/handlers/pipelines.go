@@ -77,7 +77,7 @@ func (ae ApiEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	pipeline, err := db.GetPipeline(c, ae.DBConnection, id)
+	p, err := db.GetPipeline(c, ae.DBConnection, id)
 	if err != nil {
 		e := GetPipelineError
 		ae.Logger.Error(e.errorMessage(err))
@@ -85,7 +85,7 @@ func (ae ApiEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, pipeline)
+	err = sendResponse(w, http.StatusOK, p)
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
@@ -378,8 +378,18 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 		return
 	}
+
+
+
+	p, err := db.GetPipeline(c, ae.DBConnection, id)
+	if err != nil {
+		e := GetPipelineError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
 	ep := pipeline.ExecutablePipeline{
-		PipelineID: id,
+		PipelineID: p.ID,
 		Storage:    ae.DBConnection,
 	}
 

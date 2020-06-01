@@ -227,10 +227,10 @@ func DeleteVersion(c context.Context, pc *dbconn.PGConnection, versionID uuid.UU
 
 	_, span := trace.StartSpan(c, "pg_delete version")
 	defer span.End()
-	q := `UPDATE pipeliner.versions SET deleted_at=$1 WHERE id = $2`
+	q := `UPDATE pipeliner.versions SET deleted_at=$1, status=$2 WHERE id = $3`
 
 	t := time.Now()
-	_, err := pc.Pool.Exec(c, q, t, versionID)
+	_, err := pc.Pool.Exec(c, q, t, StatusDeleted, versionID)
 	if err != nil {
 		return err
 	}
