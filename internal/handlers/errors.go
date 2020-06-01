@@ -24,6 +24,8 @@ const (
 	ApproveError
 	PipelineDeleteError
 	PipelineCreateError
+	ModuleUsageError
+	PipelineRunError
 )
 
 var errorText = map[PipelinerErrorCode]string{
@@ -42,6 +44,8 @@ var errorText = map[PipelinerErrorCode]string{
 	ApproveError:         "can't approve pipeline",
 	PipelineDeleteError:  "can't delete pipeline data",
 	PipelineCreateError:  "can't create pipeline",
+	ModuleUsageError: "can't find function usage",
+	PipelineRunError: "can't run pipeline",
 }
 
 var errorDescription = map[PipelinerErrorCode]string{
@@ -60,6 +64,8 @@ var errorDescription = map[PipelinerErrorCode]string{
 	ApproveError:         "Не удалось согласовать сценарий",
 	PipelineDeleteError:  "Не удалось удалить информацию о сценарии",
 	PipelineCreateError:  "Не удалось создать информацию о сценарии",
+	ModuleUsageError: "Ошибка при поиске использования функций в сценариях",
+	PipelineRunError: "Ошибка при заапуске пйплайна",
 }
 
 type httpError struct {

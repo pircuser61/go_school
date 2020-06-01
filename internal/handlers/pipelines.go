@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
 	"go.opencensus.io/trace"
 	"io/ioutil"
 	"net/http"
@@ -366,7 +367,7 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "list_pipelines")
+	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
 
 	idparam := chi.URLParam(req, "pipelineID")
@@ -377,8 +378,20 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 		return
 	}
+	ep := pipeline.ExecutablePipeline{
+		PipelineID: id,
+		Storage:    ae.DBConnection,
+	}
 
-	err = sendResponse(w, http.StatusOK, id)
+	err = ep.CreateWork(c)
+	if err != nil {
+		e := PipelineRunError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID:id, TaskID:ep.WorkId, Status:"work"})
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))

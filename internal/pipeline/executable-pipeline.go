@@ -26,14 +26,18 @@ type ExecutablePipeline struct {
 	NextStep   string
 }
 
-func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *VariableStore) error {
-	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
+func (ep *ExecutablePipeline) CreateWork(ctx context.Context) error {
+	ep.WorkId = uuid.New()
 	err := db.WriteTask(ctx, ep.Storage, ep.WorkId)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *VariableStore) error {
+	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
-	ep.WorkId = uuid.New()
 	ep.VarStore = runCtx
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint

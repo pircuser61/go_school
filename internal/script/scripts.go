@@ -205,12 +205,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 		ShapeType: shapeIntegration,
 	}
-	ngsa := FunctionModel{
-		BlockType: TypeInternal,
-		Title:     "send_ngsa",
-		NextFuncs: []string{next},
-		ShapeType: shapeIntegration,
-	}
+
 	connect := FunctionModel{
 		BlockType: TypeInternal,
 		Title:     "connec†or",
@@ -257,7 +252,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 		ShapeType: shapeFunction,
 	}
-	funcs = append(funcs, ifstate, equal, input, vars, nioss, ngsa, connect, needBlock)
+	funcs = append(funcs, ifstate, equal, input, vars, nioss, connect, needBlock)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{
@@ -268,8 +263,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				ShapeType: shapeFunction,
 				NextFuncs: []string{next},
 			}
-			if b.Title == "cedar-test-1" || b.Title == "get-no-energy-action" {
-				b.ShapeType = shapeIntegration
+			if b.Title == "cedar-test-1" || b.Title == "get-no-energy-action" || b.Title == "send-ngsa" {b.ShapeType = shapeIntegration
 			}
 			funcs = append(funcs, b)
 		}

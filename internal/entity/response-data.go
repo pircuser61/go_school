@@ -78,3 +78,9 @@ type UsageResponse struct {
 type Shapes struct {
 	Shapes []script.ShapeModel `json:"shapes"`
 }
+
+type RunResponse struct {
+	PipelineID uuid.UUID `json:"pipeline_id"`
+	TaskID uuid.UUID `json:"task_id"`
+	Status string `json:"status"`
+}

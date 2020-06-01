@@ -382,7 +382,7 @@ INSERT INTO public.tasks(
 	return nil
 }
 
-func CheckModuleUsage(c context.Context, pc *dbconn.PGConnection, name string) ([]uuid.UUID, error) {
+func GetUsage(c context.Context, pc *dbconn.PGConnection, name string) ([]uuid.UUID, error) {
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
 	l := make([]uuid.UUID, 0, 0)

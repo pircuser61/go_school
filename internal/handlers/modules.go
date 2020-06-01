@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"github.com/go-chi/chi"
-	"github.com/google/uuid"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"go.opencensus.io/trace"
@@ -40,15 +40,19 @@ func (ae ApiEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ae ApiEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "list_modules")
+	c, s := trace.StartSpan(context.Background(), "list_modules")
 	defer s.End()
 	name := chi.URLParam(req, "moduleName")
-	usedBy := make([]uuid.UUID, 3)
-	for i := 0; i < 3; i++ {
-		usedBy[i] = uuid.New()
+
+	usedBy, err := db.GetUsage(c, ae.DBConnection, name)
+	if err != nil {
+		e := ModuleUsageError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
 	}
 
-	err := sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, UsedBy: usedBy})
+	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, UsedBy: usedBy})
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
