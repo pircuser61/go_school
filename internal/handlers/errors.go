@@ -26,6 +26,7 @@ const (
 	PipelineCreateError
 	ModuleUsageError
 	PipelineRunError
+	Teapot
 )
 
 var errorText = map[PipelinerErrorCode]string{
@@ -46,6 +47,7 @@ var errorText = map[PipelinerErrorCode]string{
 	PipelineCreateError:  "can't create pipeline",
 	ModuleUsageError: "can't find function usage",
 	PipelineRunError: "can't run pipeline",
+	Teapot: "nothing interest there",
 }
 
 var errorDescription = map[PipelinerErrorCode]string{
@@ -65,7 +67,8 @@ var errorDescription = map[PipelinerErrorCode]string{
 	PipelineDeleteError:  "Не удалось удалить информацию о сценарии",
 	PipelineCreateError:  "Не удалось создать информацию о сценарии",
 	ModuleUsageError: "Ошибка при поиске использования функций в сценариях",
-	PipelineRunError: "Ошибка при заапуске пйплайна",
+	PipelineRunError: "Ошибка при заапуске сценария",
+	Teapot: "Мы заложили этот функционал, и сейчас он находится в реализации. Пока что здесь нет ничего интересного",
 }
 
 type httpError struct {
@@ -99,6 +102,9 @@ func (c PipelinerErrorCode) description() string {
 
 func (c PipelinerErrorCode) sendError(w http.ResponseWriter) error {
 	statusCode := http.StatusInternalServerError
+	if c == Teapot {
+		statusCode = http.StatusTeapot
+	}
 	resp := httpError{
 		StatusCode:  statusCode,
 		Error:       c.error(),
