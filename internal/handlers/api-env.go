@@ -1,4 +1,4 @@
-package handlerst a
+package handlerst
 
 import (
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
