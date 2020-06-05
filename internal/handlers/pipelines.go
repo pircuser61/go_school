@@ -139,7 +139,6 @@ func (ae ApiEnv) CreateDraft(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
-		fmt.Println(string(b))
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
@@ -187,7 +186,6 @@ func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
-		fmt.Println(string(b))
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
@@ -335,7 +333,6 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
-		fmt.Println(string(b))
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
@@ -401,8 +398,29 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(1)
+	vs :=  pipeline.NewStore()
+	b, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
+	if err != nil {
+		e := RequestReadError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	vars := make(map[string]interface{})
+	err = json.Unmarshal(b, &vars)
+	if err != nil {
+		e := PipelineRunError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	for key, value := range vars {
+		fmt.Println(key, value)
+	}
+
 	go func() {
-		vs := pipeline.VariableStore{}
+
 		err := ep.Run(c, &vs)
 		if err != nil {
 			ae.Logger.Error(PipelineExecutionError.errorMessage(err))

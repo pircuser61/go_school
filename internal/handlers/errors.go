@@ -69,7 +69,7 @@ var errorDescription = map[PipelinerErrorCode]string{
 	PipelineDeleteError:    "Не удалось удалить информацию о сценарии",
 	PipelineCreateError:    "Не удалось создать информацию о сценарии",
 	ModuleUsageError:       "Ошибка при поиске использования функций в сценариях",
-	PipelineRunError:       "Ошибка при заапуске сценария",
+	PipelineRunError:       "Ошибка при запуске сценария",
 	Teapot:                 "Мы заложили этот функционал, и сейчас он находится в реализации. Пока что здесь нет ничего интересного",
 	PipelineExecutionError: "При исполнении сценария произошла ошибка",
 }
