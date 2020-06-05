@@ -51,6 +51,7 @@ func (ae ApiEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 		return
 	}
+
 	usedBy := make([]entity.UsedBy, 0, 0)
 	used := false
 	for _, pipe := range allWorked {
