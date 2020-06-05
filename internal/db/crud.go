@@ -29,6 +29,7 @@ type PipelineStorageModelDepricated struct {
 	DeletedAt time.Time
 	Author    string
 	Pipeline  string
+
 }
 
 func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScenarioInfo, error) {
@@ -84,6 +85,46 @@ func GetOnApproveVersions(c context.Context, pc *dbconn.PGConnection) ([]entity.
 	defer span.End()
 
 	return getVersionsByStatus(c, pc, StatusOnApprove)
+}
+
+func GetWorkedVersions(c context.Context, pc *dbconn.PGConnection) ([]entity.EriusScenario, error)   {
+	c, span := trace.StartSpan(c, "pg_all_not_deleted_versions")
+	defer span.End()
+	q := `
+	SELECT pv.id, pp.name, pv.status, pv.pipeline_id, pv.content
+from pipeliner.versions pv
+join pipeliner.pipelines pp on pv.pipeline_id = pp.id
+where 
+	pv.status <> $1
+and pp.deleted_at is NULL
+order by pv.created_at `
+	rows, err := pc.Pool.Query(c, q, StatusDeleted)
+	if err != nil {
+		return nil, err
+	}
+	pipes := make([]entity.EriusScenario, 0)
+	for rows.Next() {
+		var vID, pID uuid.UUID
+		var s int
+		var c string
+		var name string
+ 		p := entity.EriusScenario{}
+		err = rows.Scan(&vID, &name, &s, &pID, &c)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal([]byte(c), &p)
+		if err != nil {
+			return nil, err
+		}
+		p.VersionID = vID
+		p.ID = pID
+		p.Status = s
+		p.Name = name
+		pipes = append(pipes, p)
+	}
+
+	return pipes, nil
 }
 
 func getVersionsByStatusAndAuthor(c context.Context, pc *dbconn.PGConnection,
@@ -280,7 +321,13 @@ JOIN pipeliner.pipeline_history pph on pph.version_id = pv.id
 		var c string
 
 		err = rows.Scan(&vID, &s, &pID, &c)
+		if err != nil {
+			return nil, err
+		}
 		err = json.Unmarshal([]byte(c), &p)
+		if err != nil {
+			return nil, err
+		}
 		p.VersionID = vID
 		p.ID = pID
 		p.Status = s
@@ -317,6 +364,9 @@ func GetPipelineVersion(c context.Context, pc *dbconn.PGConnection, id uuid.UUID
 			return nil, err
 		}
 		err = json.Unmarshal([]byte(c), &p)
+		if err != nil {
+			return nil, err
+		}
 		p.VersionID = vID
 		p.ID = pID
 		p.Status = s
@@ -380,20 +430,4 @@ INSERT INTO public.tasks(
 		return err
 	}
 	return nil
-}
-
-func GetUsage(c context.Context, pc *dbconn.PGConnection, name string) ([]uuid.UUID, error) {
-	c, span := trace.StartSpan(c, "pg_write_context")
-	defer span.End()
-	l := make([]uuid.UUID, 0, 0)
-	//	q := `
-	//select pp.id from
-	//	pipeliner.pipelines pp
-	//	join pipeliner.versions pv on pv.pipeline_id = pp.id
-	//where
-	//	pp.deleted_at is NULL
-	//and pv.content ?| 'pipeline,entrypoint''"
-	//`
-
-	return l, nil
 }

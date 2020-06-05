@@ -71,8 +71,14 @@ type EriusFunctionValue struct {
 }
 
 type UsageResponse struct {
-	Name   string      `json:"name"`
-	UsedBy []uuid.UUID `json:"used_by"`
+	Name      string      `json:"name"`
+	Used      bool        `json:"used"`
+	Pipelines []UsedBy `json:"pipelines"`
+}
+
+type UsedBy struct {
+	Name string    `json:"name"`
+	ID   uuid.UUID `json:"id"`
 }
 
 type Shapes struct {
@@ -81,6 +87,6 @@ type Shapes struct {
 
 type RunResponse struct {
 	PipelineID uuid.UUID `json:"pipeline_id"`
-	TaskID uuid.UUID `json:"task_id"`
-	Status string `json:"status"`
+	TaskID     uuid.UUID `json:"task_id"`
+	Status     string    `json:"status"`
 }

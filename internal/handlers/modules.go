@@ -44,15 +44,26 @@ func (ae ApiEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	defer s.End()
 	name := chi.URLParam(req, "moduleName")
 
-	usedBy, err := db.GetUsage(c, ae.DBConnection, name)
+	allWorked, err := db.GetWorkedVersions(c, ae.DBConnection)
 	if err != nil {
 		e := ModuleUsageError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
 	}
+	usedBy := make([]entity.UsedBy, 0, 0)
+	used := false
+	for _, pipe := range allWorked {
+		for _, f := range pipe.Pipeline.Blocks {
+			if f.Title == name {
+				usedBy = append(usedBy, entity.UsedBy{Name:pipe.Name, ID: pipe.ID})
+				used = true
+				break
+			}
+		}
+	}
 
-	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, UsedBy: usedBy})
+	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, Pipelines: usedBy, Used:used})
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
