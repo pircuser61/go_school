@@ -13,6 +13,7 @@ import (
 	"go.opencensus.io/trace"
 	"io/ioutil"
 	"net/http"
+	"sync"
 )
 
 type RunContext struct {
@@ -398,13 +399,15 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 		return
 	}
-
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
 		vs := pipeline.VariableStore{}
 		err := ep.Run(c, &vs)
 		if err != nil {
 			ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 		}
+		wg.Done()
 	}()
 
 	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: id, TaskID: ep.WorkId, Status: "work"})
@@ -414,4 +417,5 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 		return
 	}
+	wg.Wait()
 }
