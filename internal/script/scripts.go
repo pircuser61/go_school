@@ -33,9 +33,9 @@ const (
 
 	functionDeployed string = "deployed"
 
-	TypeIF          = "term"
-	TypePython      = "python3"
-	TypeInternal    = "internal"
+	TypeIF       = "term"
+	TypePython   = "python3"
+	TypeInternal = "internal"
 
 	IconFunction     = "X24function"
 	IconTerms        = "X24terms"
@@ -238,7 +238,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 			}, {
 				Name: "source_bts",
 				Type: typeString,
-			},{
+			}, {
 				Name: "nioss_bts_list",
 				Type: typeString,
 			},
@@ -263,7 +263,8 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				ShapeType: shapeFunction,
 				NextFuncs: []string{next},
 			}
-			if b.Title == "cedar-test-1" || b.Title == "get-no-energy-action" || b.Title == "send-ngsa" {b.ShapeType = shapeIntegration
+			if b.Title == "cedar-test-1" || b.Title == "get-no-energy-action" || b.Title == "send-ngsa" {
+				b.ShapeType = shapeIntegration
 			}
 			funcs = append(funcs, b)
 		}

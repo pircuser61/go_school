@@ -379,8 +379,6 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-
-
 	p, err := db.GetPipeline(c, ae.DBConnection, id)
 	if err != nil {
 		e := GetPipelineError
@@ -401,7 +399,15 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID:id, TaskID:ep.WorkId, Status:"work"})
+	go func() {
+		vs := pipeline.VariableStore{}
+		err := ep.Run(c, &vs)
+		if err != nil {
+			ae.Logger.Error(PipelineExecutionError.errorMessage(err))
+		}
+	}()
+
+	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: id, TaskID: ep.WorkId, Status: "work"})
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))

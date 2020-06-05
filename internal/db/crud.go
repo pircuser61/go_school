@@ -29,7 +29,6 @@ type PipelineStorageModelDepricated struct {
 	DeletedAt time.Time
 	Author    string
 	Pipeline  string
-
 }
 
 func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScenarioInfo, error) {
@@ -87,7 +86,7 @@ func GetOnApproveVersions(c context.Context, pc *dbconn.PGConnection) ([]entity.
 	return getVersionsByStatus(c, pc, StatusOnApprove)
 }
 
-func GetWorkedVersions(c context.Context, pc *dbconn.PGConnection) ([]entity.EriusScenario, error)   {
+func GetWorkedVersions(c context.Context, pc *dbconn.PGConnection) ([]entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_all_not_deleted_versions")
 	defer span.End()
 	q := `
@@ -108,7 +107,7 @@ order by pv.created_at `
 		var s int
 		var c string
 		var name string
- 		p := entity.EriusScenario{}
+		p := entity.EriusScenario{}
 		err = rows.Scan(&vID, &name, &s, &pID, &c)
 		if err != nil {
 			return nil, err

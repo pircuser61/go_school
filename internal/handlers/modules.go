@@ -57,14 +57,14 @@ func (ae ApiEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	for _, pipe := range allWorked {
 		for _, f := range pipe.Pipeline.Blocks {
 			if f.Title == name {
-				usedBy = append(usedBy, entity.UsedBy{Name:pipe.Name, ID: pipe.ID})
+				usedBy = append(usedBy, entity.UsedBy{Name: pipe.Name, ID: pipe.ID})
 				used = true
 				break
 			}
 		}
 	}
 
-	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, Pipelines: usedBy, Used:used})
+	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, Pipelines: usedBy, Used: used})
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))

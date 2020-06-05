@@ -71,8 +71,8 @@ type EriusFunctionValue struct {
 }
 
 type UsageResponse struct {
-	Name      string      `json:"name"`
-	Used      bool        `json:"used"`
+	Name      string   `json:"name"`
+	Used      bool     `json:"used"`
 	Pipelines []UsedBy `json:"pipelines"`
 }
 
