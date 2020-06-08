@@ -51,7 +51,7 @@ var errorText = map[PipelinerErrorCode]string{
 	Teapot:                 "nothing interest there",
 	PipelineExecutionError: "error when execution pipeline",
 }
-
+// JOKE
 var errorDescription = map[PipelinerErrorCode]string{
 	UnknownError:           "Сохраняйте спокойствие, что-то произошло непонятное",
 	GetAllApprovedError:    "Невозможно получить список согласованных сценариев",
@@ -70,7 +70,7 @@ var errorDescription = map[PipelinerErrorCode]string{
 	PipelineCreateError:    "Не удалось создать информацию о сценарии",
 	ModuleUsageError:       "Ошибка при поиске использования функций в сценариях",
 	PipelineRunError:       "Ошибка при запуске сценария",
-	Teapot:                 "Мы заложили этот функционал, и сейчас он находится в реализации. Пока что здесь нет ничего интересного",
+	Teapot:                 "Мы заложили этот функционал, и сейчас он находится в реализации. Пока что здесь нет ничего интересного. Мяу.",
 	PipelineExecutionError: "При исполнении сценария произошла ошибка",
 }
 
