@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 )
@@ -19,6 +20,8 @@ func (fb *FunctionBlock) Run(ctx context.Context, store *VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()
 
+	url := fmt.Sprintf("https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn", fb.FunctionName)
+	fmt.Println(url)
 	return nil
 }
 

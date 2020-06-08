@@ -45,7 +45,6 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *VariableStore) er
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint
 	}
-	fmt.Println(ep.Blocks)
 	for ep.NowOnPoint != "" {
 		fmt.Println("executing", ep.NowOnPoint)
 		err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)

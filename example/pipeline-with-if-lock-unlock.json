@@ -19,7 +19,7 @@
     {
       "name": "is_equal",
       "type": "string",
-      "global": "stings_is_equal.is_equal"
+      "global": "strings_is_equal.is_equal"
     }
   ],
   "pipeline": {
