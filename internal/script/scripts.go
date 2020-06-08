@@ -30,6 +30,7 @@ const (
 	typeBool   string = "bool"
 	typeString string = "string"
 	typeInt    string = "int"
+	typeArray string = "array"
 
 	functionDeployed string = "deployed"
 
@@ -150,7 +151,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 	}
 	equal := FunctionModel{
 		BlockType: TypeIF,
-		Title:     "stings_is_equal",
+		Title:     "strings_is_equal",
 		Inputs: []FunctionValueModel{
 			{
 				Name: firstStringName,
@@ -169,90 +170,32 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		BlockType: TypeInternal,
 		Title:     "variables",
 		Inputs:    nil,
-		Outputs: []FunctionValueModel{
-			{
-				Name: "action_lock",
-				Type: typeString,
-			}, {
-				Name: "action_manual_unlock",
-				Type: typeString,
-			}, {
-				Name: "activity_none",
-				Type: typeString,
-			},
-		},
+		Outputs: []FunctionValueModel{},
 		NextFuncs: []string{next},
 		ShapeType: shapeVariable,
 	}
-	nioss := FunctionModel{
-		BlockType: TypeInternal,
-		Title:     "nioss_get",
-		Inputs: []FunctionValueModel{
-			{
-				Name: "source_bts",
-				Type: typeString,
-			},
-		},
-		Outputs: []FunctionValueModel{
-			{
-				Name: "pl_id",
-				Type: typeString,
-			}, {
-				Name: "nioss_bts_list",
-				Type: typeString,
-			},
-		},
-		NextFuncs: []string{next},
-		ShapeType: shapeIntegration,
-	}
-
 	connect := FunctionModel{
 		BlockType: TypeInternal,
-		Title:     "connec†or",
+		Title:     "connector",
 		Inputs: []FunctionValueModel{
 			{
 				Name: "non_block",
-				Type: typeString,
+				Type: typeArray,
 			}, {
 				Name: "block",
-				Type: typeString,
+				Type: typeArray,
 			},
 		},
 		Outputs: []FunctionValueModel{
 			{
 				Name: "final_list",
-				Type: typeString,
+				Type: typeArray,
 			},
 		},
 		NextFuncs: []string{next},
 		ShapeType: shapeConnector,
 	}
-
-	needBlock := FunctionModel{
-		BlockType: TypeInternal,
-		Title:     "check_need_block",
-		Inputs: []FunctionValueModel{
-			{
-				Name: "pl_id",
-				Type: typeString,
-			}, {
-				Name: "source_bts",
-				Type: typeString,
-			}, {
-				Name: "nioss_bts_list",
-				Type: typeString,
-			},
-		},
-		Outputs: []FunctionValueModel{
-			{
-				Name: "need_block",
-				Type: typeBool,
-			},
-		},
-		NextFuncs: []string{next},
-		ShapeType: shapeFunction,
-	}
-	funcs = append(funcs, ifstate, equal, input, vars, nioss, connect, needBlock)
+	funcs = append(funcs, ifstate, equal, input, vars, connect)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{
