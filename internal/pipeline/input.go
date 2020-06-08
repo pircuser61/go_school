@@ -1,0 +1,28 @@
+package pipeline
+
+import (
+	"context"
+	"fmt"
+)
+
+type InputBlock struct {
+	BlockName      string
+	FunctionName   string
+	FunctionInput  map[string]string
+	NextStep       string
+}
+
+func (i *InputBlock) Run(ctx context.Context, runCtx *VariableStore) error {
+	for k, v := range i.FunctionInput {
+		_, err := runCtx.GetValue(v)
+		if err != nil {
+			return fmt.Errorf("Value for %s not found", k)
+		}
+	}
+	return nil
+}
+
+func (i *InputBlock) Next() string {
+	return i.NextStep
+}
+

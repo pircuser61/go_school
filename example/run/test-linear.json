@@ -1,3 +1,4 @@
 {
-    "alert": "ERIUS__BTS_23_111111__LOssCK"
+    "notification": "ERIUS__BTS_23_111111__LOssCK",
+    "action": "LOCK"
 }

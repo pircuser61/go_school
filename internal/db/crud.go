@@ -20,6 +20,10 @@ const (
 	StatusDeleted   int = 3
 	StatusRejected  int = 4
 	StatusOnApprove int = 5
+
+	RunStatusRunned int = 1
+	RunStatusFinished int = 2
+	RunStatusError int = 3
 )
 
 type PipelineStorageModelDepricated struct {
@@ -399,18 +403,19 @@ func WriteContext(c context.Context, pc *dbconn.PGConnection,
 	defer conn.Release()
 	id := uuid.New()
 	timestamp := time.Now()
-	q := `INSERT INTO public.storage(
-	id, work_id, pipeline_id, stage, vars, date)
-	VALUES ($1, $2, $3, $4, $5, $6);
+	q := `INSERT INTO pipeliner.variable_storage(
+	id, work_id, step_name, content, time)
+	VALUES ($1, $2, $3, $4, $5);
 `
-	_, err = conn.Exec(c, q, id, workID, pipelineID, stage, data, timestamp)
+	_, err = conn.Exec(c, q, id, workID, stage, data, timestamp)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func WriteTask(c context.Context, pc *dbconn.PGConnection, workID uuid.UUID) error {
+func WriteTask(c context.Context, pc *dbconn.PGConnection,
+	workID, versionID uuid.UUID, author string) error {
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
 	conn, err := pc.Pool.Acquire(c)
@@ -420,11 +425,31 @@ func WriteTask(c context.Context, pc *dbconn.PGConnection, workID uuid.UUID) err
 	defer conn.Release()
 	timestamp := time.Now()
 	q := `
-INSERT INTO public.tasks(
-	work_id, date)
-	VALUES ($1, $2);
+INSERT INTO pipeliner.works(
+	id, version_id, started_at, status, author)
+	VALUES ($1, $2, $3, $4, $5);
 `
-	_, err = conn.Exec(c, q, workID, timestamp)
+	_, err = conn.Exec(c, q, workID, versionID, timestamp, RunStatusRunned, author)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ChangeWorkStatus(c context.Context, pc *dbconn.PGConnection,
+	workID uuid.UUID, status int) error {
+	c, span := trace.StartSpan(c, "pg_write_context")
+	defer span.End()
+	fmt.Println(workID.String())
+	conn, err := pc.Pool.Acquire(c)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	q := `
+UPDATE pipeliner.works SET status = $1 WHERE id = $2
+`
+	_, err = conn.Exec(c, q, status, workID)
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
@@ -367,7 +366,7 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
-
+	testuser := "testuser"
 	idparam := chi.URLParam(req, "pipelineID")
 	id, err := uuid.Parse(idparam)
 	if err != nil {
@@ -384,21 +383,30 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 		return
 	}
-	ep := pipeline.ExecutablePipeline{
-		PipelineID: p.ID,
-		Storage:    ae.DBConnection,
+	ep := pipeline.ExecutablePipeline{}
+	ep.PipelineID = p.ID
+	ep.VersionID = p.VersionID
+	ep.Storage = ae.DBConnection
+	ep.Entrypoint = p.Pipeline.Entrypoint
+	err = ep.CreateBlocks(p.Pipeline.Blocks)
+	if err != nil {
+		e := GetPipelineError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
 	}
 
-	err = ep.CreateWork(c)
+	err = ep.CreateWork(c, testuser)
 	if err != nil {
 		e := PipelineRunError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
+
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	vs :=  pipeline.NewStore()
+	vs := pipeline.NewStore()
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 	if err != nil {
@@ -408,27 +416,28 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	vars := make(map[string]interface{})
-	err = json.Unmarshal(b, &vars)
-	if err != nil {
-		e := PipelineRunError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-	for key, value := range vars {
-		fmt.Println(key, value)
-	}
-
-	go func() {
-
-		err := ep.Run(c, &vs)
+	if len(b) != 0 {
+		err = json.Unmarshal(b, &vars)
 		if err != nil {
-			ae.Logger.Error(PipelineExecutionError.errorMessage(err))
+			e := PipelineRunError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+			return
 		}
-		wg.Done()
-	}()
+		for key, value := range vars {
+			vs.SetValue("input_0."+key, value)
+		}
+	}
 
-	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: id, TaskID: ep.WorkId, Status: "work"})
+	//go func() {
+	err = ep.Run(c, &vs)
+	if err != nil {
+		ae.Logger.Error(PipelineExecutionError.errorMessage(err))
+	}
+	wg.Done()
+	//}()
+
+	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: id, TaskID: ep.WorkId, Status: "started"})
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))

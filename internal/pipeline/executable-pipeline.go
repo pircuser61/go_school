@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"go.opencensus.io/trace"
 )
 
@@ -18,6 +19,7 @@ const (
 type ExecutablePipeline struct {
 	WorkId     uuid.UUID
 	PipelineID uuid.UUID
+	VersionID uuid.UUID
 	Storage    *dbconn.PGConnection
 	Entrypoint string
 	NowOnPoint string
@@ -26,9 +28,9 @@ type ExecutablePipeline struct {
 	NextStep   string
 }
 
-func (ep *ExecutablePipeline) CreateWork(ctx context.Context) error {
+func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) error {
 	ep.WorkId = uuid.New()
-	err := db.WriteTask(ctx, ep.Storage, ep.WorkId)
+	err := db.WriteTask(ctx, ep.Storage, ep.WorkId, ep.VersionID, author)
 	if err != nil {
 		return err
 	}
@@ -45,17 +47,35 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *VariableStore) er
 	for ep.NowOnPoint != "" {
 		err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
 		if err != nil {
+			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkId, db.RunStatusError)
+			if errChange != nil {
+				return errChange
+			}
 			return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 		}
 		storageData, err := json.Marshal(ep.VarStore)
 		if err != nil {
+			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkId, db.RunStatusError)
+			if errChange != nil {
+				return errChange
+			}
 			return err
 		}
 		err = db.WriteContext(ctx, ep.Storage, ep.WorkId,
 			ep.PipelineID, ep.NowOnPoint, storageData)
 		ep.NowOnPoint = ep.Blocks[ep.NowOnPoint].Next()
+		if err != nil {
+			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkId, db.RunStatusError)
+			if errChange != nil {
+				return errChange
+			}
+			return err
+		}
 	}
-
+	err := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkId, db.RunStatusFinished)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -63,63 +83,30 @@ func (ep *ExecutablePipeline) Next() string {
 	return ep.NextStep
 }
 
-func (ep *ExecutablePipeline) UnmarshalJSON(b []byte) error {
-	p := make(map[string]interface{})
-	err := json.Unmarshal(b, &p)
-	if err != nil {
-		return err
-	}
-	for k, v := range p {
-		switch v.(type) {
-		case string:
-			switch k {
-			case "entrypoint":
-				pEntry, ok := v.(string)
-				if !ok {
-					return errors.New("can't parse entrypoint")
-				}
-				ep.Entrypoint = pEntry
-			}
-		case map[string]interface{}:
-			switch k {
-			case "blocks":
-				blocksMap, ok := v.(map[string]interface{})
-				if !ok {
-					return errors.New("can't parse blocks")
-				}
-				blocks, err := UnmarshalBlocks(blocksMap)
-				if err != nil {
-					return errors.Errorf("can't unmarshal function blocks: %s", err.Error())
-				}
-				ep.Blocks = blocks
-			}
+func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) error {
+	for k, v := range source {
+		ep.Blocks = make(map[string]Runner)
+		switch v.BlockType {
+		case "internal":
+			ep.Blocks[k] = CreateInternal(v)
 		}
 	}
 	return nil
 }
 
-func UnmarshalBlocks(m map[string]interface{}) (map[string]Runner, error) {
-	blocks := make(map[string]Runner)
-	for k, v := range m {
-		b, ok := v.(map[string]interface{})
-		if !ok {
-			return nil, errors.Errorf("can't parse block %s", k)
+func CreateInternal(ef entity.EriusFunc) Runner {
+	switch ef.Title {
+	case "input":
+		i :=  InputBlock{
+			BlockName:     ef.Title,
+			FunctionName:  ef.Title,
+			NextStep:     ef.Next,
+			FunctionInput: make(map[string]string),
 		}
-		switch b[kind] {
-		case faas:
-			block, err := NewFunction(k, b)
-			if err != nil {
-				return nil, errors.Errorf("can't create function: %s", err.Error())
-			}
-			blocks[k] = block
-		case "if":
-			block, err := NewIF(b)
-			if err != nil {
-				return nil, errors.Errorf("can't create function: %s", err.Error())
-			}
-			blocks[k] = block
+		for _, v := range ef.Output {
+			i.FunctionInput[v.Name] = v.Global
 		}
+		return &i
 	}
-
-	return blocks, nil
+	return nil
 }
