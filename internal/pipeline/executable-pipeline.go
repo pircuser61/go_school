@@ -100,6 +100,7 @@ func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) e
 				FunctionInput:  make(map[string]string),
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
+				runURL: "manager",
 			}
 			for _, v := range block.Input {
 				fb.FunctionInput[v.Name] = v.Global

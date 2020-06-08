@@ -12,6 +12,7 @@ type FunctionBlock struct {
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
 	NextStep       string
+	runURL	   string
 }
 
 func (fb *FunctionBlock) Run(ctx context.Context, store *VariableStore) error {
