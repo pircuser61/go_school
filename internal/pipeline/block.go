@@ -1,10 +1,14 @@
 package pipeline
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+	"io/ioutil"
+	"net/http"
 )
 
 type FunctionBlock struct {
@@ -19,9 +23,47 @@ type FunctionBlock struct {
 func (fb *FunctionBlock) Run(ctx context.Context, store *VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()
-
-	url := fmt.Sprintf("https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn", fb.FunctionName)
+	values := make(map[string]interface{})
+	for ikey, gkey := range fb.FunctionInput {
+		fmt.Println(ikey, gkey)
+		val, ok := store.GetValue(gkey) // if no value - empty value
+		if ok {
+			values[ikey] = val
+		}
+	}
+	url := fmt.Sprintf(fb.runURL, fb.FunctionName)
+	b, err := json.Marshal(values)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(b))
 	fmt.Println(url)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	result := make(map[string]interface{})
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return err
+	}
+
+	for ikey, gkey := range fb.FunctionOutput {
+		val, _ := result[ikey]
+		store.SetValue(gkey, val)
+	}
 	return nil
 }
 

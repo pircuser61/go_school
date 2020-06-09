@@ -54,26 +54,3 @@ func (p *Pipeline) Run(ctx context.Context, runCtx *VariableStore) error {
 	}
 	return p.Pipeline.Run(ctx, &startContext)
 }
-
-func (p *Pipeline) ReturnOutput() (map[string]interface{}, error) {
-	out := make(map[string]interface{})
-	for _, v := range p.Output {
-		globalKey, ok := v["global"]
-		if !ok {
-			return nil, errors.New("can't find global variable name")
-		}
-
-		val, err := p.Pipeline.VarStore.GetValue(globalKey)
-		if err != nil {
-			return nil, errors.Errorf("can't find returning variable value: %s", err.Error())
-		}
-
-		name, ok := v["name"]
-		if !ok {
-			return nil, errors.New("can't find global variable name")
-		}
-
-		out[name] = val
-	}
-	return out, nil
-}

@@ -20,7 +20,7 @@ const (
 type ExecutablePipeline struct {
 	WorkId     uuid.UUID
 	PipelineID uuid.UUID
-	VersionID uuid.UUID
+	VersionID  uuid.UUID
 	Storage    *dbconn.PGConnection
 	Entrypoint string
 	NowOnPoint string
@@ -99,7 +99,7 @@ func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) e
 				FunctionInput:  make(map[string]string),
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
-				runURL: "manager",
+				runURL: "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
 			}
 			for _, v := range block.Input {
 				fb.FunctionInput[v.Name] = v.Global
@@ -126,6 +126,17 @@ func CreateInternal(ef entity.EriusFunc, name string) Runner {
 			i.FunctionInput[v.Name] = v.Global
 		}
 		return &i
+	case "output":
+		i :=  OutputBlock{
+			BlockName:     name,
+			FunctionName:  ef.Title,
+			NextStep:     ef.Next,
+			FunctionOutput: make(map[string]string),
+		}
+		for _, v := range ef.Output {
+			i.FunctionOutput[v.Name] = v.Global
+		}
+		return &i
 	case "if":
 		i := IF{
 			BlockName: name,
@@ -150,6 +161,21 @@ func CreateInternal(ef entity.EriusFunc, name string) Runner {
 			sie.FunctionInput[v.Name] = v.Global
 		}
 		return &sie
+	case "connector":
+		con := ConnectorBlock{
+			BlockName:      name,
+			FunctionName:   ef.Title,
+			FunctionInput:  make(map[string]string),
+			FunctionOutput: make(map[string]string),
+			NextStep:       ef.Next,
+		}
+		for _, v := range ef.Input {
+			con.FunctionInput[v.Name] = v.Global
+		}
+		for _, v := range ef.Output {
+			con.FunctionOutput[v.Name] = v.Global
+		}
+		return &con
 	}
 	return nil
 }

@@ -149,6 +149,23 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		ShapeType: shapeFunction,
 		NextFuncs: []string{next},
 	}
+	output := FunctionModel{
+		BlockType: TypeInternal,
+		Title:     "input",
+		Inputs:    nil,
+		Outputs: []FunctionValueModel{
+			{
+				Name: "notification",
+				Type: typeString,
+			},
+			{
+				Name: "action",
+				Type: typeString,
+			},
+		},
+		ShapeType: shapeFunction,
+		NextFuncs: []string{next},
+	}
 	equal := FunctionModel{
 		BlockType: TypeIF,
 		Title:     "strings_is_equal",
@@ -195,7 +212,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 		ShapeType: shapeConnector,
 	}
-	funcs = append(funcs, ifstate, equal, input, vars, connect)
+	funcs = append(funcs, ifstate, equal, input, output, vars, connect)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{

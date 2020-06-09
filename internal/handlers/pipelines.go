@@ -436,8 +436,14 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	}
 	wg.Done()
 	//}()
-
-	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: id, TaskID: ep.WorkId, Status: "started"})
+	out, err := vs.GrabOutput()
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: id, TaskID: ep.WorkId, Status: "started", Output:out})
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))

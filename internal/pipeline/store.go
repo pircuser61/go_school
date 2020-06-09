@@ -10,24 +10,29 @@ type VariableStore struct {
 	Values map[string]interface{}
 }
 
+
 func NewStore() VariableStore {
 	return VariableStore{mut: sync.Mutex{}, Values: make(map[string]interface{})}
 }
 
-func (c VariableStore) GetValue(name string) (interface{}, error) {
+func (c VariableStore) GetValue(name string) (interface{}, bool) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	val, ok := c.Values[name]
-	if !ok {
-		return nil, errors.New("unknown key in context")
-	}
-	return val, nil
+
+	return val, ok
+}
+
+func (c VariableStore) GrabOutput() (interface{}, error) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+	return c.Values, nil
 }
 
 func (c VariableStore) GetString(name string) (string, error) {
-	v, err := c.GetValue(name)
-	if err != nil {
-		return "", err
+	v, ok := c.GetValue(name)
+	if !ok {
+		return "", errors.New("unknown key in context")
 	}
 	s, ok := v.(string)
 	if !ok {
@@ -38,9 +43,9 @@ func (c VariableStore) GetString(name string) (string, error) {
 }
 
 func (c VariableStore) GetBool(name string) (bool, error) {
-	v, err := c.GetValue(name)
-	if err != nil {
-		return false, err
+	v, ok := c.GetValue(name)
+	if !ok {
+		return false, errors.New("unknown key in context")
 	}
 	s, ok := v.(bool)
 	if !ok {

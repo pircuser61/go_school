@@ -14,8 +14,8 @@ type InputBlock struct {
 
 func (i *InputBlock) Run(ctx context.Context, runCtx *VariableStore) error {
 	for k, v := range i.FunctionInput {
-		_, err := runCtx.GetValue(v)
-		if err != nil {
+		_, ok := runCtx.GetValue(v)
+		if !ok{
 			return fmt.Errorf("Value for %s not found", k)
 		}
 	}

@@ -28,6 +28,7 @@ const (
 	PipelineRunError
 	Teapot
 	PipelineExecutionError
+	PipelineOutputGrabError
 )
 
 var errorText = map[PipelinerErrorCode]string{
@@ -50,6 +51,7 @@ var errorText = map[PipelinerErrorCode]string{
 	PipelineRunError:       "can't run pipeline",
 	Teapot:                 "nothing interest there",
 	PipelineExecutionError: "error when execution pipeline",
+	PipelineOutputGrabError: "error with output grabbing",
 }
 // JOKE
 var errorDescription = map[PipelinerErrorCode]string{
@@ -72,6 +74,7 @@ var errorDescription = map[PipelinerErrorCode]string{
 	PipelineRunError:       "Ошибка при запуске сценария",
 	Teapot:                 "Мы заложили этот функционал, и сейчас он находится в реализации. Пока что здесь нет ничего интересного. Мяу.",
 	PipelineExecutionError: "При исполнении сценария произошла ошибка",
+	PipelineOutputGrabError: "Не удалось получить выходные данные",
 }
 
 type httpError struct {
