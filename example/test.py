@@ -56,9 +56,7 @@ def handle(req):
         logging.debug(f"bad request: can't parse json from {req}")
         raise e
 
-    string: str = json_req.get("string", "string is mememe")
-    integer: str = json_req.get("integer", 101)
-    boolean: str = json_req.get("boolean", False)
-    array: str = json_req.get("array", ["array", "is", "mememe"])
+    string_one: str = json_req.get("string", "string is mememe")
+    string_two: str = json_req.get("string", "strings is no no no")
 
-    return json.dumps(dict(result=[string,integer,boolean,array]), ensure_ascii=False)
+    return json.dumps(dict(result=[string_one,string_two]), ensure_ascii=False)
