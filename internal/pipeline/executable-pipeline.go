@@ -3,12 +3,12 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/libs/logger"
 	"go.opencensus.io/trace"
 )
 
@@ -27,6 +27,8 @@ type ExecutablePipeline struct {
 	VarStore   *VariableStore
 	Blocks     map[string]Runner
 	NextStep   string
+
+	Logger logger.Logger
 }
 
 func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) error {
@@ -46,7 +48,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *VariableStore) er
 		ep.NowOnPoint = ep.Entrypoint
 	}
 	for ep.NowOnPoint != "" {
-		fmt.Println("executing", ep.NowOnPoint)
+		ep.Logger.Println("executing", ep.NowOnPoint)
 		err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
 		if err != nil {
 			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkId, db.RunStatusError)
@@ -88,7 +90,6 @@ func (ep *ExecutablePipeline) Next() string {
 func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) error {
 	ep.Blocks = make(map[string]Runner)
 	for k, block := range source {
-		fmt.Println(block.BlockType)
 		switch block.BlockType {
 		case "internal", "term":
 			ep.Blocks[k] = CreateInternal(block, k)
@@ -99,7 +100,7 @@ func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) e
 				FunctionInput:  make(map[string]string),
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
-				runURL: "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
+				runURL:         "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
 			}
 			for _, v := range block.Input {
 				fb.FunctionInput[v.Name] = v.Global
@@ -116,10 +117,10 @@ func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) e
 func CreateInternal(ef entity.EriusFunc, name string) Runner {
 	switch ef.Title {
 	case "input":
-		i :=  InputBlock{
+		i := InputBlock{
 			BlockName:     name,
 			FunctionName:  ef.Title,
-			NextStep:     ef.Next,
+			NextStep:      ef.Next,
 			FunctionInput: make(map[string]string),
 		}
 		for _, v := range ef.Output {
@@ -127,10 +128,10 @@ func CreateInternal(ef entity.EriusFunc, name string) Runner {
 		}
 		return &i
 	case "output":
-		i :=  OutputBlock{
-			BlockName:     name,
-			FunctionName:  ef.Title,
-			NextStep:     ef.Next,
+		i := OutputBlock{
+			BlockName:      name,
+			FunctionName:   ef.Title,
+			NextStep:       ef.Next,
 			FunctionOutput: make(map[string]string),
 		}
 		for _, v := range ef.Output {
@@ -139,7 +140,7 @@ func CreateInternal(ef entity.EriusFunc, name string) Runner {
 		return &i
 	case "if":
 		i := IF{
-			BlockName: name,
+			BlockName:     name,
 			FunctionName:  ef.Title,
 			OnTrue:        ef.OnTrue,
 			OnFalse:       ef.OnFalse,
@@ -151,7 +152,7 @@ func CreateInternal(ef entity.EriusFunc, name string) Runner {
 		return &i
 	case "strings_is_equal":
 		sie := StringsEqual{
-			BlockName: name,
+			BlockName:     name,
 			FunctionName:  ef.Title,
 			OnTrue:        ef.OnTrue,
 			OnFalse:       ef.OnFalse,

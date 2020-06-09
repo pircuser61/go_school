@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"net/http"
+	"sync"
+
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
 	"go.opencensus.io/trace"
-	"io/ioutil"
-	"net/http"
-	"sync"
 )
 
 type RunContext struct {
@@ -366,6 +367,7 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
+	status:= "prepairing"
 	testuser := "testuser"
 	idparam := chi.URLParam(req, "pipelineID")
 	id, err := uuid.Parse(idparam)
@@ -388,6 +390,7 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	ep.VersionID = p.VersionID
 	ep.Storage = ae.DBConnection
 	ep.Entrypoint = p.Pipeline.Entrypoint
+	ep.Logger = ae.Logger
 	err = ep.CreateBlocks(p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
@@ -395,6 +398,7 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 		return
 	}
+	status = "loaded"
 
 	err = ep.CreateWork(c, testuser)
 	if err != nil {
@@ -428,11 +432,14 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 			vs.SetValue("input_0."+key, value)
 		}
 	}
+	status = "input readed"
 
 	//go func() {
+	status = "runned"
 	err = ep.Run(c, &vs)
 	if err != nil {
 		ae.Logger.Error(PipelineExecutionError.errorMessage(err))
+		vs.AddError(err)
 	}
 	wg.Done()
 	//}()
@@ -443,7 +450,26 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 		return
 	}
-	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: id, TaskID: ep.WorkId, Status: "started", Output:out})
+	status = "completed"
+	steps, err := vs.GrabSteps()
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	errs, err := vs.GrabErrors()
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	if len(errs) != 0 {
+		status = "error"
+	}
+	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: id, TaskID: ep.WorkId,
+		Status: status, Output: out, Steps: steps, Errors: errs})
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))

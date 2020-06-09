@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"fmt"
 	"go.opencensus.io/trace"
 )
 
@@ -14,18 +13,14 @@ type ConnectorBlock struct {
 	NextStep       string
 }
 
-
 func (fb *ConnectorBlock) Run(ctx context.Context, store *VariableStore) error {
+	store.AddStep(fb.BlockName)
 	ctx, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()
 	values := make(map[string]interface{})
 	for ikey, gkey := range fb.FunctionInput {
-		fmt.Println(ikey, gkey)
 		val, _ := store.GetValue(gkey) // if no value - empty value
 		values[ikey] = val
-	}
-	for k, val := range values {
-		fmt.Println(k, val, val == nil)
 	}
 	for _, gkey := range fb.FunctionOutput {
 		for _, val := range values {

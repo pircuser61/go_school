@@ -17,15 +17,15 @@ type FunctionBlock struct {
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
 	NextStep       string
-	runURL	   string
+	runURL         string
 }
 
 func (fb *FunctionBlock) Run(ctx context.Context, store *VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()
+	store.AddStep(fb.BlockName)
 	values := make(map[string]interface{})
 	for ikey, gkey := range fb.FunctionInput {
-		fmt.Println(ikey, gkey)
 		val, ok := store.GetValue(gkey) // if no value - empty value
 		if ok {
 			values[ikey] = val
@@ -36,8 +36,6 @@ func (fb *FunctionBlock) Run(ctx context.Context, store *VariableStore) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(b))
-	fmt.Println(url)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
 	if err != nil {
 		return err

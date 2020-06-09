@@ -5,7 +5,7 @@ import (
 )
 
 type IF struct {
-	BlockName      string
+	BlockName     string
 	FunctionName  string
 	FunctionInput map[string]string
 	Result        bool
@@ -14,6 +14,7 @@ type IF struct {
 }
 
 func (e *IF) Run(ctx context.Context, runCtx *VariableStore) error {
+	runCtx.AddStep(e.BlockName)
 	r, err := runCtx.GetBoolWithInput(e.FunctionInput, "check")
 	if err != nil {
 		return err
@@ -30,7 +31,7 @@ func (e *IF) Next() string {
 }
 
 type StringsEqual struct {
-	BlockName      string
+	BlockName     string
 	FunctionName  string
 	FunctionInput map[string]string
 	Result        bool
@@ -39,6 +40,7 @@ type StringsEqual struct {
 }
 
 func (e *StringsEqual) Run(ctx context.Context, runCtx *VariableStore) error {
+	runCtx.AddStep(e.BlockName)
 	allparams := make([]string, 0, len(e.FunctionInput))
 	for k := range e.FunctionInput {
 		r, err := runCtx.GetStringWithInput(e.FunctionInput, k)

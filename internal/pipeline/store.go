@@ -8,11 +8,27 @@ import (
 type VariableStore struct {
 	mut    sync.Mutex
 	Values map[string]interface{}
+	Steps  []string
+	Errors []string
 }
 
-
 func NewStore() VariableStore {
-	return VariableStore{mut: sync.Mutex{}, Values: make(map[string]interface{})}
+	s := VariableStore{mut: sync.Mutex{}, Values: make(map[string]interface{})}
+	s.Steps = make([]string, 0)
+	s.Errors = make([]string, 0)
+	return s
+}
+
+func (c *VariableStore) AddStep(name string) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+	c.Steps = append(c.Steps, name)
+}
+
+func (c *VariableStore) AddError(name error) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+	c.Errors = append(c.Errors, name.Error())
 }
 
 func (c VariableStore) GetValue(name string) (interface{}, bool) {
@@ -27,6 +43,18 @@ func (c VariableStore) GrabOutput() (interface{}, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	return c.Values, nil
+}
+
+func (c VariableStore) GrabSteps() ([]string, error) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+	return c.Steps, nil
+}
+
+func (c VariableStore) GrabErrors() ([]string, error) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+	return c.Errors, nil
 }
 
 func (c VariableStore) GetString(name string) (string, error) {

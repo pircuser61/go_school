@@ -21,9 +21,9 @@ const (
 	StatusRejected  int = 4
 	StatusOnApprove int = 5
 
-	RunStatusRunned int = 1
+	RunStatusRunned   int = 1
 	RunStatusFinished int = 2
-	RunStatusError int = 3
+	RunStatusError    int = 3
 )
 
 type PipelineStorageModelDepricated struct {
@@ -440,7 +440,6 @@ func ChangeWorkStatus(c context.Context, pc *dbconn.PGConnection,
 	workID uuid.UUID, status int) error {
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
-	fmt.Println(workID.String())
 	conn, err := pc.Pool.Acquire(c)
 	if err != nil {
 		return err

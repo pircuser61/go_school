@@ -30,7 +30,7 @@ const (
 	typeBool   string = "bool"
 	typeString string = "string"
 	typeInt    string = "int"
-	typeArray string = "array"
+	typeArray  string = "array"
 
 	functionDeployed string = "deployed"
 
@@ -187,7 +187,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		BlockType: TypeInternal,
 		Title:     "variables",
 		Inputs:    nil,
-		Outputs: []FunctionValueModel{},
+		Outputs:   []FunctionValueModel{},
 		NextFuncs: []string{next},
 		ShapeType: shapeVariable,
 	}
