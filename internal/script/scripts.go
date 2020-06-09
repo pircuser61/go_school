@@ -195,7 +195,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 		ShapeType: shapeConnector,
 	}
-	funcs = append(funcs, ifstate, equal, input, output, vars, connect)
+	funcs = append(funcs, ifstate, equal, input, vars, connect)
 	for _, v := range smf.Function {
 		if v.Status == functionDeployed {
 			b := FunctionModel{
