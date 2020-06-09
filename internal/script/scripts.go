@@ -149,23 +149,6 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		ShapeType: shapeFunction,
 		NextFuncs: []string{next},
 	}
-	output := FunctionModel{
-		BlockType: TypeInternal,
-		Title:     "output",
-		Inputs:    nil,
-		Outputs: []FunctionValueModel{
-			{
-				Name: "notification",
-				Type: typeString,
-			},
-			{
-				Name: "action",
-				Type: typeString,
-			},
-		},
-		ShapeType: shapeFunction,
-		NextFuncs: []string{next},
-	}
 	equal := FunctionModel{
 		BlockType: TypeIF,
 		Title:     "strings_is_equal",
