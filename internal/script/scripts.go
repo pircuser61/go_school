@@ -151,7 +151,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 	}
 	output := FunctionModel{
 		BlockType: TypeInternal,
-		Title:     "input",
+		Title:     "output",
 		Inputs:    nil,
 		Outputs: []FunctionValueModel{
 			{
