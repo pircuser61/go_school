@@ -363,13 +363,11 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 }
-
 func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
-	c, s := trace.StartSpan(context.Background(), "list_pipelines")
+	c, s := trace.StartSpan(context.Background(), "run_pipeline")
 	defer s.End()
-	status:= "prepairing"
-	testuser := "testuser"
 	idparam := chi.URLParam(req, "pipelineID")
+
 	id, err := uuid.Parse(idparam)
 	if err != nil {
 		e := UUIDParsingError
@@ -385,13 +383,45 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 		return
 	}
+	ae.execVersion(c, w, req, p)
+}
+
+func (ae ApiEnv) RunVersion(w http.ResponseWriter, req *http.Request)  {
+	c, s := trace.StartSpan(context.Background(), "run_version")
+	defer s.End()
+	idparam := chi.URLParam(req, "pipelineID")
+
+	id, err := uuid.Parse(idparam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	p, err := db.GetPipeline(c, ae.DBConnection, id)
+	if err != nil {
+		e := GetPipelineError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	ae.execVersion(c, w, req, p)
+}
+
+func (ae ApiEnv) execVersion(c context.Context, w http.ResponseWriter, req *http.Request, p *entity.EriusScenario) {
+	c, s := trace.StartSpan(c, "exec_version")
+	defer s.End()
+	status:= "prepairing"
+	testuser := "testuser"
+
 	ep := pipeline.ExecutablePipeline{}
 	ep.PipelineID = p.ID
 	ep.VersionID = p.VersionID
 	ep.Storage = ae.DBConnection
 	ep.Entrypoint = p.Pipeline.Entrypoint
 	ep.Logger = ae.Logger
-	err = ep.CreateBlocks(p.Pipeline.Blocks)
+	err := ep.CreateBlocks(p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
 		ae.Logger.Error(e.errorMessage(err))
@@ -468,7 +498,7 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	if len(errs) != 0 {
 		status = "error"
 	}
-	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: id, TaskID: ep.WorkId,
+	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkId,
 		Status: status, Output: out, Steps: steps, Errors: errs})
 	if err != nil {
 		e := UnknownError
