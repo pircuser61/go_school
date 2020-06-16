@@ -16,10 +16,13 @@ func ConnectPostgres(host, port, database, user, pass string, maxConn, timeout i
 	maxConnections := strconv.Itoa(maxConn)
 	connString := "postgres://" + user + ":" + pass + "@" + host + ":" + port + "/" + database +
 		"?sslmode=disable&pool_max_conns=" + maxConnections
+
 	conn, err := pgxpool.Connect(ctx.Context(timeout), connString)
 	if err != nil {
 		return nil, err
 	}
+
 	pg := PGConnection{conn}
+
 	return &pg, nil
 }

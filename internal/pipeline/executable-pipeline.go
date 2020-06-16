@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
@@ -12,171 +13,218 @@ import (
 	"go.opencensus.io/trace"
 )
 
-const (
-	kind = "kind"
-	faas = "faas"
-)
-
 type ExecutablePipeline struct {
-	WorkId     uuid.UUID
+	WorkID     uuid.UUID
 	PipelineID uuid.UUID
 	VersionID  uuid.UUID
 	Storage    *dbconn.PGConnection
-	Entrypoint string
-	NowOnPoint string
+	Entrypoint BlockName
+	NowOnPoint BlockName
 	VarStore   *VariableStore
-	Blocks     map[string]Runner
-	NextStep   string
+	Blocks     map[BlockName]Runner
+	NextStep   BlockName
 
 	Logger logger.Logger
 }
 
 func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) error {
-	ep.WorkId = uuid.New()
-	err := db.WriteTask(ctx, ep.Storage, ep.WorkId, ep.VersionID, author)
+	ep.WorkID = uuid.New()
+
+	err := db.WriteTask(ctx, ep.Storage, ep.WorkID, ep.VersionID, author)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
+
 	ep.VarStore = runCtx
+
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint
 	}
+
 	for ep.NowOnPoint != "" {
 		ep.Logger.Println("executing", ep.NowOnPoint)
+
 		err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
 		if err != nil {
-			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkId, db.RunStatusError)
+			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
 			if errChange != nil {
 				return errChange
 			}
+
 			return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 		}
+
 		storageData, err := json.Marshal(ep.VarStore)
 		if err != nil {
-			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkId, db.RunStatusError)
+			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
 			if errChange != nil {
 				return errChange
 			}
+
 			return err
 		}
-		err = db.WriteContext(ctx, ep.Storage, ep.WorkId,
-			ep.PipelineID, ep.NowOnPoint, storageData)
+
+		err = db.WriteContext(ctx, ep.Storage, ep.WorkID, string(ep.NowOnPoint), storageData)
 		ep.NowOnPoint = ep.Blocks[ep.NowOnPoint].Next()
+
 		if err != nil {
-			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkId, db.RunStatusError)
+			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
 			if errChange != nil {
 				return errChange
 			}
+
 			return err
 		}
 	}
-	err := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkId, db.RunStatusFinished)
+
+	err := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusFinished)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (ep *ExecutablePipeline) Next() string {
+func (ep *ExecutablePipeline) Next() BlockName {
 	return ep.NextStep
 }
 
 func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) error {
-	ep.Blocks = make(map[string]Runner)
-	for k, block := range source {
+	ep.Blocks = make(map[BlockName]Runner)
+
+	for k := range source {
+		bn := BlockName(k)
+
+		block := source[k]
 		switch block.BlockType {
 		case "internal", "term":
-			ep.Blocks[k] = CreateInternal(block, k)
+			ep.Blocks[bn] = CreateInternal(&block, bn)
 		case "python3":
 			fb := FunctionBlock{
-				BlockName:      k,
+				Name:           bn,
 				FunctionName:   block.Title,
 				FunctionInput:  make(map[string]string),
 				FunctionOutput: make(map[string]string),
-				NextStep:       block.Next,
+				NextStep:       BlockName(block.Next),
 				runURL:         "https://openfaas-staging.dev.autobp.mts.ru/function/%s.openfaas-fn",
 			}
+
 			for _, v := range block.Input {
 				fb.FunctionInput[v.Name] = v.Global
 			}
+
 			for _, v := range block.Output {
 				fb.FunctionOutput[v.Name] = v.Global
 			}
-			ep.Blocks[k] = &fb
+
+			ep.Blocks[bn] = &fb
 		}
 	}
+
 	return nil
 }
 
-func CreateInternal(ef entity.EriusFunc, name string) Runner {
+func createInputBlock(title string, name, next BlockName) *InputBlock {
+	return &InputBlock{
+		BlockName:     name,
+		FunctionName:  title,
+		NextStep:      next,
+		FunctionInput: make(map[string]string),
+	}
+}
+
+func createOutputBlock(title string, name, next BlockName) *OutputBlock {
+	return &OutputBlock{
+		BlockName:      name,
+		FunctionName:   title,
+		NextStep:       next,
+		FunctionOutput: make(map[string]string),
+	}
+}
+
+func createIF(title string, name, onTrue, onFalse BlockName) *IF {
+	return &IF{
+		Name:          name,
+		FunctionName:  title,
+		OnTrue:        onTrue,
+		OnFalse:       onFalse,
+		FunctionInput: make(map[string]string),
+	}
+}
+
+func createStringsEqual(title string, name, onTrue, onFalse BlockName) *StringsEqual {
+	return &StringsEqual{
+		Name:          name,
+		FunctionName:  title,
+		OnTrue:        onTrue,
+		OnFalse:       onFalse,
+		FunctionInput: make(map[string]string),
+	}
+}
+
+func createConnectorBlock(title string, name, next BlockName) *ConnectorBlock {
+	return &ConnectorBlock{
+		Name:           name,
+		FunctionName:   title,
+		FunctionInput:  make(map[string]string),
+		FunctionOutput: make(map[string]string),
+		NextStep:       next,
+	}
+}
+
+func CreateInternal(ef *entity.EriusFunc, name BlockName) Runner {
 	switch ef.Title {
 	case "input":
-		i := InputBlock{
-			BlockName:     name,
-			FunctionName:  ef.Title,
-			NextStep:      ef.Next,
-			FunctionInput: make(map[string]string),
-		}
+		i := createInputBlock(ef.Title, name, BlockName(ef.Next))
+
 		for _, v := range ef.Output {
 			i.FunctionInput[v.Name] = v.Global
 		}
-		return &i
+
+		return i
 	case "output":
-		i := OutputBlock{
-			BlockName:      name,
-			FunctionName:   ef.Title,
-			NextStep:       ef.Next,
-			FunctionOutput: make(map[string]string),
-		}
+		i := createOutputBlock(ef.Title, name, BlockName(ef.Next))
 		for _, v := range ef.Output {
 			i.FunctionOutput[v.Name] = v.Global
 		}
-		return &i
+
+		return i
 	case "if":
-		i := IF{
-			BlockName:     name,
-			FunctionName:  ef.Title,
-			OnTrue:        ef.OnTrue,
-			OnFalse:       ef.OnFalse,
-			FunctionInput: make(map[string]string),
-		}
+		i := createIF(ef.Title, name, BlockName(ef.OnTrue), BlockName(ef.OnFalse))
+
 		for _, v := range ef.Input {
 			i.FunctionInput[v.Name] = v.Global
 		}
-		return &i
+
+		return i
 	case "strings_is_equal":
-		sie := StringsEqual{
-			BlockName:     name,
-			FunctionName:  ef.Title,
-			OnTrue:        ef.OnTrue,
-			OnFalse:       ef.OnFalse,
-			FunctionInput: make(map[string]string),
-		}
+		sie := createStringsEqual(ef.Title, name, BlockName(ef.OnTrue), BlockName(ef.OnFalse))
+
 		for _, v := range ef.Input {
 			sie.FunctionInput[v.Name] = v.Global
 		}
-		return &sie
+
+		return sie
 	case "connector":
-		con := ConnectorBlock{
-			BlockName:      name,
-			FunctionName:   ef.Title,
-			FunctionInput:  make(map[string]string),
-			FunctionOutput: make(map[string]string),
-			NextStep:       ef.Next,
-		}
+		con := createConnectorBlock(ef.Title, name, BlockName(ef.Next))
+
 		for _, v := range ef.Input {
 			con.FunctionInput[v.Name] = v.Global
 		}
+
 		for _, v := range ef.Output {
 			con.FunctionOutput[v.Name] = v.Global
 		}
-		return &con
+
+		return con
 	}
+
 	return nil
 }

@@ -5,7 +5,7 @@ import (
 	"gitlab.services.mts.ru/libs/logger"
 )
 
-type ApiEnv struct {
+type APIEnv struct {
 	DBConnection  *dbconn.PGConnection
 	Logger        logger.Logger
 	ScriptManager string

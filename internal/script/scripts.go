@@ -3,11 +3,12 @@ package script
 import (
 	"context"
 	"encoding/json"
-	"go.opencensus.io/trace"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
+
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -25,17 +26,14 @@ const (
 
 	firstStringName  string = "first_string"
 	secondStringName string = "second_string"
-	isEqualName      string = "is_equal"
 
 	typeBool   string = "bool"
 	typeString string = "string"
-	typeInt    string = "int"
 	typeArray  string = "array"
 
 	functionDeployed string = "deployed"
 
 	TypeIF       = "term"
-	TypePython   = "python3"
 	TypeInternal = "internal"
 
 	IconFunction     = "X24function"
@@ -90,30 +88,37 @@ type SMFunc struct {
 func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, error) {
 	_, s := trace.StartSpan(context.Background(), "get_ready_modules")
 	defer s.End()
+
 	u, err := url.Parse(scriptManager)
 	if err != nil {
 		return nil, err
 	}
+
 	if u.Scheme == "" {
 		u.Scheme = "http"
 	}
+
 	u.Path = path.Join(u.Path, "/api/manager/function/list")
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
+
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
+
 	b, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
+
 	if err != nil {
 		return nil, err
 	}
 
 	smf := ScriptManagerResponse{}
+
 	err = json.Unmarshal(b, &smf)
 	if err != nil {
 		return nil, err
@@ -195,8 +200,11 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 		NextFuncs: []string{next},
 		ShapeType: shapeConnector,
 	}
+
 	funcs = append(funcs, ifstate, equal, input, vars, connect)
-	for _, v := range smf.Function {
+
+	for i := range smf.Function {
+		v := &smf.Function[i]
 		if v.Status == functionDeployed {
 			b := FunctionModel{
 				BlockType: v.Template,
@@ -206,9 +214,11 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				ShapeType: shapeFunction,
 				NextFuncs: []string{next},
 			}
+
 			if b.Title == "cedar-test-1" || b.Title == "get-no-energy-action" || b.Title == "send-ngsa" {
 				b.ShapeType = shapeIntegration
 			}
+
 			funcs = append(funcs, b)
 		}
 	}
@@ -250,5 +260,6 @@ func GetShapes() ([]ShapeModel, error) {
 			Icon:  IconVariable,
 		},
 	}
+
 	return shapes, nil
 }
