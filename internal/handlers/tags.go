@@ -2,13 +2,15 @@ package handlers
 
 import (
 	"context"
-	"go.opencensus.io/trace"
 	"net/http"
+
+	"go.opencensus.io/trace"
 )
 
-func (ae ApiEnv) GetTags(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "list_pipelines")
+func (ae APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
+	_, s := trace.StartSpan(context.Background(), "get_tags")
 	defer s.End()
+
 	err := Teapot.sendError(w)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
@@ -16,9 +18,10 @@ func (ae ApiEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (ae ApiEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "list_pipelines")
+func (ae APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
+	_, s := trace.StartSpan(context.Background(), "create_tag")
 	defer s.End()
+
 	err := Teapot.sendError(w)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
@@ -26,9 +29,10 @@ func (ae ApiEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (ae ApiEnv) EditTag(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "list_pipelines")
+func (ae APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
+	_, s := trace.StartSpan(context.Background(), "edit_tag")
 	defer s.End()
+
 	err := Teapot.sendError(w)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)
@@ -36,9 +40,10 @@ func (ae ApiEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (ae ApiEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "list_pipelines")
+func (ae APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
+	_, s := trace.StartSpan(context.Background(), "remove_tag")
 	defer s.End()
+
 	err := Teapot.sendError(w)
 	if err != nil {
 		ae.Logger.Error("can't send response", err)

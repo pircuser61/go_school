@@ -54,7 +54,7 @@ var errorText = map[PipelinerErrorCode]string{
 	PipelineOutputGrabError: "error with output grabbing",
 }
 
-// JOKE
+// JOKE.
 var errorDescription = map[PipelinerErrorCode]string{
 	UnknownError:            "Сохраняйте спокойствие, что-то произошло непонятное",
 	GetAllApprovedError:     "Невозможно получить список согласованных сценариев",
@@ -79,7 +79,7 @@ var errorDescription = map[PipelinerErrorCode]string{
 }
 
 type httpError struct {
-	StatusCode  int    `json:"status_code""`
+	StatusCode  int    `json:"status_code"`
 	Error       string `json:"error"`
 	Description string `json:"description"`
 }
@@ -88,6 +88,7 @@ func (c PipelinerErrorCode) errorMessage(e error) string {
 	if e != nil {
 		return fmt.Sprintf("%s: %s", c.error(), e.Error())
 	}
+
 	return c.error()
 }
 
@@ -96,6 +97,7 @@ func (c PipelinerErrorCode) error() string {
 	if ok {
 		return s
 	}
+
 	return errorText[UnknownError]
 }
 
@@ -104,23 +106,29 @@ func (c PipelinerErrorCode) description() string {
 	if ok {
 		return s
 	}
+
 	return errorDescription[UnknownError]
 }
 
 func (c PipelinerErrorCode) sendError(w http.ResponseWriter) error {
 	statusCode := http.StatusInternalServerError
+
 	if c == Teapot {
 		statusCode = http.StatusTeapot
 	}
+
 	resp := httpError{
 		StatusCode:  statusCode,
 		Error:       c.error(),
 		Description: c.description(),
 	}
+
 	w.WriteHeader(statusCode)
+
 	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

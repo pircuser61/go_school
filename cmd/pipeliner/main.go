@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
-	db2 "gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	db2 "gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
 
 	"go.opencensus.io/plugin/ochttp"
 
@@ -24,12 +26,12 @@ import (
 	"go.opencensus.io/trace"
 )
 
+const (
+	maxAge = 300
+)
+
 func main() {
-	configPath := flag.String(
-		"c",
-		"./config.yaml",
-		"path to config",
-	)
+	configPath := flag.String("c", "./config.yaml", "path to config")
 	flag.Parse()
 
 	log := logger.CreateLogger(nil)
@@ -37,21 +39,23 @@ func main() {
 	metrics.InitMetricsAuth()
 
 	cfg := &configs.Pipeliner{}
+
 	err := configs.Read(*configPath, cfg)
 	if err != nil {
 		log.WithError(err).Fatal("can't read config")
 	}
+
 	log.WithField("config", cfg).Info("started with config")
 
 	log = logger.CreateLogger(cfg.Log)
 
-	database, err := db2.DBConnect(cfg.DB)
+	database, err := db2.DBConnect(&cfg.DB)
 	if err != nil {
 		log.WithError(err).Error("can't connect database")
 		return
 	}
 
-	pipeliner := handlers.ApiEnv{
+	pipeliner := handlers.APIEnv{
 		DBConnection:  database,
 		Logger:        log,
 		ScriptManager: cfg.ScriptManager,
@@ -74,14 +78,15 @@ func main() {
 	metrics.InitMetricsAuth()
 
 	server := http.Server{
-		Handler: registerRouter(log, *cfg, pipeliner),
+		Handler: registerRouter(log, cfg, pipeliner),
 		Addr:    cfg.ServeAddr,
 	}
 
 	go func() {
 		log.Infof("script manager service started on port %s", server.Addr)
+
 		if err = server.ListenAndServe(); err != nil {
-			if err == http.ErrServerClosed {
+			if errors.Is(err, http.ErrServerClosed) {
 				log.Info("graceful shutdown")
 			} else {
 				log.WithError(err).Fatal("script manager service")
@@ -94,8 +99,9 @@ func main() {
 		metricsMux.Handle("/metrics", promhttp.Handler())
 
 		log.Infof("metrics for script manager service started on port %s", cfg.MetricsAddr)
+
 		if err = http.ListenAndServe(cfg.MetricsAddr, metricsMux); err != nil {
-			if err == http.ErrServerClosed {
+			if errors.Is(err, http.ErrServerClosed) {
 				log.Info("graceful shutdown")
 			} else {
 				log.WithError(err).Fatal("script manager metrics")
@@ -109,6 +115,7 @@ func main() {
 		syscall.SIGINT,
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
+
 	stop := <-sgnl
 
 	if err = server.Shutdown(context.Background()); err != nil {
@@ -116,10 +123,9 @@ func main() {
 	}
 
 	log.WithField("signal", stop).Info("stopping")
-
 }
 
-func registerRouter(log logger.Logger, cfg configs.Pipeliner, pipeliner handlers.ApiEnv) *chi.Mux {
+func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handlers.APIEnv) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
 	mux.Use(func(next http.Handler) http.Handler {
@@ -140,15 +146,15 @@ func registerRouter(log logger.Logger, cfg configs.Pipeliner, pipeliner handlers
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "metadata"},
 		ExposedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "metadata"},
 		AllowCredentials: true,
-		MaxAge:           300,
+		MaxAge:           maxAge,
 	}).Handler)
 
 	mux.Route("/api/pipeliner/v1", func(r chi.Router) {
 		r.Get("/pipelines/", pipeliner.ListPipelines)
-		r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
-		r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
-		r.Post("/pipelines/", pipeliner.CreatePipeline)
-		r.Post("/pipelines/version/{pipelineID}", pipeliner.CreateDraft)
+		r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline(false))
+		r.Get("/pipelines/version/{versionID}", pipeliner.GetPipeline(true))
+		r.Post("/pipelines/", pipeliner.PostPipeline(false))
+		r.Post("/pipelines/version/{pipelineID}", pipeliner.PostPipeline(true))
 		r.Put("/pipelines/version/", pipeliner.EditDraft)
 		r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
 		r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
@@ -163,5 +169,6 @@ func registerRouter(log logger.Logger, cfg configs.Pipeliner, pipeliner handlers
 
 		r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
 	})
+
 	return mux
 }

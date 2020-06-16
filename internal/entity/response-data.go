@@ -1,9 +1,10 @@
 package entity
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
-	"time"
 )
 
 type EriusScenarioList struct {

@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+
 	"gitlab.services.mts.ru/libs/logger"
 )
 
@@ -29,9 +30,10 @@ type Database struct {
 
 func (d *Database) String() string {
 	pass := ""
-	for _, _ = range d.Pass {
-		pass = pass + "*"
+	for range d.Pass {
+		pass += "*"
 	}
+
 	return fmt.Sprintf(
 		"DB: (Kind: %s, Host: %s, Port: %s, User: %s, Pass: %s, DBName: %s, MaxConn: %d, Timeout: %d)",
 		d.Kind, d.Host, d.Port, d.User, pass, d.DBName, d.MaxConnections, d.Timeout)

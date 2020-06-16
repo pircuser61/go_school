@@ -5,21 +5,29 @@ import (
 	"sync"
 )
 
+var (
+	errUnknownKey      = errors.New("unknown key in context")
+	errValueNotAString = errors.New("value not a string")
+	errValueNotABool   = errors.New("value not a bool")
+	errNoSuchKey       = errors.New("no such key")
+)
+
 type VariableStore struct {
-	mut    sync.Mutex
+	mut    *sync.Mutex
 	Values map[string]interface{}
-	Steps  []string
+	Steps  []BlockName
 	Errors []string
 }
 
 func NewStore() VariableStore {
-	s := VariableStore{mut: sync.Mutex{}, Values: make(map[string]interface{})}
-	s.Steps = make([]string, 0)
+	s := VariableStore{mut: &sync.Mutex{}, Values: make(map[string]interface{})}
+	s.Steps = make([]BlockName, 0)
 	s.Errors = make([]string, 0)
+
 	return s
 }
 
-func (c *VariableStore) AddStep(name string) {
+func (c *VariableStore) AddStep(name BlockName) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	c.Steps = append(c.Steps, name)
@@ -31,7 +39,7 @@ func (c *VariableStore) AddError(name error) {
 	c.Errors = append(c.Errors, name.Error())
 }
 
-func (c VariableStore) GetValue(name string) (interface{}, bool) {
+func (c *VariableStore) GetValue(name string) (interface{}, bool) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	val, ok := c.Values[name]
@@ -39,98 +47,107 @@ func (c VariableStore) GetValue(name string) (interface{}, bool) {
 	return val, ok
 }
 
-func (c VariableStore) GrabOutput() (interface{}, error) {
+func (c *VariableStore) GrabOutput() (interface{}, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
+
 	return c.Values, nil
 }
 
-func (c VariableStore) GrabSteps() ([]string, error) {
+func (c *VariableStore) GrabSteps() ([]BlockName, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
+
 	return c.Steps, nil
 }
 
-func (c VariableStore) GrabErrors() ([]string, error) {
+func (c *VariableStore) GrabErrors() ([]string, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
+
 	return c.Errors, nil
 }
 
-func (c VariableStore) GetString(name string) (string, error) {
+func (c *VariableStore) GetString(name string) (string, error) {
 	v, ok := c.GetValue(name)
 	if !ok {
-		return "", errors.New("unknown key in context")
+		return "", errUnknownKey
 	}
+
 	s, ok := v.(string)
 	if !ok {
-		return "", errors.New("value not a string")
+		return "", errValueNotAString
 	}
 
 	return s, nil
 }
 
-func (c VariableStore) GetBool(name string) (bool, error) {
+func (c *VariableStore) GetBool(name string) (bool, error) {
 	v, ok := c.GetValue(name)
 	if !ok {
-		return false, errors.New("unknown key in context")
+		return false, errUnknownKey
 	}
+
 	s, ok := v.(bool)
 	if !ok {
-		return false, errors.New("value not a bool")
+		return false, errValueNotABool
 	}
 
 	return s, nil
 }
 
-func (c VariableStore) GetStringWithInput(inMap map[string]string, key string) (string, error) {
+func (c *VariableStore) GetStringWithInput(inMap map[string]string, key string) (string, error) {
 	inKey, ok := inMap[key]
 	if !ok {
-		return "", errors.New("no such key")
+		return "", errNoSuchKey
 	}
+
 	return c.GetString(inKey)
 }
 
-func (c VariableStore) GetBoolWithInput(inMap map[string]string, key string) (bool, error) {
+func (c *VariableStore) GetBoolWithInput(inMap map[string]string, key string) (bool, error) {
 	inKey, ok := inMap[key]
 	if !ok {
-		return false, errors.New("no such key")
+		return false, errNoSuchKey
 	}
+
 	return c.GetBool(inKey)
 }
 
 func (c *VariableStore) SetValue(name string, value interface{}) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
-	switch value.(type) {
+
+	switch v := value.(type) {
 	case string:
-		v := value.(string)
 		c.Values[name] = v
 	case bool:
-		v := value.(bool)
 		c.Values[name] = v
 	case int:
-		v := value.(bool)
 		c.Values[name] = v
 	default:
 		c.Values[name] = value
 	}
 }
 
-func (c *VariableStore) SetStringWithOutput(outMap map[string]string, key string, val string) error {
+func (c *VariableStore) SetStringWithOutput(outMap map[string]string, key, val string) error {
 	outKey, ok := outMap[key]
 	if !ok {
-		return errors.New("no such key")
+		return errNoSuchKey
 	}
+
 	c.SetValue(outKey, val)
+
 	return nil
 }
 
 func (c *VariableStore) SetBoolWithOutput(outMap map[string]string, key string, val bool) error {
 	outKey, ok := outMap[key]
 	if !ok {
-		return errors.New("no such key")
+		return errNoSuchKey
 	}
+
 	c.SetValue(outKey, val)
+
 	return nil
 }

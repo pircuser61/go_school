@@ -16,19 +16,28 @@ import (
 	"go.opencensus.io/trace"
 )
 
+var (
+	errPipelineNotEditable = errors.New("pipeline is not editable")
+)
+
+const testAuthor = "testUser"
+const testUser = "testUser"
+
 type RunContext struct {
 	ID         string            `json:"id"`
 	Parameters map[string]string `json:"parameters"`
 }
 
-func (ae ApiEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
+func (ae APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
+
 	approved, err := db.GetApprovedVersions(c, ae.DBConnection)
 	if err != nil {
 		e := GetAllApprovedError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -37,14 +46,16 @@ func (ae ApiEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 		e := GetAllOnApproveError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
-	author := "testuser"
-	drafts, err := db.GetDraftVersions(c, ae.DBConnection, author)
+
+	drafts, err := db.GetDraftVersions(c, ae.DBConnection, testAuthor)
 	if err != nil {
 		e := GetAllDraftsError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -60,134 +71,160 @@ func (ae ApiEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-		return
-	}
 
-}
-
-func (ae ApiEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
-	c, s := trace.StartSpan(context.Background(), "list_pipelines")
-	defer s.End()
-
-	idparam := chi.URLParam(req, "pipelineID")
-	id, err := uuid.Parse(idparam)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-
-	p, err := db.GetPipeline(c, ae.DBConnection, id)
-	if err != nil {
-		e := GetPipelineError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-
-	err = sendResponse(w, http.StatusOK, p)
-	if err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
 		return
 	}
 }
 
-func (ae ApiEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(context.Background(), "list_pipelines")
-	defer s.End()
-	idparam := chi.URLParam(req, "versionID")
-	id, err := uuid.Parse(idparam)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
+// GetPipeline returns handler for GET pipelines
+// if isVersion is True - returns handler for GET pipelines/version.
+func (ae APIEnv) GetPipeline(isVersion bool) func(w http.ResponseWriter, req *http.Request) {
+	var spanName = "get_pipeline"
+
+	var paramKey = "pipelineID"
+
+	var getPipelineFunction = db.GetPipeline
+
+	var pipelineError = GetPipelineError
+
+	if isVersion {
+		spanName = "get_version"
+		paramKey = "versionID"
+		getPipelineFunction = db.GetPipelineVersion
+		pipelineError = GetVersionError
 	}
-	version, err := db.GetPipelineVersion(ctx, ae.DBConnection, id)
-	if err != nil {
-		e := GetVersionError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-	err = sendResponse(w, http.StatusOK, version)
-	if err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
+
+	return func(w http.ResponseWriter, req *http.Request) {
+		c, s := trace.StartSpan(context.Background(), spanName)
+		defer s.End()
+
+		idparam := chi.URLParam(req, paramKey)
+
+		id, err := uuid.Parse(idparam)
+		if err != nil {
+			e := UUIDParsingError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		p, err := getPipelineFunction(c, ae.DBConnection, id)
+		if err != nil {
+			e := pipelineError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		err = sendResponse(w, http.StatusOK, p)
+		if err != nil {
+			e := UnknownError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
 	}
 }
 
-func (ae ApiEnv) CreateDraft(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(context.Background(), "create_draft")
+// PostPipeline returns handler for POST pipelines
+// if isDraft is True - returns handler for POST pipelines/version.
+func (ae APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *http.Request) {
+	var spanName = "create_pipeline"
+
+	var createFunction = db.CreatePipeline
+
+	var pipelineError = PipelineCreateError
+
+	if isDraft {
+		spanName = "create_draft"
+		createFunction = db.CreateVersion
+		pipelineError = PipelineWriteError
+	}
+
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx, s := trace.StartSpan(context.Background(), spanName)
+		defer s.End()
+
+		b, err := ioutil.ReadAll(req.Body)
+		defer req.Body.Close()
+
+		if err != nil {
+			e := RequestReadError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		p := entity.EriusScenario{}
+
+		err = json.Unmarshal(b, &p)
+		if err != nil {
+			e := PipelineParseError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		p.ID = uuid.New()
+		p.VersionID = uuid.New()
+
+		err = createFunction(ctx, ae.DBConnection, &p, testAuthor, b)
+		if err != nil {
+			e := pipelineError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		created, err := db.GetPipelineVersion(ctx, ae.DBConnection, p.VersionID)
+		if err != nil {
+			e := PipelineReadError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		err = sendResponse(w, http.StatusOK, created)
+		if err != nil {
+			e := UnknownError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+}
+
+func (ae APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
+	c, s := trace.StartSpan(context.Background(), "edit_draft")
 	defer s.End()
 
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
+
 	if err != nil {
 		e := RequestReadError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
-	author := "testuser"
+
 	p := entity.EriusScenario{}
+
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-		return
-	}
-	p.ID = uuid.New()
-	p.VersionID = uuid.New()
 
-	err = db.CreateVersion(ctx, ae.DBConnection, &p, author, b)
-	if err != nil {
-		e := PipelineWriteError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-	created, err := db.GetPipelineVersion(ctx, ae.DBConnection, p.VersionID)
-	if err != nil {
-		e := PipelineReadError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-
-	err = sendResponse(w, http.StatusOK, created)
-	if err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-}
-
-func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
-	c, s := trace.StartSpan(context.Background(), "list_pipelines")
-	defer s.End()
-	b, err := ioutil.ReadAll(req.Body)
-	defer req.Body.Close()
-	if err != nil {
-		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-
-	p := entity.EriusScenario{}
-	err = json.Unmarshal(b, &p)
-	if err != nil {
-		e := PipelineParseError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
 		return
 	}
 
@@ -196,13 +233,17 @@ func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
+
 	if !canEdit {
 		e := PipelineIsDraft
-		errors.New("pipeline is not editable")
+
+		err = errPipelineNotEditable
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -211,16 +252,17 @@ func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 		e := PipelineWriteError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
 	if p.Status == db.StatusApproved {
-		author := "testuser"
-		err = db.SwitchApproved(c, ae.DBConnection, p.ID, p.VersionID, author)
+		err = db.SwitchApproved(c, ae.DBConnection, p.ID, p.VersionID, testAuthor)
 		if err != nil {
 			e := ApproveError
 			ae.Logger.Error(e.errorMessage(err))
 			_ = e.sendError(w)
+
 			return
 		}
 	}
@@ -230,6 +272,7 @@ func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 		e := PipelineReadError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -238,19 +281,23 @@ func (ae ApiEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 }
 
-func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
-	c, s := trace.StartSpan(context.Background(), "list_pipelines")
+func (ae APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
+	c, s := trace.StartSpan(context.Background(), "delete_version")
 	defer s.End()
+
 	idparam := chi.URLParam(req, "versionID")
+
 	versionID, err := uuid.Parse(idparam)
 	if err != nil {
 		e := UUIDParsingError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -259,13 +306,16 @@ func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
+
 	if !canEdit {
-		err := errors.New("pipeline is not editable")
+		err = errPipelineNotEditable
 		e := PipelineIsDraft
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -274,6 +324,7 @@ func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		e := PipelineDeleteError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -282,19 +333,23 @@ func (ae ApiEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 }
 
-func (ae ApiEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
-	c, s := trace.StartSpan(context.Background(), "list_pipelines")
+func (ae APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
+	c, s := trace.StartSpan(context.Background(), "delete_pipeline")
 	defer s.End()
+
 	idparam := chi.URLParam(req, "pipelineID")
+
 	id, err := uuid.Parse(idparam)
 	if err != nil {
 		e := UUIDParsingError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -303,6 +358,7 @@ func (ae ApiEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 		e := PipelineDeleteError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -311,47 +367,55 @@ func (ae ApiEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
-
 }
 
-func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(context.Background(), "list_pipelines")
+func (ae APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(context.Background(), "create_pipeline")
 	defer s.End()
 
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
+
 	if err != nil {
 		e := RequestReadError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
-	author := "testuser"
+
 	p := entity.EriusScenario{}
+
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
+
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 
-	err = db.CreatePipeline(ctx, ae.DBConnection, &p, author, b)
+	err = db.CreatePipeline(ctx, ae.DBConnection, &p, testAuthor, b)
 	if err != nil {
 		e := PipelineCreateError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
+
 	created, err := db.GetPipelineVersion(ctx, ae.DBConnection, p.VersionID)
 	if err != nil {
 		e := PipelineReadError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -360,12 +424,15 @@ func (ae ApiEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 }
-func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
+
+func (ae APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "run_pipeline")
 	defer s.End()
+
 	idparam := chi.URLParam(req, "pipelineID")
 
 	id, err := uuid.Parse(idparam)
@@ -373,6 +440,7 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		e := UUIDParsingError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
@@ -381,130 +449,132 @@ func (ae ApiEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		e := GetPipelineError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
+
 	ae.execVersion(c, w, req, p)
 }
 
-func (ae ApiEnv) RunVersion(w http.ResponseWriter, req *http.Request)  {
-	c, s := trace.StartSpan(context.Background(), "run_version")
-	defer s.End()
-	idparam := chi.URLParam(req, "pipelineID")
-
-	id, err := uuid.Parse(idparam)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-
-	p, err := db.GetPipeline(c, ae.DBConnection, id)
-	if err != nil {
-		e := GetPipelineError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-	ae.execVersion(c, w, req, p)
-}
-
-func (ae ApiEnv) execVersion(c context.Context, w http.ResponseWriter, req *http.Request, p *entity.EriusScenario) {
+func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http.Request, p *entity.EriusScenario) {
 	c, s := trace.StartSpan(c, "exec_version")
 	defer s.End()
-	status:= "prepairing"
-	testuser := "testuser"
 
 	ep := pipeline.ExecutablePipeline{}
 	ep.PipelineID = p.ID
 	ep.VersionID = p.VersionID
 	ep.Storage = ae.DBConnection
-	ep.Entrypoint = p.Pipeline.Entrypoint
+	ep.Entrypoint = pipeline.BlockName(p.Pipeline.Entrypoint)
 	ep.Logger = ae.Logger
+
 	err := ep.CreateBlocks(p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
-	status = "loaded"
 
-	err = ep.CreateWork(c, testuser)
+	err = ep.CreateWork(c, testUser)
 	if err != nil {
 		e := PipelineRunError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-		return
 
+		return
 	}
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
+
 	vs := pipeline.NewStore()
+
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
+
 	if err != nil {
 		e := RequestReadError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
+
 	vars := make(map[string]interface{})
+
 	if len(b) != 0 {
 		err = json.Unmarshal(b, &vars)
 		if err != nil {
 			e := PipelineRunError
 			ae.Logger.Error(e.errorMessage(err))
 			_ = e.sendError(w)
+
 			return
 		}
+
 		for key, value := range vars {
 			vs.SetValue("input_0."+key, value)
 		}
 	}
-	status = "input readed"
 
-	//go func() {
-	status = "runned"
+	// go func() {
 	err = ep.Run(c, &vs)
 	if err != nil {
 		ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 		vs.AddError(err)
 	}
+
 	wg.Done()
-	//}()
+	// }()
 	out, err := vs.GrabOutput()
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
-	status = "completed"
+
+	status := "completed"
+
 	steps, err := vs.GrabSteps()
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
+
 	errs, err := vs.GrabErrors()
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
+
 	if len(errs) != 0 {
 		status = "error"
 	}
-	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkId,
-		Status: status, Output: out, Steps: steps, Errors: errs})
+
+	var stepsResponse = make([]string, 0)
+
+	for _, s := range steps {
+		stepsResponse = append(stepsResponse, string(s))
+	}
+
+	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
+		Status: status, Output: out, Steps: stepsResponse, Errors: errs})
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
+
 	wg.Wait()
 }

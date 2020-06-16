@@ -1,9 +1,10 @@
 package pipeline
 
 import (
+	"io"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/libs/logger"
-	"io"
 )
 
 type Logger struct {
