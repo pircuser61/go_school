@@ -117,7 +117,7 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		}
 	}
 	fmt.Println("index:", index, ok)
-	fmt.Printf("%v %T\n %v %T\n %v %T\n", arr, index, len(arr))
+	fmt.Printf("%v %T\n %v %T\n %v\n", arr, arr, index, index, len(arr))
 	if len(arr) <= index {
 		fmt.Println(arr[index])
 	} else {
