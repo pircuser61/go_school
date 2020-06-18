@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
@@ -51,6 +52,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	}
 
 	for ep.NowOnPoint != "" {
+		fmt.Println(ep.VarStore)
 		ep.Logger.Println("executing", ep.NowOnPoint)
 
 		err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
