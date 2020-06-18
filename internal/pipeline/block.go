@@ -63,7 +63,7 @@ func (fb *FunctionBlock) Run(ctx context.Context, store *store.VariableStore) er
 	if err != nil {
 		return err
 	}
-
+	fmt.Println(string(body))
 	result := make(map[string]interface{})
 
 	err = json.Unmarshal(body, &result)
