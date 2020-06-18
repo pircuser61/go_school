@@ -4,22 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
 )
 
 type InputBlock struct {
-	BlockName     BlockName
+	BlockName     string
 	FunctionName  string
 	FunctionInput map[string]string
-	NextStep      BlockName
+	NextStep      string
 }
 
 var (
 	errValueNotFound = errors.New("value not found")
 )
 
-func (i *InputBlock) Run(ctx context.Context, runCtx *VariableStore) error {
+func (i *InputBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_input_block")
 	defer s.End()
 
@@ -35,6 +36,6 @@ func (i *InputBlock) Run(ctx context.Context, runCtx *VariableStore) error {
 	return nil
 }
 
-func (i *InputBlock) Next() BlockName {
+func (i *InputBlock) Next() string {
 	return i.NextStep
 }

@@ -2,19 +2,20 @@ package pipeline
 
 import (
 	"context"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
 )
 
 type ConnectorBlock struct {
-	Name           BlockName
+	Name           string
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	NextStep       BlockName
+	NextStep       string
 }
 
-func (cb *ConnectorBlock) Run(ctx context.Context, store *VariableStore) error {
+func (cb *ConnectorBlock) Run(ctx context.Context, store *store.VariableStore) error {
 	store.AddStep(cb.Name)
 
 	_, s := trace.StartSpan(ctx, "run_connector_block")
@@ -42,6 +43,6 @@ func (cb *ConnectorBlock) Run(ctx context.Context, store *VariableStore) error {
 	return nil
 }
 
-func (cb *ConnectorBlock) Next() BlockName {
+func (cb *ConnectorBlock) Next() string {
 	return cb.NextStep
 }

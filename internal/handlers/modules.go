@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -23,6 +24,14 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
+	eriusFunctions.Add(
+		script.IfState.Model(),
+		script.Input.Model(),
+		script.Equal.Model(),
+		script.Vars.Model(),
+		script.Connector.Model(),
+		integration.NewNGSASendIntegration(ae.DBConnection, 3, "").Model())
 
 	eriusShapes, err := script.GetShapes()
 	if err != nil {

@@ -2,13 +2,12 @@ package pipeline
 
 import (
 	"context"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 )
-
-type BlockName string
 
 type Pipeline struct {
 	ID       uuid.UUID           `json:"id,omitempty"`
@@ -23,11 +22,11 @@ var (
 	errCantFindVarName       = errors.New("can't find variable name")
 )
 
-func (p *Pipeline) Run(ctx context.Context, runCtx *VariableStore) error {
+func (p *Pipeline) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_pipeline")
 	defer s.End()
 
-	startContext := NewStore()
+	startContext := store.NewStore()
 
 	for _, inputValue := range p.Input {
 		glob, ok := inputValue["global"]
