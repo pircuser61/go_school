@@ -56,8 +56,3 @@ type FunctionValueModel struct {
 	Type    string `json:"type"`
 	Comment string `json:"comment"`
 }
-
-func (fms FunctionModels) Add(models ...FunctionModel) {
-	t := append(fms, models...)
-	fms = t
-}

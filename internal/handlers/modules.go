@@ -25,7 +25,7 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	eriusFunctions.Add(
+	eriusFunctions = append(eriusFunctions,
 		script.IfState.Model(),
 		script.Input.Model(),
 		script.Equal.Model(),
