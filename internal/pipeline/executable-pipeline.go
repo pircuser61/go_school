@@ -198,6 +198,7 @@ func createForBlock(title string, name, onTrue, onFalse string) *ForState {
 
 
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
+	fmt.Println("aaaaaa", ef.Title)
 	switch ef.Title {
 	case "input":
 		i := createInputBlock(ef.Title, name, ef.Next)
