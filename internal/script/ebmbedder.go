@@ -5,6 +5,13 @@ type Embedder interface {
 }
 
 const (
+	shapeFunction int = iota
+	shapeRhombus
+	shapeScenario
+	ShapeIntegration
+	shapeConnector
+	shapeVariable
+
 	OnTrue       string = "OnTrue"
 	OnFalse      string = "OnFalse"
 	Next         string = "Next"
@@ -32,12 +39,6 @@ const (
 	TypeIF       = "term"
 	TypeInternal = "internal"
 
-	shapeFunction int = iota
-	shapeRhombus
-	shapeScenario
-	ShapeIntegration
-	shapeConnector
-	shapeVariable
 )
 
 type FunctionModels []FunctionModel

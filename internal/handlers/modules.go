@@ -34,7 +34,7 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.ForState.Model(),
 		integration.NewNGSASendIntegration(ae.DBConnection, 3, "").Model())
 
-	eriusShapes, err := script.GetShapes()
+	eriusShapes, err := script.ос()
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
