@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
@@ -105,14 +106,17 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	runCtx.AddStep(e.Name)
 	fmt.Println("1")
 	arr, ok := runCtx.GetArray(e.FunctionInput["iter"])
-	fmt.Println(arr, ok)
+	fmt.Println("array", arr, ok)
+
+	index := 0
 	i, ok := runCtx.GetValue(e.FunctionOutput["index"])
-	fmt.Println(i, ok)
-	index, ok := i.(int)
-	fmt.Println(index, ok)
-	if !ok {
-		return nil
+	if ok {
+		index, ok = i.(int)
+		if !ok {
+			return errors.New("can't get index")
+		}
 	}
+	fmt.Println("index:", index, ok)
 	if len(arr) <= index {
 		fmt.Println(arr[index])
 	} else {
