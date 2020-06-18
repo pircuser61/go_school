@@ -46,7 +46,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	defer s.End()
 
 	ep.VarStore = runCtx
-
+	fmt.Println("ppipeline:", ep.Blocks)
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint
 	}
