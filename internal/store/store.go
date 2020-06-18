@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"reflect"
 	"sync"
 )
 
@@ -45,6 +46,21 @@ func (c *VariableStore) GetValue(name string) (interface{}, bool) {
 	val, ok := c.Values[name]
 
 	return val, ok
+}
+
+func (c *VariableStore) GetArray(name string) ([]interface{}, bool) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+	val, ok := c.Values[name]
+	if !ok {
+		return nil, ok
+	}
+	v := reflect.ValueOf(val)
+	switch v.Kind() {
+	case reflect.Slice:
+		return val.([]interface{}), ok
+	}
+	return nil, ok
 }
 
 func (c *VariableStore) GrabOutput() (interface{}, error) {

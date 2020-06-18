@@ -4,6 +4,7 @@ type Embedder interface {
 	Model() FunctionModel
 }
 
+// do not touch, only add in the end
 const (
 	shapeFunction int = iota
 	shapeRhombus

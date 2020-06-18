@@ -109,6 +109,10 @@ func (m Block) Model() FunctionModel {
 					Name: "now_on",
 					Type: TypeString,
 				},
+				{
+					Name:"index",
+					Type: TypeNumber,
+				},
 			},
 			ShapeType: shapeRhombus,
 			NextFuncs: []string{OnTrue, OnFalse},

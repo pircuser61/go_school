@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
@@ -99,14 +100,24 @@ type ForState struct {
 }
 
 func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "run_strings_equal_block")
+	_, s := trace.StartSpan(ctx, "cyclo_block")
 	defer s.End()
 	runCtx.AddStep(e.Name)
-	// get input array, index
-	// check index
-	// return if index >= len
-	// create new index if empty
-	// set iter, set index
+	arr, ok := runCtx.GetArray(e.FunctionInput["iter"])
+	i, ok := runCtx.GetValue(e.FunctionOutput["index"])
+	index, ok := i.(int)
+	if !ok {
+		return nil
+	}
+	if len(arr) <= index {
+		fmt.Println(arr[index])
+	} else {
+		e.Result = true
+	}
+
+	val := arr[index].(string)
+	runCtx.SetValue(e.FunctionOutput["index"], index)
+	runCtx.SetValue(e.FunctionOutput["now_on"], val)
 	return nil
 }
 
