@@ -57,7 +57,7 @@ type FunctionValueModel struct {
 	Comment string `json:"comment"`
 }
 
-func (fms *FunctionModels) Add(models ...FunctionModel) {
-	t := append(*fms, models...)
-	fms = &t
+func (fms FunctionModels) Add(models ...FunctionModel) {
+	t := append(fms, models...)
+	fms = t
 }
