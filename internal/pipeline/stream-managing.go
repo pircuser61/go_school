@@ -103,9 +103,13 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "cyclo_block")
 	defer s.End()
 	runCtx.AddStep(e.Name)
+	fmt.Println("1")
 	arr, ok := runCtx.GetArray(e.FunctionInput["iter"])
+	fmt.Println(arr, ok)
 	i, ok := runCtx.GetValue(e.FunctionOutput["index"])
+	fmt.Println(i, ok)
 	index, ok := i.(int)
+	fmt.Println(index, ok)
 	if !ok {
 		return nil
 	}
@@ -114,7 +118,7 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	} else {
 		e.Result = true
 	}
-
+	fmt.Println("len done")
 	val := arr[index].(string)
 	runCtx.SetValue(e.FunctionOutput["index"], index)
 	runCtx.SetValue(e.FunctionOutput["now_on"], val)
