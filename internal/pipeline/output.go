@@ -3,18 +3,19 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
 )
 
 type OutputBlock struct {
-	BlockName      BlockName
+	BlockName      string
 	FunctionName   string
 	FunctionOutput map[string]string
-	NextStep       BlockName
+	NextStep       string
 }
 
-func (i *OutputBlock) Run(ctx context.Context, runCtx *VariableStore) error {
+func (i *OutputBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_output_block")
 	defer s.End()
 
@@ -30,6 +31,6 @@ func (i *OutputBlock) Run(ctx context.Context, runCtx *VariableStore) error {
 	return nil
 }
 
-func (i *OutputBlock) Next() BlockName {
+func (i *OutputBlock) Next() string {
 	return i.NextStep
 }

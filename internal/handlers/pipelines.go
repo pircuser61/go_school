@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"io/ioutil"
 	"net/http"
 	"sync"
@@ -453,10 +454,11 @@ func (ae APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ae.execVersion(c, w, req, p)
+	ae.execVersion(c, w, req, p, false)
 }
 
-func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http.Request, p *entity.EriusScenario) {
+func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http.Request,
+	p *entity.EriusScenario, withStop bool) {
 	c, s := trace.StartSpan(c, "exec_version")
 	defer s.End()
 
@@ -464,7 +466,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 	ep.PipelineID = p.ID
 	ep.VersionID = p.VersionID
 	ep.Storage = ae.DBConnection
-	ep.Entrypoint = pipeline.BlockName(p.Pipeline.Entrypoint)
+	ep.Entrypoint = p.Pipeline.Entrypoint
 	ep.Logger = ae.Logger
 
 	err := ep.CreateBlocks(p.Pipeline.Blocks)
@@ -485,10 +487,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		return
 	}
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	vs := pipeline.NewStore()
+	vs := store.NewStore()
 
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
@@ -517,64 +516,82 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 			vs.SetValue("input_0."+key, value)
 		}
 	}
+	if withStop {
+		err = ep.Run(c, &vs)
+		if err != nil {
+			ae.Logger.Error(PipelineExecutionError.errorMessage(err))
+			vs.AddError(err)
+		}
+		err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
+			Status: "runned"})
+		if err != nil {
+			e := UnknownError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
 
-	// go func() {
-	err = ep.Run(c, &vs)
-	if err != nil {
-		ae.Logger.Error(PipelineExecutionError.errorMessage(err))
-		vs.AddError(err)
+			return
+		}
+
+	} else {
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		go func() {
+			err = ep.Run(c, &vs)
+			if err != nil {
+				ae.Logger.Error(PipelineExecutionError.errorMessage(err))
+				vs.AddError(err)
+			}
+
+			wg.Done()
+		}()
+		out, err := vs.GrabOutput()
+		if err != nil {
+			e := UnknownError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		status := "completed"
+
+		steps, err := vs.GrabSteps()
+		if err != nil {
+			e := UnknownError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		errs, err := vs.GrabErrors()
+		if err != nil {
+			e := UnknownError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		if len(errs) != 0 {
+			status = "error"
+		}
+
+		var stepsResponse = make([]string, 0)
+
+		for _, s := range steps {
+			stepsResponse = append(stepsResponse, s)
+		}
+
+		err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
+			Status: status, Output: out, Steps: stepsResponse, Errors: errs})
+		if err != nil {
+			e := UnknownError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+		wg.Wait()
 	}
-
-	wg.Done()
-	// }()
-	out, err := vs.GrabOutput()
-	if err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	status := "completed"
-
-	steps, err := vs.GrabSteps()
-	if err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	errs, err := vs.GrabErrors()
-	if err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if len(errs) != 0 {
-		status = "error"
-	}
-
-	var stepsResponse = make([]string, 0)
-
-	for _, s := range steps {
-		stepsResponse = append(stepsResponse, string(s))
-	}
-
-	err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
-		Status: status, Output: out, Steps: stepsResponse, Errors: errs})
-	if err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	wg.Wait()
 }

@@ -1,4 +1,4 @@
-package pipeline
+package store
 
 import (
 	"errors"
@@ -15,19 +15,19 @@ var (
 type VariableStore struct {
 	mut    *sync.Mutex
 	Values map[string]interface{}
-	Steps  []BlockName
+	Steps  []string
 	Errors []string
 }
 
 func NewStore() VariableStore {
 	s := VariableStore{mut: &sync.Mutex{}, Values: make(map[string]interface{})}
-	s.Steps = make([]BlockName, 0)
+	s.Steps = make([]string, 0)
 	s.Errors = make([]string, 0)
 
 	return s
 }
 
-func (c *VariableStore) AddStep(name BlockName) {
+func (c *VariableStore) AddStep(name string) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	c.Steps = append(c.Steps, name)
@@ -54,7 +54,7 @@ func (c *VariableStore) GrabOutput() (interface{}, error) {
 	return c.Values, nil
 }
 
-func (c *VariableStore) GrabSteps() ([]BlockName, error) {
+func (c *VariableStore) GrabSteps() ([]string, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 

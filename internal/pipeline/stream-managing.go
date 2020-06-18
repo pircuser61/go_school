@@ -2,20 +2,21 @@ package pipeline
 
 import (
 	"context"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
 )
 
 type IF struct {
-	Name          BlockName
+	Name          string
 	FunctionName  string
 	FunctionInput map[string]string
 	Result        bool
-	OnTrue        BlockName
-	OnFalse       BlockName
+	OnTrue        string
+	OnFalse       string
 }
 
-func (e *IF) Run(ctx context.Context, runCtx *VariableStore) error {
+func (e *IF) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_if_block")
 	defer s.End()
 
@@ -31,7 +32,7 @@ func (e *IF) Run(ctx context.Context, runCtx *VariableStore) error {
 	return nil
 }
 
-func (e *IF) Next() BlockName {
+func (e *IF) Next() string {
 	if e.Result {
 		return e.OnTrue
 	}
@@ -40,15 +41,15 @@ func (e *IF) Next() BlockName {
 }
 
 type StringsEqual struct {
-	Name          BlockName
+	Name          string
 	FunctionName  string
 	FunctionInput map[string]string
 	Result        bool
-	OnTrue        BlockName
-	OnFalse       BlockName
+	OnTrue        string
+	OnFalse       string
 }
 
-func (e *StringsEqual) Run(ctx context.Context, runCtx *VariableStore) error {
+func (e *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_strings_equal_block")
 	defer s.End()
 
@@ -78,7 +79,38 @@ func (e *StringsEqual) Run(ctx context.Context, runCtx *VariableStore) error {
 	return nil
 }
 
-func (e *StringsEqual) Next() BlockName {
+func (e *StringsEqual) Next() string {
+	if e.Result {
+		return e.OnTrue
+	}
+
+	return e.OnFalse
+}
+
+
+type ForState struct {
+	Name          string
+	FunctionName  string
+	FunctionInput map[string]string
+	FunctionOutput map[string]string
+	Result        bool
+	OnTrue        string
+	OnFalse       string
+}
+
+func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
+	_, s := trace.StartSpan(ctx, "run_strings_equal_block")
+	defer s.End()
+	runCtx.AddStep(e.Name)
+	// get input array, index
+	// check index
+	// return if index >= len
+	// create new index if empty
+	// set iter, set index
+	return nil
+}
+
+func (e *ForState) Next() string {
 	if e.Result {
 		return e.OnTrue
 	}

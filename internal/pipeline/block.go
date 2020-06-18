@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"io/ioutil"
 	"net/http"
 
@@ -12,15 +13,15 @@ import (
 )
 
 type FunctionBlock struct {
-	Name           BlockName
+	Name           string
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	NextStep       BlockName
+	NextStep       string
 	runURL         string
 }
 
-func (fb *FunctionBlock) Run(ctx context.Context, store *VariableStore) error {
+func (fb *FunctionBlock) Run(ctx context.Context, store *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()
 
@@ -78,6 +79,6 @@ func (fb *FunctionBlock) Run(ctx context.Context, store *VariableStore) error {
 	return nil
 }
 
-func (fb *FunctionBlock) Next() BlockName {
+func (fb *FunctionBlock) Next() string {
 	return fb.NextStep
 }

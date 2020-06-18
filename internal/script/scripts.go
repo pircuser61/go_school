@@ -11,65 +11,19 @@ import (
 	"go.opencensus.io/trace"
 )
 
-const (
-	shapeFunction int = iota
-	shapeRhombus
-	shapeScenario
-	shapeIntegration
-	shapeConnector
-	shapeVariable
+const ()
 
-	onTrue       string = "OnTrue"
-	onFalse      string = "OnFalse"
-	next         string = "Next"
-	checkVarName string = "check"
-
-	firstStringName  string = "first_string"
-	secondStringName string = "second_string"
-
-	typeBool   string = "bool"
-	typeString string = "string"
-	typeArray  string = "array"
-
-	functionDeployed string = "deployed"
-
-	TypeIF       = "term"
-	TypeInternal = "internal"
-
-	IconFunction     = "X24function"
-	IconTerms        = "X24terms"
-	IconIntegrations = "X24external"
-	IconScenario     = "X24scenario"
-	IconConnector    = "X24connector"
-	IconVariable     = "X24variable"
-)
-
-type FunctionModel struct {
-	BlockType string               `json:"block_type"`
-	Title     string               `json:"title"`
-	Inputs    []FunctionValueModel `json:"inputs"`
-	Outputs   []FunctionValueModel `json:"outputs"`
-	ShapeType int                  `json:"shape_type"`
-	NextFuncs []string             `json:"next_funcs"`
-}
-
-type FunctionValueModel struct {
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	Comment string `json:"comment"`
-}
-
-type ShapeModel struct {
+type ShapeEntity struct {
 	ID    int    `json:"id"`
 	Title string `json:"title"`
 	Icon  string `json:"icon"`
 }
 
 type ScriptManagerResponse struct {
-	Function []SMFunc `json:"function"`
+	Function []SMFunctionEntity `json:"function"`
 }
 
-type SMFunc struct {
+type SMFunctionEntity struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Template string `json:"template"`
@@ -85,7 +39,7 @@ type SMFunc struct {
 	Tags   []string `json:"tags"`
 }
 
-func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, error) {
+func GetReadyFuncs(ctx context.Context, scriptManager string) (FunctionModels, error) {
 	_, s := trace.StartSpan(context.Background(), "get_ready_modules")
 	defer s.End()
 
@@ -125,83 +79,6 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 	}
 
 	funcs := make([]FunctionModel, 0)
-	ifstate := FunctionModel{
-		BlockType: TypeIF,
-		Title:     "if",
-		Inputs: []FunctionValueModel{
-			{
-				Name: checkVarName,
-				Type: typeBool,
-			},
-		},
-		NextFuncs: []string{onTrue, onFalse},
-		ShapeType: shapeRhombus,
-	}
-	input := FunctionModel{
-		BlockType: TypeInternal,
-		Title:     "input",
-		Inputs:    nil,
-		Outputs: []FunctionValueModel{
-			{
-				Name: "notification",
-				Type: typeString,
-			},
-			{
-				Name: "action",
-				Type: typeString,
-			},
-		},
-		ShapeType: shapeFunction,
-		NextFuncs: []string{next},
-	}
-	equal := FunctionModel{
-		BlockType: TypeIF,
-		Title:     "strings_is_equal",
-		Inputs: []FunctionValueModel{
-			{
-				Name: firstStringName,
-				Type: typeString,
-			},
-			{
-				Name: secondStringName,
-				Type: typeString,
-			},
-		},
-		Outputs:   nil,
-		NextFuncs: []string{onTrue, onFalse},
-		ShapeType: shapeRhombus,
-	}
-	vars := FunctionModel{
-		BlockType: TypeInternal,
-		Title:     "variables",
-		Inputs:    nil,
-		Outputs:   []FunctionValueModel{},
-		NextFuncs: []string{next},
-		ShapeType: shapeVariable,
-	}
-	connect := FunctionModel{
-		BlockType: TypeInternal,
-		Title:     "connector",
-		Inputs: []FunctionValueModel{
-			{
-				Name: "non_block",
-				Type: typeArray,
-			}, {
-				Name: "block",
-				Type: typeArray,
-			},
-		},
-		Outputs: []FunctionValueModel{
-			{
-				Name: "final_list",
-				Type: typeArray,
-			},
-		},
-		NextFuncs: []string{next},
-		ShapeType: shapeConnector,
-	}
-
-	funcs = append(funcs, ifstate, equal, input, vars, connect)
 
 	for i := range smf.Function {
 		v := &smf.Function[i]
@@ -212,11 +89,11 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 				Inputs:    v.Input.Fields,
 				Outputs:   v.Output.Fields,
 				ShapeType: shapeFunction,
-				NextFuncs: []string{next},
+				NextFuncs: []string{Next},
 			}
 
 			if b.Title == "cedar-test-1" || b.Title == "get-no-energy-action" || b.Title == "send-ngsa" {
-				b.ShapeType = shapeIntegration
+				b.ShapeType = ShapeIntegration
 			}
 
 			funcs = append(funcs, b)
@@ -226,8 +103,8 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) ([]FunctionModel, 
 	return funcs, nil
 }
 
-func GetShapes() ([]ShapeModel, error) {
-	shapes := []ShapeModel{
+func GetShapes() ([]ShapeEntity, error) {
+	shapes := []ShapeEntity{
 
 		{
 			ID:    shapeFunction,
@@ -240,7 +117,7 @@ func GetShapes() ([]ShapeModel, error) {
 			Icon:  IconTerms,
 		},
 		{
-			ID:    shapeIntegration,
+			ID:    ShapeIntegration,
 			Title: IconIntegrations,
 			Icon:  IconIntegrations,
 		},

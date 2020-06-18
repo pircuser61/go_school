@@ -50,7 +50,7 @@ type EriusScenario struct {
 
 type EriusFunctionList struct {
 	Functions []script.FunctionModel `json:"funcs"`
-	Shapes    []script.ShapeModel    `json:"shapes"`
+	Shapes    []script.ShapeEntity   `json:"shapes"`
 }
 
 type EriusFunc struct {
@@ -62,6 +62,8 @@ type EriusFunc struct {
 	Output    []EriusFunctionValue `json:"output,omitempty"`
 	OnTrue    string               `json:"on_true,omitempty"`
 	OnFalse   string               `json:"on_false,omitempty"`
+	Final string `json:"final,omitempty"`
+	OnIter string `json:"on_iter"`
 	Next      string               `json:"next,omitempty"`
 }
 
@@ -83,7 +85,7 @@ type UsedBy struct {
 }
 
 type Shapes struct {
-	Shapes []script.ShapeModel `json:"shapes"`
+	Shapes []script.ShapeEntity `json:"shapes"`
 }
 
 type RunResponse struct {
