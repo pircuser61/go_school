@@ -120,9 +120,9 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		e.LastElem = true
 	}
 	val := fmt.Sprintf("%v", arr[index])
+	index++
 	runCtx.SetValue(e.FunctionOutput["index"], index)
 	runCtx.SetValue(e.FunctionOutput["now_on"], val)
-	index++
 	return nil
 }
 
