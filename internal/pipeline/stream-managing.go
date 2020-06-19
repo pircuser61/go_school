@@ -116,6 +116,7 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	fmt.Println(len(arr), index, len(arr)> index,len(arr) < index, len(arr) == index)
 	if index < len(arr) {
 		fmt.Println(arr[index])
+		index++
 	} else {
 		e.LastElem = true
 	}
