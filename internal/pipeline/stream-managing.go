@@ -113,6 +113,7 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 			return errors.New("can't get index")
 		}
 	}
+	fmt.Println(len(arr), index, len(arr)> index,len(arr) < index, len(arr) == index)
 	if len(arr) <= index {
 		fmt.Println(arr[index])
 	} else {
