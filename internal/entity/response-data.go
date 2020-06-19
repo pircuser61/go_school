@@ -62,8 +62,8 @@ type EriusFunc struct {
 	Output    []EriusFunctionValue `json:"output,omitempty"`
 	OnTrue    string               `json:"on_true,omitempty"`
 	OnFalse   string               `json:"on_false,omitempty"`
-	Final string `json:"final,omitempty"`
-	OnIter string `json:"on_iter"`
+	Final     string               `json:"final,omitempty"`
+	OnIter    string               `json:"on_iter"`
 	Next      string               `json:"next,omitempty"`
 }
 

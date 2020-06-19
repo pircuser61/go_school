@@ -98,19 +98,19 @@ func (m Block) Model() FunctionModel {
 		f = FunctionModel{
 			BlockType: TypeInternal,
 			Title:     "for",
-			Inputs:   []FunctionValueModel{
+			Inputs: []FunctionValueModel{
 				{
 					Name: "iter",
 					Type: TypeArray,
 				},
 			},
-			Outputs:   []FunctionValueModel{
+			Outputs: []FunctionValueModel{
 				{
 					Name: "now_on",
 					Type: TypeString,
 				},
 				{
-					Name:"index",
+					Name: "index",
 					Type: TypeNumber,
 				},
 			},

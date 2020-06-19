@@ -118,7 +118,7 @@ func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) e
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
 				//runURL:         "https://openfaas-staging.dev.autobp.mts.ru/function/%s.openfaas-fn",
-				runURL:         "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
+				runURL: "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
 			}
 
 			for _, v := range block.Input {
@@ -184,18 +184,16 @@ func createConnectorBlock(title string, name, next string) *ConnectorBlock {
 	}
 }
 
-
 func createForBlock(title string, name, onTrue, onFalse string) *ForState {
 	return &ForState{
-		Name:          name,
-		FunctionName:  title,
-		OnTrue:        onTrue,
-		OnFalse:       onFalse,
-		FunctionInput: make(map[string]string),
+		Name:           name,
+		FunctionName:   title,
+		OnTrue:         onTrue,
+		OnFalse:        onFalse,
+		FunctionInput:  make(map[string]string),
 		FunctionOutput: make(map[string]string),
 	}
 }
-
 
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
 	switch ef.Title {

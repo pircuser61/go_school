@@ -331,11 +331,18 @@ func DeleteVersion(c context.Context, pc *dbconn.PGConnection, versionID uuid.UU
 func DeletePipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) error {
 	_, span := trace.StartSpan(c, "pg_delete_pipeline")
 	defer span.End()
-
-	q := `UPDATE pipeliner.pipelines SET deleted_at=$1 WHERE id = $2`
 	t := time.Now()
+	qName := `SELECT name from pipeliner.pipelines WHERE id = $1`
+	row := pc.Pool.QueryRow(c, qName, id)
+	var n string
+	err := row.Scan(&n)
+	if err != nil {
+		return err
+	}
+	n = n + "_deleted_at_" + t.String()
+	q := `UPDATE pipeliner.pipelines SET deleted_at=$1, name=$2  WHERE id = $3`
 
-	_, err := pc.Pool.Exec(c, q, t, id)
+	_, err = pc.Pool.Exec(c, q, t, n, id)
 	if err != nil {
 		return err
 	}

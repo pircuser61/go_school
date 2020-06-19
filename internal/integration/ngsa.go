@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
@@ -10,11 +11,11 @@ import (
 )
 
 type NGSASend struct {
-	Name string
+	Name      string
 	ttl       time.Duration
 	db        *dbconn.PGConnection
 	NextBlock string
-	Input map[string]string
+	Input     map[string]string
 }
 
 func NewNGSASendIntegration(db *dbconn.PGConnection, ttl int, name string) NGSASend {
@@ -29,13 +30,10 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	defer s.End()
 
 	runCtx.AddStep(ns.Name)
-	values := make(map[string]interface{})
-	for ikey, gkey := range ns.Input {
-		val, ok := runCtx.GetValue(gkey) // if no value - empty value
-		if ok {
-			values[ikey] = val
-		}
-	}
+	notification, _ := runCtx.GetString(ns.Input["notification"])
+	reason, _ := runCtx.GetString(ns.Input["reason"])
+	action, _ := runCtx.GetString(ns.Input["action"])
+	fmt.Println(notification, reason, action)
 	return nil
 }
 
@@ -47,7 +45,7 @@ func (ns NGSASend) Model() script.FunctionModel {
 	return script.FunctionModel{
 		BlockType: script.TypeInternal,
 		Title:     "ngsa-send-alarm",
-		Inputs:    []script.FunctionValueModel{
+		Inputs: []script.FunctionValueModel{
 			{
 				Name:    "notification",
 				Type:    script.TypeString,
@@ -55,6 +53,11 @@ func (ns NGSASend) Model() script.FunctionModel {
 			},
 			{
 				Name:    "reason",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "action",
 				Type:    script.TypeString,
 				Comment: "",
 			},

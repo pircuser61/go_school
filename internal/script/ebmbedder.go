@@ -39,7 +39,6 @@ const (
 
 	TypeIF       = "term"
 	TypeInternal = "internal"
-
 )
 
 type FunctionModels []FunctionModel

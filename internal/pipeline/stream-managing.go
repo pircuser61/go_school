@@ -89,24 +89,21 @@ func (e *StringsEqual) Next() string {
 	return e.OnFalse
 }
 
-
 type ForState struct {
-	Name          string
-	FunctionName  string
-	FunctionInput map[string]string
+	Name           string
+	FunctionName   string
+	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	Result        bool
-	OnTrue        string
-	OnFalse       string
+	LastElem       bool
+	OnTrue         string
+	OnFalse        string
 }
 
 func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "cyclo_block")
+	_, s := trace.StartSpan(ctx, "run_cyclo_block")
 	defer s.End()
 	runCtx.AddStep(e.Name)
-	fmt.Println("1")
 	arr, ok := runCtx.GetArray(e.FunctionInput["iter"])
-	fmt.Println("array", arr, ok)
 
 	index := 0
 	i, ok := runCtx.GetValue(e.FunctionOutput["index"])
@@ -116,14 +113,11 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 			return errors.New("can't get index")
 		}
 	}
-	fmt.Println("index:", index, ok)
-	fmt.Printf("%v %T\n %v %T\n %v\n", arr, arr, index, index, len(arr))
 	if len(arr) <= index {
 		fmt.Println(arr[index])
 	} else {
-		e.Result = true
+		e.LastElem = true
 	}
-	fmt.Println("len done")
 	val := arr[index].(string)
 	runCtx.SetValue(e.FunctionOutput["index"], index)
 	runCtx.SetValue(e.FunctionOutput["now_on"], val)
@@ -131,9 +125,8 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 }
 
 func (e *ForState) Next() string {
-	if e.Result {
+	if e.LastElem {
 		return e.OnTrue
 	}
-
 	return e.OnFalse
 }
