@@ -96,7 +96,7 @@ func (m Block) Model() FunctionModel {
 		}
 	case ForState:
 		f = FunctionModel{
-			BlockType: TypeInternal,
+			BlockType: TypeIF,
 			Title:     "for",
 			Inputs: []FunctionValueModel{
 				{
