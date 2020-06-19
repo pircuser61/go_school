@@ -116,13 +116,13 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	fmt.Println(len(arr), index, len(arr)> index,len(arr) < index, len(arr) == index)
 	if index < len(arr) {
 		fmt.Println(arr[index])
+		val := fmt.Sprintf("%v", arr[index])
+		index++
+		runCtx.SetValue(e.FunctionOutput["index"], index)
+		runCtx.SetValue(e.FunctionOutput["now_on"], val)
 	} else {
 		e.LastElem = true
 	}
-	val := fmt.Sprintf("%v", arr[index])
-	index++
-	runCtx.SetValue(e.FunctionOutput["index"], index)
-	runCtx.SetValue(e.FunctionOutput["now_on"], val)
 	return nil
 }
 
