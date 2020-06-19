@@ -3,6 +3,7 @@ package script
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/uuid"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -36,8 +37,16 @@ type SMFunctionEntity struct {
 		Fields []FunctionValueModel `json:"fields"`
 	} `json:"output"`
 	Status string   `json:"status"`
-	Tags   []string `json:"tags"`
+	Tags   []FunctionTag `json:"tags"`
 }
+
+type FunctionTag struct {
+	ID    uuid.UUID `json:"id"`
+	Name  string    `json:"name"`
+	Color string   `json:"color"`
+	Approved bool `json:"approved"`
+}
+
 
 func GetReadyFuncs(ctx context.Context, scriptManager string) (FunctionModels, error) {
 	_, s := trace.StartSpan(context.Background(), "get_ready_modules")
