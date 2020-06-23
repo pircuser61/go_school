@@ -557,3 +557,52 @@ UPDATE pipeliner.works SET status = $1 WHERE id = $2
 
 	return nil
 }
+
+func GetExecutableScenarios(c context.Context, pc *dbconn.PGConnection) ([]entity.EriusScenario, error) {
+		c, span := trace.StartSpan(c, "pg_all_not_deleted_versions")
+		defer span.End()
+
+		q := `
+	SELECT pv.id, pp.name, pv.status, pv.pipeline_id, pv.content
+from pipeliner.versions pv
+join pipeliner.pipelines pp on pv.pipeline_id = pp.id
+where 
+	pv.status = $1
+and pp.deleted_at is NULL
+order by pv.created_at `
+
+		rows, err := pc.Pool.Query(c, q, StatusApproved)
+		if err != nil {
+			return nil, err
+		}
+
+		pipes := make([]entity.EriusScenario, 0)
+
+		for rows.Next() {
+			var vID, pID uuid.UUID
+
+			var s int
+
+			var c, name string
+
+			p := entity.EriusScenario{}
+
+			err = rows.Scan(&vID, &name, &s, &pID, &c)
+			if err != nil {
+				return nil, err
+			}
+
+			err = json.Unmarshal([]byte(c), &p)
+			if err != nil {
+				return nil, err
+			}
+
+			p.VersionID = vID
+			p.ID = pID
+			p.Status = s
+			p.Name = name
+			pipes = append(pipes, p)
+		}
+
+		return pipes, nil
+}

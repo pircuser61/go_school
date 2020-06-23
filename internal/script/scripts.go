@@ -131,7 +131,7 @@ func GetShapes() ([]ShapeEntity, error) {
 			Icon:  IconIntegrations,
 		},
 		{
-			ID:    shapeScenario,
+			ID:    ShapeScenario,
 			Title: IconScenario,
 			Icon:  IconScenario,
 		},

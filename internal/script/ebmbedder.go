@@ -8,7 +8,7 @@ type Embedder interface {
 const (
 	shapeFunction int = iota
 	shapeRhombus
-	shapeScenario
+	ShapeScenario
 	ShapeIntegration
 	shapeConnector
 	shapeVariable
@@ -39,6 +39,7 @@ const (
 
 	TypeIF       = "term"
 	TypeInternal = "internal"
+	TypeScenario = "scenario"
 )
 
 type FunctionModels []FunctionModel

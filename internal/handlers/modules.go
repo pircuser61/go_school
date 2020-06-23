@@ -34,6 +34,38 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.ForState.Model(),
 		integration.NewNGSASendIntegration(ae.DBConnection, 3, "").Model())
 
+	scenarios, err := db.GetExecutableScenarios(ctx, ae.DBConnection)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	for _, scenario := range scenarios {
+		b := script.FunctionModel{
+			BlockType: script.TypeScenario,
+			Title:     scenario.Name,
+			Inputs:    make([]script.FunctionValueModel, 0),
+			Outputs:   make([]script.FunctionValueModel, 0),
+			ShapeType: script.ShapeScenario,
+			NextFuncs: []string{script.Next},
+		}
+		for _, v := range scenario.Input {
+			b.Inputs = append(b.Inputs, script.FunctionValueModel{
+				Name:    v.Name,
+				Type:    v.Type,
+			})
+		}
+		for _, v := range scenario.Output {
+			b.Outputs = append(b.Outputs, script.FunctionValueModel{
+				Name:    v.Name,
+				Type:    v.Type,
+			})
+		}
+		eriusFunctions = append(eriusFunctions, b)
+	}
+
 	eriusShapes, err := script.GetShapes()
 	if err != nil {
 		e := UnknownError
