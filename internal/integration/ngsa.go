@@ -52,14 +52,14 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		return err
 	}
 	if action == actionLock {
-		id := uuid.New()
-		err := db.ActiveAlertNGSA(ctx, ns.db, id, reason)
+		//id := uuid.New()
+		err := db.ActiveAlertNGSA(ctx, ns.db)
 		if err != nil {
 			return err
 		}
 		if reason != LockSuccessful {
 			id := uuid.New()
-			err := db.ActiveAlertNGSA(ctx, ns.db, id, reason)
+			err := db.ActiveAlertNGSA(ctx, ns.db)
 			if err != nil {
 				return err
 			}
@@ -71,7 +71,7 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		}
 	} else {
 		id := uuid.New()
-		err := db.ActiveAlertNGSA(ctx, ns.db, id, reason)
+		err := db.ActiveAlertNGSA(ctx, ns.db)
 		if err != nil {
 			return err
 		}
@@ -122,6 +122,66 @@ func (ns NGSASend) Model() script.FunctionModel {
 			},
 			{
 				Name:    "action",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "perceivedSeverity",
+				Type:    script.TypeNumber,
+				Comment: "",
+			},
+			{
+				Name:    "source",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "eventTime",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "probableCause",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "additionalInformation",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "additionalText",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "moIdentifier",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "specificProblem",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "notificationIdentifier",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "userText",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "managedobjectinstance",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "managedobjectclass",
 				Type:    script.TypeString,
 				Comment: "",
 			},

@@ -21,7 +21,7 @@ var (
 	errPipelineNotEditable = errors.New("pipeline is not editable")
 )
 
-const testAuthor = "testUser"
+const testAuthor = "уж"
 const testUser = "testUser"
 
 type RunContext struct {
