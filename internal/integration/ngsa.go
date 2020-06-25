@@ -48,18 +48,32 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		return err
 	}
 	action, err := runCtx.GetString(ns.Input["action"])
+	bts, err := runCtx.GetString(ns.Input["moIdentifier"])
 	if err != nil {
 		return err
 	}
+	severn := 1
+	source := "ERIUS"
+	eventType := "EriusEvent"
+	cause := "test message"
+	addInf := "test message info"
+	addTxt := "test message text"
+	specProb := "test message problem specific"
+	notID := notification+"__"+action
+	usertext := "тестовый текст от пользователя"
+	moInstance := "test instance"
+	moClass := "test class"
 	if action == actionLock {
-		//id := uuid.New()
-		err := db.ActiveAlertNGSA(ctx, ns.db)
+		id := uuid.New()
+		err := db.ActiveAlertNGSA(ctx, ns.db, id,  severn, source, eventType,
+			cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
 		if err != nil {
 			return err
 		}
 		if reason != LockSuccessful {
 			id := uuid.New()
-			err := db.ActiveAlertNGSA(ctx, ns.db)
+			err := db.ActiveAlertNGSA(ctx, ns.db, id,  severn, source, eventType,
+				cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
 			if err != nil {
 				return err
 			}
@@ -71,7 +85,8 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		}
 	} else {
 		id := uuid.New()
-		err := db.ActiveAlertNGSA(ctx, ns.db)
+		err := db.ActiveAlertNGSA(ctx, ns.db, id,  severn, source, eventType,
+			cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
 		if err != nil {
 			return err
 		}

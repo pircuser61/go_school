@@ -2,9 +2,9 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
+	"time"
 )
 
 const (
@@ -12,19 +12,23 @@ const (
 	Clear = "CLEAR"
 )
 
-func ActiveAlertNGSA(c context.Context, pc *dbconn.PGConnection) error {
+func ActiveAlertNGSA(c context.Context, pc *dbconn.PGConnection, id uuid.UUID, severn int, source, eventType,
+	cause, addInf, addTxt, moId, specProb, notID, usertext, moInstance, moClass string) error {
+	state := Active
+	t :=  time.Now()
 	q := `INSERT INTO pipeliner.ngsa_alert(
 		id, state, "perceivedSeverity", "eventSource", "eventTime", "eventType", "probableCause", 
 		"additionalInformation", "additionalText", "moIdentifier", "specificProblem", "notificationIdentifier", 
-		"userText", managedobjectinstance, managedobjectclass, cleartime)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16);`
-	fmt.Println(q)
-	return nil
+		"userText", managedobjectinstance, managedobjectclass)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`
+	_, err := pc.Pool.Exec(c, q, id, state, severn, source, t, eventType, cause, addInf, addTxt, moId, specProb, notID,
+		usertext, moInstance, moClass)
+	return err
 }
 
 
 func ClearAlertNGSA(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) error {
-
+	
 	return nil
 }
 
