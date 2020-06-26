@@ -38,6 +38,7 @@ func (fb *FunctionBlock) Run(ctx context.Context, store *store.VariableStore) er
 
 	url := fmt.Sprintf(fb.runURL, fb.FunctionName)
 	fmt.Println(url)
+
 	b, err := json.Marshal(values)
 	if err != nil {
 		return err

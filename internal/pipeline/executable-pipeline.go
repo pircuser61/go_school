@@ -118,7 +118,7 @@ func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) e
 				FunctionInput:  make(map[string]string),
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
-				runURL:         ep.FaaS+"function/%s.openfaas-fn",
+				runURL:         ep.FaaS+"function/%s",
 				//runURL: "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
 			}
 
