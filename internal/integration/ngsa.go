@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
@@ -52,57 +51,60 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	if err != nil {
 		return err
 	}
-	severn := 1
-	source := "ERIUS"
-	eventType := "EriusEvent"
-	cause := "test message"
-	addInf := "test message info"
-	addTxt := "test message text"
-	specProb := "test message problem specific"
+	severn := 4
+	sev, ok := runCtx.GetValue(ns.Input["perceivedSeverity"])
+	if ok {
+		severn, ok = sev.(int)
+		if !ok {
+			severn = 4
+		}
+	}
 	notID := notification + "__" + action
-	usertext := "тестовый текст от пользователя"
-	moInstance := "test instance"
-	moClass := "test class"
+	source := "Erius"
+	eventType, err := runCtx.GetString(ns.Input["eventType"])
+	if err != nil {
+		eventType = "Environmental alarm"
+	}
+	cause, _ := runCtx.GetString(ns.Input["probableCause"])
+	addInf, _ := runCtx.GetString(ns.Input["additionalInformation"])
+	addTxt, _ := runCtx.GetString(ns.Input["additionalText"])
+	specProb, _ := runCtx.GetString(ns.Input["specificProblem"])
+	usertext, _:= runCtx.GetString(ns.Input["userText"])
+	moInstance , _:= runCtx.GetString(ns.Input["managedobjectinstance"])
+	moClass, _ :=  runCtx.GetString(ns.Input["managedobjectclass"])
 	if action == actionLock {
-		id := uuid.New()
-		err := db.ActiveAlertNGSA(ctx, ns.db, id, severn, source, eventType,
+		err := db.ActiveAlertNGSA(ctx, ns.db, severn, source, eventType,
 			cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
 		if err != nil {
 			return err
 		}
 		if reason != LockSuccessful {
-			id := uuid.New()
-			err := db.ActiveAlertNGSA(ctx, ns.db, id, severn, source, eventType,
+			err := db.ActiveAlertNGSA(ctx, ns.db, severn, source, eventType,
 				cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
 			if err != nil {
 				return err
 			}
 			time.Sleep(3 * time.Minute)
-			err = db.ClearAlertNGSA(ctx, ns.db, id)
+			err = db.ClearAlertNGSA(ctx, ns.db, notID)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		id := uuid.New()
-		err := db.ActiveAlertNGSA(ctx, ns.db, id, severn, source, eventType,
+		err := db.ActiveAlertNGSA(ctx, ns.db, severn, source, eventType,
 			cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
 		if err != nil {
 			return err
 		}
 		if reason == UnlockSuccessful {
 			name := notification + "__LOCK"
-			linkedID, err := db.GetLingedAlertFromNGSA(ctx, ns.db, name)
-			if err != nil {
-				return err
-			}
-			err = db.ClearAlertNGSA(ctx, ns.db, linkedID)
+			err = db.ClearAlertNGSA(ctx, ns.db, name)
 			if err != nil {
 				return err
 			}
 		}
 		time.Sleep(3 * time.Minute)
-		err = db.ClearAlertNGSA(ctx, ns.db, id)
+		err = db.ClearAlertNGSA(ctx, ns.db, notification)
 		if err != nil {
 			return err
 		}
@@ -174,11 +176,6 @@ func (ns NGSASend) Model() script.FunctionModel {
 			},
 			{
 				Name:    "specificProblem",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "notificationIdentifier",
 				Type:    script.TypeString,
 				Comment: "",
 			},

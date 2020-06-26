@@ -12,26 +12,38 @@ const (
 	Clear  = "CLEAR"
 )
 
-func ActiveAlertNGSA(c context.Context, pc *dbconn.PGConnection, id uuid.UUID, severn int, source, eventType,
+func ActiveAlertNGSA(c context.Context, pc *dbconn.PGConnection, severn int, source, eventType,
 	cause, addInf, addTxt, moId, specProb, notID, usertext, moInstance, moClass string) error {
-	state := Active
 	t := time.Now()
-	q := `INSERT INTO pipeliner.ngsa_alert(
-		id, state, "perceivedSeverity", "eventSource", "eventTime", "eventType", "probableCause", 
-		"additionalInformation", "additionalText", "moIdentifier", "specificProblem", "notificationIdentifier", 
-		"userText", managedobjectinstance, managedobjectclass)
+	q := `INSERT INTO pipeliner.alarm_for_ngsa(
+		state, 
+		"perceivedSeverity",
+		"eventSource", 
+		"eventTime",
+		"eventType", 
+		"probableCause", 
+		"additionInformation", 
+		"additionalText", 
+		"moIdentifier", 
+		"specificProblem", 
+		"notificationIdentifier",
+		"userText", 
+		managedobjectinstance,
+		managedobjectclass)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`
-	_, err := pc.Pool.Exec(c, q, id, state, severn, source, t, eventType, cause, addInf, addTxt, moId, specProb, notID,
-		usertext, moInstance, moClass)
+	_, err := pc.Pool.Exec(c, q, Active, severn, source, t, eventType, cause, addInf, addTxt, moId,
+		specProb, notID, usertext, moInstance, moClass)
 	return err
 }
 
-func ClearAlertNGSA(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) error {
-
-	return nil
+func ClearAlertNGSA(c context.Context, pc *dbconn.PGConnection, name string) error {
+	t := time.Now()
+	q := `UPDATE pipeliner.alarm_for_ngsa set state = $1, cleartime = $2 where name = $3`
+	_, err := pc.Pool.Exec(c, q, Clear, t, name)
+	return err
 }
 
-func GetLingedAlertFromNGSA(c context.Context, pc *dbconn.PGConnection, name string) (uuid.UUID, error) {
-
+func GetLingedAlertFromNGSA(c context.Context, pc *dbconn.PGConnection, notificaton string) (uuid.UUID, error) {
+	//q : = `select id from pipeliner `
 	return uuid.UUID{}, nil
 }
