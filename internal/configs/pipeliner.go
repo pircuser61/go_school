@@ -15,6 +15,7 @@ type Pipeliner struct {
 	MetricsAddr   string         `yaml:"metrics_addr"`
 	DB            Database       `yaml:"database"`
 	ScriptManager string         `yaml:"script_manager"`
+	FaaS          string         `yaml:"faas"`
 }
 
 type Database struct {

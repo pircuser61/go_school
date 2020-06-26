@@ -53,14 +53,14 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		}
 		for _, v := range scenario.Input {
 			b.Inputs = append(b.Inputs, script.FunctionValueModel{
-				Name:    v.Name,
-				Type:    v.Type,
+				Name: v.Name,
+				Type: v.Type,
 			})
 		}
 		for _, v := range scenario.Output {
 			b.Outputs = append(b.Outputs, script.FunctionValueModel{
-				Name:    v.Name,
-				Type:    v.Type,
+				Name: v.Name,
+				Type: v.Type,
 			})
 		}
 		eriusFunctions = append(eriusFunctions, b)

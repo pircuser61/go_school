@@ -21,8 +21,8 @@ type NGSASend struct {
 }
 
 var (
-	LockDenied = "Автоматическая блокировка не требуется"
-	LockSuccessful = "Блокировка Успешна"
+	LockDenied       = "Автоматическая блокировка не требуется"
+	LockSuccessful   = "Блокировка Успешна"
 	UnlockSuccessful = "Разблокировка Успешна"
 
 	actionLock = "LOCK"
@@ -59,25 +59,25 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	addInf := "test message info"
 	addTxt := "test message text"
 	specProb := "test message problem specific"
-	notID := notification+"__"+action
+	notID := notification + "__" + action
 	usertext := "тестовый текст от пользователя"
 	moInstance := "test instance"
 	moClass := "test class"
 	if action == actionLock {
 		id := uuid.New()
-		err := db.ActiveAlertNGSA(ctx, ns.db, id,  severn, source, eventType,
+		err := db.ActiveAlertNGSA(ctx, ns.db, id, severn, source, eventType,
 			cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
 		if err != nil {
 			return err
 		}
 		if reason != LockSuccessful {
 			id := uuid.New()
-			err := db.ActiveAlertNGSA(ctx, ns.db, id,  severn, source, eventType,
+			err := db.ActiveAlertNGSA(ctx, ns.db, id, severn, source, eventType,
 				cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
 			if err != nil {
 				return err
 			}
-			time.Sleep(3*time.Minute)
+			time.Sleep(3 * time.Minute)
 			err = db.ClearAlertNGSA(ctx, ns.db, id)
 			if err != nil {
 				return err
@@ -85,14 +85,14 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		}
 	} else {
 		id := uuid.New()
-		err := db.ActiveAlertNGSA(ctx, ns.db, id,  severn, source, eventType,
+		err := db.ActiveAlertNGSA(ctx, ns.db, id, severn, source, eventType,
 			cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
 		if err != nil {
 			return err
 		}
 		if reason == UnlockSuccessful {
 			name := notification + "__LOCK"
-			linkedID, err  := db.GetLingedAlertFromNGSA(ctx, ns.db, name)
+			linkedID, err := db.GetLingedAlertFromNGSA(ctx, ns.db, name)
 			if err != nil {
 				return err
 			}
@@ -101,20 +101,17 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 				return err
 			}
 		}
-		time.Sleep(3*time.Minute)
+		time.Sleep(3 * time.Minute)
 		err = db.ClearAlertNGSA(ctx, ns.db, id)
 		if err != nil {
 			return err
 		}
 
-
 	}
 	fmt.Println(notification, reason, action)
 
-
 	return nil
 }
-
 
 func (ns NGSASend) Next() string {
 	return ns.NextBlock

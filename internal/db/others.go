@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func RenameFuncs(d *dbconn.PGConnection) error  {
+func RenameFuncs(d *dbconn.PGConnection) error {
 	q := `select id, content from pipeliner.versions`
 
 	rows, err := d.Pool.Query(context.Background(), q)

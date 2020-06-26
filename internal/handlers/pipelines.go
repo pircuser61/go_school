@@ -441,7 +441,6 @@ func (ae APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		e := UUIDParsingError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-
 		return
 	}
 
@@ -450,7 +449,6 @@ func (ae APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		e := GetPipelineError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-
 		return
 	}
 
@@ -468,13 +466,13 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 	ep.Storage = ae.DBConnection
 	ep.Entrypoint = p.Pipeline.Entrypoint
 	ep.Logger = ae.Logger
+	ep.FaaS = ae.FaaS
 
 	err := ep.CreateBlocks(p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-
 		return
 	}
 

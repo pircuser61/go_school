@@ -36,17 +36,16 @@ type SMFunctionEntity struct {
 	Output struct {
 		Fields []FunctionValueModel `json:"fields"`
 	} `json:"output"`
-	Status string   `json:"status"`
+	Status string        `json:"status"`
 	Tags   []FunctionTag `json:"tags"`
 }
 
 type FunctionTag struct {
-	ID    uuid.UUID `json:"id"`
-	Name  string    `json:"name"`
-	Color string   `json:"color"`
-	Approved bool `json:"approved"`
+	ID       uuid.UUID `json:"id"`
+	Name     string    `json:"name"`
+	Color    string    `json:"color"`
+	Approved bool      `json:"approved"`
 }
-
 
 func GetReadyFuncs(ctx context.Context, scriptManager string) (FunctionModels, error) {
 	_, s := trace.StartSpan(context.Background(), "get_ready_modules")

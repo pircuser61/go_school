@@ -1,5 +1,8 @@
 serve_addr: ":8181"
 timeout: "30s"
+script_manager: "manager"
+faas: "https://openfaas.dev.autobp.mts.ru/"
+
 
 database:
   kind: postgres
