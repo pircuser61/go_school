@@ -198,7 +198,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			for _, v := range block.Output {
 				epi.Output[v.Name] = v.Global
 			}
-
+			ep.Blocks[bn] = &epi
 		}
 
 	}
