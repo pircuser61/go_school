@@ -468,7 +468,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 	ep.Logger = ae.Logger
 	ep.FaaS = ae.FaaS
 
-	err := ep.CreateBlocks(p.Pipeline.Blocks)
+	err := ep.CreateBlocks(c, p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
 		ae.Logger.Error(e.errorMessage(err))
@@ -511,7 +511,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		}
 
 		for key, value := range vars {
-			vs.SetValue("input_0."+key, value)
+			vs.SetValue(key, value)
 		}
 	}
 	if withStop {

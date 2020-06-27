@@ -30,3 +30,16 @@ func (i *InputBlock) Run(ctx context.Context, runCtx *store.VariableStore) error
 func (i *InputBlock) Next() string {
 	return i.NextStep
 }
+
+func (i InputBlock) IsScenario() bool {
+	return false
+}
+
+
+func (i InputBlock) Inputs() map[string]string {
+	return i.FunctionInput
+}
+
+func (i InputBlock) Outputs() map[string]string {
+	return make(map[string]string)
+}

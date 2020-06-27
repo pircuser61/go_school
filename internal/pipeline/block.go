@@ -21,6 +21,18 @@ type FunctionBlock struct {
 	runURL         string
 }
 
+func (fb FunctionBlock) Inputs() map[string]string {
+	return fb.FunctionInput
+}
+
+func (fb FunctionBlock) Outputs() map[string]string {
+	return fb.FunctionOutput
+}
+
+func (fb FunctionBlock) IsScenario() bool {
+	return false
+}
+
 func (fb *FunctionBlock) Run(ctx context.Context, store *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()

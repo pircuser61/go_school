@@ -8,4 +8,7 @@ import (
 type Runner interface {
 	Run(ctx context.Context, runCtx *store.VariableStore) error
 	Next() string
+	IsScenario() bool
+	Inputs() map[string]string
+	Outputs() map[string]string
 }

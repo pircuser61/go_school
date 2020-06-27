@@ -15,13 +15,13 @@ type OutputBlock struct {
 	NextStep       string
 }
 
-func (i *OutputBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
+func (o *OutputBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_output_block")
 	defer s.End()
 
-	runCtx.AddStep(i.BlockName)
+	runCtx.AddStep(o.BlockName)
 
-	for k, v := range i.FunctionOutput {
+	for k, v := range o.FunctionOutput {
 		_, ok := runCtx.GetValue(v)
 		if !ok {
 			return fmt.Errorf("%w: for %v", errValueNotFound, k)
@@ -31,6 +31,20 @@ func (i *OutputBlock) Run(ctx context.Context, runCtx *store.VariableStore) erro
 	return nil
 }
 
-func (i *OutputBlock) Next() string {
-	return i.NextStep
+func (o *OutputBlock) Next() string {
+	return o.NextStep
+}
+
+func (o OutputBlock) IsScenario() bool {
+	return false
+}
+
+
+
+func  (o OutputBlock) Inputs() map[string]string {
+	return  make(map[string]string)
+}
+
+func (o OutputBlock) Outputs() map[string]string {
+	return o.FunctionOutput
 }

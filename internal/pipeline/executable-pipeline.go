@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"github.com/google/uuid"
@@ -26,9 +27,22 @@ type ExecutablePipeline struct {
 	VarStore   *store.VariableStore
 	Blocks     map[string]Runner
 	NextStep   string
+	Input      map[string]string
+	Output     map[string]string
 
 	Logger logger.Logger
-	FaaS string
+	FaaS   string
+}
+
+func(ep *ExecutablePipeline) Inputs() map[string]string {
+	return ep.Input
+}
+
+func (ep *ExecutablePipeline)  Outputs() map[string]string {
+	return ep.Output
+}
+func (ep *ExecutablePipeline)  IsScenario() bool {
+	return true
 }
 
 func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) error {
@@ -47,7 +61,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	defer s.End()
 
 	ep.VarStore = runCtx
-	fmt.Println("ppipeline:", ep.Blocks)
+	fmt.Println("pipeline:", ep.Blocks)
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint
 	}
@@ -55,17 +69,41 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	for ep.NowOnPoint != "" {
 		fmt.Println(ep.VarStore)
 		ep.Logger.Println("executing", ep.NowOnPoint)
+		if ep.Blocks[ep.NowOnPoint].IsScenario() {
+			input := ep.Blocks[ep.NowOnPoint].Inputs()
+			nStore := store.NewStore()
+			for k, v := range input {
+				val, _ := runCtx.GetValue(v)
+				nStore.SetValue(k, val)
+			}
+			err := ep.Blocks[ep.NowOnPoint].Run(ctx, &nStore)
+			if err != nil {
+				errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
+				if errChange != nil {
+					return errChange
+				}
 
-		err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
-		if err != nil {
-			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
-			if errChange != nil {
-				return errChange
+				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
+			}
+			out := ep.Blocks[ep.NowOnPoint].Outputs()
+			for k, v := range out {
+				val, _ := nStore.GetValue(k)
+				nStore.SetValue(v, val)
 			}
 
-			return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
-		}
+		} else {
 
+			err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
+			if err != nil {
+				errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
+				if errChange != nil {
+					return errChange
+				}
+
+				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
+			}
+
+		}
 		storageData, err := json.Marshal(ep.VarStore)
 		if err != nil {
 			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
@@ -101,15 +139,16 @@ func (ep *ExecutablePipeline) Next() string {
 	return ep.NextStep
 }
 
-func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) error {
+func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]entity.EriusFunc) error {
 	ep.Blocks = make(map[string]Runner)
-
+	c, s := trace.StartSpan(c, "create_blocks")
+	defer s.End()
 	for k := range source {
 		bn := k
 
 		block := source[k]
 		switch block.BlockType {
-		case "internal", "term":
+		case script.TypeInternal, "term":
 			ep.Blocks[bn] = ep.CreateInternal(&block, bn)
 		case "python3":
 			fb := FunctionBlock{
@@ -118,7 +157,7 @@ func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) e
 				FunctionInput:  make(map[string]string),
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
-				runURL:         ep.FaaS+"function/%s",
+				runURL:         ep.FaaS + "function/%s",
 				//runURL: "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
 			}
 
@@ -131,7 +170,35 @@ func (ep *ExecutablePipeline) CreateBlocks(source map[string]entity.EriusFunc) e
 			}
 
 			ep.Blocks[bn] = &fb
+		case script.TypeScenario:
+			p, err := db.GetExecutableByName(c, ep.Storage, block.Title)
+			if err != nil {
+				return err
+			}
+
+			epi := ExecutablePipeline{}
+			epi.PipelineID = p.ID
+			epi.VersionID = p.VersionID
+			epi.Storage = ep.Storage
+			epi.Entrypoint = p.Pipeline.Entrypoint
+			epi.Logger = ep.Logger
+			epi.FaaS = ep.FaaS
+
+			err = epi.CreateBlocks(c, p.Pipeline.Blocks)
+			if err != nil {
+				return err
+			}
+
+			for _, v := range block.Input {
+				epi.Input[v.Name] = v.Global
+			}
+
+			for _, v := range block.Output {
+				epi.Output[v.Name] = v.Global
+			}
+
 		}
+
 	}
 
 	return nil

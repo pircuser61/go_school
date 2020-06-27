@@ -46,3 +46,15 @@ func (cb *ConnectorBlock) Run(ctx context.Context, store *store.VariableStore) e
 func (cb *ConnectorBlock) Next() string {
 	return cb.NextStep
 }
+
+func (cb ConnectorBlock) IsScenario() bool {
+	return false
+}
+
+func (cb ConnectorBlock) Inputs() map[string]string {
+	return cb.FunctionInput
+}
+
+func (cb ConnectorBlock) Outputs() map[string]string {
+	return cb.FunctionOutput
+}

@@ -606,3 +606,55 @@ order by pv.created_at `
 
 	return pipes, nil
 }
+
+func GetExecutableByName(c context.Context, pc *dbconn.PGConnection, name string) (*entity.EriusScenario, error) {
+	c, span := trace.StartSpan(c, "pg_get_pipeline")
+	defer span.End()
+
+	conn, err := pc.Pool.Acquire(c)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	p := entity.EriusScenario{}
+	q := `
+SELECT pv.id, pv.status, pv.pipeline_id, pv.content
+	FROM pipeliner.versions pv
+JOIN pipeliner.pipeline_history pph on pph.version_id = pv.id
+	WHERE pv.name = $1 order by pph.date desc LIMIT 1
+`
+
+	rows, err := conn.Query(c, q, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var vID, pID uuid.UUID
+
+		var s int
+
+		var c string
+
+		err = rows.Scan(&vID, &s, &pID, &c)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(c), &p)
+		if err != nil {
+			return nil, err
+		}
+
+		p.VersionID = vID
+		p.ID = pID
+		p.Status = s
+
+		return &p, nil
+	}
+
+	return nil, nil
+}

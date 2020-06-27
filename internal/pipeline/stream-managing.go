@@ -18,6 +18,19 @@ type IF struct {
 	OnFalse       string
 }
 
+
+func (e IF) Inputs() map[string]string {
+	return e.FunctionInput
+}
+
+func (e IF) Outputs() map[string]string {
+	return make(map[string]string)
+}
+
+func (e IF) IsScenario() bool {
+	return false
+}
+
 func (e *IF) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_if_block")
 	defer s.End()
@@ -50,6 +63,20 @@ type StringsEqual struct {
 	OnTrue        string
 	OnFalse       string
 }
+
+func (fb StringsEqual) IsScenario() bool {
+	return false
+}
+
+func  (fb StringsEqual)  Inputs() map[string]string {
+	return fb.FunctionInput
+}
+
+func (fb StringsEqual)  Outputs() map[string]string {
+	return make(map[string]string)
+}
+
+
 
 func (e *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_strings_equal_block")
@@ -97,6 +124,19 @@ type ForState struct {
 	LastElem       bool
 	OnTrue         string
 	OnFalse        string
+}
+
+
+func (e ForState) Inputs() map[string]string {
+	return e.FunctionInput
+}
+
+func (e ForState) Outputs() map[string]string {
+	return e.FunctionOutput
+}
+
+func (e ForState) IsScenario() bool {
+	return false
 }
 
 func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {

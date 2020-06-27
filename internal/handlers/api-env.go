@@ -9,5 +9,5 @@ type APIEnv struct {
 	DBConnection  *dbconn.PGConnection
 	Logger        logger.Logger
 	ScriptManager string
-	FaaS string
+	FaaS          string
 }

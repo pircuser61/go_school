@@ -34,6 +34,19 @@ func NewNGSASendIntegration(db *dbconn.PGConnection, ttl int, name string) NGSAS
 	}
 }
 
+
+func (ns NGSASend) Inputs() map[string]string {
+	return ns.Input
+}
+
+func (ns NGSASend) Outputs() map[string]string {
+	return make(map[string]string)
+}
+
+func (ns NGSASend) IsScenario() bool {
+	return false
+}
+
 func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
@@ -69,9 +82,9 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	addInf, _ := runCtx.GetString(ns.Input["additionalInformation"])
 	addTxt, _ := runCtx.GetString(ns.Input["additionalText"])
 	specProb, _ := runCtx.GetString(ns.Input["specificProblem"])
-	usertext, _:= runCtx.GetString(ns.Input["userText"])
-	moInstance , _:= runCtx.GetString(ns.Input["managedobjectinstance"])
-	moClass, _ :=  runCtx.GetString(ns.Input["managedobjectclass"])
+	usertext, _ := runCtx.GetString(ns.Input["userText"])
+	moInstance, _ := runCtx.GetString(ns.Input["managedobjectinstance"])
+	moClass, _ := runCtx.GetString(ns.Input["managedobjectclass"])
 	if action == actionLock {
 		err := db.ActiveAlertNGSA(ctx, ns.db, severn, source, eventType,
 			cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
