@@ -133,6 +133,8 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	}
 	out := ep.Outputs()
 	for loc, glob := range out {
+		fmt.Println("writing pipeline outs")
+		fmt.Println(loc, glob)
 		val, _ := runCtx.GetValue(loc)
 		runCtx.SetValue(glob, val)
 	}

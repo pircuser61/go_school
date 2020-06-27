@@ -511,7 +511,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		}
 
 		for key, value := range vars {
-			vs.SetValue(key, value)
+			vs.SetValue(p.Name+"."+key, value)
 		}
 	}
 	if withStop {
