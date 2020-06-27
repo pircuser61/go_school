@@ -155,11 +155,6 @@ func (ns NGSASend) Model() script.FunctionModel {
 				Comment: "",
 			},
 			{
-				Name:    "additionalText",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
 				Name:    "moIdentifier",
 				Type:    script.TypeString,
 				Comment: "",
