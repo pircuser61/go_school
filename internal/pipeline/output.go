@@ -15,7 +15,7 @@ type OutputBlock struct {
 	NextStep       string
 }
 
-func (o *OutputBlock) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
+func (o *OutputBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_output_block")
 	defer s.End()
 

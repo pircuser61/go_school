@@ -31,7 +31,7 @@ func (e IF) IsScenario() bool {
 	return false
 }
 
-func (e *IF) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
+func (e *IF) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_if_block")
 	defer s.End()
 
@@ -78,7 +78,7 @@ func (fb StringsEqual)  Outputs() map[string]string {
 
 
 
-func (e *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
+func (e *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_strings_equal_block")
 	defer s.End()
 
@@ -139,7 +139,7 @@ func (e ForState) IsScenario() bool {
 	return false
 }
 
-func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
+func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_cyclo_block")
 	defer s.End()
 	runCtx.AddStep(e.Name)

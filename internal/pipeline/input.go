@@ -19,7 +19,7 @@ var (
 	errValueNotFound = errors.New("value not found")
 )
 
-func (i *InputBlock) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
+func (i *InputBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_input_block")
 	defer s.End()
 	runCtx.AddStep(i.BlockName)

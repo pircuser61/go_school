@@ -467,6 +467,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 	ep.Entrypoint = p.Pipeline.Entrypoint
 	ep.Logger = ae.Logger
 	ep.FaaS = ae.FaaS
+	ep.PipelineModel = p
 
 	err := ep.CreateBlocks(c, p.Pipeline.Blocks)
 	if err != nil {
@@ -515,7 +516,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		}
 	}
 	if withStop {
-		err = ep.Run(c, vs, 1)
+		err = ep.Run(c, vs)
 		if err != nil {
 			ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 			vs.AddError(err)
@@ -534,7 +535,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go func() {
-			err = ep.Run(c, vs, 1)
+			err = ep.Run(c, vs)
 			if err != nil {
 				ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 				vs.AddError(err)

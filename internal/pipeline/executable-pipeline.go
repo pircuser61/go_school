@@ -29,6 +29,8 @@ type ExecutablePipeline struct {
 	NextStep   string
 	Input      map[string]string
 	Output     map[string]string
+	Name string
+	PipelineModel *entity.EriusScenario
 
 	Logger logger.Logger
 	FaaS   string
@@ -56,7 +58,7 @@ func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) err
 	return nil
 }
 
-func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
+func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
@@ -75,7 +77,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 				val, _ := runCtx.GetValue(global)
 				nStore.SetValue(local, val)
 			}
-			err := ep.Blocks[ep.NowOnPoint].Run(ctx, nStore, deep+1)
+			err := ep.Blocks[ep.NowOnPoint].Run(ctx, nStore)
 			if err != nil {
 				errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
@@ -93,7 +95,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 
 		} else {
 
-			err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore,  deep+1)
+			err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
 			if err != nil {
 				errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
@@ -132,6 +134,10 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 		return err
 	}
 	out := ep.Outputs()
+	for _, glob := range ep.PipelineModel.Output {
+		fmt.Println("model outs")
+		fmt.Println(glob.Name, glob.Global)
+	}
 	for loc, glob := range out {
 		fmt.Println("writing pipeline outs")
 		fmt.Println(loc, glob)
@@ -192,6 +198,8 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.Input = make(map[string]string)
 			epi.Output = make(map[string]string)
 			epi.NextStep = block.Next
+			epi.Name = block.Title
+			epi.PipelineModel = p
 		 	err = epi.CreateWork(c, "Erius")
 			if err != nil {
 				return err

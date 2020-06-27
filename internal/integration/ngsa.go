@@ -47,7 +47,7 @@ func (ns NGSASend) IsScenario() bool {
 	return false
 }
 
-func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
+func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
 	runCtx.AddStep(ns.Name)
