@@ -65,9 +65,9 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint
 	}
-
 	for ep.NowOnPoint != "" {
 		fmt.Println(ep.VarStore)
+		fmt.Println("now on", ep.NowOnPoint)
 		ep.Logger.Println("executing", ep.NowOnPoint)
 		if ep.Blocks[ep.NowOnPoint].IsScenario() {
 			input := ep.Blocks[ep.NowOnPoint].Inputs()
