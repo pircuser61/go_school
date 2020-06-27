@@ -63,7 +63,7 @@ func OutWithDeep(d int, data ...interface{})  {
 	fmt.Println(s, data)
 }
 func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
-	OutWithDeep(0, ep.VarStore)
+	OutWithDeep(0, "varstore:   ", ep.VarStore)
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
