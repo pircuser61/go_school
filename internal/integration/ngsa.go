@@ -145,11 +145,6 @@ func (ns NGSASend) Model() script.FunctionModel {
 				Comment: "",
 			},
 			{
-				Name:    "source",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
 				Name:    "probableCause",
 				Type:    script.TypeString,
 				Comment: "",
