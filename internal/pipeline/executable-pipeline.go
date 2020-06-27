@@ -185,6 +185,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.FaaS = ep.FaaS
 			epi.Input = make(map[string]string)
 			epi.Output = make(map[string]string)
+			epi.NextStep = block.Next
 
 			err = epi.CreateBlocks(c, p.Pipeline.Blocks)
 			if err != nil {
