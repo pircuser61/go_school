@@ -88,7 +88,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 			out := ep.Blocks[ep.NowOnPoint].Outputs()
 			for k, v := range out {
 				val, _ := nStore.GetValue(k)
-				nStore.SetValue(v, val)
+				ep.VarStore.SetValue(v, val)
 			}
 
 		} else {
@@ -186,6 +186,10 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.Input = make(map[string]string)
 			epi.Output = make(map[string]string)
 			epi.NextStep = block.Next
+		 	err = epi.CreateWork(c, "Erius")
+			if err != nil {
+				return err
+			}
 
 			err = epi.CreateBlocks(c, p.Pipeline.Blocks)
 			if err != nil {
