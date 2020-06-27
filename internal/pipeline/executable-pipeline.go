@@ -75,6 +75,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 			for k, v := range input {
 				val, _ := runCtx.GetValue(v)
 				nStore.SetValue(k, val)
+				fmt.Println("create store:", k, val)
 			}
 			err := ep.Blocks[ep.NowOnPoint].Run(ctx, &nStore)
 			if err != nil {
@@ -88,6 +89,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 			out := ep.Blocks[ep.NowOnPoint].Outputs()
 			for k, v := range out {
 				val, _ := nStore.GetValue(k)
+				fmt.Println("update store:", k, val)
 				ep.VarStore.SetValue(v, val)
 			}
 
@@ -198,10 +200,12 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 
 			for _, v := range block.Input {
 				epi.Input[v.Name] = v.Global
+				fmt.Println("in:", v.Name, v.Global)
 			}
 
 			for _, v := range block.Output {
 				epi.Output[v.Name] = v.Global
+				fmt.Println("out:", v.Name, v.Global)
 			}
 			ep.Blocks[bn] = &epi
 		}
