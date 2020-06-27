@@ -623,7 +623,8 @@ func GetExecutableByName(c context.Context, pc *dbconn.PGConnection, name string
 SELECT pv.id, pv.status, pv.pipeline_id, pv.content
 	FROM pipeliner.versions pv
 JOIN pipeliner.pipeline_history pph on pph.version_id = pv.id
-	WHERE pv.name = $1 order by pph.date desc LIMIT 1
+JOIN pipeliner.pipelines p on p.id = p.pipeline_id
+	WHERE p.name = $1 order by pph.date desc LIMIT 1
 `
 
 	rows, err := conn.Query(c, q, name)
