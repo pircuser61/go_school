@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"io/ioutil"
 	"net/http"
@@ -513,6 +514,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 
 		for key, value := range vars {
 			vs.SetValue(p.Name+"."+key, value)
+			fmt.Println(vs)
 		}
 	}
 	if withStop {
@@ -545,9 +547,9 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		}()
 		wg.Wait()
 		out := make(map[string]interface{})
-		for key, global := range  ep.Output {
-			val, _ := ep.VarStore.GetValue(global)
-			out[key] = val
+		for _, v := range  p.Output {
+			val, _ := ep.VarStore.GetValue(v.Global)
+			out[v.Name] = val
 		}
 
 		status := "completed"
