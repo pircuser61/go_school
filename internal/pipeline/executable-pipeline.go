@@ -87,10 +87,9 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 			out := ep.Blocks[ep.NowOnPoint].Outputs()
-			fmt.Println("after exec:", *nStore)
-			for k, v := range out {
-				val, _ := nStore.GetValue(k)
-				ep.VarStore.SetValue(v, val)
+			for inner, outer := range out {
+				val, _ := nStore.GetValue(inner)
+				ep.VarStore.SetValue(outer, val)
 			}
 
 		} else {
@@ -133,16 +132,9 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	if err != nil {
 		return err
 	}
-	out := ep.Outputs()
 	for _, glob := range ep.PipelineModel.Output {
-		fmt.Println("model outs")
-		fmt.Println(glob.Name, glob.Global)
-	}
-	for loc, glob := range out {
-		fmt.Println("writing pipeline outs")
-		fmt.Println(loc, glob)
-		val, _ := runCtx.GetValue(loc)
-		runCtx.SetValue(glob, val)
+		val, _ := runCtx.GetValue(glob.Global)
+		runCtx.SetValue(glob.Name, val)
 	}
 	return nil
 }
