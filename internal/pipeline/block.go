@@ -33,16 +33,16 @@ func (fb FunctionBlock) IsScenario() bool {
 	return false
 }
 
-func (fb *FunctionBlock) Run(ctx context.Context, store *store.VariableStore) error {
+func (fb *FunctionBlock) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
 	_, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()
 
-	store.AddStep(fb.Name)
+	runCtx.AddStep(fb.Name)
 
 	values := make(map[string]interface{})
 
 	for ikey, gkey := range fb.FunctionInput {
-		val, ok := store.GetValue(gkey) // if no value - empty value
+		val, ok := runCtx.GetValue(gkey) // if no value - empty value
 		if ok {
 			values[ikey] = val
 		}
@@ -86,7 +86,7 @@ func (fb *FunctionBlock) Run(ctx context.Context, store *store.VariableStore) er
 
 	for ikey, gkey := range fb.FunctionOutput {
 		val := result[ikey]
-		store.SetValue(gkey, val)
+		runCtx.SetValue(gkey, val)
 	}
 
 	return nil

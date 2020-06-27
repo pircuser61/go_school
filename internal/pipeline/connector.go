@@ -15,8 +15,8 @@ type ConnectorBlock struct {
 	NextStep       string
 }
 
-func (cb *ConnectorBlock) Run(ctx context.Context, store *store.VariableStore) error {
-	store.AddStep(cb.Name)
+func (cb *ConnectorBlock) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
+	runCtx.AddStep(cb.Name)
 
 	_, s := trace.StartSpan(ctx, "run_connector_block")
 	defer s.End()
@@ -24,7 +24,7 @@ func (cb *ConnectorBlock) Run(ctx context.Context, store *store.VariableStore) e
 	values := make(map[string]interface{})
 
 	for ikey, gkey := range cb.FunctionInput {
-		val, _ := store.GetValue(gkey) // if no value - empty value
+		val, _ := runCtx.GetValue(gkey) // if no value - empty value
 		values[ikey] = val
 	}
 
@@ -34,7 +34,7 @@ func (cb *ConnectorBlock) Run(ctx context.Context, store *store.VariableStore) e
 				continue
 			}
 
-			store.SetValue(gkey, val)
+			runCtx.SetValue(gkey, val)
 
 			break
 		}

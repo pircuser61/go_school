@@ -6,7 +6,7 @@ import (
 )
 
 type Runner interface {
-	Run(ctx context.Context, runCtx *store.VariableStore) error
+	Run(ctx context.Context, runCtx *store.VariableStore, deep int) error
 	Next() string
 	IsScenario() bool
 	Inputs() map[string]string

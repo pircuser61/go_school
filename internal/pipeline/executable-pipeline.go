@@ -55,19 +55,25 @@ func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) err
 
 	return nil
 }
-
-func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore) error {
+func OutWithDeep(d int, data ...interface{})  {
+	s := ""
+	for i:=0; i<=d; i++ {
+		s += "  "
+	}
+	fmt.Println(s, data)
+}
+func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
 	ep.VarStore = runCtx
-	fmt.Println("pipeline:", ep.Blocks)
+	OutWithDeep(deep, deep, "pipeline:", ep.Blocks)
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint
 	}
 	for ep.NowOnPoint != "" {
-		fmt.Println(ep.VarStore)
-		fmt.Println("now on", ep.NowOnPoint)
+		OutWithDeep(deep, ep.VarStore)
+		OutWithDeep(deep, "now on", ep.NowOnPoint)
 		ep.Logger.Println("executing", ep.NowOnPoint)
 		if ep.Blocks[ep.NowOnPoint].IsScenario() {
 			input := ep.Blocks[ep.NowOnPoint].Inputs()
@@ -75,9 +81,9 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 			for k, v := range input {
 				val, _ := runCtx.GetValue(v)
 				nStore.SetValue(k, val)
-				fmt.Println("create store:", k, val)
+				OutWithDeep(deep, "create store:", k, val)
 			}
-			err := ep.Blocks[ep.NowOnPoint].Run(ctx, nStore)
+			err := ep.Blocks[ep.NowOnPoint].Run(ctx, nStore, deep+1)
 			if err != nil {
 				errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
@@ -89,13 +95,13 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 			out := ep.Blocks[ep.NowOnPoint].Outputs()
 			for k, v := range out {
 				val, _ := nStore.GetValue(k)
-				fmt.Println("update store:", k, val)
+				OutWithDeep(deep, "update store:", k, val)
 				ep.VarStore.SetValue(v, val)
 			}
 
 		} else {
 
-			err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
+			err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore,  deep+1)
 			if err != nil {
 				errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
@@ -200,12 +206,12 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 
 			for _, v := range block.Input {
 				epi.Input[v.Name] = v.Global
-				fmt.Println("in:", v.Name, v.Global)
+				OutWithDeep( 0, "in:", v.Name, v.Global)
 			}
 
 			for _, v := range block.Output {
 				epi.Output[v.Name] = v.Global
-				fmt.Println("out:", v.Name, v.Global)
+				OutWithDeep(0, "out:", v.Name, v.Global)
 			}
 			ep.Blocks[bn] = &epi
 		}
