@@ -183,6 +183,8 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.Entrypoint = p.Pipeline.Entrypoint
 			epi.Logger = ep.Logger
 			epi.FaaS = ep.FaaS
+			epi.Input = make(map[string]string)
+			epi.Output = make(map[string]string)
 
 			err = epi.CreateBlocks(c, p.Pipeline.Blocks)
 			if err != nil {
