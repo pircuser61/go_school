@@ -71,9 +71,9 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 		if ep.Blocks[ep.NowOnPoint].IsScenario() {
 			input := ep.Blocks[ep.NowOnPoint].Inputs()
 			nStore := store.NewStore()
-			for k, v := range input {
-				val, _ := runCtx.GetValue(v)
-				nStore.SetValue(k, val)
+			for local, global := range input {
+				val, _ := runCtx.GetValue(global)
+				nStore.SetValue(local, val)
 			}
 			err := ep.Blocks[ep.NowOnPoint].Run(ctx, nStore, deep+1)
 			if err != nil {
@@ -85,6 +85,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 			out := ep.Blocks[ep.NowOnPoint].Outputs()
+			fmt.Println("after exec:", *nStore)
 			for k, v := range out {
 				val, _ := nStore.GetValue(k)
 				ep.VarStore.SetValue(v, val)
@@ -200,7 +201,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 
 			fmt.Println("creating embedded pipeline vars")
 			for _, v := range block.Input {
-				epi.Input[v.Name] = v.Global
+				epi.Input[p.Name+"."+v.Name] = v.Global
 				fmt.Println(v.Name, v.Global)
 			}
 
