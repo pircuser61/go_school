@@ -20,12 +20,12 @@ type VariableStore struct {
 	Errors []string
 }
 
-func NewStore() VariableStore {
+func NewStore() *VariableStore {
 	s := VariableStore{mut: &sync.Mutex{}, Values: make(map[string]interface{})}
 	s.Steps = make([]string, 0)
 	s.Errors = make([]string, 0)
 
-	return s
+	return &s
 }
 
 func (c *VariableStore) AddStep(name string) {
