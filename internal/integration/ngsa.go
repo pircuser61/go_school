@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
@@ -123,7 +122,6 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		}
 
 	}
-	fmt.Println(notification, reason, action)
 
 	return nil
 }

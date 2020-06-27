@@ -330,7 +330,6 @@ func DeleteVersion(c context.Context, pc *dbconn.PGConnection, versionID uuid.UU
 	var pid uuid.UUID
 	err = row.Scan(&pid)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	return DeletePipeline(c, pc, pid)
@@ -346,16 +345,13 @@ func DeletePipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) er
 	var n string
 	err := row.Scan(&n)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	n = n + "_deleted_at_" + t.String()
-	fmt.Println(n)
 	q := `UPDATE pipeliner.pipelines SET deleted_at=$1, name=$2  WHERE id = $3`
 
 	_, err = pc.Pool.Exec(c, q, t, n, id)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 

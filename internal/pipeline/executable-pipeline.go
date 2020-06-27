@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
@@ -72,6 +71,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 		ep.Logger.Println("executing", ep.NowOnPoint)
 		if ep.Blocks[ep.NowOnPoint].IsScenario() {
 			input := ep.Blocks[ep.NowOnPoint].Inputs()
+			ep.VarStore.AddStep(ep.NowOnPoint)
 			nStore := store.NewStore()
 			for local, global := range input {
 				val, _ := runCtx.GetValue(global)
@@ -201,15 +201,12 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 				return err
 			}
 
-			fmt.Println("creating embedded pipeline vars")
 			for _, v := range block.Input {
 				epi.Input[p.Name+"."+v.Name] = v.Global
-				fmt.Println(v.Name, v.Global)
 			}
 
 			for _, v := range block.Output {
 				epi.Output[v.Name] = v.Global
-				fmt.Println(v.Name, v.Global)
 			}
 			ep.Blocks[bn] = &epi
 		}

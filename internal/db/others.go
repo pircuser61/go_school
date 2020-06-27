@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"regexp"
@@ -29,7 +28,6 @@ func RenameFuncs(d *dbconn.PGConnection) error {
 		for _, s := range matches {
 			oldS := string(s)
 			newS := strings.ReplaceAll(oldS, "2g-", "") + "-2g"
-			fmt.Println(oldS, newS)
 			newCont = strings.ReplaceAll(newCont, oldS, newS)
 
 		}

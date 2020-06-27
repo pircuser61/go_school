@@ -543,27 +543,16 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 
 			wg.Done()
 		}()
-		out, err := vs.GrabOutput()
-		if err != nil {
-			e := UnknownError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
+		wg.Wait()
+		out := make(map[string]interface{})
+		for key, global := range  ep.Output {
+			val, _ := ep.VarStore.GetValue(global)
+			out[key] = val
 		}
 
 		status := "completed"
 
-		steps, err := vs.GrabSteps()
-		if err != nil {
-			e := UnknownError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
-
-		errs, err := vs.GrabErrors()
+		errs, err := ep.VarStore.GrabErrors()
 		if err != nil {
 			e := UnknownError
 			ae.Logger.Error(e.errorMessage(err))
@@ -576,14 +565,8 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 			status = "error"
 		}
 
-		var stepsResponse = make([]string, 0)
-
-		for _, s := range steps {
-			stepsResponse = append(stepsResponse, s)
-		}
-
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
-			Status: status, Output: out, Steps: stepsResponse, Errors: errs})
+			Status: status, Output: out, Errors: errs})
 		if err != nil {
 			e := UnknownError
 			ae.Logger.Error(e.errorMessage(err))
@@ -591,6 +574,6 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 
 			return
 		}
-		wg.Wait()
+
 	}
 }

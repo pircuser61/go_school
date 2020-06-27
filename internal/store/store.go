@@ -63,7 +63,7 @@ func (c *VariableStore) GetArray(name string) ([]interface{}, bool) {
 	return nil, ok
 }
 
-func (c *VariableStore) GrabOutput() (interface{}, error) {
+func (c *VariableStore) GrabStorage() (map[string]interface{}, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 

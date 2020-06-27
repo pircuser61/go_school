@@ -93,6 +93,5 @@ type RunResponse struct {
 	TaskID     uuid.UUID   `json:"task_id"`
 	Status     string      `json:"status"`
 	Output     interface{} `json:"output"`
-	Steps      []string    `json:"steps"`
 	Errors     []string    `json:"errors"`
 }
