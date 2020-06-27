@@ -74,7 +74,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 			nStore := store.NewStore()
 			for k, v := range input {
 				val, _ := runCtx.GetValue(v)
-				nStore.SetValue(k, val)
+				nStore.SetValue(v, val)
 				fmt.Println("create store:", k, val)
 			}
 			err := ep.Blocks[ep.NowOnPoint].Run(ctx, &nStore)
