@@ -63,11 +63,11 @@ func OutWithDeep(d int, data ...interface{})  {
 	fmt.Println(s, data)
 }
 func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore, deep int) error {
-	OutWithDeep(0, "varstore:   ", ep.VarStore)
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
 	ep.VarStore = runCtx
+	OutWithDeep(0, "varstore:   ", ep.VarStore)
 	OutWithDeep(deep, deep, "pipeline:", ep.Blocks)
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint
@@ -139,6 +139,11 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	err := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusFinished)
 	if err != nil {
 		return err
+	}
+	out := ep.Outputs()
+	for loc, glob := range out {
+		val, _ := runCtx.GetValue(loc)
+		runCtx.SetValue(glob, val)
 	}
 
 	return nil
