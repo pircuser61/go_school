@@ -67,7 +67,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	defer s.End()
 
 	ep.VarStore = runCtx
-	OutWithDeep(0, "varstore:   ", ep.VarStore)
+	OutWithDeep(0, "varstore prev:   ", ep.VarStore)
 	OutWithDeep(deep, deep, "pipeline:", ep.Blocks)
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint
@@ -144,8 +144,9 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	for loc, glob := range out {
 		val, _ := runCtx.GetValue(loc)
 		runCtx.SetValue(glob, val)
+		OutWithDeep(0, "writing:   ", loc, glob, val, ep.VarStore)
 	}
-
+	OutWithDeep(0, "varstore last:   ", ep.VarStore)
 	return nil
 }
 
