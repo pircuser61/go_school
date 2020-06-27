@@ -515,7 +515,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		}
 	}
 	if withStop {
-		err = ep.Run(c, vs, 0)
+		err = ep.Run(c, vs, 1)
 		if err != nil {
 			ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 			vs.AddError(err)
@@ -534,7 +534,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go func() {
-			err = ep.Run(c, vs, 0)
+			err = ep.Run(c, vs, 1)
 			if err != nil {
 				ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 				vs.AddError(err)
