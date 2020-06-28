@@ -545,7 +545,6 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 
 			wg.Done()
 		}()
-		wg.Wait()
 		out := make(map[string]interface{})
 		for _, v := range  p.Output {
 			val, _ := ep.VarStore.GetValue(v.Global)
@@ -576,6 +575,6 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 
 			return
 		}
-
+		wg.Wait()
 	}
 }
