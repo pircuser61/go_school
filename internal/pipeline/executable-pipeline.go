@@ -324,7 +324,8 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 		for _, v := range ef.Input {
 			ngsa.Input[v.Name] = v.Global
 		}
-
+		ngsa.Name = ef.Title
+		ngsa.NextBlock = ef.Next
 		return ngsa
 	case "for":
 		f := createForBlock(ef.Title, name, ef.OnTrue, ef.OnFalse)

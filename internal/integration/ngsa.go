@@ -30,6 +30,7 @@ func NewNGSASendIntegration(db *dbconn.PGConnection, ttl int, name string) NGSAS
 	return NGSASend{
 		ttl: time.Duration(ttl) * time.Minute,
 		db:  db,
+		Input: make(map[string]string),
 	}
 }
 
