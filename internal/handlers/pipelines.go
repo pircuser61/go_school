@@ -545,29 +545,12 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 
 			wg.Done()
 		}()
-		out := make(map[string]interface{})
-		for _, v := range  p.Output {
-			val, _ := ep.VarStore.GetValue(v.Global)
-			out[v.Name] = val
-		}
 
 		status := "completed"
 
-		errs, err := ep.VarStore.GrabErrors()
-		if err != nil {
-			e := UnknownError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
-
-		if len(errs) != 0 {
-			status = "error"
-		}
 
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
-			Status: status, Output: out, Errors: errs})
+			Status: status})
 		if err != nil {
 			e := UnknownError
 			ae.Logger.Error(e.errorMessage(err))
