@@ -92,11 +92,6 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 			return err
 		}
 		if reason != LockSuccessful {
-			err := db.ActiveAlertNGSA(ctx, ns.db, severn, source, eventType,
-				cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
-			if err != nil {
-				return err
-			}
 			time.Sleep(3 * time.Minute)
 			err = db.ClearAlertNGSA(ctx, ns.db, notID)
 			if err != nil {
