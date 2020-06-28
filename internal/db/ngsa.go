@@ -30,7 +30,7 @@ func ActiveAlertNGSA(c context.Context, pc *dbconn.PGConnection, severn int, sou
 		"userText", 
 		managedobjectinstance,
 		managedobjectclass)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);`
 	_, err := pc.Pool.Exec(c, q, Active, severn, source, t, eventType, cause, addInf, addTxt, moId,
 		specProb, notID, usertext, moInstance, moClass)
 	return err
