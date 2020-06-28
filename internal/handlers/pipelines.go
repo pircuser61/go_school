@@ -5,17 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-	"io/ioutil"
-	"net/http"
-	"sync"
-
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"go.opencensus.io/trace"
+	"io/ioutil"
+	"net/http"
 )
 
 var (
@@ -534,8 +532,6 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		}
 
 	} else {
-		wg := sync.WaitGroup{}
-		wg.Add(1)
 		go func() {
 			err = ep.Run(c, vs)
 			if err != nil {
@@ -543,10 +539,9 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 				vs.AddError(err)
 			}
 
-			wg.Done()
 		}()
 
-		status := "completed"
+		status := "runned"
 
 
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
@@ -558,6 +553,5 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 
 			return
 		}
-		wg.Wait()
 	}
 }
