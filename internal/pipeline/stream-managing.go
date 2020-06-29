@@ -18,7 +18,6 @@ type IF struct {
 	OnFalse       string
 }
 
-
 func (e IF) Inputs() map[string]string {
 	return e.FunctionInput
 }
@@ -68,15 +67,13 @@ func (fb StringsEqual) IsScenario() bool {
 	return false
 }
 
-func  (fb StringsEqual)  Inputs() map[string]string {
+func (fb StringsEqual) Inputs() map[string]string {
 	return fb.FunctionInput
 }
 
-func (fb StringsEqual)  Outputs() map[string]string {
+func (fb StringsEqual) Outputs() map[string]string {
 	return make(map[string]string)
 }
-
-
 
 func (e *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_strings_equal_block")
@@ -125,7 +122,6 @@ type ForState struct {
 	OnTrue         string
 	OnFalse        string
 }
-
 
 func (e ForState) Inputs() map[string]string {
 	return e.FunctionInput

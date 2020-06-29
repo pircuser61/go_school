@@ -17,32 +17,32 @@ import (
 )
 
 type ExecutablePipeline struct {
-	WorkID     uuid.UUID
-	PipelineID uuid.UUID
-	VersionID  uuid.UUID
-	Storage    *dbconn.PGConnection
-	Entrypoint string
-	NowOnPoint string
-	VarStore   *store.VariableStore
-	Blocks     map[string]Runner
-	NextStep   string
-	Input      map[string]string
-	Output     map[string]string
-	Name string
+	WorkID        uuid.UUID
+	PipelineID    uuid.UUID
+	VersionID     uuid.UUID
+	Storage       *dbconn.PGConnection
+	Entrypoint    string
+	NowOnPoint    string
+	VarStore      *store.VariableStore
+	Blocks        map[string]Runner
+	NextStep      string
+	Input         map[string]string
+	Output        map[string]string
+	Name          string
 	PipelineModel *entity.EriusScenario
 
 	Logger logger.Logger
 	FaaS   string
 }
 
-func(ep *ExecutablePipeline) Inputs() map[string]string {
+func (ep *ExecutablePipeline) Inputs() map[string]string {
 	return ep.Input
 }
 
-func (ep *ExecutablePipeline)  Outputs() map[string]string {
+func (ep *ExecutablePipeline) Outputs() map[string]string {
 	return ep.Output
 }
-func (ep *ExecutablePipeline)  IsScenario() bool {
+func (ep *ExecutablePipeline) IsScenario() bool {
 	return true
 }
 
@@ -192,7 +192,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.NextStep = block.Next
 			epi.Name = block.Title
 			epi.PipelineModel = p
-		 	err = epi.CreateWork(c, "Erius")
+			err = epi.CreateWork(c, "Erius")
 			if err != nil {
 				return err
 			}

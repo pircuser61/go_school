@@ -39,10 +39,8 @@ func (o OutputBlock) IsScenario() bool {
 	return false
 }
 
-
-
-func  (o OutputBlock) Inputs() map[string]string {
-	return  make(map[string]string)
+func (o OutputBlock) Inputs() map[string]string {
+	return make(map[string]string)
 }
 
 func (o OutputBlock) Outputs() map[string]string {

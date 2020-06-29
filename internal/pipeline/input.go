@@ -35,7 +35,6 @@ func (i InputBlock) IsScenario() bool {
 	return false
 }
 
-
 func (i InputBlock) Inputs() map[string]string {
 	return i.FunctionInput
 }

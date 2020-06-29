@@ -454,7 +454,6 @@ func (ae APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(c, w, req, p, false)
 }
 
-
 func (ae APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "run_pipeline")
 	defer s.End()
@@ -568,7 +567,6 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		}()
 
 		status := "runned"
-
 
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
 			Status: status})

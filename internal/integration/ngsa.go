@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
@@ -21,18 +20,18 @@ type NGSASend struct {
 }
 
 type NGSASendModel struct {
-	State string `json:"state,omitempty"`
-	AdditionalText string  `json:"additionalText,omitempty"`
-	PerceivedSevernity int  `json:"perceivedSeverity,omitempty"`
-	MOIdentifier string  `json:"moIdentifier,omitempty"`
-	NotificationIdentifier string  `json:"notificationIdentifier,omitempty"`
-	ManagedObjectInstance string  `json:"managedobjectinstance,omitempty"`
-	ManagedObjectClass string  `json:"managedobjectclass,omitempty"`
-	SpecificProblem string  `json:"specificProblem,omitempty"`
-	UserText string  `json:"userText,omitempty"`
-	ProbableCause string  `json:"probableCause,omitempty"`
-	AdditionalInformation string  `json:"additionInformation,omitempty"`
-	EventType string  `json:"eventType,omitempty"`
+	State                  string `json:"state,omitempty"`
+	AdditionalText         string `json:"additionalText,omitempty"`
+	PerceivedSevernity     int    `json:"perceivedSeverity,omitempty"`
+	MOIdentifier           string `json:"moIdentifier,omitempty"`
+	NotificationIdentifier string `json:"notificationIdentifier,omitempty"`
+	ManagedObjectInstance  string `json:"managedobjectinstance,omitempty"`
+	ManagedObjectClass     string `json:"managedobjectclass,omitempty"`
+	SpecificProblem        string `json:"specificProblem,omitempty"`
+	UserText               string `json:"userText,omitempty"`
+	ProbableCause          string `json:"probableCause,omitempty"`
+	AdditionalInformation  string `json:"additionInformation,omitempty"`
+	EventType              string `json:"eventType,omitempty"`
 }
 
 var (
@@ -45,12 +44,11 @@ var (
 
 func NewNGSASendIntegration(db *dbconn.PGConnection, ttl int, name string) NGSASend {
 	return NGSASend{
-		ttl: time.Duration(ttl) * time.Minute,
-		db:  db,
+		ttl:   time.Duration(ttl) * time.Minute,
+		db:    db,
 		Input: make(map[string]string),
 	}
 }
-
 
 func (ns NGSASend) Inputs() map[string]string {
 	return ns.Input
@@ -72,21 +70,11 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	inputs := ns.Model().Inputs
 	for _, input := range inputs {
 		fmt.Println(ns.Input[input.Name])
-		switch input.Type {
-		case script.TypeString:
-			val, _ := runCtx.GetString(ns.Input[input.Name])
-			vals[input.Name] = val
-		case script.TypeNumber:
-			v, ok := runCtx.GetValue(ns.Input[input.Name])
-			if !ok {
-				continue
-			}
-			val, ok := v.(int)
-			if !ok {
-				return errors.New("value is not int")
-			}
-			vals[input.Name] = val
+		v, ok := runCtx.GetValue(ns.Input[input.Name])
+		if !ok {
+			continue
 		}
+		vals[input.Name] = v
 	}
 	b, err := json.Marshal(vals)
 	if err != nil {
