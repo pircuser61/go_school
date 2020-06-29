@@ -173,6 +173,7 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 		r.Delete("/tags/{ID}", pipeliner.RemoveTag)
 
 		r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
+		r.Post("/run/version/{versionID}", pipeliner.RunVersion)
 	})
 
 	return mux

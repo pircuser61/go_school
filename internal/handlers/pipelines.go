@@ -454,6 +454,32 @@ func (ae APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(c, w, req, p, false)
 }
 
+
+func (ae APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
+	c, s := trace.StartSpan(context.Background(), "run_pipeline")
+	defer s.End()
+
+	idparam := chi.URLParam(req, "versionID")
+
+	id, err := uuid.Parse(idparam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	p, err := db.GetPipelineVersion(c, ae.DBConnection, id)
+	if err != nil {
+		e := GetPipelineError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	ae.execVersion(c, w, req, p, false)
+}
+
 func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http.Request,
 	p *entity.EriusScenario, withStop bool) {
 	c, s := trace.StartSpan(c, "exec_version")
