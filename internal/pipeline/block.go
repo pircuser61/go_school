@@ -56,6 +56,7 @@ func (fb *FunctionBlock) Run(ctx context.Context, runCtx *store.VariableStore) e
 	if err != nil {
 		return err
 	}
+	fmt.Println(string(b))
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
 	if err != nil {
