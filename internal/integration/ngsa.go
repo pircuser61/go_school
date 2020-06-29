@@ -71,12 +71,16 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	vals := make(map[string]interface{})
 	inputs := ns.Model().Inputs
 	for _, input := range inputs {
+		fmt.Println(ns.Input[input.Name])
 		switch input.Type {
 		case script.TypeString:
 			val, _ := runCtx.GetString(ns.Input[input.Name])
 			vals[input.Name] = val
 		case script.TypeNumber:
-			v, _ := runCtx.GetValue(ns.Input[input.Name])
+			v, ok := runCtx.GetValue(ns.Input[input.Name])
+			if !ok {
+				continue
+			}
 			val, ok := v.(int)
 			if !ok {
 				return errors.New("value is not int")
