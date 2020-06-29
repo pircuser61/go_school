@@ -56,8 +56,7 @@ func (c *VariableStore) GetArray(name string) ([]interface{}, bool) {
 		return nil, ok
 	}
 	v := reflect.ValueOf(val)
-	switch v.Kind() {
-	case reflect.Slice:
+	if v.Kind() == reflect.Slice {
 		return val.([]interface{}), ok
 	}
 	return nil, ok

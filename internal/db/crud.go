@@ -333,7 +333,6 @@ func DeleteVersion(c context.Context, pc *dbconn.PGConnection, versionID uuid.UU
 		return err
 	}
 	return DeletePipeline(c, pc, pid)
-
 }
 
 func DeletePipeline(c context.Context, pc *dbconn.PGConnection, id uuid.UUID) error {

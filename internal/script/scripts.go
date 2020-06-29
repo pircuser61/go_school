@@ -3,11 +3,12 @@ package script
 import (
 	"context"
 	"encoding/json"
-	"github.com/google/uuid"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
+
+	"github.com/google/uuid"
 
 	"go.opencensus.io/trace"
 )

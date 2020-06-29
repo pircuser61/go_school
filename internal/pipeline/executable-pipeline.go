@@ -67,7 +67,6 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 		ep.NowOnPoint = ep.Entrypoint
 	}
 	for ep.NowOnPoint != "" {
-
 		ep.Logger.Println("executing", ep.NowOnPoint)
 		if ep.Blocks[ep.NowOnPoint].IsScenario() {
 			input := ep.Blocks[ep.NowOnPoint].Inputs()
@@ -91,9 +90,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 				val, _ := nStore.GetValue(inner)
 				ep.VarStore.SetValue(outer, val)
 			}
-
 		} else {
-
 			err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
 			if err != nil {
 				errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
@@ -103,7 +100,6 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
-
 		}
 		storageData, err := json.Marshal(ep.VarStore)
 		if err != nil {

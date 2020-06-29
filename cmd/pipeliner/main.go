@@ -54,11 +54,6 @@ func main() {
 		log.WithError(err).Error("can't connect database")
 		return
 	}
-	//err = db.RenameFuncs(database)
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//os.Exit(0)
 	pipeliner := handlers.APIEnv{
 		DBConnection:  database,
 		Logger:        log,
