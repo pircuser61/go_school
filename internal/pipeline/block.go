@@ -8,6 +8,7 @@ import (
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"go.opencensus.io/trace"
 )
@@ -63,7 +64,9 @@ func (fb *FunctionBlock) Run(ctx context.Context, runCtx *store.VariableStore) e
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 15 * time.Minute,
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
