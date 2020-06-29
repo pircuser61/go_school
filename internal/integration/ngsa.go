@@ -43,10 +43,10 @@ const (
 	erius  = "Erius"
 )
 
-func NewNGSASendIntegration(db *dbconn.PGConnection, ttl int, name string) NGSASend {
+func NewNGSASendIntegration(database *dbconn.PGConnection, ttl int, name string) NGSASend {
 	return NGSASend{
 		ttl:   time.Duration(ttl) * time.Minute,
-		db:    db,
+		db:    database,
 		Input: make(map[string]string),
 	}
 }

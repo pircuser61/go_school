@@ -80,18 +80,19 @@ func (fb *FunctionBlock) Run(ctx context.Context, runCtx *store.VariableStore) e
 		return err
 	}
 	fmt.Println("response:", string(body))
-	result := make(map[string]interface{})
+	if len(body) != 0 {
+		result := make(map[string]interface{})
 
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return err
+		err = json.Unmarshal(body, &result)
+		if err != nil {
+			return err
+		}
+
+		for ikey, gkey := range fb.FunctionOutput {
+			val := result[ikey]
+			runCtx.SetValue(gkey, val)
+		}
 	}
-
-	for ikey, gkey := range fb.FunctionOutput {
-		val := result[ikey]
-		runCtx.SetValue(gkey, val)
-	}
-
 	return nil
 }
 
