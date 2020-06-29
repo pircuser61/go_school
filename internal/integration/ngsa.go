@@ -88,7 +88,13 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(b))
+	fmt.Println("input Data:", string(b))
+	m := NGSASendModel{}
+	err = json.Unmarshal(b, &m)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("after unmarshal: %+v\n", m)
 	return nil
 }
 
