@@ -2,7 +2,9 @@ package integration
 
 import (
 	"context"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
@@ -16,6 +18,21 @@ type NGSASend struct {
 	db        *dbconn.PGConnection
 	NextBlock string
 	Input     map[string]string
+}
+
+type NGSASendModel struct {
+	State string `json:"state,omitempty"`
+	AdditionalText string  `json:"additionalText,omitempty"`
+	PerceivedSevernity int  `json:"perceivedSeverity,omitempty"`
+	MOIdentifier string  `json:"moIdentifier,omitempty"`
+	NotificationIdentifier string  `json:"notificationIdentifier,omitempty"`
+	ManagedObjectInstance string  `json:"managedobjectinstance,omitempty"`
+	ManagedObjectClass string  `json:"managedobjectclass,omitempty"`
+	SpecificProblem string  `json:"specificProblem,omitempty"`
+	UserText string  `json:"userText,omitempty"`
+	ProbableCause string  `json:"probableCause,omitempty"`
+	AdditionalInformation string  `json:"additionInformation,omitempty"`
+	EventType string  `json:"eventType,omitempty"`
 }
 
 var (
@@ -51,74 +68,27 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
 	runCtx.AddStep(ns.Name)
-	notification, err := runCtx.GetString(ns.Input["notification"])
-	if err != nil {
-		return err
-	}
-	reason, err := runCtx.GetString(ns.Input["reason"])
-	if err != nil {
-		return err
-	}
-	action, err := runCtx.GetString(ns.Input["action"])
-	bts, err := runCtx.GetString(ns.Input["moIdentifier"])
-	if err != nil {
-		return err
-	}
-	severn := 4
-	sev, ok := runCtx.GetValue(ns.Input["perceivedSeverity"])
-	if ok {
-		severn, ok = sev.(int)
-		if !ok {
-			severn = 4
-		}
-	}
-	notID := notification + "__" + action
-	source := "Erius"
-	eventType, err := runCtx.GetString(ns.Input["eventType"])
-	if err != nil {
-		eventType = "Environmental alarm"
-	}
-	cause, _ := runCtx.GetString(ns.Input["probableCause"])
-	addInf, _ := runCtx.GetString(ns.Input["additionalInformation"])
-	addTxt, _ := runCtx.GetString(ns.Input["additionalText"])
-	specProb, _ := runCtx.GetString(ns.Input["specificProblem"])
-	usertext, _ := runCtx.GetString(ns.Input["userText"])
-	moInstance, _ := runCtx.GetString(ns.Input["managedobjectinstance"])
-	moClass, _ := runCtx.GetString(ns.Input["managedobjectclass"])
-	if action == actionLock {
-		err := db.ActiveAlertNGSA(ctx, ns.db, severn, source, eventType,
-			cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
-		if err != nil {
-			return err
-		}
-		if reason != LockSuccessful {
-			time.Sleep(3 * time.Minute)
-			err = db.ClearAlertNGSA(ctx, ns.db, notID)
-			if err != nil {
-				return err
+	vals := make(map[string]interface{})
+	inputs := ns.Model().Inputs
+	for _, input := range inputs {
+		switch input.Type {
+		case script.TypeString:
+			val, _ := runCtx.GetString(ns.Input[input.Name])
+			vals[input.Name] = val
+		case script.TypeNumber:
+			v, _ := runCtx.GetValue(ns.Input[input.Name])
+			val, ok := v.(int)
+			if !ok {
+				return errors.New("value is not int")
 			}
+			vals[input.Name] = val
 		}
-	} else {
-		err := db.ActiveAlertNGSA(ctx, ns.db, severn, source, eventType,
-			cause, addInf, addTxt, bts, specProb, notID, usertext, moInstance, moClass)
-		if err != nil {
-			return err
-		}
-		if reason == UnlockSuccessful {
-			name := notification + "__LOCK"
-			err = db.ClearAlertNGSA(ctx, ns.db, name)
-			if err != nil {
-				return err
-			}
-		}
-		time.Sleep(3 * time.Minute)
-		err = db.ClearAlertNGSA(ctx, ns.db, notification)
-		if err != nil {
-			return err
-		}
-
 	}
-
+	b, err := json.Marshal(vals)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(b))
 	return nil
 }
 
@@ -132,17 +102,12 @@ func (ns NGSASend) Model() script.FunctionModel {
 		Title:     "ngsa-send-alarm",
 		Inputs: []script.FunctionValueModel{
 			{
-				Name:    "notification",
+				Name:    "state",
 				Type:    script.TypeString,
 				Comment: "",
 			},
 			{
-				Name:    "reason",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "action",
+				Name:    "additionalText",
 				Type:    script.TypeString,
 				Comment: "",
 			},
@@ -152,17 +117,22 @@ func (ns NGSASend) Model() script.FunctionModel {
 				Comment: "",
 			},
 			{
-				Name:    "probableCause",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "additionalInformation",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
 				Name:    "moIdentifier",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "notificationIdentifier",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "managedobjectinstance",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "managedobjectclass",
 				Type:    script.TypeString,
 				Comment: "",
 			},
@@ -177,12 +147,17 @@ func (ns NGSASend) Model() script.FunctionModel {
 				Comment: "",
 			},
 			{
-				Name:    "managedobjectinstance",
+				Name:    "probableCause",
 				Type:    script.TypeString,
 				Comment: "",
 			},
 			{
-				Name:    "managedobjectclass",
+				Name:    "additionInformation",
+				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "eventType",
 				Type:    script.TypeString,
 				Comment: "",
 			},
