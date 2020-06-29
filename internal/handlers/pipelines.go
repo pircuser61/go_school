@@ -501,7 +501,7 @@ func (ae APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http
 		_ = e.sendError(w)
 		return
 	}
-
+	ae.Logger.Println("--- running pipeline:", p.Name)
 	err = ep.CreateWork(c, testUser)
 	if err != nil {
 		e := PipelineRunError
