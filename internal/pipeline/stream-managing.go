@@ -140,11 +140,13 @@ func (e ForState) IsScenario() bool {
 }
 
 func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
+	fmt.Println("ITERATIONZZZZ")
+	fmt.Println(*e)
 	_, s := trace.StartSpan(ctx, "run_cyclo_block")
 	defer s.End()
 	runCtx.AddStep(e.Name)
 	arr, ok := runCtx.GetArray(e.FunctionInput["iter"])
-
+	fmt.Println("arr", arr, "ok", ok)
 	index := 0
 	i, ok := runCtx.GetValue(e.FunctionOutput["index"])
 	if ok {
@@ -153,8 +155,11 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 			return errors.New("can't get index")
 		}
 	}
+	fmt.Println("index", index)
 	if index < len(arr) {
+		fmt.Println("index in arr")
 		val := fmt.Sprintf("%v", arr[index])
+		fmt.Println("val", val)
 		index++
 		runCtx.SetValue(e.FunctionOutput["index"], index)
 		runCtx.SetValue(e.FunctionOutput["now_on"], val)
