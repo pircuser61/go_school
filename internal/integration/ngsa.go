@@ -3,7 +3,9 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
@@ -32,14 +34,13 @@ type NGSASendModel struct {
 	ProbableCause          string `json:"probableCause,omitempty"`
 	AdditionalInformation  string `json:"additionInformation,omitempty"`
 	EventType              string `json:"eventType,omitempty"`
+	TimeOut                int    `json:"timeout,omitempty"`
 }
 
-var (
-	LockDenied       = "Автоматическая блокировка не требуется"
-	LockSuccessful   = "Блокировка Успешна"
-	UnlockSuccessful = "Разблокировка Успешна"
-
-	actionLock = "LOCK"
+const (
+	active = "ACTIVE"
+	clear  = "CLEAR"
+	erius  = "Erius"
 )
 
 func NewNGSASendIntegration(db *dbconn.PGConnection, ttl int, name string) NGSASend {
@@ -86,8 +87,22 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("after unmarshal: %+v\n", m)
-	return nil
+	if m.State != active && m.State != clear {
+		return errors.New("unknown status")
+	}
+	if m.NotificationIdentifier == "" {
+		return errors.New("notification id not found")
+	}
+	if m.TimeOut != 0 {
+		time.Sleep(time.Duration(m.TimeOut)*time.Minute)
+	}
+	if m.State == active {
+		return db.ActiveAlertNGSA(ctx, ns.db, m.PerceivedSevernity,
+			m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
+			m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance, m.ManagedObjectClass)
+	}
+
+	return db.ClearAlertNGSA(ctx, ns.db, m.NotificationIdentifier)
 }
 
 func (ns NGSASend) Next() string {
@@ -157,6 +172,11 @@ func (ns NGSASend) Model() script.FunctionModel {
 			{
 				Name:    "eventType",
 				Type:    script.TypeString,
+				Comment: "",
+			},
+			{
+				Name:    "timeout",
+				Type:    script.TypeNumber,
 				Comment: "",
 			},
 		},
