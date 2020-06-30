@@ -34,7 +34,7 @@ func ActiveAlertNGSA(c context.Context, pc *dbconn.PGConnection, sever int,
 func ClearAlertNGSA(c context.Context, pc *dbconn.PGConnection, name string) error {
 	t := time.Now()
 	q := `UPDATE pipeliner.alarm_for_ngsa SET
-	state = 'CLEAR' AND cleartime = $1
+	state = 'CLEAR', cleartime = $1
 	WHERE "notificationIdentifier" = $2
 `
 	_, err := pc.Pool.Exec(c, q, t, name)
