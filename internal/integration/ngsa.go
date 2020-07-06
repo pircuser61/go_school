@@ -63,6 +63,9 @@ func (ns NGSASend) IsScenario() bool {
 	return false
 }
 
+// spec_prob - lock_processing
+// additionalText - проверить
+// почему нет снятия?
 func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
@@ -94,12 +97,29 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		return errors.New("notification id not found")
 	}
 	if m.TimeOut != 0 {
-		time.Sleep(time.Duration(m.TimeOut) * time.Minute)
+		go func() {
+			time.Sleep(time.Duration(m.TimeOut) * time.Minute)
+			if m.State == active {
+				err = db.ActiveAlertNGSA(ctx, ns.db, m.PerceivedSevernity,
+					m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
+					m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
+					m.ManagedObjectClass)
+				if err != nil {
+					runCtx.AddError(err)
+				}
+			}
+			err = db.ClearAlertNGSA(ctx, ns.db, m.NotificationIdentifier)
+			if err != nil {
+				runCtx.AddError(err)
+			}
+		}()
+		return nil
 	}
 	if m.State == active {
 		return db.ActiveAlertNGSA(ctx, ns.db, m.PerceivedSevernity,
 			m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
-			m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance, m.ManagedObjectClass)
+			m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
+			m.ManagedObjectClass)
 	}
 
 	return db.ClearAlertNGSA(ctx, ns.db, m.NotificationIdentifier)
