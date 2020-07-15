@@ -58,6 +58,7 @@ func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) err
 	return nil
 }
 
+//nolint:gocyclo // big cyclo for strong man
 func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
@@ -284,7 +285,7 @@ func createForBlock(title, name, onTrue, onFalse string) *ForState {
 		FunctionOutput: make(map[string]string),
 	}
 }
-
+//nolint:gocyclo // big cyclo for strong man
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
 	switch ef.Title {
 	case "input":
