@@ -958,7 +958,8 @@ func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, fmt.Errorf("not found")
 }
 
-func (m *MockDB) ActiveAlertNGSA(c context.Context, sever int, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error {
+func (m *MockDB) ActiveAlertNGSA(c context.Context, sever int, state, source,
+	eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error {
 	panic("implement me")
 }
 

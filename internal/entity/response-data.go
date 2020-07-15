@@ -79,7 +79,6 @@ type UsageResponse struct {
 	Pipelines []UsedBy `json:"pipelines"`
 }
 
-
 type AllUsageResponse struct {
 	Functions map[string][]string `json:"pipelines"`
 }

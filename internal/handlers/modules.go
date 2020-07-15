@@ -89,6 +89,7 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+//nolint //i rly want copy and big loop for simple read
 func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "all_modules_usage")
 	defer s.End()
@@ -102,16 +103,16 @@ func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	}
 
 	moduleUsageMap := make(map[string]map[string]struct{})
-	for i, _ := range scenarios {
-		for j, _ := range scenarios[i].Pipeline.Blocks {
-			if scenarios[i].Pipeline.Blocks[j].BlockType != script.TypePython3 {
+	for _, scenario := range scenarios {
+		for _, block := range scenario.Pipeline.Blocks {
+			if block.BlockType != script.TypePython3 {
 				continue
 			}
-			name := scenarios[i].Pipeline.Blocks[j].Title
+			name := block.Title
 			if _, ok := moduleUsageMap[name]; !ok {
 				moduleUsageMap[name] = make(map[string]struct{})
 			}
-			moduleUsageMap[name][scenarios[i].Name] = struct{}{}
+			moduleUsageMap[name][scenario.Name] = struct{}{}
 		}
 	}
 	resp := make(map[string][]string)
