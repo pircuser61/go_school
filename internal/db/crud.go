@@ -6,18 +6,36 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/ctx"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"go.opencensus.io/trace"
 )
 
-type PgDatabase struct {
-	Conn *dbconn.PGConnection
+type PGConnection struct {
+	Pool *pgxpool.Pool
 }
+
+func ConnectPostgres(db *configs.Database) (PGConnection, error) {
+	maxConnections := strconv.Itoa(db.MaxConnections)
+	connString := "postgres://" + db.User + ":" + db.Pass + "@" + db.Host + ":" + db.Port + "/" + db.DBName +
+		"?sslmode=disable&pool_max_conns=" + maxConnections
+
+	conn, err := pgxpool.Connect(ctx.Context(db.Timeout), connString)
+	if err != nil {
+		return PGConnection{}, err
+	}
+	pgc := PGConnection{Pool: conn}
+	return pgc, nil
+}
+
 
 const (
 	StatusDraft     int = 1
@@ -61,14 +79,14 @@ func parseRowsVersionList(ctx context.Context, rows pgx.Rows) ([]entity.EriusSce
 	return versionInfoList, nil
 }
 
-func (db *PgDatabase) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_list_approved_versions")
 	defer span.End()
 
 	return db.GetVersionsByStatus(c, StatusApproved)
 }
 
-func (db *PgDatabase) GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error) {
+func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_versions_by_status")
 	defer span.End()
 
@@ -81,7 +99,7 @@ where
 and pp.deleted_at is NULL
 order by created_at `
 
-	rows, err := db.Conn.Pool.Query(c, q, status)
+	rows, err := db.Pool.Query(c, q, status)
 	if err != nil {
 		return nil, err
 	}
@@ -89,21 +107,21 @@ order by created_at `
 	return parseRowsVersionList(c, rows)
 }
 
-func (db *PgDatabase) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
+func (db *PGConnection) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_list_draft_versions")
 	defer span.End()
 
 	return db.GetVersionsByStatusAndAuthor(c, StatusDraft, author)
 }
 
-func (db *PgDatabase) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+func (db *PGConnection) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_list_on_approve_versions")
 	defer span.End()
 
 	return db.GetVersionsByStatus(c, StatusOnApprove)
 }
 
-func (db *PgDatabase) GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error) {
+func (db *PGConnection) GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_all_not_deleted_versions")
 	defer span.End()
 
@@ -116,7 +134,7 @@ where
 and pp.deleted_at is NULL
 order by pv.created_at `
 
-	rows, err := db.Conn.Pool.Query(c, q, StatusDeleted)
+	rows, err := db.Pool.Query(c, q, StatusDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +170,7 @@ order by pv.created_at `
 	return pipes, nil
 }
 
-func (db *PgDatabase) GetVersionsByStatusAndAuthor(c context.Context,
+func (db *PGConnection) GetVersionsByStatusAndAuthor(c context.Context,
 	status int, author string) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_version_by_status_and_author")
 	defer span.End()
@@ -167,7 +185,7 @@ and pv.author = $2
 and pp.deleted_at is NULL
 order by created_at `
 
-	rows, err := db.Conn.Pool.Query(c, q, status, author)
+	rows, err := db.Pool.Query(c, q, status, author)
 	if err != nil {
 		return nil, err
 	}
@@ -175,13 +193,13 @@ order by created_at `
 	return parseRowsVersionList(c, rows)
 }
 
-func (db *PgDatabase) SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error {
+func (db *PGConnection) SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error {
 	c, span := trace.StartSpan(c, "pg_switch_approved")
 	defer span.End()
 
 	date := time.Now()
 
-	conn, err := db.Conn.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return err
 	}
@@ -220,13 +238,13 @@ func (db *PgDatabase) SwitchApproved(c context.Context, pipelineID, versionID uu
 	return nil
 }
 
-func (db *PgDatabase) VersionEditable(c context.Context, versionID uuid.UUID) (bool, error) {
+func (db *PGConnection) VersionEditable(c context.Context, versionID uuid.UUID) (bool, error) {
 	c, span := trace.StartSpan(c, "pg_version_editable")
 	defer span.End()
 
 	q := `select count(id) from pipeliner.versions where id =$1 and status = $2 or status = $3`
 
-	rows, err := db.Conn.Pool.Query(c, q, versionID, StatusApproved, StatusRejected)
+	rows, err := db.Pool.Query(c, q, versionID, StatusApproved, StatusRejected)
 	if err != nil {
 		return false, err
 	}
@@ -249,12 +267,12 @@ func (db *PgDatabase) VersionEditable(c context.Context, versionID uuid.UUID) (b
 	return false, nil
 }
 
-func (db *PgDatabase) CreatePipeline(c context.Context,
+func (db *PGConnection) CreatePipeline(c context.Context,
 	p *entity.EriusScenario, author string, pipelineData []byte) error {
 	_, span := trace.StartSpan(c, "pg_create_pipeline")
 	defer span.End()
 
-	conn, err := db.Conn.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return err
 	}
@@ -290,7 +308,7 @@ func (db *PgDatabase) CreatePipeline(c context.Context,
 	return db.CreateVersion(c, p, author, pipelineData)
 }
 
-func (db *PgDatabase) CreateVersion(c context.Context,
+func (db *PGConnection) CreateVersion(c context.Context,
 	p *entity.EriusScenario, author string, pipelineData []byte) error {
 	_, span := trace.StartSpan(c, "pg_create_version")
 	defer span.End()
@@ -301,7 +319,7 @@ func (db *PgDatabase) CreateVersion(c context.Context,
 
 	createdAt := time.Now()
 
-	_, err := db.Conn.Pool.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author)
+	_, err := db.Pool.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author)
 	if err != nil {
 		return err
 	}
@@ -309,20 +327,20 @@ func (db *PgDatabase) CreateVersion(c context.Context,
 	return nil
 }
 
-func (db *PgDatabase) DeleteVersion(c context.Context, versionID uuid.UUID) error {
+func (db *PGConnection) DeleteVersion(c context.Context, versionID uuid.UUID) error {
 	_, span := trace.StartSpan(c, "pg_delete_version")
 	defer span.End()
 
 	q := `UPDATE pipeliner.versions SET deleted_at=$1, status=$2 WHERE id = $3`
 	t := time.Now()
 
-	_, err := db.Conn.Pool.Exec(c, q, t, StatusDeleted, versionID)
+	_, err := db.Pool.Exec(c, q, t, StatusDeleted, versionID)
 	if err != nil {
 		return err
 	}
 
 	qPid := `SELECT pipeline_id from pipeliner.versions  where id = $1`
-	row := db.Conn.Pool.QueryRow(c, qPid, versionID)
+	row := db.Pool.QueryRow(c, qPid, versionID)
 
 	var pid uuid.UUID
 
@@ -334,13 +352,13 @@ func (db *PgDatabase) DeleteVersion(c context.Context, versionID uuid.UUID) erro
 	return db.DeletePipeline(c, pid)
 }
 
-func (db *PgDatabase) DeletePipeline(c context.Context, id uuid.UUID) error {
+func (db *PGConnection) DeletePipeline(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_delete_pipeline")
 	defer span.End()
 
 	t := time.Now()
 	qName := `SELECT name from pipeliner.pipelines WHERE id = $1`
-	row := db.Conn.Pool.QueryRow(c, qName, id)
+	row := db.Pool.QueryRow(c, qName, id)
 
 	var n string
 
@@ -352,7 +370,7 @@ func (db *PgDatabase) DeletePipeline(c context.Context, id uuid.UUID) error {
 	n = n + "_deleted_at_" + t.String()
 	q := `UPDATE pipeliner.pipelines SET deleted_at=$1, name=$2  WHERE id = $3`
 
-	_, err = db.Conn.Pool.Exec(c, q, t, n, id)
+	_, err = db.Pool.Exec(c, q, t, n, id)
 	if err != nil {
 		return err
 	}
@@ -360,11 +378,11 @@ func (db *PgDatabase) DeletePipeline(c context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (db *PgDatabase) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
+func (db *PGConnection) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline")
 	defer span.End()
-
-	conn, err := db.Conn.Pool.Acquire(c)
+	pool := db.Pool
+	conn, err := pool.Acquire(c)
 	if err != nil {
 		return nil, err
 	}
@@ -378,6 +396,7 @@ SELECT pv.id, pv.status, pv.pipeline_id, pv.content
 JOIN pipeliner.pipeline_history pph on pph.version_id = pv.id
 	WHERE pv.pipeline_id = $1 order by pph.date desc LIMIT 1
 `
+	fmt.Printf(strings.ReplaceAll(q, "$1", "'"+id.String()+"'"))
 
 	rows, err := conn.Query(c, q, id)
 	if err != nil {
@@ -409,14 +428,14 @@ JOIN pipeliner.pipeline_history pph on pph.version_id = pv.id
 		return &p, nil
 	}
 
-	return nil, nil
+	return nil, errCantFindPipelineVersion
 }
 
-func (db *PgDatabase) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
+func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline_version")
 	defer span.End()
 
-	conn, err := db.Conn.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +482,7 @@ func (db *PgDatabase) GetPipelineVersion(c context.Context, id uuid.UUID) (*enti
 	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
 }
 
-func (db *PgDatabase) UpdateDraft(c context.Context,
+func (db *PGConnection) UpdateDraft(c context.Context,
 	p *entity.EriusScenario, pipelineData []byte) error {
 	c, span := trace.StartSpan(c, "pg_update_draft")
 	defer span.End()
@@ -471,7 +490,7 @@ func (db *PgDatabase) UpdateDraft(c context.Context,
 	q := `UPDATE pipeliner.versions SET
 	 status = $1, content =$2 WHERE id = $3;`
 
-	_, err := db.Conn.Pool.Exec(c, q, p.Status, pipelineData, p.VersionID)
+	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.VersionID)
 	if err != nil {
 		return err
 	}
@@ -479,11 +498,11 @@ func (db *PgDatabase) UpdateDraft(c context.Context,
 	return nil
 }
 
-func (db *PgDatabase) WriteContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
+func (db *PGConnection) WriteContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
 
-	conn, err := db.Conn.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return err
 	}
@@ -505,12 +524,12 @@ func (db *PgDatabase) WriteContext(c context.Context, workID uuid.UUID, stage st
 	return nil
 }
 
-func (db *PgDatabase) WriteTask(c context.Context,
+func (db *PGConnection) WriteTask(c context.Context,
 	workID, versionID uuid.UUID, author string) error {
 	c, span := trace.StartSpan(c, "pg_write_task")
 	defer span.End()
 
-	conn, err := db.Conn.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return err
 	}
@@ -532,12 +551,12 @@ INSERT INTO pipeliner.works(
 	return nil
 }
 
-func (db *PgDatabase) ChangeWorkStatus(c context.Context,
+func (db *PGConnection) ChangeWorkStatus(c context.Context,
 	workID uuid.UUID, status int) error {
 	c, span := trace.StartSpan(c, "pg_change_work_status")
 	defer span.End()
 
-	conn, err := db.Conn.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return err
 	}
@@ -556,7 +575,7 @@ UPDATE pipeliner.works SET status = $1 WHERE id = $2
 	return nil
 }
 
-func (db *PgDatabase) GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error) {
+func (db *PGConnection) GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_all_not_deleted_versions")
 	defer span.End()
 
@@ -569,7 +588,7 @@ where
 and pp.deleted_at is NULL
 order by pv.created_at `
 
-	rows, err := db.Conn.Pool.Query(c, q, StatusApproved)
+	rows, err := db.Pool.Query(c, q, StatusApproved)
 	if err != nil {
 		return nil, err
 	}
@@ -605,11 +624,11 @@ order by pv.created_at `
 	return pipes, nil
 }
 
-func (db *PgDatabase) GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error) {
+func (db *PGConnection) GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline")
 	defer span.End()
 
-	conn, err := db.Conn.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return nil, err
 	}

@@ -11,7 +11,6 @@ import (
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 
-	db2 "gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
 
 	"go.opencensus.io/plugin/ochttp"
@@ -51,18 +50,14 @@ func main() {
 
 	log = logger.CreateLogger(cfg.Log)
 
-	dbConn, err := db2.DBConnect(&cfg.DB)
+	dbConn, err := db.ConnectPostgres(&cfg.DB)
 	if err != nil {
 		log.WithError(err).Error("can't connect database")
 		return
 	}
 
-	database := &db.PgDatabase{
-		Conn: dbConn,
-	}
-
 	pipeliner := handlers.APIEnv{
-		DB:            database,
+		DB:            &dbConn,
 		Logger:        log,
 		ScriptManager: cfg.ScriptManager,
 		FaaS:          cfg.FaaS,

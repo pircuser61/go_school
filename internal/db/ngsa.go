@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func (db *PgDatabase) ActiveAlertNGSA(c context.Context, sever int,
+func (db *PGConnection) ActiveAlertNGSA(c context.Context, sever int,
 	state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error {
 	t := time.Now()
 	q := `INSERT INTO pipeliner.alarm_for_ngsa(
@@ -24,19 +24,19 @@ func (db *PgDatabase) ActiveAlertNGSA(c context.Context, sever int,
 		managedobjectinstance, 
 		managedobjectclass)
 	VALUES ($1, $2, $3, $4, $5, $6, $7,$8, $9, $10, $11, $12, $13, $14);`
-	_, err := db.Conn.Pool.Exec(c, q, state, sever, source, t, eventType, cause,
+	_, err := db.Pool.Exec(c, q, state, sever, source, t, eventType, cause,
 		addInf, addTxt, moID, specProb, notID, usertext, moi, moc)
 
 	return err
 }
 
-func (db *PgDatabase) ClearAlertNGSA(c context.Context, name string) error {
+func (db *PGConnection) ClearAlertNGSA(c context.Context, name string) error {
 	t := time.Now()
 	q := `UPDATE pipeliner.alarm_for_ngsa SET
 	state = 'CLEAR', cleartime = $1
 	WHERE "notificationIdentifier" = $2
 `
-	_, err := db.Conn.Pool.Exec(c, q, t, name)
+	_, err := db.Pool.Exec(c, q, t, name)
 
 	return err
 }
