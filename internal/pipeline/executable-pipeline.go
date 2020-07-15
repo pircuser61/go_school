@@ -162,7 +162,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 		switch block.BlockType {
 		case script.TypeInternal, "term":
 			ep.Blocks[bn] = ep.CreateInternal(&block, bn)
-		case "python3":
+		case script.TypePython3:
 			fb := FunctionBlock{
 				Name:           bn,
 				FunctionName:   block.Title,

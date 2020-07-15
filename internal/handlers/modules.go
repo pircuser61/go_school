@@ -104,7 +104,7 @@ func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	moduleUsageMap := make(map[string]map[string]struct{})
 	for i, _ := range scenarios {
 		for j, _ := range scenarios[i].Pipeline.Blocks {
-			if scenarios[i].Pipeline.Blocks[j].BlockType != "python3"  {
+			if scenarios[i].Pipeline.Blocks[j].BlockType != script.TypePython3 {
 				continue
 			}
 			name := scenarios[i].Pipeline.Blocks[j].Title

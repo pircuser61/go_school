@@ -40,6 +40,7 @@ const (
 	TypeIF       = "term"
 	TypeInternal = "internal"
 	TypeScenario = "scenario"
+	TypePython3 = "python3"
 )
 
 type FunctionModels []FunctionModel
