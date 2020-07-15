@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"fmt"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"

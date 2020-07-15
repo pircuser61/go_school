@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
 

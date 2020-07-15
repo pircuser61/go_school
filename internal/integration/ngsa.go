@@ -5,18 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"go.opencensus.io/trace"
-	"time"
 )
 
 type NGSASend struct {
 	Name      string
 	ttl       time.Duration
-	db        *dbconn.PGConnection
+	db        db.Database
 	NextBlock string
 	Input     map[string]string
 }
@@ -43,7 +43,7 @@ const (
 	erius  = "Erius"
 )
 
-func NewNGSASendIntegration(database *dbconn.PGConnection, ttl int, name string) NGSASend {
+func NewNGSASendIntegration(database db.Database, ttl int, name string) NGSASend {
 	return NGSASend{
 		ttl:   time.Duration(ttl) * time.Minute,
 		db:    database,
@@ -69,38 +69,51 @@ func (ns NGSASend) IsScenario() bool {
 func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
+
 	runCtx.AddStep(ns.Name)
+
 	vals := make(map[string]interface{})
+
 	inputs := ns.Model().Inputs
 	for _, input := range inputs {
 		fmt.Println(ns.Input[input.Name])
+
 		v, ok := runCtx.GetValue(ns.Input[input.Name])
 		if !ok {
 			continue
 		}
+
 		vals[input.Name] = v
 	}
+
 	b, err := json.Marshal(vals)
 	if err != nil {
 		return err
 	}
+
 	fmt.Println("input Data:", string(b))
+
 	m := NGSASendModel{}
+
 	err = json.Unmarshal(b, &m)
 	if err != nil {
 		return err
 	}
+
 	if m.State != active && m.State != clear {
 		return errors.New("unknown status")
 	}
+
 	if m.NotificationIdentifier == "" {
 		return errors.New("notification id not found")
 	}
+
 	if m.TimeOut != 0 {
 		go func() {
 			time.Sleep(time.Duration(m.TimeOut) * time.Minute)
+
 			if m.State == active {
-				err = db.ActiveAlertNGSA(ctx, ns.db, m.PerceivedSevernity,
+				err = ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
 					m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
 					m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
 					m.ManagedObjectClass)
@@ -108,21 +121,24 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 					runCtx.AddError(err)
 				}
 			}
-			err = db.ClearAlertNGSA(ctx, ns.db, m.NotificationIdentifier)
+
+			err = ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
 			if err != nil {
 				runCtx.AddError(err)
 			}
 		}()
+
 		return nil
 	}
+
 	if m.State == active {
-		return db.ActiveAlertNGSA(ctx, ns.db, m.PerceivedSevernity,
+		return ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
 			m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
 			m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
 			m.ManagedObjectClass)
 	}
 
-	return db.ClearAlertNGSA(ctx, ns.db, m.NotificationIdentifier)
+	return ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
 }
 
 func (ns NGSASend) Next() string {
