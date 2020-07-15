@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
@@ -10,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/dbconn"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/libs/logger"
 	"go.opencensus.io/trace"
@@ -20,7 +20,7 @@ type ExecutablePipeline struct {
 	WorkID        uuid.UUID
 	PipelineID    uuid.UUID
 	VersionID     uuid.UUID
-	Storage       *dbconn.PGConnection
+	Storage       db.Database
 	Entrypoint    string
 	NowOnPoint    string
 	VarStore      *store.VariableStore
@@ -42,6 +42,7 @@ func (ep *ExecutablePipeline) Inputs() map[string]string {
 func (ep *ExecutablePipeline) Outputs() map[string]string {
 	return ep.Output
 }
+
 func (ep *ExecutablePipeline) IsScenario() bool {
 	return true
 }
@@ -49,7 +50,7 @@ func (ep *ExecutablePipeline) IsScenario() bool {
 func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) error {
 	ep.WorkID = uuid.New()
 
-	err := db.WriteTask(ctx, ep.Storage, ep.WorkID, ep.VersionID, author)
+	err := ep.Storage.WriteTask(ctx, ep.WorkID, ep.VersionID, author)
 	if err != nil {
 		return err
 	}
@@ -66,25 +67,31 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	if ep.NowOnPoint == "" {
 		ep.NowOnPoint = ep.Entrypoint
 	}
+
 	for ep.NowOnPoint != "" {
 		ep.Logger.Println("executing", ep.NowOnPoint)
+
 		if ep.Blocks[ep.NowOnPoint].IsScenario() {
-			input := ep.Blocks[ep.NowOnPoint].Inputs()
 			ep.VarStore.AddStep(ep.NowOnPoint)
+
 			nStore := store.NewStore()
+
+			input := ep.Blocks[ep.NowOnPoint].Inputs()
 			for local, global := range input {
 				val, _ := runCtx.GetValue(global)
 				nStore.SetValue(local, val)
 			}
+
 			err := ep.Blocks[ep.NowOnPoint].Run(ctx, nStore)
 			if err != nil {
-				errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
+				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
 					return errChange
 				}
 
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
+
 			out := ep.Blocks[ep.NowOnPoint].Outputs()
 			for inner, outer := range out {
 				val, _ := nStore.GetValue(inner)
@@ -93,7 +100,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 		} else {
 			err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
 			if err != nil {
-				errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
+				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
 					return errChange
 				}
@@ -101,9 +108,10 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 		}
+
 		storageData, err := json.Marshal(ep.VarStore)
 		if err != nil {
-			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
+			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 			if errChange != nil {
 				return errChange
 			}
@@ -111,11 +119,11 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 			return err
 		}
 
-		err = db.WriteContext(ctx, ep.Storage, ep.WorkID, string(ep.NowOnPoint), storageData)
+		err = ep.Storage.WriteContext(ctx, ep.WorkID, ep.NowOnPoint, storageData)
 		ep.NowOnPoint = ep.Blocks[ep.NowOnPoint].Next()
 
 		if err != nil {
-			errChange := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusError)
+			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 			if errChange != nil {
 				return errChange
 			}
@@ -124,14 +132,16 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 		}
 	}
 
-	err := db.ChangeWorkStatus(ctx, ep.Storage, ep.WorkID, db.RunStatusFinished)
+	err := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusFinished)
 	if err != nil {
 		return err
 	}
+
 	for _, glob := range ep.PipelineModel.Output {
 		val, _ := runCtx.GetValue(glob.Global)
 		runCtx.SetValue(glob.Name, val)
 	}
+
 	return nil
 }
 
@@ -141,8 +151,10 @@ func (ep *ExecutablePipeline) Next() string {
 
 func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]entity.EriusFunc) error {
 	ep.Blocks = make(map[string]Runner)
+
 	c, s := trace.StartSpan(c, "create_blocks")
 	defer s.End()
+
 	for k := range source {
 		bn := k
 
@@ -171,7 +183,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 
 			ep.Blocks[bn] = &fb
 		case script.TypeScenario:
-			p, err := db.GetExecutableByName(c, ep.Storage, block.Title)
+			p, err := ep.Storage.GetExecutableByName(c, block.Title)
 			if err != nil {
 				return err
 			}
@@ -188,10 +200,12 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.NextStep = block.Next
 			epi.Name = block.Title
 			epi.PipelineModel = p
+
 			err = epi.CreateWork(c, "Erius")
 			if err != nil {
 				return err
 			}
+
 			err = epi.CreateBlocks(c, p.Pipeline.Blocks)
 			if err != nil {
 				return err
@@ -204,15 +218,15 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			for _, v := range block.Output {
 				epi.Output[v.Name] = v.Global
 			}
+
 			ep.Blocks[bn] = &epi
 		}
-
 	}
 
 	return nil
 }
 
-func createInputBlock(title string, name, next string) *InputBlock {
+func createInputBlock(title, name, next string) *InputBlock {
 	return &InputBlock{
 		BlockName:     name,
 		FunctionName:  title,
@@ -221,7 +235,7 @@ func createInputBlock(title string, name, next string) *InputBlock {
 	}
 }
 
-func createOutputBlock(title string, name, next string) *OutputBlock {
+func createOutputBlock(title, name, next string) *OutputBlock {
 	return &OutputBlock{
 		BlockName:      name,
 		FunctionName:   title,
@@ -230,7 +244,7 @@ func createOutputBlock(title string, name, next string) *OutputBlock {
 	}
 }
 
-func createIF(title string, name, onTrue, onFalse string) *IF {
+func createIF(title, name, onTrue, onFalse string) *IF {
 	return &IF{
 		Name:          name,
 		FunctionName:  title,
@@ -240,7 +254,7 @@ func createIF(title string, name, onTrue, onFalse string) *IF {
 	}
 }
 
-func createStringsEqual(title string, name, onTrue, onFalse string) *StringsEqual {
+func createStringsEqual(title, name, onTrue, onFalse string) *StringsEqual {
 	return &StringsEqual{
 		Name:          name,
 		FunctionName:  title,
@@ -250,7 +264,7 @@ func createStringsEqual(title string, name, onTrue, onFalse string) *StringsEqua
 	}
 }
 
-func createConnectorBlock(title string, name, next string) *ConnectorBlock {
+func createConnectorBlock(title, name, next string) *ConnectorBlock {
 	return &ConnectorBlock{
 		Name:           name,
 		FunctionName:   title,
@@ -260,7 +274,7 @@ func createConnectorBlock(title string, name, next string) *ConnectorBlock {
 	}
 }
 
-func createForBlock(title string, name, onTrue, onFalse string) *ForState {
+func createForBlock(title, name, onTrue, onFalse string) *ForState {
 	return &ForState{
 		Name:           name,
 		FunctionName:   title,
@@ -314,23 +328,29 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 		for _, v := range ef.Output {
 			con.FunctionOutput[v.Name] = v.Global
 		}
+
 		return con
 	case "ngsa-send-alarm":
 		ngsa := integration.NewNGSASendIntegration(ep.Storage, 3, name)
 		for _, v := range ef.Input {
 			ngsa.Input[v.Name] = v.Global
 		}
+
 		ngsa.Name = ef.Title
 		ngsa.NextBlock = ef.Next
+
 		return ngsa
 	case "for":
 		f := createForBlock(ef.Title, name, ef.OnTrue, ef.OnFalse)
+
 		for _, v := range ef.Input {
 			f.FunctionInput[v.Name] = v.Global
 		}
+
 		for _, v := range ef.Output {
 			f.FunctionOutput[v.Name] = v.Global
 		}
+
 		return f
 	}
 

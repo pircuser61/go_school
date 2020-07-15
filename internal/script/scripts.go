@@ -13,8 +13,6 @@ import (
 	"go.opencensus.io/trace"
 )
 
-const ()
-
 type ShapeEntity struct {
 	ID    int    `json:"id"`
 	Title string `json:"title"`

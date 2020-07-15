@@ -4,9 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
+)
+
+var (
+	errCantGetIndex = errors.New("can't get index")
 )
 
 type IF struct {
@@ -18,15 +23,15 @@ type IF struct {
 	OnFalse       string
 }
 
-func (e IF) Inputs() map[string]string {
+func (e *IF) Inputs() map[string]string {
 	return e.FunctionInput
 }
 
-func (e IF) Outputs() map[string]string {
+func (e *IF) Outputs() map[string]string {
 	return make(map[string]string)
 }
 
-func (e IF) IsScenario() bool {
+func (e *IF) IsScenario() bool {
 	return false
 }
 
@@ -63,28 +68,28 @@ type StringsEqual struct {
 	OnFalse       string
 }
 
-func (fb StringsEqual) IsScenario() bool {
+func (fb *StringsEqual) IsScenario() bool {
 	return false
 }
 
-func (fb StringsEqual) Inputs() map[string]string {
+func (fb *StringsEqual) Inputs() map[string]string {
 	return fb.FunctionInput
 }
 
-func (fb StringsEqual) Outputs() map[string]string {
+func (fb *StringsEqual) Outputs() map[string]string {
 	return make(map[string]string)
 }
 
-func (e *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) error {
+func (fb *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_strings_equal_block")
 	defer s.End()
 
-	runCtx.AddStep(e.Name)
+	runCtx.AddStep(fb.Name)
 
-	allparams := make([]string, 0, len(e.FunctionInput))
+	allparams := make([]string, 0, len(fb.FunctionInput))
 
-	for k := range e.FunctionInput {
-		r, err := runCtx.GetStringWithInput(e.FunctionInput, k)
+	for k := range fb.FunctionInput {
+		r, err := runCtx.GetStringWithInput(fb.FunctionInput, k)
 		if err != nil {
 			return err
 		}
@@ -95,8 +100,8 @@ func (e *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) err
 	const minVariablesCnt = 2
 	if len(allparams) >= minVariablesCnt {
 		for _, v := range allparams {
-			e.Result = allparams[0] == v
-			if !e.Result {
+			fb.Result = allparams[0] == v
+			if !fb.Result {
 				return nil
 			}
 		}
@@ -105,12 +110,12 @@ func (e *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) err
 	return nil
 }
 
-func (e *StringsEqual) Next() string {
-	if e.Result {
-		return e.OnTrue
+func (fb *StringsEqual) Next() string {
+	if fb.Result {
+		return fb.OnTrue
 	}
 
-	return e.OnFalse
+	return fb.OnFalse
 }
 
 type ForState struct {
@@ -123,35 +128,48 @@ type ForState struct {
 	OnFalse        string
 }
 
-func (e ForState) Inputs() map[string]string {
+func (e *ForState) Inputs() map[string]string {
 	return e.FunctionInput
 }
 
-func (e ForState) Outputs() map[string]string {
+func (e *ForState) Outputs() map[string]string {
 	return e.FunctionOutput
 }
 
-func (e ForState) IsScenario() bool {
+func (e *ForState) IsScenario() bool {
 	return false
 }
 
 func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	fmt.Println("ITERATIONZZZZ")
 	fmt.Println(*e)
+
 	_, s := trace.StartSpan(ctx, "run_cyclo_block")
 	defer s.End()
+
 	runCtx.AddStep(e.Name)
+
 	arr, ok := runCtx.GetArray(e.FunctionInput["iter"])
+
 	fmt.Println("arr", arr, "ok", ok)
+
 	index := 0
+
 	i, ok := runCtx.GetValue(e.FunctionOutput["index"])
 	if ok {
 		index, ok = i.(int)
 		if !ok {
-			return errors.New("can't get index")
+			return errCantGetIndex
 		}
 	}
+
 	fmt.Println("index", index)
+
+	if e.LastElem {
+		index = 0
+		e.LastElem = false
+	}
+
 	if index < len(arr) {
 		fmt.Println("index in arr")
 		val := fmt.Sprintf("%v", arr[index])
@@ -162,6 +180,7 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	} else {
 		e.LastElem = true
 	}
+
 	return nil
 }
 
@@ -169,5 +188,6 @@ func (e *ForState) Next() string {
 	if e.LastElem {
 		return e.OnTrue
 	}
+
 	return e.OnFalse
 }

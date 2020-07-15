@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
 )
@@ -22,15 +23,15 @@ type FunctionBlock struct {
 	runURL         string
 }
 
-func (fb FunctionBlock) Inputs() map[string]string {
+func (fb *FunctionBlock) Inputs() map[string]string {
 	return fb.FunctionInput
 }
 
-func (fb FunctionBlock) Outputs() map[string]string {
+func (fb *FunctionBlock) Outputs() map[string]string {
 	return fb.FunctionOutput
 }
 
-func (fb FunctionBlock) IsScenario() bool {
+func (fb *FunctionBlock) IsScenario() bool {
 	return false
 }
 
@@ -56,6 +57,7 @@ func (fb *FunctionBlock) Run(ctx context.Context, runCtx *store.VariableStore) e
 	if err != nil {
 		return err
 	}
+
 	fmt.Println(string(b))
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
@@ -65,8 +67,10 @@ func (fb *FunctionBlock) Run(ctx context.Context, runCtx *store.VariableStore) e
 
 	req.Header.Set("Content-Type", "application/json")
 
+	const timeoutMinutes = 15
+
 	client := &http.Client{
-		Timeout: 15 * time.Minute,
+		Timeout: timeoutMinutes * time.Minute,
 	}
 
 	resp, err := client.Do(req)
@@ -80,7 +84,9 @@ func (fb *FunctionBlock) Run(ctx context.Context, runCtx *store.VariableStore) e
 	if err != nil {
 		return err
 	}
+
 	fmt.Println("response:", string(body))
+
 	if len(body) != 0 {
 		result := make(map[string]interface{})
 
@@ -94,6 +100,7 @@ func (fb *FunctionBlock) Run(ctx context.Context, runCtx *store.VariableStore) e
 			runCtx.SetValue(gkey, val)
 		}
 	}
+
 	return nil
 }
 

@@ -31,12 +31,14 @@ func NewStore() *VariableStore {
 func (c *VariableStore) AddStep(name string) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
+
 	c.Steps = append(c.Steps, name)
 }
 
 func (c *VariableStore) AddError(name error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
+
 	c.Errors = append(c.Errors, name.Error())
 }
 
@@ -51,14 +53,17 @@ func (c *VariableStore) GetValue(name string) (interface{}, bool) {
 func (c *VariableStore) GetArray(name string) ([]interface{}, bool) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
+
 	val, ok := c.Values[name]
 	if !ok {
 		return nil, ok
 	}
+
 	v := reflect.ValueOf(val)
 	if v.Kind() == reflect.Slice {
 		return val.([]interface{}), ok
 	}
+
 	return nil, ok
 }
 

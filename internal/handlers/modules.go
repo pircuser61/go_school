@@ -3,12 +3,11 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"go.opencensus.io/trace"
 )
@@ -33,9 +32,9 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.Vars.Model(),
 		script.Connector.Model(),
 		script.ForState.Model(),
-		integration.NewNGSASendIntegration(ae.DBConnection, 3, "").Model())
+		integration.NewNGSASendIntegration(ae.DB, 3, "").Model())
 
-	scenarios, err := db.GetExecutableScenarios(ctx, ae.DBConnection)
+	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
@@ -43,7 +42,9 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-	for _, scenario := range scenarios {
+
+	for i := range scenarios {
+		scenario := &scenarios[i]
 		b := script.FunctionModel{
 			BlockType: script.TypeScenario,
 			Title:     scenario.Name,
@@ -52,18 +53,21 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			ShapeType: script.ShapeScenario,
 			NextFuncs: []string{script.Next},
 		}
+
 		for _, v := range scenario.Input {
 			b.Inputs = append(b.Inputs, script.FunctionValueModel{
 				Name: v.Name,
 				Type: v.Type,
 			})
 		}
+
 		for _, v := range scenario.Output {
 			b.Outputs = append(b.Outputs, script.FunctionValueModel{
 				Name: v.Name,
 				Type: v.Type,
 			})
 		}
+
 		eriusFunctions = append(eriusFunctions, b)
 	}
 
@@ -99,7 +103,7 @@ func (ae APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 
 	name := chi.URLParam(req, "moduleName")
 
-	allWorked, err := db.GetWorkedVersions(c, ae.DBConnection)
+	allWorked, err := ae.DB.GetWorkedVersions(c)
 	if err != nil {
 		e := ModuleUsageError
 		ae.Logger.Error(e.errorMessage(err))
