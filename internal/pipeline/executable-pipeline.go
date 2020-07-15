@@ -285,6 +285,7 @@ func createForBlock(title, name, onTrue, onFalse string) *ForState {
 		FunctionOutput: make(map[string]string),
 	}
 }
+
 //nolint:gocyclo // big cyclo for strong man
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
 	switch ef.Title {
