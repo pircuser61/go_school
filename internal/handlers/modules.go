@@ -102,17 +102,16 @@ func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	}
 
 	moduleUsageMap := make(map[string]map[string]struct{})
-	for _, pipeStruct := range scenarios {
-		pipe := &pipeStruct
-		for _, block := range pipe.Pipeline.Blocks {
-			if block.BlockType != "python3"  {
+	for i, _ := range scenarios {
+		for j, _ := range scenarios[i].Pipeline.Blocks {
+			if scenarios[i].Pipeline.Blocks[j].BlockType != "python3"  {
 				continue
 			}
-			name := block.Title
+			name := scenarios[i].Pipeline.Blocks[j].Title
 			if _, ok := moduleUsageMap[name]; !ok {
 				moduleUsageMap[name] = make(map[string]struct{})
 			}
-			moduleUsageMap[name][pipe.Name] = struct{}{}
+			moduleUsageMap[name][scenarios[i].Name] = struct{}{}
 		}
 	}
 	resp := make(map[string][]string)
