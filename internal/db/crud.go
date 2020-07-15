@@ -29,7 +29,6 @@ const (
 	RunStatusRunned   int = 1
 	RunStatusFinished int = 2
 	RunStatusError    int = 3
-
 )
 
 var (

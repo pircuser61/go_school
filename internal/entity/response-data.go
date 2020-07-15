@@ -79,6 +79,10 @@ type UsageResponse struct {
 	Pipelines []UsedBy `json:"pipelines"`
 }
 
+type AllUsageResponse struct {
+	Functions map[string][]string `json:"pipelines"`
+}
+
 type UsedBy struct {
 	Name string    `json:"name"`
 	ID   uuid.UUID `json:"id"`

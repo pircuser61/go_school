@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -90,11 +89,48 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+//nolint //i rly want copy and big loop for simple read
 func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "all_modules_usage")
 	defer s.End()
 
-	fmt.Println(c)
+	scenarios, err := ae.DB.GetWorkedVersions(c)
+	if err != nil {
+		e := ModuleUsageError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	moduleUsageMap := make(map[string]map[string]struct{})
+	for _, scenario := range scenarios {
+		for _, block := range scenario.Pipeline.Blocks {
+			if block.BlockType != script.TypePython3 {
+				continue
+			}
+			name := block.Title
+			if _, ok := moduleUsageMap[name]; !ok {
+				moduleUsageMap[name] = make(map[string]struct{})
+			}
+			moduleUsageMap[name][scenario.Name] = struct{}{}
+		}
+	}
+	resp := make(map[string][]string)
+	for module, pipes := range moduleUsageMap {
+		p := make([]string, 0, len(pipes))
+		for n := range pipes {
+			p = append(p, n)
+		}
+		resp[module] = p
+	}
+	err = sendResponse(w, http.StatusOK, entity.AllUsageResponse{Functions: resp})
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }
 
 func (ae APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {

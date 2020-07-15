@@ -109,7 +109,7 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	}
 
 	if m.TimeOut != 0 {
-		go func()  {
+		go func() {
 			time.Sleep(time.Duration(m.TimeOut) * time.Minute)
 
 			if m.State == active {
