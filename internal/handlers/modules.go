@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
 	"net/http"
 
@@ -83,6 +84,13 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+}
+
+func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
+	c, s := trace.StartSpan(context.Background(), "all_modules_usage")
+	defer s.End()
+
+	fmt.Println(c)
 }
 
 func (ae APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {

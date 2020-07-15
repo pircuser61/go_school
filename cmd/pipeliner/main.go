@@ -160,6 +160,7 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 		r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
 
 		r.Get("/modules/", pipeliner.GetModules)
+		r.Get("/modules/usage", pipeliner.AllModulesUsage)
 		r.Get("/modules/{moduleName}/usage", pipeliner.ModuleUsage)
 
 		r.Get("/tags/", pipeliner.GetTags)

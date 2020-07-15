@@ -97,7 +97,7 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		return errors.New("notification id not found")
 	}
 	if m.TimeOut != 0 {
-		go func() {
+		go func()  {
 			time.Sleep(time.Duration(m.TimeOut) * time.Minute)
 			if m.State == active {
 				err = db.ActiveAlertNGSA(ctx, ns.db, m.PerceivedSevernity,
