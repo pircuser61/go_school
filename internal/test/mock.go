@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"time"
 
+	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
+
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 )
 
 func OnlyReturnBlockGenerator(ret map[string]interface{}) http.HandlerFunc {
@@ -634,9 +635,9 @@ var (
 			Entrypoint: "Block1",
 			Blocks: map[string]entity.EriusFunc{
 				"Block1": {
-					script.TypePython3,
-					Title: "Block1",
-					Input: nil,
+					BlockType: script.TypePython3,
+					Title:     "Block1",
+					Input:     nil,
 					Output: []entity.EriusFunctionValue{
 						{
 							Name:   "Output",
@@ -647,9 +648,9 @@ var (
 					Next: "Block2",
 				},
 				"Block2": {
-					script.TypePython3,
-					Title: "Block2",
-					Input: nil,
+					BlockType: script.TypePython3,
+					Title:     "Block2",
+					Input:     nil,
 					Output: []entity.EriusFunctionValue{
 						{
 							Name:   "Output",
@@ -678,9 +679,9 @@ var (
 					OnFalse: "BlockFalse",
 				},
 				"BlockTrue": {
-					script.TypePython3,
-					Title: "BlockTrue",
-					Input: nil,
+					BlockType: script.TypePython3,
+					Title:     "BlockTrue",
+					Input:     nil,
 					Output: []entity.EriusFunctionValue{
 						{
 							Name:   "Output",
@@ -691,9 +692,9 @@ var (
 					Next: "",
 				},
 				"BlockFalse": {
-					script.TypePython3,
-					Title: "BlockFalse",
-					Input: nil,
+					BlockType: script.TypePython3,
+					Title:     "BlockFalse",
+					Input:     nil,
 					Output: []entity.EriusFunctionValue{
 						{
 							Name:   "Output",
@@ -748,9 +749,9 @@ var (
 			Entrypoint: "Block1",
 			Blocks: map[string]entity.EriusFunc{
 				"Block1": {
-					script.TypePython3,
-					Title: "Block1",
-					Input: nil,
+					BlockType: script.TypePython3,
+					Title:     "Block1",
+					Input:     nil,
 					Output: []entity.EriusFunctionValue{
 						{
 							Name:   "Output",
@@ -761,9 +762,9 @@ var (
 					Next: "Block2",
 				},
 				"Block2": {
-					script.TypePython3,
-					Title: "Block2",
-					Input: nil,
+					BlockType: script.TypePython3,
+					Title:     "Block2",
+					Input:     nil,
 					Output: []entity.EriusFunctionValue{
 						{
 							Name:   "Output",
@@ -798,8 +799,8 @@ var (
 					Next: "Block3",
 				},
 				"Block3": {
-					script.TypePython3,
-					Title: "Block3",
+					BlockType: script.TypePython3,
+					Title:     "Block3",
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "Input",
