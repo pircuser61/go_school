@@ -13,6 +13,7 @@ const (
 
 func (m Block) Model() FunctionModel {
 	f := FunctionModel{}
+
 	switch m {
 	case IfState:
 		f = FunctionModel{
@@ -118,5 +119,6 @@ func (m Block) Model() FunctionModel {
 			NextFuncs: []string{OnTrue, OnFalse},
 		}
 	}
+
 	return f
 }
