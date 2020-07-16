@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/jackc/pgx/v4/pgxpool"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/ctx"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
@@ -36,7 +36,6 @@ func ConnectPostgres(db *configs.Database) (PGConnection, error) {
 	return pgc, nil
 }
 
-
 const (
 	StatusDraft     int = 1
 	StatusApproved  int = 2
@@ -53,8 +52,8 @@ var (
 	errCantFindPipelineVersion = errors.New("can't find pipeline version")
 )
 
-func parseRowsVersionList(ctx context.Context, rows pgx.Rows) ([]entity.EriusScenarioInfo, error) {
-	_, span := trace.StartSpan(ctx, "parse_row_version_list")
+func parseRowsVersionList(с context.Context, rows pgx.Rows) ([]entity.EriusScenarioInfo, error) {
+	_, span := trace.StartSpan(с, "parse_row_version_list")
 	defer span.End()
 
 	defer rows.Close()
@@ -91,9 +90,11 @@ func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]en
 	defer span.End()
 
 	q := `SELECT 
-	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name
+	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name
 from pipeliner.versions pv
 join pipeliner.pipelines pp on pv.pipeline_id = pp.id
+join pipeliner.works pw on pw.id = pv.last_run_id
+join pipeliner.work_status pws on pws.id = pw.status
 where 
 	pv.status = $1
 and pp.deleted_at is NULL
@@ -396,8 +397,6 @@ SELECT pv.id, pv.status, pv.pipeline_id, pv.content
 JOIN pipeliner.pipeline_history pph on pph.version_id = pv.id
 	WHERE pv.pipeline_id = $1 order by pph.date desc LIMIT 1
 `
-	fmt.Printf(strings.ReplaceAll(q, "$1", "'"+id.String()+"'"))
-
 	rows, err := conn.Query(c, q, id)
 	if err != nil {
 		return nil, err
@@ -536,18 +535,37 @@ func (db *PGConnection) WriteTask(c context.Context,
 
 	defer conn.Release()
 
+	tx, err := conn.Begin(c)
+	if err != nil {
+		return err
+	}
+
 	timestamp := time.Now()
 	q := `
 INSERT INTO pipeliner.works(
 	id, version_id, started_at, status, author)
 	VALUES ($1, $2, $3, $4, $5);
 `
-
-	_, err = conn.Exec(c, q, workID, versionID, timestamp, RunStatusRunned, author)
+	_, err = tx.Exec(c, q, workID, versionID, timestamp, RunStatusRunned, author)
 	if err != nil {
 		return err
 	}
 
+	q = `UPDATE pipeliner.versions SET last_run_id=$1 where id = $2`
+	_, err = tx.Exec(c, q, workID, versionID)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(c)
+	if err != nil {
+		err = tx.Rollback(c)
+		if err != nil {
+			return err
+		}
+
+		return err
+	}
 	return nil
 }
 
