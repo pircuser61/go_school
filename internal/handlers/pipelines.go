@@ -171,7 +171,20 @@ func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *ht
 			return
 		}
 
-		p.ID = uuid.New()
+		pipelineID := chi.URLParam(req, "pipelineID")
+		if pipelineID == "" {
+			p.ID = uuid.New()
+		} else {
+			p.ID, err = uuid.Parse(pipelineID)
+			if err != nil {
+				e := VersionCreateError
+				ae.Logger.Error(e.errorMessage(err))
+				_ = e.sendError(w)
+
+				return
+			}
+		}
+
 		p.VersionID = uuid.New()
 
 		err = createFunction(ctx, &p, testAuthor, b)

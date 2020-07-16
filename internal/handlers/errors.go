@@ -29,6 +29,7 @@ const (
 	Teapot
 	PipelineExecutionError
 	PipelineOutputGrabError
+	VersionCreateError
 )
 
 var errorText = map[PipelinerErrorCode]string{
@@ -47,6 +48,7 @@ var errorText = map[PipelinerErrorCode]string{
 	ApproveError:            "can't approve pipeline",
 	PipelineDeleteError:     "can't delete pipeline data",
 	PipelineCreateError:     "can't create pipeline",
+	VersionCreateError:      "can't create version",
 	ModuleUsageError:        "can't find function usage",
 	PipelineRunError:        "can't run pipeline",
 	Teapot:                  "nothing interest there",
@@ -71,6 +73,7 @@ var errorDescription = map[PipelinerErrorCode]string{
 	ApproveError:            "Не удалось согласовать сценарий",
 	PipelineDeleteError:     "Не удалось удалить информацию о сценарии",
 	PipelineCreateError:     "Не удалось создать информацию о сценарии",
+	VersionCreateError:      "Не удалось создать версию сценария",
 	ModuleUsageError:        "Ошибка при поиске использования функций в сценариях",
 	PipelineRunError:        "Ошибка при запуске сценария",
 	Teapot:                  "Мы заложили этот функционал, и сейчас он находится в реализации. Пока что здесь нет ничего интересного. Мяу.",
