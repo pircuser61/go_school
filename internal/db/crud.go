@@ -65,7 +65,8 @@ func parseRowsVersionList(с context.Context, rows pgx.Rows) ([]entity.EriusScen
 
 		var approver sql.NullString
 
-		err := rows.Scan(&e.VersionID, &e.Status, &e.ID, &e.CreatedAt, &e.Author, &approver, &e.Name)
+		err := rows.Scan(&e.VersionID, &e.Status, &e.ID, &e.CreatedAt, &e.Author, &approver, &e.Name,
+			&e.LastRun, &e.LastRunStatus)
 		if err != nil {
 			return nil, err
 		}
@@ -93,8 +94,8 @@ func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]en
 	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name
 from pipeliner.versions pv
 join pipeliner.pipelines pp on pv.pipeline_id = pp.id
-join pipeliner.works pw on pw.id = pv.last_run_id
-join pipeliner.work_status pws on pws.id = pw.status
+left outer join  pipeliner.works pw on pw.id = pv.last_run_id
+left outer join  pipeliner.work_status pws on pws.id = pw.status
 where 
 	pv.status = $1
 and pp.deleted_at is NULL
@@ -177,9 +178,11 @@ func (db *PGConnection) GetVersionsByStatusAndAuthor(c context.Context,
 	defer span.End()
 
 	q := `SELECT 
-	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name
+	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name,  pw.started_at, pws.name
 from pipeliner.versions pv
 join pipeliner.pipelines pp on pv.pipeline_id = pp.id
+left outer join  pipeliner.works pw on pw.id = pv.last_run_id
+left outer join  pipeliner.work_status pws on pws.id = pw.status
 where 
 	pv.status = $1
 and pv.author = $2
