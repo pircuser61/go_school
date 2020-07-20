@@ -18,6 +18,7 @@ func sendResponse(w http.ResponseWriter, statusCode int, body interface{}) error
 	}
 
 	w.WriteHeader(statusCode)
+	w.Header().Set("Content-Type", "application/json")
 
 	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {
