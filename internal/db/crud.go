@@ -32,7 +32,9 @@ func ConnectPostgres(db *configs.Database) (PGConnection, error) {
 	if err != nil {
 		return PGConnection{}, err
 	}
+
 	pgc := PGConnection{Pool: conn}
+
 	return pgc, nil
 }
 
@@ -52,8 +54,8 @@ var (
 	errCantFindPipelineVersion = errors.New("can't find pipeline version")
 )
 
-func parseRowsVersionList(с context.Context, rows pgx.Rows) ([]entity.EriusScenarioInfo, error) {
-	_, span := trace.StartSpan(с, "parse_row_version_list")
+func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScenarioInfo, error) {
+	_, span := trace.StartSpan(c, "parse_row_version_list")
 	defer span.End()
 
 	defer rows.Close()
@@ -385,7 +387,9 @@ func (db *PGConnection) DeletePipeline(c context.Context, id uuid.UUID) error {
 func (db *PGConnection) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline")
 	defer span.End()
+
 	pool := db.Pool
+
 	conn, err := pool.Acquire(c)
 	if err != nil {
 		return nil, err
@@ -400,10 +404,12 @@ SELECT pv.id, pv.status, pv.pipeline_id, pv.content
 JOIN pipeliner.pipeline_history pph on pph.version_id = pv.id
 	WHERE pv.pipeline_id = $1 order by pph.date desc LIMIT 1
 `
+
 	rows, err := conn.Query(c, q, id)
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	if rows.Next() {
@@ -549,12 +555,14 @@ INSERT INTO pipeliner.works(
 	id, version_id, started_at, status, author)
 	VALUES ($1, $2, $3, $4, $5);
 `
+
 	_, err = tx.Exec(c, q, workID, versionID, timestamp, RunStatusRunned, author)
 	if err != nil {
 		return err
 	}
 
 	q = `UPDATE pipeliner.versions SET last_run_id=$1 where id = $2`
+
 	_, err = tx.Exec(c, q, workID, versionID)
 	if err != nil {
 		return err
@@ -569,6 +577,7 @@ INSERT INTO pipeliner.works(
 
 		return err
 	}
+
 	return nil
 }
 
