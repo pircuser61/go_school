@@ -23,8 +23,8 @@ type EriusScenarioInfo struct {
 	Approver      string      `json:"approver"`
 	Name          string      `json:"name"`
 	Tags          []time.Time `json:"tags"`
-	LastRun       *time.Time   `json:"last_run"`
-	LastRunStatus *string      `json:"last_run_status"`
+	LastRun       *time.Time  `json:"last_run"`
+	LastRunStatus *string     `json:"last_run_status"`
 	Status        int         `json:"status"`
 }
 

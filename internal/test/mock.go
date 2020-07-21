@@ -3,7 +3,7 @@ package test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -18,7 +18,7 @@ import (
 func OnlyReturnBlockGenerator(ret map[string]interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 
 		bytesOutput, _ := json.Marshal(ret)
 		_, _ = w.Write(bytesOutput)
@@ -30,6 +30,10 @@ type TestablePipeline struct {
 	PipelineUUID     uuid.UUID
 	pipeline         *entity.EriusScenario
 }
+
+var (
+	errNotFound = errors.New("not found")
+)
 
 var (
 	LinearPipelineBlock = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +48,7 @@ var (
 
 		bytes, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -52,17 +56,17 @@ var (
 
 		err = json.Unmarshal(bytes, &jsonInput)
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		bytesOutput, err := json.Marshal(OutputStruct{Output: jsonInput.Input})
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(bytesOutput)
 	})
 	StringIsEqualToBlockGenerator = func(equalsTo string) http.HandlerFunc {
@@ -78,7 +82,7 @@ var (
 
 			bytes, err := ioutil.ReadAll(r.Body)
 			if err != nil {
-				w.WriteHeader(500)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
@@ -86,17 +90,17 @@ var (
 
 			err = json.Unmarshal(bytes, &jsonInput)
 			if err != nil {
-				w.WriteHeader(500)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
 			bytesOutput, err := json.Marshal(OutputStruct{Output: jsonInput.Input == equalsTo})
 			if err != nil {
-				w.WriteHeader(500)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write(bytesOutput)
 		}
 	}
@@ -864,8 +868,8 @@ func (m *MockDB) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 		Approver:      "",
 		Name:          "",
 		Tags:          nil,
-		LastRun:       time.Time{},
-		LastRunStatus: "",
+		LastRun:       &time.Time{},
+		LastRunStatus: new(string),
 		Status:        0,
 	}
 
@@ -925,7 +929,7 @@ func (m *MockDB) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 		}
 	}
 
-	return nil, fmt.Errorf("not found")
+	return nil, errNotFound
 }
 
 func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelineData []byte) error {
@@ -955,7 +959,7 @@ func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.Er
 		}
 	}
 
-	return nil, fmt.Errorf("not found")
+	return nil, errNotFound
 }
 
 func (m *MockDB) ActiveAlertNGSA(c context.Context, sever int, state, source,

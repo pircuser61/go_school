@@ -54,6 +54,7 @@ func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) err
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
