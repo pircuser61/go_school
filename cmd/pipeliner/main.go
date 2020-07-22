@@ -60,7 +60,7 @@ func main() {
 		DB:            &dbConn,
 		Logger:        log,
 		ScriptManager: cfg.ScriptManager,
-		FaaS:          cfg.FaaS,
+		FaaS:          cfg.RunEnv.FaaSAddress,
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{

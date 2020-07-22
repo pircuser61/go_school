@@ -143,8 +143,8 @@ func TestFunctionBlock_Run(t *testing.T) {
 				NextStep:       tt.fields.NextStep,
 				runURL:         server.URL + "/%s",
 			}
-			if err := fb.Run(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
-				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
+			if err := fb.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
+				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !wasRan {
 				t.Errorf("Function %s was not ran", tt.fields.FunctionName)

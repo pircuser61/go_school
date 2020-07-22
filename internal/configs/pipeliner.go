@@ -6,6 +6,11 @@ import (
 	"gitlab.services.mts.ru/libs/logger"
 )
 
+const (
+	StrategyHttp  = "http"
+	StrategyKafka = "kafka"
+)
+
 type Pipeliner struct {
 	Tracing       TracingConfig  `yaml:"tracing"`
 	Timeout       Duration       `yaml:"timeout"`
@@ -15,7 +20,15 @@ type Pipeliner struct {
 	MetricsAddr   string         `yaml:"metrics_addr"`
 	DB            Database       `yaml:"database"`
 	ScriptManager string         `yaml:"script_manager"`
-	FaaS          string         `yaml:"faas"`
+	RunEnv        RunEnv         `yaml:"run_env"`
+}
+
+type RunEnv struct {
+	Strategy          string `yaml:"strategy"`
+	FaaSAddress       string `yaml:"faas_address,omitempty"`
+	KafkaAddress      string `yaml:"kafka_address,omitempty"`
+	PipelinesRunQueue string `yaml:"pipelines_run_queue,omitempty"`
+	FunctionsRunQueue string `yaml:"functions_run_queue,omitempty"`
 }
 
 type Database struct {

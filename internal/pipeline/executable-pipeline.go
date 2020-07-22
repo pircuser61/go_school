@@ -57,8 +57,12 @@ func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) err
 	return nil
 }
 
-//nolint:gocyclo // big cyclo for strong man
 func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore) error {
+	return ep.DebugRun(ctx, runCtx)
+}
+
+//nolint:gocyclo // big cyclo for strong man
+func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
@@ -82,7 +86,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 				nStore.SetValue(local, val)
 			}
 
-			err := ep.Blocks[ep.NowOnPoint].Run(ctx, nStore)
+			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
 			if err != nil {
 				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
@@ -98,7 +102,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 				ep.VarStore.SetValue(outer, val)
 			}
 		} else {
-			err := ep.Blocks[ep.NowOnPoint].Run(ctx, ep.VarStore)
+			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
 			if err != nil {
 				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
@@ -226,24 +230,6 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 	return nil
 }
 
-func createInputBlock(title, name, next string) *InputBlock {
-	return &InputBlock{
-		BlockName:     name,
-		FunctionName:  title,
-		NextStep:      next,
-		FunctionInput: make(map[string]string),
-	}
-}
-
-func createOutputBlock(title, name, next string) *OutputBlock {
-	return &OutputBlock{
-		BlockName:      name,
-		FunctionName:   title,
-		NextStep:       next,
-		FunctionOutput: make(map[string]string),
-	}
-}
-
 func createIF(title, name, onTrue, onFalse string) *IF {
 	return &IF{
 		Name:          name,
@@ -288,21 +274,6 @@ func createForBlock(title, name, onTrue, onFalse string) *ForState {
 //nolint:gocyclo // big cyclo for strong man
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
 	switch ef.Title {
-	case "input":
-		i := createInputBlock(ef.Title, name, ef.Next)
-
-		for _, v := range ef.Output {
-			i.FunctionInput[v.Name] = v.Global
-		}
-
-		return i
-	case "output":
-		i := createOutputBlock(ef.Title, name, ef.Next)
-		for _, v := range ef.Output {
-			i.FunctionOutput[v.Name] = v.Global
-		}
-
-		return i
 	case "if":
 		i := createIF(ef.Title, name, ef.OnTrue, ef.OnFalse)
 

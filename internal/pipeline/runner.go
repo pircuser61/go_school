@@ -7,6 +7,7 @@ import (
 )
 
 type Runner interface {
+	DebugRun(ctx context.Context, runCtx *store.VariableStore) error
 	Run(ctx context.Context, runCtx *store.VariableStore) error
 	Next() string
 	IsScenario() bool

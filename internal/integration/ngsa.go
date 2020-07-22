@@ -63,10 +63,11 @@ func (ns NGSASend) IsScenario() bool {
 	return false
 }
 
-// spec_prob - lock_processing
-// additionalText - проверить
-// почему нет снятия?
 func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
+	return ns.DebugRun(ctx, runCtx)
+}
+
+func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
 

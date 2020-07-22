@@ -569,7 +569,7 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 	}
 
 	if withStop {
-		err = ep.Run(c, vs)
+		err = ep.DebugRun(c, vs)
 		if err != nil {
 			ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 			vs.AddError(err)
@@ -586,7 +586,7 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 		}
 	} else {
 		go func() {
-			err = ep.Run(c, vs)
+			err = ep.DebugRun(c, vs)
 			if err != nil {
 				ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 				vs.AddError(err)

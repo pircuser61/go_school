@@ -36,6 +36,10 @@ func (e *IF) IsScenario() bool {
 }
 
 func (e *IF) Run(ctx context.Context, runCtx *store.VariableStore) error {
+	return e.DebugRun(ctx, runCtx)
+}
+
+func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_if_block")
 	defer s.End()
 
@@ -68,28 +72,33 @@ type StringsEqual struct {
 	OnFalse       string
 }
 
-func (fb *StringsEqual) IsScenario() bool {
+func (se *StringsEqual) IsScenario() bool {
 	return false
 }
 
-func (fb *StringsEqual) Inputs() map[string]string {
-	return fb.FunctionInput
+func (se *StringsEqual) Inputs() map[string]string {
+	return se.FunctionInput
 }
 
-func (fb *StringsEqual) Outputs() map[string]string {
+func (se *StringsEqual) Outputs() map[string]string {
 	return make(map[string]string)
 }
 
-func (fb *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) error {
+
+func (se *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) error {
+	return se.DebugRun(ctx, runCtx)
+}
+
+func (se *StringsEqual) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_strings_equal_block")
 	defer s.End()
 
-	runCtx.AddStep(fb.Name)
+	runCtx.AddStep(se.Name)
 
-	allparams := make([]string, 0, len(fb.FunctionInput))
+	allparams := make([]string, 0, len(se.FunctionInput))
 
-	for k := range fb.FunctionInput {
-		r, err := runCtx.GetStringWithInput(fb.FunctionInput, k)
+	for k := range se.FunctionInput {
+		r, err := runCtx.GetStringWithInput(se.FunctionInput, k)
 		if err != nil {
 			return err
 		}
@@ -100,8 +109,8 @@ func (fb *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) er
 	const minVariablesCnt = 2
 	if len(allparams) >= minVariablesCnt {
 		for _, v := range allparams {
-			fb.Result = allparams[0] == v
-			if !fb.Result {
+			se.Result = allparams[0] == v
+			if !se.Result {
 				return nil
 			}
 		}
@@ -110,12 +119,12 @@ func (fb *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) er
 	return nil
 }
 
-func (fb *StringsEqual) Next() string {
-	if fb.Result {
-		return fb.OnTrue
+func (se *StringsEqual) Next() string {
+	if se.Result {
+		return se.OnTrue
 	}
 
-	return fb.OnFalse
+	return se.OnFalse
 }
 
 type ForState struct {
@@ -141,17 +150,16 @@ func (e *ForState) IsScenario() bool {
 }
 
 func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	fmt.Println("ITERATIONZZZZ")
-	fmt.Println(*e)
+	return e.DebugRun(ctx, runCtx)
+}
 
+func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_cyclo_block")
 	defer s.End()
 
 	runCtx.AddStep(e.Name)
 
 	arr, ok := runCtx.GetArray(e.FunctionInput["iter"])
-
-	fmt.Println("arr", arr, "ok", ok)
 
 	index := 0
 
@@ -163,17 +171,13 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		}
 	}
 
-	fmt.Println("index", index)
-
 	if e.LastElem {
 		index = 0
 		e.LastElem = false
 	}
 
 	if index < len(arr) {
-		fmt.Println("index in arr")
 		val := fmt.Sprintf("%v", arr[index])
-		fmt.Println("val", val)
 		index++
 		runCtx.SetValue(e.FunctionOutput["index"], index)
 		runCtx.SetValue(e.FunctionOutput["now_on"], val)

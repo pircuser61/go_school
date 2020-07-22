@@ -16,7 +16,11 @@ type ConnectorBlock struct {
 	NextStep       string
 }
 
-func (cb *ConnectorBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
+func (cb *ConnectorBlock) Run(ctx context.Context, runCtx *store.VariableStore) error{
+	return cb.DebugRun(ctx, runCtx)
+}
+
+func (cb *ConnectorBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	runCtx.AddStep(cb.Name)
 
 	_, s := trace.StartSpan(ctx, "run_connector_block")
