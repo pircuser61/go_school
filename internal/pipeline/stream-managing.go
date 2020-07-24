@@ -84,7 +84,6 @@ func (se *StringsEqual) Outputs() map[string]string {
 	return make(map[string]string)
 }
 
-
 func (se *StringsEqual) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return se.DebugRun(ctx, runCtx)
 }

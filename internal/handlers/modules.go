@@ -11,6 +11,16 @@ import (
 	"go.opencensus.io/trace"
 )
 
+// GetModules godoc
+// @Summary Get list of modules
+// @Description Список блоков
+// @Tags modules
+// @ID      get-modules
+// @Produce json
+// @Success 200 {object} httpResponse{data=entity.EriusFunctionList}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /modules/ [get]
 func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(context.Background(), "list_modules")
 	defer s.End()
@@ -89,6 +99,16 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// AllModulesUsage godoc
+// @Summary Get list of modules usage
+// @Description Блоки и сценарии, в которых они используются
+// @Tags modules
+// @ID      modules-usage
+// @Produce json
+// @success 200 {object} httpResponse{data=entity.AllUsageResponse}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /modules/usage [get]
 //nolint //i rly want copy and big loop for simple read
 func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "all_modules_usage")
@@ -133,6 +153,17 @@ func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// ModuleUsage godoc
+// @Summary Usage of module in pipelines
+// @Description Сценарии, в которых используется блок
+// @Tags modules
+// @ID      module-usage
+// @Produce json
+// @Param moduleName path string true "module name"
+// @Success 200 {object} httpResponse{data=entity.UsageResponse}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /modules/{moduleName}/usage [get]
 func (ae APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "module_usage")
 	defer s.End()

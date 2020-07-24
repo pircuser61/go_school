@@ -1,0 +1,723 @@
+basePath: /api/pipeliner/v1
+definitions:
+  entity.AllUsageResponse:
+    properties:
+      pipelines:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+    type: object
+  entity.EriusFunc:
+    properties:
+      block_type:
+        enum:
+          - python3
+          - internal
+          - term
+          - scenario
+        example: python3
+        type: string
+      final:
+        type: string
+      input:
+        items:
+          $ref: '#/definitions/entity.EriusFunctionValue'
+        type: array
+      next:
+        example: send-data_0
+        type: string
+      on_false:
+        type: string
+      on_iter:
+        type: string
+      on_true:
+        type: string
+      output:
+        items:
+          $ref: '#/definitions/entity.EriusFunctionValue'
+        type: array
+      title:
+        example: lock-bts
+        type: string
+      x:
+        type: integer
+      "y":
+        type: integer
+    type: object
+  entity.EriusFunctionList:
+    properties:
+      funcs:
+        items:
+          $ref: '#/definitions/script.FunctionModel'
+        type: array
+      shapes:
+        items:
+          $ref: '#/definitions/script.ShapeEntity'
+        type: array
+    type: object
+  entity.EriusFunctionValue:
+    properties:
+      global:
+        example: block.some_data
+        type: string
+      name:
+        example: some_data
+        type: string
+      type:
+        example: string
+        type: string
+    type: object
+  entity.EriusScenario:
+    properties:
+      hasDraft:
+        type: boolean
+      id:
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
+      input:
+        items:
+          $ref: '#/definitions/entity.EriusFunctionValue'
+        type: array
+      name:
+        example: ScenarioName
+        type: string
+      output:
+        items:
+          $ref: '#/definitions/entity.EriusFunctionValue'
+        type: array
+      pipeline:
+        properties:
+          blocks:
+            additionalProperties:
+              $ref: '#/definitions/entity.EriusFunc'
+            type: object
+          entrypoint:
+            type: string
+        type: object
+      status:
+        description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+        type: integer
+      version_id:
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
+    type: object
+  entity.EriusScenarioInfo:
+    properties:
+      approved_at:
+        example: "2020-07-16T17:10:25.112704+03:00"
+        type: string
+      approver:
+        example: testApprover
+        type: string
+      author:
+        example: testAuthor
+        type: string
+      created_at:
+        example: "2020-07-16T17:10:25.112704+03:00"
+        type: string
+      id:
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
+      last_run:
+        example: "2020-07-16T17:10:25.112704+03:00"
+        type: string
+      last_run_status:
+        type: string
+      name:
+        example: ScenarioName
+        type: string
+      status:
+        description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      version_id:
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
+    type: object
+  entity.EriusScenarioList:
+    properties:
+      drafts:
+        description: Черновики
+        items:
+          $ref: '#/definitions/entity.EriusScenarioInfo'
+        type: array
+      on_approve:
+        description: Сценарии на одобрении
+        items:
+          $ref: '#/definitions/entity.EriusScenarioInfo'
+        type: array
+      pipelines:
+        description: Сценарии
+        items:
+          $ref: '#/definitions/entity.EriusScenarioInfo'
+        type: array
+      tags:
+        description: Теги
+        items:
+          $ref: '#/definitions/entity.EriusTagInfo'
+        type: array
+    type: object
+  entity.EriusTagInfo:
+    properties:
+      color:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  entity.RunResponse:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      output:
+        type: object
+      pipeline_id:
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
+      status:
+        example: runned
+        type: string
+      task_id:
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
+    type: object
+  entity.UsageResponse:
+    properties:
+      name:
+        description: Имя блока
+        type: string
+      pipelines:
+        items:
+          $ref: '#/definitions/entity.UsedBy'
+        type: array
+      used:
+        type: boolean
+    type: object
+  entity.UsedBy:
+    properties:
+      id:
+        description: ID сценария
+        type: string
+      name:
+        description: Имя сценария
+        type: string
+    type: object
+  handlers.httpError:
+    properties:
+      description:
+        type: string
+      error:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  handlers.httpResponse:
+    properties:
+      data:
+        type: object
+      status_code:
+        type: integer
+    type: object
+  script.FunctionModel:
+    properties:
+      block_type:
+        type: string
+      inputs:
+        items:
+          $ref: '#/definitions/script.FunctionValueModel'
+        type: array
+      next_funcs:
+        items:
+          type: string
+        type: array
+      outputs:
+        items:
+          $ref: '#/definitions/script.FunctionValueModel'
+        type: array
+      shape_type:
+        type: integer
+      title:
+        type: string
+    type: object
+  script.FunctionValueModel:
+    properties:
+      comment:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  script.ShapeEntity:
+    properties:
+      icon:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
+host: localhost:8181
+info:
+  contact: {}
+  license: {}
+  title: Pipeliner API
+  version: "0.1"
+paths:
+  /modules/:
+    get:
+      description: Список блоков
+      operationId: get-modules
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.EriusFunctionList'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get list of modules
+      tags:
+        - modules
+  /modules/{moduleName}/usage:
+    get:
+      description: Сценарии, в которых используется блок
+      operationId: module-usage
+      parameters:
+        - description: module name
+          in: path
+          name: moduleName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.UsageResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Usage of module in pipelines
+      tags:
+        - modules
+  /modules/usage:
+    get:
+      description: Блоки и сценарии, в которых они используются
+      operationId: modules-usage
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.AllUsageResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get list of modules usage
+      tags:
+        - modules
+  /pipelines/:
+    get:
+      description: Список сценариев
+      operationId: list-pipelines
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.EriusScenarioList'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get list of pipelines
+      tags:
+        - pipeline
+    post:
+      consumes:
+        - application/json
+      description: Создать новый сценарий
+      operationId: create-pipeline
+      parameters:
+        - description: New scenario
+          in: body
+          name: pipeline
+          required: true
+          schema:
+            $ref: '#/definitions/entity.EriusScenario'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.EriusScenario'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Create pipeline
+      tags:
+        - pipeline
+  /pipelines/{pipelineID}:
+    get:
+      description: Получить сценарий по ID
+      operationId: get-pipeline
+      parameters:
+        - description: Pipeline ID
+          in: path
+          name: pipelineID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.EriusScenario'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get pipeline
+      tags:
+        - pipeline
+  /pipelines/version:
+    put:
+      consumes:
+        - application/json
+      description: Изменить черновик
+      operationId: edit-draft
+      parameters:
+        - description: New draft
+          in: body
+          name: draft
+          required: true
+          schema:
+            $ref: '#/definitions/entity.EriusScenario'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.EriusScenario'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Edit Draft
+      tags:
+        - pipeline
+  /pipelines/version/{pipelineID}:
+    delete:
+      description: Удалить сценарий
+      operationId: delete-pipeline
+      parameters:
+        - description: Pipeline ID
+          in: path
+          name: pipelineID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.httpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Delete Pipeline
+      tags:
+        - pipeline
+    post:
+      consumes:
+        - application/json
+      description: Создать новую версию сценария
+      operationId: create-version
+      parameters:
+        - description: New version
+          in: body
+          name: pipeline
+          required: true
+          schema:
+            $ref: '#/definitions/entity.EriusScenario'
+        - description: Pipeline ID
+          in: path
+          name: pipelineID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.EriusScenario'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Create pipeline version
+      tags:
+        - pipeline
+        - version
+  /pipelines/version/{versionID}:
+    delete:
+      description: Удалить версию
+      operationId: delete-version
+      parameters:
+        - description: Version ID
+          in: path
+          name: versionID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.httpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Delete Version
+      tags:
+        - version
+    get:
+      description: Получить версию сценария по ID
+      operationId: get-version
+      parameters:
+        - description: Version ID
+          in: path
+          name: versionID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.EriusScenario'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get pipeline version
+      tags:
+        - pipeline
+        - version
+  /run/{pipelineID}:
+    post:
+      consumes:
+        - application/json
+      description: Запустить сценарий
+      operationId: run-pipeline
+      parameters:
+        - description: pipeline input
+          in: body
+          name: variables
+          schema:
+            type: object
+        - description: Pipeline ID
+          in: path
+          name: pipelineID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.RunResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Run Pipeline
+      tags:
+        - pipeline
+        - run
+  /run/{versionID}:
+    post:
+      consumes:
+        - application/json
+      description: Запустить версию
+      operationId: run-version
+      parameters:
+        - description: pipeline input
+          in: body
+          name: variables
+          schema:
+            type: object
+        - description: Version ID
+          in: path
+          name: versionID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/handlers.httpResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/entity.RunResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Run Version
+      tags:
+        - version
+        - run
+swagger: "2.0"
