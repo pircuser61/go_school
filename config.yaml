@@ -14,3 +14,8 @@ database:
   max_connections: 10
   timeout: 10
 
+swagger:
+  base_path: "/api/pipeliner/v1"
+  version: "0.1"
+  host: "localhost"
+  port: "1234"

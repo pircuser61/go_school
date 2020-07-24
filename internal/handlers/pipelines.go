@@ -1,5 +1,7 @@
 package handlers
 
+//go:generate swag init -g ../../cmd/pipeliner/main.go -o ../../cmd/pipeliner/docs
+
 import (
 	"context"
 	"encoding/json"
@@ -29,6 +31,16 @@ type RunContext struct {
 	Parameters map[string]string `json:"parameters"`
 }
 
+// ListPipelines godoc
+// @Summary Get list of pipelines
+// @Description Список сценариев
+// @Tags pipeline
+// @ID      list-pipelines
+// @Produce json
+// @success 200 {object} httpResponse{data=entity.EriusScenarioList}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/ [get]
 func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
@@ -77,8 +89,30 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// @Summary Get pipeline
+// @Description Получить сценарий по ID
+// @Tags pipeline
+// @ID      get-pipeline
+// @Produce json
+// @Param pipelineID path string true "Pipeline ID"
+// @success 200 {object} httpResponse{data=entity.EriusScenario}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/{pipelineID} [get]
+func GetVersion() {}
+
 // GetPipeline returns handler for GET pipelines
 // if isVersion is True - returns handler for GET pipelines/version.
+// @Summary Get pipeline version
+// @Description Получить версию сценария по ID
+// @Tags pipeline, version
+// @ID      get-version
+// @Produce json
+// @Param versionID path string true "Version ID"
+// @success 200 {object} httpResponse{data=entity.EriusScenario}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/version/{versionID} [get]
 func (ae *APIEnv) GetPipeline(isVersion bool) func(w http.ResponseWriter, req *http.Request) {
 	var spanName = "get_pipeline"
 
@@ -130,8 +164,34 @@ func (ae *APIEnv) GetPipeline(isVersion bool) func(w http.ResponseWriter, req *h
 	}
 }
 
+// @Summary Create pipeline version
+// @Description Создать новую версию сценария
+// @Tags pipeline, version
+// @ID      create-version
+// @Accept json
+// @Produce json
+// @Param pipeline body entity.EriusScenario true "New version"
+// @Param pipelineID path string true "Pipeline ID"
+// @success 200 {object} httpResponse{data=entity.EriusScenario}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/version/{pipelineID} [post]
+//nolint:gocritic,deadcode,unused // need for swagger codegen
+func postVersion() {}
+
 // PostPipeline returns handler for POST pipelines
 // if isDraft is True - returns handler for POST pipelines/version.
+// @Summary Create pipeline
+// @Description Создать новый сценарий
+// @Tags pipeline
+// @ID      create-pipeline
+// @Accept json
+// @Produce json
+// @Param pipeline body entity.EriusScenario true "New scenario"
+// @Success 200 {object} httpResponse{data=entity.EriusScenario}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/ [post]
 func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *http.Request) {
 	var spanName = "create_pipeline"
 
@@ -216,6 +276,17 @@ func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *ht
 	}
 }
 
+// @Summary Edit Draft
+// @Description Изменить черновик
+// @Tags pipeline
+// @ID      edit-draft
+// @Accept json
+// @Produce json
+// @Param draft body entity.EriusScenario true "New draft"
+// @Success 200 {object} httpResponse{data=entity.EriusScenario}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/version [put]
 func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "edit_draft")
 	defer s.End()
@@ -300,6 +371,16 @@ func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// @Summary Delete Version
+// @Description Удалить версию
+// @Tags version
+// @ID      delete-version
+// @Produce json
+// @Param versionID path string true "Version ID"
+// @Success 200 {object} httpResponse
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/version/{versionID} [delete]
 func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "delete_version")
 	defer s.End()
@@ -352,6 +433,16 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// @Summary Delete Pipeline
+// @Description Удалить сценарий
+// @Tags pipeline
+// @ID      delete-pipeline
+// @Produce json
+// @Param pipelineID path string true "Pipeline ID"
+// @Success 200 {object} httpResponse
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/version/{pipelineID} [delete]
 func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "delete_pipeline")
 	defer s.End()
@@ -386,63 +477,18 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(context.Background(), "create_pipeline")
-	defer s.End()
-
-	b, err := ioutil.ReadAll(req.Body)
-	defer req.Body.Close()
-
-	if err != nil {
-		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	p := entity.EriusScenario{}
-
-	err = json.Unmarshal(b, &p)
-	if err != nil {
-		e := PipelineParseError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	p.ID = uuid.New()
-	p.VersionID = uuid.New()
-
-	err = ae.DB.CreatePipeline(ctx, &p, testAuthor, b)
-	if err != nil {
-		e := PipelineCreateError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
-	if err != nil {
-		e := PipelineReadError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	err = sendResponse(w, http.StatusOK, created)
-	if err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
+// @Summary Run Pipeline
+// @Description Запустить сценарий
+// @Tags pipeline, run
+// @ID run-pipeline
+// @Accept json
+// @Produce json
+// @Param variables body object false "pipeline input"
+// @Param pipelineID path string true "Pipeline ID"
+// @Success 200 {object} httpResponse{data=entity.RunResponse}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /run/{pipelineID} [post]
 func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "run_pipeline")
 	defer s.End()
@@ -476,6 +522,18 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(c, w, req, p, withStop)
 }
 
+// @Summary Run Version
+// @Description Запустить версию
+// @Tags version, run
+// @ID run-version
+// @Accept json
+// @Produce json
+// @Param variables body object false "pipeline input"
+// @Param versionID path string true "Version ID"
+// @Success 200 {object} httpResponse{data=entity.RunResponse}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /run/{versionID} [post]
 func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "run_pipeline")
 	defer s.End()

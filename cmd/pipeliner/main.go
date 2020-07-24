@@ -13,6 +13,10 @@ import (
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
 
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
+
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
@@ -31,6 +35,11 @@ const (
 	maxAge = 300
 )
 
+// @title Pipeliner API
+// @version 0.1
+
+// @host localhost:8181
+// @BasePath /api/pipeliner/v1
 func main() {
 	configPath := flag.String("c", "./config.yaml", "path to config")
 	flag.Parse()
@@ -107,6 +116,25 @@ func main() {
 				log.Info("graceful shutdown")
 			} else {
 				log.WithError(err).Fatal("script manager metrics")
+			}
+		}
+	}()
+
+	go func() {
+		docs.SwaggerInfo.Host = cfg.Swag.Host + cfg.ServeAddr
+		docs.SwaggerInfo.BasePath = cfg.Swag.BasePath
+		docs.SwaggerInfo.Version = cfg.Swag.Version
+
+		swaggerMux := chi.NewRouter()
+		swaggerMux.Get("/swagger/*", httpSwagger.Handler(
+			httpSwagger.URL("http://localhost:"+cfg.Swag.Port+"/swagger/doc.json"),
+		))
+
+		if err = http.ListenAndServe("localhost:"+cfg.Swag.Port, swaggerMux); err != nil {
+			if errors.Is(err, http.ErrServerClosed) {
+				log.Info("graceful shutdown")
+			} else {
+				log.WithError(err).Fatal("swagger")
 			}
 		}
 	}()
