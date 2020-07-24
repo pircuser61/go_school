@@ -127,10 +127,10 @@ func main() {
 
 		swaggerMux := chi.NewRouter()
 		swaggerMux.Get("/swagger/*", httpSwagger.Handler(
-			httpSwagger.URL("http://localhost:"+cfg.Swag.Port+"/swagger/doc.json"),
+			httpSwagger.URL("http://"+cfg.Swag.Host+":"+cfg.Swag.Port+"/swagger/doc.json"),
 		))
 
-		if err = http.ListenAndServe("localhost:"+cfg.Swag.Port, swaggerMux); err != nil {
+		if err = http.ListenAndServe(":"+cfg.Swag.Port, swaggerMux); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
 				log.Info("graceful shutdown")
 			} else {
