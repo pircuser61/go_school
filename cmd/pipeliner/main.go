@@ -9,14 +9,13 @@ import (
 	"os/signal"
 	"syscall"
 
+	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
 
 	httpSwagger "github.com/swaggo/http-swagger"
-
-	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
-
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
@@ -88,6 +87,8 @@ func main() {
 
 	metrics.InitMetricsAuth()
 
+	initSwagger(cfg)
+
 	server := http.Server{
 		Handler: registerRouter(log, cfg, pipeliner),
 		Addr:    cfg.ServeAddr,
@@ -116,25 +117,6 @@ func main() {
 				log.Info("graceful shutdown")
 			} else {
 				log.WithError(err).Fatal("script manager metrics")
-			}
-		}
-	}()
-
-	go func() {
-		docs.SwaggerInfo.Host = cfg.Swag.Host + cfg.ServeAddr
-		docs.SwaggerInfo.BasePath = cfg.Swag.BasePath
-		docs.SwaggerInfo.Version = cfg.Swag.Version
-
-		swaggerMux := chi.NewRouter()
-		swaggerMux.Get("/swagger/*", httpSwagger.Handler(
-			httpSwagger.URL("http://"+cfg.Swag.Host+":"+cfg.Swag.Port+"/swagger/doc.json"),
-		))
-
-		if err = http.ListenAndServe(":"+cfg.Swag.Port, swaggerMux); err != nil {
-			if errors.Is(err, http.ErrServerClosed) {
-				log.Info("graceful shutdown")
-			} else {
-				log.WithError(err).Fatal("swagger")
 			}
 		}
 	}()
@@ -202,5 +184,14 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 		r.Post("/run/version/{versionID}", pipeliner.RunVersion)
 	})
 
+	mux.With(middleware.SetHeader("Content-type", "")).
+		Mount("/swagger/", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
+
 	return mux
+}
+
+func initSwagger(cfg *configs.Pipeliner) {
+	docs.SwaggerInfo.BasePath = cfg.Swag.BasePath
+	docs.SwaggerInfo.Version = cfg.Swag.Version
+	docs.SwaggerInfo.Host = cfg.Swag.Host + cfg.ServeAddr
 }

@@ -9,160 +9,160 @@
   "host": "localhost:8181",
   "basePath": "/api/pipeliner/v1",
   "paths": {
-      "/modules/": {
-          "get": {
-              "description": "Список блоков",
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "modules"
-              ],
-              "summary": "Get list of modules",
-              "operationId": "get-modules",
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "allOf": [
-                              {
-                                  "$ref": "#/definitions/handlers.httpResponse"
-                              },
-                              {
-                                  "type": "object",
-                                  "properties": {
-                                      "data": {
-                                          "$ref": "#/definitions/entity.EriusFunctionList"
-                                      }
-                                  }
-                              }
-                          ]
-                      }
-                  },
-                  "400": {
-                      "description": "Bad Request",
-                      "schema": {
-                          "$ref": "#/definitions/handlers.httpError"
-                      }
-                  },
-                  "500": {
-                      "description": "Internal Server Error",
-                      "schema": {
-                          "$ref": "#/definitions/handlers.httpError"
-                      }
+    "/modules/": {
+      "get": {
+        "description": "Список блоков",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "modules"
+        ],
+        "summary": "Get list of modules",
+        "operationId": "get-modules",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/handlers.httpResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/entity.EriusFunctionList"
+                    }
                   }
-              }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/handlers.httpError"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/handlers.httpError"
+            }
           }
-      },
-      "/modules/usage": {
-          "get": {
-              "description": "Блоки и сценарии, в которых они используются",
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "modules"
-              ],
-              "summary": "Get list of modules usage",
-              "operationId": "modules-usage",
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "allOf": [
-                              {
-                                  "$ref": "#/definitions/handlers.httpResponse"
-                              },
-                              {
-                                  "type": "object",
-                                  "properties": {
-                                      "data": {
-                                          "$ref": "#/definitions/entity.AllUsageResponse"
-                                      }
-                                  }
-                              }
-                          ]
-                      }
-                  },
-                  "400": {
-                      "description": "Bad Request",
-                      "schema": {
-                          "$ref": "#/definitions/handlers.httpError"
-                      }
-                  },
-                  "500": {
-                      "description": "Internal Server Error",
-                      "schema": {
-                          "$ref": "#/definitions/handlers.httpError"
-                      }
+        }
+      }
+    },
+    "/modules/usage": {
+      "get": {
+        "description": "Блоки и сценарии, в которых они используются",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "modules"
+        ],
+        "summary": "Get list of modules usage",
+        "operationId": "modules-usage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/handlers.httpResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/entity.AllUsageResponse"
+                    }
                   }
-              }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/handlers.httpError"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/handlers.httpError"
+            }
           }
-      },
-      "/modules/{moduleName}/usage": {
-          "get": {
-              "description": "Сценарии, в которых используется блок",
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "modules"
-              ],
-              "summary": "Usage of module in pipelines",
-              "operationId": "module-usage",
-              "parameters": [
-                  {
-                      "type": "string",
-                      "description": "module name",
-                      "name": "moduleName",
-                      "in": "path",
-                      "required": true
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "allOf": [
-                              {
-                                  "$ref": "#/definitions/handlers.httpResponse"
-                              },
-                              {
-                                  "type": "object",
-                                  "properties": {
-                                      "data": {
-                                          "$ref": "#/definitions/entity.UsageResponse"
-                                      }
-                                  }
-                              }
-                          ]
-                      }
-                  },
-                  "400": {
-                      "description": "Bad Request",
-                      "schema": {
-                          "$ref": "#/definitions/handlers.httpError"
-                      }
-                  },
-                  "500": {
-                      "description": "Internal Server Error",
-                      "schema": {
-                          "$ref": "#/definitions/handlers.httpError"
-                      }
-                  }
-              }
+        }
+      }
+    },
+    "/modules/{moduleName}/usage": {
+      "get": {
+        "description": "Сценарии, в которых используется блок",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "modules"
+        ],
+        "summary": "Usage of module in pipelines",
+        "operationId": "module-usage",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "module name",
+            "name": "moduleName",
+            "in": "path",
+            "required": true
           }
-      },
-      "/pipelines/": {
-          "get": {
-              "description": "Список сценариев",
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "pipeline"
-              ],
-              "summary": "Get list of pipelines",
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/handlers.httpResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/entity.UsageResponse"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/handlers.httpError"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/handlers.httpError"
+            }
+          }
+        }
+      }
+    },
+    "/pipelines/": {
+      "get": {
+        "description": "Список сценариев",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "pipeline"
+        ],
+        "summary": "Get list of pipelines",
         "operationId": "list-pipelines",
         "responses": {
           "200": {
@@ -704,33 +704,33 @@
     }
   },
   "definitions": {
-      "entity.AllUsageResponse": {
+    "entity.AllUsageResponse": {
+      "type": "object",
+      "properties": {
+        "pipelines": {
           "type": "object",
-          "properties": {
-              "pipelines": {
-                  "type": "object",
-                  "additionalProperties": {
-                      "type": "array",
-                      "items": {
-                          "type": "string"
-                      }
-                  }
-              }
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
-      },
-      "entity.EriusFunc": {
-          "type": "object",
-          "properties": {
-              "block_type": {
-                  "type": "string",
-                  "enum": [
-                      "python3",
-                      "internal",
-                      "term",
-                      "scenario"
-                  ],
-                  "example": "python3"
-              },
+        }
+      }
+    },
+    "entity.EriusFunc": {
+      "type": "object",
+      "properties": {
+        "block_type": {
+          "type": "string",
+          "enum": [
+            "python3",
+            "internal",
+            "term",
+            "scenario"
+          ],
+          "example": "python3"
+        },
         "final": {
           "type": "string"
         },
@@ -741,8 +741,8 @@
           }
         },
         "next": {
-            "type": "string",
-            "example": "send-data_0"
+          "type": "string",
+          "example": "send-data_0"
         },
         "on_false": {
           "type": "string"
@@ -760,48 +760,48 @@
           }
         },
         "title": {
-            "type": "string",
-            "example": "lock-bts"
+          "type": "string",
+          "example": "lock-bts"
         },
-              "x": {
-                  "type": "integer"
-              },
-              "y": {
-                  "type": "integer"
-              }
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      }
+    },
+    "entity.EriusFunctionList": {
+      "type": "object",
+      "properties": {
+        "funcs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/script.FunctionModel"
           }
-      },
-      "entity.EriusFunctionList": {
-          "type": "object",
-          "properties": {
-              "funcs": {
-                  "type": "array",
-                  "items": {
-                      "$ref": "#/definitions/script.FunctionModel"
-                  }
-              },
-              "shapes": {
-                  "type": "array",
-                  "items": {
-                      "$ref": "#/definitions/script.ShapeEntity"
-                  }
-              }
+        },
+        "shapes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/script.ShapeEntity"
           }
-      },
-      "entity.EriusFunctionValue": {
-          "type": "object",
-          "properties": {
-              "global": {
-                  "type": "string",
-                  "example": "block.some_data"
-              },
-              "name": {
-                  "type": "string",
-                  "example": "some_data"
-              },
+        }
+      }
+    },
+    "entity.EriusFunctionValue": {
+      "type": "object",
+      "properties": {
+        "global": {
+          "type": "string",
+          "example": "block.some_data"
+        },
+        "name": {
+          "type": "string",
+          "example": "some_data"
+        },
         "type": {
-            "type": "string",
-            "example": "string"
+          "type": "string",
+          "example": "string"
         }
       }
     },
@@ -812,9 +812,9 @@
           "type": "boolean"
         },
         "id": {
-            "type": "string",
-            "format": "uuid",
-            "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+          "type": "string",
+          "format": "uuid",
+          "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
         },
         "input": {
           "type": "array",
@@ -823,8 +823,8 @@
           }
         },
         "name": {
-            "type": "string",
-            "example": "ScenarioName"
+          "type": "string",
+          "example": "ScenarioName"
         },
         "output": {
           "type": "array",
@@ -847,20 +847,20 @@
           }
         },
         "status": {
-            "description": "1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve",
-            "type": "integer",
-            "enum": [
-                1,
-                2,
-                3,
-                4,
-                5
-            ]
+          "description": "1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve",
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
         },
         "version_id": {
-            "type": "string",
-            "format": "uuid",
-            "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+          "type": "string",
+          "format": "uuid",
+          "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
         }
       }
     },
@@ -868,47 +868,47 @@
       "type": "object",
       "properties": {
         "approved_at": {
-            "type": "string",
-            "example": "2020-07-16T17:10:25.112704+03:00"
+          "type": "string",
+          "example": "2020-07-16T17:10:25.112704+03:00"
         },
         "approver": {
-            "type": "string",
-            "example": "testApprover"
+          "type": "string",
+          "example": "testApprover"
         },
         "author": {
-            "type": "string",
-            "example": "testAuthor"
+          "type": "string",
+          "example": "testAuthor"
         },
         "created_at": {
-            "type": "string",
-            "example": "2020-07-16T17:10:25.112704+03:00"
+          "type": "string",
+          "example": "2020-07-16T17:10:25.112704+03:00"
         },
         "id": {
-            "type": "string",
-            "format": "uuid",
-            "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+          "type": "string",
+          "format": "uuid",
+          "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
         },
         "last_run": {
-            "type": "string",
-            "example": "2020-07-16T17:10:25.112704+03:00"
+          "type": "string",
+          "example": "2020-07-16T17:10:25.112704+03:00"
         },
         "last_run_status": {
           "type": "string"
         },
         "name": {
-            "type": "string",
-            "example": "ScenarioName"
+          "type": "string",
+          "example": "ScenarioName"
         },
         "status": {
-            "description": "1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve",
-            "type": "integer",
-            "enum": [
-                1,
-                2,
-                3,
-                4,
-                5
-            ]
+          "description": "1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve",
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
         },
         "tags": {
           "type": "array",
@@ -917,9 +917,9 @@
           }
         },
         "version_id": {
-            "type": "string",
-            "format": "uuid",
-            "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+          "type": "string",
+          "format": "uuid",
+          "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
         }
       }
     },
@@ -927,32 +927,32 @@
       "type": "object",
       "properties": {
         "drafts": {
-            "description": "Черновики",
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/entity.EriusScenarioInfo"
-            }
+          "description": "Черновики",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entity.EriusScenarioInfo"
+          }
         },
         "on_approve": {
-            "description": "Сценарии на одобрении",
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/entity.EriusScenarioInfo"
-            }
+          "description": "Сценарии на одобрении",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entity.EriusScenarioInfo"
+          }
         },
         "pipelines": {
-            "description": "Сценарии",
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/entity.EriusScenarioInfo"
-            }
+          "description": "Согласованные сценарии",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entity.EriusScenarioInfo"
+          }
         },
         "tags": {
-            "description": "Теги",
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/entity.EriusTagInfo"
-            }
+          "description": "Теги",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entity.EriusTagInfo"
+          }
         }
       }
     },
@@ -973,64 +973,64 @@
     "entity.RunResponse": {
       "type": "object",
       "properties": {
-          "errors": {
-              "type": "array",
-              "items": {
-                  "type": "string"
-              }
-          },
-          "output": {
-              "type": "object"
-          },
-          "pipeline_id": {
-              "type": "string",
-              "format": "uuid",
-              "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
-          },
-          "status": {
-              "type": "string",
-              "example": "runned"
-          },
-          "task_id": {
-              "type": "string",
-              "format": "uuid",
-              "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
+        },
+        "output": {
+          "type": "object"
+        },
+        "pipeline_id": {
+          "type": "string",
+          "format": "uuid",
+          "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+        },
+        "status": {
+          "type": "string",
+          "example": "runned"
+        },
+        "task_id": {
+          "type": "string",
+          "format": "uuid",
+          "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+        }
       }
     },
-      "entity.UsageResponse": {
-          "type": "object",
-          "properties": {
-              "name": {
-                  "description": "Имя блока",
-                  "type": "string"
-              },
-              "pipelines": {
-                  "type": "array",
-                  "items": {
-                      "$ref": "#/definitions/entity.UsedBy"
-                  }
-              },
-              "used": {
-                  "type": "boolean"
-              }
+    "entity.UsageResponse": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Имя блока",
+          "type": "string"
+        },
+        "pipelines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entity.UsedBy"
           }
-      },
-      "entity.UsedBy": {
-          "type": "object",
-          "properties": {
-              "id": {
-                  "description": "ID сценария",
-                  "type": "string"
-              },
-              "name": {
-                  "description": "Имя сценария",
-                  "type": "string"
-              }
-          }
-      },
-      "handlers.httpError": {
-          "type": "object",
+        },
+        "used": {
+          "type": "boolean"
+        }
+      }
+    },
+    "entity.UsedBy": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "ID сценария",
+          "type": "string"
+        },
+        "name": {
+          "description": "Имя сценария",
+          "type": "string"
+        }
+      }
+    },
+    "handlers.httpError": {
+      "type": "object",
       "properties": {
         "description": {
           "type": "string"
@@ -1042,77 +1042,77 @@
           "type": "integer"
         }
       }
-      },
-      "handlers.httpResponse": {
-          "type": "object",
-          "properties": {
-              "data": {
-                  "type": "object"
-              },
-              "status_code": {
-                  "type": "integer"
-              }
-          }
-      },
-      "script.FunctionModel": {
-          "type": "object",
-          "properties": {
-              "block_type": {
-                  "type": "string"
-              },
-              "inputs": {
-                  "type": "array",
-                  "items": {
-                      "$ref": "#/definitions/script.FunctionValueModel"
-                  }
-              },
-              "next_funcs": {
-                  "type": "array",
-                  "items": {
-                      "type": "string"
-                  }
-              },
-              "outputs": {
-                  "type": "array",
-                  "items": {
-                      "$ref": "#/definitions/script.FunctionValueModel"
-                  }
-              },
-              "shape_type": {
-                  "type": "integer"
-              },
-              "title": {
-                  "type": "string"
-              }
-          }
-      },
-      "script.FunctionValueModel": {
-          "type": "object",
-          "properties": {
-              "comment": {
-                  "type": "string"
-              },
-              "name": {
-                  "type": "string"
-              },
-              "type": {
-                  "type": "string"
-              }
-          }
-      },
-      "script.ShapeEntity": {
-          "type": "object",
-          "properties": {
-              "icon": {
-                  "type": "string"
-              },
-              "id": {
-                  "type": "integer"
-              },
-              "title": {
-                  "type": "string"
-              }
-          }
+    },
+    "handlers.httpResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object"
+        },
+        "status_code": {
+          "type": "integer"
+        }
       }
+    },
+    "script.FunctionModel": {
+      "type": "object",
+      "properties": {
+        "block_type": {
+          "type": "string"
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/script.FunctionValueModel"
+          }
+        },
+        "next_funcs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/script.FunctionValueModel"
+          }
+        },
+        "shape_type": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "script.FunctionValueModel": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "script.ShapeEntity": {
+      "type": "object",
+      "properties": {
+        "icon": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    }
   }
 }

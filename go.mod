@@ -6,7 +6,6 @@ require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.0
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/certifi/gocertifi v0.0.0-20200211180108-c7c1fbc02894 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/go-chi/chi v4.0.3+incompatible
 	github.com/go-chi/cors v1.0.0
 	github.com/go-openapi/jsonreference v0.19.4 // indirect
@@ -22,7 +21,6 @@ require (
 	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba
 	github.com/swaggo/swag v1.6.7
 	github.com/tidwall/gjson v1.6.0 // indirect
-	github.com/urfave/cli/v2 v2.2.0 // indirect
 	gitlab.services.mts.ru/libs/logger v1.1.1
 	go.opencensus.io v0.22.3
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect

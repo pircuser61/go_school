@@ -168,7 +168,7 @@ definitions:
           $ref: '#/definitions/entity.EriusScenarioInfo'
         type: array
       pipelines:
-        description: Сценарии
+        description: Согласованные сценарии
         items:
           $ref: '#/definitions/entity.EriusScenarioInfo'
         type: array
