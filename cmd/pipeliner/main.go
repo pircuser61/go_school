@@ -9,13 +9,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	httpSwagger "github.com/swaggo/http-swagger"
+
 	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
 
-	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
@@ -151,7 +152,6 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 	})
 
 	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
-	mux.Use(middleware.SetHeader("Content-Type", "text/json"))
 	mux.Use(cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{http.MethodPost, http.MethodGet, http.MethodHead, http.MethodPatch, http.MethodPut},
@@ -161,31 +161,31 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 		MaxAge:           maxAge,
 	}).Handler)
 
-	mux.Route("/api/pipeliner/v1", func(r chi.Router) {
-		r.Get("/pipelines/", pipeliner.ListPipelines)
-		r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline(false))
-		r.Get("/pipelines/version/{versionID}", pipeliner.GetPipeline(true))
-		r.Post("/pipelines/", pipeliner.PostPipeline(false))
-		r.Post("/pipelines/version/{pipelineID}", pipeliner.PostPipeline(true))
-		r.Put("/pipelines/version/", pipeliner.EditDraft)
-		r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
-		r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
+	mux.With(middleware.SetHeader("Content-Type", "text/json")).
+		Route("/api/pipeliner/v1", func(r chi.Router) {
+			r.Get("/pipelines/", pipeliner.ListPipelines)
+			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline(false))
+			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipeline(true))
+			r.Post("/pipelines/", pipeliner.PostPipeline(false))
+			r.Post("/pipelines/version/{pipelineID}", pipeliner.PostPipeline(true))
+			r.Put("/pipelines/version/", pipeliner.EditDraft)
+			r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
+			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
 
-		r.Get("/modules/", pipeliner.GetModules)
-		r.Get("/modules/usage", pipeliner.AllModulesUsage)
-		r.Get("/modules/{moduleName}/usage", pipeliner.ModuleUsage)
+			r.Get("/modules/", pipeliner.GetModules)
+			r.Get("/modules/usage", pipeliner.AllModulesUsage)
+			r.Get("/modules/{moduleName}/usage", pipeliner.ModuleUsage)
 
-		r.Get("/tags/", pipeliner.GetTags)
-		r.Post("/tags/", pipeliner.CreateTag)
-		r.Put("/tags/{ID}", pipeliner.EditTag)
-		r.Delete("/tags/{ID}", pipeliner.RemoveTag)
+			r.Get("/tags/", pipeliner.GetTags)
+			r.Post("/tags/", pipeliner.CreateTag)
+			r.Put("/tags/{ID}", pipeliner.EditTag)
+			r.Delete("/tags/{ID}", pipeliner.RemoveTag)
 
-		r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
-		r.Post("/run/version/{versionID}", pipeliner.RunVersion)
+			r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
+			r.Post("/run/version/{versionID}", pipeliner.RunVersion)
+		})
 
-		r.With(middleware.SetHeader("Content-type", "")).
-			Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
-	})
+	mux.Mount("/api/pipeliner/v1/swagger/", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
 
 	return mux
 }
