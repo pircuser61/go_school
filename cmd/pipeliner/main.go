@@ -193,5 +193,5 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 func initSwagger(cfg *configs.Pipeliner) {
 	docs.SwaggerInfo.BasePath = cfg.Swag.BasePath
 	docs.SwaggerInfo.Version = cfg.Swag.Version
-	docs.SwaggerInfo.Host = cfg.Swag.Host + cfg.ServeAddr
+	docs.SwaggerInfo.Host = cfg.Swag.Host + cfg.Swag.Port
 }
