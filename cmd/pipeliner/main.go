@@ -182,10 +182,10 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 
 		r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
 		r.Post("/run/version/{versionID}", pipeliner.RunVersion)
-	})
 
-	mux.With(middleware.SetHeader("Content-type", "")).
-		Mount("/swagger/", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
+		r.With(middleware.SetHeader("Content-type", "")).
+			Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
+	})
 
 	return mux
 }
