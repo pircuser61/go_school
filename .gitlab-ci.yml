@@ -3,7 +3,3 @@ include:
     ref: v3
     file: '/templates/go_base_auto_mr.yml'
 
-test:
-  only:
-    - pushes
-    - merge_requests
