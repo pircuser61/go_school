@@ -586,9 +586,9 @@ var doc = `{
                 }
             }
         },
-        "/run/{pipelineID}": {
+        "/run/version/{versionID}": {
             "post": {
-                "description": "Запустить сценарий",
+                "description": "Запустить версию",
                 "consumes": [
                     "application/json"
                 ],
@@ -596,11 +596,11 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "pipeline",
+                    "version",
                     "run"
                 ],
-                "summary": "Run Pipeline",
-                "operationId": "run-pipeline",
+                "summary": "Run Version",
+                "operationId": "run-version",
                 "parameters": [
                     {
                         "description": "pipeline input",
@@ -612,8 +612,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "Pipeline ID",
-                        "name": "pipelineID",
+                        "description": "Version ID",
+                        "name": "versionID",
                         "in": "path",
                         "required": true
                     }
@@ -652,9 +652,9 @@ var doc = `{
                 }
             }
         },
-        "/run/{versionID}": {
+        "/run/{pipelineID}": {
             "post": {
-                "description": "Запустить версию",
+                "description": "Запустить сценарий",
                 "consumes": [
                     "application/json"
                 ],
@@ -662,11 +662,11 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "version",
+                    "pipeline",
                     "run"
                 ],
-                "summary": "Run Version",
-                "operationId": "run-version",
+                "summary": "Run Pipeline",
+                "operationId": "run-pipeline",
                 "parameters": [
                     {
                         "description": "pipeline input",
@@ -678,8 +678,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "Version ID",
-                        "name": "versionID",
+                        "description": "Pipeline ID",
+                        "name": "pipelineID",
                         "in": "path",
                         "required": true
                     }
