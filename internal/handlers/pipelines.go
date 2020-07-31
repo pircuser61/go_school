@@ -533,7 +533,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 // @Success 200 {object} httpResponse{data=entity.RunResponse}
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /run/{versionID} [post]
+// @Router /run/version/{versionID} [post]
 func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "run_pipeline")
 	defer s.End()
