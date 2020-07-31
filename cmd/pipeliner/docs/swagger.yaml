@@ -679,7 +679,7 @@ paths:
       tags:
         - pipeline
         - run
-  /run/{versionID}:
+  /run/version/{versionID}:
     post:
       consumes:
         - application/json
