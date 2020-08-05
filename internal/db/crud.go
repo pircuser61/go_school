@@ -137,7 +137,7 @@ func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]en
 	defer span.End()
 
 	q := `SELECT 
-	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name,
+	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name
 from pipeliner.versions pv
 join pipeliner.pipelines pp on pv.pipeline_id = pp.id
 left outer join  pipeliner.works pw on pw.id = pv.last_run_id
