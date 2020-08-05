@@ -114,7 +114,8 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 func (db *PGConnection) findApproveDate(c context.Context, id uuid.UUID) (time.Time, error) {
 	c, span := trace.StartSpan(c, "pg_find_approve_time")
 	defer span.End()
-	q := `SELECT date FROM pipeliner.pipeline_history where version_id = $1  order by date limit 1 `
+
+	q := `SELECT date FROM pipeliner.pipeline_history where version_id = $1 order by date limit 1`
 	rows, err := db.Pool.Query(c, q, id)
 	if err != nil {
 		return time.Time{}, err
@@ -136,7 +137,7 @@ func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]en
 	defer span.End()
 
 	q := `SELECT 
-	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name, pv.
+	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name,
 from pipeliner.versions pv
 join pipeliner.pipelines pp on pv.pipeline_id = pp.id
 left outer join  pipeliner.works pw on pw.id = pv.last_run_id
