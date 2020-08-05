@@ -3,3 +3,14 @@ include:
     ref: v3
     file: '/templates/go_base_auto_mr.yml'
 
+stages:
+  - generate
+  - lint
+  - build
+  - image
+  - deploy
+  - push_changes
+
+generate swagger:
+  extends: .go_swagger
+  stage: generate
