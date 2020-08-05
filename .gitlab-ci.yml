@@ -14,3 +14,11 @@ include:
 # generate swagger:
 #   extends: .go_swagger
 #   stage: generate
+
+# test:
+#   dependencies:
+#     - generate swagger
+
+# build binary:
+#   dependencies:
+#     - generate swagger
