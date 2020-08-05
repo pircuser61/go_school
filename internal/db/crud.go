@@ -123,7 +123,7 @@ func (db *PGConnection) findApproveDate(c context.Context, id uuid.UUID) (time.T
 	defer rows.Close()
 	for rows.Next() {
 		date := time.Time{}
-		err := rows.Scan(date)
+		err := rows.Scan(&date)
 		if err != nil {
 			return time.Time{}, err
 		}
