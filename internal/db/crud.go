@@ -61,7 +61,6 @@ func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScena
 	defer rows.Close()
 
 	versionInfoList := make([]entity.EriusScenarioInfo, 0)
-
 	for rows.Next() {
 		e := entity.EriusScenarioInfo{}
 
@@ -85,7 +84,51 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 	c, span := trace.StartSpan(c, "pg_list_approved_versions")
 	defer span.End()
 
-	return db.GetVersionsByStatus(c, StatusApproved)
+	vMap := make(map[uuid.UUID]entity.EriusScenarioInfo)
+	versions, err := db.GetVersionsByStatus(c, StatusApproved)
+	if err != nil {
+		return nil, err
+	}
+	for _, version := range versions {
+		finV, ok := vMap[version.ID]
+		if ok {
+			t, err := db.findApproveDate(c, version.VersionID)
+			if err != nil {
+				return nil, err
+			}
+			if finV.ApprovedAt.After(t) {
+				continue
+			}
+		}
+		vMap[version.ID] = version
+	}
+	final := make([]entity.EriusScenarioInfo, len(vMap))
+	n := 0
+	for _, v := range vMap {
+		final[n] = v
+		n++
+	}
+	return final, nil
+}
+
+func (db *PGConnection) findApproveDate(c context.Context, id uuid.UUID) (time.Time, error) {
+	c, span := trace.StartSpan(c, "pg_find_approve_time")
+	defer span.End()
+	q := `SELECT date FROM pipeliner.pipeline_history where version_id = $1  order by date limit 1 `
+	rows, err := db.Pool.Query(c, q, id)
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		date := time.Time{}
+		err := rows.Scan(date)
+		if err != nil {
+			return time.Time{}, err
+		}
+		break
+	}
+	return time.Time{}, nil
 }
 
 func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error) {
@@ -93,7 +136,7 @@ func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]en
 	defer span.End()
 
 	q := `SELECT 
-	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name
+	pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name, pv.
 from pipeliner.versions pv
 join pipeliner.pipelines pp on pv.pipeline_id = pp.id
 left outer join  pipeliner.works pw on pw.id = pv.last_run_id
