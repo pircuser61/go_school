@@ -1,7 +1,5 @@
 package handlers
 
-//go:generate swag init -g ../../cmd/pipeliner/main.go -o ../../cmd/pipeliner/docs
-
 import (
 	"context"
 	"encoding/json"
