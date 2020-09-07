@@ -564,6 +564,10 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 	c, s := trace.StartSpan(c, "exec_version")
 	defer s.End()
 
+	reqID := req.Header.Get(XRequestIDHeader)
+
+	c = context.WithValue(c, XRequestIDHeader, reqID)
+
 	ep := pipeline.ExecutablePipeline{}
 	ep.PipelineID = p.ID
 	ep.VersionID = p.VersionID
