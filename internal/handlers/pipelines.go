@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"gitlab.services.mts.ru/erius/admin/pkg/auth"
+
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
@@ -42,6 +44,13 @@ type RunContext struct {
 func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	c, s := trace.StartSpan(context.Background(), "list_pipelines")
 	defer s.End()
+
+	user, err := auth.UserFromContext(c)
+	if err != nil {
+		ae.Logger.Errorf("user failed: %s", err.Error())
+	}
+
+	ae.Logger.Errorf("user: %s", user.UserName())
 
 	approved, err := ae.DB.GetApprovedVersions(c)
 	if err != nil {
