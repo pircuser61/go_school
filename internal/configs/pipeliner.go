@@ -23,6 +23,7 @@ type Pipeliner struct {
 	FaaS          string         `yaml:"faas"`
 	RunEnv        RunEnv         `yaml:"run_env"`
 	Swag          SwaggerGeneral `yaml:"swagger"`
+	AuthBaseURL   *URL           `yaml:"auth"`
 }
 
 type RunEnv struct {

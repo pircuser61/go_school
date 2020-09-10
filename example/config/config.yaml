@@ -2,6 +2,7 @@ serve_addr: ":8181"
 timeout: "30s"
 script_manager: "manager"
 faas: "https://openfaas.dev.autobp.mts.ru/"
+auth: 'http://admin.erius-develop/api/admin/v1/'
 
 database:
   kind: postgres

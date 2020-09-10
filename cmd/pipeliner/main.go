@@ -13,6 +13,7 @@ import (
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
+	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
@@ -67,11 +68,18 @@ func main() {
 		return
 	}
 
+	authClient, err := auth.NewClient(cfg.AuthBaseURL.URL, nil)
+	if err != nil {
+		log.WithError(err).Error("can't create auth client")
+		return
+	}
+
 	pipeliner := handlers.APIEnv{
 		DB:            &dbConn,
 		Logger:        log,
 		ScriptManager: cfg.ScriptManager,
 		FaaS:          cfg.FaaS,
+		AuthClient:    authClient,
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
@@ -165,7 +173,12 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route("/api/pipeliner/v1", func(r chi.Router) {
-			r.Get("/pipelines/", pipeliner.ListPipelines)
+
+			r.Group(func(r chi.Router) {
+				r.Use(auth.UserMiddleware(pipeliner.AuthClient))
+				r.Get("/pipelines/", pipeliner.ListPipelines)
+			})
+
 			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline(false))
 			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipeline(true))
 			r.Post("/pipelines/", pipeliner.PostPipeline(false))
