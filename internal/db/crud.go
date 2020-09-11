@@ -50,9 +50,7 @@ const (
 	RunStatusError    int = 3
 )
 
-var (
-	errCantFindPipelineVersion = errors.New("can't find pipeline version")
-)
+var errCantFindPipelineVersion = errors.New("can't find pipeline version")
 
 func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScenarioInfo, error) {
 	_, span := trace.StartSpan(c, "parse_row_version_list")

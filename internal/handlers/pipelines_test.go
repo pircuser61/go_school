@@ -180,7 +180,6 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 					handler(w, rq)
 
 					expectedBlockIndex += 1
-
 				})
 			}))
 			defer FaaSMockServer.Close()
@@ -194,7 +193,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 
 			pipelineRouter := chi.NewRouter()
 
-			//pipelineRouter.Use(AddWithStop)
+			// pipelineRouter.Use(AddWithStop)
 			pipelineRouter.Route("/", func(r chi.Router) {
 				r.With(SetRequestID).Post("/pipeliner/{pipelineID}", ae.RunPipeline)
 			})

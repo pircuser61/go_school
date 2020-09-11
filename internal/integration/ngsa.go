@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
@@ -77,8 +76,6 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	inputs := ns.Model().Inputs
 	for _, input := range inputs {
-		fmt.Println(ns.Input[input.Name])
-
 		v, ok := runCtx.GetValue(ns.Input[input.Name])
 		if !ok {
 			continue
@@ -91,8 +88,6 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("input Data:", string(b))
 
 	m := NGSASendModel{}
 

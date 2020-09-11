@@ -46,7 +46,6 @@ const (
 func main() {
 	configPath := flag.String("c", "./config.yaml", "path to config")
 	flag.Parse()
-
 	log := logger.CreateLogger(nil)
 
 	metrics.InitMetricsAuth()
@@ -173,16 +172,15 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route("/api/pipeliner/v1", func(r chi.Router) {
-
 			r.Group(func(r chi.Router) {
 				r.Use(auth.UserMiddleware(pipeliner.AuthClient))
 				r.Get("/pipelines/", pipeliner.ListPipelines)
+				r.Post("/pipelines/", pipeliner.PostPipeline(false))
+				r.Post("/pipelines/version/{pipelineID}", pipeliner.PostPipeline(true))
 			})
 
-			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline(false))
-			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipeline(true))
-			r.Post("/pipelines/", pipeliner.PostPipeline(false))
-			r.Post("/pipelines/version/{pipelineID}", pipeliner.PostPipeline(true))
+		r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline(false))
+		r.Get("/pipelines/version/{versionID}", pipeliner.GetPipeline(true))
 			r.Put("/pipelines/version/", pipeliner.EditDraft)
 			r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
 			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)

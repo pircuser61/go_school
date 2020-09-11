@@ -47,7 +47,6 @@ var (
 )
 
 func TestFunctionBlock_Run(t *testing.T) {
-
 	type fields struct {
 		Name           string
 		FunctionName   string

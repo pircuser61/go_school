@@ -31,9 +31,7 @@ type TestablePipeline struct {
 	pipeline         *entity.EriusScenario
 }
 
-var (
-	errNotFound = errors.New("not found")
-)
+var errNotFound = errors.New("not found")
 
 var (
 	LinearPipelineBlock = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
