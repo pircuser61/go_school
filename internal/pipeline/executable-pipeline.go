@@ -75,6 +75,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 	for ep.NowOnPoint != "" {
 		ep.Logger.Println("executing", ep.NowOnPoint)
+		ep.Logger.Println("  -- storage ---", runCtx.Values)
+		ep.Logger.Println("  -- steps ---", runCtx.Steps)
+		ep.Logger.Println("  -- errors ---", runCtx.Errors)
 
 		if ep.Blocks[ep.NowOnPoint].IsScenario() {
 			ep.VarStore.AddStep(ep.NowOnPoint)
