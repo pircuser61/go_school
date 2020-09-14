@@ -219,7 +219,7 @@ func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *ht
 			ae.Logger.Errorf("user failed: %s", err.Error())
 		}
 		defer s.End()
-
+		fmt.Println(user.UserName())
 		b, err := ioutil.ReadAll(req.Body)
 		defer req.Body.Close()
 
