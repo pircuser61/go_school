@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
+
 	"github.com/go-chi/chi"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/test"
 	"gitlab.services.mts.ru/libs/logger"
@@ -144,6 +146,9 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			ExpectedRunningSequence: []string{"Block1", "Block2", "Block3"},
 		},
 	}
+
+	monitoring.Setup("http://localhost:9000/api/monitoring/v1/pipeliner", http.DefaultClient, time.Second*1)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expectedBlockIndex := 0
@@ -211,7 +216,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			resp, _ := pipelinerServer.Client().Do(req)
 			respBytes, _ := ioutil.ReadAll(resp.Body)
 
-			time.Sleep(1 * time.Second)
+			time.Sleep(5 * time.Second)
 
 			var httpResp struct {
 				StatusCode int `json:"status_code"`
