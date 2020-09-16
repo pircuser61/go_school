@@ -10,9 +10,7 @@ import (
 	"go.opencensus.io/trace"
 )
 
-var (
-	errCantGetIndex = errors.New("can't get index")
-)
+var errCantGetIndex = errors.New("can't get index")
 
 type IF struct {
 	Name          string

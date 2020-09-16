@@ -19,12 +19,12 @@ import (
 	"go.opencensus.io/trace"
 )
 
-var (
-	errPipelineNotEditable = errors.New("pipeline is not editable")
-)
+var errPipelineNotEditable = errors.New("pipeline is not editable")
 
-const testAuthor = "testUser"
-const testUser = "testUser"
+const (
+	testAuthor = "testUser"
+	testUser   = "testUser"
+)
 
 type RunContext struct {
 	ID         string            `json:"id"`
@@ -70,7 +70,7 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	drafts, err := ae.DB.GetDraftVersions(c, testAuthor)
+	drafts, err := ae.DB.GetDraftVersions(c, user.UserName())
 	if err != nil {
 		e := GetAllDraftsError
 		ae.Logger.Error(e.errorMessage(err))
@@ -96,17 +96,6 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// @Summary Get pipeline
-// @Description Получить сценарий по ID
-// @Tags pipeline
-// @ID      get-pipeline
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @success 200 {object} httpResponse{data=entity.EriusScenario}
-// @Failure 400 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/{pipelineID} [get]
-func GetVersion() {}
 
 // GetPipeline returns handler for GET pipelines
 // if isVersion is True - returns handler for GET pipelines/version.
@@ -121,13 +110,13 @@ func GetVersion() {}
 // @Failure 500 {object} httpError
 // @Router /pipelines/version/{versionID} [get]
 func (ae *APIEnv) GetPipeline(isVersion bool) func(w http.ResponseWriter, req *http.Request) {
-	var spanName = "get_pipeline"
+	spanName := "get_pipeline"
 
-	var paramKey = "pipelineID"
+	paramKey := "pipelineID"
 
-	var getPipelineFunction = ae.DB.GetPipeline
+	getPipelineFunction := ae.DB.GetPipeline
 
-	var pipelineError = GetPipelineError
+	pipelineError := GetPipelineError
 
 	if isVersion {
 		spanName = "get_version"
@@ -200,11 +189,11 @@ func postVersion() {}
 // @Failure 500 {object} httpError
 // @Router /pipelines/ [post]
 func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *http.Request) {
-	var spanName = "create_pipeline"
+	spanName := "create_pipeline"
 
-	var createFunction = ae.DB.CreatePipeline
+	createFunction := ae.DB.CreatePipeline
 
-	var pipelineError = PipelineCreateError
+	pipelineError := PipelineCreateError
 
 	if isDraft {
 		spanName = "create_draft"
@@ -214,8 +203,11 @@ func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *ht
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx, s := trace.StartSpan(context.Background(), spanName)
+		user, err := auth.UserFromContext(ctx)
+		if err != nil {
+			ae.Logger.Errorf("user failed: %s", err.Error())
+		}
 		defer s.End()
-
 		b, err := ioutil.ReadAll(req.Body)
 		defer req.Body.Close()
 
@@ -254,7 +246,7 @@ func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *ht
 
 		p.VersionID = uuid.New()
 
-		err = createFunction(ctx, &p, testAuthor, b)
+		err = createFunction(ctx, &p, user.UserName(), b)
 		if err != nil {
 			e := pipelineError
 			ae.Logger.Error(e.errorMessage(err))
@@ -644,8 +636,10 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 			vs.AddError(err)
 		}
 
-		err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
-			Status: "runned"})
+		err = sendResponse(w, http.StatusOK, entity.RunResponse{
+			PipelineID: ep.PipelineID, TaskID: ep.WorkID,
+			Status: "runned",
+		})
 		if err != nil {
 			e := UnknownError
 			ae.Logger.Error(e.errorMessage(err))
@@ -664,8 +658,10 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 
 		status := "runned"
 
-		err = sendResponse(w, http.StatusOK, entity.RunResponse{PipelineID: ep.PipelineID, TaskID: ep.WorkID,
-			Status: status})
+		err = sendResponse(w, http.StatusOK, entity.RunResponse{
+			PipelineID: ep.PipelineID, TaskID: ep.WorkID,
+			Status: status,
+		})
 		if err != nil {
 			e := UnknownError
 			ae.Logger.Error(e.errorMessage(err))

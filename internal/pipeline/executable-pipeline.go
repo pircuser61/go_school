@@ -178,7 +178,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
 				runURL:         ep.FaaS + "function/%s",
-				//runURL: "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
+				// runURL: "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
 			}
 
 			for _, v := range block.Input {
