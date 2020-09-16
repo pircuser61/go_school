@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/go-chi/chi"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
@@ -59,6 +61,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 		ctx    context.Context
 		runCtx *store.VariableStore
 	}
+	ctx := context.WithValue(context.Background(), "X-Request-Id", uuid.New().String())
 	tests := []struct {
 		name    string
 		fields  fields
@@ -82,7 +85,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				runURL:         "",
 			},
 			args: args{
-				ctx:    context.Background(),
+				ctx:    ctx,
 				runCtx: store.NewStore(),
 			},
 			wantErr:     false,
@@ -103,7 +106,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				runURL:   "",
 			},
 			args: args{
-				ctx:    context.Background(),
+				ctx:    ctx,
 				runCtx: newStoreWithData(map[string]interface{}{"global.sInput": "sInputValue"}),
 			},
 			wantErr: false,

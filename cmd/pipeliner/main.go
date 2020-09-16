@@ -10,6 +10,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
@@ -116,6 +119,8 @@ func main() {
 		}
 	}()
 
+	monitoring.Setup(cfg.Monitoring.Addr, http.DefaultClient, time.Duration(cfg.Monitoring.Timeout)*time.Second)
+
 	go func() {
 		metricsMux := chi.NewRouter()
 		metricsMux.Handle("/metrics", promhttp.Handler())
@@ -179,8 +184,8 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 				r.Post("/pipelines/version/{pipelineID}", pipeliner.PostPipeline(true))
 			})
 
-		r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline(false))
-		r.Get("/pipelines/version/{versionID}", pipeliner.GetPipeline(true))
+			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline(false))
+			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipeline(true))
 			r.Put("/pipelines/version/", pipeliner.EditDraft)
 			r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
 			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
