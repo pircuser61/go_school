@@ -96,17 +96,6 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// @Summary Get pipeline
-// @Description Получить сценарий по ID
-// @Tags pipeline
-// @ID      get-pipeline
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @success 200 {object} httpResponse{data=entity.EriusScenario}
-// @Failure 400 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/{pipelineID} [get]
-func GetVersion() {}
 
 // GetPipeline returns handler for GET pipelines
 // if isVersion is True - returns handler for GET pipelines/version.
@@ -219,7 +208,6 @@ func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *ht
 			ae.Logger.Errorf("user failed: %s", err.Error())
 		}
 		defer s.End()
-		fmt.Println(user.UserName())
 		b, err := ioutil.ReadAll(req.Body)
 		defer req.Body.Close()
 
@@ -258,7 +246,7 @@ func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *ht
 
 		p.VersionID = uuid.New()
 
-		err = createFunction(ctx, &p, testAuthor, b)
+		err = createFunction(ctx, &p, user.UserName(), b)
 		if err != nil {
 			e := pipelineError
 			ae.Logger.Error(e.errorMessage(err))
