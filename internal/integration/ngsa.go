@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
@@ -63,7 +66,19 @@ func (ns NGSASend) IsScenario() bool {
 }
 
 func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return ns.DebugRun(ctx, runCtx)
+	err := ns.DebugRun(ctx, runCtx)
+	if err != nil {
+		metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
+	} else {
+		metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
+	}
+
+	errPush := metrics.Pusher.Push()
+	if errPush != nil {
+		fmt.Printf("can't push: %s\n", errPush.Error())
+	}
+
+	return err
 }
 
 func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
