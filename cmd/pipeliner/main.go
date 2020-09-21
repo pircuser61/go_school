@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/push"
+
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -99,6 +101,8 @@ func main() {
 	}
 
 	metrics.InitMetricsAuth()
+
+	metrics.Pusher = push.New(cfg.Push.URL, cfg.Push.Job).Gatherer(metrics.Registry)
 
 	initSwagger(cfg)
 
