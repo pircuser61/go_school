@@ -3,6 +3,7 @@ package configs
 import (
 	"fmt"
 
+	"gitlab.services.mts.ru/erius/monitoring/pkg/configs"
 	"gitlab.services.mts.ru/libs/logger"
 )
 
@@ -12,20 +13,20 @@ const (
 )
 
 type Pipeliner struct {
-	Tracing       TracingConfig  `yaml:"tracing"`
-	Timeout       Duration       `yaml:"timeout"`
-	Proxy         string         `yaml:"proxy"`
-	Log           *logger.Config `yaml:"log"`
-	ServeAddr     string         `yaml:"serve_addr"`
-	MetricsAddr   string         `yaml:"metrics_addr"`
-	DB            Database       `yaml:"database"`
-	ScriptManager string         `yaml:"script_manager"`
-	FaaS          string         `yaml:"faas"`
-	RunEnv        RunEnv         `yaml:"run_env"`
-	Swag          SwaggerGeneral `yaml:"swagger"`
-	Monitoring    Monitoring     `yaml:"monitoring"`
-	AuthBaseURL   *URL           `yaml:"auth"`
-	Push          PushConfig     `yaml:"push"`
+	Tracing       TracingConfig      `yaml:"tracing"`
+	Timeout       Duration           `yaml:"timeout"`
+	Proxy         string             `yaml:"proxy"`
+	Log           *logger.Config     `yaml:"log"`
+	ServeAddr     string             `yaml:"serve_addr"`
+	MetricsAddr   string             `yaml:"metrics_addr"`
+	DB            Database           `yaml:"database"`
+	ScriptManager string             `yaml:"script_manager"`
+	FaaS          string             `yaml:"faas"`
+	RunEnv        RunEnv             `yaml:"run_env"`
+	Swag          SwaggerGeneral     `yaml:"swagger"`
+	Monitoring    configs.Monitoring `yaml:"monitoring"`
+	AuthBaseURL   *URL               `yaml:"auth"`
+	Push          PushConfig         `yaml:"push"`
 }
 
 type RunEnv struct {
@@ -52,11 +53,6 @@ type Database struct {
 	DBName         string `yaml:"dbname"`
 	MaxConnections int    `yaml:"max_connections"`
 	Timeout        int    `yaml:"timeout"`
-}
-
-type Monitoring struct {
-	Addr    string `yaml:"addr"`
-	Timeout int    `yaml:"timeout"`
 }
 
 type PushConfig struct {

@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus/push"
 
@@ -19,6 +18,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
+
 	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
@@ -34,9 +34,10 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/libs/logger"
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 )
 
 const (
@@ -123,7 +124,7 @@ func main() {
 		}
 	}()
 
-	monitoring.Setup(cfg.Monitoring.Addr, http.DefaultClient, time.Duration(cfg.Monitoring.Timeout)*time.Second)
+	monitoring.Setup(cfg.Monitoring.Addr, &http.Client{Timeout: cfg.Monitoring.Timeout.Duration})
 
 	go func() {
 		metricsMux := chi.NewRouter()

@@ -9,10 +9,11 @@ import (
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-	"go.opencensus.io/trace"
 )
 
 type NGSASend struct {
@@ -66,24 +67,27 @@ func (ns NGSASend) IsScenario() bool {
 }
 
 func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	err := ns.DebugRun(ctx, runCtx)
-	if err != nil {
-		metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
-	} else {
-		metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
-	}
-
-	errPush := metrics.Pusher.Push()
-	if errPush != nil {
-		fmt.Printf("can't push: %s\n", errPush.Error())
-	}
-
-	return err
+	return ns.DebugRun(ctx, runCtx)
 }
 
 func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
+
+	ok := false
+
+	defer func() {
+		if ok {
+			metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
+		} else {
+			metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
+		}
+
+		errPush := metrics.Pusher.Push()
+		if errPush != nil {
+			fmt.Printf("can't push: %s\n", errPush.Error())
+		}
+	}()
 
 	runCtx.AddStep(ns.Name)
 
@@ -143,13 +147,23 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	}
 
 	if m.State == active {
-		return ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
+		err := ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
 			m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
 			m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
 			m.ManagedObjectClass)
+		if err == nil {
+			ok = true
+		}
+
+		return err
 	}
 
-	return ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
+	err = ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
+	if err == nil {
+		ok = true
+	}
+
+	return err
 }
 
 func (ns NGSASend) Next() string {

@@ -16,11 +16,12 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-	"go.opencensus.io/trace"
 )
 
 var errPipelineNotEditable = errors.New("pipeline is not editable")
@@ -570,14 +571,12 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 
 	reqID := req.Header.Get(XRequestIDHeader)
 
-	mon := monitoring.Copy(monitoring.Pipeliner)
+	mon := monitoring.New()
 	mon.Set(reqID, monitor.PipelinerData{
 		PipelineUUID: p.ID.String(),
 		VersionUUID:  p.VersionID.String(),
 		Name:         p.Name,
 	})
-
-	monCtx, _ := context.WithCancel(c)
 
 	c = context.WithValue(c, XRequestIDHeader, reqID)
 
@@ -596,7 +595,7 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
-		err = mon.Fatal(monCtx)
+		err = mon.Fatal(c)
 		if err != nil {
 			ae.Logger.WithError(err).Error("can't send data to monitoring")
 		}
@@ -612,7 +611,7 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
-		err = mon.Fatal(monCtx)
+		err = mon.Fatal(c)
 		if err != nil {
 			ae.Logger.WithError(err).Error("can't send data to monitoring")
 		}
@@ -630,7 +629,7 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
-		err = mon.Fatal(monCtx)
+		err = mon.Fatal(c)
 		if err != nil {
 			ae.Logger.WithError(err).Error("can't send data to monitoring")
 		}
@@ -647,7 +646,7 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 			ae.Logger.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
-			err = mon.Fatal(monCtx)
+			err = mon.Fatal(c)
 			if err != nil {
 				ae.Logger.WithError(err).Error("can't send data to monitoring")
 			}
@@ -681,7 +680,7 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 		}
 	} else {
 		go func() {
-			err = mon.Run(monCtx)
+			err = mon.Run(c)
 			if err != nil {
 				ae.Logger.WithError(err).Error("can't send data to monitoring")
 			}
@@ -691,13 +690,13 @@ func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *htt
 				ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 				vs.AddError(err)
 
-				err = mon.Error(monCtx)
+				err = mon.Error(c)
 				if err != nil {
 					ae.Logger.WithError(err).Error("can't send data to monitoring")
 				}
 			}
 
-			err = mon.Done(monCtx)
+			err = mon.Done(c)
 			if err != nil {
 				ae.Logger.WithError(err).Error("can't send data to monitoring")
 			}
