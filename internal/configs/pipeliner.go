@@ -23,7 +23,9 @@ type Pipeliner struct {
 	FaaS          string         `yaml:"faas"`
 	RunEnv        RunEnv         `yaml:"run_env"`
 	Swag          SwaggerGeneral `yaml:"swagger"`
+	Monitoring    Monitoring     `yaml:"monitoring"`
 	AuthBaseURL   *URL           `yaml:"auth"`
+	Push          PushConfig     `yaml:"push"`
 }
 
 type RunEnv struct {
@@ -50,6 +52,16 @@ type Database struct {
 	DBName         string `yaml:"dbname"`
 	MaxConnections int    `yaml:"max_connections"`
 	Timeout        int    `yaml:"timeout"`
+}
+
+type Monitoring struct {
+	Addr    string `yaml:"addr"`
+	Timeout int    `yaml:"timeout"`
+}
+
+type PushConfig struct {
+	URL string `yaml:"url"`
+	Job string `yaml:"job"`
 }
 
 func (d *Database) String() string {

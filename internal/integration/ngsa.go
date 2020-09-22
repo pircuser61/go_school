@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
@@ -64,7 +66,19 @@ func (ns NGSASend) IsScenario() bool {
 }
 
 func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return ns.DebugRun(ctx, runCtx)
+	err := ns.DebugRun(ctx, runCtx)
+	if err != nil {
+		metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
+	} else {
+		metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
+	}
+
+	errPush := metrics.Pusher.Push()
+	if errPush != nil {
+		fmt.Printf("can't push: %s\n", errPush.Error())
+	}
+
+	return err
 }
 
 func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
@@ -77,8 +91,6 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	inputs := ns.Model().Inputs
 	for _, input := range inputs {
-		fmt.Println(ns.Input[input.Name])
-
 		v, ok := runCtx.GetValue(ns.Input[input.Name])
 		if !ok {
 			continue
@@ -91,8 +103,6 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("input Data:", string(b))
 
 	m := NGSASendModel{}
 
