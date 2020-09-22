@@ -389,17 +389,7 @@ func (db *PGConnection) DeleteVersion(c context.Context, versionID uuid.UUID) er
 		return err
 	}
 
-	qPid := `SELECT pipeline_id from pipeliner.versions  where id = $1`
-	row := db.Pool.QueryRow(c, qPid, versionID)
-
-	var pid uuid.UUID
-
-	err = row.Scan(&pid)
-	if err != nil {
-		return err
-	}
-
-	return db.DeletePipeline(c, pid)
+	return nil
 }
 
 func (db *PGConnection) DeletePipeline(c context.Context, id uuid.UUID) error {
