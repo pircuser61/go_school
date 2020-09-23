@@ -13,8 +13,9 @@ import (
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 
 	"github.com/go-chi/chi"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/test"
 	"gitlab.services.mts.ru/libs/logger"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/test"
 )
 
 func AddWithStop(next http.Handler) http.Handler {
@@ -147,7 +148,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		},
 	}
 
-	monitoring.Setup("http://localhost:9000/api/monitoring/v1/pipeliner", http.DefaultClient, time.Second*1)
+	monitoring.Setup("http://localhost:9000/api/monitoring/v1/pipeliner", http.DefaultClient)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
