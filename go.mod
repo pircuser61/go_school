@@ -14,7 +14,7 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba
 	github.com/swaggo/swag v1.6.7
-	gitlab.services.mts.ru/erius/admin v0.0.27
+	gitlab.services.mts.ru/erius/admin v0.0.29
 	gitlab.services.mts.ru/erius/monitoring v0.0.2
 	gitlab.services.mts.ru/libs/logger v1.1.1
 	go.opencensus.io v0.22.4
