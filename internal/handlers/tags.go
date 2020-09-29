@@ -1,14 +1,13 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 
 	"go.opencensus.io/trace"
 )
 
 func (ae APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "get_tags")
+	_, s := trace.StartSpan(req.Context(), "get_tags")
 	defer s.End()
 
 	err := Teapot.sendError(w)
@@ -19,7 +18,7 @@ func (ae APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ae APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "create_tag")
+	_, s := trace.StartSpan(req.Context(), "create_tag")
 	defer s.End()
 
 	err := Teapot.sendError(w)
@@ -30,7 +29,7 @@ func (ae APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ae APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "edit_tag")
+	_, s := trace.StartSpan(req.Context(), "edit_tag")
 	defer s.End()
 
 	err := Teapot.sendError(w)
@@ -41,7 +40,7 @@ func (ae APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ae APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
-	_, s := trace.StartSpan(context.Background(), "remove_tag")
+	_, s := trace.StartSpan(req.Context(), "remove_tag")
 	defer s.End()
 
 	err := Teapot.sendError(w)

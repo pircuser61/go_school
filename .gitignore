@@ -357,3 +357,4 @@ main
 # End of https://www.gitignore.io/api/go,linux,macos,python,pycharm,windows,jetbrains+all,visualstudiocode
 
 *-local.yaml
+.build/

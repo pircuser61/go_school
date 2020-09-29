@@ -47,7 +47,7 @@ type FunctionTag struct {
 }
 
 func GetReadyFuncs(ctx context.Context, scriptManager string) (FunctionModels, error) {
-	_, s := trace.StartSpan(context.Background(), "get_ready_modules")
+	_, s := trace.StartSpan(ctx, "get_ready_modules")
 	defer s.End()
 
 	u, err := url.Parse(scriptManager)

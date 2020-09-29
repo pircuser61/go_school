@@ -23,6 +23,7 @@ func sendResponse(w http.ResponseWriter, statusCode int, body interface{}) error
 	if err != nil {
 		return err
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	return nil
