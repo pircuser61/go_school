@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -22,7 +21,7 @@ import (
 // @Failure 500 {object} httpError
 // @Router /modules/ [get]
 func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(context.Background(), "list_modules")
+	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
 
 	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager)
@@ -111,10 +110,10 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 // @Router /modules/usage [get]
 //nolint //i rly want copy and big loop for simple read
 func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
-	c, s := trace.StartSpan(context.Background(), "all_modules_usage")
+	ctx, s := trace.StartSpan(req.Context(), "all_modules_usage")
 	defer s.End()
 
-	scenarios, err := ae.DB.GetWorkedVersions(c)
+	scenarios, err := ae.DB.GetWorkedVersions(ctx)
 	if err != nil {
 		e := ModuleUsageError
 		ae.Logger.Error(e.errorMessage(err))
@@ -165,12 +164,12 @@ func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 // @Failure 500 {object} httpError
 // @Router /modules/{moduleName}/usage [get]
 func (ae APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
-	c, s := trace.StartSpan(context.Background(), "module_usage")
+	ctx, s := trace.StartSpan(req.Context(), "module_usage")
 	defer s.End()
 
 	name := chi.URLParam(req, "moduleName")
 
-	allWorked, err := ae.DB.GetWorkedVersions(c)
+	allWorked, err := ae.DB.GetWorkedVersions(ctx)
 	if err != nil {
 		e := ModuleUsageError
 		ae.Logger.Error(e.errorMessage(err))
