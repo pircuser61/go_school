@@ -8,15 +8,14 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-
-	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
-
-	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
-
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/erius/admin/pkg/auth"
+	"gitlab.services.mts.ru/erius/admin/pkg/vars"
+	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
+	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
@@ -25,11 +24,6 @@ import (
 )
 
 var errPipelineNotEditable = errors.New("pipeline is not editable")
-
-const (
-	testAuthor = "testUser"
-	testUser   = "testUser"
-)
 
 type RunContext struct {
 	ID         string            `json:"id"`
@@ -43,55 +37,191 @@ type RunContext struct {
 // @ID      list-pipelines
 // @Produce json
 // @success 200 {object} httpResponse{data=entity.EriusScenarioList}
-// @Failure 400 {object} httpError
+// @success 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/ [get]
 func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_pipelines")
 	defer s.End()
 
-	user, err := auth.UserFromContext(ctx)
+	drafts, err := ae.draftVersions(ctx)
 	if err != nil {
-		ae.Logger.Errorf("user failed: %s", err.Error())
-	}
-
-	ae.Logger.Errorf("user: %s", user.UserName())
-
-	approved, err := ae.DB.GetApprovedVersions(ctx)
-	if err != nil {
-		e := GetAllApprovedError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		_ = err.sendError(w)
 
 		return
 	}
 
-	onApprove, err := ae.DB.GetOnApproveVersions(ctx)
+	approved, err := ae.approvedVersions(ctx)
 	if err != nil {
-		e := GetAllOnApproveError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+		_ = err.sendError(w)
 
 		return
 	}
 
-	drafts, err := ae.DB.GetDraftVersions(ctx, user.UserName())
-	if err != nil {
-		e := GetAllDraftsError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+	onApprove, perr := ae.onApprovedVersions(ctx)
+	if perr != nil {
+		_ = perr.sendError(w)
 
 		return
 	}
 
 	resp := entity.EriusScenarioList{
 		Pipelines: approved,
-		Drafts:    drafts,
 		OnApprove: onApprove,
+		Drafts:    drafts,
 		Tags:      nil,
 	}
 
-	err = sendResponse(w, http.StatusOK, resp)
+	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+// draftVersions выбирает версии сценария с признаком Draft,
+// разрешенные для данного пользователя
+func (ae *APIEnv) draftVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
+	ctx, s := trace.StartSpan(ctx, "list_drafts")
+	defer s.End()
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineVersion, vars.Own)
+	if err != nil {
+		ae.Logger.Error(AuthServiceError.errorMessage(err))
+
+		return []entity.EriusScenarioInfo{}, &PipelinerError{AuthServiceError}
+	}
+
+	if !grants.Allow {
+		ae.Logger.Error(UnauthError.errorMessage(err))
+
+		return []entity.EriusScenarioInfo{}, nil
+	}
+
+	drafts, err := ae.DB.GetDraftVersionsAuth(ctx)
+	if err != nil {
+		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllDraftsError}
+	}
+
+	return filterVersionsByID(drafts, grants.All, grants.Items), nil
+}
+
+// onApprovedVersions выбирает версии сценариев с признаком OnApprove,
+// разрешенные для данного пользователя
+// nolint:dupl different constant values
+func (ae *APIEnv) onApprovedVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
+	ctx, s := trace.StartSpan(ctx, "list_on_approve_versions")
+	defer s.End()
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Approve)
+	if err != nil {
+		ae.Logger.Error(AuthServiceError.errorMessage(err))
+
+		return []entity.EriusScenarioInfo{}, &PipelinerError{AuthServiceError}
+	}
+
+	if !grants.Allow {
+		ae.Logger.Error(UnauthError.errorMessage(err))
+
+		return []entity.EriusScenarioInfo{}, nil
+	}
+
+	onApprove, err := ae.DB.GetOnApproveVersions(ctx)
+	if err != nil {
+		ae.Logger.Error(GetAllOnApproveError.errorMessage(err))
+
+		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllOnApproveError}
+	}
+
+	return filterVersionsByID(onApprove, grants.All, grants.Items), nil
+}
+
+// approvedVersions выбирает последние рабочие версии сценариев,
+// разрешенные для данного пользователя
+func (ae *APIEnv) approvedVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
+	ctx, s := trace.StartSpan(ctx, "list_approved_versions")
+	defer s.End()
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
+	if err != nil {
+		ae.Logger.Error(AuthServiceError.errorMessage(err))
+
+		return []entity.EriusScenarioInfo{}, &PipelinerError{AuthServiceError}
+	}
+
+	if !grants.Allow {
+		ae.Logger.Error(UnauthError.errorMessage(err))
+
+		return []entity.EriusScenarioInfo{}, nil
+	}
+
+	approved, err := ae.DB.GetApprovedVersions(ctx)
+	if err != nil {
+		ae.Logger.Error(GetAllApprovedError.errorMessage(err))
+
+		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllApprovedError}
+	}
+
+	return filterVersionsByID(approved, grants.All, grants.Items), nil
+}
+
+// GetPipelineVersion
+// @Summary Get pipeline version
+// @Description Получить версию сценария по ID
+// @Tags version
+// @ID      get-version
+// @Produce json
+// @Param versionID path string true "Version ID"
+// @success 200 {object} httpResponse{data=entity.EriusScenario}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/version/{versionID} [get]
+func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_version")
+	defer s.End()
+
+	idParam := chi.URLParam(req, "versionID")
+
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	p, err := ae.DB.GetPipelineVersion(ctx, id)
+	if err != nil {
+		e := GetVersionError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// проверяем доступ к сценарию запрошенной версии
+	if !(grants.Allow && grants.Contains(p.ID.String())) {
+		e := UnauthError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, p)
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
@@ -101,86 +231,185 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// GetPipeline returns handler for GET pipelines
-// if isVersion is True - returns handler for GET pipelines/version.
-// @Summary Get pipeline version
-// @Description Получить версию сценария по ID
-// @Tags pipeline, version
-// @ID      get-version
+// GetPipeline
+// @Summary Get pipeline
+// @Description Получить сценарий по ID
+// @Tags pipeline
+// @ID      get-pipeline
 // @Produce json
-// @Param versionID path string true "Version ID"
+// @Param pipelineID path string true "Pipeline ID"
 // @success 200 {object} httpResponse{data=entity.EriusScenario}
 // @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /pipelines/version/{versionID} [get]
-func (ae *APIEnv) GetPipeline(isVersion bool) func(w http.ResponseWriter, req *http.Request) {
-	spanName := "get_pipeline"
+// @Router /pipelines/pipeline/{pipelineID} [get]
+func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
+	defer s.End()
 
-	paramKey := "pipelineID"
+	idParam := chi.URLParam(req, "pipelineID")
 
-	getPipelineFunction := ae.DB.GetPipeline
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-	pipelineError := GetPipelineError
-
-	if isVersion {
-		spanName = "get_version"
-		paramKey = "versionID"
-		getPipelineFunction = ae.DB.GetPipelineVersion
-		pipelineError = GetVersionError
+		return
 	}
 
-	return func(w http.ResponseWriter, req *http.Request) {
-		ctx, s := trace.StartSpan(req.Context(), spanName)
-		defer s.End()
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-		idparam := chi.URLParam(req, paramKey)
+		return
+	}
 
-		id, err := uuid.Parse(idparam)
-		if err != nil {
-			e := UUIDParsingError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+	// проверяем доступ на чтение запрошенного сценария
+	if !(grants.Allow && grants.Contains(idParam)) {
+		e := UnauthError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-			return
-		}
+		return
+	}
 
-		p, err := getPipelineFunction(ctx, id)
-		if err != nil {
-			e := pipelineError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+	p, err := ae.DB.GetPipeline(ctx, id)
+	if err != nil {
+		e := GetPipelineError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-			return
-		}
+		return
+	}
 
-		err = sendResponse(w, http.StatusOK, p)
-		if err != nil {
-			e := UnknownError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+	err = sendResponse(w, http.StatusOK, p)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-			return
-		}
+		return
 	}
 }
 
 // @Summary Create pipeline version
 // @Description Создать новую версию сценария
-// @Tags pipeline, version
+// @Tags version
 // @ID      create-version
 // @Accept json
 // @Produce json
-// @Param pipeline body entity.EriusScenario true "New version"
-// @Param pipelineID path string true "Pipeline ID"
+// @Param pipeline   body entity.EriusScenario  true "New version"
+// @Param pipelineID path string 				true "Pipeline ID"
 // @success 200 {object} httpResponse{data=entity.EriusScenario}
 // @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/version/{pipelineID} [post]
-//nolint:gocritic,deadcode,unused // need for swagger codegen
-func postVersion() {}
+// nolint:dupl different constant values
+func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "create_draft")
+	defer s.End()
 
-// PostPipeline returns handler for POST pipelines
-// if isDraft is True - returns handler for POST pipelines/version.
+	b, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	p := entity.EriusScenario{}
+
+	err = json.Unmarshal(b, &p)
+	if err != nil {
+		e := PipelineParseError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	pipelineID := chi.URLParam(req, "pipelineID")
+
+	p.ID, err = uuid.Parse(pipelineID)
+	if err != nil {
+		e := VersionCreateError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	p.VersionID = uuid.New()
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Create)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !grants.Allow {
+		e := UnauthError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	user, err := auth.UserFromContext(ctx)
+	if err != nil {
+		ae.Logger.Errorf("user failed: %s", err.Error())
+	}
+
+	err = ae.DB.CreateVersion(ctx, &p, user.UserName(), b)
+	if err != nil {
+		e := PipelineWriteError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
+	if err != nil {
+		e := PipelineReadError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = ae.AuthClient.Notice(ctx, &auth.Notice{
+		NoticeType:   vars.CreateNotice,
+		ResourceType: vars.PipelineVersion,
+		ResourceID:   created.VersionID.String(),
+	}); err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, created)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 // @Summary Create pipeline
 // @Description Создать новый сценарий
 // @Tags pipeline
@@ -190,94 +419,86 @@ func postVersion() {}
 // @Param pipeline body entity.EriusScenario true "New scenario"
 // @Success 200 {object} httpResponse{data=entity.EriusScenario}
 // @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/ [post]
-func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *http.Request) {
-	spanName := "create_pipeline"
+// nolint:dupl different logic
+func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
+	defer s.End()
 
-	createFunction := ae.DB.CreatePipeline
+	b, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
 
-	pipelineError := PipelineCreateError
+	if err != nil {
+		e := RequestReadError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-	if isDraft {
-		spanName = "create_draft"
-		createFunction = ae.DB.CreateVersion
-		pipelineError = PipelineWriteError
+		return
 	}
 
-	return func(w http.ResponseWriter, req *http.Request) {
-		ctx, s := trace.StartSpan(req.Context(), spanName)
-		defer s.End()
+	p := entity.EriusScenario{}
 
-		user, err := auth.UserFromContext(ctx)
-		if err != nil {
-			ae.Logger.Errorf("user failed: %s", err.Error())
-		}
+	err = json.Unmarshal(b, &p)
+	if err != nil {
+		e := PipelineParseError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-		b, err := ioutil.ReadAll(req.Body)
-		defer req.Body.Close()
+		return
+	}
 
-		if err != nil {
-			e := RequestReadError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Create)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-			return
-		}
+		return
+	}
 
-		p := entity.EriusScenario{}
+	if !grants.Allow {
+		e := UnauthError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-		err = json.Unmarshal(b, &p)
-		if err != nil {
-			e := PipelineParseError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+		return
+	}
 
-			return
-		}
+	user, err := auth.UserFromContext(ctx)
+	if err != nil {
+		ae.Logger.Error("user failed: ", err.Error())
+	}
 
-		pipelineID := chi.URLParam(req, "pipelineID")
-		if pipelineID == "" {
-			p.ID = uuid.New()
-		} else {
-			p.ID, err = uuid.Parse(pipelineID)
-			if err != nil {
-				e := VersionCreateError
-				ae.Logger.Error(e.errorMessage(err))
-				_ = e.sendError(w)
+	p.ID = uuid.New()
+	p.VersionID = uuid.New()
 
-				return
-			}
-		}
+	err = ae.DB.CreatePipeline(ctx, &p, user.UserName(), b)
+	if err != nil {
+		e := PipelineCreateError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-		p.VersionID = uuid.New()
+		return
+	}
 
-		err = createFunction(ctx, &p, user.UserName(), b)
-		if err != nil {
-			e := pipelineError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
+	if err != nil {
+		e := PipelineReadError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-			return
-		}
+		return
+	}
 
-		created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
-		if err != nil {
-			e := PipelineReadError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+	err = sendResponse(w, http.StatusOK, created)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-			return
-		}
-
-		err = sendResponse(w, http.StatusOK, created)
-		if err != nil {
-			e := UnknownError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
+		return
 	}
 }
 
@@ -290,6 +511,7 @@ func (ae *APIEnv) PostPipeline(isDraft bool) func(w http.ResponseWriter, req *ht
 // @Param draft body entity.EriusScenario true "New draft"
 // @Success 200 {object} httpResponse{data=entity.EriusScenario}
 // @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/version [put]
 func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
@@ -330,7 +552,25 @@ func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 	if !canEdit {
 		e := PipelineIsDraft
 
-		err = errPipelineNotEditable
+		ae.Logger.Error(e.errorMessage(errPipelineNotEditable))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	resource, action, id := authParametersByPipelineStatus(&p)
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, resource, action)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !(grants.Allow && grants.Contains(id)) {
+		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -346,8 +586,13 @@ func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	user, err := auth.UserFromContext(ctx)
+	if err != nil {
+		ae.Logger.Error(err.Error())
+	}
+
 	if p.Status == db.StatusApproved {
-		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, testAuthor)
+		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, user.UserName())
 		if err != nil {
 			e := ApproveError
 			ae.Logger.Error(e.errorMessage(err))
@@ -376,6 +621,21 @@ func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func authParametersByPipelineStatus(p *entity.EriusScenario) (resource vars.ResourceType, action vars.ActionType, id string) {
+	switch p.Status {
+	case db.StatusDraft, db.StatusOnApprove:
+		resource = vars.PipelineVersion
+		action = vars.Own
+		id = p.VersionID.String()
+	default:
+		resource = vars.Pipeline
+		action = vars.Update
+		id = p.ID.String() // pipeline id
+	}
+
+	return resource, action, id
+}
+
 // @Summary Delete Version
 // @Description Удалить версию
 // @Tags version
@@ -384,6 +644,7 @@ func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 // @Param versionID path string true "Version ID"
 // @Success 200 {object} httpResponse
 // @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/version/{versionID} [delete]
 func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
@@ -411,8 +672,24 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !canEdit {
-		err = errPipelineNotEditable
 		e := PipelineIsDraft
+		ae.Logger.Error(e.errorMessage(errPipelineNotEditable))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Delete)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !(grants.Allow && grants.Contains(versionID.String())) {
+		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -422,6 +699,18 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.DeleteVersion(ctx, versionID)
 	if err != nil {
 		e := PipelineDeleteError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = ae.AuthClient.Notice(ctx, &auth.Notice{
+		NoticeType:   vars.DeleteNotice,
+		ResourceType: vars.PipelineVersion,
+		ResourceID:   versionID.String(),
+	}); err != nil {
+		e := AuthServiceError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -446,6 +735,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 // @Param pipelineID path string true "Pipeline ID"
 // @Success 200 {object} httpResponse
 // @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/version/{pipelineID} [delete]
 func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
@@ -463,9 +753,38 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Delete)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !(grants.Allow && grants.Contains(id.String())) {
+		e := UnauthError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	err = ae.DB.DeletePipeline(ctx, id)
 	if err != nil {
 		e := PipelineDeleteError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = ae.AuthClient.Notice(ctx, &auth.Notice{
+		NoticeType:   vars.DeleteNotice,
+		ResourceType: vars.Pipeline,
+		ResourceID:   id.String(),
+	}); err != nil {
+		e := AuthServiceError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -492,6 +811,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 // @Param pipelineID path string true "Pipeline ID"
 // @Success 200 {object} httpResponse{data=entity.RunResponse}
 // @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /run/{pipelineID} [post]
 func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
@@ -524,6 +844,24 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Run)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// проверяем права на запуск пайплайна
+	if !(grants.Allow && grants.Contains(id.String())) {
+		e := UnauthError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	ae.execVersion(ctx, w, req, p, withStop)
 }
 
@@ -537,6 +875,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 // @Param versionID path string true "Version ID"
 // @Success 200 {object} httpResponse{data=entity.RunResponse}
 // @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /run/version/{versionID} [post]
 func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
@@ -557,6 +896,24 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	p, err := ae.DB.GetPipelineVersion(ctx, id)
 	if err != nil {
 		e := GetPipelineError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Run)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// проверяем права на запуск пайплайна
+	if !(grants.Allow && grants.Contains(p.ID.String())) {
+		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -607,7 +964,12 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	ae.Logger.Println("--- running pipeline:", p.Name)
 
-	err = ep.CreateWork(ctx, testUser)
+	user, err := auth.UserFromContext(ctx)
+	if err != nil {
+		ae.Logger.Error(err)
+	}
+
+	err = ep.CreateWork(ctx, user.UserName())
 	if err != nil {
 		e := PipelineRunError
 		ae.Logger.Error(e.errorMessage(err))
@@ -639,10 +1001,10 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		return
 	}
 
-	vars := make(map[string]interface{})
+	pipelineVars := make(map[string]interface{})
 
 	if len(b) != 0 {
-		err = json.Unmarshal(b, &vars)
+		err = json.Unmarshal(b, &pipelineVars)
 		if err != nil {
 			e := PipelineRunError
 			ae.Logger.Error(e.errorMessage(err))
@@ -656,7 +1018,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 			return
 		}
 
-		for key, value := range vars {
+		for key, value := range pipelineVars {
 			vs.SetValue(p.Name+"."+key, value)
 			fmt.Println(vs)
 		}
@@ -718,4 +1080,24 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 			return
 		}
 	}
+}
+
+func filterVersionsByID(scenarios []entity.EriusScenarioInfo, isAll bool, allowedKeys map[string]struct{}) []entity.EriusScenarioInfo {
+	if isAll {
+		return scenarios
+	}
+
+	if len(allowedKeys) == 0 {
+		return []entity.EriusScenarioInfo{}
+	}
+
+	res := make([]entity.EriusScenarioInfo, 0)
+
+	for i := range scenarios {
+		if _, ok := allowedKeys[scenarios[i].VersionID.String()]; ok {
+			res = append(res, scenarios[i])
+		}
+	}
+
+	return res
 }

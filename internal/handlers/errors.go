@@ -6,10 +6,18 @@ import (
 	"net/http"
 )
 
-type PipelinerErrorCode int
+type PipelinerError struct {
+	Err
+}
+
+func (p *PipelinerError) Error() string {
+	return p.error()
+}
+
+type Err int
 
 const (
-	UnknownError PipelinerErrorCode = iota
+	UnknownError Err = iota
 	UUIDParsingError
 	RequestReadError
 	PipelineParseError
@@ -30,9 +38,11 @@ const (
 	PipelineExecutionError
 	PipelineOutputGrabError
 	VersionCreateError
+	UnauthError
+	AuthServiceError
 )
 
-var errorText = map[PipelinerErrorCode]string{
+var errorText = map[Err]string{
 	UnknownError:            "unknown error",
 	GetAllApprovedError:     "can't get approved versions",
 	GetAllOnApproveError:    "can't get versions on approve",
@@ -54,10 +64,12 @@ var errorText = map[PipelinerErrorCode]string{
 	Teapot:                  "nothing interest there",
 	PipelineExecutionError:  "error when execution pipeline",
 	PipelineOutputGrabError: "error with output grabbing",
+	UnauthError:             "not allowed",
+	AuthServiceError:        "auth service failed",
 }
 
 // JOKE.
-var errorDescription = map[PipelinerErrorCode]string{
+var errorDescription = map[Err]string{
 	UnknownError:            "Сохраняйте спокойствие, что-то произошло непонятное",
 	GetAllApprovedError:     "Невозможно получить список согласованных сценариев",
 	GetAllOnApproveError:    "Невозможно получить список сценариев, ожидающих согласования",
@@ -79,6 +91,13 @@ var errorDescription = map[PipelinerErrorCode]string{
 	Teapot:                  "Мы заложили этот функционал, и сейчас он находится в реализации. Пока что здесь нет ничего интересного. Мяу.",
 	PipelineExecutionError:  "При исполнении сценария произошла ошибка",
 	PipelineOutputGrabError: "Не удалось получить выходные данные",
+	UnauthError:             "Нет разрешений для выполнения операции",
+	AuthServiceError:        "Ошибка сервиса авторизации",
+}
+
+var errorStatus = map[Err]int{
+	Teapot:      http.StatusTeapot,
+	UnauthError: http.StatusUnauthorized,
 }
 
 type httpError struct {
@@ -87,7 +106,7 @@ type httpError struct {
 	Description string `json:"description"`
 }
 
-func (c PipelinerErrorCode) errorMessage(e error) string {
+func (c Err) errorMessage(e error) string {
 	if e != nil {
 		return fmt.Sprintf("%s: %s", c.error(), e.Error())
 	}
@@ -95,38 +114,38 @@ func (c PipelinerErrorCode) errorMessage(e error) string {
 	return c.error()
 }
 
-func (c PipelinerErrorCode) error() string {
-	s, ok := errorText[c]
-	if ok {
+func (c Err) error() string {
+	if s, ok := errorText[c]; ok {
 		return s
 	}
 
 	return errorText[UnknownError]
 }
 
-func (c PipelinerErrorCode) description() string {
-	s, ok := errorDescription[c]
-	if ok {
+func (c Err) status() int {
+	if s, ok := errorStatus[c]; ok {
+		return s
+	}
+
+	return http.StatusInternalServerError
+}
+
+func (c Err) description() string {
+	if s, ok := errorDescription[c]; ok {
 		return s
 	}
 
 	return errorDescription[UnknownError]
 }
 
-func (c PipelinerErrorCode) sendError(w http.ResponseWriter) error {
-	statusCode := http.StatusInternalServerError
-
-	if c == Teapot {
-		statusCode = http.StatusTeapot
-	}
-
+func (c Err) sendError(w http.ResponseWriter) error {
 	resp := httpError{
-		StatusCode:  statusCode,
+		StatusCode:  c.status(),
 		Error:       c.error(),
 		Description: c.description(),
 	}
 
-	w.WriteHeader(statusCode)
+	w.WriteHeader(resp.StatusCode)
 
 	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {

@@ -35,6 +35,7 @@ linters:
     - maligned
     - prealloc
     - gochecknoglobals
+    - godot
 
 run:
   tests: false

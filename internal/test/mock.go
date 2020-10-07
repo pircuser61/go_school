@@ -876,6 +876,10 @@ func (m *MockDB) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 	return versionInfoList, nil
 }
 
+func (m *MockDB) GetDraftVersionsAuth(c context.Context) ([]entity.EriusScenarioInfo, error) {
+	panic("implement me")
+}
+
 func (m *MockDB) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
 	panic("implement me")
 }

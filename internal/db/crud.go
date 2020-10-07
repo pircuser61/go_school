@@ -59,6 +59,7 @@ func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScena
 	defer rows.Close()
 
 	versionInfoList := make([]entity.EriusScenarioInfo, 0)
+
 	for rows.Next() {
 		e := entity.EriusScenarioInfo{}
 
@@ -127,6 +128,7 @@ func (db *PGConnection) findApproveDate(c context.Context, id uuid.UUID) (time.T
 		}
 		break
 	}
+
 	return time.Time{}, nil
 }
 
@@ -151,6 +153,13 @@ order by created_at `
 	}
 
 	return parseRowsVersionList(c, rows)
+}
+
+func (db *PGConnection) GetDraftVersionsAuth(c context.Context) ([]entity.EriusScenarioInfo, error) {
+	c, span := trace.StartSpan(c, "pg_list_draft_versions")
+	defer span.End()
+
+	return db.GetVersionsByStatus(c, StatusDraft)
 }
 
 func (db *PGConnection) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {

@@ -10,6 +10,7 @@ import (
 type Database interface {
 	GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error)
+	GetDraftVersionsAuth(c context.Context) ([]entity.EriusScenarioInfo, error)
 	GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error)
 	GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error)
