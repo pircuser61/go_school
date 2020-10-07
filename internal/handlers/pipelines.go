@@ -1044,23 +1044,24 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		}
 	} else {
 		go func() {
-			err = mon.Run(ctx)
+			routineCtx := context.WithValue(context.Background(), "X-Request-Id", ctx.Value("X-Request-Id"))
+			err = mon.Run(routineCtx)
 			if err != nil {
 				ae.Logger.WithError(err).Error("can't send data to monitoring")
 			}
 
-			err = ep.DebugRun(ctx, vs)
+			err = ep.DebugRun(routineCtx, vs)
 			if err != nil {
 				ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 				vs.AddError(err)
 
-				err = mon.Error(ctx)
+				err = mon.Error(routineCtx)
 				if err != nil {
 					ae.Logger.WithError(err).Error("can't send data to monitoring")
 				}
 			}
 
-			err = mon.Done(ctx)
+			err = mon.Done(routineCtx)
 			if err != nil {
 				ae.Logger.WithError(err).Error("can't send data to monitoring")
 			}
