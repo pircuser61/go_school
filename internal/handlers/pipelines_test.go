@@ -7,8 +7,22 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
+
+	"bou.ke/monkey"
+
+	"gitlab.services.mts.ru/erius/admin/pkg/auth"
+
+	"gitlab.services.mts.ru/erius/admin/pkg/vars"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/google/uuid"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 
@@ -28,6 +42,9 @@ func AddWithStop(next http.Handler) http.Handler {
 }
 
 func TestAPIEnv_RunPipeline(t *testing.T) {
+	patchAuthClient()
+	defer monkey.UnpatchAll()
+
 	mockDB := test.NewMockDB()
 	log := logger.CreateLogger(nil)
 
@@ -37,7 +54,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		pipelineInput           map[string]interface{}
 		tp                      test.TestablePipeline
 		HandlersExpectedInput   map[string]string
-		PiplinerExpectedOutput  map[string]string
+		PipelinerExpectedOutput map[string]string
 		ExpectedRunningSequence []string
 	}{
 		{
@@ -53,7 +70,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				"Block3": "{\"Input\":\"Value\"}",
 			},
 
-			PiplinerExpectedOutput: map[string]string{
+			PipelinerExpectedOutput: map[string]string{
 				"Input": "Value",
 			},
 			ExpectedRunningSequence: []string{"Block1", "Block2", "Block3"},
@@ -64,7 +81,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				"Input": "Value",
 			},
 			tp:                      test.IfPipelineTestable,
-			PiplinerExpectedOutput:  nil,
+			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "BlockTrue"},
 		},
 		{
@@ -73,7 +90,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				"Input": "Unexpected",
 			},
 			tp:                      test.IfPipelineTestable,
-			PiplinerExpectedOutput:  nil,
+			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "BlockFalse"},
 		},
 		//todo how pipeliner should react to broken function-block?
@@ -89,7 +106,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		//		"Block3": LinearPipelineBlock,
 		//	},
 		//	HandlersExpectedInput:   nil,
-		//	PiplinerExpectedOutput:  nil,
+		//	PipelinerExpectedOutput:  nil,
 		//	ExpectedRunningSequence: []string{"Block1", "Block2"},
 		//},
 		{
@@ -99,7 +116,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			},
 			tp:                      test.ForPipelineTestable,
 			HandlersExpectedInput:   nil,
-			PiplinerExpectedOutput:  nil,
+			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "Block2", "Block2", "Block2", "Block3"},
 		},
 		{
@@ -113,7 +130,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				"Block2": "{\"Input\":\"Value\"}",
 				"Block3": "{\"Input\":\"Value\"}",
 			},
-			PiplinerExpectedOutput:  nil,
+			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "Block1", "Block2", "Block3", "Block2"},
 		},
 		{
@@ -121,19 +138,19 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			pipelineInput:           nil,
 			tp:                      test.ForInForPipelineTestable,
 			HandlersExpectedInput:   nil,
-			PiplinerExpectedOutput:  nil,
+			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"MasGen", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1"},
 		},
 		{
 			name:                    "Strings equal Pipeline True",
 			tp:                      test.StringsEqualsPipelineTrueTestable,
-			PiplinerExpectedOutput:  nil,
+			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "Block2", "BlockTrue"},
 		},
 		{
 			name:                    "Strings equal Pipeline False",
 			tp:                      test.StringsEqualsPipelineFalseTestable,
-			PiplinerExpectedOutput:  nil,
+			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "Block2", "BlockFalse"},
 		},
 		{
@@ -143,7 +160,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			HandlersExpectedInput: map[string]string{
 				"Block3": "{\"Input\":[\"1\",\"2\",\"3\"]}",
 			},
-			PiplinerExpectedOutput:  nil,
+			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "Block2", "Block3"},
 		},
 	}
@@ -154,8 +171,8 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			expectedBlockIndex := 0
 			FaaSMockServer := httptest.NewServer(chi.NewRouter().Route("/", func(r chi.Router) {
-				r.Post("/function/{funcName}", func(w http.ResponseWriter, rq *http.Request) {
-					funcName := chi.URLParam(rq, "funcName")
+				r.Post("/function/{onApprovedVersions}", func(w http.ResponseWriter, rq *http.Request) {
+					funcName := chi.URLParam(rq, "onApprovedVersions")
 					handler, ok := tt.tp.FunctionHandlers[funcName]
 					if !ok {
 						t.Fatalf("No such func %s", funcName)
@@ -195,6 +212,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				Logger:        log,
 				ScriptManager: "",
 				FaaS:          FaaSMockServer.URL + "/",
+				AuthClient:    &auth.Client{},
 			}
 
 			pipelineRouter := chi.NewRouter()
@@ -214,7 +232,8 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				pipelinerServer.URL+"/pipeliner/"+tt.tp.PipelineUUID.String(),
 				bytes.NewReader(pipelineInputBytes))
 
-			resp, _ := pipelinerServer.Client().Do(req)
+			resp, err := pipelinerServer.Client().Do(req)
+			_ = err
 			respBytes, _ := ioutil.ReadAll(resp.Body)
 
 			time.Sleep(5 * time.Second)
@@ -232,6 +251,138 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			if tt.ExpectedRunningSequence != nil && expectedBlockIndex != len(tt.ExpectedRunningSequence) {
 				t.Errorf("Pipeline didn't run functions")
 			}
+		})
+	}
+}
+
+func patchAuthClient() {
+	// patch auth client
+	monkey.PatchInstanceMethod(
+		reflect.TypeOf(&auth.Client{}),
+		"CheckGrants",
+		func(*auth.Client, context.Context, vars.ResourceType, vars.ActionType) (*auth.Grants, error) {
+			alwaysGrantsAll := &auth.Grants{Allow: true, All: true}
+
+			return alwaysGrantsAll, nil
+		})
+
+	monkey.PatchInstanceMethod(
+		reflect.TypeOf(&auth.Client{}),
+		"Notice",
+		func(*auth.Client, context.Context, *auth.Notice) error {
+			return nil
+		})
+}
+
+func newUUID(val string) uuid.UUID {
+	res, _ := uuid.Parse(val)
+	return res
+}
+
+func Test_filter(t *testing.T) {
+	tests := []struct {
+		name  string
+		items []entity.EriusScenarioInfo
+		isAll bool
+		keys  map[string]struct{}
+		want  []entity.EriusScenarioInfo
+	}{
+		{
+			name: "ok with all",
+			items: []entity.EriusScenarioInfo{
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
+			},
+			want: []entity.EriusScenarioInfo{
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
+			},
+			isAll: true,
+		},
+		{
+			name: "ok with keys",
+			items: []entity.EriusScenarioInfo{
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf2")},
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf3")},
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf4")},
+			},
+			keys: map[string]struct{}{
+				"42bdafca-dce8-4c3d-84c6-4971854d1cf1": {},
+				"42bdafca-dce8-4c3d-84c6-4971854d1cf3": {},
+			},
+			want: []entity.EriusScenarioInfo{
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf3")},
+			},
+		},
+		{
+			name:  "return empty if empty items",
+			items: []entity.EriusScenarioInfo{},
+			keys: map[string]struct{}{
+				"42bdafca-dce8-4c3d-84c6-4971854d1cf1": {},
+				"42bdafca-dce8-4c3d-84c6-4971854d1cf3": {},
+			},
+			want: make([]entity.EriusScenarioInfo, 0),
+		},
+		{
+			name: "return input slice if nil map",
+			items: []entity.EriusScenarioInfo{
+				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			},
+			keys: nil,
+			want: []entity.EriusScenarioInfo{},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, filterVersionsByID(tt.items, tt.isAll, tt.keys), "%v", tt.name)
+		})
+	}
+}
+
+func Test_authParametersByPipelineStatus(t *testing.T) {
+	tests := []struct {
+		name         string
+		p            entity.EriusScenario
+		wantResource vars.ResourceType
+		wantAction   vars.ActionType
+		wantID       string
+	}{
+		{
+			name:         "draft",
+			p:            entity.EriusScenario{Status: db.StatusDraft, VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			wantResource: vars.PipelineVersion,
+			wantAction:   vars.Own,
+			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
+		},
+		{
+			name:         "on approve",
+			p:            entity.EriusScenario{Status: db.StatusOnApprove, VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			wantResource: vars.PipelineVersion,
+			wantAction:   vars.Own,
+			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
+		},
+		{
+			name:         "on approve",
+			p:            entity.EriusScenario{Status: db.StatusApproved, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			wantResource: vars.Pipeline,
+			wantAction:   vars.Update,
+			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			gotResource, gotAction, gotID := authParametersByPipelineStatus(&tt.p)
+
+			assert.Equal(t, tt.wantResource, gotResource, "%v", tt.name)
+			assert.Equal(t, tt.wantAction, gotAction, "%v", tt.name)
+			assert.Equal(t, tt.wantID, gotID, "%v", tt.name)
+
 		})
 	}
 }

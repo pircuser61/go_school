@@ -65,7 +65,7 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 
 	fmt.Println(string(b))
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}

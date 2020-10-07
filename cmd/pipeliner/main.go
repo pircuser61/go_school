@@ -52,6 +52,7 @@ const (
 func main() {
 	configPath := flag.String("c", "./config.yaml", "path to config")
 	flag.Parse()
+
 	log := logger.CreateLogger(nil)
 
 	metrics.InitMetricsAuth()
@@ -70,12 +71,14 @@ func main() {
 	dbConn, err := db.ConnectPostgres(&cfg.DB)
 	if err != nil {
 		log.WithError(err).Error("can't connect database")
+
 		return
 	}
 
 	authClient, err := auth.NewClient(cfg.AuthBaseURL.URL, nil)
 	if err != nil {
 		log.WithError(err).Error("can't create auth client")
+
 		return
 	}
 
@@ -182,15 +185,13 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route("/api/pipeliner/v1", func(r chi.Router) {
-			r.Group(func(r chi.Router) {
-				r.Use(auth.UserMiddleware(pipeliner.AuthClient))
-				r.Get("/pipelines/", pipeliner.ListPipelines)
-				r.Post("/pipelines/", pipeliner.PostPipeline(false))
-				r.Post("/pipelines/version/{pipelineID}", pipeliner.PostPipeline(true))
-			})
+			r.Use(auth.UserMiddleware(pipeliner.AuthClient))
+			r.Get("/pipelines/", pipeliner.ListPipelines)
+			r.Post("/pipelines/", pipeliner.CreatePipeline)
+			r.Post("/pipelines/version/{pipelineID}", pipeliner.CreatePipelineVersion)
 
-			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline(false))
-			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipeline(true))
+			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
+			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
 			r.Put("/pipelines/version/", pipeliner.EditDraft)
 			r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
 			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)

@@ -62,7 +62,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -107,7 +107,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -161,7 +161,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -206,7 +206,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -263,7 +263,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -322,7 +322,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -389,7 +389,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -429,7 +429,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -484,7 +484,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -524,7 +524,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -578,7 +578,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -644,7 +644,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -710,7 +710,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Err",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }

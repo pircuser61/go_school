@@ -3,6 +3,7 @@ module gitlab.services.mts.ru/erius/pipeliner
 go 1.14
 
 require (
+	bou.ke/monkey v1.0.2
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/go-chi/chi v4.1.2+incompatible
@@ -12,9 +13,10 @@ require (
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
+	github.com/stretchr/testify v1.6.1
 	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba
 	github.com/swaggo/swag v1.6.7
-	gitlab.services.mts.ru/erius/admin v0.0.29
+	gitlab.services.mts.ru/erius/admin v0.0.31
 	gitlab.services.mts.ru/erius/monitoring v0.0.2
 	gitlab.services.mts.ru/libs/logger v1.1.1
 	go.opencensus.io v0.22.4
