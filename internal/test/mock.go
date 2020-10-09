@@ -11,6 +11,7 @@ import (
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 
 	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 )
@@ -817,6 +818,32 @@ var (
 		},
 	}
 
+	NGSAPipelineUUID        = uuid.New()
+	NGSAPipelineVersionUUID = uuid.New()
+	NGSAPipeline            = entity.EriusScenario{
+		ID:        NGSAPipelineUUID,
+		VersionID: NGSAPipelineVersionUUID,
+		Status:    db.StatusApproved,
+		HasDraft:  false,
+		Name:      "ngsa",
+		Input:     nil,
+		Output:    nil,
+		Pipeline: struct {
+			Entrypoint string                      `json:"entrypoint"`
+			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+		}{
+			Entrypoint: "ngsa",
+			Blocks: map[string]entity.EriusFunc{
+				"ngsa": {
+					BlockType: script.TypeInternal,
+					Title:     "ngsa-send-alarm",
+					Input:     nil,
+					Output:    nil,
+				},
+			},
+		},
+	}
+
 	// Pipeline passes output of Block1 and Block2 to connector block
 	// Block3 should receive Block1.Output
 	ConnectorPipelineTestable = TestablePipeline{
@@ -837,6 +864,7 @@ var (
 		forInForPipeline,
 		stringsEqualPipeline,
 		connectorPipeline,
+		NGSAPipeline,
 	}
 )
 
@@ -966,9 +994,9 @@ func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.Er
 
 func (m *MockDB) ActiveAlertNGSA(c context.Context, sever int, state, source,
 	eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error {
-	panic("implement me")
+	return nil
 }
 
 func (m *MockDB) ClearAlertNGSA(c context.Context, name string) error {
-	panic("implement me")
+	return nil
 }

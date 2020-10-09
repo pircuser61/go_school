@@ -954,9 +954,8 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
-		err = mon.Fatal(ctx)
-		if err != nil {
-			ae.Logger.WithError(err).Error("can't send data to monitoring")
+		if monErr := mon.RunError(ctx); monErr != nil {
+			ae.Logger.WithError(monErr).Error("can't send data to monitoring")
 		}
 
 		return
@@ -975,9 +974,8 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
-		err = mon.Fatal(ctx)
-		if err != nil {
-			ae.Logger.WithError(err).Error("can't send data to monitoring")
+		if monErr := mon.RunError(ctx); monErr != nil {
+			ae.Logger.WithError(monErr).Error("can't send data to monitoring")
 		}
 
 		return
@@ -993,9 +991,8 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
-		err = mon.Fatal(ctx)
-		if err != nil {
-			ae.Logger.WithError(err).Error("can't send data to monitoring")
+		if monErr := mon.RunError(ctx); monErr != nil {
+			ae.Logger.WithError(monErr).Error("can't send data to monitoring")
 		}
 
 		return
@@ -1010,9 +1007,8 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 			ae.Logger.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
-			err = mon.Fatal(ctx)
-			if err != nil {
-				ae.Logger.WithError(err).Error("can't send data to monitoring")
+			if monErr := mon.RunError(ctx); monErr != nil {
+				ae.Logger.WithError(monErr).Error("can't send data to monitoring")
 			}
 
 			return
@@ -1045,9 +1041,9 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	} else {
 		go func() {
 			routineCtx := context.WithValue(context.Background(), "X-Request-Id", ctx.Value("X-Request-Id"))
-			err = mon.Run(routineCtx)
-			if err != nil {
-				ae.Logger.WithError(err).Error("can't send data to monitoring")
+
+			if monErr := mon.Run(routineCtx); monErr != nil {
+				ae.Logger.WithError(monErr).Error("can't send data to monitoring")
 			}
 
 			err = ep.DebugRun(routineCtx, vs)
@@ -1055,15 +1051,13 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 				ae.Logger.Error(PipelineExecutionError.errorMessage(err))
 				vs.AddError(err)
 
-				err = mon.Error(routineCtx)
-				if err != nil {
-					ae.Logger.WithError(err).Error("can't send data to monitoring")
+				if monErr := mon.RunError(routineCtx); monErr != nil {
+					ae.Logger.WithError(monErr).Error("can't send data to monitoring")
 				}
 			}
 
-			err = mon.Done(routineCtx)
-			if err != nil {
-				ae.Logger.WithError(err).Error("can't send data to monitoring")
+			if monErr := mon.Done(routineCtx); monErr != nil {
+				ae.Logger.WithError(monErr).Error("can't send data to monitoring")
 			}
 		}()
 

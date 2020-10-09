@@ -17,7 +17,7 @@ require (
 	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba
 	github.com/swaggo/swag v1.6.7
 	gitlab.services.mts.ru/erius/admin v0.0.31
-	gitlab.services.mts.ru/erius/monitoring v0.0.2
+	gitlab.services.mts.ru/erius/monitoring v0.1.0
 	gitlab.services.mts.ru/libs/logger v1.1.1
 	go.opencensus.io v0.22.4
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776

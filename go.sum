@@ -598,6 +598,8 @@ gitlab.services.mts.ru/erius/admin v0.0.31 h1:x/HgrulGuEiv7LgGfB8qpvU8OCxV3+gJh9
 gitlab.services.mts.ru/erius/admin v0.0.31/go.mod h1:YW9X2BvTJqVHwxsV1abP93llopbZD72GKchFUvTUkUE=
 gitlab.services.mts.ru/erius/monitoring v0.0.2 h1:mO0yBGjd2EITcF1FFFM82DfO7iUi+LnLme0bcdRVYMc=
 gitlab.services.mts.ru/erius/monitoring v0.0.2/go.mod h1:PYrIh29yPQk9BwR85amdnTL9UuVy+aHybNGtDc/rVNk=
+gitlab.services.mts.ru/erius/monitoring v0.1.0 h1:iu2eKuuoQ/zWP6MPqlBinYBoXv5Kyws/XtGEo4yVxrs=
+gitlab.services.mts.ru/erius/monitoring v0.1.0/go.mod h1:1NJtchxk6Smhtnk3c3BNv0ScbYZz0mhfEgncNbt4kxY=
 gitlab.services.mts.ru/libs/logger v1.1.1 h1:xgBDjr2p/s0mS8YE4VY4IAFDOWLnNU38jHKK8Zqrof4=
 gitlab.services.mts.ru/libs/logger v1.1.1/go.mod h1:VSy5MDnzBTUEVHxa6rmJc8CejRy/0MvHFNOl8drpkls=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
