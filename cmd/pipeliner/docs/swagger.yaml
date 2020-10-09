@@ -439,39 +439,6 @@ paths:
       summary: Create pipeline
       tags:
         - pipeline
-  /pipelines/{pipelineID}:
-    get:
-      description: Получить сценарий по ID
-      operationId: get-pipeline
-      parameters:
-        - description: Pipeline ID
-          in: path
-          name: pipelineID
-          required: true
-          type: string
-      produces:
-        - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-              - $ref: '#/definitions/handlers.httpResponse'
-              - properties:
-                  data:
-                    $ref: '#/definitions/entity.EriusScenario'
-                type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-      summary: Get pipeline
-      tags:
-        - pipeline
   /pipelines/version:
     put:
       consumes:

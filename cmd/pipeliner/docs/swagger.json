@@ -516,91 +516,37 @@
         }
       }
     },
-    "/pipelines/{pipelineID}": {
-      "get": {
-        "description": "Получить сценарий по ID",
+    "/run/version/{versionID}": {
+      "post": {
+        "description": "Запустить версию",
+        "consumes": [
+          "application/json"
+        ],
         "produces": [
           "application/json"
         ],
         "tags": [
-          "pipeline"
+          "version",
+          "run"
         ],
-        "summary": "Get pipeline",
-        "operationId": "get-pipeline",
+        "summary": "Run Version",
+        "operationId": "run-version",
         "parameters": [
           {
+            "description": "pipeline input",
+            "name": "variables",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
             "type": "string",
-            "description": "Pipeline ID",
-            "name": "pipelineID",
+            "description": "Version ID",
+            "name": "versionID",
             "in": "path",
             "required": true
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/definitions/handlers.httpResponse"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/definitions/entity.EriusScenario"
-                    }
-                  }
-                }
-              ]
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.httpError"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.httpError"
-            }
-          }
-        }
-      }
-    },
-    "/run/version/{versionID}": {
-        "post": {
-            "description": "Запустить версию",
-            "consumes": [
-                "application/json"
-            ],
-            "produces": [
-                "application/json"
-            ],
-            "tags": [
-                "version",
-                "run"
-            ],
-            "summary": "Run Version",
-            "operationId": "run-version",
-            "parameters": [
-                {
-                    "description": "pipeline input",
-                    "name": "variables",
-                    "in": "body",
-                    "schema": {
-                        "type": "object"
-                    }
-                },
-                {
-                    "type": "string",
-                    "description": "Version ID",
-                    "name": "versionID",
-                    "in": "path",
-                    "required": true
-                }
         ],
         "responses": {
           "200": {
@@ -636,37 +582,37 @@
         }
       }
     },
-      "/run/{pipelineID}": {
-          "post": {
-              "description": "Запустить сценарий",
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "pipeline",
-                  "run"
-              ],
-              "summary": "Run Pipeline",
-              "operationId": "run-pipeline",
-              "parameters": [
-                  {
-                      "description": "pipeline input",
-                      "name": "variables",
-                      "in": "body",
-                      "schema": {
-                          "type": "object"
-                      }
-                  },
-                  {
-                      "type": "string",
-                      "description": "Pipeline ID",
-                      "name": "pipelineID",
-                      "in": "path",
-                      "required": true
-                  }
+    "/run/{pipelineID}": {
+      "post": {
+        "description": "Запустить сценарий",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "pipeline",
+          "run"
+        ],
+        "summary": "Run Pipeline",
+        "operationId": "run-pipeline",
+        "parameters": [
+          {
+            "description": "pipeline input",
+            "name": "variables",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            }
+          },
+          {
+            "type": "string",
+            "description": "Pipeline ID",
+            "name": "pipelineID",
+            "in": "path",
+            "required": true
+          }
         ],
         "responses": {
           "200": {
