@@ -152,7 +152,6 @@ func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return e.DebugRun(ctx, runCtx)
 }
 
-
 func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_cyclo_block")
 	defer s.End()
