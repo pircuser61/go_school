@@ -80,6 +80,7 @@ func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScena
 	return versionInfoList, nil
 }
 
+//nolint:gocritic // copies for slice is allowed
 func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_list_approved_versions")
 	defer span.End()
@@ -111,6 +112,7 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 	return final, nil
 }
 
+//nolint:staticcheck // TODO remove break
 func (db *PGConnection) findApproveDate(c context.Context, id uuid.UUID) (time.Time, error) {
 	c, span := trace.StartSpan(c, "pg_find_approve_time")
 	defer span.End()

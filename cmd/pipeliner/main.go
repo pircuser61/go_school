@@ -148,6 +148,7 @@ func main() {
 	log.WithField("signal", stop).Info("stopping")
 }
 
+//nolint:whitespace // i dont need long strings
 func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handlers.APIEnv) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)

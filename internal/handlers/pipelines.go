@@ -568,6 +568,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(c, w, req, p, false)
 }
 
+//nolint:staticcheck // i need string!
 func (ae *APIEnv) execVersion(c context.Context, w http.ResponseWriter, req *http.Request,
 	p *entity.EriusScenario, withStop bool) {
 	c, s := trace.StartSpan(c, "exec_version")
