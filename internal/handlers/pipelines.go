@@ -923,6 +923,43 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(ctx, w, req, p, false)
 }
 
+// GetPipelineLogs
+// @Summary Get Pipeline Logs
+// @Description Получить логи по сценарию
+// @Tags pipeline logs
+// @ID      get-pipeline-logs
+// @Produce json
+// @Param pipelineID path string true "Pipeline ID"
+// @success 200 {object} httpResponse{data=entity.EriusLogs}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /logs/{pipelineID} [get]
+func (ae *APIEnv) GetPipelineLogs(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_logs")
+	defer s.End()
+	fmt.Println(ctx)
+}
+
+// GetVersionLogs
+// @Summary Get Version Logs
+// @Description Получить логи по версии сценарию
+// @Tags version logs
+// @ID      get-version-logs
+// @Produce json
+// @Param versionID path string true "Version ID"
+// @success 200 {object} httpResponse{data=entity.EriusLogs}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /logs/version/{pipelineID} [get]
+
+func (ae *APIEnv) GetVersionLogs(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
+	defer s.End()
+	fmt.Println(ctx)
+}
+
 func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,
 	p *entity.EriusScenario, withStop bool) {
 	ctx, s := trace.StartSpan(ctx, "exec_version")

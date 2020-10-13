@@ -747,3 +747,22 @@ JOIN pipeliner.pipelines p on p.id = pv.pipeline_id
 
 	return nil, nil
 }
+
+func (db *PGConnection) GetPipelineLogs(c context.Context, id uuid.UUID) (*entity.EriusLogs, error) {
+	c, span := trace.StartSpan(c, "pg_get_pipeline_logs")
+	defer span.End()
+	q := `SELECT`
+	return db.getLogs(c, q, id)
+}
+
+func (db *PGConnection) GetVersionLogs(c context.Context, q string, id uuid.UUID) (*entity.EriusLogs, error) {
+	c, span := trace.StartSpan(c, "pg_get_pipeline_logs")
+	defer span.End()
+
+	return nil, nil
+}
+
+func (db *PGConnection) getLogs(c context.Context, q string, id uuid.UUID) (*entity.EriusLogs, error) {
+
+	return nil, nil
+}

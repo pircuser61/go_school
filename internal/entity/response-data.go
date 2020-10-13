@@ -99,3 +99,14 @@ type RunResponse struct {
 	Output     interface{} `json:"output"`
 	Errors     []string    `json:"errors"`
 }
+
+type EriusLogs struct {
+	Logs map[uuid.UUID]map[string]EriusLog `json:"logs"`
+}
+
+type EriusLog struct {
+	Variables map[string]interface{} `json:"variables"`
+	Errors    []string               `json:"errors"`
+	Steps     []string               `json:"steps"`
+	Time      time.Time              `json:"time"`
+}
