@@ -35,11 +35,11 @@ func (c *VariableStore) AddStep(name string) {
 	c.Steps = append(c.Steps, name)
 }
 
-func (c *VariableStore) AddError(name error) {
+func (c *VariableStore) AddError(err error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
-	c.Errors = append(c.Errors, name.Error())
+	c.Errors = append(c.Errors, err.Error())
 }
 
 func (c *VariableStore) GetValue(name string) (interface{}, bool) {
