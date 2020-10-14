@@ -79,6 +79,11 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		eriusFunctions = append(eriusFunctions, b)
 	}
 
+	for _, v := range eriusFunctions {
+		id := v.Title+v.BlockType
+		v.ID = id
+	}
+
 	eriusShapes, err := script.GetShapes()
 	if err != nil {
 		e := UnknownError

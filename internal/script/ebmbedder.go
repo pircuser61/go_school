@@ -52,6 +52,7 @@ type FunctionModel struct {
 	Outputs   []FunctionValueModel `json:"outputs"`
 	ShapeType int                  `json:"shape_type"`
 	NextFuncs []string             `json:"next_funcs"`
+	ID        string               `json:"id"`
 }
 
 type FunctionValueModel struct {
