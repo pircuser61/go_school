@@ -39,4 +39,6 @@ type Database interface {
 	ActiveAlertNGSA(c context.Context, sever int,
 		state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error
 	ClearAlertNGSA(c context.Context, name string) error
+	GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error)
+	GetVersionTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error)
 }

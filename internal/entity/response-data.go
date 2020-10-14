@@ -100,13 +100,12 @@ type RunResponse struct {
 	Errors     []string    `json:"errors"`
 }
 
-type EriusLogs struct {
-	Logs map[uuid.UUID]map[string]EriusLog `json:"logs"`
+type EriusTasks struct {
+	Tasks []EriusTask `json:"tasks"`
 }
 
-type EriusLog struct {
-	Variables map[string]interface{} `json:"variables"`
-	Errors    []string               `json:"errors"`
-	Steps     []string               `json:"steps"`
-	Time      time.Time              `json:"time"`
+type EriusTask struct {
+	ID     uuid.UUID `json:"id"`
+	Time   time.Time `json:"started_at"`
+	Status string    `json:"status" example:"runned"`
 }

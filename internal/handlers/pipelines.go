@@ -923,7 +923,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(ctx, w, req, p, false)
 }
 
-// GetPipelineLogs
+// GetPipelineTasks
 // @Summary Get Pipeline Logs
 // @Description Получить логи по сценарию
 // @Tags pipeline logs
@@ -935,13 +935,38 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /logs/{pipelineID} [get]
-func (ae *APIEnv) GetPipelineLogs(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_logs")
 	defer s.End()
-	fmt.Println(ctx)
+
+	idParam := chi.URLParam(req, "pipelineID")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	resp, err := ae.DB.GetPipelineTasks(ctx, id)
+	if err != nil {
+		e := GetTasksError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 }
 
-// GetVersionLogs
+// GetVersionTasks
 // @Summary Get Version Logs
 // @Description Получить логи по версии сценарию
 // @Tags version logs
@@ -953,11 +978,34 @@ func (ae *APIEnv) GetPipelineLogs(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /logs/version/{pipelineID} [get]
-
-func (ae *APIEnv) GetVersionLogs(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
 	defer s.End()
-	fmt.Println(ctx)
+
+	idParam := chi.URLParam(req, "versionID")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	resp, err := ae.DB.GetVersionTasks(ctx, id)
+	if err != nil {
+		e := GetTasksError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }
 
 func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,

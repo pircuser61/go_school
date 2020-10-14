@@ -748,21 +748,56 @@ JOIN pipeliner.pipelines p on p.id = pv.pipeline_id
 	return nil, nil
 }
 
-func (db *PGConnection) GetPipelineLogs(c context.Context, id uuid.UUID) (*entity.EriusLogs, error) {
-	c, span := trace.StartSpan(c, "pg_get_pipeline_logs")
+func (db *PGConnection) GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
+	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()
-	q := `SELECT`
-	return db.getLogs(c, q, id)
+	q := `SELECT w.id, w.started_at, w.status  FROM pipeliner.works w 
+		JOIN pipeliner.versions v ON v.id = w.version_id
+		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id 
+		WHERE p.id = $1
+		ORDER BY w.started_at DESC
+		LIMIT 100`
+	return db.getTasks(c, q, id)
 }
 
-func (db *PGConnection) GetVersionLogs(c context.Context, q string, id uuid.UUID) (*entity.EriusLogs, error) {
-	c, span := trace.StartSpan(c, "pg_get_pipeline_logs")
+func (db *PGConnection) GetVersionTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
+	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()
-
-	return nil, nil
+	q := `SELECT w.id, w.started_at, w.status  FROM pipeliner.works w 
+		JOIN pipeliner.versions v ON v.id = w.version_id
+		WHERE v.id = $1
+		ORDER BY w.started_at DESC
+		LIMIT 100`
+	return db.getTasks(c, q, id)
 }
 
-func (db *PGConnection) getLogs(c context.Context, q string, id uuid.UUID) (*entity.EriusLogs, error) {
+func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*entity.EriusTasks, error) {
+	ets := entity.EriusTasks{
+		Tasks: make([]entity.EriusTask, 0),
+	}
+	c, span := trace.StartSpan(c, "pg_get_tasks")
+	defer span.End()
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
 
-	return nil, nil
+	rows, err := conn.Query(c, q, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		et := entity.EriusTask{}
+		err := rows.Scan(et.ID, et.Time, et.Status)
+		if err != nil {
+			return nil, err
+		}
+
+		ets.Tasks = append(ets.Tasks, et)
+	}
+
+	return &ets, nil
 }

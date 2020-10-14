@@ -208,8 +208,8 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handler
 			r.With(handlers.SetRequestID).Post("/run/{pipelineID}", pipeliner.RunPipeline)
 			r.With(handlers.SetRequestID).Post("/run/version/{versionID}", pipeliner.RunVersion)
 
-			r.Get("/logs/{pipelineID}", pipeliner.GetPipelineLogs)
-			r.Get("/logs/{versionID}", pipeliner.GetVersionLogs)
+			r.Get("/tasks/{pipelineID}", pipeliner.GetPipelineTasks)
+			r.Get("/tasks/version/{versionID}", pipeliner.GetVersionTasks)
 		})
 
 	mux.Mount("/api/pipeliner/v1/swagger/", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
