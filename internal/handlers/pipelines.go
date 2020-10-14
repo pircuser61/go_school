@@ -923,6 +923,133 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(ctx, w, req, p, false)
 }
 
+// GetPipelineTasks
+// @Summary Get Pipeline Tasks
+// @Description Получить задачи по сценарию
+// @Tags pipeline tasks
+// @ID      get-pipeline-tasks
+// @Produce json
+// @Param pipelineID path string true "Pipeline ID"
+// @success 200 {object} httpResponse{data=entity.EriusTasks}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /tasks/{pipelineID} [get]
+func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_logs")
+	defer s.End()
+
+	idParam := chi.URLParam(req, "pipelineID")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	resp, err := ae.DB.GetPipelineTasks(ctx, id)
+	if err != nil {
+		e := GetTasksError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+}
+
+// GetVersionTasks
+// @Summary Get Version Tasks
+// @Description Получить задачи по версии сценарию
+// @Tags version tasks
+// @ID      get-version-tasks
+// @Produce json
+// @Param versionID path string true "Version ID"
+// @success 200 {object} httpResponse{data=entity.EriusTasks}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /tasks/version/{pipelineID} [get]
+func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
+	defer s.End()
+
+	idParam := chi.URLParam(req, "versionID")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	resp, err := ae.DB.GetVersionTasks(ctx, id)
+	if err != nil {
+		e := GetTasksError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+// GetTaskLog
+// @Summary Get Task Log
+// @Description Получить логи по задаче
+// @Tags tasks log
+// @ID      get-task-log
+// @Produce json
+// @Param versionID path string true "Task ID"
+// @success 200 {object} httpResponse{data=entity.EriusLog}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /logs/version/{pipelineID} [get]
+func (ae *APIEnv) GetTaskLog(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
+	defer s.End()
+
+	idParam := chi.URLParam(req, "taskID")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	resp, err := ae.DB.GetTaskLog(ctx, id)
+	if err != nil {
+		e := GetLogError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,
 	p *entity.EriusScenario, withStop bool) {
 	ctx, s := trace.StartSpan(ctx, "exec_version")

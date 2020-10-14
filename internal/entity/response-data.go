@@ -99,3 +99,25 @@ type RunResponse struct {
 	Output     interface{} `json:"output"`
 	Errors     []string    `json:"errors"`
 }
+
+type EriusTasks struct {
+	Tasks []EriusTask `json:"tasks"`
+}
+
+type EriusTask struct {
+	ID     uuid.UUID `json:"id"`
+	Time   time.Time `json:"started_at"`
+	Status string    `json:"status" example:"runned"`
+}
+
+type EriusLog struct {
+	Steps []Step `json:"steps"`
+}
+
+type Step struct {
+	Time    time.Time              `json:"time"`
+	Name    string                 `json:"name"`
+	Storage map[string]interface{} `json:"storage"`
+	Errors  []string               `json:"errors"`
+	Steps   []string               `json:"steps"`
+}

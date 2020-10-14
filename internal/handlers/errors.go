@@ -40,6 +40,8 @@ const (
 	VersionCreateError
 	UnauthError
 	AuthServiceError
+	GetTasksError
+	GetLogError
 )
 
 var errorText = map[Err]string{
@@ -66,6 +68,8 @@ var errorText = map[Err]string{
 	PipelineOutputGrabError: "error with output grabbing",
 	UnauthError:             "not allowed",
 	AuthServiceError:        "auth service failed",
+	GetTasksError:           "can't find tasks",
+	GetLogError:             "can't get log",
 }
 
 // JOKE.
@@ -93,6 +97,8 @@ var errorDescription = map[Err]string{
 	PipelineOutputGrabError: "Не удалось получить выходные данные",
 	UnauthError:             "Нет разрешений для выполнения операции",
 	AuthServiceError:        "Ошибка сервиса авторизации",
+	GetTasksError:           "Не удалось найти запуски сценария",
+	GetLogError:             "Не удалось получить лог",
 }
 
 var errorStatus = map[Err]int{
