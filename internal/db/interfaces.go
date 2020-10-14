@@ -41,4 +41,5 @@ type Database interface {
 	ClearAlertNGSA(c context.Context, name string) error
 	GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error)
 	GetVersionTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error)
+	GetTaskLog(c context.Context, id uuid.UUID) (*entity.EriusLog, error)
 }

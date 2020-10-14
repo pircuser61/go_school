@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"strconv"
 	"time"
 
@@ -772,11 +773,11 @@ func (db *PGConnection) GetVersionTasks(c context.Context, id uuid.UUID) (*entit
 }
 
 func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*entity.EriusTasks, error) {
+	c, span := trace.StartSpan(c, "pg_get_tasks")
+	defer span.End()
 	ets := entity.EriusTasks{
 		Tasks: make([]entity.EriusTask, 0),
 	}
-	c, span := trace.StartSpan(c, "pg_get_tasks")
-	defer span.End()
 	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return nil, err
@@ -791,7 +792,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 
 	for rows.Next() {
 		et := entity.EriusTask{}
-		err := rows.Scan(et.ID, et.Time, et.Status)
+		err := rows.Scan(&et.ID, &et.Time, &et.Status)
 		if err != nil {
 			return nil, err
 		}
@@ -800,4 +801,51 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 	}
 
 	return &ets, nil
+}
+
+func (db *PGConnection) GetTaskLog(c context.Context, id uuid.UUID) (*entity.EriusLog, error) {
+	c, span := trace.StartSpan(c, "pg_get_tasks")
+	defer span.End()
+	el := entity.EriusLog{
+		Steps: make([]entity.Step, 0),
+	}
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
+
+	q := `
+SELECT vs.step_name, vs.time, vs.content 
+FROM pipeliner.variable_storage vs 
+WHERE work_id = $1
+ORDER BY vs.time DESC
+`
+
+	rows, err := conn.Query(c, q, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		s := entity.Step{}
+		var c string
+		err := rows.Scan(&s.Name, &s.Time, &c)
+		if err != nil {
+			return nil, err
+		}
+
+		storage := store.VariableStore{}
+		err = json.Unmarshal([]byte(c), &storage)
+		if err != nil {
+			return nil, err
+		}
+		s.Steps = storage.Steps
+		s.Errors = storage.Errors
+		s.Storage = storage.Values
+		el.Steps = append(el.Steps, s)
+	}
+
+	return nil, nil
 }

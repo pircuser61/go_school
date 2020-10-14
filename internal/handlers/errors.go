@@ -41,6 +41,7 @@ const (
 	UnauthError
 	AuthServiceError
 	GetTasksError
+	GetLogError
 )
 
 var errorText = map[Err]string{
@@ -68,6 +69,7 @@ var errorText = map[Err]string{
 	UnauthError:             "not allowed",
 	AuthServiceError:        "auth service failed",
 	GetTasksError:           "can't find tasks",
+	GetLogError:             "can't get log",
 }
 
 // JOKE.
@@ -96,6 +98,7 @@ var errorDescription = map[Err]string{
 	UnauthError:             "Нет разрешений для выполнения операции",
 	AuthServiceError:        "Ошибка сервиса авторизации",
 	GetTasksError:           "Не удалось найти запуски сценария",
+	GetLogError:             "Не удалось получить лог",
 }
 
 var errorStatus = map[Err]int{
