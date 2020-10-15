@@ -92,12 +92,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
 			if err != nil {
-				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
-				if errChange != nil {
-					return errChange
-				}
-
-				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
+				ep.Logger.Error(err)
 			}
 
 			out := ep.Blocks[ep.NowOnPoint].Outputs()
