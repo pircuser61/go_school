@@ -21,10 +21,12 @@ type VariableStore struct {
 }
 
 func NewStore() *VariableStore {
-	s := VariableStore{mut: &sync.Mutex{}, Values: make(map[string]interface{})}
-	s.Steps = make([]string, 0)
-	s.Errors = make([]string, 0)
-
+	s := VariableStore{
+		mut:    &sync.Mutex{},
+		Values: make(map[string]interface{}),
+		Steps : make([]string, 0),
+		Errors : make([]string, 0),
+	}
 	return &s
 }
 

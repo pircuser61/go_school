@@ -836,8 +836,8 @@ ORDER BY vs.time DESC
 			return nil, err
 		}
 
-		storage := store.VariableStore{}
-		err = json.Unmarshal([]byte(c), &storage)
+		storage := store.NewStore()
+		err = json.Unmarshal([]byte(c), storage)
 		if err != nil {
 			return nil, err
 		}
