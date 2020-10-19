@@ -80,7 +80,13 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		ep.Logger.Println("  -- errors ---", runCtx.Errors)
 		now, ok := ep.Blocks[ep.NowOnPoint]
 		if !ok {
-			return errors.New("unknown block")
+			err := errors.New("unknown block")
+			ep.VarStore.AddError(err)
+			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
+			if errChange != nil {
+				return errChange
+			}
+			return err
 		}
 		if now.IsScenario() {
 			ep.VarStore.AddStep(ep.NowOnPoint)
