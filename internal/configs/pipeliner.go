@@ -8,25 +8,26 @@ import (
 )
 
 const (
-	StrategyHttp  = "http"
+	StrategyHTTP  = "http"
 	StrategyKafka = "kafka"
 )
 
 type Pipeliner struct {
-	Tracing       TracingConfig      `yaml:"tracing"`
-	Timeout       Duration           `yaml:"timeout"`
-	Proxy         string             `yaml:"proxy"`
-	Log           *logger.Config     `yaml:"log"`
-	ServeAddr     string             `yaml:"serve_addr"`
-	MetricsAddr   string             `yaml:"metrics_addr"`
-	DB            Database           `yaml:"database"`
-	ScriptManager string             `yaml:"script_manager"`
-	FaaS          string             `yaml:"faas"`
-	RunEnv        RunEnv             `yaml:"run_env"`
-	Swag          SwaggerGeneral     `yaml:"swagger"`
-	Monitoring    configs.Monitoring `yaml:"monitoring"`
-	AuthBaseURL   *URL               `yaml:"auth"`
-	Push          PushConfig         `yaml:"push"`
+	Tracing          TracingConfig      `yaml:"tracing"`
+	Timeout          Duration           `yaml:"timeout"`
+	Proxy            string             `yaml:"proxy"`
+	Log              *logger.Config     `yaml:"log"`
+	ServeAddr        string             `yaml:"serve_addr"`
+	MetricsAddr      string             `yaml:"metrics_addr"`
+	DB               Database           `yaml:"database"`
+	ScriptManager    string             `yaml:"script_manager"`
+	FaaS             string             `yaml:"faas"`
+	RunEnv           RunEnv             `yaml:"run_env"`
+	Swag             SwaggerGeneral     `yaml:"swagger"`
+	Monitoring       configs.Monitoring `yaml:"monitoring"`
+	AuthBaseURL      *URL               `yaml:"auth"`
+	Push             PushConfig         `yaml:"push"`
+	HTTPClientConfig *HTTPClient        `yaml:"http_client_config"`
 }
 
 type RunEnv struct {
@@ -69,4 +70,14 @@ func (d *Database) String() string {
 	return fmt.Sprintf(
 		"DB: (Kind: %s, Host: %s, Port: %s, User: %s, Pass: %s, DBName: %s, MaxConn: %d, Timeout: %d)",
 		d.Kind, d.Host, d.Port, d.User, pass, d.DBName, d.MaxConnections, d.Timeout)
+}
+
+type HTTPClient struct {
+	Timeout               Duration `yaml:"timeout"`
+	KeepAlive             Duration `yaml:"keep_alive"`
+	MaxIdleConns          int      `yaml:"max_idle_conns"`
+	IdleConnTimeout       Duration `yaml:"idle_conn_timeout"`
+	TLSHandshakeTimeout   Duration `yaml:"tls_handshake_timeout"`
+	ExpectContinueTimeout Duration `yaml:"expect_continue_timeout"`
+	ProxyURL              URL      `yaml:"proxy_url"`
 }

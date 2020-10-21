@@ -8,9 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"go.opencensus.io/trace"
+
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
-	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/admin/pkg/vars"
@@ -948,6 +949,7 @@ func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
 	resp, err := ae.DB.GetPipelineTasks(ctx, id)
 	if err != nil {
 		e := GetTasksError
@@ -956,6 +958,7 @@ func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
 	if err := sendResponse(w, http.StatusOK, resp); err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
@@ -963,7 +966,6 @@ func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-
 }
 
 // GetVersionTasks
@@ -991,6 +993,7 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
 	resp, err := ae.DB.GetVersionTasks(ctx, id)
 	if err != nil {
 		e := GetTasksError
@@ -999,6 +1002,7 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
 	if err := sendResponse(w, http.StatusOK, resp); err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
@@ -1033,6 +1037,7 @@ func (ae *APIEnv) GetTaskLog(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
 	resp, err := ae.DB.GetTaskLog(ctx, id)
 	if err != nil {
 		e := GetLogError
@@ -1041,6 +1046,7 @@ func (ae *APIEnv) GetTaskLog(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
 	if err := sendResponse(w, http.StatusOK, resp); err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
