@@ -40,11 +40,13 @@ func InitMetricsAuth() {
 
 		Stats.NGSAPushes.Ok = prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "ngsa_ok",
-			Help: "time and status of last success NGSA push"})
+			Help: "time and status of last success NGSA push",
+		})
 
 		Stats.NGSAPushes.Fail = prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "ngsa_fail",
-			Help: "time and status of last not success NGSA push"})
+			Help: "time and status of last not success NGSA push",
+		})
 
 		Registry.MustRegister(Stats.NGSAPushes.Ok)
 		Registry.MustRegister(Stats.NGSAPushes.Fail)

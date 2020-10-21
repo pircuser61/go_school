@@ -46,7 +46,7 @@ type FunctionTag struct {
 	Approved bool      `json:"approved"`
 }
 
-func GetReadyFuncs(ctx context.Context, scriptManager string) (FunctionModels, error) {
+func GetReadyFuncs(ctx context.Context, scriptManager string, httpClient *http.Client) (FunctionModels, error) {
 	_, s := trace.StartSpan(ctx, "get_ready_modules")
 	defer s.End()
 
@@ -66,7 +66,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) (FunctionModels, e
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	resp, err := httpClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}

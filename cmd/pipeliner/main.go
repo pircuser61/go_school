@@ -11,32 +11,26 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/prometheus/client_golang/prometheus/push"
-
-	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
-
-	httpSwagger "github.com/swaggo/http-swagger"
-
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-
-	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
-
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-
-	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
-
-	"go.opencensus.io/plugin/ochttp"
-
-	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
-
 	"contrib.go.opencensus.io/exporter/jaeger"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/trace"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gitlab.services.mts.ru/libs/logger"
-	"go.opencensus.io/trace"
+	"github.com/prometheus/client_golang/prometheus/push"
+	httpSwagger "github.com/swaggo/http-swagger"
 
+	"gitlab.services.mts.ru/erius/admin/pkg/auth"
+	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
+	"gitlab.services.mts.ru/libs/logger"
+
+	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 )
 
@@ -54,8 +48,6 @@ func main() {
 	flag.Parse()
 
 	log := logger.CreateLogger(nil)
-
-	metrics.InitMetricsAuth()
 
 	cfg := &configs.Pipeliner{}
 
@@ -75,7 +67,10 @@ func main() {
 		return
 	}
 
-	authClient, err := auth.NewClient(cfg.AuthBaseURL.URL, nil)
+	httpClient := httpclient.HTTPClient(cfg.HTTPClientConfig)
+	auth.InjectTransport(httpClient)
+
+	authClient, err := auth.NewClient(cfg.AuthBaseURL.URL, httpClient)
 	if err != nil {
 		log.WithError(err).Error("can't create auth client")
 
@@ -88,6 +83,7 @@ func main() {
 		ScriptManager: cfg.ScriptManager,
 		FaaS:          cfg.FaaS,
 		AuthClient:    authClient,
+		HTTPClient:    httpClient,
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{

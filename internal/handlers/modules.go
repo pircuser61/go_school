@@ -24,7 +24,7 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
 
-	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager)
+	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager, ae.HTTPClient)
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
@@ -80,7 +80,7 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, v := range eriusFunctions {
-		id := v.Title+v.BlockType
+		id := v.Title + v.BlockType
 		v.ID = id
 	}
 

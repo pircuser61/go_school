@@ -6,18 +6,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"strconv"
 	"time"
 
-	"github.com/jackc/pgx/v4/pgxpool"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/ctx"
+	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/ctx"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
 
 type PGConnection struct {
@@ -85,10 +86,12 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 	defer span.End()
 
 	vMap := make(map[uuid.UUID]entity.EriusScenarioInfo)
+
 	versions, err := db.GetVersionsByStatus(c, StatusApproved)
 	if err != nil {
 		return nil, err
 	}
+
 	for _, version := range versions {
 		finV, ok := vMap[version.ID]
 		if ok {
@@ -96,18 +99,23 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 			if err != nil {
 				return nil, err
 			}
+
 			if finV.ApprovedAt.After(t) {
 				continue
 			}
 		}
+
 		vMap[version.ID] = version
 	}
+
 	final := make([]entity.EriusScenarioInfo, len(vMap))
 	n := 0
+
 	for _, v := range vMap {
 		final[n] = v
 		n++
 	}
+
 	return final, nil
 }
 
@@ -116,18 +124,21 @@ func (db *PGConnection) findApproveDate(c context.Context, id uuid.UUID) (time.T
 	defer span.End()
 
 	q := `SELECT date FROM pipeliner.pipeline_history where version_id = $1 order by date limit 1`
+
 	rows, err := db.Pool.Query(c, q, id)
 	if err != nil {
 		return time.Time{}, err
 	}
+
 	defer rows.Close()
-	for rows.Next() {
+
+	if rows.Next() {
 		date := time.Time{}
+
 		err := rows.Scan(&date)
 		if err != nil {
 			return time.Time{}, err
 		}
-		break
 	}
 
 	return time.Time{}, nil
@@ -752,36 +763,43 @@ JOIN pipeliner.pipelines p on p.id = pv.pipeline_id
 func (db *PGConnection) GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()
+
 	q := `SELECT w.id, w.started_at, w.status  FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id 
 		WHERE p.id = $1
 		ORDER BY w.started_at DESC
 		LIMIT 100`
+
 	return db.getTasks(c, q, id)
 }
 
 func (db *PGConnection) GetVersionTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()
+
 	q := `SELECT w.id, w.started_at, w.status  FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		WHERE v.id = $1
 		ORDER BY w.started_at DESC
 		LIMIT 100`
+
 	return db.getTasks(c, q, id)
 }
 
 func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*entity.EriusTasks, error) {
 	c, span := trace.StartSpan(c, "pg_get_tasks")
 	defer span.End()
+
 	ets := entity.EriusTasks{
 		Tasks: make([]entity.EriusTask, 0),
 	}
+
 	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return nil, err
 	}
+
 	defer conn.Release()
 
 	rows, err := conn.Query(c, q, id)
@@ -792,6 +810,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 
 	for rows.Next() {
 		et := entity.EriusTask{}
+
 		err := rows.Scan(&et.ID, &et.Time, &et.Status)
 		if err != nil {
 			return nil, err
@@ -806,13 +825,16 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 func (db *PGConnection) GetTaskLog(c context.Context, id uuid.UUID) (*entity.EriusLog, error) {
 	c, span := trace.StartSpan(c, "pg_get_tasks")
 	defer span.End()
+
 	el := entity.EriusLog{
 		Steps: make([]entity.Step, 0),
 	}
+
 	conn, err := db.Pool.Acquire(c)
 	if err != nil {
 		return nil, err
 	}
+
 	defer conn.Release()
 
 	q := `
@@ -830,17 +852,20 @@ ORDER BY vs.time DESC
 
 	for rows.Next() {
 		s := entity.Step{}
-		var c string
+		c := ""
+
 		err := rows.Scan(&s.Name, &s.Time, &c)
 		if err != nil {
 			return nil, err
 		}
 
 		storage := store.NewStore()
+
 		err = json.Unmarshal([]byte(c), storage)
 		if err != nil {
 			return nil, err
 		}
+
 		s.Steps = storage.Steps
 		s.Errors = storage.Errors
 		s.Storage = storage.Values

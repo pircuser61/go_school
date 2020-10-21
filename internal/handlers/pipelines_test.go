@@ -382,7 +382,6 @@ func Test_authParametersByPipelineStatus(t *testing.T) {
 			assert.Equal(t, tt.wantResource, gotResource, "%v", tt.name)
 			assert.Equal(t, tt.wantAction, gotAction, "%v", tt.name)
 			assert.Equal(t, tt.wantID, gotID, "%v", tt.name)
-
 		})
 	}
 }

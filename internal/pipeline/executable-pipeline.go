@@ -78,16 +78,20 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		ep.Logger.Println("  -- storage ---", runCtx.Values)
 		ep.Logger.Println("  -- steps ---", runCtx.Steps)
 		ep.Logger.Println("  -- errors ---", runCtx.Errors)
+
 		now, ok := ep.Blocks[ep.NowOnPoint]
 		if !ok {
 			err := errors.New("unknown block")
 			ep.VarStore.AddError(err)
+
 			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 			if errChange != nil {
 				return errChange
 			}
+
 			return err
 		}
+
 		if now.IsScenario() {
 			ep.VarStore.AddStep(ep.NowOnPoint)
 
@@ -102,11 +106,14 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
 			if err != nil {
 				ep.VarStore.AddError(err)
+
 				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
 					return errChange
 				}
+
 				ep.VarStore.AddError(errChange)
+
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 
@@ -131,6 +138,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		storageData, err := json.Marshal(ep.VarStore)
 		if err != nil {
 			ep.VarStore.AddError(err)
+
 			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 			if errChange != nil {
 				ep.VarStore.AddError(errChange)
@@ -145,9 +153,11 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 		if err != nil {
 			ep.VarStore.AddError(err)
+
 			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 			if errChange != nil {
 				ep.VarStore.AddError(errChange)
+
 				return errChange
 			}
 

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"net/http"
+
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/libs/logger"
 
@@ -13,4 +15,5 @@ type APIEnv struct {
 	ScriptManager string
 	FaaS          string
 	AuthClient    *auth.Client
+	HTTPClient    *http.Client
 }

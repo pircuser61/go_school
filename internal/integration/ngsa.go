@@ -3,15 +3,15 @@ package integration
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
-
 	"go.opencensus.io/trace"
 
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
@@ -95,8 +95,8 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	inputs := ns.Model().Inputs
 	for _, input := range inputs {
-		v, ok := runCtx.GetValue(ns.Input[input.Name])
-		if !ok {
+		v, okV := runCtx.GetValue(ns.Input[input.Name])
+		if !okV {
 			continue
 		}
 
@@ -147,11 +147,11 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	}
 
 	if m.State == active {
-		err := ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
+		errNGSA := ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
 			m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
 			m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
 			m.ManagedObjectClass)
-		if err == nil {
+		if errNGSA == nil {
 			ok = true
 		}
 
