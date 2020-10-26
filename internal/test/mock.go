@@ -32,7 +32,10 @@ type TestablePipeline struct {
 	pipeline         *entity.EriusScenario
 }
 
-var errNotFound = errors.New("not found")
+var (
+	errNotFound       = errors.New("not found")
+	errNotImplemented = errors.New("not implemented")
+)
 
 //nolint //need globals
 var (
@@ -883,6 +886,18 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (m *MockDB) GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetVersionTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetTaskLog(c context.Context, id uuid.UUID) (*entity.EriusLog, error) {
+	return nil, errNotFound
+}
+
 func NewMockDB() *MockDB {
 	return &MockDB{pipelines: pipelines}
 }
@@ -913,48 +928,44 @@ func (m *MockDB) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 	return versionInfoList, nil
 }
 
-func (m *MockDB) GetDraftVersionsAuth(c context.Context) ([]entity.EriusScenarioInfo, error) {
-	panic("implement me")
-}
-
-func (m *MockDB) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
-	panic("implement me")
+func (m *MockDB) GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+	return nil, errNotImplemented
 }
 
 func (m *MockDB) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
-	panic("implement me")
+	return nil, errNotImplemented
 }
 
 func (m *MockDB) GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error) {
-	panic("implement me")
+	return nil, errNotImplemented
 }
 
 func (m *MockDB) GetVersionsByStatusAndAuthor(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error) {
-	panic("implement me")
+	return nil, errNotImplemented
 }
 
 func (m *MockDB) SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) VersionEditable(c context.Context, versionID uuid.UUID) (bool, error) {
-	panic("implement me")
+	return false, errNotImplemented
 }
 
 func (m *MockDB) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) CreateVersion(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) DeleteVersion(c context.Context, versionID uuid.UUID) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) DeletePipeline(c context.Context, id uuid.UUID) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
@@ -972,7 +983,7 @@ func (m *MockDB) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 }
 
 func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelineData []byte) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) WriteContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
@@ -988,7 +999,7 @@ func (m *MockDB) ChangeWorkStatus(c context.Context, workID uuid.UUID, status in
 }
 
 func (m *MockDB) GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error) {
-	panic("implement me")
+	return nil, errNotImplemented
 }
 
 func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error) {

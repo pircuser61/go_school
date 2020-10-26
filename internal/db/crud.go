@@ -166,18 +166,11 @@ order by created_at `
 	return parseRowsVersionList(c, rows)
 }
 
-func (db *PGConnection) GetDraftVersionsAuth(c context.Context) ([]entity.EriusScenarioInfo, error) {
+func (db *PGConnection) GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_list_draft_versions")
 	defer span.End()
 
 	return db.GetVersionsByStatus(c, StatusDraft)
-}
-
-func (db *PGConnection) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
-	c, span := trace.StartSpan(c, "pg_list_draft_versions")
-	defer span.End()
-
-	return db.GetVersionsByStatusAndAuthor(c, StatusDraft, author)
 }
 
 func (db *PGConnection) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
