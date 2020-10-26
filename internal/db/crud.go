@@ -36,6 +36,7 @@ func ConnectPostgres(db *configs.Database) (PGConnection, error) {
 	}
 
 	pgc := PGConnection{Pool: conn}
+
 	return pgc, nil
 }
 

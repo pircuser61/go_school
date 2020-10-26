@@ -498,6 +498,18 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if err = ae.AuthClient.Notice(ctx, &auth.Notice{
+		NoticeType:   vars.CreateNotice,
+		ResourceType: vars.PipelineVersion,
+		ResourceID:   created.VersionID.String(),
+	}); err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	err = sendResponse(w, http.StatusOK, created)
 	if err != nil {
 		e := UnknownError
