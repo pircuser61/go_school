@@ -344,7 +344,7 @@ func Test_filter(t *testing.T) {
 	}
 }
 
-func Test_authParametersByPipelineStatus(t *testing.T) {
+func Test_authUpdateParametersByPipelineStatus(t *testing.T) {
 	tests := []struct {
 		name         string
 		p            entity.EriusScenario
@@ -403,7 +403,7 @@ func Test_authDeleteParametersByPipelineStatus(t *testing.T) {
 		},
 		{
 			name:         "on approve",
-			p:            entity.EriusScenario{Status: db.StatusOnApprove, VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			p:            entity.EriusScenario{Status: db.StatusOnApprove, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
 			wantResource: vars.Pipeline,
 			wantAction:   vars.Delete,
 			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
