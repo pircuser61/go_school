@@ -9,7 +9,7 @@ import (
 )
 
 // nolint:dupl // mock method
-func (ae APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tags")
 	defer s.End()
 
@@ -38,7 +38,7 @@ func (ae APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 }
 
 // nolint:dupl // mock method
-func (ae APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_tag")
 	defer s.End()
 
@@ -67,7 +67,7 @@ func (ae APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 }
 
 // nolint:dupl // mock method
-func (ae APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_tag")
 	defer s.End()
 
@@ -96,7 +96,7 @@ func (ae APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 }
 
 // nolint:dupl // mock method
-func (ae APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_tag")
 	defer s.End()
 

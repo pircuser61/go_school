@@ -46,6 +46,7 @@ type EriusScenario struct {
 		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
 	} `json:"pipeline"`
+	ApproveDate time.Time `json:"approve_date"`
 }
 
 type EriusFunctionList struct {

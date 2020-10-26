@@ -22,6 +22,7 @@ type Statistic struct {
 	NGSAPushes NGSAStatus
 }
 
+//nolint:gochecknoglobals //its good
 var (
 	Stats    = Statistic{}
 	once     = &sync.Once{}

@@ -107,7 +107,7 @@ func main() {
 	initSwagger(cfg)
 
 	server := http.Server{
-		Handler: registerRouter(log, cfg, pipeliner),
+		Handler: registerRouter(log, cfg, &pipeliner),
 		Addr:    cfg.ServeAddr,
 	}
 
@@ -156,7 +156,7 @@ func main() {
 	log.WithField("signal", stop).Info("stopping")
 }
 
-func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner handlers.APIEnv) *chi.Mux {
+func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
 	mux.Use(func(next http.Handler) http.Handler {

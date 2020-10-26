@@ -18,7 +18,6 @@ import (
 
 type NGSASend struct {
 	Name      string
-	ttl       time.Duration
 	db        db.Database
 	NextBlock string
 	Input     map[string]string
@@ -46,9 +45,8 @@ const (
 	erius  = "Erius"
 )
 
-func NewNGSASendIntegration(database db.Database, ttl int, name string) NGSASend {
+func NewNGSASendIntegration(database db.Database) NGSASend {
 	return NGSASend{
-		ttl:   time.Duration(ttl) * time.Minute,
 		db:    database,
 		Input: make(map[string]string),
 	}
@@ -70,6 +68,7 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return ns.DebugRun(ctx, runCtx)
 }
 
+//nolint:gocyclo //need bigger cyclomatic
 func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()

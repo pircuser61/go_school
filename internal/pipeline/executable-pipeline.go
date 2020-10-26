@@ -62,7 +62,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	return ep.DebugRun(ctx, runCtx)
 }
 
-//nolint:gocyclo
+//nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
@@ -91,7 +91,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			return err
 		}
-
+		//nolint:nestif //its really complexive
 		if now.IsScenario() {
 			ep.VarStore.AddStep(ep.NowOnPoint)
 
@@ -129,8 +129,10 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 				if errChange != nil {
 					ep.VarStore.AddError(errChange)
+
 					return errChange
 				}
+
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 		}
@@ -142,6 +144,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
 			if errChange != nil {
 				ep.VarStore.AddError(errChange)
+
 				return errChange
 			}
 
@@ -168,6 +171,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	err := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusFinished)
 	if err != nil {
 		ep.VarStore.AddError(err)
+
 		return err
 	}
 
@@ -301,7 +305,7 @@ func createForBlock(title, name, onTrue, onFalse string) *ForState {
 	}
 }
 
-//nolint:gocyclo
+//nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
 	switch ef.Title {
 	case "if":
@@ -333,7 +337,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		return con
 	case "ngsa-send-alarm":
-		ngsa := integration.NewNGSASendIntegration(ep.Storage, 3, name)
+		ngsa := integration.NewNGSASendIntegration(ep.Storage)
 		for _, v := range ef.Input {
 			ngsa.Input[v.Name] = v.Global
 		}

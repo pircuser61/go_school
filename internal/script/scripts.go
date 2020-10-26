@@ -19,7 +19,7 @@ type ShapeEntity struct {
 	Icon  string `json:"icon"`
 }
 
-type ScriptManagerResponse struct {
+type SMResponse struct {
 	Function []SMFunctionEntity `json:"function"`
 }
 
@@ -78,7 +78,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string, httpClient *http.C
 		return nil, err
 	}
 
-	smf := ScriptManagerResponse{}
+	smf := SMResponse{}
 
 	err = json.Unmarshal(b, &smf)
 	if err != nil {
