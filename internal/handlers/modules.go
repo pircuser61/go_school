@@ -20,7 +20,7 @@ import (
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /modules/ [get]
-func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
 
@@ -40,7 +40,7 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.Vars.Model(),
 		script.Connector.Model(),
 		script.ForState.Model(),
-		integration.NewNGSASendIntegration(ae.DB, 3, "").Model())
+		integration.NewNGSASendIntegration(ae.DB).Model())
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
 	if err != nil {
@@ -79,7 +79,8 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		eriusFunctions = append(eriusFunctions, b)
 	}
 
-	for _, v := range eriusFunctions {
+	for i := range eriusFunctions {
+		v := eriusFunctions[i]
 		id := v.Title + v.BlockType
 		v.ID = id
 	}
@@ -113,8 +114,7 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /modules/usage [get]
-//nolint //i rly want copy and big loop for simple read
-func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "all_modules_usage")
 	defer s.End()
 
@@ -123,20 +123,22 @@ func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 		e := ModuleUsageError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
 	moduleUsageMap := make(map[string]map[string]struct{})
-	for _, scenario := range scenarios {
-		for _, block := range scenario.Pipeline.Blocks {
-			if block.BlockType != script.TypePython3 {
+	for i := range scenarios {
+		blocks := scenarios[i].Pipeline.Blocks
+		for k := range blocks {
+			if blocks[k].BlockType != script.TypePython3 {
 				continue
 			}
-			name := block.Title
+			name := blocks[k].Title
 			if _, ok := moduleUsageMap[name]; !ok {
 				moduleUsageMap[name] = make(map[string]struct{})
 			}
-			moduleUsageMap[name][scenario.Name] = struct{}{}
+			moduleUsageMap[name][scenarios[i].Name] = struct{}{}
 		}
 	}
 	resp := make(map[string][]string)
@@ -168,7 +170,7 @@ func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /modules/{moduleName}/usage [get]
-func (ae APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "module_usage")
 	defer s.End()
 

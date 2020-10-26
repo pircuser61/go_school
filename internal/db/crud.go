@@ -36,7 +36,6 @@ func ConnectPostgres(db *configs.Database) (PGConnection, error) {
 	}
 
 	pgc := PGConnection{Pool: conn}
-
 	return pgc, nil
 }
 
@@ -91,10 +90,9 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 	if err != nil {
 		return nil, err
 	}
-
-	for _, version := range versions {
-		finV, ok := vMap[version.ID]
-		if ok {
+	for i := range versions {
+		version := versions[i]
+		if finV, ok := vMap[version.ID]; ok {
 			t, err := db.findApproveDate(c, version.VersionID)
 			if err != nil {
 				return nil, err
@@ -110,8 +108,8 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 
 	final := make([]entity.EriusScenarioInfo, len(vMap))
 	n := 0
-
-	for _, v := range vMap {
+	for i := range vMap {
+		v := vMap[i]
 		final[n] = v
 		n++
 	}
@@ -188,6 +186,7 @@ func (db *PGConnection) GetOnApproveVersions(c context.Context) ([]entity.EriusS
 	return db.GetVersionsByStatus(c, StatusOnApprove)
 }
 
+//nolint:dupl //its unique
 func (db *PGConnection) GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_all_not_deleted_versions")
 	defer span.End()
@@ -658,14 +657,16 @@ UPDATE pipeliner.works SET status = $1 WHERE id = $2
 	return nil
 }
 
+//nolint:dupl //its unique
 func (db *PGConnection) GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_all_not_deleted_versions")
 	defer span.End()
 
 	q := `
-	SELECT pv.id, pp.name, pv.status, pv.pipeline_id, pv.content
+SELECT pv.id, pp.name, pv.status, pv.pipeline_id, pv.content, ph.date
 from pipeliner.versions pv
 join pipeliner.pipelines pp on pv.pipeline_id = pp.id
+join pipeliner.pipeline_history ph on ph.version_id = pv.id
 where 
 	pv.status = $1
 and pp.deleted_at is NULL
@@ -685,9 +686,11 @@ order by pv.created_at `
 
 		var c, name string
 
+		var d time.Time
+
 		p := entity.EriusScenario{}
 
-		err = rows.Scan(&vID, &name, &s, &pID, &c)
+		err = rows.Scan(&vID, &name, &s, &pID, &c, &d)
 		if err != nil {
 			return nil, err
 		}
@@ -701,10 +704,37 @@ order by pv.created_at `
 		p.ID = pID
 		p.Status = s
 		p.Name = name
+		p.ApproveDate = d
 		pipes = append(pipes, p)
 	}
 
-	return pipes, nil
+	vMap := make(map[uuid.UUID]entity.EriusScenario)
+
+	for i := range pipes {
+		version := pipes[i]
+		if finV, ok := vMap[version.ID]; ok {
+			t, err := db.findApproveDate(c, version.VersionID)
+			if err != nil {
+				return nil, err
+			}
+
+			if finV.ApproveDate.After(t) {
+				continue
+			}
+		}
+
+		vMap[version.ID] = version
+	}
+
+	final := make([]entity.EriusScenario, len(vMap))
+	n := 0
+	for i := range vMap {
+		v := vMap[i]
+		final[n] = v
+		n++
+	}
+
+	return final, nil
 }
 
 func (db *PGConnection) GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error) {

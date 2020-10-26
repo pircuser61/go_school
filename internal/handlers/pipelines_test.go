@@ -99,11 +99,11 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		//	pipelineInput: map[string]interface{}{
 		//		"Input": "Value",
 		//	},
-		//	pipelineUUID: test.LinearPipelineUUID,
+		//	pipelineUUID: test.linearPipelineUUID,
 		//	FunctionHandlers: map[string]http.HandlerFunc{
-		//		"Block1": LinearPipelineBlock,
+		//		"Block1": linearPipelineBlock,
 		//		"Block2": BrokenBlock,
-		//		"Block3": LinearPipelineBlock,
+		//		"Block3": linearPipelineBlock,
 		//	},
 		//	HandlersExpectedInput:   nil,
 		//	PipelinerExpectedOutput:  nil,

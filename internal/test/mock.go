@@ -34,8 +34,9 @@ type TestablePipeline struct {
 
 var errNotFound = errors.New("not found")
 
+//nolint //need globals
 var (
-	LinearPipelineBlock = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	linearPipelineBlock = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		type InputStruct struct {
 			Input string `json:"Input"`
 		}
@@ -68,7 +69,7 @@ var (
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(bytesOutput)
 	})
-	StringIsEqualToBlockGenerator = func(equalsTo string) http.HandlerFunc {
+	stringIsEqualToBlockGenerator = func(equalsTo string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			type InputStruct struct {
 				Input string `json:"Input"`
@@ -103,32 +104,32 @@ var (
 			_, _ = w.Write(bytesOutput)
 		}
 	}
-	EmptyBlock = OnlyReturnBlockGenerator(map[string]interface{}{})
+	emptyBlock = OnlyReturnBlockGenerator(map[string]interface{}{})
 
-	LinearPipelineUUID        = uuid.New()
-	LinearPipelineVersionUUID = uuid.New()
+	linearPipelineUUID        = uuid.New()
+	linearPipelineVersionUUID = uuid.New()
 
-	IfPipelineUUID        = uuid.New()
-	IfPipelineVersionUUID = uuid.New()
+	ifPipelineUUID        = uuid.New()
+	ifPipelineVersionUUID = uuid.New()
 
-	ForPipelineUUID        = uuid.New()
-	ForPipelineVersionUUID = uuid.New()
+	forPipelineUUID        = uuid.New()
+	forPipelineVersionUUID = uuid.New()
 
-	PipelineWithPipelineUUID        = uuid.New()
-	PipelineWithPipelineVersionUUID = uuid.New()
+	pipelineWithPipelineUUID        = uuid.New()
+	pipelineWithPipelineVersionUUID = uuid.New()
 
-	ForInForPipelineUUID        = uuid.New()
-	ForInForPipelineVersionUUID = uuid.New()
+	forInForPipelineUUID        = uuid.New()
+	forInForPipelineVersionUUID = uuid.New()
 
-	StringsEqualPipelineUUID        = uuid.New()
-	StringsEqualPipelineVersionUUID = uuid.New()
+	stringsEqualPipelineUUID        = uuid.New()
+	stringsEqualPipelineVersionUUID = uuid.New()
 
-	ConnectorPipelineUUID        = uuid.New()
-	ConnectorPipelineVersionUUID = uuid.New()
+	connectorPipelineUUID        = uuid.New()
+	connectorPipelineVersionUUID = uuid.New()
 
 	linearPipeline = entity.EriusScenario{
-		ID:        LinearPipelineUUID,
-		VersionID: LinearPipelineVersionUUID,
+		ID:        linearPipelineUUID,
+		VersionID: linearPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "LinearPipeline",
@@ -217,19 +218,20 @@ var (
 	// Input string goes through pipeline
 	// Block1, Block2, Block3 should accept {"Input":"string"} and return {"Output":"string"}
 	// Test should check for block running sequence and block input
+	//nolint:gochecknoglobals //need this as global
 	LinearPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
-			"Block1": LinearPipelineBlock,
-			"Block2": LinearPipelineBlock,
-			"Block3": LinearPipelineBlock,
+			"Block1": linearPipelineBlock,
+			"Block2": linearPipelineBlock,
+			"Block3": linearPipelineBlock,
 		},
-		PipelineUUID: LinearPipelineUUID,
+		PipelineUUID: linearPipelineUUID,
 		pipeline:     &linearPipeline,
 	}
 
 	ifPipeline = entity.EriusScenario{
-		ID:        IfPipelineUUID,
-		VersionID: IfPipelineVersionUUID,
+		ID:        ifPipelineUUID,
+		VersionID: ifPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "IfPipeline",
@@ -310,19 +312,20 @@ var (
 	// Block1 should compare pipeline input with something inside and return bool
 	// Depending on Block1.Output runs BlockTrue or BlockFalse
 	// Test should check for block running sequence
+	//nolint:gochecknoglobals //need this as global
 	IfPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
-			"Block1":     StringIsEqualToBlockGenerator("Value"),
+			"Block1":     stringIsEqualToBlockGenerator("Value"),
 			"BlockTrue":  OnlyReturnBlockGenerator(map[string]interface{}{"Output": "true"}),
 			"BlockFalse": OnlyReturnBlockGenerator(map[string]interface{}{"Output": "false"}),
 		},
-		PipelineUUID: IfPipelineUUID,
+		PipelineUUID: ifPipelineUUID,
 		pipeline:     &ifPipeline,
 	}
 
 	forPipeline = entity.EriusScenario{
-		ID:        ForPipelineUUID,
-		VersionID: ForPipelineVersionUUID,
+		ID:        forPipelineUUID,
+		VersionID: forPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "ForPipeline",
@@ -407,19 +410,20 @@ var (
 	// For every item in array run Block2
 	// After loop run Block3
 	// Test should check for block running sequence
+	//nolint:gochecknoglobals //need this as global
 	ForPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"Block1": OnlyReturnBlockGenerator(map[string]interface{}{"Output": []string{"1", "2", "3"}}),
-			"Block2": EmptyBlock,
-			"Block3": EmptyBlock,
+			"Block2": emptyBlock,
+			"Block3": emptyBlock,
 		},
-		PipelineUUID: ForPipelineUUID,
+		PipelineUUID: forPipelineUUID,
 		pipeline:     &forPipeline,
 	}
 
 	pipelineWithPipeline = entity.EriusScenario{
-		ID:        PipelineWithPipelineUUID,
-		VersionID: PipelineWithPipelineVersionUUID,
+		ID:        pipelineWithPipelineUUID,
+		VersionID: pipelineWithPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "PipelineWithPipeline",
@@ -506,19 +510,20 @@ var (
 	// Same as linear pipeline, but with linear pipeline inside
 	// Block1, Block2, Block3 should accept {"Input":"string"} and return {"Output":"string"}
 	// Test should check for block running sequence and block input
+	//nolint:gochecknoglobals //need this as global
 	PipelineWithPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
-			"Block1": LinearPipelineBlock,
-			"Block2": LinearPipelineBlock,
-			"Block3": LinearPipelineBlock,
+			"Block1": linearPipelineBlock,
+			"Block2": linearPipelineBlock,
+			"Block3": linearPipelineBlock,
 		},
-		PipelineUUID: PipelineWithPipelineUUID,
+		PipelineUUID: pipelineWithPipelineUUID,
 		pipeline:     &pipelineWithPipeline,
 	}
 
 	forInForPipeline = entity.EriusScenario{
-		ID:        ForInForPipelineUUID,
-		VersionID: ForInForPipelineVersionUUID,
+		ID:        forInForPipelineUUID,
+		VersionID: forInForPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "ForInForPipeline",
@@ -614,18 +619,19 @@ var (
 	// Runs loop inside loop
 	// MasGen block should return {"Output":[]}, Block1 should be empty
 	// Test should check for block running sequence
+	//nolint:gochecknoglobals //need this as global
 	ForInForPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"MasGen": OnlyReturnBlockGenerator(map[string]interface{}{"Output": []string{"1", "2", "3"}}),
-			"Block1": EmptyBlock,
+			"Block1": emptyBlock,
 		},
-		PipelineUUID: ForInForPipelineUUID,
+		PipelineUUID: forInForPipelineUUID,
 		pipeline:     &forInForPipeline,
 	}
 
 	stringsEqualPipeline = entity.EriusScenario{
-		ID:        StringsEqualPipelineUUID,
-		VersionID: StringsEqualPipelineVersionUUID,
+		ID:        stringsEqualPipelineUUID,
+		VersionID: stringsEqualPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "StringsEqualPipeline",
@@ -713,33 +719,35 @@ var (
 
 	// Pipeline passes Output of Block1 and Block2 to StringsEqual
 	// Should run BlockTrue
+	//nolint:gochecknoglobals //need this as global
 	StringsEqualsPipelineTrueTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"Block1":     OnlyReturnBlockGenerator(map[string]interface{}{"Output": "value"}),
 			"Block2":     OnlyReturnBlockGenerator(map[string]interface{}{"Output": "value"}),
-			"BlockTrue":  EmptyBlock,
-			"BlockFalse": EmptyBlock,
+			"BlockTrue":  emptyBlock,
+			"BlockFalse": emptyBlock,
 		},
-		PipelineUUID: StringsEqualPipelineUUID,
+		PipelineUUID: stringsEqualPipelineUUID,
 		pipeline:     &stringsEqualPipeline,
 	}
 
 	// Pipeline passes Output of Block1 and Block2 to StringsEqual
 	// Should run BlockFalse
+	//nolint:gochecknoglobals //need this as global
 	StringsEqualsPipelineFalseTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"Block1":     OnlyReturnBlockGenerator(map[string]interface{}{"Output": "value"}),
 			"Block2":     OnlyReturnBlockGenerator(map[string]interface{}{"Output": "other value"}),
-			"BlockTrue":  EmptyBlock,
-			"BlockFalse": EmptyBlock,
+			"BlockTrue":  emptyBlock,
+			"BlockFalse": emptyBlock,
 		},
-		PipelineUUID: StringsEqualPipelineUUID,
+		PipelineUUID: stringsEqualPipelineUUID,
 		pipeline:     &stringsEqualPipeline,
 	}
 
 	connectorPipeline = entity.EriusScenario{
-		ID:        ConnectorPipelineUUID,
-		VersionID: ConnectorPipelineVersionUUID,
+		ID:        connectorPipelineUUID,
+		VersionID: connectorPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "ConnectorPipeline",
@@ -818,11 +826,11 @@ var (
 		},
 	}
 
-	NGSAPipelineUUID        = uuid.New()
-	NGSAPipelineVersionUUID = uuid.New()
-	NGSAPipeline            = entity.EriusScenario{
-		ID:        NGSAPipelineUUID,
-		VersionID: NGSAPipelineVersionUUID,
+	ngsaPipelineUUID        = uuid.New()
+	ngsaPipelineVersionUUID = uuid.New()
+	ngsaPipeline            = entity.EriusScenario{
+		ID:        ngsaPipelineUUID,
+		VersionID: ngsaPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "ngsa",
@@ -846,13 +854,14 @@ var (
 
 	// Pipeline passes output of Block1 and Block2 to connector block
 	// Block3 should receive Block1.Output
+	//nolint:gochecknoglobals //need this as global
 	ConnectorPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"Block1": OnlyReturnBlockGenerator(map[string]interface{}{"Output": []string{"1", "2", "3"}}),
 			"Block2": OnlyReturnBlockGenerator(map[string]interface{}{}),
-			"Block3": EmptyBlock,
+			"Block3": emptyBlock,
 		},
-		PipelineUUID: ConnectorPipelineUUID,
+		PipelineUUID: connectorPipelineUUID,
 		pipeline:     &connectorPipeline,
 	}
 
@@ -864,7 +873,7 @@ var (
 		forInForPipeline,
 		stringsEqualPipeline,
 		connectorPipeline,
-		NGSAPipeline,
+		ngsaPipeline,
 	}
 )
 

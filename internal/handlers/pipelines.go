@@ -24,6 +24,10 @@ import (
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
 
+const (
+	statusRunned = "runned"
+)
+
 var errPipelineNotEditable = errors.New("pipeline is not editable")
 
 type RunContext struct {
@@ -84,6 +88,7 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 
 // draftVersions выбирает версии сценария с признаком Draft,
 // разрешенные для данного пользователя
+//nolint:dupl //diff logic
 func (ae *APIEnv) draftVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
 	ctx, s := trace.StartSpan(ctx, "list_drafts")
 	defer s.End()
@@ -111,7 +116,7 @@ func (ae *APIEnv) draftVersions(ctx context.Context) ([]entity.EriusScenarioInfo
 
 // onApprovedVersions выбирает версии сценариев с признаком OnApprove,
 // разрешенные для данного пользователя
-// nolint:dupl different constant values
+//nolint:dupl //different logic
 func (ae *APIEnv) onApprovedVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
 	ctx, s := trace.StartSpan(ctx, "list_on_approve_versions")
 	defer s.End()
@@ -141,6 +146,7 @@ func (ae *APIEnv) onApprovedVersions(ctx context.Context) ([]entity.EriusScenari
 
 // approvedVersions выбирает последние рабочие версии сценариев,
 // разрешенные для данного пользователя
+//nolint:dupl //different logic
 func (ae *APIEnv) approvedVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
 	ctx, s := trace.StartSpan(ctx, "list_approved_versions")
 	defer s.End()
@@ -309,7 +315,6 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/version/{pipelineID} [post]
-// nolint:dupl different constant values
 func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_draft")
 	defer s.End()
@@ -423,7 +428,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/ [post]
-// nolint:dupl different logic
+//nolint:dupl //diff logic
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
@@ -936,6 +941,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /tasks/{pipelineID} [get]
+//nolint:dupl //diff logic
 func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_logs")
 	defer s.End()
@@ -980,6 +986,7 @@ func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /tasks/version/{pipelineID} [get]
+//nolint:dupl //diff logic
 func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
 	defer s.End()
@@ -1024,6 +1031,7 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /logs/version/{pipelineID} [get]
+//nolint:dupl //difff logic
 func (ae *APIEnv) GetTaskLog(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
 	defer s.End()
@@ -1056,6 +1064,7 @@ func (ae *APIEnv) GetTaskLog(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+//nolint //need big cyclo,need equal string for all usages
 func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,
 	p *entity.EriusScenario, withStop bool) {
 	ctx, s := trace.StartSpan(ctx, "exec_version")
@@ -1152,7 +1161,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 			fmt.Println(vs)
 		}
 	}
-
+	//nolint:nestif //its simple
 	if withStop {
 		err = ep.DebugRun(ctx, vs)
 		if err != nil {
@@ -1162,7 +1171,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{
 			PipelineID: ep.PipelineID, TaskID: ep.WorkID,
-			Status: "runned",
+			Status: statusRunned,
 		})
 		if err != nil {
 			e := UnknownError
@@ -1173,7 +1182,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		}
 	} else {
 		go func() {
-			routineCtx := context.WithValue(context.Background(), "X-Request-Id", ctx.Value("X-Request-Id"))
+			routineCtx := context.WithValue(context.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 
 			if monErr := mon.Run(routineCtx); monErr != nil {
 				ae.Logger.WithError(monErr).Error("can't send data to monitoring")
@@ -1194,11 +1203,9 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 			}
 		}()
 
-		status := "runned"
-
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{
 			PipelineID: ep.PipelineID, TaskID: ep.WorkID,
-			Status: status,
+			Status: statusRunned,
 		})
 		if err != nil {
 			e := UnknownError

@@ -11,7 +11,7 @@ func (db *PGConnection) ActiveAlertNGSA(c context.Context, sever int,
 	q := `INSERT INTO pipeliner.alarm_for_ngsa(
 		state,
 		"perceivedSeverity", 
-		"eventSource", 
+		"event.Source", 
 		"eventTime", 
 		"eventType", 
 		"probableCause", 

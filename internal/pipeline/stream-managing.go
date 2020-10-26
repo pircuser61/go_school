@@ -156,7 +156,7 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	runCtx.AddStep(e.Name)
 
-	arr, ok := runCtx.GetArray(e.FunctionInput["iter"])
+	arr, _ := runCtx.GetArray(e.FunctionInput["iter"])
 
 	index := 0
 
