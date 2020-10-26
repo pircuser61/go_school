@@ -83,6 +83,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		v := eriusFunctions[i]
 		id := v.Title + v.BlockType
 		v.ID = id
+		eriusFunctions[i] = v
 	}
 
 	eriusShapes, err := script.GetShapes()
