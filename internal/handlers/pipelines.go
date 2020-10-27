@@ -106,7 +106,7 @@ func (ae *APIEnv) draftVersions(ctx context.Context) ([]entity.EriusScenarioInfo
 		return []entity.EriusScenarioInfo{}, nil
 	}
 
-	drafts, err := ae.DB.GetDraftVersionsAuth(ctx)
+	drafts, err := ae.DB.GetDraftVersions(ctx)
 	if err != nil {
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllDraftsError}
 	}
@@ -576,7 +576,7 @@ func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resource, action, id := authParametersByPipelineStatus(&p)
+	resource, action, id := authUpdateParametersByPipelineStatus(&p)
 
 	grants, err := ae.AuthClient.CheckGrants(ctx, resource, action)
 	if err != nil {
@@ -639,7 +639,7 @@ func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func authParametersByPipelineStatus(p *entity.EriusScenario) (resource vars.ResourceType, action vars.ActionType, id string) {
+func authUpdateParametersByPipelineStatus(p *entity.EriusScenario) (resource vars.ResourceType, action vars.ActionType, id string) {
 	switch p.Status {
 	case db.StatusDraft, db.StatusOnApprove:
 		resource = vars.PipelineVersion
@@ -648,6 +648,21 @@ func authParametersByPipelineStatus(p *entity.EriusScenario) (resource vars.Reso
 	default:
 		resource = vars.Pipeline
 		action = vars.Update
+		id = p.ID.String() // pipeline id
+	}
+
+	return resource, action, id
+}
+
+func authDeleteParametersByPipelineStatus(p *entity.EriusScenario) (resource vars.ResourceType, action vars.ActionType, id string) {
+	switch p.Status {
+	case db.StatusDraft:
+		resource = vars.PipelineVersion
+		action = vars.Own
+		id = p.VersionID.String()
+	default:
+		resource = vars.Pipeline
+		action = vars.Delete
 		id = p.ID.String() // pipeline id
 	}
 
@@ -680,24 +695,18 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	canEdit, err := ae.DB.VersionEditable(ctx, versionID)
+	p, err := ae.DB.GetPipelineVersion(ctx, versionID)
 	if err != nil {
-		e := UnknownError
+		e := PipelineDeleteError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
 	}
 
-	if !canEdit {
-		e := PipelineIsDraft
-		ae.Logger.Error(e.errorMessage(errPipelineNotEditable))
-		_ = e.sendError(w)
+	resource, action, id := authDeleteParametersByPipelineStatus(p)
 
-		return
-	}
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Delete)
+	grants, err := ae.AuthClient.CheckGrants(ctx, resource, action)
 	if err != nil {
 		e := AuthServiceError
 		ae.Logger.Error(e.errorMessage(err))
@@ -706,7 +715,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !(grants.Allow && grants.Contains(versionID.String())) {
+	if !(grants.Allow && grants.Contains(id)) {
 		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)

@@ -344,7 +344,7 @@ func Test_filter(t *testing.T) {
 	}
 }
 
-func Test_authParametersByPipelineStatus(t *testing.T) {
+func Test_authUpdateParametersByPipelineStatus(t *testing.T) {
 	tests := []struct {
 		name         string
 		p            entity.EriusScenario
@@ -367,7 +367,7 @@ func Test_authParametersByPipelineStatus(t *testing.T) {
 			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
 		},
 		{
-			name:         "on approve",
+			name:         "approved",
 			p:            entity.EriusScenario{Status: db.StatusApproved, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
 			wantResource: vars.Pipeline,
 			wantAction:   vars.Update,
@@ -377,7 +377,49 @@ func Test_authParametersByPipelineStatus(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			gotResource, gotAction, gotID := authParametersByPipelineStatus(&tt.p)
+			gotResource, gotAction, gotID := authUpdateParametersByPipelineStatus(&tt.p)
+
+			assert.Equal(t, tt.wantResource, gotResource, "%v", tt.name)
+			assert.Equal(t, tt.wantAction, gotAction, "%v", tt.name)
+			assert.Equal(t, tt.wantID, gotID, "%v", tt.name)
+		})
+	}
+}
+
+func Test_authDeleteParametersByPipelineStatus(t *testing.T) {
+	tests := []struct {
+		name         string
+		p            entity.EriusScenario
+		wantResource vars.ResourceType
+		wantAction   vars.ActionType
+		wantID       string
+	}{
+		{
+			name:         "draft",
+			p:            entity.EriusScenario{Status: db.StatusDraft, VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			wantResource: vars.PipelineVersion,
+			wantAction:   vars.Own,
+			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
+		},
+		{
+			name:         "on approve",
+			p:            entity.EriusScenario{Status: db.StatusOnApprove, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			wantResource: vars.Pipeline,
+			wantAction:   vars.Delete,
+			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
+		},
+		{
+			name:         "approved",
+			p:            entity.EriusScenario{Status: db.StatusApproved, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			wantResource: vars.Pipeline,
+			wantAction:   vars.Delete,
+			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			gotResource, gotAction, gotID := authDeleteParametersByPipelineStatus(&tt.p)
 
 			assert.Equal(t, tt.wantResource, gotResource, "%v", tt.name)
 			assert.Equal(t, tt.wantAction, gotAction, "%v", tt.name)
