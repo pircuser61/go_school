@@ -183,14 +183,14 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner *handle
 		Route("/api/pipeliner/v1", func(r chi.Router) {
 			r.Use(auth.UserMiddleware(pipeliner.AuthClient))
 			r.Get("/pipelines/", pipeliner.ListPipelines)
-			r.Post("/pipelines/", pipeliner.CreatePipeline)
-			r.Post("/pipelines/version/{pipelineID}", pipeliner.CreatePipelineVersion)
-
 			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
-			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
-			r.Put("/pipelines/version/", pipeliner.EditDraft)
-			r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
+			r.Post("/pipelines/", pipeliner.CreatePipeline)
 			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
+
+			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
+			r.Post("/pipelines/version/{pipelineID}", pipeliner.CreatePipelineVersion)
+			r.Put("/pipelines/version/", pipeliner.EditVersion)
+			r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
 
 			r.Get("/modules/", pipeliner.GetModules)
 			r.Get("/modules/usage", pipeliner.AllModulesUsage)
