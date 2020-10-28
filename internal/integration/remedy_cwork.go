@@ -54,7 +54,6 @@ type RemedySendCreateWorkModel struct {
 	HwRegion               string    `json:"HwRegion,omitempty"`
 	MainNIOSSID            string    `json:"Main_NIOSS_ID,omitempty"`
 	Module                 string    `json:"Module,omitempty"`
-	FileList               FileItem  `json:"FileList,omitempty"`
 }
 
 func NewRemedySendCreateWork(remedyPath string, httpClient *http.Client) RemedySendCreateWork {
@@ -316,36 +315,6 @@ func (rs RemedySendCreateWork) Model() script.FunctionModel {
 			},
 			{
 				Name:    "module",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileIndex",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileTimestamp",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileURL",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileName",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileSize",
-				Type:    script.TypeNumber,
-				Comment: "",
-			},
-			{
-				Name:    "fileAuthor",
 				Type:    script.TypeString,
 				Comment: "",
 			},

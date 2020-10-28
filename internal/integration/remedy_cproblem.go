@@ -24,42 +24,33 @@ type RemedySendCreateProblem struct {
 }
 
 type RemedySendCreateProblemModel struct {
-	ExtID                    string       `json:"extID,omitempty"`
-	OperationID              string       `json:"operationID,omitempty"`
-	Source                   string       `json:"source,omitempty"`
-	Region                   string       `json:"region,omitempty"`
-	Status                   int          `json:"status,omitempty"`
-	Priority                 int          `json:"priority,omitempty"`
-	ClassificatorDescription string       `json:"classificatordescription,omitempty"`
-	ServiceImpactCls         string       `json:"serviceImpactCls,omitempty"`
-	SolutionCode             int          `json:"solutioncode,omitempty"`
-	FlagInvestment           int          `json:"flaginvestment,omitempty"`
-	ClosureCode              int          `json:"closurecode,omitempty"`
-	Description              string       `json:"description,omitempty"`
-	ClassificatorCause       string       `json:"classificatorcause,omitempty"`
-	ClassificatorSolution    string       `json:"classificatorsolution,omitempty"`
-	Solution                 string       `json:"solution,omitempty"`
-	ResponsibilityZone       string       `json:"responsibility_zone,omitempty"`
-	EventTime                time.Time    `json:"eventtime,omitempty"`
-	FixTime                  time.Time    `json:"fixtime,omitempty"`
-	Deadline                 time.Time    `json:"deadline,omitempty"`
-	SolutionPlanTime         time.Time    `json:"solutionplantime,omitempty"`
-	InitiatorLogin           string       `json:"initiator_login,omitempty"`
-	ExecutorLogin            string       `json:"executor_login,omitempty"`
-	ExecutorGroupID          string       `json:"executor_group_id,omitempty"`
-	SupervisorLogin          string       `json:"supervisor_login,omitempty"`
-	SupervisorGroupID        string       `json:"supervisor_group_id,omitempty"`
-	NENiossID                string       `json:"ne_nioss_id,omitempty"`
-	NESubsystem              string       `json:"ne_subsystem,omitempty"`
-	CommentList              CommentItem  `json:"comment_list,omitempty"`
-	FileList                 FileItem     `json:"file_list,omitempty"`
-	RelationList             RelationItem `json:"relation_list,omitempty"`
-	ResourceList             ResourceItem `json:"resource_list,omitempty"`
-}
-
-type RelationItem struct {
-	RelType string `json:"rel_type,omitempty"`
-	RelID   string `json:"rel_id,omitempty"`
+	ExtID                    string    `json:"extID,omitempty"`
+	OperationID              string    `json:"operationID,omitempty"`
+	Source                   string    `json:"source,omitempty"`
+	Region                   string    `json:"region,omitempty"`
+	Status                   int       `json:"status,omitempty"`
+	Priority                 int       `json:"priority,omitempty"`
+	ClassificatorDescription string    `json:"classificatordescription,omitempty"`
+	ServiceImpactCls         string    `json:"serviceImpactCls,omitempty"`
+	SolutionCode             int       `json:"solutioncode,omitempty"`
+	FlagInvestment           int       `json:"flaginvestment,omitempty"`
+	ClosureCode              int       `json:"closurecode,omitempty"`
+	Description              string    `json:"description,omitempty"`
+	ClassificatorCause       string    `json:"classificatorcause,omitempty"`
+	ClassificatorSolution    string    `json:"classificatorsolution,omitempty"`
+	Solution                 string    `json:"solution,omitempty"`
+	ResponsibilityZone       string    `json:"responsibility_zone,omitempty"`
+	EventTime                time.Time `json:"eventtime,omitempty"`
+	FixTime                  time.Time `json:"fixtime,omitempty"`
+	Deadline                 time.Time `json:"deadline,omitempty"`
+	SolutionPlanTime         time.Time `json:"solutionplantime,omitempty"`
+	InitiatorLogin           string    `json:"initiator_login,omitempty"`
+	ExecutorLogin            string    `json:"executor_login,omitempty"`
+	ExecutorGroupID          string    `json:"executor_group_id,omitempty"`
+	SupervisorLogin          string    `json:"supervisor_login,omitempty"`
+	SupervisorGroupID        string    `json:"supervisor_group_id,omitempty"`
+	NENiossID                string    `json:"ne_nioss_id,omitempty"`
+	NESubsystem              string    `json:"ne_subsystem,omitempty"`
 }
 
 func NewRemedySendCreateProblem(remedyPath string, httpClient *http.Client) RemedySendCreateProblem {
@@ -306,85 +297,6 @@ func (rs RemedySendCreateProblem) Model() script.FunctionModel {
 			},
 			{
 				Name:    "neSubsystem",
-				Type:    script.TypeString,
-				Comment: "",
-			}, {
-				Name:    "commTimestamp",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "commText",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "commAuthor",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileIndex",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileTimestamp",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileURL",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileName",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileSize",
-				Type:    script.TypeNumber,
-				Comment: "",
-			},
-			{
-				Name:    "fileAuthor",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileDescription",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "relType",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "relID",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "resID",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "resType",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "resValue",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "resAuthor",
 				Type:    script.TypeString,
 				Comment: "",
 			},
