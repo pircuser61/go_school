@@ -24,83 +24,56 @@ type RemedySendCreateMI struct {
 }
 
 type RemedySendCreateMIModel struct {
-	ExtID               string       `json:"ext_id,omitempty"`
-	OperationID         string       `json:"operation_id,omitempty"`
-	ExecutorLogin       string       `json:"executor_login,omitempty"`
-	ExecutorGroupID     string       `json:"executor_group_id,omitempty"`
-	PlaceAddress        string       `json:"place_address,omitempty"`
-	Theme               string       `json:"theme,omitempty"`
-	Scale               int          `json:"scale,omitempty"`
-	Influence           int          `json:"influence,omitempty"`
-	Urgency             int          `json:"urgency,omitempty"`
-	Subject             string       `json:"subject,omitempty"`
-	Regtime             time.Time    `json:"regtime,omitempty"`
-	Region              string       `json:"region,omitempty"`
-	BusDesc             string       `json:"bus_desc,omitempty"`
-	NiossID             string       `json:"nioss_id,omitempty"`
-	NE                  string       `json:"ne,omitempty"`
-	ObjPriority         int          `json:"obj_priority,omitempty"`
-	ImpactDesc          string       `json:"impact_desc,omitempty"`
-	SupervisorGroupID   string       `json:"supervisor_group_id,omitempty"`
-	SupervisorLogin     string       `json:"supervisor_login,omitempty"`
-	InitiatorLogin      string       `json:"initiator_login,omitempty"`
-	StopServDat         time.Time    `json:"stop_serv_dat,omitempty"`
-	ShortDesc           string       `json:"short_desc,omitempty"`
-	ServiceSiebel       string       `json:"service_siebel,omitempty"`
-	RespZone            string       `json:"resp_zone,omitempty"`
-	KPI                 int          `json:"kpi,omitempty"`
-	ExtDesc             string       `json:"ext_desc,omitempty"`
-	AlarmMessage        string       `json:"alarm_message,omitempty"`
-	NEAlias             string       `json:"ne_alias,omitempty"`
-	MRClusterF1         int          `json:"mr_cluster_f1,omitempty"`
-	MRClusterF2         int          `json:"mr_cluster_f2,omitempty"`
-	MRClusterF3         int          `json:"mr_cluster_f3,omitempty"`
-	MRClusterF4         int          `json:"mr_cluster_f4,omitempty"`
-	DeadlineExceedCause string       `json:"deadline_exceed_cause,omitempty"`
-	NEVendor            string       `json:"ne_vendor,omitempty"`
-	NESubsystem         string       `json:"ne_subsystem,omitempty"`
-	NEType              string       `json:"ne_type,omitempty"`
-	InReport            int          `json:"inreport,omitempty"`
-	KnownProblem        int          `json:"known_problem,omitempty"`
-	NEName              string       `json:"ne_name,omitempty"`
-	NESegment           string       `json:"ne_segment,omitempty"`
-	NETimeRoad          int          `json:"ne_time_road,omitempty"`
-	NEAddress           string       `json:"ne_address,omitempty"`
-	NESite              string       `json:"ne_site,omitempty"`
-	NESubtype           string       `json:"ne_subtype,omitempty"`
-	NotifyService       int          `json:"notify_service,omitempty"`
-	NotifyServiceTime   time.Time    `json:"notify_service_time,omitempty"`
-	NEServiceType       string       `json:"ne_service_type,omitempty"`
-	SiebelTimeRoad      int          `json:"siebel_time_road,omitempty"`
-	SiebelScale2        int          `json:"siebel_scale2,omitempty"`
-	TermSolution        time.Time    `json:"term_solution,omitempty"`
-	CommentList         CommentItem  `json:"comment_list,omitempty"`
-	FileList            FileItem     `json:"file_list,omitempty"`
-	ResourceList        ResourceItem `json:"resource_list,omitempty"`
-}
-
-type CommentItem struct {
-	CommTimestamp time.Time `json:"comm_timestamp,omitempty"`
-	CommText      string    `json:"comm_text,omitempty"`
-	CommAuthor    string    `json:"comm_author,omitempty"`
-}
-
-type FileItem struct {
-	FileIndex       string    `json:"file_index,omitempty"`
-	FileTimestamp   time.Time `json:"file_timestamp,omitempty"`
-	FileURL         string    `json:"file_url,omitempty"`
-	FileName        string    `json:"file_name,omitempty"`
-	FileSize        int       `json:"file_size,omitempty"`
-	Schema          string    `json:"schema,omitempty"`
-	FileAuthor      string    `json:"file_author,omitempty"`
-	FileDescription string    `json:"file_description,omitempty"`
-}
-
-type ResourceItem struct {
-	ResID     string `json:"res_id,omitempty"`
-	ResType   string `json:"res_type,omitempty"`
-	ResValue  string `json:"res_value,omitempty"`
-	ResAuthor string `json:"res_author,omitempty"`
+	ExtID               string    `json:"ext_id,omitempty"`
+	OperationID         string    `json:"operation_id,omitempty"`
+	ExecutorLogin       string    `json:"executor_login,omitempty"`
+	ExecutorGroupID     string    `json:"executor_group_id,omitempty"`
+	PlaceAddress        string    `json:"place_address,omitempty"`
+	Theme               string    `json:"theme,omitempty"`
+	Scale               int       `json:"scale,omitempty"`
+	Influence           int       `json:"influence,omitempty"`
+	Urgency             int       `json:"urgency,omitempty"`
+	Subject             string    `json:"subject,omitempty"`
+	Regtime             time.Time `json:"regtime,omitempty"`
+	Region              string    `json:"region,omitempty"`
+	BusDesc             string    `json:"bus_desc,omitempty"`
+	NiossID             string    `json:"nioss_id,omitempty"`
+	NE                  string    `json:"ne,omitempty"`
+	ObjPriority         int       `json:"obj_priority,omitempty"`
+	ImpactDesc          string    `json:"impact_desc,omitempty"`
+	SupervisorGroupID   string    `json:"supervisor_group_id,omitempty"`
+	SupervisorLogin     string    `json:"supervisor_login,omitempty"`
+	InitiatorLogin      string    `json:"initiator_login,omitempty"`
+	StopServDat         time.Time `json:"stop_serv_dat,omitempty"`
+	ShortDesc           string    `json:"short_desc,omitempty"`
+	ServiceSiebel       string    `json:"service_siebel,omitempty"`
+	RespZone            string    `json:"resp_zone,omitempty"`
+	KPI                 int       `json:"kpi,omitempty"`
+	ExtDesc             string    `json:"ext_desc,omitempty"`
+	AlarmMessage        string    `json:"alarm_message,omitempty"`
+	NEAlias             string    `json:"ne_alias,omitempty"`
+	MRClusterF1         int       `json:"mr_cluster_f1,omitempty"`
+	MRClusterF2         int       `json:"mr_cluster_f2,omitempty"`
+	MRClusterF3         int       `json:"mr_cluster_f3,omitempty"`
+	MRClusterF4         int       `json:"mr_cluster_f4,omitempty"`
+	DeadlineExceedCause string    `json:"deadline_exceed_cause,omitempty"`
+	NEVendor            string    `json:"ne_vendor,omitempty"`
+	NESubsystem         string    `json:"ne_subsystem,omitempty"`
+	NEType              string    `json:"ne_type,omitempty"`
+	InReport            int       `json:"inreport,omitempty"`
+	KnownProblem        int       `json:"known_problem,omitempty"`
+	NEName              string    `json:"ne_name,omitempty"`
+	NESegment           string    `json:"ne_segment,omitempty"`
+	NETimeRoad          int       `json:"ne_time_road,omitempty"`
+	NEAddress           string    `json:"ne_address,omitempty"`
+	NESite              string    `json:"ne_site,omitempty"`
+	NESubtype           string    `json:"ne_subtype,omitempty"`
+	NotifyService       int       `json:"notify_service,omitempty"`
+	NotifyServiceTime   time.Time `json:"notify_service_time,omitempty"`
+	NEServiceType       string    `json:"ne_service_type,omitempty"`
+	SiebelTimeRoad      int       `json:"siebel_time_road,omitempty"`
+	SiebelScale2        int       `json:"siebel_scale2,omitempty"`
+	TermSolution        time.Time `json:"term_solution,omitempty"`
 }
 
 func NewRemedySendCreateMI(remedyPath string, httpClient *http.Client) RemedySendCreateMI {
@@ -462,81 +435,6 @@ func (rs RemedySendCreateMI) Model() script.FunctionModel {
 			},
 			{
 				Name:    "termSolution",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "commTimestamp",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "commText",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "commAuthor",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileIndex",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileTimestamp",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileURL",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileName",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileSize",
-				Type:    script.TypeNumber,
-				Comment: "",
-			},
-			{
-				Name:    "schema",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileAuthor",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileDescription",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "resID",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "resType",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "resValue",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "resAuthor",
 				Type:    script.TypeString,
 				Comment: "",
 			},

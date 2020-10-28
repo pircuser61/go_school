@@ -38,7 +38,6 @@ type RemedySendUpdateWorkModel struct {
 	Description     string    `json:"Description,omitempty"`
 	MainNIOSSID     string    `json:"Main_NIOSS_ID,omitempty"`
 	CompletionCode  string    `json:"completionCode,omitempty"`
-	FileList        FileItem  `json:"FileList,omitempty"`
 }
 
 func NewRemedySendUpdateWork(remedyPath string, httpClient *http.Client) RemedySendUpdateWork {
@@ -220,36 +219,6 @@ func (rs RemedySendUpdateWork) Model() script.FunctionModel {
 			},
 			{
 				Name:    "completionCode",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileIndex",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileTimestamp",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileURL",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileName",
-				Type:    script.TypeString,
-				Comment: "",
-			},
-			{
-				Name:    "fileSize",
-				Type:    script.TypeNumber,
-				Comment: "",
-			},
-			{
-				Name:    "fileAuthor",
 				Type:    script.TypeString,
 				Comment: "",
 			},
