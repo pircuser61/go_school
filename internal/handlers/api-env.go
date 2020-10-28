@@ -13,6 +13,7 @@ type APIEnv struct {
 	DB            db.Database
 	Logger        logger.Logger
 	ScriptManager string
+	Remedy        string
 	FaaS          string
 	AuthClient    *auth.Client
 	HTTPClient    *http.Client
