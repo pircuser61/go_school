@@ -25,6 +25,66 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/logs/version/{pipelineID}": {
+            "get": {
+                "description": "Получить логи по задаче",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks log"
+                ],
+                "summary": "Get Task Log",
+                "operationId": "get-task-log",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "versionID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusLog"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
         "/modules/": {
             "get": {
                 "description": "Список блоков",
@@ -62,7 +122,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -107,7 +167,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -161,7 +221,7 @@ var doc = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -199,14 +259,14 @@ var doc = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -262,8 +322,74 @@ var doc = `{
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/pipelines/pipeline/{pipelineID}": {
+            "get": {
+                "description": "Получить сценарий по ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "Get pipeline",
+                "operationId": "get-pipeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pipeline ID",
+                        "name": "pipelineID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusScenario"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -321,8 +447,14 @@ var doc = `{
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -340,7 +472,6 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "pipeline",
                     "version"
                 ],
                 "summary": "Create pipeline version",
@@ -388,48 +519,14 @@ var doc = `{
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Err",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Удалить сценарий",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "pipeline"
-                ],
-                "summary": "Delete Pipeline",
-                "operationId": "delete-pipeline",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Pipeline ID",
-                        "name": "pipelineID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -444,7 +541,6 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "pipeline",
                     "version"
                 ],
                 "summary": "Get pipeline version",
@@ -483,8 +579,14 @@ var doc = `{
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -523,8 +625,14 @@ var doc = `{
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -533,16 +641,16 @@ var doc = `{
             }
         },
         "/pipelines/{pipelineID}": {
-            "get": {
-                "description": "Получить сценарий по ID",
+            "delete": {
+                "description": "Удалить сценарий",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "pipeline"
                 ],
-                "summary": "Get pipeline",
-                "operationId": "get-pipeline",
+                "summary": "Delete Pipeline",
+                "operationId": "delete-pipeline",
                 "parameters": [
                     {
                         "type": "string",
@@ -556,19 +664,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/handlers.httpResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/entity.EriusScenario"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/handlers.httpResponse"
                         }
                     },
                     "400": {
@@ -577,8 +673,14 @@ var doc = `{
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -643,8 +745,14 @@ var doc = `{
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -709,8 +817,134 @@ var doc = `{
                             "$ref": "#/definitions/handlers.httpError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
                     "500": {
-                        "description": "Internal Server Err",
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/version/{pipelineID}": {
+            "get": {
+                "description": "Получить задачи по версии сценарию",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "version tasks"
+                ],
+                "summary": "Get Version Tasks",
+                "operationId": "get-version-tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Version ID",
+                        "name": "versionID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTasks"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{pipelineID}": {
+            "get": {
+                "description": "Получить задачи по сценарию",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline tasks"
+                ],
+                "summary": "Get Pipeline Tasks",
+                "operationId": "get-pipeline-tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pipeline ID",
+                        "name": "pipelineID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTasks"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpError"
                         }
@@ -821,9 +1055,23 @@ var doc = `{
                 }
             }
         },
+        "entity.EriusLog": {
+            "type": "object",
+            "properties": {
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Step"
+                    }
+                }
+            }
+        },
         "entity.EriusScenario": {
             "type": "object",
             "properties": {
+                "approve_date": {
+                    "type": "string"
+                },
                 "hasDraft": {
                     "type": "boolean"
                 },
@@ -986,6 +1234,32 @@ var doc = `{
                 }
             }
         },
+        "entity.EriusTask": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "runned"
+                }
+            }
+        },
+        "entity.EriusTasks": {
+            "type": "object",
+            "properties": {
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusTask"
+                    }
+                }
+            }
+        },
         "entity.RunResponse": {
             "type": "object",
             "properties": {
@@ -1011,6 +1285,33 @@ var doc = `{
                     "type": "string",
                     "format": "uuid",
                     "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+                }
+            }
+        },
+        "entity.Step": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "storage": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "time": {
+                    "type": "string"
                 }
             }
         },
@@ -1074,6 +1375,9 @@ var doc = `{
             "type": "object",
             "properties": {
                 "block_type": {
+                    "type": "string"
+                },
+                "id": {
                     "type": "string"
                 },
                 "inputs": {

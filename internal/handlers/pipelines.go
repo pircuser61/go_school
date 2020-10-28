@@ -532,7 +532,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/version [put]
-func (ae *APIEnv) EditDraft(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_draft")
 	defer s.End()
 
@@ -764,7 +764,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /pipelines/version/{pipelineID} [delete]
+// @Router /pipelines/{pipelineID} [delete]
 func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "delete_pipeline")
 	defer s.End()
