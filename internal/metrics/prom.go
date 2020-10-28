@@ -17,9 +17,15 @@ type NGSAStatus struct {
 	Fail prometheus.Gauge
 }
 
+type RemedyStatus struct {
+	Ok   prometheus.Gauge
+	Fail prometheus.Gauge
+}
+
 type Statistic struct {
-	Requests   prometheus.Counter
-	NGSAPushes NGSAStatus
+	Requests     prometheus.Counter
+	NGSAPushes   NGSAStatus
+	RemedyPushes RemedyStatus
 }
 
 //nolint:gochecknoglobals //its good

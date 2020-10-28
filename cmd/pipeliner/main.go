@@ -81,6 +81,7 @@ func main() {
 		DB:            &dbConn,
 		Logger:        log,
 		ScriptManager: cfg.ScriptManager,
+		Remedy:        cfg.Remedy,
 		FaaS:          cfg.FaaS,
 		AuthClient:    authClient,
 		HTTPClient:    httpClient,

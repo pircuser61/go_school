@@ -40,7 +40,13 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.Vars.Model(),
 		script.Connector.Model(),
 		script.ForState.Model(),
-		integration.NewNGSASendIntegration(ae.DB).Model())
+		integration.NewNGSASendIntegration(ae.DB).Model(),
+		integration.NewRemedySendCreateMI(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendCreateWork(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendCreateProblem(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendUpdateMI(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendUpdateWork(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendUpdateProblem(ae.Remedy, ae.HTTPClient).Model())
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
 	if err != nil {

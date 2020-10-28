@@ -211,6 +211,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				DB:            mockDB,
 				Logger:        log,
 				ScriptManager: "",
+				Remedy:        "",
 				FaaS:          FaaSMockServer.URL + "/",
 				AuthClient:    &auth.Client{},
 			}
