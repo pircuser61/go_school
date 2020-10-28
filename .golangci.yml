@@ -36,6 +36,7 @@ linters:
     - godot
     - gocognit
     - wsl
+    - dupl
 
 run:
   timeout: 5m
