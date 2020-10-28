@@ -13,8 +13,6 @@ type Database interface {
 	GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error)
-	GetVersionsByStatusAndAuthor(c context.Context,
-		status int, author string) ([]entity.EriusScenarioInfo, error)
 	SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error
 	VersionEditable(c context.Context, versionID uuid.UUID) (bool, error)
 	CreatePipeline(c context.Context,
