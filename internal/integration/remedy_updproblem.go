@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-	"go.opencensus.io/trace"
 	"net/http"
 	"net/url"
 	"path"
 	"time"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"go.opencensus.io/trace"
 )
 
 type RemedySendUpdateProblem struct {
@@ -23,40 +24,40 @@ type RemedySendUpdateProblem struct {
 	Remedy     string
 }
 
-type RemedySendUpdateProblemModel struct {
-	OperationID              string    `json:"operationID,omitempty"`
-	ExtID                    string    `json:"extID,omitempty"`
-	RequestID                string    `json:"request_id,omitempty"`
-	Source                   string    `json:"source,omitempty"`
-	Region                   string    `json:"region,omitempty"`
-	Status                   int       `json:"status,omitempty"`
-	Priority                 int       `json:"Priority,omitempty"`
-	ClassificatorDescription string    `json:"classificatordescription,omitempty"`
-	ServiceImpactCls         string    `json:"serviceImpactCls,omitempty"`
-	SolutionCode             int       `json:"solutioncode,omitempty"`
-	FlagInvestment           int       `json:"flaginvestment,omitempty"`
-	ClosureCode              int       `json:"closurecode,omitempty"`
-	Description              string    `json:"description,omitempty"`
-	ClassificatorCause       string    `json:"classificatorcause,omitempty"`
-	ClassificatorSolution    string    `json:"classificatorsolution,omitempty"`
-	Solution                 string    `json:"solution,omitempty"`
-	ResponsibilityZone       string    `json:"responsibility_zone,omitempty"`
-	EventTime                time.Time `json:"eventtime,omitempty"`
-	FixTime                  time.Time `json:"fixtime,omitempty"`
-	Deadline                 time.Time `json:"deadline,omitempty"`
-	SolutionPlanTime         time.Time `json:"solutionplantime,omitempty"`
-	InitiatorLogin           string    `json:"initiator_login,omitempty"`
-	ExecutorLogin            string    `json:"executor_login,omitempty"`
-	ExecutorGroupID          string    `json:"executor_group_id,omitempty"`
-	SupervisorLogin          string    `json:"supervisor_login,omitempty"`
-	SupervisorGroupID        string    `json:"supervisor_group_id,omitempty"`
-	NENiossID                string    `json:"ne_nioss_id,omitempty"`
-	NESubsystem              string    `json:"ne_subsystem,omitempty"`
+type RemedySendUpdateProblemModel struct{
+	OperationID              string       `json:"operationID,omitempty"`
+	ExtID                    string       `json:"extID,omitempty"`
+	RequestID                string       `json:"request_id,omitempty"`
+	Source                   string       `json:"source,omitempty"`
+	Region                   string       `json:"region,omitempty"`
+	Status                   int          `json:"status,omitempty"`
+	Priority                 int          `json:"Priority,omitempty"`
+	ClassificatorDescription string       `json:"classificatordescription,omitempty"`
+	ServiceImpactCls         string       `json:"serviceImpactCls,omitempty"`
+	SolutionCode             int          `json:"solutioncode,omitempty"`
+	FlagInvestment           int          `json:"flaginvestment,omitempty"`
+	ClosureCode              int          `json:"closurecode,omitempty"`
+	Description              string       `json:"description,omitempty"`
+	ClassificatorCause       string       `json:"classificatorcause,omitempty"`
+	ClassificatorSolution    string       `json:"classificatorsolution,omitempty"`
+	Solution                 string       `json:"solution,omitempty"`
+	ResponsibilityZone       string       `json:"responsibility_zone,omitempty"`
+	EventTime                time.Time    `json:"eventtime,omitempty"`
+	FixTime                  time.Time    `json:"fixtime,omitempty"`
+	Deadline                 time.Time    `json:"deadline,omitempty"`
+	SolutionPlanTime         time.Time    `json:"solutionplantime,omitempty"`
+	InitiatorLogin           string       `json:"initiator_login,omitempty"`
+	ExecutorLogin            string       `json:"executor_login,omitempty"`
+	ExecutorGroupID          string       `json:"executor_group_id,omitempty"`
+	SupervisorLogin          string       `json:"supervisor_login,omitempty"`
+	SupervisorGroupID        string       `json:"supervisor_group_id,omitempty"`
+	NENiossID                string       `json:"ne_nioss_id,omitempty"`
+	NESubsystem              string       `json:"ne_subsystem,omitempty"`
 }
 
 func NewRemedySendUpdateProblem(remedyPath string, httpClient *http.Client) RemedySendUpdateProblem {
 	return RemedySendUpdateProblem{
-		Name:       "remedy_update_problem",
+		Name:       "remedy-update-problem",
 		Input:      make(map[string]string),
 		HttpClient: *httpClient,
 		Remedy:     remedyPath,

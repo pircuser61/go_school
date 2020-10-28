@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
@@ -30,6 +31,8 @@ type ExecutablePipeline struct {
 	Output        map[string]string
 	Name          string
 	PipelineModel *entity.EriusScenario
+	HttpClient    *http.Client
+	Remedy        string
 
 	Logger logger.Logger
 	FaaS   string
@@ -208,7 +211,6 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
 				runURL:         ep.FaaS + "function/%s",
-				// runURL: "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
 			}
 
 			for _, v := range block.Input {
@@ -346,6 +348,48 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 		ngsa.NextBlock = ef.Next
 
 		return ngsa
+	case "remedy-create-mi":
+		rem := integration.NewRemedySendCreateMI(ep.Remedy, ep.HttpClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+	case "remedy-create-problem":
+		rem := integration.NewRemedySendCreateProblem(ep.Remedy, ep.HttpClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+	case "remedy-create-work":
+		rem := integration.NewRemedySendCreateWork(ep.Remedy, ep.HttpClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+	case "remedy-update-mi":
+		rem := integration.NewRemedySendUpdateMI(ep.Remedy, ep.HttpClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+	case "remedy-update-problem":
+		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HttpClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+	case "remedy-update-work":
+		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HttpClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
 	case "for":
 		f := createForBlock(ef.Title, name, ef.OnTrue, ef.OnFalse)
 

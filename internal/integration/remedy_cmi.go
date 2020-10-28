@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-	"go.opencensus.io/trace"
 	"net/http"
 	"net/url"
 	"path"
 	"time"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"go.opencensus.io/trace"
 )
 
 type RemedySendCreateMI struct {
@@ -78,7 +79,7 @@ type RemedySendCreateMIModel struct {
 
 func NewRemedySendCreateMI(remedyPath string, httpClient *http.Client) RemedySendCreateMI {
 	return RemedySendCreateMI{
-		Name:       "remedy_create_mi",
+		Name:       "remedy-create-mi",
 		Input:      make(map[string]string),
 		HttpClient: *httpClient,
 		Remedy:     remedyPath,

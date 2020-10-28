@@ -871,23 +871,23 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Run)
-	if err != nil {
-		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	// проверяем права на запуск пайплайна
-	if !(grants.Allow && grants.Contains(id.String())) {
-		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
+	// grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Run)
+	// if err != nil {
+	// 	e := AuthServiceError
+	// 	ae.Logger.Error(e.errorMessage(err))
+	// 	_ = e.sendError(w)
+	//
+	// 	return
+	// }
+	//
+	// // проверяем права на запуск пайплайна
+	// if !(grants.Allow && grants.Contains(id.String())) {
+	// 	e := UnauthError
+	// 	ae.Logger.Error(e.errorMessage(err))
+	// 	_ = e.sendError(w)
+	//
+	// 	return
+	// }
 
 	ae.execVersion(ctx, w, req, p, withStop)
 }
@@ -1110,6 +1110,8 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	ep.Logger = ae.Logger
 	ep.FaaS = ae.FaaS
 	ep.PipelineModel = p
+	ep.HttpClient = ae.HTTPClient
+	ep.Remedy = ae.Remedy
 
 	err := ep.CreateBlocks(ctx, p.Pipeline.Blocks)
 	if err != nil {
