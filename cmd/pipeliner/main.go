@@ -22,9 +22,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/push"
 	httpSwagger "github.com/swaggo/http-swagger"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
-	"gitlab.services.mts.ru/libs/logger"
 
 	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
@@ -113,7 +113,7 @@ func main() {
 	}
 
 	go func() {
-		log.Infof("script manager service started on port %s", server.Addr)
+		log.Info("script manager service started on port", server.Addr)
 
 		if err = server.ListenAndServe(); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
@@ -130,7 +130,7 @@ func main() {
 		metricsMux := chi.NewRouter()
 		metricsMux.Handle("/metrics", promhttp.Handler())
 
-		log.Infof("metrics for script manager service started on port %s", cfg.MetricsAddr)
+		log.Info("metrics for script manager service started on port", cfg.MetricsAddr)
 
 		if err = http.ListenAndServe(cfg.MetricsAddr, metricsMux); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {

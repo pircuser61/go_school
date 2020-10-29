@@ -27,7 +27,7 @@ import (
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 
 	"github.com/go-chi/chi"
-	"gitlab.services.mts.ru/libs/logger"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/test"
 )
