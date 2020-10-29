@@ -11,9 +11,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/libs/logger"
 	"go.opencensus.io/trace"
 )
 
@@ -77,10 +77,10 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	}
 
 	for ep.NowOnPoint != "" {
-		ep.Logger.Println("executing", ep.NowOnPoint)
-		ep.Logger.Println("  -- storage ---", runCtx.Values)
-		ep.Logger.Println("  -- steps ---", runCtx.Steps)
-		ep.Logger.Println("  -- errors ---", runCtx.Errors)
+		ep.Logger.Info("executing", ep.NowOnPoint)
+		ep.Logger.Info("  -- storage ---", runCtx.Values)
+		ep.Logger.Info("  -- steps ---", runCtx.Steps)
+		ep.Logger.Info("  -- errors ---", runCtx.Errors)
 
 		now, ok := ep.Blocks[ep.NowOnPoint]
 		if !ok {

@@ -3,8 +3,8 @@ package configs
 import (
 	"fmt"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/configs"
-	"gitlab.services.mts.ru/libs/logger"
 )
 
 const (

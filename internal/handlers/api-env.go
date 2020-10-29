@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-	"gitlab.services.mts.ru/libs/logger"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 )

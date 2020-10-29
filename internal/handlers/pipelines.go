@@ -373,7 +373,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
-		ae.Logger.Errorf("user failed: %s", err.Error())
+		ae.Logger.WithError(err).Error("user failed")
 	}
 
 	err = ae.DB.CreateVersion(ctx, &p, user.UserName(), b)
@@ -1129,7 +1129,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		return
 	}
 
-	ae.Logger.Println("--- running pipeline:", p.Name)
+	ae.Logger.Info("--- running pipeline:", p.Name)
 
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
