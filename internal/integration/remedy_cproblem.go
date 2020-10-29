@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"time"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"go.opencensus.io/trace"
@@ -20,82 +18,79 @@ type RemedySendCreateProblem struct {
 	Name       string
 	NextBlock  string
 	Input      map[string]string
-	HttpClient http.Client
+	HTTPClient http.Client
 	Remedy     string
 }
 
 type RemedySendCreateProblemModel struct {
-	ExtID                    string       `json:"extID,omitempty"`
-	OperationID              string       `json:"operationID,omitempty"`
-	Source                   string       `json:"source,omitempty"`
-	Region                   string       `json:"region,omitempty"`
-	Status                   int          `json:"status,omitempty"`
-	Priority                 int          `json:"priority,omitempty"`
-	ClassificatorDescription string       `json:"classificatordescription,omitempty"`
-	ServiceImpactCls         string       `json:"serviceImpactCls,omitempty"`
-	SolutionCode             int          `json:"solutioncode,omitempty"`
-	FlagInvestment           int          `json:"flaginvestment,omitempty"`
-	ClosureCode              int          `json:"closurecode,omitempty"`
-	Description              string       `json:"description,omitempty"`
-	ClassificatorCause       string       `json:"classificatorcause,omitempty"`
-	ClassificatorSolution    string       `json:"classificatorsolution,omitempty"`
-	Solution                 string       `json:"solution,omitempty"`
-	ResponsibilityZone       string       `json:"responsibility_zone,omitempty"`
-	EventTime                time.Time    `json:"eventtime,omitempty"`
-	FixTime                  time.Time    `json:"fixtime,omitempty"`
-	Deadline                 time.Time    `json:"deadline,omitempty"`
-	SolutionPlanTime         time.Time    `json:"solutionplantime,omitempty"`
-	InitiatorLogin           string       `json:"initiator_login,omitempty"`
-	ExecutorLogin            string       `json:"executor_login,omitempty"`
-	ExecutorGroupID          string       `json:"executor_group_id,omitempty"`
-	SupervisorLogin          string       `json:"supervisor_login,omitempty"`
-	SupervisorGroupID        string       `json:"supervisor_group_id,omitempty"`
-	NENiossID                string       `json:"ne_nioss_id,omitempty"`
-	NESubsystem              string       `json:"ne_subsystem,omitempty"`
+	ExtID                    string    `json:"extID,omitempty"`
+	OperationID              string    `json:"operationID,omitempty"`
+	Source                   string    `json:"source,omitempty"`
+	Region                   string    `json:"region,omitempty"`
+	Status                   int       `json:"status,omitempty"`
+	Priority                 int       `json:"priority,omitempty"`
+	ClassificatorDescription string    `json:"classificatordescription,omitempty"`
+	ServiceImpactCls         string    `json:"serviceImpactCls,omitempty"`
+	SolutionCode             int       `json:"solutioncode,omitempty"`
+	FlagInvestment           int       `json:"flaginvestment,omitempty"`
+	ClosureCode              int       `json:"closurecode,omitempty"`
+	Description              string    `json:"description,omitempty"`
+	ClassificatorCause       string    `json:"classificatorcause,omitempty"`
+	ClassificatorSolution    string    `json:"classificatorsolution,omitempty"`
+	Solution                 string    `json:"solution,omitempty"`
+	ResponsibilityZone       string    `json:"responsibility_zone,omitempty"`
+	EventTime                time.Time `json:"eventtime,omitempty"`
+	FixTime                  time.Time `json:"fixtime,omitempty"`
+	Deadline                 time.Time `json:"deadline,omitempty"`
+	SolutionPlanTime         time.Time `json:"solutionplantime,omitempty"`
+	InitiatorLogin           string    `json:"initiator_login,omitempty"`
+	ExecutorLogin            string    `json:"executor_login,omitempty"`
+	ExecutorGroupID          string    `json:"executor_group_id,omitempty"`
+	SupervisorLogin          string    `json:"supervisor_login,omitempty"`
+	SupervisorGroupID        string    `json:"supervisor_group_id,omitempty"`
+	NENiossID                string    `json:"ne_nioss_id,omitempty"`
+	NESubsystem              string    `json:"ne_subsystem,omitempty"`
 }
 
 func NewRemedySendCreateProblem(remedyPath string, httpClient *http.Client) RemedySendCreateProblem {
 	return RemedySendCreateProblem{
 		Name:       "remedy-create-problem",
 		Input:      make(map[string]string),
-		HttpClient: *httpClient,
+		HTTPClient: *httpClient,
 		Remedy:     remedyPath,
 	}
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateProblem) Inputs() map[string]string {
 	return rs.Input
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateProblem) Outputs() map[string]string {
 	return make(map[string]string)
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateProblem) IsScenario() bool {
 	return false
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateProblem) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return rs.DebugRun(ctx, runCtx)
 }
 
+//nolint:dupl, gocritic //its really complex
 func (rs RemedySendCreateProblem) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
-	ctx, s := trace.StartSpan(ctx, "run_remedy_send")
+	//nolint:ineffassign, staticcheck //its valid assignment
+	ctx, s := trace.StartSpan(ctx, "run_remedy_send_createproblem")
 	defer s.End()
 
 	ok := false
 
 	defer func() {
-		if ok {
-			metrics.Stats.RemedyPushes.Ok.SetToCurrentTime()
-		} else {
-			metrics.Stats.RemedyPushes.Fail.SetToCurrentTime()
-		}
-
-		errPush := metrics.Pusher.Push()
-		if errPush != nil {
-			fmt.Printf("can't push: %s\n", errPush.Error())
-		}
+		CheckStatusForMetrics(ok)
 	}()
 
 	runCtx.AddStep(rs.Name)
@@ -130,12 +125,12 @@ func (rs RemedySendCreateProblem) DebugRun(ctx context.Context, runCtx *store.Va
 	}
 
 	if u.Scheme == "" {
-		u.Scheme = "http"
+		u.Scheme = httpScheme
 	}
 
 	u.Path = path.Join(rs.Remedy, "/api/remedy/problem/create")
 
-	gatereq, err := http.NewRequest("Post", u.String(), bytes.NewBuffer(b))
+	gatereq, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
@@ -143,7 +138,7 @@ func (rs RemedySendCreateProblem) DebugRun(ctx context.Context, runCtx *store.Va
 	gatereq.Header.Add("Content-Type", "application/json")
 	gatereq.Header.Add("cache-control", "no-cache")
 
-	resp, err := rs.HttpClient.Do(gatereq)
+	resp, err := rs.HTTPClient.Do(gatereq)
 	if err != nil {
 		return err
 	}
@@ -157,10 +152,12 @@ func (rs RemedySendCreateProblem) DebugRun(ctx context.Context, runCtx *store.Va
 	return err
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateProblem) Next() string {
 	return rs.NextBlock
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateProblem) Model() script.FunctionModel {
 	return script.FunctionModel{
 		BlockType: script.TypeInternal,

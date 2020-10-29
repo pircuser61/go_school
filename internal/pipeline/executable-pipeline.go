@@ -22,7 +22,7 @@ type ExecutablePipeline struct {
 	PipelineID    uuid.UUID
 	VersionID     uuid.UUID
 	Storage       db.Database
-	Entrypoint    string
+	EntryPoint    string
 	NowOnPoint    string
 	VarStore      *store.VariableStore
 	Blocks        map[string]Runner
@@ -31,7 +31,7 @@ type ExecutablePipeline struct {
 	Output        map[string]string
 	Name          string
 	PipelineModel *entity.EriusScenario
-	HttpClient    *http.Client
+	HTTPClient    *http.Client
 	Remedy        string
 
 	Logger logger.Logger
@@ -65,7 +65,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	return ep.DebugRun(ctx, runCtx)
 }
 
-//nolint:gocyclo //need bigger cyclomatic
+//nolint:gocognit,gocyclo //its really complex
 func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
@@ -73,7 +73,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	ep.VarStore = runCtx
 
 	if ep.NowOnPoint == "" {
-		ep.NowOnPoint = ep.Entrypoint
+		ep.NowOnPoint = ep.EntryPoint
 	}
 
 	for ep.NowOnPoint != "" {
@@ -232,7 +232,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.PipelineID = p.ID
 			epi.VersionID = p.VersionID
 			epi.Storage = ep.Storage
-			epi.Entrypoint = p.Pipeline.Entrypoint
+			epi.EntryPoint = p.Pipeline.Entrypoint
 			epi.Logger = ep.Logger
 			epi.FaaS = ep.FaaS
 			epi.Input = make(map[string]string)
@@ -349,45 +349,51 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		return ngsa
 	case "remedy-create-mi":
-		rem := integration.NewRemedySendCreateMI(ep.Remedy, ep.HttpClient)
+		rem := integration.NewRemedySendCreateMI(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
 		}
+
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
 	case "remedy-create-problem":
-		rem := integration.NewRemedySendCreateProblem(ep.Remedy, ep.HttpClient)
+		rem := integration.NewRemedySendCreateProblem(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
 		}
+
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
 	case "remedy-create-work":
-		rem := integration.NewRemedySendCreateWork(ep.Remedy, ep.HttpClient)
+		rem := integration.NewRemedySendCreateWork(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
 		}
+
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
 	case "remedy-update-mi":
-		rem := integration.NewRemedySendUpdateMI(ep.Remedy, ep.HttpClient)
+		rem := integration.NewRemedySendUpdateMI(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
 		}
+
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
 	case "remedy-update-problem":
-		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HttpClient)
+		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
 		}
+
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
 	case "remedy-update-work":
-		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HttpClient)
+		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
 		}
+
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
 	case "for":

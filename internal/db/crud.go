@@ -91,6 +91,7 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 	if err != nil {
 		return nil, err
 	}
+
 	for i := range versions {
 		version := versions[i]
 		if finV, ok := vMap[version.ID]; ok {
@@ -109,6 +110,7 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 
 	final := make([]entity.EriusScenarioInfo, len(vMap))
 	n := 0
+
 	for i := range vMap {
 		v := vMap[i]
 		final[n] = v
@@ -700,6 +702,7 @@ func (db *PGConnection) GetExecutableScenarios(c context.Context) ([]entity.Eriu
 
 	final := make([]entity.EriusScenario, len(vMap))
 	n := 0
+
 	for i := range vMap {
 		v := vMap[i]
 		final[n] = v
