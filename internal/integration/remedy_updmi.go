@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"time"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"go.opencensus.io/trace"
@@ -20,116 +18,112 @@ type RemedySendUpdateMI struct {
 	Name       string
 	NextBlock  string
 	Input      map[string]string
-	HttpClient http.Client
+	HTTPClient http.Client
 	Remedy     string
 }
 
 type RemedySendUpdateMIModel struct {
-	ExtID               string       `json:"ext_id,omitempty"`
-	RequestID           string       `json:"request_id,omitempty"`
-	OperationID         string       `json:"operation_id,omitempty"`
-	ExecutorLogin       string       `json:"executor_login,omitempty"`
-	ExecutorGroupID     string       `json:"executor_group_id,omitempty"`
-	PlaceAddress        string       `json:"place_address,omitempty"`
-	State               int          `json:"state,omitempty"`
-	Theme               string       `json:"theme,omitempty"`
-	Scale               int          `json:"scale,omitempty"`
-	Influence           int          `json:"influence,omitempty"`
-	Urgency             int          `json:"urgency,omitempty"`
-	Subject             string       `json:"subject,omitempty"`
-	Regtime             time.Time    `json:"regtime,omitempty"`
-	Region              string       `json:"region,omitempty"`
-	BusDesc             string       `json:"bus_desc,omitempty"`
-	NiossID             string       `json:"nioss_id,omitempty"`
-	NE                  string       `json:"ne,omitempty"`
-	ObjPriority         int          `json:"obj_priority,omitempty"`
-	ImpactDesc          string       `json:"impact_desc,omitempty"`
-	SupervisorGroupID   string       `json:"supervisor_group_id,omitempty"`
-	SupervisorLogin     string       `json:"supervisor_login,omitempty"`
-	InitiatorLogin      string       `json:"initiator_login,omitempty"`
-	StopServDat         time.Time    `json:"stop_serv_dat,omitempty"`
-	ShortDesc           string       `json:"short_desc,omitempty"`
-	ServiceSiebel       string       `json:"service_siebel,omitempty"`
-	RespZone            string       `json:"resp_zone,omitempty"`
-	KPI                 int          `json:"kpi,omitempty"`
-	Cause               string       `json:"cause,omitempty"`
-	CauseClassif        string       `json:"cause_classif,omitempty"`
-	Solution            string       `json:"solution,omitempty"`
-	ClosureCode         string       `json:"closure_code,omitempty"`
-	FixTime             time.Time    `json:"fixtime,omitempty"`
-	ParentID            string       `json:"parent_id,omitempty"`
-	ExtDesc             string       `json:"ext_desc,omitempty"`
-	AlarmMessage        string       `json:"alarm_message,omitempty"`
-	NEAlias             string       `json:"ne_alias,omitempty"`
-	Category            int          `json:"category,omitempty"`
-	MRClusterF1         int          `json:"mr_cluster_f1,omitempty"`
-	MRClusterF2         int          `json:"mr_cluster_f2,omitempty"`
-	MRClusterF3         int          `json:"mr_cluster_f3,omitempty"`
-	MRClusterF4         int          `json:"mr_cluster_f4,omitempty"`
-	DeadlineExceedCause string       `json:"deadline_exceed_cause,omitempty"`
-	Downtime            int          `json:"downtime,omitempty"`
-	NEVendor            string       `json:"ne_vendor,omitempty"`
-	NESubsystem         string       `json:"ne_subsystem,omitempty"`
-	NEType              string       `json:"ne_type,omitempty"`
-	InReport            int          `json:"inreport,omitempty"`
-	KnownProblem        int          `json:"known_problem,omitempty"`
-	NEName              string       `json:"ne_name,omitempty"`
-	NESegment           string       `json:"ne_segment,omitempty"`
-	NETimeRoad          int          `json:"ne_time_road,omitempty"`
-	NEAddress           string       `json:"ne_address,omitempty"`
-	NESite              string       `json:"ne_site,omitempty"`
-	NESubtype           string       `json:"ne_subtype,omitempty"`
-	NotifyService       int          `json:"notify_service,omitempty"`
-	NotifyServiceTime   time.Time    `json:"notify_service_time,omitempty"`
-	NEServiceType       string       `json:"ne_service_type,omitempty"`
-	SiebelTimeRoad      int          `json:"siebel_time_road,omitempty"`
-	SiebelScale2        int          `json:"siebel_scale2,omitempty"`
-	TermSolution        time.Time    `json:"term_solution,omitempty"`
-
+	ExtID               string    `json:"ext_id,omitempty"`
+	RequestID           string    `json:"request_id,omitempty"`
+	OperationID         string    `json:"operation_id,omitempty"`
+	ExecutorLogin       string    `json:"executor_login,omitempty"`
+	ExecutorGroupID     string    `json:"executor_group_id,omitempty"`
+	PlaceAddress        string    `json:"place_address,omitempty"`
+	State               int       `json:"state,omitempty"`
+	Theme               string    `json:"theme,omitempty"`
+	Scale               int       `json:"scale,omitempty"`
+	Influence           int       `json:"influence,omitempty"`
+	Urgency             int       `json:"urgency,omitempty"`
+	Subject             string    `json:"subject,omitempty"`
+	Regtime             time.Time `json:"regtime,omitempty"`
+	Region              string    `json:"region,omitempty"`
+	BusDesc             string    `json:"bus_desc,omitempty"`
+	NiossID             string    `json:"nioss_id,omitempty"`
+	NE                  string    `json:"ne,omitempty"`
+	ObjPriority         int       `json:"obj_priority,omitempty"`
+	ImpactDesc          string    `json:"impact_desc,omitempty"`
+	SupervisorGroupID   string    `json:"supervisor_group_id,omitempty"`
+	SupervisorLogin     string    `json:"supervisor_login,omitempty"`
+	InitiatorLogin      string    `json:"initiator_login,omitempty"`
+	StopServDat         time.Time `json:"stop_serv_dat,omitempty"`
+	ShortDesc           string    `json:"short_desc,omitempty"`
+	ServiceSiebel       string    `json:"service_siebel,omitempty"`
+	RespZone            string    `json:"resp_zone,omitempty"`
+	KPI                 int       `json:"kpi,omitempty"`
+	Cause               string    `json:"cause,omitempty"`
+	CauseClassif        string    `json:"cause_classif,omitempty"`
+	Solution            string    `json:"solution,omitempty"`
+	ClosureCode         string    `json:"closure_code,omitempty"`
+	FixTime             time.Time `json:"fixtime,omitempty"`
+	ParentID            string    `json:"parent_id,omitempty"`
+	ExtDesc             string    `json:"ext_desc,omitempty"`
+	AlarmMessage        string    `json:"alarm_message,omitempty"`
+	NEAlias             string    `json:"ne_alias,omitempty"`
+	Category            int       `json:"category,omitempty"`
+	MRClusterF1         int       `json:"mr_cluster_f1,omitempty"`
+	MRClusterF2         int       `json:"mr_cluster_f2,omitempty"`
+	MRClusterF3         int       `json:"mr_cluster_f3,omitempty"`
+	MRClusterF4         int       `json:"mr_cluster_f4,omitempty"`
+	DeadlineExceedCause string    `json:"deadline_exceed_cause,omitempty"`
+	Downtime            int       `json:"downtime,omitempty"`
+	NEVendor            string    `json:"ne_vendor,omitempty"`
+	NESubsystem         string    `json:"ne_subsystem,omitempty"`
+	NEType              string    `json:"ne_type,omitempty"`
+	InReport            int       `json:"inreport,omitempty"`
+	KnownProblem        int       `json:"known_problem,omitempty"`
+	NEName              string    `json:"ne_name,omitempty"`
+	NESegment           string    `json:"ne_segment,omitempty"`
+	NETimeRoad          int       `json:"ne_time_road,omitempty"`
+	NEAddress           string    `json:"ne_address,omitempty"`
+	NESite              string    `json:"ne_site,omitempty"`
+	NESubtype           string    `json:"ne_subtype,omitempty"`
+	NotifyService       int       `json:"notify_service,omitempty"`
+	NotifyServiceTime   time.Time `json:"notify_service_time,omitempty"`
+	NEServiceType       string    `json:"ne_service_type,omitempty"`
+	SiebelTimeRoad      int       `json:"siebel_time_road,omitempty"`
+	SiebelScale2        int       `json:"siebel_scale2,omitempty"`
+	TermSolution        time.Time `json:"term_solution,omitempty"`
 }
 
 func NewRemedySendUpdateMI(remedyPath string, httpClient *http.Client) RemedySendUpdateMI {
 	return RemedySendUpdateMI{
 		Name:       "remedy-update-mi",
 		Input:      make(map[string]string),
-		HttpClient: *httpClient,
+		HTTPClient: *httpClient,
 		Remedy:     remedyPath,
 	}
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateMI) Inputs() map[string]string {
 	return rs.Input
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateMI) Outputs() map[string]string {
 	return make(map[string]string)
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateMI) IsScenario() bool {
 	return false
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateMI) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return rs.DebugRun(ctx, runCtx)
 }
 
+//nolint:dupl, gocritic //its really complex
 func (rs RemedySendUpdateMI) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
-	ctx, s := trace.StartSpan(ctx, "run_remedy_send")
+	//nolint:ineffassign, staticcheck //its valid assignment
+	ctx, s := trace.StartSpan(ctx, "run_remedy_send_updatemi")
 	defer s.End()
 
 	ok := false
 
 	defer func() {
-		if ok {
-			metrics.Stats.RemedyPushes.Ok.SetToCurrentTime()
-		} else {
-			metrics.Stats.RemedyPushes.Fail.SetToCurrentTime()
-		}
-
-		errPush := metrics.Pusher.Push()
-		if errPush != nil {
-			fmt.Printf("can't push: %s\n", errPush.Error())
-		}
+		CheckStatusForMetrics(ok)
 	}()
 
 	runCtx.AddStep(rs.Name)
@@ -164,12 +158,12 @@ func (rs RemedySendUpdateMI) DebugRun(ctx context.Context, runCtx *store.Variabl
 	}
 
 	if u.Scheme == "" {
-		u.Scheme = "http"
+		u.Scheme = httpScheme
 	}
 
 	u.Path = path.Join(rs.Remedy, "/api/remedy/incident/update")
 
-	gatereq, err := http.NewRequest("PUT", u.String(), bytes.NewBuffer(b))
+	gatereq, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
@@ -177,7 +171,7 @@ func (rs RemedySendUpdateMI) DebugRun(ctx context.Context, runCtx *store.Variabl
 	gatereq.Header.Add("Content-Type", "application/json")
 	gatereq.Header.Add("cache-control", "no-cache")
 
-	resp, err := rs.HttpClient.Do(gatereq)
+	resp, err := rs.HTTPClient.Do(gatereq)
 	if err != nil {
 		return err
 	}
@@ -191,10 +185,12 @@ func (rs RemedySendUpdateMI) DebugRun(ctx context.Context, runCtx *store.Variabl
 	return err
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateMI) Next() string {
 	return rs.NextBlock
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateMI) Model() script.FunctionModel {
 	return script.FunctionModel{
 		BlockType: script.TypeInternal,

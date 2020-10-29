@@ -20,7 +20,7 @@ type RemedySendCreateMI struct {
 	Name       string
 	NextBlock  string
 	Input      map[string]string
-	HttpClient http.Client
+	HTTPClient http.Client
 	Remedy     string
 }
 
@@ -81,44 +81,41 @@ func NewRemedySendCreateMI(remedyPath string, httpClient *http.Client) RemedySen
 	return RemedySendCreateMI{
 		Name:       "remedy-create-mi",
 		Input:      make(map[string]string),
-		HttpClient: *httpClient,
+		HTTPClient: *httpClient,
 		Remedy:     remedyPath,
 	}
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateMI) Inputs() map[string]string {
 	return rs.Input
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateMI) Outputs() map[string]string {
 	return make(map[string]string)
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateMI) IsScenario() bool {
 	return false
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateMI) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return rs.DebugRun(ctx, runCtx)
 }
 
+//nolint:dupl, gocritic //its really complex
 func (rs RemedySendCreateMI) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
-	ctx, s := trace.StartSpan(ctx, "run_remedy_send")
+	//nolint:ineffassign, staticcheck //its valid assignment
+	ctx, s := trace.StartSpan(ctx, "run_remedy_send_createmi")
 	defer s.End()
 
 	ok := false
 
 	defer func() {
-		if ok {
-			metrics.Stats.RemedyPushes.Ok.SetToCurrentTime()
-		} else {
-			metrics.Stats.RemedyPushes.Fail.SetToCurrentTime()
-		}
-
-		errPush := metrics.Pusher.Push()
-		if errPush != nil {
-			fmt.Printf("can't push: %s\n", errPush.Error())
-		}
+		CheckStatusForMetrics(ok)
 	}()
 
 	runCtx.AddStep(rs.Name)
@@ -153,12 +150,12 @@ func (rs RemedySendCreateMI) DebugRun(ctx context.Context, runCtx *store.Variabl
 	}
 
 	if u.Scheme == "" {
-		u.Scheme = "http"
+		u.Scheme = httpScheme
 	}
 
 	u.Path = path.Join(rs.Remedy, "/api/remedy/incident/create")
 
-	gatereq, err := http.NewRequest("Post", u.String(), bytes.NewBuffer(b))
+	gatereq, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
@@ -166,7 +163,7 @@ func (rs RemedySendCreateMI) DebugRun(ctx context.Context, runCtx *store.Variabl
 	gatereq.Header.Add("Content-Type", "application/json")
 	gatereq.Header.Add("cache-control", "no-cache")
 
-	resp, err := rs.HttpClient.Do(gatereq)
+	resp, err := rs.HTTPClient.Do(gatereq)
 	if err != nil {
 		return err
 	}
@@ -180,10 +177,25 @@ func (rs RemedySendCreateMI) DebugRun(ctx context.Context, runCtx *store.Variabl
 	return err
 }
 
+func CheckStatusForMetrics(ok bool) {
+	if ok {
+		metrics.Stats.RemedyPushes.Ok.SetToCurrentTime()
+	} else {
+		metrics.Stats.RemedyPushes.Fail.SetToCurrentTime()
+	}
+
+	errPush := metrics.Pusher.Push()
+	if errPush != nil {
+		fmt.Printf("can't push: %s\n", errPush.Error())
+	}
+}
+
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateMI) Next() string {
 	return rs.NextBlock
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateMI) Model() script.FunctionModel {
 	return script.FunctionModel{
 		BlockType: script.TypeInternal,

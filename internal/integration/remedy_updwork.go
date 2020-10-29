@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"time"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 	"go.opencensus.io/trace"
@@ -20,7 +18,7 @@ type RemedySendUpdateWork struct {
 	Name       string
 	NextBlock  string
 	Input      map[string]string
-	HttpClient http.Client
+	HTTPClient http.Client
 	Remedy     string
 }
 
@@ -41,48 +39,46 @@ type RemedySendUpdateWorkModel struct {
 	CompletionCode  string    `json:"completionCode,omitempty"`
 }
 
+//nolint:gocritic //impossible to pass pointer
 func NewRemedySendUpdateWork(remedyPath string, httpClient *http.Client) RemedySendUpdateWork {
 	return RemedySendUpdateWork{
 		Name:       "remedy-update-work",
 		Input:      make(map[string]string),
-		HttpClient: *httpClient,
+		HTTPClient: *httpClient,
 		Remedy:     remedyPath,
 	}
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateWork) Inputs() map[string]string {
 	return rs.Input
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateWork) Outputs() map[string]string {
 	return make(map[string]string)
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateWork) IsScenario() bool {
 	return false
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateWork) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return rs.DebugRun(ctx, runCtx)
 }
 
+//nolint:dupl, gocritic //its really complex
 func (rs RemedySendUpdateWork) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
-	ctx, s := trace.StartSpan(ctx, "run_remedy_send")
+	//nolint:ineffassign, staticcheck //its valid assignment
+	ctx, s := trace.StartSpan(ctx, "run_remedy_send_updatework")
 	defer s.End()
 
 	ok := false
 
 	defer func() {
-		if ok {
-			metrics.Stats.RemedyPushes.Ok.SetToCurrentTime()
-		} else {
-			metrics.Stats.RemedyPushes.Fail.SetToCurrentTime()
-		}
-
-		errPush := metrics.Pusher.Push()
-		if errPush != nil {
-			fmt.Printf("can't push: %s\n", errPush.Error())
-		}
+		CheckStatusForMetrics(ok)
 	}()
 
 	runCtx.AddStep(rs.Name)
@@ -117,12 +113,12 @@ func (rs RemedySendUpdateWork) DebugRun(ctx context.Context, runCtx *store.Varia
 	}
 
 	if u.Scheme == "" {
-		u.Scheme = "http"
+		u.Scheme = httpScheme
 	}
 
 	u.Path = path.Join(rs.Remedy, "/api/remedy/work/update")
 
-	gatereq, err := http.NewRequest("Put", u.String(), bytes.NewBuffer(b))
+	gatereq, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
@@ -130,7 +126,7 @@ func (rs RemedySendUpdateWork) DebugRun(ctx context.Context, runCtx *store.Varia
 	gatereq.Header.Add("Content-Type", "application/json")
 	gatereq.Header.Add("cache-control", "no-cache")
 
-	resp, err := rs.HttpClient.Do(gatereq)
+	resp, err := rs.HTTPClient.Do(gatereq)
 	if err != nil {
 		return err
 	}
@@ -144,10 +140,12 @@ func (rs RemedySendUpdateWork) DebugRun(ctx context.Context, runCtx *store.Varia
 	return err
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateWork) Next() string {
 	return rs.NextBlock
 }
 
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateWork) Model() script.FunctionModel {
 	return script.FunctionModel{
 		BlockType: script.TypeInternal,

@@ -881,7 +881,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// проверяем права на запуск пайплайна
-	if !(grants.Allow && grants.Contains(id.String())) {
+	if !(grants.Allow && grants.Contains(p.ID.String())) {
 		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -968,6 +968,7 @@ func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 	defer s.End()
 
 	idParam := chi.URLParam(req, "pipelineID")
+
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		e := UUIDParsingError
@@ -1013,6 +1014,7 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 	defer s.End()
 
 	idParam := chi.URLParam(req, "versionID")
+
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		e := UUIDParsingError
@@ -1058,6 +1060,7 @@ func (ae *APIEnv) GetTaskLog(w http.ResponseWriter, req *http.Request) {
 	defer s.End()
 
 	idParam := chi.URLParam(req, "taskID")
+
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		e := UUIDParsingError
@@ -1106,11 +1109,11 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	ep.PipelineID = p.ID
 	ep.VersionID = p.VersionID
 	ep.Storage = ae.DB
-	ep.Entrypoint = p.Pipeline.Entrypoint
+	ep.EntryPoint = p.Pipeline.Entrypoint
 	ep.Logger = ae.Logger
 	ep.FaaS = ae.FaaS
 	ep.PipelineModel = p
-	ep.HttpClient = ae.HTTPClient
+	ep.HTTPClient = ae.HTTPClient
 	ep.Remedy = ae.Remedy
 
 	err := ep.CreateBlocks(ctx, p.Pipeline.Blocks)

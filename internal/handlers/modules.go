@@ -135,27 +135,34 @@ func (ae *APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	}
 
 	moduleUsageMap := make(map[string]map[string]struct{})
+
 	for i := range scenarios {
 		blocks := scenarios[i].Pipeline.Blocks
 		for k := range blocks {
 			if blocks[k].BlockType != script.TypePython3 {
 				continue
 			}
+
 			name := blocks[k].Title
 			if _, ok := moduleUsageMap[name]; !ok {
 				moduleUsageMap[name] = make(map[string]struct{})
 			}
+
 			moduleUsageMap[name][scenarios[i].Name] = struct{}{}
 		}
 	}
+
 	resp := make(map[string][]string)
+
 	for module, pipes := range moduleUsageMap {
 		p := make([]string, 0, len(pipes))
 		for n := range pipes {
 			p = append(p, n)
 		}
+
 		resp[module] = p
 	}
+
 	err = sendResponse(w, http.StatusOK, entity.AllUsageResponse{Functions: resp})
 	if err != nil {
 		e := UnknownError
