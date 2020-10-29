@@ -1,0 +1,15 @@
+{
+  "state": "string",
+  "additionalText":"string",
+  "perceivedSeverity":"number",
+  "moIdentifier":"string",
+  "notificationIdentifier":"string",
+  "managedobjectinstance":"string",
+  "managedobjectclass":"string",
+  "specificProblem":"string",
+  "userText":"string",
+  "probableCause":"string",
+  "additionInformation":"string",
+  "timeout":"number",
+  "eventType":"string"
+}

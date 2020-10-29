@@ -1,0 +1,77 @@
+{
+  "name": "test-with-if",
+  "id": "9b3a31fe-184f-4aab-bbaf-f31eab5f6489",
+  "version_id": "c763cd4b-9a8f-41a5-89fa-12a0d6981e2d",
+  "status": 2,
+  "input":[
+    {
+      "name": "first_string",
+      "type": "string",
+      "global": "input.first_string"
+    },
+    {
+      "name": "second_string",
+      "type": "string",
+      "global": "input.second_string"
+    }
+  ],
+  "output": [
+    {
+      "name": "is_equal",
+      "type": "string",
+      "global": "strings_is_equal.is_equal"
+    }
+  ],
+  "pipeline": {
+    "entrypoint": "stings_is_equal_1",
+    "blocks": {
+      "stings_is_equal_1": {
+        "block_type": "internal",
+        "title": "stings_is_equal",
+        "input": [
+          {
+            "name": "first_string",
+            "type": "string",
+            "global": "input.first_string"
+          },
+          {
+            "name": "second_string",
+            "type": "string",
+            "global": "input.first_string"
+          }
+        ],
+        "output": [
+          {
+            "name": "is_equal",
+            "type": "string",
+            "global": "stings_is_equal.is_equal"
+          }
+        ],
+        "next": "if_1"
+      },
+      "if_1": {
+        "block_type": "term",
+        "title": "if",
+        "input": [
+          {
+            "name": "is_equal",
+            "type": "string",
+            "global": "stings_is_equal.is_equal"
+          }
+        ],
+        "on_true": "cedar-test-1_1",
+        "on_false": "cedar-test-1_2"
+      },
+      "cedar-test-1_1": {
+        "block_type": "python3",
+        "title": "cedar-test-1",
+        "next": ""
+      },
+      "cedar-test-1_2": {
+        "block_type": "python3",
+        "title": "cedar-test-1",
+        "next": ""
+      }
+    }
+  }
+}

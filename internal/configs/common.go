@@ -24,34 +24,39 @@ type TracingConfig struct {
 
 func (d *Duration) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	stringDuration := ""
+
 	err := unmarshal(&stringDuration)
 	if err != nil {
 		return err
 	}
 
 	d.Duration, err = time.ParseDuration(stringDuration)
+
 	return err
 }
 
 func (u *URL) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	stringURL := ""
+
 	err := unmarshal(&stringURL)
 	if err != nil {
 		return err
 	}
 
 	u.URL, err = url.Parse(stringURL)
+
 	return err
 }
 
 func Read(path string, cfg interface{}) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return errors.Wrap(err, "cant read config file")
+		return errors.Errorf("cant read config file: %s", err.Error())
 	}
+
 	err = yaml.Unmarshal(data, cfg)
 	if err != nil {
-		return errors.Wrap(err, "cant parse config")
+		return errors.Errorf("cant parse config: %s", err.Error())
 	}
 
 	return nil
