@@ -348,7 +348,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 		ngsa.NextBlock = ef.Next
 
 		return ngsa
-	case "remedy-create-mi":
+	case "remedy-send-createmi":
 		rem := integration.NewRemedySendCreateMI(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
@@ -356,7 +356,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
-	case "remedy-create-problem":
+	case "remedy-send-createproblem":
 		rem := integration.NewRemedySendCreateProblem(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
@@ -364,7 +364,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
-	case "remedy-create-work":
+	case "remedy-send-creatework":
 		rem := integration.NewRemedySendCreateWork(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
@@ -372,7 +372,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
-	case "remedy-update-mi":
+	case "remedy-send-updatemi":
 		rem := integration.NewRemedySendUpdateMI(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
@@ -380,7 +380,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
-	case "remedy-update-problem":
+	case "remedy-send-updateproblem":
 		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
@@ -388,8 +388,8 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
-	case "remedy-update-work":
-		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HTTPClient)
+	case "remedy-send-updatework":
+		rem := integration.NewRemedySendUpdateWork(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
 			rem.Input[v.Name] = v.Global
 		}

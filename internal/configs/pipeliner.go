@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/erius/monitoring/pkg/configs"
+	monconf "gitlab.services.mts.ru/erius/monitoring/pkg/configs"
 )
 
 const (
@@ -25,7 +25,7 @@ type Pipeliner struct {
 	FaaS             string             `yaml:"faas"`
 	RunEnv           RunEnv             `yaml:"run_env"`
 	Swag             SwaggerGeneral     `yaml:"swagger"`
-	Monitoring       configs.Monitoring `yaml:"monitoring"`
+	Monitoring       monconf.Monitoring `yaml:"monitoring"`
 	AuthBaseURL      *URL               `yaml:"auth"`
 	Push             PushConfig         `yaml:"push"`
 	HTTPClientConfig *HTTPClient        `yaml:"http_client_config"`

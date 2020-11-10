@@ -9,17 +9,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type URL struct {
-	*url.URL
-}
-
-type Duration struct {
-	time.Duration
-}
 
 type TracingConfig struct {
 	URL            string  `yaml:"url"`
 	SampleFraction float64 `yaml:"sample_fraction"`
+}
+
+type Duration struct {
+	time.Duration
 }
 
 func (d *Duration) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -33,6 +30,10 @@ func (d *Duration) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	d.Duration, err = time.ParseDuration(stringDuration)
 
 	return err
+}
+
+type URL struct {
+	*url.URL
 }
 
 func (u *URL) UnmarshalYAML(unmarshal func(interface{}) error) error {
