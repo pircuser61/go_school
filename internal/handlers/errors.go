@@ -42,6 +42,16 @@ const (
 	AuthServiceError
 	GetTasksError
 	GetLogError
+	GetAllTagsError
+	GetPipelineTagsError
+	GetTagError
+	TagCreateError
+	TagEditError
+	TagAttachError
+	TagDeleteError
+	TagHasZeroLengthError
+	TagParseError
+	TagDetachError
 )
 
 var errorText = map[Err]string{

@@ -1020,3 +1020,39 @@ func (m *MockDB) ActiveAlertNGSA(c context.Context, sever int, state, source,
 func (m *MockDB) ClearAlertNGSA(c context.Context, name string) error {
 	return nil
 }
+
+func (m *MockDB) CreateTag(c context.Context, e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) EditTag(c context.Context, e *entity.EriusTagInfo) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) RemoveTag(c context.Context, e *entity.EriusTagInfo) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) GetAllTags(c context.Context) ([]entity.EriusTagInfo, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetPipelineTag(c context.Context, id uuid.UUID) ([]entity.EriusTagInfo, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) AttachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) DetachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) RemovePipelineTags(c context.Context, id uuid.UUID) error {
+	return errNotImplemented
+}

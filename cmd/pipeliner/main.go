@@ -187,6 +187,9 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner *handle
 			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
 			r.Post("/pipelines/", pipeliner.CreatePipeline)
 			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
+			r.Put("/pipelines/{pipelineID}/tags/{ID}", pipeliner.AttachTag)
+			r.Get("/pipelines/{pipelineID}/tags/", pipeliner.GetPipelineTag)
+			r.Delete("/pipelines/{pipelineID}/tags/{ID}", pipeliner.DetachTag)
 
 			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
 			r.Post("/pipelines/version/{pipelineID}", pipeliner.CreatePipelineVersion)
