@@ -70,11 +70,18 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	tags, err := ae.tags(ctx)
+	if err != nil {
+		_ = err.sendError(w)
+
+		return
+	}
+
 	resp := entity.EriusScenarioList{
 		Pipelines: approved,
 		OnApprove: onApprove,
 		Drafts:    drafts,
-		Tags:      nil,
+		Tags:      tags,
 	}
 
 	if err := sendResponse(w, http.StatusOK, resp); err != nil {
@@ -174,6 +181,33 @@ func (ae *APIEnv) approvedVersions(ctx context.Context) ([]entity.EriusScenarioI
 	return filterVersionsByID(approved, grants.All, grants.Items), nil
 }
 
+func (ae *APIEnv) tags(ctx context.Context) ([]entity.EriusTagInfo, *PipelinerError) {
+	ctx, s := trace.StartSpan(ctx, "list_approved_versions")
+	defer s.End()
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Read)
+	if err != nil {
+		ae.Logger.Error(AuthServiceError.errorMessage(err))
+
+		return []entity.EriusTagInfo{}, &PipelinerError{AuthServiceError}
+	}
+
+	if !grants.Allow {
+		ae.Logger.Error(UnauthError.errorMessage(err))
+
+		return []entity.EriusTagInfo{}, nil
+	}
+
+	tags, err := ae.DB.GetAllTags(ctx)
+	if err != nil {
+		ae.Logger.Error(GetAllTagsError.errorMessage(err))
+
+		return []entity.EriusTagInfo{}, &PipelinerError{GetAllTagsError}
+	}
+
+	return tags, nil
+}
+
 // GetPipelineVersion
 // @Summary Get pipeline version
 // @Description Получить версию сценария по ID
@@ -209,6 +243,15 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
+	tags, err := ae.DB.GetPipelineTag(ctx, p.ID)
+	if err != nil {
+		e := GetPipelineTagsError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+	}
+
+	p.Tags = tags
 
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
 	if err != nil {
@@ -291,6 +334,15 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
+	tags, err := ae.DB.GetPipelineTag(ctx, p.ID)
+	if err != nil {
+		e := GetPipelineTagsError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+	}
+
+	p.Tags = tags
 
 	err = sendResponse(w, http.StatusOK, p)
 	if err != nil {
@@ -797,6 +849,15 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	err = ae.DB.RemovePipelineTags(ctx, id)
+	if err != nil {
+		e := TagDetachError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	err = ae.DB.DeletePipeline(ctx, id)
 	if err != nil {
 		e := PipelineDeleteError
@@ -1261,4 +1322,204 @@ func filterVersionsByID(scenarios []entity.EriusScenarioInfo, isAll bool, allowe
 	}
 
 	return res
+}
+
+func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tag")
+	defer s.End()
+
+	pipelineID := chi.URLParam(req, "pipelineID")
+
+	pID, err := uuid.Parse(pipelineID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !grants.Allow {
+		e := UnauthError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tags, err := ae.DB.GetPipelineTag(ctx, pID)
+	if err != nil {
+		e := GetPipelineTagsError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+	}
+
+	if err := sendResponse(w, http.StatusOK, tags); err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+//nolint:dupl //its different function
+func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "attach_tag")
+	defer s.End()
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !grants.Allow {
+		e := UnauthError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	pipelineID := chi.URLParam(req, "pipelineID")
+
+	pID, err := uuid.Parse(pipelineID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tagID := chi.URLParam(req, "ID")
+
+	tID, err := uuid.Parse(tagID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	etag := entity.EriusTagInfo{}
+
+	etag.ID = tID
+
+	attached, err := ae.DB.GetTag(ctx, &etag)
+	if err != nil {
+		e := GetTagError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = ae.DB.AttachTag(ctx, pID, &etag)
+	if err != nil {
+		e := TagAttachError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, attached)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+//nolint:dupl //its different function
+func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "remove_pipeline_tag")
+	defer s.End()
+
+	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
+	if err != nil {
+		e := AuthServiceError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !grants.Allow {
+		e := UnauthError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	pipelineID := chi.URLParam(req, "pipelineID")
+
+	pID, err := uuid.Parse(pipelineID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tagID := chi.URLParam(req, "ID")
+
+	tID, err := uuid.Parse(tagID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	etag := entity.EriusTagInfo{}
+
+	etag.ID = tID
+
+	_, err = ae.DB.GetTag(ctx, &etag)
+	if err != nil {
+		e := GetTagError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = ae.DB.DetachTag(ctx, pID, &etag)
+	if err != nil {
+		e := TagDetachError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, nil)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }

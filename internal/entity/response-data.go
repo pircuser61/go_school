@@ -29,9 +29,10 @@ type EriusScenarioInfo struct {
 }
 
 type EriusTagInfo struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Color string `json:"color"`
+	ID     uuid.UUID `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	Name   string    `json:"name"`
+	Status int       `json:"status" enums:"1,3"` // 1 - Created, 3 - Deleted
+	Color  int       `json:"color"  enums:"1,2,3,4,5,6,7,8"`
 }
 
 type EriusScenario struct {
@@ -46,7 +47,8 @@ type EriusScenario struct {
 		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
 	} `json:"pipeline"`
-	ApproveDate time.Time `json:"approve_date"`
+	ApproveDate time.Time      `json:"approve_date"`
+	Tags        []EriusTagInfo `json:"tags"`
 }
 
 type EriusFunctionList struct {
