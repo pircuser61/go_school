@@ -244,6 +244,15 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	tags, err := ae.DB.GetPipelineTag(ctx, p.ID)
+	if err != nil {
+		e := GetPipelineTagsError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+	}
+
+	p.Tags = tags
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
 	if err != nil {
 		e := AuthServiceError
