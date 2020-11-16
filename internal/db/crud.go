@@ -486,14 +486,19 @@ func (db *PGConnection) CreateTag(c context.Context,
 
 	qNewTag := `INSERT INTO pipeliner.tags(
 	id, name, status, author, color)
-	VALUES ($1, $2, $3, $4, $5);`
+	VALUES ($1, $2, $3, $4, $5)
+	RETURNING id, name, status, color;`
 
-	_, err = conn.Exec(c, qNewTag, e.ID, e.Name, StatusDraft, author, e.Color)
+	row := conn.QueryRow(c, qNewTag, e.ID, e.Name, StatusDraft, author, e.Color)
+
+	etag := &entity.EriusTagInfo{}
+
+	err = row.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, err
+	return etag, err
 }
 
 func (db *PGConnection) DeleteVersion(c context.Context, versionID uuid.UUID) error {
