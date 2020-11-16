@@ -50,6 +50,10 @@ const (
 	RunStatusRunning  int = 1
 	RunStatusFinished int = 2
 	RunStatusError    int = 3
+
+	qCheckTagIsAttached string = `SELECT COUNT(pipeline_id)
+	FROM pipeliner.pipeline_tags    
+	WHERE pipeline_id = $1 and tag_id = $2`
 )
 
 var (
@@ -746,29 +750,17 @@ func (db *PGConnection) AttachTag(c context.Context, pid uuid.UUID, e *entity.Er
 
 	defer conn.Release()
 
-	qCheckTagNotAttached := `
-	SELECT count(pipeline_id)
-	FROM pipeline.pipeline_tags
-	WHERE pipeline_id = $1 and tag_id = $2`
+	row := conn.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
 
-	rows, err := conn.Query(c, qCheckTagNotAttached, pid, e.ID)
+	count := 0
+
+	err = row.Scan(&count)
 	if err != nil {
 		return err
 	}
 
-	defer rows.Close()
-
-	for rows.Next() {
-		count := 0
-		err = rows.Scan(&count)
-
-		if err != nil {
-			return err
-		}
-
-		if count != 0 {
-			return nil
-		}
+	if count != 0 {
+		return nil
 	}
 
 	qAttachTag := `INSERT INTO pipeliner.pipeline_tags (
@@ -783,7 +775,7 @@ func (db *PGConnection) AttachTag(c context.Context, pid uuid.UUID, e *entity.Er
 	return nil
 }
 
-func (db *PGConnection) RemoveTag(c context.Context, e *entity.EriusTagInfo) error {
+func (db *PGConnection) RemoveTag(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_remove_tag")
 	defer span.End()
 
@@ -798,7 +790,7 @@ func (db *PGConnection) RemoveTag(c context.Context, e *entity.EriusTagInfo) err
 
 	qName := `SELECT name FROM pipeliner.tags WHERE id = $1`
 
-	row := conn.QueryRow(c, qName, e.ID)
+	row := conn.QueryRow(c, qName, id)
 
 	var n string
 
@@ -809,17 +801,36 @@ func (db *PGConnection) RemoveTag(c context.Context, e *entity.EriusTagInfo) err
 
 	n = n + "_deleted_at_" + t.String()
 
-	qSetTagDeleted := `UPDATE pipeliner.tags SET status=$1, name=$2  WHERE id = $3;`
+	qSetTagDeleted := `UPDATE pipeliner.tags
+	SET status=$1, name=$2  
+	WHERE id = $3;`
 
-	_, err = conn.Exec(c, qSetTagDeleted, StatusDeleted, n, e.ID)
+	_, err = conn.Exec(c, qSetTagDeleted, StatusDeleted, n, id)
 	if err != nil {
 		return err
 	}
 
-	qRemoveAttachedTags := `DELETE FROM pipeline.pipeline_tags
+	qCheckTagAttached := `SELECT COUNT(pipeline_id)
+	FROM pipeliner.pipeline_tags
 	WHERE tag_id = $1`
 
-	_, err = conn.Exec(c, qRemoveAttachedTags, e.ID)
+	row = conn.QueryRow(c, qCheckTagAttached, id)
+
+	count := 0
+
+	err = row.Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return nil
+	}
+
+	qRemoveAttachedTags := `DELETE FROM pipeliner.pipeline_tags
+	WHERE tag_id = $1`
+
+	_, err = conn.Exec(c, qRemoveAttachedTags, id)
 	if err != nil {
 		return err
 	}
@@ -839,32 +850,22 @@ func (db *PGConnection) DetachTag(c context.Context, pid uuid.UUID, e *entity.Er
 
 	defer conn.Release()
 
-	qCheckTagAttached := `SELECT count(pipeline_id)
-	FROM pipeline.pipeline_tags
-	WHERE pipeline_id = $1 and tag_id = $2`
+	row := conn.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
 
-	rows, err := conn.Query(c, qCheckTagAttached, pid, e.ID)
+	count := 0
+
+	err = row.Scan(&count)
 	if err != nil {
 		return err
 	}
 
-	defer rows.Close()
-
-	for rows.Next() {
-		count := 0
-		err = rows.Scan(&count)
-
-		if err != nil {
-			return err
-		}
-
-		if count == 0 {
-			return nil
-		}
+	if count == 0 {
+		return nil
 	}
 
-	qDetachTag := `DELETE FROM pipeline.pipeline_tags
-	WHERE pipeline_id = $1 and tag_id = $2`
+	qDetachTag := `DELETE FROM pipeliner.pipeline_tags
+	WHERE pipeline_id = $1 
+	AND tag_id = $2`
 
 	_, err = conn.Exec(c, qDetachTag, pid, e.ID)
 	if err != nil {
@@ -885,7 +886,25 @@ func (db *PGConnection) RemovePipelineTags(c context.Context, id uuid.UUID) erro
 
 	defer conn.Release()
 
-	qRemovePipelineTags := `DELETE FROM pipeline.pipeline_tags
+	qCheckTagIsAttached := `
+	SELECT COUNT(pipeline_id)
+	FROM pipeliner.pipeline_tags
+	WHERE pipeline_id = $1`
+
+	row := conn.QueryRow(c, qCheckTagIsAttached, id)
+
+	count := 0
+
+	err = row.Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return nil
+	}
+
+	qRemovePipelineTags := `DELETE FROM pipeliner.pipeline_tags
 	WHERE pipeline_id = $1`
 
 	_, err = conn.Exec(c, qRemovePipelineTags, id)

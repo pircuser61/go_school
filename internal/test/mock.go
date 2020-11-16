@@ -1033,7 +1033,7 @@ func (m *MockDB) EditTag(c context.Context, e *entity.EriusTagInfo) error {
 	return errNotImplemented
 }
 
-func (m *MockDB) RemoveTag(c context.Context, e *entity.EriusTagInfo) error {
+func (m *MockDB) RemoveTag(c context.Context, id uuid.UUID) error {
 	return errNotImplemented
 }
 
