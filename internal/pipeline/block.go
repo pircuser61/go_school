@@ -128,6 +128,8 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 		}
 	}
 
+	fmt.Println(values)
+
 	url := fmt.Sprintf(fb.RunURL, fb.FunctionName)
 	fmt.Println(url)
 
