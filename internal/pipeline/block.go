@@ -72,8 +72,8 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 
 	// fixme extract "X-Request-Id" to variable
 
-	if xReqId, ok := ctx.Value("X-Request-Id").(string); ok {
-		req.Header.Set("X-Request-Id", xReqId)
+	if xReqID, ok := ctx.Value("X-Request-Id").(string); ok {
+		req.Header.Set("X-Request-Id", xReqID)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
