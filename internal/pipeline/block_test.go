@@ -143,7 +143,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				FunctionInput:  tt.fields.FunctionInput,
 				FunctionOutput: tt.fields.FunctionOutput,
 				NextStep:       tt.fields.NextStep,
-				runURL:         server.URL + "/%s",
+				RunURL:         server.URL + "/%s",
 			}
 			if err := fb.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
 				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)

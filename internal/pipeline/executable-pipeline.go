@@ -210,7 +210,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 				FunctionInput:  make(map[string]string),
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
-				runURL:         ep.FaaS + "function/%s",
+				RunURL:         ep.FaaS + "function/%s",
 			}
 
 			for _, v := range block.Input {
