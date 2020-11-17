@@ -20,7 +20,7 @@ type FunctionBlock struct {
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
 	NextStep       string
-	runURL         string
+	RunURL         string
 }
 
 func (fb *FunctionBlock) Inputs() map[string]string {
@@ -55,7 +55,7 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 		}
 	}
 
-	url := fmt.Sprintf(fb.runURL, fb.FunctionName)
+	url := fmt.Sprintf(fb.RunURL, fb.FunctionName)
 	fmt.Println(url)
 
 	b, err := json.Marshal(values)
@@ -117,4 +117,65 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 
 func (fb *FunctionBlock) Next() string {
 	return fb.NextStep
+}
+
+func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStore) (interface{}, error) {
+	_, s := trace.StartSpan(ctx, "run_function_block")
+	defer s.End()
+
+	values := make(map[string]interface{})
+
+	for ikey, gkey := range fb.FunctionInput {
+		val, ok := runCtx.GetValue(gkey) // if no value - empty value
+		if ok {
+			values[ikey] = val
+		}
+	}
+
+	fmt.Println(values, fb.FunctionInput)
+
+	url := fmt.Sprintf(fb.RunURL, fb.FunctionName)
+	fmt.Println(url)
+
+	b, err := json.Marshal(values)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(string(b))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	// fixme extract "X-Request-Id" to variable
+	req.Header.Set("Content-Type", "application/json")
+
+	const timeoutMinutes = 15
+
+	client := &http.Client{
+		Timeout: timeoutMinutes * time.Minute,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(string(body))
+	if len(body) != 0 {
+		result := make(map[string]interface{})
+		err = json.Unmarshal(body, &result)
+		if err != nil {
+			return string(body), nil
+		}
+		return result, nil
+	}
+
+	return string(body), nil
 }

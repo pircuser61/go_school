@@ -52,6 +52,7 @@ const (
 	TagHasZeroLengthError
 	TagParseError
 	TagDetachError
+	ModuleFindError
 )
 
 var errorText = map[Err]string{
@@ -80,6 +81,7 @@ var errorText = map[Err]string{
 	AuthServiceError:        "auth service failed",
 	GetTasksError:           "can't find tasks",
 	GetLogError:             "can't get log",
+	ModuleFindError:         "can't find module",
 }
 
 // JOKE.
@@ -109,6 +111,7 @@ var errorDescription = map[Err]string{
 	AuthServiceError:        "Ошибка сервиса авторизации",
 	GetTasksError:           "Не удалось найти запуски сценария",
 	GetLogError:             "Не удалось получить лог",
+	ModuleFindError:         "Не удалось найти функцию",
 }
 
 var errorStatus = map[Err]int{

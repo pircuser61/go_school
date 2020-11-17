@@ -1,7 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"github.com/go-chi/chi"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
@@ -216,6 +221,114 @@ func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	}
 
 	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, Pipelines: usedBy, Used: used})
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+// ModuleRun godoc
+// @Summary Run Module By Name
+// @Description Запустить блок
+// @Tags modules
+// @ID      module-usage
+// @Produce json
+// @Param moduleName path string true "module name"
+// @Success 200 {object} httpResponse{data=entity.UsageResponse}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /modules/{moduleName} [post]
+func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "module_run")
+	defer s.End()
+
+	name := chi.URLParam(req, "moduleName")
+
+	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager, ae.HTTPClient)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	block := script.FunctionModel{}
+	for i := range eriusFunctions {
+		if eriusFunctions[i].Title == name {
+			block = eriusFunctions[i]
+			break
+		}
+	}
+
+	if block.Title == "" {
+		e := ModuleUsageError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	fb := pipeline.FunctionBlock{
+		Name:           block.Title,
+		FunctionName:   block.Title,
+		FunctionInput:  make(map[string]string),
+		FunctionOutput: make(map[string]string),
+		NextStep:       "",
+		RunURL:         ae.FaaS + "function/%s",
+	}
+
+	for _, v := range block.Inputs {
+		fb.FunctionInput[v.Name] = v.Name
+	}
+
+	for _, v := range block.Outputs {
+		fb.FunctionOutput[v.Name] = v.Name
+	}
+
+	vs := store.NewStore()
+
+	b, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	pipelineVars := make(map[string]interface{})
+
+	if len(b) != 0 {
+		err = json.Unmarshal(b, &pipelineVars)
+		if err != nil {
+			e := PipelineRunError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		for key, value := range pipelineVars {
+			vs.SetValue(key, value)
+		}
+	}
+
+	result, err := fb.RunOnly(ctx, vs)
+	if err != nil {
+		e := PipelineRunError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, result)
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
