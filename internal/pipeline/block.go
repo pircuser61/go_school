@@ -142,7 +142,6 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 	}
 
 	// fixme extract "X-Request-Id" to variable
-	req.Header.Set("X-Request-Id", ctx.Value("X-Request-Id").(string))
 	req.Header.Set("Content-Type", "application/json")
 
 	const timeoutMinutes = 15

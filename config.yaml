@@ -1,6 +1,6 @@
 serve_addr: ':8181'
 timeout: '30s'
-script_manager: 'manager'
+script_manager: 'localhost:8282'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 auth: 'http://admin.erius-develop/api/admin/v1/'
 
