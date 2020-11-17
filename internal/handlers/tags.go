@@ -230,20 +230,7 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	etag := entity.EriusTagInfo{}
-
-	etag.ID = tID
-
-	_, err = ae.DB.GetTag(ctx, &etag)
-	if err != nil {
-		e := GetTagError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	err = ae.DB.RemoveTag(ctx, &etag)
+	err = ae.DB.RemoveTag(ctx, tID)
 	if err != nil {
 		e := TagDeleteError
 		ae.Logger.Error(e.errorMessage(err))

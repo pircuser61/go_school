@@ -9,7 +9,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
 type TracingConfig struct {
 	URL            string  `yaml:"url"`
 	SampleFraction float64 `yaml:"sample_fraction"`
