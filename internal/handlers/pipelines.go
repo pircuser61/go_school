@@ -1377,6 +1377,28 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "attach_tag")
 	defer s.End()
 
+	pipelineID := chi.URLParam(req, "pipelineID")
+
+	pID, err := uuid.Parse(pipelineID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tagID := chi.URLParam(req, "ID")
+
+	tID, err := uuid.Parse(tagID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
 	if err != nil {
 		e := AuthServiceError
@@ -1394,22 +1416,10 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	pipelineID := chi.URLParam(req, "pipelineID")
+	id := pID.String()
 
-	pID, err := uuid.Parse(pipelineID)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	tagID := chi.URLParam(req, "ID")
-
-	tID, err := uuid.Parse(tagID)
-	if err != nil {
-		e := UUIDParsingError
+	if !(grants.Allow && grants.Contains(id)) {
+		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -1453,6 +1463,28 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_pipeline_tag")
 	defer s.End()
 
+	pipelineID := chi.URLParam(req, "pipelineID")
+
+	pID, err := uuid.Parse(pipelineID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tagID := chi.URLParam(req, "ID")
+
+	tID, err := uuid.Parse(tagID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
 	if err != nil {
 		e := AuthServiceError
@@ -1470,22 +1502,10 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	pipelineID := chi.URLParam(req, "pipelineID")
+	id := pID.String()
 
-	pID, err := uuid.Parse(pipelineID)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	tagID := chi.URLParam(req, "ID")
-
-	tID, err := uuid.Parse(tagID)
-	if err != nil {
-		e := UUIDParsingError
+	if !(grants.Allow && grants.Contains(id)) {
+		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 

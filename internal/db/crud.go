@@ -466,6 +466,10 @@ func (db *PGConnection) CreateTag(c context.Context,
 
 	defer conn.Release()
 
+	if e.Name == "" {
+		return nil, err
+	}
+
 	qCheckTagExisted := `
 	SELECT t.id, t.name, t.status, t.color
 	FROM pipeliner.tags t
@@ -706,31 +710,24 @@ func (db *PGConnection) EditTag(c context.Context, e *entity.EriusTagInfo) error
 	FROM pipeliner.tags 
 	WHERE id = $1 AND status = $2`
 
-	rows, err := conn.Query(c, qCheckTagIsCreated, e.ID, StatusDraft)
+	row := conn.QueryRow(c, qCheckTagIsCreated, e.ID, StatusDraft)
+
+	count := 0
+
+	err = row.Scan(&count)
 	if err != nil {
 		return err
 	}
 
-	defer rows.Close()
-
-	for rows.Next() {
-		count := 0
-		err = rows.Scan(&count)
-
-		if err != nil {
-			return err
-		}
-
-		if count == 0 {
-			return fmt.Errorf("%w: with id: %v", errCantFindTag, e.ID)
-		}
+	if count == 0 {
+		return fmt.Errorf("%w: with id: %v", errCantFindTag, e.ID)
 	}
 
-	qEditTag := `UPDATE pipeliner.tag_status 
-	SET name = $1, color = $2
-	WHERE id = $3;`
+	qEditTag := `UPDATE pipeliner.tags
+	SET color = $1
+	WHERE id = $2;`
 
-	_, err = db.Pool.Exec(c, qEditTag, e.Name, e.Color, e.ID)
+	_, err = conn.Exec(c, qEditTag, e.Color, e.ID)
 	if err != nil {
 		return err
 	}
