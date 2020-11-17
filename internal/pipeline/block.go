@@ -128,7 +128,7 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 		}
 	}
 
-	fmt.Println(values)
+	fmt.Println(values, fb.FunctionInput)
 
 	url := fmt.Sprintf(fb.RunURL, fb.FunctionName)
 	fmt.Println(url)
@@ -137,7 +137,7 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(string(b))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
 	if err != nil {
 		return nil, err
@@ -163,12 +163,12 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(string(body))
 	if len(body) != 0 {
 		result := make(map[string]interface{})
 		err = json.Unmarshal(body, &result)
 		if err != nil {
-			return nil, err
+			return string(body), nil
 		}
 		return result, nil
 	}
