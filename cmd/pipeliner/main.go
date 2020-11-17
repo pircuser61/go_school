@@ -199,6 +199,7 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner *handle
 			r.Get("/modules/", pipeliner.GetModules)
 			r.Get("/modules/usage", pipeliner.AllModulesUsage)
 			r.Get("/modules/{moduleName}/usage", pipeliner.ModuleUsage)
+			r.Post("/modules/{moduleName}", pipeliner.ModuleRun)
 
 			r.Get("/tags/", pipeliner.GetTags)
 			r.Post("/tags/", pipeliner.CreateTag)
