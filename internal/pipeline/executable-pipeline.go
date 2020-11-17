@@ -12,9 +12,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"go.opencensus.io/trace"
 )
 
 type ExecutablePipeline struct {
@@ -356,6 +357,8 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
+
+		return rem
 	case "remedy-send-createproblem":
 		rem := integration.NewRemedySendCreateProblem(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
@@ -364,6 +367,8 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
+
+		return rem
 	case "remedy-send-creatework":
 		rem := integration.NewRemedySendCreateWork(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
@@ -372,6 +377,8 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
+
+		return rem
 	case "remedy-send-updatemi":
 		rem := integration.NewRemedySendUpdateMI(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
@@ -380,6 +387,8 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
+
+		return rem
 	case "remedy-send-updateproblem":
 		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
@@ -388,6 +397,8 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
+
+		return rem
 	case "remedy-send-updatework":
 		rem := integration.NewRemedySendUpdateWork(ep.Remedy, ep.HTTPClient)
 		for _, v := range ef.Input {
@@ -396,6 +407,8 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		rem.Name = ef.Title
 		rem.NextBlock = ef.Next
+
+		return rem
 	case "for":
 		f := createForBlock(ef.Title, name, ef.OnTrue, ef.OnFalse)
 
