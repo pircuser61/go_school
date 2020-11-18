@@ -473,7 +473,7 @@ func (db *PGConnection) CreateTag(c context.Context,
 	qCheckTagExisted := `
 	SELECT t.id, t.name, t.status, t.color
 	FROM pipeliner.tags t
-	WHERE t.name = $1 AND t.status <> $2
+	WHERE lower(t.name) = lower($1) AND t.status <> $2
 	LIMIT 1;`
 
 	rows, err := conn.Query(c, qCheckTagExisted, e.Name, StatusDeleted)
