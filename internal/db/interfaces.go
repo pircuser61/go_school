@@ -48,4 +48,5 @@ type Database interface {
 	AttachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
 	DetachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
 	RemovePipelineTags(c context.Context, id uuid.UUID) error
+	PipelineRemovable(c context.Context, id uuid.UUID) (bool, error)
 }

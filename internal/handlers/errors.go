@@ -49,10 +49,10 @@ const (
 	TagEditError
 	TagAttachError
 	TagDeleteError
-	TagHasZeroLengthError
 	TagParseError
 	TagDetachError
 	ModuleFindError
+	PipelineIsNotDraft
 )
 
 var errorText = map[Err]string{
