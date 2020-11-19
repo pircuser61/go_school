@@ -394,6 +394,35 @@ func (db *PGConnection) VersionEditable(c context.Context, versionID uuid.UUID) 
 	return false, nil
 }
 
+func (db *PGConnection) PipelineRemovable(c context.Context, versionID uuid.UUID) (bool, error) {
+	c, span := trace.StartSpan(c, "pg_pipeline_removable")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return false, err
+	}
+
+	defer conn.Release()
+
+	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE id =$1`
+
+	row := conn.QueryRow(c, q, versionID)
+
+	count := 0
+
+	err = row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	if count == 1 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (db *PGConnection) CreatePipeline(c context.Context,
 	p *entity.EriusScenario, author string, pipelineData []byte) error {
 	_, span := trace.StartSpan(c, "pg_create_pipeline")

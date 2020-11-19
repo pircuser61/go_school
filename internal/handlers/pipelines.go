@@ -775,6 +775,17 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if p.Status == db.StatusDraft {
+		err = ae.DeleteDraftPipeline(ctx, w, p)
+		if err != nil {
+			e := PipelineDeleteError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+
 	err = ae.DB.DeleteVersion(ctx, versionID)
 	if err != nil {
 		e := PipelineDeleteError
@@ -804,6 +815,39 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+}
+
+func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {
+	canDelete, err := ae.DB.PipelineRemovable(ctx, p.VersionID)
+	if err != nil {
+		e := PipelineIsNotDraft
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return err
+	}
+
+	if canDelete {
+		err = ae.DB.RemovePipelineTags(ctx, p.ID)
+		if err != nil {
+			e := TagDetachError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return err
+		}
+
+		err = ae.DB.DeletePipeline(ctx, p.ID)
+		if err != nil {
+			e := PipelineDeleteError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return err
+		}
+	}
+
+	return nil
 }
 
 // @Summary Delete Pipeline

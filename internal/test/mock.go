@@ -1056,3 +1056,7 @@ func (m *MockDB) DetachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInf
 func (m *MockDB) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 	return errNotImplemented
 }
+
+func (m *MockDB) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error) {
+	return false, errNotImplemented
+}
