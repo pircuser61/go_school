@@ -76,13 +76,11 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	monChan := make(chan bool)
 
 	go func() {
-		select {
-		case ok := <-monChan:
-			if ok {
-				metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
-			} else {
-				metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
-			}
+		ok := <-monChan
+		if ok {
+			metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
+		} else {
+			metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
 		}
 
 		close(monChan)
