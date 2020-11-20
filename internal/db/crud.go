@@ -394,7 +394,7 @@ func (db *PGConnection) VersionEditable(c context.Context, versionID uuid.UUID) 
 	return false, nil
 }
 
-func (db *PGConnection) PipelineRemovable(c context.Context, versionID uuid.UUID) (bool, error) {
+func (db *PGConnection) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error) {
 	c, span := trace.StartSpan(c, "pg_pipeline_removable")
 	defer span.End()
 
@@ -405,9 +405,9 @@ func (db *PGConnection) PipelineRemovable(c context.Context, versionID uuid.UUID
 
 	defer conn.Release()
 
-	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE id =$1`
+	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE pipeline_id =$1`
 
-	row := conn.QueryRow(c, q, versionID)
+	row := conn.QueryRow(c, q, id)
 
 	count := 0
 
