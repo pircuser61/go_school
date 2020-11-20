@@ -168,7 +168,7 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 		monChan <- errNGSA == nil
 
-		return err
+		return errNGSA
 	}
 
 	err = ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
