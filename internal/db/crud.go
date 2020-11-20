@@ -289,7 +289,7 @@ func (db *PGConnection) GetPipelineTag(c context.Context, pid uuid.UUID) ([]enti
 
 	defer conn.Release()
 
-	q := `SELECT t.id, t.name, t.status, t.color
+	q := `SELECT t.id, t.name, t.status, t.color, t.is_marker
 	FROM pipeliner.tags t
 	LEFT OUTER JOIN pipeliner.pipeline_tags pt ON pt.tag_id = t.id
     WHERE 
@@ -309,7 +309,7 @@ func (db *PGConnection) GetPipelineTag(c context.Context, pid uuid.UUID) ([]enti
 	for rows.Next() {
 		etag := entity.EriusTagInfo{}
 
-		err = rows.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color)
+		err = rows.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color, &etag.IsMarker)
 		if err != nil {
 			return nil, err
 		}
@@ -500,12 +500,12 @@ func (db *PGConnection) CreateTag(c context.Context,
 	}
 
 	qCheckTagExisted := `
-	SELECT t.id, t.name, t.status, t.color
+	SELECT t.id, t.name, t.status, t.color, t.is_marker
 	FROM pipeliner.tags t
-	WHERE lower(t.name) = lower($1) AND t.status <> $2
+	WHERE lower(t.name) = lower($1) AND t.status <> $2 and t.is_marker <> $3
 	LIMIT 1;`
 
-	rows, err := conn.Query(c, qCheckTagExisted, e.Name, StatusDeleted)
+	rows, err := conn.Query(c, qCheckTagExisted, e.Name, StatusDeleted, e.IsMarker)
 	if err != nil {
 		return nil, err
 	}
@@ -513,7 +513,7 @@ func (db *PGConnection) CreateTag(c context.Context,
 	defer rows.Close()
 
 	if rows.Next() {
-		err = rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color)
+		err = rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color, &e.IsMarker)
 		if err != nil {
 			return nil, err
 		}
@@ -522,15 +522,15 @@ func (db *PGConnection) CreateTag(c context.Context,
 	}
 
 	qNewTag := `INSERT INTO pipeliner.tags(
-	id, name, status, author, color)
-	VALUES ($1, $2, $3, $4, $5)
-	RETURNING id, name, status, color;`
+	id, name, status, author, color, is_marker)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING id, name, status, color, is_marker;`
 
-	row := conn.QueryRow(c, qNewTag, e.ID, e.Name, StatusDraft, author, e.Color)
+	row := conn.QueryRow(c, qNewTag, e.ID, e.Name, StatusDraft, author, e.Color, e.IsMarker)
 
 	etag := &entity.EriusTagInfo{}
 
-	err = row.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color)
+	err = row.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color, &etag.IsMarker)
 	if err != nil {
 		return nil, err
 	}
@@ -699,7 +699,7 @@ func (db *PGConnection) GetTag(c context.Context, e *entity.EriusTagInfo) (*enti
 	defer conn.Release()
 
 	qGetTag := `
-	SELECT t.id, t.name, t.status, t.color
+	SELECT t.id, t.name, t.status, t.color, t.is_marker
 	FROM pipeliner.tags t
 	WHERE t.id = $1 AND t.status <> $2
 	LIMIT 1;`
@@ -712,7 +712,7 @@ func (db *PGConnection) GetTag(c context.Context, e *entity.EriusTagInfo) (*enti
 	defer rows.Close()
 
 	if rows.Next() {
-		err := rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color)
+		err := rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color, &e.IsMarker)
 		if err != nil {
 			return nil, err
 		}
