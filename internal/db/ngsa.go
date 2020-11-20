@@ -8,14 +8,14 @@ import (
 func (db *PGConnection) ActiveAlertNGSA(c context.Context, sever int,
 	state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error {
 	t := time.Now()
-	q := `INSERT INTO pipeliner.alarm_for_ngsa(
+	q := `INSERT INTO pipeliner.ngsa_alert(
 		state,
 		"perceivedSeverity", 
-		"event.Source", 
+		"eventSource", 
 		"eventTime", 
 		"eventType", 
 		"probableCause", 
-		"additionInformation", 
+		"additionalInformation", 
 		"additionalText", 
 		"moIdentifier", 
 		"specificProblem", 
@@ -32,7 +32,7 @@ func (db *PGConnection) ActiveAlertNGSA(c context.Context, sever int,
 
 func (db *PGConnection) ClearAlertNGSA(c context.Context, name string) error {
 	t := time.Now()
-	q := `UPDATE pipeliner.alarm_for_ngsa SET
+	q := `UPDATE pipeliner.ngsa_alert SET
 	state = 'CLEAR', cleartime = $1
 	WHERE "notificationIdentifier" = $2
 `
