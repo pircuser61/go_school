@@ -818,7 +818,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {
-	canDelete, err := ae.DB.PipelineRemovable(ctx, p.VersionID)
+	canDelete, err := ae.DB.PipelineRemovable(ctx, p.ID)
 	if err != nil {
 		e := PipelineIsNotDraft
 		ae.Logger.Error(e.errorMessage(err))
