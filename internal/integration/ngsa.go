@@ -68,6 +68,20 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return ns.DebugRun(ctx, runCtx)
 }
 
+func waitStatus(monChan <-chan bool) {
+	ok := <-monChan
+	if ok {
+		metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
+	} else {
+		metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
+	}
+
+	errPush := metrics.Pusher.Add()
+	if errPush != nil {
+		fmt.Printf("can't push: %s\n", errPush.Error())
+	}
+}
+
 //nolint:gocyclo //need bigger cyclomatic
 func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
@@ -75,21 +89,7 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	monChan := make(chan bool)
 
-	go func() {
-		ok := <-monChan
-		if ok {
-			metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
-		} else {
-			metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
-		}
-
-		close(monChan)
-
-		errPush := metrics.Pusher.Add()
-		if errPush != nil {
-			fmt.Printf("can't push: %s\n", errPush.Error())
-		}
-	}()
+	go waitStatus(monChan)
 
 	runCtx.AddStep(ns.Name)
 
