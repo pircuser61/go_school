@@ -9,9 +9,10 @@ import (
 	"path"
 	"time"
 
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-	"go.opencensus.io/trace"
 )
 
 type RemedySendCreateProblem struct {
@@ -148,6 +149,8 @@ func (rs RemedySendCreateProblem) DebugRun(ctx context.Context, runCtx *store.Va
 	}
 
 	defer resp.Body.Close()
+
+	ok = true
 
 	return err
 }
