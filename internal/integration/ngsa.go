@@ -85,7 +85,7 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 		close(monChan)
 
-		errPush := metrics.Pusher.Push()
+		errPush := metrics.Pusher.Add()
 		if errPush != nil {
 			fmt.Printf("can't push: %s\n", errPush.Error())
 		}
