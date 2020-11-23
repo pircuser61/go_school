@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"path"
 	"time"
 
 	"go.opencensus.io/trace"
@@ -162,7 +161,7 @@ func (rs RemedySendUpdateMI) DebugRun(ctx context.Context, runCtx *store.Variabl
 		u.Scheme = httpScheme
 	}
 
-	u.Path = path.Join(rs.Remedy, "/api/remedy/incident/update")
+	u.Path = "/api/remedy/incident/update"
 
 	gatereq, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), bytes.NewBuffer(b))
 	if err != nil {
