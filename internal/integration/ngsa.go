@@ -68,25 +68,28 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return ns.DebugRun(ctx, runCtx)
 }
 
+func waitStatus(monChan <-chan bool) {
+	ok := <-monChan
+	if ok {
+		metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
+	} else {
+		metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
+	}
+
+	errPush := metrics.Pusher.Add()
+	if errPush != nil {
+		fmt.Printf("can't push: %s\n", errPush.Error())
+	}
+}
+
 //nolint:gocyclo //need bigger cyclomatic
 func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
 
-	ok := false
+	monChan := make(chan bool)
 
-	defer func() {
-		if ok {
-			metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
-		} else {
-			metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
-		}
-
-		errPush := metrics.Pusher.Add()
-		if errPush != nil {
-			fmt.Printf("can't push: %s\n", errPush.Error())
-		}
-	}()
+	go waitStatus(monChan)
 
 	runCtx.AddStep(ns.Name)
 
@@ -104,6 +107,7 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	b, err := json.Marshal(vals)
 	if err != nil {
+		monChan <- false
 		return err
 	}
 
@@ -111,14 +115,17 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	err = json.Unmarshal(b, &m)
 	if err != nil {
+		monChan <- false
 		return err
 	}
 
 	if m.State != active && m.State != clear {
+		monChan <- false
 		return errors.New("unknown status")
 	}
 
 	if m.NotificationIdentifier == "" {
+		monChan <- false
 		return errors.New("notification id not found")
 	}
 
@@ -126,19 +133,27 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 		go func() {
 			time.Sleep(time.Duration(m.TimeOut) * time.Minute)
 
+			var errActive error
+
 			if m.State == active {
-				err = ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
+				errActive = ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
 					m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
 					m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
 					m.ManagedObjectClass)
-				if err != nil {
+				if errActive != nil {
 					runCtx.AddError(err)
 				}
 			}
 
-			err = ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
-			if err != nil {
+			errClear := ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
+			if errClear != nil {
 				runCtx.AddError(err)
+			}
+
+			if errClear != nil || errActive != nil {
+				monChan <- false
+			} else {
+				monChan <- true
 			}
 		}()
 
@@ -150,17 +165,15 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 			m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
 			m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
 			m.ManagedObjectClass)
-		if errNGSA == nil {
-			ok = true
-		}
 
-		return err
+		monChan <- errNGSA == nil
+
+		return errNGSA
 	}
 
 	err = ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
-	if err == nil {
-		ok = true
-	}
+
+	monChan <- err == nil
 
 	return err
 }
