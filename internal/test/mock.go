@@ -1060,3 +1060,7 @@ func (m *MockDB) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 func (m *MockDB) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error) {
 	return false, errNotImplemented
 }
+
+func (m *MockDB) DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error) {
+	return false, errNotImplemented
+}

@@ -423,6 +423,35 @@ func (db *PGConnection) PipelineRemovable(c context.Context, id uuid.UUID) (bool
 	return false, nil
 }
 
+func (db *PGConnection) DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error) {
+	c, span := trace.StartSpan(c, "pg_draft_pipeline_creatable")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return false, err
+	}
+
+	defer conn.Release()
+
+	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE pipeline_id =$1 AND author = $2 AND (status = $3 OR status = $4)`
+
+	row := conn.QueryRow(c, q, id, author, StatusDraft, StatusOnApprove)
+
+	count := 0
+
+	err = row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	if count == 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (db *PGConnection) CreatePipeline(c context.Context,
 	p *entity.EriusScenario, author string, pipelineData []byte) error {
 	_, span := trace.StartSpan(c, "pg_create_pipeline")
