@@ -134,7 +134,7 @@ var errorDescription = map[Err]string{
 	TagParseError:           "Не удалось разбрать информацию о теге",
 	TagDetachError:          "Не удалось открепить тег от сценария",
 	ModuleFindError:         "Не удалось найти функцию",
-	PipelineHasDraft:        "Черновик данного сценария создан в разделе Мои сценарии",
+	PipelineHasDraft:        "Pipeline already has a draft",
 }
 
 var errorStatus = map[Err]int{
