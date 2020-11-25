@@ -428,23 +428,21 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		ae.Logger.WithError(err).Error("user failed")
 	}
 	//nolint:govet //it doesn't shadow
-	if p.Status == db.StatusDraft {
-		canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, user.UserName())
-		if err != nil {
-			e := UnknownError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+	canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, user.UserName())
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-			return
-		}
+		return
+	}
 
-		if !canCreate {
-			e := PipelineHasDraft
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+	if !canCreate {
+		e := PipelineHasDraft
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-			return
-		}
+		return
 	}
 
 	err = ae.DB.CreateVersion(ctx, &p, user.UserName(), b)
