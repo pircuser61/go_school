@@ -25,7 +25,8 @@ require (
 	gitlab.services.mts.ru/abp/myosotis v0.3.0
 	gitlab.services.mts.ru/erius/admin v0.0.31
 	gitlab.services.mts.ru/erius/monitoring v0.1.0
-	go.opencensus.io v0.22.4
+	gitlab.services.mts.ru/erius/scheduler_client v0.0.1
+	go.opencensus.io v0.22.5
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	mvdan.cc/gofumpt v0.0.0-20201027171050-85d5401eb0f6 // indirect
