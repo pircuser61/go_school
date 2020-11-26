@@ -257,9 +257,11 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 	}
 
 	block := script.FunctionModel{}
+
 	for i := range eriusFunctions {
 		if eriusFunctions[i].Title == name {
 			block = eriusFunctions[i]
+
 			break
 		}
 	}

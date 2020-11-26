@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"path"
 	"time"
+
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-	"go.opencensus.io/trace"
 )
 
 type RemedySendUpdateWork struct {
@@ -116,7 +116,7 @@ func (rs RemedySendUpdateWork) DebugRun(ctx context.Context, runCtx *store.Varia
 		u.Scheme = httpScheme
 	}
 
-	u.Path = path.Join(rs.Remedy, "/api/remedy/work/update")
+	u.Path = "/api/remedy/work/update"
 
 	gatereq, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), bytes.NewBuffer(b))
 	if err != nil {
@@ -136,6 +136,8 @@ func (rs RemedySendUpdateWork) DebugRun(ctx context.Context, runCtx *store.Varia
 	}
 
 	defer resp.Body.Close()
+
+	ok = true
 
 	return err
 }

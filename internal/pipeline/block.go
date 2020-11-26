@@ -71,7 +71,11 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 	}
 
 	// fixme extract "X-Request-Id" to variable
-	req.Header.Set("X-Request-Id", ctx.Value("X-Request-Id").(string))
+
+	if xReqID, ok := ctx.Value("X-Request-Id").(string); ok {
+		req.Header.Set("X-Request-Id", xReqID)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	const timeoutMinutes = 15
@@ -137,7 +141,9 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 	if err != nil {
 		return nil, err
 	}
+
 	fmt.Println(string(b))
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
 	if err != nil {
 		return nil, err
@@ -163,13 +169,17 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 	if err != nil {
 		return nil, err
 	}
+
 	fmt.Println(string(body))
+
 	if len(body) != 0 {
 		result := make(map[string]interface{})
 		err = json.Unmarshal(body, &result)
+
 		if err != nil {
 			return string(body), nil
 		}
+
 		return result, nil
 	}
 

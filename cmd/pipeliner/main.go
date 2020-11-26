@@ -25,6 +25,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
+	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
 	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
@@ -77,14 +78,22 @@ func main() {
 		return
 	}
 
+	schedulerClient, err := scheduler.NewClient(cfg.SchedulerBaseURL.URL, httpClient)
+	if err != nil {
+		log.WithError(err).Error("can't create scheduler client")
+
+		return
+	}
+
 	pipeliner := handlers.APIEnv{
-		DB:            &dbConn,
-		Logger:        log,
-		ScriptManager: cfg.ScriptManager,
-		Remedy:        cfg.Remedy,
-		FaaS:          cfg.FaaS,
-		AuthClient:    authClient,
-		HTTPClient:    httpClient,
+		DB:              &dbConn,
+		Logger:          log,
+		ScriptManager:   cfg.ScriptManager,
+		Remedy:          cfg.Remedy,
+		FaaS:            cfg.FaaS,
+		AuthClient:      authClient,
+		SchedulerClient: schedulerClient,
+		HTTPClient:      httpClient,
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{

@@ -1033,7 +1033,7 @@ func (m *MockDB) EditTag(c context.Context, e *entity.EriusTagInfo) error {
 	return errNotImplemented
 }
 
-func (m *MockDB) RemoveTag(c context.Context, e *entity.EriusTagInfo) error {
+func (m *MockDB) RemoveTag(c context.Context, id uuid.UUID) error {
 	return errNotImplemented
 }
 
@@ -1055,4 +1055,12 @@ func (m *MockDB) DetachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInf
 
 func (m *MockDB) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 	return errNotImplemented
+}
+
+func (m *MockDB) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error) {
+	return false, errNotImplemented
+}
+
+func (m *MockDB) DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error) {
+	return false, errNotImplemented
 }

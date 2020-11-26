@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 )
 
@@ -15,24 +16,25 @@ type EriusScenarioList struct {
 }
 
 type EriusScenarioInfo struct {
-	ID            uuid.UUID   `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	VersionID     uuid.UUID   `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	CreatedAt     time.Time   `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	ApprovedAt    time.Time   `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	Author        string      `json:"author" example:"testAuthor"`
-	Approver      string      `json:"approver" example:"testApprover"`
-	Name          string      `json:"name" example:"ScenarioName"`
-	Tags          []time.Time `json:"tags"`
-	LastRun       *time.Time  `json:"last_run" example:"2020-07-16T17:10:25.112704+03:00"`
-	LastRunStatus *string     `json:"last_run_status"`
-	Status        int         `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+	ID            uuid.UUID      `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	VersionID     uuid.UUID      `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	CreatedAt     time.Time      `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt    time.Time      `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author        string         `json:"author" example:"testAuthor"`
+	Approver      string         `json:"approver" example:"testApprover"`
+	Name          string         `json:"name" example:"ScenarioName"`
+	Tags          []EriusTagInfo `json:"tags"`
+	LastRun       *time.Time     `json:"last_run" example:"2020-07-16T17:10:25.112704+03:00"`
+	LastRunStatus *string        `json:"last_run_status"`
+	Status        int            `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 }
 
 type EriusTagInfo struct {
-	ID     uuid.UUID `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	Name   string    `json:"name"`
-	Status int       `json:"status" enums:"1,3"` // 1 - Created, 3 - Deleted
-	Color  int       `json:"color"  enums:"1,2,3,4,5,6,7,8"`
+	ID       uuid.UUID `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	Name     string    `json:"name"`
+	Status   int       `json:"status" enums:"1,3"` // 1 - Created, 3 - Deleted
+	Color    string    `json:"color"`
+	IsMarker bool      `json:"isMarker"`
 }
 
 type EriusScenario struct {

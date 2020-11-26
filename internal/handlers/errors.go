@@ -49,12 +49,14 @@ const (
 	TagEditError
 	TagAttachError
 	TagDeleteError
-	TagHasZeroLengthError
 	TagParseError
 	TagDetachError
 	ModuleFindError
+	PipelineIsNotDraft
+	PipelineHasDraft
 )
 
+//nolint:dupl //its not duplicate
 var errorText = map[Err]string{
 	UnknownError:            "unknown error",
 	GetAllApprovedError:     "can't get approved versions",
@@ -81,10 +83,21 @@ var errorText = map[Err]string{
 	AuthServiceError:        "auth service failed",
 	GetTasksError:           "can't find tasks",
 	GetLogError:             "can't get log",
+	GetAllTagsError:         "can't get all tags",
+	GetPipelineTagsError:    "can't get pipeline tags",
+	GetTagError:             "can't get tag",
+	TagCreateError:          "can't create tag",
+	TagEditError:            "can't edit tag",
+	TagAttachError:          "can't attach tag",
+	TagDeleteError:          "can't delete tag",
+	TagParseError:           "can't pars tag data",
+	TagDetachError:          "can't detaсh tags from pipeline",
 	ModuleFindError:         "can't find module",
+	PipelineHasDraft:        "pipeline already has a draft",
 }
 
 // JOKE.
+//nolint:dupl //its not duplicate
 var errorDescription = map[Err]string{
 	UnknownError:            "Сохраняйте спокойствие, что-то произошло непонятное",
 	GetAllApprovedError:     "Невозможно получить список согласованных сценариев",
@@ -111,7 +124,17 @@ var errorDescription = map[Err]string{
 	AuthServiceError:        "Ошибка сервиса авторизации",
 	GetTasksError:           "Не удалось найти запуски сценария",
 	GetLogError:             "Не удалось получить лог",
+	GetAllTagsError:         "Невозможно получить список тегов",
+	GetPipelineTagsError:    "Невозможно получить список тегов сценария",
+	GetTagError:             "Не удалось получить информацию о теге",
+	TagCreateError:          "Не удалось создать информацию о теге",
+	TagEditError:            "Не удалось изменить информацию о теге",
+	TagAttachError:          "Не удалось прикрепить тег к сценарию",
+	TagDeleteError:          "Не удалось удалить информацию о теге",
+	TagParseError:           "Не удалось разбрать информацию о теге",
+	TagDetachError:          "Не удалось открепить тег от сценария",
 	ModuleFindError:         "Не удалось найти функцию",
+	PipelineHasDraft:        "Черновик данного сценария создан в разделе \"Мои сценарии\"",
 }
 
 var errorStatus = map[Err]int{

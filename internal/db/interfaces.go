@@ -42,10 +42,12 @@ type Database interface {
 	CreateTag(c context.Context, e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error)
 	GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error)
 	EditTag(c context.Context, e *entity.EriusTagInfo) error
-	RemoveTag(c context.Context, e *entity.EriusTagInfo) error
+	RemoveTag(c context.Context, id uuid.UUID) error
 	GetAllTags(c context.Context) ([]entity.EriusTagInfo, error)
 	GetPipelineTag(c context.Context, id uuid.UUID) ([]entity.EriusTagInfo, error)
 	AttachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
 	DetachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
 	RemovePipelineTags(c context.Context, id uuid.UUID) error
+	PipelineRemovable(c context.Context, id uuid.UUID) (bool, error)
+	DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error)
 }
