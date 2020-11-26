@@ -148,7 +148,7 @@ func (ae *APIEnv) onApprovedVersions(ctx context.Context) ([]entity.EriusScenari
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllOnApproveError}
 	}
 
-	return filterVersionsByID(onApprove, grants.All, grants.Items), nil
+	return onApprove, nil
 }
 
 // approvedVersions выбирает последние рабочие версии сценариев,
@@ -178,11 +178,12 @@ func (ae *APIEnv) approvedVersions(ctx context.Context) ([]entity.EriusScenarioI
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllApprovedError}
 	}
 
-	return filterVersionsByID(approved, grants.All, grants.Items), nil
+	return filterPipelinesByID(approved, grants.All, grants.Items), nil
 }
 
+// nolint:dupl // original code
 func (ae *APIEnv) tags(ctx context.Context) ([]entity.EriusTagInfo, *PipelinerError) {
-	ctx, s := trace.StartSpan(ctx, "list_approved_versions")
+	ctx, s := trace.StartSpan(ctx, "list_tags")
 	defer s.End()
 
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Read)
@@ -1378,6 +1379,26 @@ func filterVersionsByID(scenarios []entity.EriusScenarioInfo, isAll bool, allowe
 
 	for i := range scenarios {
 		if _, ok := allowedKeys[scenarios[i].VersionID.String()]; ok {
+			res = append(res, scenarios[i])
+		}
+	}
+
+	return res
+}
+
+func filterPipelinesByID(scenarios []entity.EriusScenarioInfo, isAll bool, allowedKeys map[string]struct{}) []entity.EriusScenarioInfo {
+	if isAll {
+		return scenarios
+	}
+
+	if len(allowedKeys) == 0 {
+		return []entity.EriusScenarioInfo{}
+	}
+
+	res := make([]entity.EriusScenarioInfo, 0)
+
+	for i := range scenarios {
+		if _, ok := allowedKeys[scenarios[i].ID.String()]; ok {
 			res = append(res, scenarios[i])
 		}
 	}
