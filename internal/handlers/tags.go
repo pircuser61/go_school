@@ -95,12 +95,6 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if etag.Name == "" {
-		e := TagHasZeroLengthError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-	}
-
 	etag.ID = uuid.New()
 
 	user, err := auth.UserFromContext(ctx)
@@ -131,6 +125,28 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_tag")
 	defer s.End()
 
+	b, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	etag := entity.EriusTagInfo{}
+
+	err = json.Unmarshal(b, &etag)
+	if err != nil {
+		e := TagParseError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Update)
 	if err != nil {
 		e := AuthServiceError
@@ -148,22 +164,10 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	b, err := ioutil.ReadAll(req.Body)
-	defer req.Body.Close()
+	id := etag.ID.String()
 
-	if err != nil {
-		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	etag := entity.EriusTagInfo{}
-
-	err = json.Unmarshal(b, &etag)
-	if err != nil {
-		e := TagParseError
+	if !(grants.Allow && grants.Contains(id)) {
+		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -202,6 +206,17 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_tag")
 	defer s.End()
 
+	tagID := chi.URLParam(req, "ID")
+
+	tID, err := uuid.Parse(tagID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Delete)
 	if err != nil {
 		e := AuthServiceError
@@ -219,31 +234,17 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	tagID := chi.URLParam(req, "ID")
+	id := tID.String()
 
-	tID, err := uuid.Parse(tagID)
-	if err != nil {
-		e := UUIDParsingError
+	if !(grants.Allow && grants.Contains(id)) {
+		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
 	}
 
-	etag := entity.EriusTagInfo{}
-
-	etag.ID = tID
-
-	_, err = ae.DB.GetTag(ctx, &etag)
-	if err != nil {
-		e := GetTagError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	err = ae.DB.RemoveTag(ctx, &etag)
+	err = ae.DB.RemoveTag(ctx, tID)
 	if err != nil {
 		e := TagDeleteError
 		ae.Logger.Error(e.errorMessage(err))

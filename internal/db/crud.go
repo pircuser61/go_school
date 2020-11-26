@@ -50,6 +50,10 @@ const (
 	RunStatusRunning  int = 1
 	RunStatusFinished int = 2
 	RunStatusError    int = 3
+
+	qCheckTagIsAttached string = `SELECT COUNT(pipeline_id)
+	FROM pipeliner.pipeline_tags    
+	WHERE pipeline_id = $1 and tag_id = $2`
 )
 
 var (
@@ -168,7 +172,19 @@ func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]en
 		return nil, err
 	}
 
-	return parseRowsVersionList(c, rows)
+	res, err := parseRowsVersionList(c, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range res {
+		tags, err := db.GetPipelineTag(c, res[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		res[i].Tags = tags
+	}
+	return res, nil
 }
 
 func (db *PGConnection) GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
@@ -285,7 +301,7 @@ func (db *PGConnection) GetPipelineTag(c context.Context, pid uuid.UUID) ([]enti
 
 	defer conn.Release()
 
-	q := `SELECT t.id, t.name, t.status, t.color
+	q := `SELECT t.id, t.name, t.status, t.color, t.is_marker
 	FROM pipeliner.tags t
 	LEFT OUTER JOIN pipeliner.pipeline_tags pt ON pt.tag_id = t.id
     WHERE 
@@ -305,7 +321,7 @@ func (db *PGConnection) GetPipelineTag(c context.Context, pid uuid.UUID) ([]enti
 	for rows.Next() {
 		etag := entity.EriusTagInfo{}
 
-		err = rows.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color)
+		err = rows.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color, &etag.IsMarker)
 		if err != nil {
 			return nil, err
 		}
@@ -390,6 +406,64 @@ func (db *PGConnection) VersionEditable(c context.Context, versionID uuid.UUID) 
 	return false, nil
 }
 
+func (db *PGConnection) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error) {
+	c, span := trace.StartSpan(c, "pg_pipeline_removable")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return false, err
+	}
+
+	defer conn.Release()
+
+	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE pipeline_id =$1`
+
+	row := conn.QueryRow(c, q, id)
+
+	count := 0
+
+	err = row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	if count == 1 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (db *PGConnection) DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error) {
+	c, span := trace.StartSpan(c, "pg_draft_pipeline_creatable")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return false, err
+	}
+
+	defer conn.Release()
+
+	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE pipeline_id =$1 AND author = $2 AND (status = $3 OR status = $4)`
+
+	row := conn.QueryRow(c, q, id, author, StatusDraft, StatusOnApprove)
+
+	count := 0
+
+	err = row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	if count == 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (db *PGConnection) CreatePipeline(c context.Context,
 	p *entity.EriusScenario, author string, pipelineData []byte) error {
 	_, span := trace.StartSpan(c, "pg_create_pipeline")
@@ -462,13 +536,17 @@ func (db *PGConnection) CreateTag(c context.Context,
 
 	defer conn.Release()
 
+	if e.Name == "" {
+		return nil, err
+	}
+
 	qCheckTagExisted := `
-	SELECT t.id, t.name, t.status, t.color
+	SELECT t.id, t.name, t.status, t.color, t.is_marker
 	FROM pipeliner.tags t
-	WHERE t.name = $1 AND t.status <> $2
+	WHERE lower(t.name) = lower($1) AND t.status <> $2 and t.is_marker <> $3
 	LIMIT 1;`
 
-	rows, err := conn.Query(c, qCheckTagExisted, e.Name, StatusDeleted)
+	rows, err := conn.Query(c, qCheckTagExisted, e.Name, StatusDeleted, e.IsMarker)
 	if err != nil {
 		return nil, err
 	}
@@ -476,7 +554,7 @@ func (db *PGConnection) CreateTag(c context.Context,
 	defer rows.Close()
 
 	if rows.Next() {
-		err = rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color)
+		err = rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color, &e.IsMarker)
 		if err != nil {
 			return nil, err
 		}
@@ -485,15 +563,20 @@ func (db *PGConnection) CreateTag(c context.Context,
 	}
 
 	qNewTag := `INSERT INTO pipeliner.tags(
-	id, name, status, author, color)
-	VALUES ($1, $2, $3, $4, $5);`
+	id, name, status, author, color, is_marker)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING id, name, status, color, is_marker;`
 
-	_, err = conn.Exec(c, qNewTag, e.ID, e.Name, StatusDraft, author, e.Color)
+	row := conn.QueryRow(c, qNewTag, e.ID, e.Name, StatusDraft, author, e.Color, e.IsMarker)
+
+	etag := &entity.EriusTagInfo{}
+
+	err = row.Scan(&etag.ID, &etag.Name, &etag.Status, &etag.Color, &etag.IsMarker)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, err
+	return etag, err
 }
 
 func (db *PGConnection) DeleteVersion(c context.Context, versionID uuid.UUID) error {
@@ -657,7 +740,7 @@ func (db *PGConnection) GetTag(c context.Context, e *entity.EriusTagInfo) (*enti
 	defer conn.Release()
 
 	qGetTag := `
-	SELECT t.id, t.name, t.status, t.color
+	SELECT t.id, t.name, t.status, t.color, t.is_marker
 	FROM pipeliner.tags t
 	WHERE t.id = $1 AND t.status <> $2
 	LIMIT 1;`
@@ -670,7 +753,7 @@ func (db *PGConnection) GetTag(c context.Context, e *entity.EriusTagInfo) (*enti
 	defer rows.Close()
 
 	if rows.Next() {
-		err := rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color)
+		err := rows.Scan(&e.ID, &e.Name, &e.Status, &e.Color, &e.IsMarker)
 		if err != nil {
 			return nil, err
 		}
@@ -697,31 +780,24 @@ func (db *PGConnection) EditTag(c context.Context, e *entity.EriusTagInfo) error
 	FROM pipeliner.tags 
 	WHERE id = $1 AND status = $2`
 
-	rows, err := conn.Query(c, qCheckTagIsCreated, e.ID, StatusDraft)
+	row := conn.QueryRow(c, qCheckTagIsCreated, e.ID, StatusDraft)
+
+	count := 0
+
+	err = row.Scan(&count)
 	if err != nil {
 		return err
 	}
 
-	defer rows.Close()
-
-	for rows.Next() {
-		count := 0
-		err = rows.Scan(&count)
-
-		if err != nil {
-			return err
-		}
-
-		if count == 0 {
-			return fmt.Errorf("%w: with id: %v", errCantFindTag, e.ID)
-		}
+	if count == 0 {
+		return fmt.Errorf("%w: with id: %v", errCantFindTag, e.ID)
 	}
 
-	qEditTag := `UPDATE pipeliner.tag_status 
-	SET name = $1, color = $2
-	WHERE id = $3;`
+	qEditTag := `UPDATE pipeliner.tags
+	SET color = $1
+	WHERE id = $2;`
 
-	_, err = db.Pool.Exec(c, qEditTag, e.Name, e.Color, e.ID)
+	_, err = conn.Exec(c, qEditTag, e.Color, e.ID)
 	if err != nil {
 		return err
 	}
@@ -741,29 +817,17 @@ func (db *PGConnection) AttachTag(c context.Context, pid uuid.UUID, e *entity.Er
 
 	defer conn.Release()
 
-	qCheckTagNotAttached := `
-	SELECT count(pipeline_id)
-	FROM pipeline.pipeline_tags
-	WHERE pipeline_id = $1 and tag_id = $2`
+	row := conn.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
 
-	rows, err := conn.Query(c, qCheckTagNotAttached, pid, e.ID)
+	count := 0
+
+	err = row.Scan(&count)
 	if err != nil {
 		return err
 	}
 
-	defer rows.Close()
-
-	for rows.Next() {
-		count := 0
-		err = rows.Scan(&count)
-
-		if err != nil {
-			return err
-		}
-
-		if count != 0 {
-			return nil
-		}
+	if count != 0 {
+		return nil
 	}
 
 	qAttachTag := `INSERT INTO pipeliner.pipeline_tags (
@@ -778,7 +842,7 @@ func (db *PGConnection) AttachTag(c context.Context, pid uuid.UUID, e *entity.Er
 	return nil
 }
 
-func (db *PGConnection) RemoveTag(c context.Context, e *entity.EriusTagInfo) error {
+func (db *PGConnection) RemoveTag(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_remove_tag")
 	defer span.End()
 
@@ -793,7 +857,7 @@ func (db *PGConnection) RemoveTag(c context.Context, e *entity.EriusTagInfo) err
 
 	qName := `SELECT name FROM pipeliner.tags WHERE id = $1`
 
-	row := conn.QueryRow(c, qName, e.ID)
+	row := conn.QueryRow(c, qName, id)
 
 	var n string
 
@@ -804,17 +868,36 @@ func (db *PGConnection) RemoveTag(c context.Context, e *entity.EriusTagInfo) err
 
 	n = n + "_deleted_at_" + t.String()
 
-	qSetTagDeleted := `UPDATE pipeliner.tags SET status=$1, name=$2  WHERE id = $3;`
+	qSetTagDeleted := `UPDATE pipeliner.tags
+	SET status=$1, name=$2  
+	WHERE id = $3;`
 
-	_, err = conn.Exec(c, qSetTagDeleted, StatusDeleted, n, e.ID)
+	_, err = conn.Exec(c, qSetTagDeleted, StatusDeleted, n, id)
 	if err != nil {
 		return err
 	}
 
-	qRemoveAttachedTags := `DELETE FROM pipeline.pipeline_tags
+	qCheckTagAttached := `SELECT COUNT(pipeline_id)
+	FROM pipeliner.pipeline_tags
 	WHERE tag_id = $1`
 
-	_, err = conn.Exec(c, qRemoveAttachedTags, e.ID)
+	row = conn.QueryRow(c, qCheckTagAttached, id)
+
+	count := 0
+
+	err = row.Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return nil
+	}
+
+	qRemoveAttachedTags := `DELETE FROM pipeliner.pipeline_tags
+	WHERE tag_id = $1`
+
+	_, err = conn.Exec(c, qRemoveAttachedTags, id)
 	if err != nil {
 		return err
 	}
@@ -834,32 +917,22 @@ func (db *PGConnection) DetachTag(c context.Context, pid uuid.UUID, e *entity.Er
 
 	defer conn.Release()
 
-	qCheckTagAttached := `SELECT count(pipeline_id)
-	FROM pipeline.pipeline_tags
-	WHERE pipeline_id = $1 and tag_id = $2`
+	row := conn.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
 
-	rows, err := conn.Query(c, qCheckTagAttached, pid, e.ID)
+	count := 0
+
+	err = row.Scan(&count)
 	if err != nil {
 		return err
 	}
 
-	defer rows.Close()
-
-	for rows.Next() {
-		count := 0
-		err = rows.Scan(&count)
-
-		if err != nil {
-			return err
-		}
-
-		if count == 0 {
-			return nil
-		}
+	if count == 0 {
+		return nil
 	}
 
-	qDetachTag := `DELETE FROM pipeline.pipeline_tags
-	WHERE pipeline_id = $1 and tag_id = $2`
+	qDetachTag := `DELETE FROM pipeliner.pipeline_tags
+	WHERE pipeline_id = $1 
+	AND tag_id = $2`
 
 	_, err = conn.Exec(c, qDetachTag, pid, e.ID)
 	if err != nil {
@@ -880,7 +953,25 @@ func (db *PGConnection) RemovePipelineTags(c context.Context, id uuid.UUID) erro
 
 	defer conn.Release()
 
-	qRemovePipelineTags := `DELETE FROM pipeline.pipeline_tags
+	qCheckTagIsAttached := `
+	SELECT COUNT(pipeline_id)
+	FROM pipeliner.pipeline_tags
+	WHERE pipeline_id = $1`
+
+	row := conn.QueryRow(c, qCheckTagIsAttached, id)
+
+	count := 0
+
+	err = row.Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return nil
+	}
+
+	qRemovePipelineTags := `DELETE FROM pipeliner.pipeline_tags
 	WHERE pipeline_id = $1`
 
 	_, err = conn.Exec(c, qRemovePipelineTags, id)

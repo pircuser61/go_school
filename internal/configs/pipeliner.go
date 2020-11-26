@@ -27,6 +27,7 @@ type Pipeliner struct {
 	Swag             SwaggerGeneral     `yaml:"swagger"`
 	Monitoring       monconf.Monitoring `yaml:"monitoring"`
 	AuthBaseURL      *URL               `yaml:"auth"`
+	SchedulerBaseURL *URL               `yaml:"scheduler"`
 	Push             PushConfig         `yaml:"push"`
 	HTTPClientConfig *HTTPClient        `yaml:"http_client_config"`
 }

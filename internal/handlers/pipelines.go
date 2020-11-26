@@ -148,7 +148,7 @@ func (ae *APIEnv) onApprovedVersions(ctx context.Context) ([]entity.EriusScenari
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllOnApproveError}
 	}
 
-	return filterVersionsByID(onApprove, grants.All, grants.Items), nil
+	return onApprove, nil
 }
 
 // approvedVersions выбирает последние рабочие версии сценариев,
@@ -178,11 +178,12 @@ func (ae *APIEnv) approvedVersions(ctx context.Context) ([]entity.EriusScenarioI
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllApprovedError}
 	}
 
-	return filterVersionsByID(approved, grants.All, grants.Items), nil
+	return filterPipelinesByID(approved, grants.All, grants.Items), nil
 }
 
+// nolint:dupl // original code
 func (ae *APIEnv) tags(ctx context.Context) ([]entity.EriusTagInfo, *PipelinerError) {
-	ctx, s := trace.StartSpan(ctx, "list_approved_versions")
+	ctx, s := trace.StartSpan(ctx, "list_tags")
 	defer s.End()
 
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Read)
@@ -426,6 +427,23 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
 		ae.Logger.WithError(err).Error("user failed")
+	}
+	//nolint:govet //it doesn't shadow
+	canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, user.UserName())
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !canCreate {
+		e := PipelineHasDraft
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
 
 	err = ae.DB.CreateVersion(ctx, &p, user.UserName(), b)
@@ -775,6 +793,17 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if p.Status == db.StatusDraft {
+		err = ae.DeleteDraftPipeline(ctx, w, p)
+		if err != nil {
+			e := PipelineDeleteError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+
 	err = ae.DB.DeleteVersion(ctx, versionID)
 	if err != nil {
 		e := PipelineDeleteError
@@ -804,6 +833,39 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+}
+
+func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {
+	canDelete, err := ae.DB.PipelineRemovable(ctx, p.ID)
+	if err != nil {
+		e := PipelineIsNotDraft
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return err
+	}
+
+	if canDelete {
+		err = ae.DB.RemovePipelineTags(ctx, p.ID)
+		if err != nil {
+			e := TagDetachError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return err
+		}
+
+		err = ae.DB.DeletePipeline(ctx, p.ID)
+		if err != nil {
+			e := PipelineDeleteError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return err
+		}
+	}
+
+	return nil
 }
 
 // @Summary Delete Pipeline
@@ -1324,6 +1386,26 @@ func filterVersionsByID(scenarios []entity.EriusScenarioInfo, isAll bool, allowe
 	return res
 }
 
+func filterPipelinesByID(scenarios []entity.EriusScenarioInfo, isAll bool, allowedKeys map[string]struct{}) []entity.EriusScenarioInfo {
+	if isAll {
+		return scenarios
+	}
+
+	if len(allowedKeys) == 0 {
+		return []entity.EriusScenarioInfo{}
+	}
+
+	res := make([]entity.EriusScenarioInfo, 0)
+
+	for i := range scenarios {
+		if _, ok := allowedKeys[scenarios[i].ID.String()]; ok {
+			res = append(res, scenarios[i])
+		}
+	}
+
+	return res
+}
+
 func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tag")
 	defer s.End()
@@ -1377,6 +1459,28 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "attach_tag")
 	defer s.End()
 
+	pipelineID := chi.URLParam(req, "pipelineID")
+
+	pID, err := uuid.Parse(pipelineID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tagID := chi.URLParam(req, "ID")
+
+	tID, err := uuid.Parse(tagID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
 	if err != nil {
 		e := AuthServiceError
@@ -1394,22 +1498,10 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	pipelineID := chi.URLParam(req, "pipelineID")
+	id := pID.String()
 
-	pID, err := uuid.Parse(pipelineID)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	tagID := chi.URLParam(req, "ID")
-
-	tID, err := uuid.Parse(tagID)
-	if err != nil {
-		e := UUIDParsingError
+	if !(grants.Allow && grants.Contains(id)) {
+		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -1453,6 +1545,28 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_pipeline_tag")
 	defer s.End()
 
+	pipelineID := chi.URLParam(req, "pipelineID")
+
+	pID, err := uuid.Parse(pipelineID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tagID := chi.URLParam(req, "ID")
+
+	tID, err := uuid.Parse(tagID)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
 	if err != nil {
 		e := AuthServiceError
@@ -1470,22 +1584,10 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	pipelineID := chi.URLParam(req, "pipelineID")
+	id := pID.String()
 
-	pID, err := uuid.Parse(pipelineID)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	tagID := chi.URLParam(req, "ID")
-
-	tID, err := uuid.Parse(tagID)
-	if err != nil {
-		e := UUIDParsingError
+	if !(grants.Allow && grants.Contains(id)) {
+		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
