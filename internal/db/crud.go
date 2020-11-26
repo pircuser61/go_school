@@ -172,7 +172,19 @@ func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]en
 		return nil, err
 	}
 
-	return parseRowsVersionList(c, rows)
+	res, err := parseRowsVersionList(c, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range res {
+		tags, err := db.GetPipelineTag(c, res[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		res[i].Tags = tags
+	}
+	return res, nil
 }
 
 func (db *PGConnection) GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
