@@ -108,6 +108,7 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	b, err := json.Marshal(vals)
 	if err != nil {
 		monChan <- false
+
 		return err
 	}
 
@@ -116,16 +117,19 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	err = json.Unmarshal(b, &m)
 	if err != nil {
 		monChan <- false
+
 		return err
 	}
 
 	if m.State != active && m.State != clear {
 		monChan <- false
+
 		return errors.New("unknown status")
 	}
 
 	if m.NotificationIdentifier == "" {
 		monChan <- false
+
 		return errors.New("notification id not found")
 	}
 
