@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"go.opencensus.io/trace"
 
@@ -972,6 +973,13 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 
 	if withStopCtx := req.Context().Value("with_stop"); withStopCtx != nil {
 		withStop = true
+	}
+
+	keys := req.URL.Query()
+	if ws, ok := keys["with_stop"]; ok && !withStop {
+		if stop, err := strconv.ParseBool(ws[0]); err == nil {
+			withStop = stop
+		}
 	}
 
 	idParam := chi.URLParam(req, "pipelineID")
