@@ -51,6 +51,7 @@ type EriusScenario struct {
 	} `json:"pipeline"`
 	ApproveDate time.Time      `json:"approve_date"`
 	Tags        []EriusTagInfo `json:"tags"`
+	Comment     string         `json:"comment"`
 }
 
 type EriusFunctionList struct {
