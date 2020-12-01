@@ -1064,3 +1064,7 @@ func (m *MockDB) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 func (m *MockDB) DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error) {
 	return false, errNotImplemented
 }
+
+func (m *MockDB) DeleteAllVersions(c context.Context, id uuid.UUID) error {
+	return errNotImplemented
+}

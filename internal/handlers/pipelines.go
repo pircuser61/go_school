@@ -912,6 +912,15 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	err = ae.SchedulerClient.DeleteTasksByPipelineID(ctx, id)
+	if err != nil {
+		e := SchedulerClientFailed
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	err = ae.DB.RemovePipelineTags(ctx, id)
 	if err != nil {
 		e := TagDetachError
