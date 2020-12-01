@@ -182,8 +182,10 @@ func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]en
 		if err != nil {
 			return nil, err
 		}
+
 		res[i].Tags = tags
 	}
+
 	return res, nil
 }
 

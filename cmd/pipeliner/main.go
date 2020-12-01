@@ -193,9 +193,12 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner *handle
 		Route("/api/pipeliner/v1", func(r chi.Router) {
 			r.Use(auth.UserMiddleware(pipeliner.AuthClient))
 			r.Get("/pipelines/", pipeliner.ListPipelines)
-			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
 			r.Post("/pipelines/", pipeliner.CreatePipeline)
+			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
 			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
+
+			r.Get("/pipelines/{pipelineID}/scheduler-tasks", pipeliner.ListSchedulerTasks)
+
 			r.Put("/pipelines/{pipelineID}/tags/{ID}", pipeliner.AttachTag)
 			r.Get("/pipelines/{pipelineID}/tags/", pipeliner.GetPipelineTag)
 			r.Delete("/pipelines/{pipelineID}/tags/{ID}", pipeliner.DetachTag)

@@ -126,3 +126,7 @@ type Step struct {
 	Errors  []string               `json:"errors"`
 	Steps   []string               `json:"steps"`
 }
+
+type SchedulerTasksResponse struct {
+	Result bool `json:"result"`
+}
