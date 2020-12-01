@@ -596,6 +596,21 @@ func (db *PGConnection) DeleteVersion(c context.Context, versionID uuid.UUID) er
 	return nil
 }
 
+func (db *PGConnection) DeleteAllVersions(c context.Context, id uuid.UUID) error {
+	_, span := trace.StartSpan(c, "pg_delete_version")
+	defer span.End()
+
+	q := `UPDATE pipeliner.versions SET deleted_at=$1, status=$2 WHERE pipeline_id = $3`
+	t := time.Now()
+
+	_, err := db.Pool.Exec(c, q, t, StatusDeleted, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PGConnection) DeletePipeline(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_delete_pipeline")
 	defer span.End()
@@ -619,7 +634,7 @@ func (db *PGConnection) DeletePipeline(c context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	return nil
+	return db.DeleteAllVersions(c, id)
 }
 
 func (db *PGConnection) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
