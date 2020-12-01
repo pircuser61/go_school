@@ -115,6 +115,10 @@ definitions:
         - 4
         - 5
         type: integer
+      tags:
+        items:
+          $ref: '#/definitions/entity.EriusTagInfo'
+        type: array
       version_id:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
@@ -157,7 +161,7 @@ definitions:
         type: integer
       tags:
         items:
-          type: string
+          $ref: '#/definitions/entity.EriusTagInfo'
         type: array
       version_id:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
@@ -192,9 +196,19 @@ definitions:
       color:
         type: string
       id:
-        type: integer
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
+      isMarker:
+        type: boolean
       name:
         type: string
+      status:
+        description: 1 - Created, 3 - Deleted
+        enum:
+        - 1
+        - 3
+        type: integer
     type: object
   entity.EriusTask:
     properties:
@@ -232,6 +246,11 @@ definitions:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
         type: string
+    type: object
+  entity.SchedulerTasksResponse:
+    properties:
+      result:
+        type: boolean
     type: object
   entity.Step:
     properties:
@@ -400,6 +419,39 @@ paths:
       summary: Get list of modules
       tags:
       - modules
+  /modules/{moduleName}:
+    post:
+      description: Запустить блок
+      operationId: module-usage
+      parameters:
+      - description: module name
+        in: path
+        name: moduleName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.UsageResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Run Module By Name
+      tags:
+      - modules
   /modules/{moduleName}/usage:
     get:
       description: Сценарии, в которых используется блок
@@ -556,6 +608,41 @@ paths:
           schema:
             $ref: '#/definitions/handlers.httpError'
       summary: Delete Pipeline
+      tags:
+      - pipeline
+  /pipelines/{pipelineID}/scheduler-tasks:
+    post:
+      consumes:
+      - application/json
+      description: Наличие у сценария активных заданий в шедулере
+      operationId: pipeline-scheduler-tasks
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipelineID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.SchedulerTasksResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Active scheduler tasks
       tags:
       - pipeline
   /pipelines/pipeline/{pipelineID}:

@@ -54,6 +54,7 @@ const (
 	ModuleFindError
 	PipelineIsNotDraft
 	PipelineHasDraft
+	SchedulerClientFailed
 )
 
 //nolint:dupl //its not duplicate
@@ -94,6 +95,7 @@ var errorText = map[Err]string{
 	TagDetachError:          "can't detaсh tags from pipeline",
 	ModuleFindError:         "can't find module",
 	PipelineHasDraft:        "pipeline already has a draft",
+	SchedulerClientFailed:   "scheduler client failed",
 }
 
 // JOKE.
@@ -135,11 +137,13 @@ var errorDescription = map[Err]string{
 	TagDetachError:          "Не удалось открепить тег от сценария",
 	ModuleFindError:         "Не удалось найти функцию",
 	PipelineHasDraft:        "Черновик данного сценария создан в разделе \"Мои сценарии\"",
+	SchedulerClientFailed:   "Ошибка клиента планировщика",
 }
 
 var errorStatus = map[Err]int{
-	Teapot:      http.StatusTeapot,
-	UnauthError: http.StatusUnauthorized,
+	Teapot:           http.StatusTeapot,
+	UnauthError:      http.StatusUnauthorized,
+	UUIDParsingError: http.StatusBadRequest,
 }
 
 type httpError struct {

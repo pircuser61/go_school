@@ -175,6 +175,60 @@ var doc = `{
                 }
             }
         },
+        "/modules/{moduleName}": {
+            "post": {
+                "description": "Запустить блок",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "modules"
+                ],
+                "summary": "Run Module By Name",
+                "operationId": "module-usage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "module name",
+                        "name": "moduleName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.UsageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
         "/modules/{moduleName}/usage": {
             "get": {
                 "description": "Сценарии, в которых используется блок",
@@ -688,6 +742,63 @@ var doc = `{
                 }
             }
         },
+        "/pipelines/{pipelineID}/scheduler-tasks": {
+            "post": {
+                "description": "Наличие у сценария активных заданий в шедулере",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "Active scheduler tasks",
+                "operationId": "pipeline-scheduler-tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pipeline ID",
+                        "name": "pipelineID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.SchedulerTasksResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
         "/run/version/{versionID}": {
             "post": {
                 "description": "Запустить версию",
@@ -1121,6 +1232,12 @@ var doc = `{
                         5
                     ]
                 },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusTagInfo"
+                    }
+                },
                 "version_id": {
                     "type": "string",
                     "format": "uuid",
@@ -1177,7 +1294,7 @@ var doc = `{
                 "tags": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/entity.EriusTagInfo"
                     }
                 },
                 "version_id": {
@@ -1227,10 +1344,23 @@ var doc = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+                },
+                "isMarker": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
+                },
+                "status": {
+                    "description": "1 - Created, 3 - Deleted",
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        3
+                    ]
                 }
             }
         },
@@ -1285,6 +1415,14 @@ var doc = `{
                     "type": "string",
                     "format": "uuid",
                     "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+                }
+            }
+        },
+        "entity.SchedulerTasksResponse": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "boolean"
                 }
             }
         },

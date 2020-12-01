@@ -952,6 +952,56 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// @Summary Active scheduler tasks
+// @Description Наличие у сценария активных заданий в шедулере
+// @Tags pipeline
+// @ID pipeline-scheduler-tasks
+// @Accept json
+// @Produce json
+// @Param pipelineID path string true "Pipeline ID"
+// @Success 200 {object} httpResponse{data=entity.SchedulerTasksResponse}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/{pipelineID}/scheduler-tasks [post]
+func (ae *APIEnv) ListSchedulerTasks(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "scheduler tasks list")
+	defer s.End()
+
+	idParam := chi.URLParam(req, "pipelineID")
+
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tasks, err := ae.SchedulerClient.GetTasksByPipelineID(ctx, id)
+	if err != nil {
+		e := SchedulerClientFailed
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// в текущей реализации возращаем только факт наличия заданий
+	result := &entity.SchedulerTasksResponse{
+		Result: len(tasks) > 0,
+	}
+
+	err = sendResponse(w, http.StatusOK, result)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 // @Summary Run Pipeline
 // @Description Запустить сценарий
 // @Tags pipeline, run
