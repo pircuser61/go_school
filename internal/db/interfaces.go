@@ -51,4 +51,5 @@ type Database interface {
 	PipelineRemovable(c context.Context, id uuid.UUID) (bool, error)
 	DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error)
 	DeleteAllVersions(c context.Context, id uuid.UUID) error
+	PipelineNameCreatable(c context.Context, name string) (bool, error)
 }

@@ -55,6 +55,7 @@ const (
 	PipelineIsNotDraft
 	PipelineHasDraft
 	SchedulerClientFailed
+	PipelineNameUsed
 )
 
 //nolint:dupl //its not duplicate
@@ -96,6 +97,7 @@ var errorText = map[Err]string{
 	ModuleFindError:         "can't find module",
 	PipelineHasDraft:        "pipeline already has a draft",
 	SchedulerClientFailed:   "scheduler client failed",
+	PipelineNameUsed:        "pipeline name is already used",
 }
 
 // JOKE.
@@ -138,6 +140,7 @@ var errorDescription = map[Err]string{
 	ModuleFindError:         "Не удалось найти функцию",
 	PipelineHasDraft:        "Черновик данного сценария создан в разделе \"Мои сценарии\"",
 	SchedulerClientFailed:   "Ошибка клиента планировщика",
+	PipelineNameUsed:        "Сценарий с таким именем уже существует",
 }
 
 var errorStatus = map[Err]int{

@@ -551,6 +551,23 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 
+	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !canCreate {
+		e := PipelineNameUsed
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	err = ae.DB.CreatePipeline(ctx, &p, user.UserName(), b)
 	if err != nil {
 		e := PipelineCreateError

@@ -526,6 +526,35 @@ func (db *PGConnection) CreateVersion(c context.Context,
 	return nil
 }
 
+func (db *PGConnection) PipelineNameCreatable(c context.Context, name string) (bool, error) {
+	c, span := trace.StartSpan(c, "pg_check_pipeline_name_for_existence")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return false, err
+	}
+
+	defer conn.Release()
+
+	q := `
+	SELECT count(name) 
+	FROM pipeliner.pipelines
+	WHERE name = $1`
+
+	row := conn.QueryRow(c, q, name)
+
+	count := 0
+
+	err = row.Scan(&count)
+
+	if count != 0 {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (db *PGConnection) CreateTag(c context.Context,
 	e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error) {
 	_, span := trace.StartSpan(c, "pg_create_tag")
