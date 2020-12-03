@@ -894,7 +894,15 @@ func (m *MockDB) GetVersionTasks(c context.Context, id uuid.UUID) (*entity.Erius
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTaskLog(c context.Context, id uuid.UUID) (*entity.EriusLog, error) {
+func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (*entity.EriusLog, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetLastTask(c context.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
+	return nil, errNotFound
+}
+
+func (m *MockDB) GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error) {
 	return nil, errNotFound
 }
 
@@ -990,7 +998,7 @@ func (m *MockDB) WriteContext(c context.Context, workID uuid.UUID, stage string,
 	return nil
 }
 
-func (m *MockDB) WriteTask(c context.Context, workID, versionID uuid.UUID, author string) error {
+func (m *MockDB) WriteTask(c context.Context, workID, versionID uuid.UUID, author string, debug bool, inputs []byte) error {
 	return nil
 }
 

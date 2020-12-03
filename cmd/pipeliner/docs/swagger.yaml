@@ -212,8 +212,13 @@ definitions:
     type: object
   entity.EriusTask:
     properties:
+      debug:
+        type: boolean
       id:
         type: string
+      inputs:
+        additionalProperties: true
+        type: object
       started_at:
         type: string
       status:
@@ -351,47 +356,9 @@ definitions:
 host: localhost:8181
 info:
   contact: {}
-  license: {}
   title: Pipeliner API
   version: "0.1"
 paths:
-  /logs/version/{pipelineID}:
-    get:
-      description: Получить логи по задаче
-      operationId: get-task-log
-      parameters:
-      - description: Task ID
-        in: path
-        name: versionID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusLog'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-      summary: Get Task Log
-      tags:
-      - tasks log
   /modules/:
     get:
       description: Список блоков
@@ -417,6 +384,39 @@ paths:
           schema:
             $ref: '#/definitions/handlers.httpError'
       summary: Get list of modules
+      tags:
+      - modules
+  /modules/{moduleName}:
+    post:
+      description: Запустить блок
+      operationId: module-usage-by-name
+      parameters:
+      - description: module name
+        in: path
+        name: moduleName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.UsageResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Run Module By Name
       tags:
       - modules
   /modules/{moduleName}:
@@ -962,6 +962,80 @@ paths:
       summary: Get Pipeline Tasks
       tags:
       - pipeline tasks
+  /tasks/{taskID}:
+    get:
+      description: Получить логи по задаче
+      operationId: get-task-log
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusLog'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get Task Steps
+      tags:
+      - tasks log
+  /tasks/last/{versionID}:
+    get:
+      description: Получить последнюю сессию выполнения версии сценария
+      operationId: get-last-task-log
+      parameters:
+      - description: Version ID
+        in: path
+        name: versionID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusLog'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get last work for version
+      tags:
+      - tasks log
   /tasks/version/{pipelineID}:
     get:
       description: Получить задачи по версии сценарию

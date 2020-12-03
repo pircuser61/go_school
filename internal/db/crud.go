@@ -1073,7 +1073,7 @@ func (db *PGConnection) WriteContext(c context.Context, workID uuid.UUID, stage 
 }
 
 func (db *PGConnection) WriteTask(c context.Context,
-	workID, versionID uuid.UUID, author string) error {
+	workID, versionID uuid.UUID, author string, debug bool, inputs []byte) error {
 	c, span := trace.StartSpan(c, "pg_write_task")
 	defer span.End()
 
@@ -1092,11 +1092,11 @@ func (db *PGConnection) WriteTask(c context.Context,
 	timestamp := time.Now()
 	q := `
 	INSERT INTO pipeliner.works(
-	id, version_id, started_at, status, author)
-	VALUES ($1, $2, $3, $4, $5);
+	id, version_id, started_at, status, author, debug, inputs)
+	VALUES ($1, $2, $3, $4, $5, $6, $7);
 `
 
-	_, err = tx.Exec(c, q, workID, versionID, timestamp, RunStatusRunning, author)
+	_, err = tx.Exec(c, q, workID, versionID, timestamp, RunStatusRunning, author, debug, inputs)
 	if err != nil {
 		return err
 	}
@@ -1281,32 +1281,103 @@ func (db *PGConnection) GetExecutableByName(c context.Context, name string) (*en
 	return nil, nil
 }
 
-func (db *PGConnection) GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
+func (db *PGConnection) GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()
 
-	q := `SELECT w.id, w.started_at, w.status  
+	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.inputs  
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
-		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id 
+		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
+		JOIN pipeliner.work_status ws ON w.status = ws.id
 		WHERE p.id = $1
 		ORDER BY w.started_at DESC
 		LIMIT 100;`
 
-	return db.getTasks(c, q, id)
+	return db.getTasks(c, q, pipelineID)
 }
 
-func (db *PGConnection) GetVersionTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
+func (db *PGConnection) GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()
 
-	q := `SELECT w.id, w.started_at, w.status  FROM pipeliner.works w 
+	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.inputs
+		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
+		JOIN pipeliner.work_status ws ON w.status = ws.id
 		WHERE v.id = $1
 		ORDER BY w.started_at DESC
 		LIMIT 100;`
 
-	return db.getTasks(c, q, id)
+	return db.getTasks(c, q, versionID)
+}
+
+func (db *PGConnection) GetLastTask(c context.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
+	c, span := trace.StartSpan(c, "pg_get_last_task")
+	defer span.End()
+
+	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.inputs
+		FROM pipeliner.works w 
+		JOIN pipeliner.versions v ON v.id = w.version_id
+		JOIN pipeliner.work_status ws ON w.status = ws.id
+		WHERE v.id = $1
+		AND w.author = $2
+		ORDER BY w.started_at DESC
+		LIMIT 1;`
+
+	et := entity.EriusTask{}
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	row := conn.QueryRow(c, q, id, author)
+
+	err = row.Scan(&et.ID, &et.Time, &et.Status, &et.Debug, &et.Inputs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &et, nil
+}
+
+func (db *PGConnection) GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error) {
+	c, span := trace.StartSpan(c, "pg_get_task")
+	defer span.End()
+
+	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.inputs
+		FROM pipeliner.works w 
+		JOIN pipeliner.versions v ON v.id = w.version_id
+		JOIN pipeliner.work_status ws ON w.status = ws.id
+		WHERE w.id = $1;`
+
+	return db.getTask(c, q, id)
+}
+
+func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*entity.EriusTask, error) {
+	c, span := trace.StartSpan(c, "pg_get_task_private")
+	defer span.End()
+
+	et := entity.EriusTask{}
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	row := conn.QueryRow(c, q, id)
+
+	err = row.Scan(&et.ID, &et.Time, &et.Status, &et.Debug, &et.Inputs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &et, nil
 }
 
 func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*entity.EriusTasks, error) {
@@ -1333,7 +1404,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 	for rows.Next() {
 		et := entity.EriusTask{}
 
-		err := rows.Scan(&et.ID, &et.Time, &et.Status)
+		err := rows.Scan(&et.ID, &et.Time, &et.Status, &et.Debug, &et.Inputs)
 		if err != nil {
 			return nil, err
 		}
@@ -1344,7 +1415,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 	return &ets, nil
 }
 
-func (db *PGConnection) GetTaskLog(c context.Context, id uuid.UUID) (*entity.EriusLog, error) {
+func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (*entity.EriusLog, error) {
 	c, span := trace.StartSpan(c, "pg_get_tasks")
 	defer span.End()
 
