@@ -3,11 +3,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/pkg/errors"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 
 	"go.opencensus.io/trace"
 
@@ -929,6 +931,15 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	childPipelines, err := scenarioUsage(ctx, ae.DB, id)
+	if len(childPipelines) > 0 {
+		e := ScenarioIsUsedInOtherError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	err = ae.SchedulerClient.DeleteTasksByPipelineID(ctx, id)
 	if err != nil {
 		e := SchedulerClientFailed
@@ -1570,4 +1581,35 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+}
+
+func scenarioUsage(ctx context.Context, pipelineStorager db.PipelineStorager, id uuid.UUID) ([]entity.EriusScenario, error) {
+	ctx, span := trace.StartSpan(ctx, "scenario usage")
+	defer span.End()
+
+	p, err := pipelineStorager.GetPipeline(ctx, id)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to get pipeline")
+	}
+
+	workedVersions, err := pipelineStorager.GetWorkedVersions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]entity.EriusScenario, 0)
+
+	for i := range workedVersions {
+		for j := range workedVersions[i].Pipeline.Blocks {
+			block := workedVersions[i].Pipeline.Blocks[j]
+			if block.BlockType == script.TypeScenario &&
+				block.Title == p.Name {
+				res = append(res, workedVersions[i])
+
+				break
+			}
+		}
+	}
+
+	return res, nil
 }
