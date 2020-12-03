@@ -19,72 +19,11 @@ var doc = `{
         "description": "{{.Description}}",
         "title": "{{.Title}}",
         "contact": {},
-        "license": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/logs/version/{pipelineID}": {
-            "get": {
-                "description": "Получить логи по задаче",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks log"
-                ],
-                "summary": "Get Task Log",
-                "operationId": "get-task-log",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Task ID",
-                        "name": "versionID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/handlers.httpResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/entity.EriusLog"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    }
-                }
-            }
-        },
         "/modules/": {
             "get": {
                 "description": "Список блоков",
@@ -154,6 +93,60 @@ var doc = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/entity.AllUsageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/modules/{moduleName}": {
+            "post": {
+                "description": "Запустить блок",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "modules"
+                ],
+                "summary": "Run Module By Name",
+                "operationId": "module-usage-by-name",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "module name",
+                        "name": "moduleName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.UsageResponse"
                                         }
                                     }
                                 }
@@ -943,6 +936,66 @@ var doc = `{
                 }
             }
         },
+        "/tasks/last/{versionID}": {
+            "get": {
+                "description": "Получить последнюю сессию выполнения версии сценария",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks log"
+                ],
+                "summary": "Get last work for version",
+                "operationId": "get-last-task-log",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Version ID",
+                        "name": "versionID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusLog"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/version/{pipelineID}": {
             "get": {
                 "description": "Получить задачи по версии сценарию",
@@ -1036,6 +1089,66 @@ var doc = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/entity.EriusTasks"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{taskID}": {
+            "get": {
+                "description": "Получить логи по задаче",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks log"
+                ],
+                "summary": "Get Task Steps",
+                "operationId": "get-task-log",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "taskID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusLog"
                                         }
                                     }
                                 }
@@ -1367,8 +1480,15 @@ var doc = `{
         "entity.EriusTask": {
             "type": "object",
             "properties": {
+                "debug": {
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "string"
+                },
+                "inputs": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "started_at": {
                     "type": "string"

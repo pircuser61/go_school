@@ -51,10 +51,10 @@ func (ep *ExecutablePipeline) IsScenario() bool {
 	return true
 }
 
-func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) error {
+func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string, debug bool, inputs []byte) error {
 	ep.WorkID = uuid.New()
 
-	err := ep.Storage.WriteTask(ctx, ep.WorkID, ep.VersionID, author)
+	err := ep.Storage.WriteTask(ctx, ep.WorkID, ep.VersionID, author, debug, inputs)
 	if err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.Name = block.Title
 			epi.PipelineModel = p
 
-			err = epi.CreateWork(c, "Erius")
+			err = epi.CreateWork(c, "Erius", false, []byte{})
 			if err != nil {
 				return err
 			}

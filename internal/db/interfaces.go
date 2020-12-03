@@ -8,6 +8,7 @@ import (
 )
 
 type Database interface {
+	Tasker
 	GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error)
 	GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
@@ -26,19 +27,13 @@ type Database interface {
 	UpdateDraft(c context.Context,
 		p *entity.EriusScenario, pipelineData []byte) error
 	WriteContext(c context.Context, workID uuid.UUID, stage string, data []byte) error
-	WriteTask(c context.Context,
-		workID, versionID uuid.UUID, author string) error
-	ChangeWorkStatus(c context.Context,
-		workID uuid.UUID, status int) error
+
 	GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error)
 	GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error)
 
 	ActiveAlertNGSA(c context.Context, sever int,
 		state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error
 	ClearAlertNGSA(c context.Context, name string) error
-	GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error)
-	GetVersionTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error)
-	GetTaskLog(c context.Context, id uuid.UUID) (*entity.EriusLog, error)
 	CreateTag(c context.Context, e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error)
 	GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error)
 	EditTag(c context.Context, e *entity.EriusTagInfo) error
@@ -52,4 +47,15 @@ type Database interface {
 	DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error)
 	DeleteAllVersions(c context.Context, id uuid.UUID) error
 	PipelineNameCreatable(c context.Context, name string) (bool, error)
+}
+
+type Tasker interface {
+	GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error)
+	GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error)
+	GetTaskSteps(c context.Context, id uuid.UUID) (*entity.EriusLog, error)
+	WriteTask(c context.Context,
+		workID, versionID uuid.UUID, author string, debug bool, inputs []byte) error
+	ChangeWorkStatus(c context.Context, workID uuid.UUID, status int) error
+	GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error)
+	GetLastTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error)
 }

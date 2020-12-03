@@ -110,9 +110,11 @@ type EriusTasks struct {
 }
 
 type EriusTask struct {
-	ID     uuid.UUID `json:"id"`
-	Time   time.Time `json:"started_at"`
-	Status string    `json:"status" example:"runned"`
+	ID     uuid.UUID              `json:"id"`
+	Time   time.Time              `json:"started_at"`
+	Status string                 `json:"status" example:"runned"`
+	Debug  bool                   `json:"debug"`
+	Inputs map[string]interface{} `json:"inputs"`
 }
 
 type EriusLog struct {
