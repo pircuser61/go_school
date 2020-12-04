@@ -356,6 +356,7 @@ definitions:
 host: localhost:8181
 info:
   contact: {}
+  license: {}
   title: Pipeliner API
   version: "0.1"
 paths:
@@ -390,39 +391,6 @@ paths:
     post:
       description: Запустить блок
       operationId: module-usage-by-name
-      parameters:
-      - description: module name
-        in: path
-        name: moduleName
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.UsageResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-      summary: Run Module By Name
-      tags:
-      - modules
-  /modules/{moduleName}:
-    post:
-      description: Запустить блок
-      operationId: module-usage
       parameters:
       - description: module name
         in: path
