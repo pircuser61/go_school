@@ -19,6 +19,7 @@ var doc = `{
         "description": "{{.Description}}",
         "title": "{{.Title}}",
         "contact": {},
+        "license": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -125,60 +126,6 @@ var doc = `{
                 ],
                 "summary": "Run Module By Name",
                 "operationId": "module-usage-by-name",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "module name",
-                        "name": "moduleName",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/handlers.httpResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/entity.UsageResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    }
-                }
-            }
-        },
-        "/modules/{moduleName}": {
-            "post": {
-                "description": "Запустить блок",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "modules"
-                ],
-                "summary": "Run Module By Name",
-                "operationId": "module-usage",
                 "parameters": [
                     {
                         "type": "string",
