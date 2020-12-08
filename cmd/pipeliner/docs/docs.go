@@ -1012,7 +1012,7 @@ var doc = `{
                 }
             }
         },
-        "/tasks/last/{versionID}": {
+        "/tasks/last-by-version/{versionID}": {
             "get": {
                 "description": "Получить последнюю debug-задачу версии сценария",
                 "produces": [
