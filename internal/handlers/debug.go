@@ -143,6 +143,8 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 		e := GetVersionError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
+		return
 	}
 
 	// права на создание дебаг сессии проверяем относительно запуска сценария
