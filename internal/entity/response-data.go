@@ -110,14 +110,14 @@ type EriusTasks struct {
 }
 
 type EriusTask struct {
-	ID          uuid.UUID         `json:"id"`
-	VersionID   uuid.UUID         `json:"version_id"`
-	StartedAt   time.Time         `json:"started_at"`
-	Status      string            `json:"status"`
-	Author      string            `json:"author"`
-	IsDebugMode bool              `json:"debug"`
-	Parameters  map[string]string `json:"parameters"`
-	Steps       TaskSteps         `json:"steps"`
+	ID          uuid.UUID              `json:"id"`
+	VersionID   uuid.UUID              `json:"version_id"`
+	StartedAt   time.Time              `json:"started_at"`
+	Status      string                 `json:"status"`
+	Author      string                 `json:"author"`
+	IsDebugMode bool                   `json:"debug"`
+	Parameters  map[string]interface{} `json:"parameters"`
+	Steps       TaskSteps              `json:"steps"`
 }
 
 type TaskSteps []Step
