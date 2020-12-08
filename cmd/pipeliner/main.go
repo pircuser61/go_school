@@ -228,7 +228,7 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner *handle
 				r.Get("/version/{versionID}", pipeliner.GetVersionTasks)
 			})
 
-			r.Route("/d/", func(r chi.Router) {
+			r.Route("/debug/", func(r chi.Router) {
 				r.Post("/run", pipeliner.StartDebugTask)
 				r.Post("/", pipeliner.CreateDebugTask)
 			})
