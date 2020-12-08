@@ -224,8 +224,7 @@ definitions:
       id:
         type: string
       parameters:
-        additionalProperties:
-          type: string
+        additionalProperties: true
         type: object
       started_at:
         type: string
@@ -1084,7 +1083,7 @@ paths:
       summary: Get Task
       tags:
       - tasks
-  /tasks/last/{versionID}:
+  /tasks/last-by-version/{versionID}:
     get:
       description: Получить последнюю debug-задачу версии сценария
       operationId: get-version-last-debug-task

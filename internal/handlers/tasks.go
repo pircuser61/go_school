@@ -78,7 +78,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /tasks/last/{versionID} [get]
+// @Router /tasks/last-by-version/{versionID} [get]
 // nolint:dupl //its unique
 func (ae *APIEnv) LastVersionDebugTask(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_last_version_tasks")
