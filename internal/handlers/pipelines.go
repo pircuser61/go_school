@@ -228,9 +228,9 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version")
 	defer s.End()
 
-	idParam := chi.URLParam(req, "versionID")
+	versionID := chi.URLParam(req, "versionID")
 
-	id, err := uuid.Parse(idParam)
+	versionUUID, err := uuid.Parse(versionID)
 	if err != nil {
 		e := UUIDParsingError
 		ae.Logger.Error(e.errorMessage(err))
@@ -239,7 +239,7 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	p, err := ae.DB.GetPipelineVersion(ctx, id)
+	p, err := ae.DB.GetPipelineVersion(ctx, versionUUID)
 	if err != nil {
 		e := GetVersionError
 		ae.Logger.Error(e.errorMessage(err))
@@ -1216,7 +1216,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		ae.Logger.Error(err)
 	}
 
-	err = ep.CreateWork(ctx, user.UserName(), false, []byte{})
+	err = ep.CreateTask(ctx, user.UserName(), false, []byte{})
 	if err != nil {
 		e := PipelineRunError
 		ae.Logger.Error(e.errorMessage(err))
@@ -1276,7 +1276,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		}
 
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{
-			PipelineID: ep.PipelineID, TaskID: ep.WorkID,
+			PipelineID: ep.PipelineID, TaskID: ep.TaskID,
 			Status: statusRunned,
 		})
 		if err != nil {
@@ -1310,7 +1310,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		}()
 
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{
-			PipelineID: ep.PipelineID, TaskID: ep.WorkID,
+			PipelineID: ep.PipelineID, TaskID: ep.TaskID,
 			Status: statusRunned,
 		})
 		if err != nil {

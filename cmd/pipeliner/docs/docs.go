@@ -25,6 +25,135 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/debug/": {
+            "post": {
+                "description": "Создать сессию отладки",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "debug"
+                ],
+                "summary": "Create debug task",
+                "operationId": "create-debug-task",
+                "parameters": [
+                    {
+                        "description": "New debug task",
+                        "name": "debug",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTask"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/debug/run": {
+            "post": {
+                "description": "Начать отладку",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "debug"
+                ],
+                "summary": "Start debug task",
+                "operationId": "debug-task",
+                "parameters": [
+                    {
+                        "description": "debug request",
+                        "name": "variables",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DebugRunRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.DebugRunResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
         "/modules/": {
             "get": {
                 "description": "Список блоков",
@@ -885,15 +1014,15 @@ var doc = `{
         },
         "/tasks/last/{versionID}": {
             "get": {
-                "description": "Получить последнюю сессию выполнения версии сценария",
+                "description": "Получить последнюю debug-задачу версии сценария",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "tasks log"
+                    "tasks"
                 ],
-                "summary": "Get last work for version",
-                "operationId": "get-last-task-log",
+                "summary": "Get last debug task for version",
+                "operationId": "get-version-last-debug-task",
                 "parameters": [
                     {
                         "type": "string",
@@ -915,7 +1044,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/entity.EriusLog"
+                                            "$ref": "#/definitions/entity.EriusTask"
                                         }
                                     }
                                 }
@@ -943,14 +1072,15 @@ var doc = `{
                 }
             }
         },
-        "/tasks/version/{pipelineID}": {
+        "/tasks/version/{versionID}": {
             "get": {
                 "description": "Получить задачи по версии сценарию",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "version tasks"
+                    "version",
+                    "tasks"
                 ],
                 "summary": "Get Version Tasks",
                 "operationId": "get-version-tasks",
@@ -1010,7 +1140,8 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "pipeline tasks"
+                    "pipeline",
+                    "tasks"
                 ],
                 "summary": "Get Pipeline Tasks",
                 "operationId": "get-pipeline-tasks",
@@ -1065,15 +1196,15 @@ var doc = `{
         },
         "/tasks/{taskID}": {
             "get": {
-                "description": "Получить логи по задаче",
+                "description": "Получить экземпляр задачи",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "tasks log"
+                    "tasks"
                 ],
-                "summary": "Get Task Steps",
-                "operationId": "get-task-log",
+                "summary": "Get Task",
+                "operationId": "get-task-entity",
                 "parameters": [
                     {
                         "type": "string",
@@ -1095,7 +1226,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/entity.EriusLog"
+                                            "$ref": "#/definitions/entity.EriusTask"
                                         }
                                     }
                                 }
@@ -1136,6 +1267,23 @@ var doc = `{
                             "type": "string"
                         }
                     }
+                }
+            }
+        },
+        "entity.DebugRunResult": {
+            "type": "object",
+            "properties": {
+                "block_name": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "todo define values",
+                    "type": "string",
+                    "example": "run,error,finished"
+                },
+                "task": {
+                    "type": "object",
+                    "$ref": "#/definitions/entity.EriusTask"
                 }
             }
         },
@@ -1223,17 +1371,6 @@ var doc = `{
                 "type": {
                     "type": "string",
                     "example": "string"
-                }
-            }
-        },
-        "entity.EriusLog": {
-            "type": "object",
-            "properties": {
-                "steps": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entity.Step"
-                    }
                 }
             }
         },
@@ -1427,22 +1564,33 @@ var doc = `{
         "entity.EriusTask": {
             "type": "object",
             "properties": {
+                "author": {
+                    "type": "string"
+                },
                 "debug": {
                     "type": "boolean"
                 },
                 "id": {
                     "type": "string"
                 },
-                "inputs": {
+                "parameters": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
                 "started_at": {
                     "type": "string"
                 },
                 "status": {
-                    "type": "string",
-                    "example": "runned"
+                    "type": "string"
+                },
+                "steps": {
+                    "type": "object",
+                    "$ref": "#/definitions/entity.TaskSteps"
+                },
+                "version_id": {
+                    "type": "string"
                 }
             }
         },
@@ -1520,6 +1668,12 @@ var doc = `{
                 }
             }
         },
+        "entity.TaskSteps": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/entity.Step"
+            }
+        },
         "entity.UsageResponse": {
             "type": "object",
             "properties": {
@@ -1547,6 +1701,38 @@ var doc = `{
                 },
                 "name": {
                     "description": "Имя сценария",
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CreateTaskRequest": {
+            "type": "object",
+            "properties": {
+                "parameters": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "version_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DebugRunRequest": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "example": "step_over,resume"
+                },
+                "break_points": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "task_id": {
                     "type": "string"
                 }
             }

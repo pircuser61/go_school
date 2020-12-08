@@ -110,13 +110,19 @@ type EriusTasks struct {
 }
 
 type EriusTask struct {
-	ID     uuid.UUID              `json:"id"`
-	Time   time.Time              `json:"started_at"`
-	Status string                 `json:"status" example:"runned"`
-	Debug  bool                   `json:"debug"`
-	Inputs map[string]interface{} `json:"inputs"`
+	ID          uuid.UUID         `json:"id"`
+	VersionID   uuid.UUID         `json:"version_id"`
+	StartedAt   time.Time         `json:"started_at"`
+	Status      string            `json:"status"`
+	Author      string            `json:"author"`
+	IsDebugMode bool              `json:"debug"`
+	Parameters  map[string]string `json:"parameters"`
+	Steps       TaskSteps         `json:"steps"`
 }
 
+type TaskSteps []Step
+
+// @deprecated
 type EriusLog struct {
 	Steps []Step `json:"steps"`
 }
@@ -131,4 +137,10 @@ type Step struct {
 
 type SchedulerTasksResponse struct {
 	Result bool `json:"result"`
+}
+
+type DebugRunResult struct {
+	BlockName   string     `json:"block_name"`
+	BlockStatus string     `json:"status" example:"run,error,finished"` // todo define values
+	Task        *EriusTask `json:"task"`
 }

@@ -9,6 +9,18 @@ definitions:
           type: array
         type: object
     type: object
+  entity.DebugRunResult:
+    properties:
+      block_name:
+        type: string
+      status:
+        description: todo define values
+        example: run,error,finished
+        type: string
+      task:
+        $ref: '#/definitions/entity.EriusTask'
+        type: object
+    type: object
   entity.EriusFunc:
     properties:
       block_type:
@@ -68,13 +80,6 @@ definitions:
       type:
         example: string
         type: string
-    type: object
-  entity.EriusLog:
-    properties:
-      steps:
-        items:
-          $ref: '#/definitions/entity.Step'
-        type: array
     type: object
   entity.EriusScenario:
     properties:
@@ -212,17 +217,24 @@ definitions:
     type: object
   entity.EriusTask:
     properties:
+      author:
+        type: string
       debug:
         type: boolean
       id:
         type: string
-      inputs:
-        additionalProperties: true
+      parameters:
+        additionalProperties:
+          type: string
         type: object
       started_at:
         type: string
       status:
-        example: runned
+        type: string
+      steps:
+        $ref: '#/definitions/entity.TaskSteps'
+        type: object
+      version_id:
         type: string
     type: object
   entity.EriusTasks:
@@ -275,6 +287,10 @@ definitions:
       time:
         type: string
     type: object
+  entity.TaskSteps:
+    items:
+      $ref: '#/definitions/entity.Step'
+    type: array
   entity.UsageResponse:
     properties:
       name:
@@ -294,6 +310,27 @@ definitions:
         type: string
       name:
         description: Имя сценария
+        type: string
+    type: object
+  handlers.CreateTaskRequest:
+    properties:
+      parameters:
+        additionalProperties:
+          type: string
+        type: object
+      version_id:
+        type: string
+    type: object
+  handlers.DebugRunRequest:
+    properties:
+      action:
+        example: step_over,resume
+        type: string
+      break_points:
+        items:
+          type: string
+        type: array
+      task_id:
         type: string
     type: object
   handlers.httpError:
@@ -360,6 +397,85 @@ info:
   title: Pipeliner API
   version: "0.1"
 paths:
+  /debug/:
+    post:
+      consumes:
+      - application/json
+      description: Создать сессию отладки
+      operationId: create-debug-task
+      parameters:
+      - description: New debug task
+        in: body
+        name: debug
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTask'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Create debug task
+      tags:
+      - debug
+  /debug/run:
+    post:
+      consumes:
+      - application/json
+      description: Начать отладку
+      operationId: debug-task
+      parameters:
+      - description: debug request
+        in: body
+        name: variables
+        schema:
+          $ref: '#/definitions/handlers.DebugRunRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.DebugRunResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Start debug task
+      tags:
+      - debug
   /modules/:
     get:
       description: Список блоков
@@ -929,11 +1045,12 @@ paths:
             $ref: '#/definitions/handlers.httpError'
       summary: Get Pipeline Tasks
       tags:
-      - pipeline tasks
+      - pipeline
+      - tasks
   /tasks/{taskID}:
     get:
-      description: Получить логи по задаче
-      operationId: get-task-log
+      description: Получить экземпляр задачи
+      operationId: get-task-entity
       parameters:
       - description: Task ID
         in: path
@@ -950,7 +1067,7 @@ paths:
             - $ref: '#/definitions/handlers.httpResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/entity.EriusLog'
+                  $ref: '#/definitions/entity.EriusTask'
               type: object
         "400":
           description: Bad Request
@@ -964,13 +1081,13 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.httpError'
-      summary: Get Task Steps
+      summary: Get Task
       tags:
-      - tasks log
+      - tasks
   /tasks/last/{versionID}:
     get:
-      description: Получить последнюю сессию выполнения версии сценария
-      operationId: get-last-task-log
+      description: Получить последнюю debug-задачу версии сценария
+      operationId: get-version-last-debug-task
       parameters:
       - description: Version ID
         in: path
@@ -987,7 +1104,7 @@ paths:
             - $ref: '#/definitions/handlers.httpResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/entity.EriusLog'
+                  $ref: '#/definitions/entity.EriusTask'
               type: object
         "400":
           description: Bad Request
@@ -1001,10 +1118,10 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.httpError'
-      summary: Get last work for version
+      summary: Get last debug task for version
       tags:
-      - tasks log
-  /tasks/version/{pipelineID}:
+      - tasks
+  /tasks/version/{versionID}:
     get:
       description: Получить задачи по версии сценарию
       operationId: get-version-tasks
@@ -1040,5 +1157,6 @@ paths:
             $ref: '#/definitions/handlers.httpError'
       summary: Get Version Tasks
       tags:
-      - version tasks
+      - version
+      - tasks
 swagger: "2.0"

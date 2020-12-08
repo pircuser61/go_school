@@ -53,7 +53,7 @@ const (
 
 	qCheckTagIsAttached string = `SELECT COUNT(pipeline_id)
 	FROM pipeliner.pipeline_tags    
-	WHERE pipeline_id = $1 and tag_id = $2`
+	WHERE pipeline_id = $1 and tag_id = $2;`
 )
 
 var (
@@ -1045,7 +1045,7 @@ func (db *PGConnection) UpdateDraft(c context.Context,
 	return nil
 }
 
-func (db *PGConnection) WriteContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
+func (db *PGConnection) SaveStepContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
 
@@ -1072,57 +1072,71 @@ func (db *PGConnection) WriteContext(c context.Context, workID uuid.UUID, stage 
 	return nil
 }
 
-func (db *PGConnection) WriteTask(c context.Context,
-	workID, versionID uuid.UUID, author string, debug bool, inputs []byte) error {
-	c, span := trace.StartSpan(c, "pg_write_task")
+func (db *PGConnection) CreateTask(c context.Context,
+	taskID, versionID uuid.UUID, author string, isDebugMode bool, parameters []byte) (*entity.EriusTask, error) {
+	c, span := trace.StartSpan(c, "db_create_task")
 	defer span.End()
 
 	conn, err := db.Pool.Acquire(c)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer conn.Release()
 
 	tx, err := conn.Begin(c)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	timestamp := time.Now()
+	startedAt := time.Now()
 	q := `
 	INSERT INTO pipeliner.works(
-	id, version_id, started_at, status, author, debug, inputs)
-	VALUES ($1, $2, $3, $4, $5, $6, $7);
+	id, version_id, started_at, status, author, debug, parameters)
+	VALUES ($1, $2, $3, $4, $5, $6, $7)
+	RETURNING id;
 `
+	row := tx.QueryRow(c, q, taskID, versionID, startedAt, RunStatusRunning, author, isDebugMode, parameters)
 
-	_, err = tx.Exec(c, q, workID, versionID, timestamp, RunStatusRunning, author, debug, inputs)
+	var id uuid.UUID
+
+	err = row.Scan(&id)
 	if err != nil {
-		return err
+		err = tx.Rollback(c)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, err
 	}
 
 	q = `UPDATE pipeliner.versions SET last_run_id=$1 WHERE id = $2;`
 
-	_, err = tx.Exec(c, q, workID, versionID)
+	_, err = tx.Exec(c, q, taskID, versionID)
 	if err != nil {
-		return err
+		err = tx.Rollback(c)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, err
 	}
 
 	err = tx.Commit(c)
 	if err != nil {
 		err = tx.Rollback(c)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		return err
+		return nil, err
 	}
 
-	return nil
+	return db.GetTask(c, id)
 }
 
-func (db *PGConnection) ChangeWorkStatus(c context.Context,
-	workID uuid.UUID, status int) error {
+func (db *PGConnection) ChangeTaskStatus(c context.Context,
+	taskID uuid.UUID, status int) error {
 	c, span := trace.StartSpan(c, "pg_change_work_status")
 	defer span.End()
 
@@ -1133,11 +1147,9 @@ func (db *PGConnection) ChangeWorkStatus(c context.Context,
 
 	defer conn.Release()
 
-	q := `
-	UPDATE pipeliner.works SET status = $1 WHERE id = $2;
-	`
+	q := `UPDATE pipeliner.works SET status = $1 WHERE id = $2;`
 
-	_, err = conn.Exec(c, q, status, workID)
+	_, err = conn.Exec(c, q, status, taskID)
 	if err != nil {
 		return err
 	}
@@ -1285,7 +1297,7 @@ func (db *PGConnection) GetPipelineTasks(c context.Context, pipelineID uuid.UUID
 	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()
 
-	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.inputs  
+	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.parameters, w.author, w.version_id
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
@@ -1301,7 +1313,7 @@ func (db *PGConnection) GetVersionTasks(c context.Context, versionID uuid.UUID) 
 	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()
 
-	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.inputs
+	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.parameters,w.author, w.version_id
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.work_status ws ON w.status = ws.id
@@ -1312,16 +1324,17 @@ func (db *PGConnection) GetVersionTasks(c context.Context, versionID uuid.UUID) 
 	return db.getTasks(c, q, versionID)
 }
 
-func (db *PGConnection) GetLastTask(c context.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
-	c, span := trace.StartSpan(c, "pg_get_last_task")
+func (db *PGConnection) GetLastDebugTask(c context.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
+	c, span := trace.StartSpan(c, "pg_get_last_debug_task")
 	defer span.End()
 
-	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.inputs
+	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.parameters, w.author, w.version_id
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.work_status ws ON w.status = ws.id
 		WHERE v.id = $1
 		AND w.author = $2
+		AND w.debug = true
 		ORDER BY w.started_at DESC
 		LIMIT 1;`
 
@@ -1335,8 +1348,14 @@ func (db *PGConnection) GetLastTask(c context.Context, id uuid.UUID, author stri
 	defer conn.Release()
 
 	row := conn.QueryRow(c, q, id, author)
+	parameters := ""
 
-	err = row.Scan(&et.ID, &et.Time, &et.Status, &et.Debug, &et.Inputs)
+	err = row.Scan(&et.ID, &et.StartedAt, &et.Status, &et.IsDebugMode, &parameters, &et.Author, &et.VersionID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(parameters), &et.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -1348,7 +1367,7 @@ func (db *PGConnection) GetTask(c context.Context, id uuid.UUID) (*entity.EriusT
 	c, span := trace.StartSpan(c, "pg_get_task")
 	defer span.End()
 
-	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.inputs
+	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.parameters, w.author, w.version_id
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.work_status ws ON w.status = ws.id
@@ -1362,6 +1381,7 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 	defer span.End()
 
 	et := entity.EriusTask{}
+	parameters := ""
 
 	conn, err := db.Pool.Acquire(c)
 	if err != nil {
@@ -1372,7 +1392,19 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 
 	row := conn.QueryRow(c, q, id)
 
-	err = row.Scan(&et.ID, &et.Time, &et.Status, &et.Debug, &et.Inputs)
+	err = row.Scan(
+		&et.ID,
+		&et.StartedAt,
+		&et.Status,
+		&et.IsDebugMode,
+		&parameters,
+		&et.Author,
+		&et.VersionID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(parameters), &et.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -1403,8 +1435,21 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 
 	for rows.Next() {
 		et := entity.EriusTask{}
+		parameters := ""
 
-		err := rows.Scan(&et.ID, &et.Time, &et.Status, &et.Debug, &et.Inputs)
+		err = rows.Scan(
+			&et.ID,
+			&et.StartedAt,
+			&et.Status,
+			&et.IsDebugMode,
+			&parameters,
+			&et.Author,
+			&et.VersionID)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(parameters), &et.Parameters)
 		if err != nil {
 			return nil, err
 		}
@@ -1415,13 +1460,11 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 	return &ets, nil
 }
 
-func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (*entity.EriusLog, error) {
+func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error) {
 	c, span := trace.StartSpan(c, "pg_get_tasks")
 	defer span.End()
 
-	el := entity.EriusLog{
-		Steps: make([]entity.Step, 0),
-	}
+	el := entity.TaskSteps{}
 
 	conn, err := db.Pool.Acquire(c)
 	if err != nil {
@@ -1461,8 +1504,8 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (*entity.E
 		s.Steps = storage.Steps
 		s.Errors = storage.Errors
 		s.Storage = storage.Values
-		el.Steps = append(el.Steps, s)
+		el = append(el, s)
 	}
 
-	return nil, nil
+	return el, nil
 }

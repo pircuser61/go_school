@@ -19,12 +19,12 @@ type PipelineStorager interface {
 type TaskStorager interface {
 	GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error)
 	GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error)
-	GetTaskSteps(c context.Context, id uuid.UUID) (*entity.EriusLog, error)
-	WriteTask(c context.Context,
-		workID, versionID uuid.UUID, author string, debug bool, inputs []byte) error
-	ChangeWorkStatus(c context.Context, workID uuid.UUID, status int) error
+	GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error)
+	CreateTask(c context.Context,
+		taskID, versionID uuid.UUID, author string, isDebugMode bool, parameters []byte) (*entity.EriusTask, error)
+	ChangeTaskStatus(c context.Context, taskID uuid.UUID, status int) error
 	GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error)
-	GetLastTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error)
+	GetLastDebugTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error)
 }
 
 type Database interface {
@@ -43,7 +43,7 @@ type Database interface {
 	GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
 	UpdateDraft(c context.Context,
 		p *entity.EriusScenario, pipelineData []byte) error
-	WriteContext(c context.Context, workID uuid.UUID, stage string, data []byte) error
+	SaveStepContext(c context.Context, workID uuid.UUID, stage string, data []byte) error
 
 	GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error)
 	GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error)

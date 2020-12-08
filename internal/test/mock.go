@@ -886,6 +886,10 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error) {
+	return nil, errNotImplemented
+}
+
 func (m *MockDB) GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
 	return nil, errNotImplemented
 }
@@ -894,12 +898,8 @@ func (m *MockDB) GetVersionTasks(c context.Context, id uuid.UUID) (*entity.Erius
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (*entity.EriusLog, error) {
+func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error) {
 	return nil, errNotImplemented
-}
-
-func (m *MockDB) GetLastTask(c context.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
-	return nil, errNotFound
 }
 
 func (m *MockDB) GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error) {
@@ -948,10 +948,6 @@ func (m *MockDB) GetWorkedVersions(c context.Context) ([]entity.EriusScenario, e
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetVersionsByStatusAndAuthor(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error) {
-	return nil, errNotImplemented
-}
-
 func (m *MockDB) SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error {
 	return errNotImplemented
 }
@@ -994,15 +990,16 @@ func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelin
 	return errNotImplemented
 }
 
-func (m *MockDB) WriteContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
+func (m *MockDB) SaveStepContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
 	return nil
 }
 
-func (m *MockDB) WriteTask(c context.Context, workID, versionID uuid.UUID, author string, debug bool, inputs []byte) error {
-	return nil
+func (m *MockDB) CreateTask(c context.Context, workID, versionID uuid.UUID, author string, isDebugMode bool,
+	parameters []byte) (*entity.EriusTask, error) {
+	return nil, errNotImplemented
 }
 
-func (m *MockDB) ChangeWorkStatus(c context.Context, workID uuid.UUID, status int) error {
+func (m *MockDB) ChangeTaskStatus(c context.Context, workID uuid.UUID, status int) error {
 	return nil
 }
 

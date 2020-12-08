@@ -41,7 +41,7 @@ const (
 	UnauthError
 	AuthServiceError
 	GetTasksError
-	GetLogError
+	GetTaskError
 	GetAllTagsError
 	GetPipelineTagsError
 	GetTagError
@@ -57,6 +57,10 @@ const (
 	SchedulerClientFailed
 	ScenarioIsUsedInOtherError
 	PipelineNameUsed
+	NoUserInContextError
+	CreateDebugParseError
+	CreateDebugInputsError
+	CreateWorkError
 )
 
 //nolint:dupl //its not duplicate
@@ -85,7 +89,7 @@ var errorText = map[Err]string{
 	UnauthError:                "not allowed",
 	AuthServiceError:           "auth service failed",
 	GetTasksError:              "can't find tasks",
-	GetLogError:                "can't get log",
+	GetTaskError:               "can't get task",
 	GetAllTagsError:            "can't get all tags",
 	GetPipelineTagsError:       "can't get pipeline tags",
 	GetTagError:                "can't get tag",
@@ -100,6 +104,10 @@ var errorText = map[Err]string{
 	SchedulerClientFailed:      "scheduler client failed",
 	ScenarioIsUsedInOtherError: "scenario is used in other",
 	PipelineNameUsed:           "pipeline name is already used",
+	NoUserInContextError:       "no user in context",
+	CreateDebugParseError:      "can't pars debug task data",
+	CreateDebugInputsError:     "can't pars debug task inputs",
+	CreateWorkError:            "can't create work",
 }
 
 // JOKE.
@@ -129,7 +137,7 @@ var errorDescription = map[Err]string{
 	UnauthError:                "Нет разрешений для выполнения операции",
 	AuthServiceError:           "Ошибка сервиса авторизации",
 	GetTasksError:              "Не удалось найти запуски сценария",
-	GetLogError:                "Не удалось получить лог",
+	GetTaskError:               "Не удалось получить экземпляр задачи",
 	GetAllTagsError:            "Невозможно получить список тегов",
 	GetPipelineTagsError:       "Невозможно получить список тегов сценария",
 	GetTagError:                "Не удалось получить информацию о теге",
@@ -144,6 +152,10 @@ var errorDescription = map[Err]string{
 	SchedulerClientFailed:      "Ошибка клиента планировщика",
 	ScenarioIsUsedInOtherError: "Невозможно удалить: сценарий используется в других сценариях",
 	PipelineNameUsed:           "Сценарий с таким именем уже существует",
+	NoUserInContextError:       "Пользователь не найден в контексте",
+	CreateDebugParseError:      "Не удалось разобрать информацию о запуске сценария в режиме отладки",
+	CreateDebugInputsError:     "Не удалось разобрать входные данные в режиме отладки",
+	CreateWorkError:            "Не удалось создать новый запуск",
 }
 
 var errorStatus = map[Err]int{
