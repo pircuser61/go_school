@@ -3,26 +3,28 @@ package handlers
 import (
 	"net/http"
 
+	"gitlab.services.mts.ru/erius/admin/pkg/auth"
+
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 )
 
-// GetTaskSteps
-// @Summary Get Task Steps
-// @Description Получить логи по задаче
-// @Tags tasks log
-// @ID      get-task-log
+// GetTask
+// @Summary Get Task
+// @Description Получить экземпляр задачи
+// @Tags tasks
+// @ID      get-task-entity
 // @Produce json
 // @Param taskID path string true "Task ID"
-// @success 200 {object} httpResponse{data=entity.EriusLog}
+// @success 200 {object} httpResponse{data=entity.EriusTask}
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /tasks/{taskID} [get]
 //nolint:dupl //diff logic
 func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
+	ctx, s := trace.StartSpan(req.Context(), "get_task")
 	defer s.End()
 
 	idParam := chi.URLParam(req, "taskID")
@@ -38,12 +40,23 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 
 	resp, err := ae.DB.GetTask(ctx, id)
 	if err != nil {
-		e := GetLogError
+		e := GetTaskError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
 	}
+
+	steps, err := ae.DB.GetTaskSteps(ctx, id)
+	if err != nil {
+		e := GetTaskError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	resp.Steps = steps
 
 	if err := sendResponse(w, http.StatusOK, resp); err != nil {
 		e := UnknownError
@@ -55,19 +68,19 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 }
 
 // LastVersionDebugTask
-// @Summary Get last work for version
-// @Description Получить последнюю сессию выполнения версии сценария
-// @Tags tasks log
-// @ID      get-last-task-log
+// @Summary Get last debug task for version
+// @Description Получить последнюю debug-задачу версии сценария
+// @Tags tasks
+// @ID      get-version-last-debug-task
 // @Produce json
 // @Param versionID path string true "Version ID"
-// @success 200 {object} httpResponse{data=entity.EriusLog}
+// @success 200 {object} httpResponse{data=entity.EriusTask}
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /tasks/last/{versionID} [get]
 // nolint:dupl //its unique
-func (ae *APIEnv) LastVersionTask(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) LastVersionDebugTask(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_last_version_tasks")
 	defer s.End()
 
@@ -82,16 +95,38 @@ func (ae *APIEnv) LastVersionTask(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp, err := ae.DB.GetTask(ctx, id)
+	user, err := auth.UserFromContext(ctx)
 	if err != nil {
-		e := GetLogError
+		if err != nil {
+			e := NoUserInContextError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+
+	task, err := ae.DB.GetLastDebugTask(ctx, id, user.UserName())
+	if err != nil {
+		e := GetTaskError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
 	}
 
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+	steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
+	if err != nil {
+		e := GetTaskError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	task.Steps = steps
+
+	if err := sendResponse(w, http.StatusOK, task); err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -103,7 +138,7 @@ func (ae *APIEnv) LastVersionTask(w http.ResponseWriter, req *http.Request) {
 // GetPipelineTasks
 // @Summary Get Pipeline Tasks
 // @Description Получить задачи по сценарию
-// @Tags pipeline tasks
+// @Tags pipeline, tasks
 // @ID      get-pipeline-tasks
 // @Produce json
 // @Param pipelineID path string true "Pipeline ID"
@@ -149,7 +184,7 @@ func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 // GetVersionTasks
 // @Summary Get Version Tasks
 // @Description Получить задачи по версии сценарию
-// @Tags version tasks
+// @Tags version, tasks
 // @ID      get-version-tasks
 // @Produce json
 // @Param versionID path string true "Version ID"
@@ -157,7 +192,7 @@ func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /tasks/version/{pipelineID} [get]
+// @Router /tasks/version/{versionID} [get]
 //nolint:dupl //diff logic
 func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")

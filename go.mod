@@ -8,6 +8,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/cors v1.1.1
+	github.com/go-chi/render v1.0.1
 	github.com/go-openapi/jsonreference v0.19.4 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/jackc/pgx/v4 v4.8.1
@@ -24,6 +25,7 @@ require (
 	gitlab.services.mts.ru/erius/monitoring v0.1.0
 	gitlab.services.mts.ru/erius/scheduler_client v0.0.3
 	go.opencensus.io v0.22.5
+	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 )
