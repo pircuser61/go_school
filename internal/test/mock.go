@@ -996,7 +996,7 @@ func (m *MockDB) SaveStepContext(c context.Context, workID uuid.UUID, stage stri
 
 func (m *MockDB) CreateTask(c context.Context, workID, versionID uuid.UUID, author string, isDebugMode bool,
 	parameters []byte) (*entity.EriusTask, error) {
-	return nil, errNotImplemented
+	return &entity.EriusTask{}, nil
 }
 
 func (m *MockDB) ChangeTaskStatus(c context.Context, workID uuid.UUID, status int) error {
