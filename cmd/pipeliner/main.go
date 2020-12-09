@@ -215,7 +215,7 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner *handle
 
 			r.Get("/tags/", pipeliner.GetTags)
 			r.Post("/tags/", pipeliner.CreateTag)
-			r.Put("/tags/{ID}", pipeliner.EditTag)
+			r.Put("/tags/", pipeliner.EditTag)
 			r.Delete("/tags/{ID}", pipeliner.RemoveTag)
 
 			r.With(handlers.SetRequestID).Post("/run/{pipelineID}", pipeliner.RunPipeline)

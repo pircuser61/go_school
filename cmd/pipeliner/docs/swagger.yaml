@@ -728,6 +728,126 @@ paths:
       summary: Active scheduler tasks
       tags:
       - pipeline
+  /pipelines/{pipelineID}/tags/:
+    get:
+      description: Список тегов сценария
+      operationId: get-pipeline-tags
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipelineID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.EriusTagInfo'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get Pipeline Tags
+      tags:
+      - pipeline
+      - tags
+  /pipelines/{pipelineID}/tags/{ID}:
+    delete:
+      description: Открепить тег от сценария
+      operationId: detach-tag
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipelineID
+        required: true
+        type: string
+      - description: Tag ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.httpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Detach Tag
+      tags:
+      - pipeline
+      - tags
+    put:
+      description: Прикрепить тег к сценарию
+      operationId: attach-tag
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipelineID
+        required: true
+        type: string
+      - description: Tag ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTagInfo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Attach Tag
+      tags:
+      - pipeline
+      - tags
   /pipelines/pipeline/{pipelineID}:
     get:
       description: Получить сценарий по ID
@@ -1008,6 +1128,149 @@ paths:
       tags:
       - version
       - run
+  /tags/:
+    get:
+      description: Cписок тегов
+      operationId: get-tags
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.EriusTagInfo'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get Tags
+      tags:
+      - tags
+    post:
+      consumes:
+      - application/json
+      description: Создать новый тег
+      operationId: create-tag
+      parameters:
+      - description: New tag
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/entity.EriusTagInfo'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTagInfo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Create Tag
+      tags:
+      - tags
+    put:
+      consumes:
+      - application/json
+      description: Изменить тег
+      operationId: edit-tag
+      parameters:
+      - description: Modified tag
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/entity.EriusTagInfo'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTagInfo'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Edit Tag
+      tags:
+      - tags
+  /tags/{ID}:
+    delete:
+      description: Удалить тег
+      operationId: remove-tag
+      parameters:
+      - description: Tag ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.httpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Remove Tag
+      tags:
+      - tags
   /tasks/{pipelineID}:
     get:
       description: Получить задачи по сценарию
