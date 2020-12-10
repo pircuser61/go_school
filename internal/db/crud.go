@@ -1381,7 +1381,7 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 	defer span.End()
 
 	et := entity.EriusTask{}
-	parameters := ""
+	var nullStringParameters sql.NullString
 
 	conn, err := db.Pool.Acquire(c)
 	if err != nil {
@@ -1397,16 +1397,18 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 		&et.StartedAt,
 		&et.Status,
 		&et.IsDebugMode,
-		&parameters,
+		&nullStringParameters,
 		&et.Author,
 		&et.VersionID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(parameters), &et.Parameters)
-	if err != nil {
-		return nil, err
+	if nullStringParameters.Valid {
+		err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &et, nil
@@ -1435,23 +1437,24 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 
 	for rows.Next() {
 		et := entity.EriusTask{}
-		parameters := ""
+		var nullStringParameters sql.NullString
 
 		err = rows.Scan(
 			&et.ID,
 			&et.StartedAt,
 			&et.Status,
 			&et.IsDebugMode,
-			&parameters,
+			&nullStringParameters,
 			&et.Author,
 			&et.VersionID)
 		if err != nil {
 			return nil, err
 		}
-
-		err = json.Unmarshal([]byte(parameters), &et.Parameters)
-		if err != nil {
-			return nil, err
+		if nullStringParameters.Valid {
+			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		ets.Tasks = append(ets.Tasks, et)
