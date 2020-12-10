@@ -34,12 +34,11 @@ func NewStore() *VariableStore {
 	return &s
 }
 
-func NewFromStep(step *entity.Step, breakPoints map[string]struct{}) *VariableStore {
+func NewFromStep(step *entity.Step) *VariableStore {
 	return &VariableStore{
-		Values:      step.Storage,
-		Steps:       step.Steps,
-		Errors:      step.Errors,
-		BreakPoints: breakPoints,
+		Values: step.Storage,
+		Steps:  step.Steps,
+		Errors: step.Errors,
 	}
 }
 
