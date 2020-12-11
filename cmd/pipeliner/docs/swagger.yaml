@@ -85,6 +85,10 @@ definitions:
     properties:
       approve_date:
         type: string
+      comment:
+        type: string
+      comment_rejected:
+        type: string
       hasDraft:
         type: boolean
       id:
@@ -140,6 +144,10 @@ definitions:
       author:
         example: testAuthor
         type: string
+      comment:
+        type: string
+      comment_rejected:
+        type: string
       created_at:
         example: "2020-07-16T17:10:25.112704+03:00"
         type: string
@@ -187,6 +195,11 @@ definitions:
         type: array
       pipelines:
         description: Согласованные сценарии
+        items:
+          $ref: '#/definitions/entity.EriusScenarioInfo'
+        type: array
+      rejected:
+        description: Сценарии отправлены на доработку
         items:
           $ref: '#/definitions/entity.EriusScenarioInfo'
         type: array

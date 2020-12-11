@@ -75,7 +75,7 @@ func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScena
 		var approver sql.NullString
 
 		err := rows.Scan(&e.VersionID, &e.Status, &e.ID, &e.CreatedAt, &e.Author, &approver, &e.Name,
-			&e.LastRun, &e.LastRunStatus)
+			&e.LastRun, &e.LastRunStatus, &e.CommentRejected, &e.Comment)
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +158,7 @@ func (db *PGConnection) GetVersionsByStatus(c context.Context, status int) ([]en
 
 	q := `
 	SELECT 
-		pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name
+		pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.author, pv.approver, pp.name, pw.started_at, pws.name, pv.comment_rejected, pv.comment
 	FROM pipeliner.versions pv
 	JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
 	LEFT OUTER JOIN  pipeliner.works pw ON pw.id = pv.last_run_id
@@ -201,6 +201,13 @@ func (db *PGConnection) GetOnApproveVersions(c context.Context) ([]entity.EriusS
 	defer span.End()
 
 	return db.GetVersionsByStatus(c, StatusOnApprove)
+}
+
+func (db *PGConnection) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+	c, span := trace.StartSpan(c, "pg_list_rejected_versions")
+	defer span.End()
+
+	return db.GetVersionsByStatus(c, StatusRejected)
 }
 
 //nolint:dupl //its unique
@@ -379,13 +386,34 @@ func (db *PGConnection) SwitchApproved(c context.Context, pipelineID, versionID 
 	return nil
 }
 
+func (db *PGConnection) SwitchRejected(c context.Context, pipelineID, versionID uuid.UUID, comment, author string) error {
+	c, span := trace.StartSpan(c, "pg_switch_rejected")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return err
+	}
+
+	defer conn.Release()
+
+	qSetRejected := `UPDATE pipeliner.versions SET status=$1, approver = $2, comment_rejected = $3 WHERE id = $4`
+
+	_, err = conn.Exec(c, qSetRejected, StatusRejected, author, comment, versionID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PGConnection) VersionEditable(c context.Context, versionID uuid.UUID) (bool, error) {
 	c, span := trace.StartSpan(c, "pg_version_editable")
 	defer span.End()
 
-	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE id =$1 AND status = $2 OR status = $3`
+	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE id =$1 AND status = $2`
 
-	rows, err := db.Pool.Query(c, q, versionID, StatusApproved, StatusRejected)
+	rows, err := db.Pool.Query(c, q, versionID, StatusApproved)
 	if err != nil {
 		return false, err
 	}
@@ -513,12 +541,12 @@ func (db *PGConnection) CreateVersion(c context.Context,
 	defer span.End()
 
 	qNewVersion := `INSERT INTO pipeliner.versions(
-	id, status, pipeline_id, created_at, content, author)
-	VALUES ($1, $2, $3, $4, $5, $6);`
+	id, status, pipeline_id, created_at, content, author, comment)
+	VALUES ($1, $2, $3, $4, $5, $6, $7);`
 
 	createdAt := time.Now()
 
-	_, err := db.Pool.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author)
+	_, err := db.Pool.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author, p.Comment)
 	if err != nil {
 		return err
 	}
@@ -681,7 +709,7 @@ func (db *PGConnection) GetPipeline(c context.Context, id uuid.UUID) (*entity.Er
 
 	p := entity.EriusScenario{}
 	q := `
-	SELECT pv.id, pv.status, pv.pipeline_id, pv.content
+	SELECT pv.id, pv.status, pv.pipeline_id, pv.content, pv.comment
 	FROM pipeliner.versions pv
 	JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
 	WHERE pv.pipeline_id = $1
@@ -700,9 +728,10 @@ func (db *PGConnection) GetPipeline(c context.Context, id uuid.UUID) (*entity.Er
 			vID, pID uuid.UUID
 			s        int
 			c        string
+			cm       string
 		)
 
-		err = rows.Scan(&vID, &s, &pID, &c)
+		err = rows.Scan(&vID, &s, &pID, &c, &cm)
 		if err != nil {
 			return nil, err
 		}
@@ -715,6 +744,7 @@ func (db *PGConnection) GetPipeline(c context.Context, id uuid.UUID) (*entity.Er
 		p.VersionID = vID
 		p.ID = pID
 		p.Status = s
+		p.Comment = cm
 
 		return &p, nil
 	}
@@ -736,7 +766,7 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 	p := entity.EriusScenario{}
 
 	qVersion := `
-	SELECT id, status, pipeline_id, content
+	SELECT id, status, pipeline_id, content, comment_rejected, comment
 	FROM pipeliner.versions 
 	WHERE id = $1 LIMIT 1;`
 
@@ -752,9 +782,11 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 			vID, pID uuid.UUID
 			s        int
 			c        string
+			cr       string
+			cm       string
 		)
 
-		err := rows.Scan(&vID, &s, &pID, &c)
+		err := rows.Scan(&vID, &s, &pID, &c, &cr, &cm)
 		if err != nil {
 			return nil, err
 		}
@@ -767,6 +799,8 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 		p.VersionID = vID
 		p.ID = pID
 		p.Status = s
+		p.CommentRejected = cr
+		p.Comment = cm
 
 		return &p, nil
 	}
@@ -1035,9 +1069,9 @@ func (db *PGConnection) UpdateDraft(c context.Context,
 
 	q := `
 	UPDATE pipeliner.versions 
-	SET status = $1, content =$2 WHERE id = $3;`
+	SET status = $1, content = $2, comment = $3 WHERE id = $4;`
 
-	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.VersionID)
+	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.Comment, p.VersionID)
 	if err != nil {
 		return err
 	}

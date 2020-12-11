@@ -1077,3 +1077,11 @@ func (m *MockDB) DeleteAllVersions(c context.Context, id uuid.UUID) error {
 func (m *MockDB) PipelineNameCreatable(c context.Context, name string) (bool, error) {
 	return false, errNotImplemented
 }
+
+func (m *MockDB) SwitchRejected(c context.Context, pipelineID, versionID uuid.UUID, comment, author string) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+	return nil, errNotImplemented
+}

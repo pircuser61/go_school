@@ -42,7 +42,6 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.IfState.Model(),
 		script.Input.Model(),
 		script.Equal.Model(),
-		script.Vars.Model(),
 		script.Connector.Model(),
 		script.ForState.Model(),
 		integration.NewNGSASendIntegration(ae.DB).Model(),

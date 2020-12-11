@@ -1794,6 +1794,12 @@ var doc = `{
                 "approve_date": {
                     "type": "string"
                 },
+                "comment": {
+                    "type": "string"
+                },
+                "comment_rejected": {
+                    "type": "string"
+                },
                 "hasDraft": {
                     "type": "boolean"
                 },
@@ -1871,6 +1877,12 @@ var doc = `{
                     "type": "string",
                     "example": "testAuthor"
                 },
+                "comment": {
+                    "type": "string"
+                },
+                "comment_rejected": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string",
                     "example": "2020-07-16T17:10:25.112704+03:00"
@@ -1939,6 +1951,13 @@ var doc = `{
                         "$ref": "#/definitions/entity.EriusScenarioInfo"
                     }
                 },
+                "rejected": {
+                    "description": "Сценарии отправлены на доработку",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusScenarioInfo"
+                    }
+                },
                 "tags": {
                     "description": "Теги",
                     "type": "array",
@@ -1989,9 +2008,7 @@ var doc = `{
                 },
                 "parameters": {
                     "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                    "additionalProperties": true
                 },
                 "started_at": {
                     "type": "string"
