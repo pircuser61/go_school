@@ -1778,6 +1778,12 @@
                 "approve_date": {
                     "type": "string"
                 },
+                "comment": {
+                    "type": "string"
+                },
+                "comment_rejected": {
+                    "type": "string"
+                },
                 "hasDraft": {
                     "type": "boolean"
                 },
@@ -1855,6 +1861,12 @@
                     "type": "string",
                     "example": "testAuthor"
                 },
+                "comment": {
+                    "type": "string"
+                },
+                "comment_rejected": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string",
                     "example": "2020-07-16T17:10:25.112704+03:00"
@@ -1923,6 +1935,13 @@
                         "$ref": "#/definitions/entity.EriusScenarioInfo"
                     }
                 },
+                "rejected": {
+                    "description": "Сценарии отправлены на доработку",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusScenarioInfo"
+                    }
+                },
                 "tags": {
                     "description": "Теги",
                     "type": "array",
@@ -1973,9 +1992,7 @@
                 },
                 "parameters": {
                     "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                    "additionalProperties": true
                 },
                 "started_at": {
                     "type": "string"

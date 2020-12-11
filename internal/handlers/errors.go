@@ -61,6 +61,7 @@ const (
 	CreateDebugParseError
 	CreateDebugInputsError
 	CreateWorkError
+	GetAllRejectedError
 )
 
 //nolint:dupl //its not duplicate
@@ -108,6 +109,7 @@ var errorText = map[Err]string{
 	CreateDebugParseError:      "can't pars debug task data",
 	CreateDebugInputsError:     "can't pars debug task inputs",
 	CreateWorkError:            "can't create work",
+	GetAllRejectedError:        "can't get rejected versions",
 }
 
 // JOKE.
@@ -156,6 +158,7 @@ var errorDescription = map[Err]string{
 	CreateDebugParseError:      "Не удалось разобрать информацию о запуске сценария в режиме отладки",
 	CreateDebugInputsError:     "Не удалось разобрать входные данные в режиме отладки",
 	CreateWorkError:            "Не удалось создать новый запуск",
+	GetAllRejectedError:        "Невозможно получить список сценариев, отправленных на доработку",
 }
 
 var errorStatus = map[Err]int{
