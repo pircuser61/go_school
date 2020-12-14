@@ -82,7 +82,7 @@ func waitStatus(monChan <-chan bool) {
 	}
 }
 
-//nolint:gocyclo //need bigger cyclomatic
+//nolint:gocyclo,nestif //need bigger cyclomatic, its necessary
 func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
@@ -133,6 +133,7 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 		return errors.New("notification id not found")
 	}
 
+	//nolint:nestif /its
 	if m.TimeOut != 0 {
 		go func() {
 			time.Sleep(time.Duration(m.TimeOut) * time.Minute)

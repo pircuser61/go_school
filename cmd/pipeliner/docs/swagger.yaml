@@ -198,11 +198,6 @@ definitions:
         items:
           $ref: '#/definitions/entity.EriusScenarioInfo'
         type: array
-      rejected:
-        description: Сценарии отправлены на доработку
-        items:
-          $ref: '#/definitions/entity.EriusScenarioInfo'
-        type: array
       tags:
         description: Теги
         items:

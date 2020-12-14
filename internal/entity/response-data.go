@@ -12,7 +12,6 @@ type EriusScenarioList struct {
 	Pipelines []EriusScenarioInfo `json:"pipelines"`  // Согласованные сценарии
 	Drafts    []EriusScenarioInfo `json:"drafts"`     // Черновики
 	OnApprove []EriusScenarioInfo `json:"on_approve"` // Сценарии на одобрении
-	Rejected  []EriusScenarioInfo `json:"rejected"`   // Сценарии отправлены на доработку
 	Tags      []EriusTagInfo      `json:"tags"`       // Теги
 }
 
