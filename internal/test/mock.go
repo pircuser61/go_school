@@ -1078,7 +1078,7 @@ func (m *MockDB) PipelineNameCreatable(c context.Context, name string) (bool, er
 	return false, errNotImplemented
 }
 
-func (m *MockDB) SwitchRejected(c context.Context, pipelineID, versionID uuid.UUID, comment, author string) error {
+func (m *MockDB) SwitchRejected(c context.Context, versionID uuid.UUID, comment, author string) error {
 	return errNotImplemented
 }
 

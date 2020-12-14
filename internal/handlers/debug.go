@@ -207,6 +207,7 @@ func (ae *APIEnv) runDebugTask(
 ) (*entity.DebugRunResult, error) {
 	ctx, s := trace.StartSpan(ctx, "run debug task")
 	defer s.End()
+
 	_ = action
 
 	version, err := ae.DB.GetPipelineVersion(ctx, task.VersionID)
@@ -245,10 +246,12 @@ func (ae *APIEnv) runDebugTask(
 			vs.SetValue(version.Name+"."+key, value)
 		}
 	}
+
 	if !isFirstRun {
 		lastStep := steps[0]
 		vs = store.NewFromStep(&lastStep)
 	}
+
 	vs.SetBreakPoints(breakPoints)
 
 	err = ep.DebugRun(ctx, vs)

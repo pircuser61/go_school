@@ -73,13 +73,6 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	rejected, perr := ae.rejectedVersions(ctx)
-	if perr != nil {
-		_ = perr.sendError(w)
-
-		return
-	}
-
 	tags, err := ae.tags(ctx)
 	if err != nil {
 		_ = err.sendError(w)
@@ -91,7 +84,6 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 		Pipelines: approved,
 		OnApprove: onApprove,
 		Drafts:    drafts,
-		Rejected:  rejected,
 		Tags:      tags,
 	}
 
@@ -128,6 +120,19 @@ func (ae *APIEnv) draftVersions(ctx context.Context) ([]entity.EriusScenarioInfo
 	if err != nil {
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllDraftsError}
 	}
+
+	onapprove, err := ae.DB.GetOnApproveVersions(ctx)
+	if err != nil {
+		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllOnApproveError}
+	}
+
+	rejected, err := ae.DB.GetRejectedVersions(ctx)
+	if err != nil {
+		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllRejectedError}
+	}
+
+	drafts = append(drafts, onapprove...)
+	drafts = append(drafts, rejected...)
 
 	return filterVersionsByID(drafts, grants.All, grants.Items), nil
 }
@@ -190,36 +195,6 @@ func (ae *APIEnv) approvedVersions(ctx context.Context) ([]entity.EriusScenarioI
 	}
 
 	return filterPipelinesByID(approved, grants.All, grants.Items), nil
-}
-
-// rejectedVersions выбирает версии сценариев, отправленные на доработку,
-// разрешенные для данного пользователя
-//nolint:dupl //different logic
-func (ae *APIEnv) rejectedVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
-	ctx, s := trace.StartSpan(ctx, "list_rejected_versions")
-	defer s.End()
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Approve)
-	if err != nil {
-		ae.Logger.Error(AuthServiceError.errorMessage(err))
-
-		return []entity.EriusScenarioInfo{}, &PipelinerError{AuthServiceError}
-	}
-
-	if !grants.Allow {
-		ae.Logger.Error(UnauthError.errorMessage(err))
-
-		return []entity.EriusScenarioInfo{}, nil
-	}
-
-	rejected, err := ae.DB.GetRejectedVersions(ctx)
-	if err != nil {
-		ae.Logger.Error(GetAllRejectedError.errorMessage(err))
-
-		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllRejectedError}
-	}
-
-	return filterPipelinesByID(rejected, grants.All, grants.Items), nil
 }
 
 // nolint:dupl // original code
@@ -750,7 +725,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if p.Status == db.StatusRejected {
-		err = ae.DB.SwitchRejected(ctx, p.ID, p.VersionID, p.CommentRejected, user.UserName())
+		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, user.UserName())
 		if err != nil {
 			e := ApproveError
 			ae.Logger.Error(e.errorMessage(err))

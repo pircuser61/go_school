@@ -386,7 +386,7 @@ func (db *PGConnection) SwitchApproved(c context.Context, pipelineID, versionID 
 	return nil
 }
 
-func (db *PGConnection) SwitchRejected(c context.Context, pipelineID, versionID uuid.UUID, comment, author string) error {
+func (db *PGConnection) SwitchRejected(c context.Context, versionID uuid.UUID, comment, author string) error {
 	c, span := trace.StartSpan(c, "pg_switch_rejected")
 	defer span.End()
 
@@ -476,9 +476,9 @@ func (db *PGConnection) DraftPipelineCreatable(c context.Context, id uuid.UUID, 
 
 	defer conn.Release()
 
-	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE pipeline_id =$1 AND author = $2 AND (status = $3 OR status = $4)`
+	q := `SELECT COUNT(id) FROM pipeliner.versions WHERE pipeline_id =$1 AND author = $2 AND (status = $3 OR status = $4 OR status = $5)`
 
-	row := conn.QueryRow(c, q, id, author, StatusDraft, StatusOnApprove)
+	row := conn.QueryRow(c, q, id, author, StatusDraft, StatusOnApprove, StatusRejected)
 
 	count := 0
 
@@ -1415,6 +1415,7 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 	defer span.End()
 
 	et := entity.EriusTask{}
+
 	var nullStringParameters sql.NullString
 
 	conn, err := db.Pool.Acquire(c)
@@ -1471,6 +1472,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 
 	for rows.Next() {
 		et := entity.EriusTask{}
+
 		var nullStringParameters sql.NullString
 
 		err = rows.Scan(
@@ -1484,6 +1486,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 		if err != nil {
 			return nil, err
 		}
+
 		if nullStringParameters.Valid {
 			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
 			if err != nil {

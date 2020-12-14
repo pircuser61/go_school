@@ -1951,13 +1951,6 @@ var doc = `{
                         "$ref": "#/definitions/entity.EriusScenarioInfo"
                     }
                 },
-                "rejected": {
-                    "description": "Сценарии отправлены на доработку",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entity.EriusScenarioInfo"
-                    }
-                },
                 "tags": {
                     "description": "Теги",
                     "type": "array",

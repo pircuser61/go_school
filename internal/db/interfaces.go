@@ -63,6 +63,6 @@ type Database interface {
 	DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error)
 	DeleteAllVersions(c context.Context, id uuid.UUID) error
 	PipelineNameCreatable(c context.Context, name string) (bool, error)
-	SwitchRejected(c context.Context, pipelineID, versionID uuid.UUID, comment string, author string) error
+	SwitchRejected(c context.Context, versionID uuid.UUID, comment string, author string) error
 	GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 }
