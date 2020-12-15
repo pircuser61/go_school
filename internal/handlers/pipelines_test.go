@@ -433,7 +433,14 @@ func Test_authUpdateParametersByPipelineStatus(t *testing.T) {
 			name:         "approved",
 			p:            entity.EriusScenario{Status: db.StatusApproved, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
 			wantResource: vars.Pipeline,
-			wantAction:   vars.Update,
+			wantAction:   vars.Approve,
+			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
+		},
+		{
+			name:         "rejected",
+			p:            entity.EriusScenario{Status: db.StatusRejected, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			wantResource: vars.Pipeline,
+			wantAction:   vars.Approve,
 			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
 		},
 	}

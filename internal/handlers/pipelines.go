@@ -760,6 +760,10 @@ func authUpdateParametersByPipelineStatus(p *entity.EriusScenario) (resource var
 		resource = vars.PipelineVersion
 		action = vars.Own
 		id = p.VersionID.String()
+	case db.StatusApproved, db.StatusRejected:
+		resource = vars.Pipeline
+		action = vars.Approve
+		id = p.ID.String() // pipeline id
 	default:
 		resource = vars.Pipeline
 		action = vars.Update
