@@ -1544,7 +1544,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 		s.Steps = storage.Steps
 		s.Errors = storage.Errors
 		s.Storage = storage.Values
-		el = append(el, s)
+		el = append(el, &s)
 	}
 
 	return el, nil

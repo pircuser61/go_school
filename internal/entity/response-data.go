@@ -124,7 +124,27 @@ type EriusTask struct {
 	Steps       TaskSteps              `json:"steps"`
 }
 
-type TaskSteps []Step
+func (et *EriusTask) IsRun() bool {
+	return et.Status == "run"
+}
+
+func (et *EriusTask) IsCreated() bool {
+	return et.Status == "created"
+}
+
+func (et *EriusTask) IsStopped() bool {
+	return et.Status == "stopped"
+}
+
+func (et *EriusTask) IsFinished() bool {
+	return et.Status == "finished"
+}
+
+type TaskSteps []*Step
+
+func (ts *TaskSteps) IsEmpty() bool {
+	return len(*ts) == 0
+}
 
 // @deprecated
 type EriusLog struct {
@@ -143,8 +163,8 @@ type SchedulerTasksResponse struct {
 	Result bool `json:"result"`
 }
 
-type DebugRunResult struct {
+type DebugResult struct {
 	BlockName   string     `json:"block_name"`
-	BlockStatus string     `json:"status" example:"run,error,finished"` // todo define values
+	BlockStatus string     `json:"status" example:"run,error,finished,created"` // todo define values
 	Task        *EriusTask `json:"task"`
 }

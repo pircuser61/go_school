@@ -17,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/erius/admin/pkg/vars"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 
+	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 
 	"go.opencensus.io/trace"
@@ -40,11 +41,11 @@ type CreateTaskRequest struct {
 // @Summary Start debug task
 // @Description Начать отладку
 // @Tags debug
-// @ID debug-task
+// @ID debug-task-run
 // @Accept json
 // @Produce json
 // @Param variables body DebugRunRequest false "debug request"
-// @Success 200 {object} httpResponse{data=entity.DebugRunResult}
+// @Success 200 {object} httpResponse{data=entity.EriusTask}
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
@@ -73,16 +74,19 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 
 	mappedBreakPoints := sliceToMap(debugRequest.BreakPoints)
 
-	result, err := ae.runDebugTask(ctx, task, mappedBreakPoints, debugRequest.Action)
-	if err != nil {
-		e := PipelineRunError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+	go func() {
+		routineCtx := context.Background()
 
-		return
-	}
+		_, err := ae.runDebugTask(routineCtx, task, mappedBreakPoints, debugRequest.Action)
+		if err != nil {
+			e := RunDebugError
+			ae.Logger.Error(e.errorMessage(err))
 
-	if err := sendResponse(w, http.StatusOK, result); err != nil {
+			return
+		}
+	}()
+
+	if err := sendResponse(w, http.StatusOK, task); err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -198,23 +202,11 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// todo monitoring
-func (ae *APIEnv) runDebugTask(
+func (ae *APIEnv) executablePipeline(
 	ctx context.Context,
 	task *entity.EriusTask,
-	breakPoints map[string]struct{},
-	action string,
-) (*entity.DebugRunResult, error) {
-	ctx, s := trace.StartSpan(ctx, "run debug task")
-	defer s.End()
-
-	_ = action
-
-	version, err := ae.DB.GetPipelineVersion(ctx, task.VersionID)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get version")
-	}
-
+	version *entity.EriusScenario,
+) (*pipeline.ExecutablePipeline, error) {
 	ep := pipeline.ExecutablePipeline{
 		TaskID:        task.ID,
 		PipelineID:    version.ID,
@@ -228,16 +220,19 @@ func (ae *APIEnv) runDebugTask(
 		Remedy:        ae.Remedy,
 	}
 
-	err = ep.CreateBlocks(ctx, version.Pipeline.Blocks)
+	err := ep.CreateBlocks(ctx, version.Pipeline.Blocks)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create pipeline blocks")
 	}
 
-	steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get task steps")
-	}
+	return &ep, nil
+}
 
+func variableStoreFromSteps(
+	task *entity.EriusTask,
+	version *entity.EriusScenario,
+	steps entity.TaskSteps,
+) *store.VariableStore {
 	vs := store.NewStore()
 	isFirstRun := len(steps) == 0
 
@@ -249,15 +244,174 @@ func (ae *APIEnv) runDebugTask(
 
 	if !isFirstRun {
 		lastStep := steps[0]
-		vs = store.NewFromStep(&lastStep)
+		vs = store.NewFromStep(lastStep)
 	}
+
+	return vs
+}
+
+func currentStepName(
+	ep *pipeline.ExecutablePipeline,
+	steps entity.TaskSteps,
+	task *entity.EriusTask,
+) (currentStep string) {
+	if steps.IsEmpty() {
+		currentStep = ep.EntryPoint
+
+		return
+	}
+
+	if task.IsRun() {
+		currentStep = ep.Blocks[steps[0].Name].Next()
+
+		return
+	}
+
+	return steps[0].Name
+}
+
+func currentBlockStatus(
+	task *entity.EriusTask,
+	steps entity.TaskSteps,
+) (blockStatus string) {
+	if !steps.IsEmpty() {
+		blockStatus = stepStatus(task, steps[0])
+
+		return
+	}
+
+	return
+}
+
+func stepStatus(task *entity.EriusTask, step *entity.Step) (stepStatus string) {
+	if _, ok := step.Storage[step.Name+"."+"error"]; ok {
+		return "error"
+	}
+
+	return task.Status
+}
+
+// todo monitoring
+func (ae *APIEnv) runDebugTask(
+	ctx context.Context,
+	task *entity.EriusTask,
+	breakPoints map[string]struct{},
+	action string,
+) (*entity.DebugResult, error) {
+	ctx, s := trace.StartSpan(ctx, "run debug task")
+	defer s.End()
+
+	_ = action
+
+	version, err := ae.DB.GetPipelineVersion(ctx, task.VersionID)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get version")
+	}
+
+	ep, err := ae.executablePipeline(ctx, task, version)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get executable pipeline")
+	}
+
+	steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get task steps")
+	}
+
+	vs := variableStoreFromSteps(task, version, steps)
 
 	vs.SetBreakPoints(breakPoints)
 
 	err = ep.DebugRun(ctx, vs)
 	if err != nil {
 		ae.Logger.Error(err)
+
+		return nil, errors.Wrap(err, "unable to run debug")
 	}
 
-	return &entity.DebugRunResult{}, nil
+	return &entity.DebugResult{}, nil
+}
+
+// DebugTask
+// @Summary Debug task
+// @Description Получить debug-задачу
+// @Tags tasks
+// @ID      debug-task
+// @Produce json
+// @Param taskID path string true "Task ID"
+// @success 200 {object} httpResponse{data=entity.DebugResult}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /debug/{taskID} [get]
+// nolint:dupl //its unique
+func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_debug_task")
+	defer s.End()
+
+	idParam := chi.URLParam(req, "taskID")
+
+	taskID, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	task, err := ae.DB.GetTask(ctx, taskID)
+	if err != nil {
+		e := GetTaskError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	version, err := ae.DB.GetPipelineVersion(ctx, task.VersionID)
+	if err != nil {
+		e := GetVersionError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	ep, err := ae.executablePipeline(ctx, task, version)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	task.Steps = steps
+
+	nowOnPoint := currentStepName(ep, steps, task)
+	nowOnPointStatus := currentBlockStatus(task, steps)
+
+	result := entity.DebugResult{
+		BlockName:   nowOnPoint,
+		BlockStatus: nowOnPointStatus,
+		Task:        task,
+	}
+
+	if err := sendResponse(w, http.StatusOK, result); err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }
