@@ -19,7 +19,6 @@ var doc = `{
         "description": "{{.Description}}",
         "title": "{{.Title}}",
         "contact": {},
-        "license": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -103,7 +102,7 @@ var doc = `{
                     "debug"
                 ],
                 "summary": "Start debug task",
-                "operationId": "debug-task",
+                "operationId": "debug-task-run",
                 "parameters": [
                     {
                         "description": "debug request",
@@ -126,7 +125,67 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/entity.DebugRunResult"
+                                            "$ref": "#/definitions/entity.EriusTask"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/debug/{taskID}": {
+            "get": {
+                "description": "Получить debug-задачу",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Debug task",
+                "operationId": "debug-task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "taskID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.DebugResult"
                                         }
                                     }
                                 }
@@ -1684,7 +1743,7 @@ var doc = `{
                 }
             }
         },
-        "entity.DebugRunResult": {
+        "entity.DebugResult": {
             "type": "object",
             "properties": {
                 "block_name": {
@@ -1693,10 +1752,9 @@ var doc = `{
                 "status": {
                     "description": "todo define values",
                     "type": "string",
-                    "example": "run,error,finished"
+                    "example": "run,error,finished,created"
                 },
                 "task": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.EriusTask"
                 }
             }
@@ -2010,8 +2068,10 @@ var doc = `{
                     "type": "string"
                 },
                 "steps": {
-                    "type": "object",
-                    "$ref": "#/definitions/entity.TaskSteps"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Step"
+                    }
                 },
                 "version_id": {
                     "type": "string"
@@ -2090,12 +2150,6 @@ var doc = `{
                 "time": {
                     "type": "string"
                 }
-            }
-        },
-        "entity.TaskSteps": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/entity.Step"
             }
         },
         "entity.UsageResponse": {
