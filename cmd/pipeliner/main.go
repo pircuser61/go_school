@@ -99,7 +99,7 @@ func main() {
 	jr, err := jaeger.NewExporter(jaeger.Options{
 		CollectorEndpoint: cfg.Tracing.URL,
 		Process: jaeger.Process{
-			ServiceName: "no-auth",
+			ServiceName: "erius.pipeliner",
 			Tags:        []jaeger.Tag{jaeger.StringTag("system", "pipeliner")},
 		},
 	})
