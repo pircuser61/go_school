@@ -496,7 +496,7 @@ func (db *PGConnection) DraftPipelineCreatable(c context.Context, id uuid.UUID, 
 
 func (db *PGConnection) CreatePipeline(c context.Context,
 	p *entity.EriusScenario, author string, pipelineData []byte) error {
-	_, span := trace.StartSpan(c, "pg_create_pipeline")
+	c, span := trace.StartSpan(c, "pg_create_pipeline")
 	defer span.End()
 
 	conn, err := db.Pool.Acquire(c)
@@ -537,7 +537,7 @@ func (db *PGConnection) CreatePipeline(c context.Context,
 
 func (db *PGConnection) CreateVersion(c context.Context,
 	p *entity.EriusScenario, author string, pipelineData []byte) error {
-	_, span := trace.StartSpan(c, "pg_create_version")
+	c, span := trace.StartSpan(c, "pg_create_version")
 	defer span.End()
 
 	qNewVersion := `INSERT INTO pipeliner.versions(
@@ -585,7 +585,7 @@ func (db *PGConnection) PipelineNameCreatable(c context.Context, name string) (b
 
 func (db *PGConnection) CreateTag(c context.Context,
 	e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error) {
-	_, span := trace.StartSpan(c, "pg_create_tag")
+	c, span := trace.StartSpan(c, "pg_create_tag")
 	defer span.End()
 
 	conn, err := db.Pool.Acquire(c)
@@ -639,7 +639,7 @@ func (db *PGConnection) CreateTag(c context.Context,
 }
 
 func (db *PGConnection) DeleteVersion(c context.Context, versionID uuid.UUID) error {
-	_, span := trace.StartSpan(c, "pg_delete_version")
+	c, span := trace.StartSpan(c, "pg_delete_version")
 	defer span.End()
 
 	q := `UPDATE pipeliner.versions SET deleted_at=$1, status=$2 WHERE id = $3`
@@ -654,7 +654,7 @@ func (db *PGConnection) DeleteVersion(c context.Context, versionID uuid.UUID) er
 }
 
 func (db *PGConnection) DeleteAllVersions(c context.Context, id uuid.UUID) error {
-	_, span := trace.StartSpan(c, "pg_delete_version")
+	c, span := trace.StartSpan(c, "pg_delete_version")
 	defer span.End()
 
 	q := `UPDATE pipeliner.versions SET deleted_at=$1, status=$2 WHERE pipeline_id = $3`
