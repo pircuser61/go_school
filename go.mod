@@ -25,7 +25,6 @@ require (
 	gitlab.services.mts.ru/erius/monitoring v0.1.0
 	gitlab.services.mts.ru/erius/scheduler_client v0.0.3
 	go.opencensus.io v0.22.5
-	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 )

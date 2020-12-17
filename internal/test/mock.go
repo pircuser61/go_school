@@ -1004,7 +1004,7 @@ func (m *MockDB) ChangeTaskStatus(c context.Context, workID uuid.UUID, status in
 }
 
 func (m *MockDB) GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error) {
-	return nil, errNotImplemented
+	return []entity.EriusScenario{}, nil
 }
 
 func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error) {

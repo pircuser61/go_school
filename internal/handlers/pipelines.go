@@ -635,7 +635,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/version [put]
-//nolint: gocyclo /its  necessary
+//nolint:gocyclo //its  necessary
 func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_draft")
 	defer s.End()

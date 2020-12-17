@@ -133,7 +133,7 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 		return errors.New("notification id not found")
 	}
 
-	//nolint:nestif /its
+	//nolint:nestif //its necessary
 	if m.TimeOut != 0 {
 		go func() {
 			time.Sleep(time.Duration(m.TimeOut) * time.Minute)
