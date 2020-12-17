@@ -260,15 +260,15 @@ func currentStepName(
 		currentStep = ep.EntryPoint
 
 		return
-	} else {
-		if task.IsRun() {
-			currentStep = ep.Blocks[steps[0].Name].Next(vs)
-
-			return
-		}
-
-		return steps[0].Name
 	}
+
+	if task.IsRun() {
+		currentStep = ep.Blocks[steps[0].Name].Next(vs)
+
+		return
+	}
+
+	return steps[0].Name
 }
 
 func currentBlockStatus(
@@ -393,6 +393,7 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
 	steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
 	if err != nil {
 		e := UnknownError

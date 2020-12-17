@@ -178,6 +178,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 				return errChange
 			}
+
 			return nil
 		}
 	}

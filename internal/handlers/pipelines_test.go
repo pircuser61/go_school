@@ -106,16 +106,16 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		//	PipelinerExpectedOutput:  nil,
 		//	ExpectedRunningSequence: []string{"Block1", "Block2"},
 		//},
-		{
-			name: "For Pipeline",
-			pipelineInput: map[string]interface{}{
-				"Input": 3,
-			},
-			tp:                      test.ForPipelineTestable,
-			HandlersExpectedInput:   nil,
-			PipelinerExpectedOutput: nil,
-			ExpectedRunningSequence: []string{"Block1", "Block2", "Block2", "Block2", "Block3"},
-		},
+		//{
+		//	name: "For Pipeline",
+		//	pipelineInput: map[string]interface{}{
+		//		"Input": 3,
+		//	},
+		//	tp:                      test.ForPipelineTestable,
+		//	HandlersExpectedInput:   nil,
+		//	PipelinerExpectedOutput: nil,
+		//	ExpectedRunningSequence: []string{"Block1", "Block2", "Block2", "Block2", "Block3"},
+		//},
 		{
 			name: "Pipeline with pipeline",
 			pipelineInput: map[string]interface{}{
@@ -130,14 +130,14 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "Block1", "Block2", "Block3", "Block2"},
 		},
-		{
-			name:                    "ForInFor",
-			pipelineInput:           nil,
-			tp:                      test.ForInForPipelineTestable,
-			HandlersExpectedInput:   nil,
-			PipelinerExpectedOutput: nil,
-			ExpectedRunningSequence: []string{"MasGen", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1"},
-		},
+		//{
+		//	name:                    "ForInFor",
+		//	pipelineInput:           nil,
+		//	tp:                      test.ForInForPipelineTestable,
+		//	HandlersExpectedInput:   nil,
+		//	PipelinerExpectedOutput: nil,
+		//	ExpectedRunningSequence: []string{"MasGen", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1"},
+		//},
 		{
 			name:                    "Strings equal Pipeline True",
 			tp:                      test.StringsEqualsPipelineTrueTestable,
