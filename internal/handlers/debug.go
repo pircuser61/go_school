@@ -34,8 +34,8 @@ func (d DebugRunRequest) Bind(r *http.Request) error {
 }
 
 type CreateTaskRequest struct {
-	VersionID  uuid.UUID         `json:"version_id"`
-	Parameters map[string]string `json:"parameters"`
+	VersionID  uuid.UUID              `json:"version_id"`
+	Parameters map[string]interface{} `json:"parameters"`
 }
 
 // @Summary Start debug task
@@ -254,20 +254,21 @@ func currentStepName(
 	ep *pipeline.ExecutablePipeline,
 	steps entity.TaskSteps,
 	task *entity.EriusTask,
+	vs *store.VariableStore,
 ) (currentStep string) {
 	if steps.IsEmpty() {
 		currentStep = ep.EntryPoint
 
 		return
+	} else {
+		if task.IsRun() {
+			currentStep = ep.Blocks[steps[0].Name].Next(vs)
+
+			return
+		}
+
+		return steps[0].Name
 	}
-
-	if task.IsRun() {
-		currentStep = ep.Blocks[steps[0].Name].Next()
-
-		return
-	}
-
-	return steps[0].Name
 }
 
 func currentBlockStatus(
@@ -319,6 +320,12 @@ func (ae *APIEnv) runDebugTask(
 	}
 
 	vs := variableStoreFromSteps(task, version, steps)
+
+	if steps.IsEmpty() {
+		ep.NowOnPoint = ep.EntryPoint
+	} else {
+		ep.NowOnPoint = ep.Blocks[steps[0].Name].Next(vs)
+	}
 
 	vs.SetBreakPoints(breakPoints)
 
@@ -386,7 +393,6 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-
 	steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
 	if err != nil {
 		e := UnknownError
@@ -398,7 +404,8 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 
 	task.Steps = steps
 
-	nowOnPoint := currentStepName(ep, steps, task)
+	vs := variableStoreFromSteps(task, version, steps)
+	nowOnPoint := currentStepName(ep, steps, task, vs)
 	nowOnPointStatus := currentBlockStatus(task, steps)
 
 	result := entity.DebugResult{

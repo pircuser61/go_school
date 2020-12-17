@@ -115,7 +115,7 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 	return nil
 }
 
-func (fb *FunctionBlock) Next() string {
+func (fb *FunctionBlock) Next(runCtx *store.VariableStore) string {
 	return fb.NextStep
 }
 
