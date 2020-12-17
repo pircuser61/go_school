@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
@@ -53,8 +54,10 @@ func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	return nil
 }
 
-func (e *IF) Next() string {
-	if e.Result {
+func (e *IF) Next(runCtx *store.VariableStore) string {
+	r, _ := runCtx.GetBoolWithInput(e.FunctionInput, "check")
+
+	if r {
 		return e.OnTrue
 	}
 
@@ -116,7 +119,7 @@ func (se *StringsEqual) DebugRun(ctx context.Context, runCtx *store.VariableStor
 	return nil
 }
 
-func (se *StringsEqual) Next() string {
+func (se *StringsEqual) Next(runCtx *store.VariableStore) string {
 	if se.Result {
 		return se.OnTrue
 	}
@@ -162,7 +165,7 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	i, ok := runCtx.GetValue(e.FunctionOutput["index"])
 	if ok {
-		index, ok = i.(int)
+		index, ok = indexToInt(i)
 		if !ok {
 			return errCantGetIndex
 		}
@@ -185,10 +188,31 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	return nil
 }
 
-func (e *ForState) Next() string {
-	if e.LastElem {
+func (e *ForState) Next(runCtx *store.VariableStore) string {
+	arr, _ := runCtx.GetArray(e.FunctionInput["iter"])
+
+	i, _ := runCtx.GetValue(e.FunctionOutput["index"])
+	index, _ := indexToInt(i)
+
+	if index >= len(arr) {
 		return e.OnTrue
 	}
 
 	return e.OnFalse
+}
+
+func indexToInt(i interface{}) (int, bool) {
+	switch i.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		index, ok := i.(int)
+
+		return index, ok
+	case float32, float64:
+		floatIndex, ok := i.(float64)
+		index := int(math.Round(floatIndex))
+
+		return index, ok
+	default:
+		return 0, false
+	}
 }

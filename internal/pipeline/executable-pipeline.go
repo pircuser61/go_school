@@ -19,7 +19,7 @@ import (
 )
 
 type ExecutablePipeline struct {
-	WorkID        uuid.UUID
+	TaskID        uuid.UUID
 	PipelineID    uuid.UUID
 	VersionID     uuid.UUID
 	Storage       db.Database
@@ -51,10 +51,10 @@ func (ep *ExecutablePipeline) IsScenario() bool {
 	return true
 }
 
-func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) error {
-	ep.WorkID = uuid.New()
+func (ep *ExecutablePipeline) CreateTask(ctx context.Context, author string, isDebugMode bool, parameters []byte) error {
+	ep.TaskID = uuid.New()
 
-	err := ep.Storage.WriteTask(ctx, ep.WorkID, ep.VersionID, author)
+	_, err := ep.Storage.CreateTask(ctx, ep.TaskID, ep.VersionID, author, isDebugMode, parameters)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			err := errors.New("unknown block")
 			ep.VarStore.AddError(err)
 
-			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
+			errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
 			if errChange != nil {
 				return errChange
 			}
@@ -111,7 +111,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			if err != nil {
 				ep.VarStore.AddError(err)
 
-				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
+				errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
 				if errChange != nil {
 					return errChange
 				}
@@ -130,7 +130,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
 			if err != nil {
 				ep.VarStore.AddError(err)
-				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
+				errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
 				if errChange != nil {
 					ep.VarStore.AddError(errChange)
 
@@ -145,7 +145,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		if err != nil {
 			ep.VarStore.AddError(err)
 
-			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
+			errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
 			if errChange != nil {
 				ep.VarStore.AddError(errChange)
 
@@ -155,13 +155,13 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			return err
 		}
 
-		err = ep.Storage.WriteContext(ctx, ep.WorkID, ep.NowOnPoint, storageData)
-		ep.NowOnPoint = ep.Blocks[ep.NowOnPoint].Next()
+		err = ep.Storage.SaveStepContext(ctx, ep.TaskID, ep.NowOnPoint, storageData)
+		ep.NowOnPoint = ep.Blocks[ep.NowOnPoint].Next(ep.VarStore)
 
 		if err != nil {
 			ep.VarStore.AddError(err)
 
-			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
+			errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
 			if errChange != nil {
 				ep.VarStore.AddError(errChange)
 
@@ -170,9 +170,20 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			return err
 		}
+
+		if _, ok := runCtx.BreakPoints[ep.NowOnPoint]; ok {
+			errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusStopped)
+			if errChange != nil {
+				ep.VarStore.AddError(errChange)
+
+				return errChange
+			}
+
+			return nil
+		}
 	}
 
-	err := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusFinished)
+	err := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusFinished)
 	if err != nil {
 		ep.VarStore.AddError(err)
 
@@ -187,7 +198,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	return nil
 }
 
-func (ep *ExecutablePipeline) Next() string {
+func (ep *ExecutablePipeline) Next(runCtx *store.VariableStore) string {
 	return ep.NextStep
 }
 
@@ -242,7 +253,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.Name = block.Title
 			epi.PipelineModel = p
 
-			err = epi.CreateWork(c, "Erius")
+			err = epi.CreateTask(c, "Erius", false, []byte{})
 			if err != nil {
 				return err
 			}

@@ -48,7 +48,7 @@ func (cb *ConnectorBlock) DebugRun(ctx context.Context, runCtx *store.VariableSt
 	return nil
 }
 
-func (cb *ConnectorBlock) Next() string {
+func (cb *ConnectorBlock) Next(runCtx *store.VariableStore) string {
 	return cb.NextStep
 }
 

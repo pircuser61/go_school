@@ -4,6 +4,8 @@ import (
 	"errors"
 	"reflect"
 	"sync"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 )
 
 var (
@@ -14,48 +16,57 @@ var (
 )
 
 type VariableStore struct {
-	mut    *sync.Mutex
-	Values map[string]interface{}
-	Steps  []string
-	Errors []string
+	sync.Mutex
+	Values      map[string]interface{}
+	Steps       []string
+	Errors      []string
+	BreakPoints map[string]struct{}
 }
 
 func NewStore() *VariableStore {
 	s := VariableStore{
-		mut:    &sync.Mutex{},
-		Values: make(map[string]interface{}),
-		Steps:  make([]string, 0),
-		Errors: make([]string, 0),
+		Values:      make(map[string]interface{}),
+		Steps:       make([]string, 0),
+		Errors:      make([]string, 0),
+		BreakPoints: make(map[string]struct{}),
 	}
 
 	return &s
 }
 
+func NewFromStep(step *entity.Step) *VariableStore {
+	return &VariableStore{
+		Values: step.Storage,
+		Steps:  step.Steps,
+		Errors: step.Errors,
+	}
+}
+
 func (c *VariableStore) AddStep(name string) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	c.Steps = append(c.Steps, name)
 }
 
 func (c *VariableStore) AddError(err error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	c.Errors = append(c.Errors, err.Error())
 }
 
 func (c *VariableStore) GetValue(name string) (interface{}, bool) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 	val, ok := c.Values[name]
 
 	return val, ok
 }
 
 func (c *VariableStore) GetArray(name string) ([]interface{}, bool) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	val, ok := c.Values[name]
 	if !ok {
@@ -71,22 +82,22 @@ func (c *VariableStore) GetArray(name string) ([]interface{}, bool) {
 }
 
 func (c *VariableStore) GrabStorage() (map[string]interface{}, error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	return c.Values, nil
 }
 
 func (c *VariableStore) GrabSteps() ([]string, error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	return c.Steps, nil
 }
 
 func (c *VariableStore) GrabErrors() ([]string, error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	return c.Errors, nil
 }
@@ -138,8 +149,8 @@ func (c *VariableStore) GetBoolWithInput(inMap map[string]string, key string) (b
 }
 
 func (c *VariableStore) SetValue(name string, value interface{}) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	switch v := value.(type) {
 	case string:
@@ -173,4 +184,20 @@ func (c *VariableStore) SetBoolWithOutput(outMap map[string]string, key string, 
 	c.SetValue(outKey, val)
 
 	return nil
+}
+
+func (c *VariableStore) SetBreakPoints(points map[string]struct{}) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.BreakPoints = points
+}
+
+func (c *VariableStore) IsBreakPointExists(key string) bool {
+	c.Lock()
+	defer c.Unlock()
+
+	_, ok := c.BreakPoints[key]
+
+	return ok
 }

@@ -42,7 +42,6 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.IfState.Model(),
 		script.Input.Model(),
 		script.Equal.Model(),
-		script.Vars.Model(),
 		script.Connector.Model(),
 		script.ForState.Model(),
 		integration.NewNGSASendIntegration(ae.DB).Model(),
@@ -234,7 +233,7 @@ func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 // @Summary Run Module By Name
 // @Description Запустить блок
 // @Tags modules
-// @ID      module-usage
+// @ID      module-usage-by-name
 // @Produce json
 // @Param moduleName path string true "module name"
 // @Success 200 {object} httpResponse{data=entity.UsageResponse}
