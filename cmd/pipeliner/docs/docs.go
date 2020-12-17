@@ -2188,9 +2188,7 @@ var doc = `{
             "properties": {
                 "parameters": {
                     "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                    "additionalProperties": true
                 },
                 "version_id": {
                     "type": "string"

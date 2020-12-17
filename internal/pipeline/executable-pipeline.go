@@ -156,7 +156,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		}
 
 		err = ep.Storage.SaveStepContext(ctx, ep.TaskID, ep.NowOnPoint, storageData)
-		ep.NowOnPoint = ep.Blocks[ep.NowOnPoint].Next()
+		ep.NowOnPoint = ep.Blocks[ep.NowOnPoint].Next(ep.VarStore)
 
 		if err != nil {
 			ep.VarStore.AddError(err)
@@ -169,6 +169,16 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			}
 
 			return err
+		}
+
+		if _, ok := runCtx.BreakPoints[ep.NowOnPoint]; ok {
+			errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusStopped)
+			if errChange != nil {
+				ep.VarStore.AddError(errChange)
+
+				return errChange
+			}
+			return nil
 		}
 	}
 
@@ -187,7 +197,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	return nil
 }
 
-func (ep *ExecutablePipeline) Next() string {
+func (ep *ExecutablePipeline) Next(runCtx *store.VariableStore) string {
 	return ep.NextStep
 }
 

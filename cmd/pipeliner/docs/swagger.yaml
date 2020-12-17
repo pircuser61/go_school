@@ -318,8 +318,7 @@ definitions:
   handlers.CreateTaskRequest:
     properties:
       parameters:
-        additionalProperties:
-          type: string
+        additionalProperties: true
         type: object
       version_id:
         type: string

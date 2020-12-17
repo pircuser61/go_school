@@ -183,7 +183,7 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	return err
 }
 
-func (ns NGSASend) Next() string {
+func (ns NGSASend) Next(runCtx *store.VariableStore) string {
 	return ns.NextBlock
 }
 
