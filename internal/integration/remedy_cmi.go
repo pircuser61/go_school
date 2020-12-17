@@ -193,7 +193,7 @@ func CheckStatusForMetrics(ok bool) {
 }
 
 //nolint:gocritic //impossible to pass pointer
-func (rs RemedySendCreateMI) Next() string {
+func (rs RemedySendCreateMI) Next(runCtx *store.VariableStore) string {
 	return rs.NextBlock
 }
 

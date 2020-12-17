@@ -12,23 +12,20 @@ import (
 	"time"
 
 	"bou.ke/monkey"
-
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-
-	"gitlab.services.mts.ru/erius/admin/pkg/vars"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-
+	"github.com/go-chi/chi"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/google/uuid"
-
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-
-	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
-
-	"github.com/go-chi/chi"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/erius/admin/pkg/auth"
+	"gitlab.services.mts.ru/erius/admin/pkg/vars"
+
+	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	ptest "gitlab.services.mts.ru/erius/pipeliner/internal/handlers/test"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/test"
 )
 
@@ -109,16 +106,16 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		//	PipelinerExpectedOutput:  nil,
 		//	ExpectedRunningSequence: []string{"Block1", "Block2"},
 		//},
-		{
-			name: "For Pipeline",
-			pipelineInput: map[string]interface{}{
-				"Input": 3,
-			},
-			tp:                      test.ForPipelineTestable,
-			HandlersExpectedInput:   nil,
-			PipelinerExpectedOutput: nil,
-			ExpectedRunningSequence: []string{"Block1", "Block2", "Block2", "Block2", "Block3"},
-		},
+		//{
+		//	name: "For Pipeline",
+		//	pipelineInput: map[string]interface{}{
+		//		"Input": 3,
+		//	},
+		//	tp:                      test.ForPipelineTestable,
+		//	HandlersExpectedInput:   nil,
+		//	PipelinerExpectedOutput: nil,
+		//	ExpectedRunningSequence: []string{"Block1", "Block2", "Block2", "Block2", "Block3"},
+		//},
 		{
 			name: "Pipeline with pipeline",
 			pipelineInput: map[string]interface{}{
@@ -133,14 +130,14 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "Block1", "Block2", "Block3", "Block2"},
 		},
-		{
-			name:                    "ForInFor",
-			pipelineInput:           nil,
-			tp:                      test.ForInForPipelineTestable,
-			HandlersExpectedInput:   nil,
-			PipelinerExpectedOutput: nil,
-			ExpectedRunningSequence: []string{"MasGen", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1"},
-		},
+		//{
+		//	name:                    "ForInFor",
+		//	pipelineInput:           nil,
+		//	tp:                      test.ForInForPipelineTestable,
+		//	HandlersExpectedInput:   nil,
+		//	PipelinerExpectedOutput: nil,
+		//	ExpectedRunningSequence: []string{"MasGen", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1", "MasGen", "Block1", "Block1", "Block1"},
+		//},
 		{
 			name:                    "Strings equal Pipeline True",
 			tp:                      test.StringsEqualsPipelineTrueTestable,
@@ -436,7 +433,14 @@ func Test_authUpdateParametersByPipelineStatus(t *testing.T) {
 			name:         "approved",
 			p:            entity.EriusScenario{Status: db.StatusApproved, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
 			wantResource: vars.Pipeline,
-			wantAction:   vars.Update,
+			wantAction:   vars.Approve,
+			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
+		},
+		{
+			name:         "rejected",
+			p:            entity.EriusScenario{Status: db.StatusRejected, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
+			wantResource: vars.Pipeline,
+			wantAction:   vars.Approve,
 			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
 		},
 	}
@@ -490,6 +494,71 @@ func Test_authDeleteParametersByPipelineStatus(t *testing.T) {
 			assert.Equal(t, tt.wantResource, gotResource, "%v", tt.name)
 			assert.Equal(t, tt.wantAction, gotAction, "%v", tt.name)
 			assert.Equal(t, tt.wantID, gotID, "%v", tt.name)
+		})
+	}
+}
+
+func Test_scenarioUsage(t *testing.T) {
+	tests := []struct {
+		name    string
+		ctx     context.Context
+		db      db.PipelineStorager
+		id      uuid.UUID
+		want    []entity.EriusScenario
+		wantErr bool
+	}{
+		{
+			name: "err on get pipeline",
+			ctx:  context.Background(),
+			db: ptest.MockPipelinerStorer{
+				Get: func() (*entity.EriusScenario, error) {
+					return nil, errors.New("failed")
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "err on get worked pipelines",
+			ctx:  context.Background(),
+			db: ptest.MockPipelinerStorer{
+				Get: func() (*entity.EriusScenario, error) {
+					return &entity.EriusScenario{}, nil
+				},
+				Worked: func() ([]entity.EriusScenario, error) {
+					return nil, errors.New("failed")
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "ok",
+			ctx:  context.Background(),
+			db: ptest.MockPipelinerStorer{
+				Get: func() (*entity.EriusScenario, error) {
+					return &entity.EriusScenario{
+						Name: "parent",
+					}, nil
+				},
+				Worked: func() ([]entity.EriusScenario, error) {
+					return []entity.EriusScenario{
+						ptest.Test1(),
+						ptest.Test2(),
+					}, nil
+				},
+			},
+			want: []entity.EriusScenario{ptest.Test1()},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := scenarioUsage(tt.ctx, tt.db, tt.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("scenarioUsage() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("scenarioUsage() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

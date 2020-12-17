@@ -155,7 +155,7 @@ func (rs RemedySendCreateProblem) DebugRun(ctx context.Context, runCtx *store.Va
 }
 
 //nolint:gocritic //impossible to pass pointer
-func (rs RemedySendCreateProblem) Next() string {
+func (rs RemedySendCreateProblem) Next(runCtx *store.VariableStore) string {
 	return rs.NextBlock
 }
 

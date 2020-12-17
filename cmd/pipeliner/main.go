@@ -99,7 +99,7 @@ func main() {
 	jr, err := jaeger.NewExporter(jaeger.Options{
 		CollectorEndpoint: cfg.Tracing.URL,
 		Process: jaeger.Process{
-			ServiceName: "no-auth",
+			ServiceName: "erius.pipeliner",
 			Tags:        []jaeger.Tag{jaeger.StringTag("system", "pipeliner")},
 		},
 	})
@@ -193,9 +193,12 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner *handle
 		Route("/api/pipeliner/v1", func(r chi.Router) {
 			r.Use(auth.UserMiddleware(pipeliner.AuthClient))
 			r.Get("/pipelines/", pipeliner.ListPipelines)
-			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
 			r.Post("/pipelines/", pipeliner.CreatePipeline)
+			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
 			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
+
+			r.Get("/pipelines/{pipelineID}/scheduler-tasks", pipeliner.ListSchedulerTasks)
+
 			r.Put("/pipelines/{pipelineID}/tags/{ID}", pipeliner.AttachTag)
 			r.Get("/pipelines/{pipelineID}/tags/", pipeliner.GetPipelineTag)
 			r.Delete("/pipelines/{pipelineID}/tags/{ID}", pipeliner.DetachTag)
@@ -212,15 +215,24 @@ func registerRouter(log logger.Logger, cfg *configs.Pipeliner, pipeliner *handle
 
 			r.Get("/tags/", pipeliner.GetTags)
 			r.Post("/tags/", pipeliner.CreateTag)
-			r.Put("/tags/{ID}", pipeliner.EditTag)
+			r.Put("/tags/", pipeliner.EditTag)
 			r.Delete("/tags/{ID}", pipeliner.RemoveTag)
 
 			r.With(handlers.SetRequestID).Post("/run/{pipelineID}", pipeliner.RunPipeline)
 			r.With(handlers.SetRequestID).Post("/run/version/{versionID}", pipeliner.RunVersion)
 
-			r.Get("/tasks/{pipelineID}", pipeliner.GetPipelineTasks)
-			r.Get("/tasks/version/{versionID}", pipeliner.GetVersionTasks)
-			r.Get("/logs/{taskID}", pipeliner.GetTaskLog)
+			r.Route("/tasks/", func(r chi.Router) {
+				r.Get("/{taskID}", pipeliner.GetTask)
+				r.Get("/last-by-version/{versionID}", pipeliner.LastVersionDebugTask)
+				r.Get("/pipeline/{pipelineID}", pipeliner.GetPipelineTasks)
+				r.Get("/version/{versionID}", pipeliner.GetVersionTasks)
+			})
+
+			r.Route("/debug/", func(r chi.Router) {
+				r.Post("/run", pipeliner.StartDebugTask)
+				r.Post("/", pipeliner.CreateDebugTask)
+				r.Get("/{taskID}", pipeliner.DebugTask)
+			})
 		})
 
 	mux.Mount("/api/pipeliner/v1/swagger/", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))

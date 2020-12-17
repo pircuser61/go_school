@@ -3,11 +3,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/pkg/errors"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 
 	"go.opencensus.io/trace"
 
@@ -119,6 +121,19 @@ func (ae *APIEnv) draftVersions(ctx context.Context) ([]entity.EriusScenarioInfo
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllDraftsError}
 	}
 
+	onapprove, err := ae.DB.GetOnApproveVersions(ctx)
+	if err != nil {
+		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllOnApproveError}
+	}
+
+	rejected, err := ae.DB.GetRejectedVersions(ctx)
+	if err != nil {
+		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllRejectedError}
+	}
+
+	drafts = append(drafts, onapprove...)
+	drafts = append(drafts, rejected...)
+
 	return filterVersionsByID(drafts, grants.All, grants.Items), nil
 }
 
@@ -226,9 +241,9 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version")
 	defer s.End()
 
-	idParam := chi.URLParam(req, "versionID")
+	versionID := chi.URLParam(req, "versionID")
 
-	id, err := uuid.Parse(idParam)
+	versionUUID, err := uuid.Parse(versionID)
 	if err != nil {
 		e := UUIDParsingError
 		ae.Logger.Error(e.errorMessage(err))
@@ -237,7 +252,7 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	p, err := ae.DB.GetPipelineVersion(ctx, id)
+	p, err := ae.DB.GetPipelineVersion(ctx, versionUUID)
 	if err != nil {
 		e := GetVersionError
 		ae.Logger.Error(e.errorMessage(err))
@@ -551,6 +566,23 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 
+	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !canCreate {
+		e := PipelineNameUsed
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	err = ae.DB.CreatePipeline(ctx, &p, user.UserName(), b)
 	if err != nil {
 		e := PipelineCreateError
@@ -603,6 +635,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/version [put]
+//nolint:gocyclo //its  necessary
 func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_draft")
 	defer s.End()
@@ -691,6 +724,17 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	if p.Status == db.StatusRejected {
+		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, user.UserName())
+		if err != nil {
+			e := ApproveError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+
 	edited, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
 	if err != nil {
 		e := PipelineReadError
@@ -716,6 +760,10 @@ func authUpdateParametersByPipelineStatus(p *entity.EriusScenario) (resource var
 		resource = vars.PipelineVersion
 		action = vars.Own
 		id = p.VersionID.String()
+	case db.StatusApproved, db.StatusRejected:
+		resource = vars.Pipeline
+		action = vars.Approve
+		id = p.ID.String() // pipeline id
 	default:
 		resource = vars.Pipeline
 		action = vars.Update
@@ -912,6 +960,24 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	childPipelines, err := scenarioUsage(ctx, ae.DB, id)
+	if len(childPipelines) > 0 {
+		e := ScenarioIsUsedInOtherError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = ae.SchedulerClient.DeleteTasksByPipelineID(ctx, id)
+	if err != nil {
+		e := SchedulerClientFailed
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	err = ae.DB.RemovePipelineTags(ctx, id)
 	if err != nil {
 		e := TagDetachError
@@ -943,6 +1009,56 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 
 	err = sendResponse(w, http.StatusOK, id)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+// @Summary Active scheduler tasks
+// @Description Наличие у сценария активных заданий в шедулере
+// @Tags pipeline
+// @ID pipeline-scheduler-tasks
+// @Accept json
+// @Produce json
+// @Param pipelineID path string true "Pipeline ID"
+// @Success 200 {object} httpResponse{data=entity.SchedulerTasksResponse}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/{pipelineID}/scheduler-tasks [post]
+func (ae *APIEnv) ListSchedulerTasks(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "scheduler tasks list")
+	defer s.End()
+
+	idParam := chi.URLParam(req, "pipelineID")
+
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tasks, err := ae.SchedulerClient.GetTasksByPipelineID(ctx, id)
+	if err != nil {
+		e := SchedulerClientFailed
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// в текущей реализации возращаем только факт наличия заданий
+	result := &entity.SchedulerTasksResponse{
+		Result: len(tasks) > 0,
+	}
+
+	err = sendResponse(w, http.StatusOK, result)
 	if err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
@@ -1081,144 +1197,6 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(ctx, w, req, p, false)
 }
 
-// GetPipelineTasks
-// @Summary Get Pipeline Tasks
-// @Description Получить задачи по сценарию
-// @Tags pipeline tasks
-// @ID      get-pipeline-tasks
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @success 200 {object} httpResponse{data=entity.EriusTasks}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks/{pipelineID} [get]
-//nolint:dupl //diff logic
-func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_logs")
-	defer s.End()
-
-	idParam := chi.URLParam(req, "pipelineID")
-
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	resp, err := ae.DB.GetPipelineTasks(ctx, id)
-	if err != nil {
-		e := GetTasksError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
-// GetVersionTasks
-// @Summary Get Version Tasks
-// @Description Получить задачи по версии сценарию
-// @Tags version tasks
-// @ID      get-version-tasks
-// @Produce json
-// @Param versionID path string true "Version ID"
-// @success 200 {object} httpResponse{data=entity.EriusTasks}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks/version/{pipelineID} [get]
-//nolint:dupl //diff logic
-func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
-	defer s.End()
-
-	idParam := chi.URLParam(req, "versionID")
-
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	resp, err := ae.DB.GetVersionTasks(ctx, id)
-	if err != nil {
-		e := GetTasksError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
-// GetTaskLog
-// @Summary Get Task Log
-// @Description Получить логи по задаче
-// @Tags tasks log
-// @ID      get-task-log
-// @Produce json
-// @Param versionID path string true "Task ID"
-// @success 200 {object} httpResponse{data=entity.EriusLog}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /logs/version/{pipelineID} [get]
-//nolint:dupl //difff logic
-func (ae *APIEnv) GetTaskLog(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
-	defer s.End()
-
-	idParam := chi.URLParam(req, "taskID")
-
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	resp, err := ae.DB.GetTaskLog(ctx, id)
-	if err != nil {
-		e := GetLogError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
 //nolint //need big cyclo,need equal string for all usages
 func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,
 	p *entity.EriusScenario, withStop bool) {
@@ -1267,7 +1245,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		ae.Logger.Error(err)
 	}
 
-	err = ep.CreateWork(ctx, user.UserName())
+	err = ep.CreateTask(ctx, user.UserName(), false, []byte{})
 	if err != nil {
 		e := PipelineRunError
 		ae.Logger.Error(e.errorMessage(err))
@@ -1327,7 +1305,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		}
 
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{
-			PipelineID: ep.PipelineID, TaskID: ep.WorkID,
+			PipelineID: ep.PipelineID, TaskID: ep.TaskID,
 			Status: statusRunned,
 		})
 		if err != nil {
@@ -1361,7 +1339,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		}()
 
 		err = sendResponse(w, http.StatusOK, entity.RunResponse{
-			PipelineID: ep.PipelineID, TaskID: ep.WorkID,
+			PipelineID: ep.PipelineID, TaskID: ep.TaskID,
 			Status: statusRunned,
 		})
 		if err != nil {
@@ -1414,6 +1392,18 @@ func filterPipelinesByID(scenarios []entity.EriusScenarioInfo, isAll bool, allow
 	return res
 }
 
+// GetPipelineTags
+// @Summary Get Pipeline Tags
+// @Description Список тегов сценария
+// @Tags pipeline, tags
+// @ID      get-pipeline-tags
+// @Produce json
+// @Param pipelineID path string true "Pipeline ID"
+// @success 200 {object} httpResponse{data=[]entity.EriusTagInfo}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/{pipelineID}/tags/ [get]
 func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tag")
 	defer s.End()
@@ -1462,6 +1452,18 @@ func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// @Summary Attach Tag
+// @Description Прикрепить тег к сценарию
+// @Tags pipeline, tags
+// @ID      attach-tag
+// @Produce json
+// @Param pipelineID path string true "Pipeline ID"
+// @Param ID path string true "Tag ID"
+// @Success 200 {object} httpResponse{data=entity.EriusTagInfo}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/{pipelineID}/tags/{ID} [put]
 //nolint:dupl //its different function
 func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "attach_tag")
@@ -1548,6 +1550,18 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// @Summary Detach Tag
+// @Description Открепить тег от сценария
+// @Tags pipeline, tags
+// @ID      detach-tag
+// @Produce json
+// @Param pipelineID path string true "Pipeline ID"
+// @Param ID path string true "Tag ID"
+// @Success 200 {object} httpResponse
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /pipelines/{pipelineID}/tags/{ID} [delete]
 //nolint:dupl //its different function
 func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_pipeline_tag")
@@ -1632,4 +1646,35 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+}
+
+func scenarioUsage(ctx context.Context, pipelineStorager db.PipelineStorager, id uuid.UUID) ([]entity.EriusScenario, error) {
+	ctx, span := trace.StartSpan(ctx, "scenario usage")
+	defer span.End()
+
+	p, err := pipelineStorager.GetPipeline(ctx, id)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to get pipeline")
+	}
+
+	workedVersions, err := pipelineStorager.GetWorkedVersions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]entity.EriusScenario, 0)
+
+	for i := range workedVersions {
+		for j := range workedVersions[i].Pipeline.Blocks {
+			block := workedVersions[i].Pipeline.Blocks[j]
+			if block.BlockType == script.TypeScenario &&
+				block.Title == p.Name {
+				res = append(res, workedVersions[i])
+
+				break
+			}
+		}
+	}
+
+	return res, nil
 }
