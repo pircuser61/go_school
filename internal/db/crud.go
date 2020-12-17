@@ -101,12 +101,15 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 
 	for i := range versions {
 		version := versions[i]
-		if finV, ok := vMap[version.ID]; ok {
-			t, err := db.findApproveDate(c, version.VersionID)
-			if err != nil {
-				return nil, err
-			}
 
+		t, err := db.findApproveDate(c, version.VersionID)
+		if err != nil {
+			return nil, err
+		}
+
+		version.ApprovedAt = t
+
+		if finV, ok := vMap[version.ID]; ok {
 			if finV.ApprovedAt.After(t) {
 				continue
 			}
@@ -147,6 +150,8 @@ func (db *PGConnection) findApproveDate(c context.Context, id uuid.UUID) (time.T
 		if err != nil {
 			return time.Time{}, err
 		}
+
+		return date, nil
 	}
 
 	return time.Time{}, nil
