@@ -990,7 +990,8 @@ func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelin
 	return errNotImplemented
 }
 
-func (m *MockDB) SaveStepContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
+func (m *MockDB) SaveStepContext(c context.Context,
+	workID uuid.UUID, stage string, data []byte, breakPoints []string) error {
 	return nil
 }
 

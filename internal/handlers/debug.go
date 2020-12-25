@@ -23,6 +23,11 @@ import (
 	"go.opencensus.io/trace"
 )
 
+const (
+	actionStepOver = "step_over"
+	actionResume   = "resume"
+)
+
 type DebugRunRequest struct {
 	TaskID      uuid.UUID `json:"task_id"`
 	BreakPoints []string  `json:"break_points"`
@@ -72,12 +77,42 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mappedBreakPoints := sliceToMap(debugRequest.BreakPoints)
+	if !task.IsStopped() && !task.IsCreated() {
+		if task.IsRun() {
+			e := RunDebugTaskAlreadyRunError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		if task.IsError() {
+			e := RunDebugTaskAlreadyError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		if task.IsFinished() {
+			e := RunDebugTaskFinishedError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		e := RunDebugInvalidStatusError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 
 	go func() {
 		routineCtx := context.Background()
 
-		_, err := ae.runDebugTask(routineCtx, task, mappedBreakPoints, debugRequest.Action)
+		_, err := ae.runDebugTask(routineCtx, task, debugRequest.BreakPoints, debugRequest.Action)
 		if err != nil {
 			e := RunDebugError
 			ae.Logger.Error(e.errorMessage(err))
@@ -93,16 +128,6 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-}
-
-func sliceToMap(items []string) map[string]struct{} {
-	res := make(map[string]struct{})
-
-	for i := range items {
-		res[items[i]] = struct{}{}
-	}
-
-	return res
 }
 
 // @Summary Create debug task
@@ -255,20 +280,21 @@ func currentStepName(
 	steps entity.TaskSteps,
 	task *entity.EriusTask,
 	vs *store.VariableStore,
-) (currentStep string) {
+) (string, error) {
 	if steps.IsEmpty() {
-		currentStep = ep.EntryPoint
-
-		return
+		return ep.EntryPoint, nil
 	}
 
 	if task.IsRun() {
-		currentStep = ep.Blocks[steps[0].Name].Next(vs)
+		currentStep, ok := ep.Blocks[steps[0].Name].Next(vs)
+		if !ok {
+			return "", pipeline.ErrCantGetNextStep
+		}
 
-		return
+		return currentStep, nil
 	}
 
-	return steps[0].Name
+	return steps[0].Name, nil
 }
 
 func currentBlockStatus(
@@ -296,7 +322,7 @@ func stepStatus(task *entity.EriusTask, step *entity.Step) (stepStatus string) {
 func (ae *APIEnv) runDebugTask(
 	ctx context.Context,
 	task *entity.EriusTask,
-	breakPoints map[string]struct{},
+	breakPoints []string,
 	action string,
 ) (*entity.DebugResult, error) {
 	ctx, s := trace.StartSpan(ctx, "run debug task")
@@ -324,10 +350,22 @@ func (ae *APIEnv) runDebugTask(
 	if steps.IsEmpty() {
 		ep.NowOnPoint = ep.EntryPoint
 	} else {
-		ep.NowOnPoint = ep.Blocks[steps[0].Name].Next(vs)
+		ep.NowOnPoint, _ = ep.Blocks[steps[0].Name].Next(vs)
 	}
 
-	vs.SetBreakPoints(breakPoints)
+	stopPoints := store.NewStopPoints(ep.NowOnPoint)
+	nextSteps := ep.Blocks[ep.NowOnPoint].NextSteps()
+
+	vs.SetStopPoints(*stopPoints)
+	vs.StopPoints.SetBreakPoints(breakPoints...)
+
+	if action == actionStepOver {
+		vs.StopPoints.SetStepOvers(nextSteps...)
+	}
+
+	if action == actionResume {
+		vs.StopPoints.SetExcludedPoints(nextSteps...)
+	}
 
 	err = ep.DebugRun(ctx, vs)
 	if err != nil {
@@ -406,12 +444,23 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 	task.Steps = steps
 
 	vs := variableStoreFromSteps(task, version, steps)
-	nowOnPoint := currentStepName(ep, steps, task, vs)
+
+	nowOnPoint, err := currentStepName(ep, steps, task, vs)
+	if err != nil {
+		e := RunDebugError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	nowOnPointStatus := currentBlockStatus(task, steps)
+	stopPoints := vs.StopPoints.BreakPointsList()
 
 	result := entity.DebugResult{
 		BlockName:   nowOnPoint,
 		BlockStatus: nowOnPointStatus,
+		BreakPoints: stopPoints,
 		Task:        task,
 	}
 

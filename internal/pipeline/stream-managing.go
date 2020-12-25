@@ -11,7 +11,10 @@ import (
 	"go.opencensus.io/trace"
 )
 
-var errCantGetIndex = errors.New("can't get index")
+var (
+	ErrCantGetNextStep    = errors.New("can't get next step")
+	errCantCastIndexToInt = errors.New("can't cast index to int")
+)
 
 type IF struct {
 	Name          string
@@ -20,6 +23,25 @@ type IF struct {
 	Result        bool
 	OnTrue        string
 	OnFalse       string
+}
+
+func (e *IF) Next(runCtx *store.VariableStore) (string, bool) {
+	r, err := runCtx.GetBoolWithInput(e.FunctionInput, "check")
+	if err != nil {
+		return "", false
+	}
+
+	if r {
+		return e.OnTrue, true
+	}
+
+	return e.OnFalse, true
+}
+
+func (e *IF) NextSteps() []string {
+	nextSteps := []string{e.OnTrue, e.OnFalse}
+
+	return nextSteps
 }
 
 func (e *IF) Inputs() map[string]string {
@@ -52,16 +74,6 @@ func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	e.Result = r
 
 	return nil
-}
-
-func (e *IF) Next(runCtx *store.VariableStore) string {
-	r, _ := runCtx.GetBoolWithInput(e.FunctionInput, "check")
-
-	if r {
-		return e.OnTrue
-	}
-
-	return e.OnFalse
 }
 
 type StringsEqual struct {
@@ -119,12 +131,16 @@ func (se *StringsEqual) DebugRun(ctx context.Context, runCtx *store.VariableStor
 	return nil
 }
 
-func (se *StringsEqual) Next(runCtx *store.VariableStore) string {
+func (se *StringsEqual) Next(runCtx *store.VariableStore) (string, bool) {
 	if se.Result {
-		return se.OnTrue
+		return se.OnTrue, true
 	}
 
-	return se.OnFalse
+	return se.OnFalse, true
+}
+
+func (se *StringsEqual) NextSteps() []string {
+	return []string{se.OnTrue, se.OnFalse}
 }
 
 type ForState struct {
@@ -167,7 +183,7 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	if ok {
 		index, ok = indexToInt(i)
 		if !ok {
-			return errCantGetIndex
+			return errCantCastIndexToInt
 		}
 	}
 
@@ -188,17 +204,30 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	return nil
 }
 
-func (e *ForState) Next(runCtx *store.VariableStore) string {
+func (e *ForState) Next(runCtx *store.VariableStore) (string, bool) {
 	arr, _ := runCtx.GetArray(e.FunctionInput["iter"])
 
-	i, _ := runCtx.GetValue(e.FunctionOutput["index"])
-	index, _ := indexToInt(i)
-
-	if index >= len(arr) {
-		return e.OnTrue
+	i, getValue := runCtx.GetValue(e.FunctionOutput["index"])
+	if !getValue {
+		return "", getValue
 	}
 
-	return e.OnFalse
+	index, indexOk := indexToInt(i)
+	if !indexOk {
+		return "", indexOk
+	}
+
+	if index >= len(arr) {
+		return e.OnTrue, true
+	}
+
+	return e.OnFalse, true
+}
+
+func (e *ForState) NextSteps() []string {
+	nextSteps := []string{e.OnTrue, e.OnFalse}
+
+	return nextSteps
 }
 
 func indexToInt(i interface{}) (int, bool) {

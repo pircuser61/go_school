@@ -183,8 +183,12 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	return err
 }
 
-func (ns NGSASend) Next(runCtx *store.VariableStore) string {
-	return ns.NextBlock
+func (ns NGSASend) Next(runCtx *store.VariableStore) (string, bool) {
+	return ns.NextBlock, true
+}
+
+func (ns NGSASend) NextSteps() []string {
+	return []string{ns.NextBlock}
 }
 
 func (ns NGSASend) Model() script.FunctionModel {

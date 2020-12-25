@@ -1086,7 +1086,8 @@ func (db *PGConnection) UpdateDraft(c context.Context,
 	return nil
 }
 
-func (db *PGConnection) SaveStepContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
+func (db *PGConnection) SaveStepContext(c context.Context,
+	workID uuid.UUID, stage string, data []byte, breakPoints []string) error {
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
 
@@ -1101,11 +1102,11 @@ func (db *PGConnection) SaveStepContext(c context.Context, workID uuid.UUID, sta
 	timestamp := time.Now()
 	q := `
 	INSERT INTO pipeliner.variable_storage(
-	id, work_id, step_name, content, time)
-	VALUES ($1, $2, $3, $4, $5);
+	id, work_id, step_name, content, time, break_points)
+	VALUES ($1, $2, $3, $4, $5, $6);
 `
 
-	_, err = conn.Exec(c, q, id, workID, stage, data, timestamp)
+	_, err = conn.Exec(c, q, id, workID, stage, data, timestamp, breakPoints)
 	if err != nil {
 		return err
 	}
@@ -1137,7 +1138,7 @@ func (db *PGConnection) CreateTask(c context.Context,
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING id;
 `
-	row := tx.QueryRow(c, q, taskID, versionID, startedAt, RunStatusRunning, author, isDebugMode, parameters)
+	row := tx.QueryRow(c, q, taskID, versionID, startedAt, RunStatusCreated, author, isDebugMode, parameters)
 
 	var id uuid.UUID
 
@@ -1521,7 +1522,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 	defer conn.Release()
 
 	q := `
-	SELECT vs.step_name, vs.time, vs.content 
+	SELECT vs.step_name, vs.time, vs.content, COALESCE(vs.break_points, '{}')
 	FROM pipeliner.variable_storage vs 
 	WHERE work_id = $1
 	ORDER BY vs.time DESC;`
@@ -1536,7 +1537,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 		s := entity.Step{}
 		c := ""
 
-		err := rows.Scan(&s.Name, &s.Time, &c)
+		err := rows.Scan(&s.Name, &s.Time, &c, &s.BreakPoints)
 		if err != nil {
 			return nil, err
 		}

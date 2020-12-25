@@ -140,6 +140,10 @@ func (et *EriusTask) IsFinished() bool {
 	return et.Status == "finished"
 }
 
+func (et *EriusTask) IsError() bool {
+	return et.Status == "error"
+}
+
 type TaskSteps []*Step
 
 func (ts *TaskSteps) IsEmpty() bool {
@@ -152,11 +156,12 @@ type EriusLog struct {
 }
 
 type Step struct {
-	Time    time.Time              `json:"time"`
-	Name    string                 `json:"name"`
-	Storage map[string]interface{} `json:"storage"`
-	Errors  []string               `json:"errors"`
-	Steps   []string               `json:"steps"`
+	Time        time.Time              `json:"time"`
+	Name        string                 `json:"name"`
+	Storage     map[string]interface{} `json:"storage"`
+	Errors      []string               `json:"errors"`
+	Steps       []string               `json:"steps"`
+	BreakPoints []string               `json:"-"`
 }
 
 type SchedulerTasksResponse struct {
@@ -166,5 +171,6 @@ type SchedulerTasksResponse struct {
 type DebugResult struct {
 	BlockName   string     `json:"block_name"`
 	BlockStatus string     `json:"status" example:"run,error,finished,created"` // todo define values
+	BreakPoints []string   `json:"break_points"`
 	Task        *EriusTask `json:"task"`
 }

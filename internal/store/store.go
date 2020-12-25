@@ -17,29 +17,35 @@ var (
 
 type VariableStore struct {
 	sync.Mutex
-	Values      map[string]interface{}
-	Steps       []string
-	Errors      []string
-	BreakPoints map[string]struct{}
+	Values     map[string]interface{}
+	Steps      []string
+	Errors     []string
+	StopPoints StopPoints `json:"-"`
 }
 
 func NewStore() *VariableStore {
 	s := VariableStore{
-		Values:      make(map[string]interface{}),
-		Steps:       make([]string, 0),
-		Errors:      make([]string, 0),
-		BreakPoints: make(map[string]struct{}),
+		Values:     make(map[string]interface{}),
+		Steps:      make([]string, 0),
+		Errors:     make([]string, 0),
+		StopPoints: StopPoints{},
 	}
 
 	return &s
 }
 
 func NewFromStep(step *entity.Step) *VariableStore {
-	return &VariableStore{
-		Values: step.Storage,
-		Steps:  step.Steps,
-		Errors: step.Errors,
+	sp := NewStopPoints(step.Name)
+	sp.SetBreakPoints(step.BreakPoints...)
+
+	vs := VariableStore{
+		Values:     step.Storage,
+		Steps:      step.Steps,
+		Errors:     step.Errors,
+		StopPoints: *sp,
 	}
+
+	return &vs
 }
 
 func (c *VariableStore) AddStep(name string) {
@@ -186,18 +192,76 @@ func (c *VariableStore) SetBoolWithOutput(outMap map[string]string, key string, 
 	return nil
 }
 
-func (c *VariableStore) SetBreakPoints(points map[string]struct{}) {
+func (c *VariableStore) SetStopPoints(points StopPoints) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.BreakPoints = points
+	c.StopPoints = points
 }
 
-func (c *VariableStore) IsBreakPointExists(key string) bool {
-	c.Lock()
-	defer c.Unlock()
+type StopPoints struct {
+	BreakPoints    map[string]struct{}
+	StepOverPoints map[string]struct{}
+	ExcludedPoints map[string]struct{}
+	StartPoint     string
+}
 
-	_, ok := c.BreakPoints[key]
+func NewStopPoints(startPoint string) *StopPoints {
+	sp := StopPoints{
+		BreakPoints:    make(map[string]struct{}),
+		StepOverPoints: make(map[string]struct{}),
+		ExcludedPoints: make(map[string]struct{}),
+		StartPoint:     startPoint,
+	}
 
-	return ok
+	return &sp
+}
+
+func (sp *StopPoints) SetStepOvers(steps ...string) {
+	for _, step := range steps {
+		if step != "" {
+			sp.StepOverPoints[step] = struct{}{}
+		}
+	}
+}
+
+func (sp *StopPoints) SetBreakPoints(steps ...string) {
+	for _, step := range steps {
+		if step != "" {
+			sp.BreakPoints[step] = struct{}{}
+		}
+	}
+}
+
+func (sp *StopPoints) BreakPointsList() []string {
+	breakPoints := make([]string, 0)
+	for k := range sp.BreakPoints {
+		breakPoints = append(breakPoints, k)
+	}
+
+	return breakPoints
+}
+
+func (sp *StopPoints) SetExcludedPoints(steps ...string) {
+	for _, step := range steps {
+		if step != "" {
+			sp.ExcludedPoints[step] = struct{}{}
+		}
+	}
+}
+
+func (sp *StopPoints) IsStopPoint(stepName string) bool {
+	if _, ok := sp.ExcludedPoints[stepName]; ok {
+		return false
+	}
+
+	if _, ok := sp.StepOverPoints[stepName]; ok {
+		return true
+	}
+
+	if _, ok := sp.BreakPoints[stepName]; ok {
+		return true
+	}
+
+	return false
 }
