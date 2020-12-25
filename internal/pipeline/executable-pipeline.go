@@ -18,6 +18,10 @@ import (
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 )
 
+var (
+	unknownBlock = errors.New("unknown block")
+)
+
 type ExecutablePipeline struct {
 	TaskID        uuid.UUID
 	PipelineID    uuid.UUID
@@ -66,6 +70,28 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	return ep.DebugRun(ctx, runCtx)
 }
 
+func (ep *ExecutablePipeline) finallyError(ctx context.Context, err error) error {
+	ep.VarStore.AddError(err)
+
+	errChange := ep.changeTaskStatus(ctx, db.RunStatusError)
+	if errChange != nil {
+		return errChange
+	}
+
+	return err
+}
+
+func (ep *ExecutablePipeline) changeTaskStatus(ctx context.Context, taskStatus int) error {
+	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, taskStatus)
+	if errChange != nil {
+		ep.VarStore.AddError(errChange)
+
+		return errChange
+	}
+
+	return nil
+}
+
 //nolint:gocognit,gocyclo //its really complex
 func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
@@ -77,24 +103,19 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		ep.NowOnPoint = ep.EntryPoint
 	}
 
+	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusRunning)
+	if errChange != nil {
+		return errChange
+	}
+
 	for ep.NowOnPoint != "" {
 		ep.Logger.Info("executing", ep.NowOnPoint)
-		ep.Logger.Info("  -- storage ---", runCtx.Values)
-		ep.Logger.Info("  -- steps ---", runCtx.Steps)
-		ep.Logger.Info("  -- errors ---", runCtx.Errors)
 
 		now, ok := ep.Blocks[ep.NowOnPoint]
 		if !ok {
-			err := errors.New("unknown block")
-			ep.VarStore.AddError(err)
-
-			errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
-			if errChange != nil {
-				return errChange
-			}
-
-			return err
+			return ep.finallyError(ctx, unknownBlock)
 		}
+
 		//nolint:nestif //its really complexive
 		if now.IsScenario() {
 			ep.VarStore.AddStep(ep.NowOnPoint)
@@ -109,15 +130,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
 			if err != nil {
-				ep.VarStore.AddError(err)
-
-				errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
-				if errChange != nil {
-					return errChange
-				}
-
-				ep.VarStore.AddError(errChange)
-
+				_ = ep.finallyError(ctx, err)
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 
@@ -129,53 +142,31 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		} else {
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
 			if err != nil {
-				ep.VarStore.AddError(err)
-				errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
-				if errChange != nil {
-					ep.VarStore.AddError(errChange)
-
-					return errChange
-				}
-
+				_ = ep.finallyError(ctx, err)
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 		}
 
 		storageData, err := json.Marshal(ep.VarStore)
 		if err != nil {
-			ep.VarStore.AddError(err)
-
-			errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
-			if errChange != nil {
-				ep.VarStore.AddError(errChange)
-
-				return errChange
-			}
-
-			return err
+			return ep.finallyError(ctx, err)
 		}
 
-		err = ep.Storage.SaveStepContext(ctx, ep.TaskID, ep.NowOnPoint, storageData)
-		ep.NowOnPoint = ep.Blocks[ep.NowOnPoint].Next(ep.VarStore)
+		breakPoints := ep.VarStore.StopPoints.BreakPointsList()
 
+		err = ep.Storage.SaveStepContext(ctx, ep.TaskID, ep.NowOnPoint, storageData, breakPoints)
 		if err != nil {
-			ep.VarStore.AddError(err)
-
-			errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusError)
-			if errChange != nil {
-				ep.VarStore.AddError(errChange)
-
-				return errChange
-			}
-
-			return err
+			return ep.finallyError(ctx, err)
 		}
 
-		if _, ok := runCtx.BreakPoints[ep.NowOnPoint]; ok {
-			errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusStopped)
-			if errChange != nil {
-				ep.VarStore.AddError(errChange)
+		ep.NowOnPoint, ok = ep.Blocks[ep.NowOnPoint].Next(ep.VarStore)
+		if !ok {
+			return ep.finallyError(ctx, ErrCantGetNextStep)
+		}
 
+		if runCtx.StopPoints.IsStopPoint(ep.NowOnPoint) {
+			errChangeStopped := ep.changeTaskStatus(ctx, db.RunStatusStopped)
+			if errChangeStopped != nil {
 				return errChange
 			}
 
@@ -183,11 +174,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		}
 	}
 
-	err := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusFinished)
-	if err != nil {
-		ep.VarStore.AddError(err)
-
-		return err
+	errChangeFinished := ep.changeTaskStatus(ctx, db.RunStatusFinished)
+	if errChangeFinished != nil {
+		return errChange
 	}
 
 	for _, glob := range ep.PipelineModel.Output {
@@ -198,8 +187,12 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	return nil
 }
 
-func (ep *ExecutablePipeline) Next(runCtx *store.VariableStore) string {
-	return ep.NextStep
+func (ep *ExecutablePipeline) Next(runCtx *store.VariableStore) (string, bool) {
+	return ep.NextStep, true
+}
+
+func (ep *ExecutablePipeline) NextSteps() []string {
+	return []string{ep.NextStep}
 }
 
 func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]entity.EriusFunc) error {

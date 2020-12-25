@@ -43,7 +43,7 @@ type Database interface {
 	GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
 	UpdateDraft(c context.Context,
 		p *entity.EriusScenario, pipelineData []byte) error
-	SaveStepContext(c context.Context, workID uuid.UUID, stage string, data []byte) error
+	SaveStepContext(c context.Context, workID uuid.UUID, stage string, data []byte, breakPoints []string) error
 
 	GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error)
 	GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error)

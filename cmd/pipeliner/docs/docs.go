@@ -1749,6 +1749,12 @@ var doc = `{
                 "block_name": {
                     "type": "string"
                 },
+                "break_points": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "status": {
                     "description": "todo define values",
                     "type": "string",

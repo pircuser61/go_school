@@ -13,6 +13,10 @@ definitions:
     properties:
       block_name:
         type: string
+      break_points:
+        items:
+          type: string
+        type: array
       status:
         description: todo define values
         example: run,error,finished,created
