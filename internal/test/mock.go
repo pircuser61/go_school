@@ -1086,3 +1086,7 @@ func (m *MockDB) SwitchRejected(c context.Context, versionID uuid.UUID, comment,
 func (m *MockDB) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	return nil, errNotImplemented
 }
+
+func (m *MockDB) RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error {
+	return errNotImplemented
+}
