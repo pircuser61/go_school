@@ -65,4 +65,5 @@ type Database interface {
 	PipelineNameCreatable(c context.Context, name string) (bool, error)
 	SwitchRejected(c context.Context, versionID uuid.UUID, comment string, author string) error
 	GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
+	RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error
 }

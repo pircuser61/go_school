@@ -56,6 +56,8 @@ const (
 	qCheckTagIsAttached string = `SELECT COUNT(pipeline_id)
 	FROM pipeliner.pipeline_tags    
 	WHERE pipeline_id = $1 and tag_id = $2;`
+
+	qWriteHistory = `INSERT INTO pipeliner.pipeline_history(id, pipeline_id, version_id, date) VALUES ($1, $2, $3, $4)`
 )
 
 var (
@@ -88,6 +90,32 @@ func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScena
 	}
 
 	return versionInfoList, nil
+}
+
+func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.EriusVersionInfo, error) {
+	_, span := trace.StartSpan(c, "parse_row_version_history_list")
+	defer span.End()
+
+	defer rows.Close()
+
+	versionHistoryList := make([]entity.EriusVersionInfo, 0)
+
+	for rows.Next() {
+		e := entity.EriusVersionInfo{}
+
+		var approver sql.NullString
+
+		err := rows.Scan(&e.VersionID, &e.CreatedAt, &e.Author, &approver, &e.ApprovedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		e.Approver = approver.String
+
+		versionHistoryList = append(versionHistoryList, e)
+	}
+
+	return versionHistoryList, nil
 }
 
 func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
@@ -129,6 +157,18 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 		n++
 	}
 
+	for i := range final {
+		vs := final[i]
+
+		versionHistory, err := db.getVersionHistory(c, vs.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		final[i].History = versionHistory
+		n++
+	}
+
 	return final, nil
 }
 
@@ -136,7 +176,9 @@ func (db *PGConnection) findApproveDate(c context.Context, id uuid.UUID) (time.T
 	c, span := trace.StartSpan(c, "pg_find_approve_time")
 	defer span.End()
 
-	q := `SELECT date FROM pipeliner.pipeline_history WHERE version_id = $1 ORDER BY date LIMIT 1;`
+	q := `SELECT date FROM pipeliner.pipeline_history WHERE version_id = $1 
+	ORDER BY date DESC
+	LIMIT 1;`
 
 	rows, err := db.Pool.Query(c, q, id)
 	if err != nil {
@@ -368,12 +410,49 @@ func (db *PGConnection) SwitchApproved(c context.Context, pipelineID, versionID 
 
 	id := uuid.New()
 	qSetApproved := `UPDATE pipeliner.versions SET status=$1, approver = $2 WHERE id = $3`
-	qWriteHistory := `INSERT INTO pipeliner.pipeline_history(id, pipeline_id, version_id, date) VALUES ($1, $2, $3, $4)`
 
 	_, err = tx.Exec(c, qSetApproved, StatusApproved, author, versionID)
 	if err != nil {
 		return err
 	}
+
+	_, err = tx.Exec(c, qWriteHistory, id, pipelineID, versionID, date)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(c)
+	if err != nil {
+		err = tx.Rollback(c)
+		if err != nil {
+			return err
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGConnection) RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error {
+	c, span := trace.StartSpan(c, "pg_rollback_version")
+	defer span.End()
+
+	date := time.Now()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return err
+	}
+
+	defer conn.Release()
+
+	tx, err := conn.Begin(c)
+	if err != nil {
+		return err
+	}
+
+	id := uuid.New()
 
 	_, err = tx.Exec(c, qWriteHistory, id, pipelineID, versionID, date)
 	if err != nil {
@@ -1556,4 +1635,39 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 	}
 
 	return el, nil
+}
+
+func (db *PGConnection) getVersionHistory(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error) {
+	c, span := trace.StartSpan(c, "pg_get_version_history")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	q := `
+	SELECT 
+		pv.id, pv.created_at, pv.author, pv.approver, ph.date
+	FROM pipeliner.versions pv
+	JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
+	LEFT OUTER JOIN pipeliner.pipeline_history ph ON pv.id = ph.version_id
+	WHERE pv.status = $1 
+	AND pp.id = $2 
+	AND pp.deleted_at IS NULL
+	ORDER BY date;`
+
+	rows, err := conn.Query(c, q, StatusApproved, id)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := parseRowsVersionHistoryList(c, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
