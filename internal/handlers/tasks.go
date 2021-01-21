@@ -3,8 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"go.opencensus.io/trace"
@@ -59,74 +57,6 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 	resp.Steps = steps
 
 	if err := sendResponse(w, http.StatusOK, resp); err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
-// LastVersionDebugTask
-// @Summary Get last debug task for version
-// @Description Получить последнюю debug-задачу версии сценария
-// @Tags tasks
-// @ID      get-version-last-debug-task
-// @Produce json
-// @Param versionID path string true "Version ID"
-// @success 200 {object} httpResponse{data=entity.EriusTask}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks/last-by-version/{versionID} [get]
-// nolint:dupl //its unique
-func (ae *APIEnv) LastVersionDebugTask(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "get_last_version_tasks")
-	defer s.End()
-
-	idParam := chi.URLParam(req, "versionID")
-
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		if err != nil {
-			e := NoUserInContextError
-			ae.Logger.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
-	}
-
-	task, err := ae.DB.GetLastDebugTask(ctx, id, user.UserName())
-	if err != nil {
-		e := GetTaskError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
-	if err != nil {
-		e := GetTaskError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	task.Steps = steps
-
-	if err := sendResponse(w, http.StatusOK, task); err != nil {
 		e := UnknownError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
