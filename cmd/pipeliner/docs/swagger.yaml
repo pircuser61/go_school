@@ -13,12 +13,17 @@ definitions:
     properties:
       block_name:
         type: string
+      break_points:
+        items:
+          type: string
+        type: array
       status:
         description: todo define values
         example: run,error,finished,created
         type: string
       task:
         $ref: '#/definitions/entity.EriusTask'
+        type: object
     type: object
   entity.EriusFunc:
     properties:
@@ -175,6 +180,10 @@ definitions:
         items:
           $ref: '#/definitions/entity.EriusTagInfo'
         type: array
+      version_history:
+        items:
+          $ref: '#/definitions/entity.EriusVersionInfo'
+        type: array
       version_id:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
@@ -238,9 +247,8 @@ definitions:
       status:
         type: string
       steps:
-        items:
-          $ref: '#/definitions/entity.Step'
-        type: array
+        $ref: '#/definitions/entity.TaskSteps'
+        type: object
       version_id:
         type: string
     type: object
@@ -250,6 +258,25 @@ definitions:
         items:
           $ref: '#/definitions/entity.EriusTask'
         type: array
+    type: object
+  entity.EriusVersionInfo:
+    properties:
+      approved_at:
+        example: "2020-07-16T17:10:25.112704+03:00"
+        type: string
+      approver:
+        example: testApprover
+        type: string
+      author:
+        example: testAuthor
+        type: string
+      created_at:
+        example: "2020-07-16T17:10:25.112704+03:00"
+        type: string
+      version_id:
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
     type: object
   entity.RunResponse:
     properties:
@@ -294,6 +321,10 @@ definitions:
       time:
         type: string
     type: object
+  entity.TaskSteps:
+    items:
+      $ref: '#/definitions/entity.Step'
+    type: array
   entity.UsageResponse:
     properties:
       name:
@@ -395,6 +426,7 @@ definitions:
 host: localhost:8181
 info:
   contact: {}
+  license: {}
   title: Pipeliner API
   version: "0.1"
 paths:

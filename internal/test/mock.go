@@ -990,7 +990,8 @@ func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelin
 	return errNotImplemented
 }
 
-func (m *MockDB) SaveStepContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
+func (m *MockDB) SaveStepContext(c context.Context,
+	workID uuid.UUID, stage string, data []byte, breakPoints []string) error {
 	return nil
 }
 
@@ -1084,4 +1085,8 @@ func (m *MockDB) SwitchRejected(c context.Context, versionID uuid.UUID, comment,
 
 func (m *MockDB) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	return nil, errNotImplemented
+}
+
+func (m *MockDB) RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error {
+	return errNotImplemented
 }

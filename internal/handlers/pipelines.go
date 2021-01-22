@@ -31,8 +31,6 @@ const (
 	statusRunned = "runned"
 )
 
-var errPipelineNotEditable = errors.New("pipeline is not editable")
-
 type RunContext struct {
 	ID         string            `json:"id"`
 	Parameters map[string]string `json:"parameters"`
@@ -662,24 +660,6 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
-	if err != nil {
-		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !canEdit {
-		e := PipelineIsDraft
-
-		ae.Logger.Error(e.errorMessage(errPipelineNotEditable))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	resource, action, id := authUpdateParametersByPipelineStatus(&p)
 
 	grants, err := ae.AuthClient.CheckGrants(ctx, resource, action)
@@ -695,6 +675,37 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		e := UnauthError
 		ae.Logger.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
+		return
+	}
+
+	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
+	if err != nil {
+		e := UnknownError
+		ae.Logger.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !canEdit {
+		err = ae.DB.RollbackVersion(ctx, p.ID, p.VersionID)
+		if err != nil {
+			e := ApproveError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		err = sendResponse(w, http.StatusOK, nil)
+		if err != nil {
+			e := UnknownError
+			ae.Logger.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
 
 		return
 	}

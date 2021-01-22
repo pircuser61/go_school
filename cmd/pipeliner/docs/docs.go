@@ -19,6 +19,7 @@ var doc = `{
         "description": "{{.Description}}",
         "title": "{{.Title}}",
         "contact": {},
+        "license": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -1749,12 +1750,19 @@ var doc = `{
                 "block_name": {
                     "type": "string"
                 },
+                "break_points": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "status": {
                     "description": "todo define values",
                     "type": "string",
                     "example": "run,error,finished,created"
                 },
                 "task": {
+                    "type": "object",
                     "$ref": "#/definitions/entity.EriusTask"
                 }
             }
@@ -1978,6 +1986,12 @@ var doc = `{
                         "$ref": "#/definitions/entity.EriusTagInfo"
                     }
                 },
+                "version_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusVersionInfo"
+                    }
+                },
                 "version_id": {
                     "type": "string",
                     "format": "uuid",
@@ -2068,10 +2082,8 @@ var doc = `{
                     "type": "string"
                 },
                 "steps": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entity.Step"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/entity.TaskSteps"
                 },
                 "version_id": {
                     "type": "string"
@@ -2086,6 +2098,32 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/entity.EriusTask"
                     }
+                }
+            }
+        },
+        "entity.EriusVersionInfo": {
+            "type": "object",
+            "properties": {
+                "approved_at": {
+                    "type": "string",
+                    "example": "2020-07-16T17:10:25.112704+03:00"
+                },
+                "approver": {
+                    "type": "string",
+                    "example": "testApprover"
+                },
+                "author": {
+                    "type": "string",
+                    "example": "testAuthor"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2020-07-16T17:10:25.112704+03:00"
+                },
+                "version_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
                 }
             }
         },
@@ -2150,6 +2188,12 @@ var doc = `{
                 "time": {
                     "type": "string"
                 }
+            }
+        },
+        "entity.TaskSteps": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/entity.Step"
             }
         },
         "entity.UsageResponse": {
