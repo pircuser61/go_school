@@ -70,12 +70,33 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	return ep.DebugRun(ctx, runCtx)
 }
 
+func (ep *ExecutablePipeline) saveStep(ctx context.Context, hasError bool) error {
+	storageData, errSerialize := json.Marshal(ep.VarStore)
+	if errSerialize != nil {
+		return errSerialize
+	}
+
+	breakPoints := ep.VarStore.StopPoints.BreakPointsList()
+
+	errSaveStep := ep.Storage.SaveStepContext(ctx, ep.TaskID, ep.NowOnPoint, storageData, breakPoints, hasError)
+	if errSaveStep != nil {
+		return errSaveStep
+	}
+
+	return nil
+}
+
 func (ep *ExecutablePipeline) finallyError(ctx context.Context, err error) error {
 	ep.VarStore.AddError(err)
 
 	errChange := ep.changeTaskStatus(ctx, db.RunStatusError)
 	if errChange != nil {
 		return errChange
+	}
+
+	errSaveStep := ep.saveStep(ctx, true)
+	if errSaveStep != nil {
+		return errSaveStep
 	}
 
 	return err
@@ -147,16 +168,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			}
 		}
 
-		storageData, err := json.Marshal(ep.VarStore)
-		if err != nil {
-			return ep.finallyError(ctx, err)
-		}
-
-		breakPoints := ep.VarStore.StopPoints.BreakPointsList()
-
-		err = ep.Storage.SaveStepContext(ctx, ep.TaskID, ep.NowOnPoint, storageData, breakPoints)
-		if err != nil {
-			return ep.finallyError(ctx, err)
+		errSaveStep := ep.saveStep(ctx, false)
+		if errSaveStep != nil {
+			return ep.finallyError(ctx, errSaveStep)
 		}
 
 		ep.NowOnPoint, ok = ep.Blocks[ep.NowOnPoint].Next(ep.VarStore)

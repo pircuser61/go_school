@@ -206,6 +206,9 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 func (e *ForState) Next(runCtx *store.VariableStore) (string, bool) {
 	arr, _ := runCtx.GetArray(e.FunctionInput["iter"])
+	if len(arr) == 0 {
+		return e.OnTrue, true
+	}
 
 	i, getValue := runCtx.GetValue(e.FunctionOutput["index"])
 	if !getValue {
