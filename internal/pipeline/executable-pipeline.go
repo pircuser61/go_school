@@ -168,7 +168,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			}
 		}
 
-		errSaveStep := ep.saveStep(ctx, false)
+		_, hasError := runCtx.GetValue(ep.NowOnPoint + KeyDelimiter + ErrorKey)
+
+		errSaveStep := ep.saveStep(ctx, hasError)
 		if errSaveStep != nil {
 			return ep.finallyError(ctx, errSaveStep)
 		}
@@ -271,7 +273,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			}
 
 			for _, v := range block.Input {
-				epi.Input[p.Name+"."+v.Name] = v.Global
+				epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
 			}
 
 			for _, v := range block.Output {
