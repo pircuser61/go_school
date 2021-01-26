@@ -171,6 +171,7 @@ type Step struct {
 	Errors      []string               `json:"errors"`
 	Steps       []string               `json:"steps"`
 	BreakPoints []string               `json:"-"`
+	HasError    bool                   `json:"has_error"`
 }
 
 type SchedulerTasksResponse struct {
