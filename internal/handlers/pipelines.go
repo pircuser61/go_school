@@ -1303,7 +1303,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		}
 
 		for key, value := range pipelineVars {
-			vs.SetValue(p.Name+"."+key, value)
+			vs.SetValue(p.Name+pipeline.KeyDelimiter+key, value)
 			fmt.Println(vs)
 		}
 	}

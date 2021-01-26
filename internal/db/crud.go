@@ -1166,7 +1166,7 @@ func (db *PGConnection) UpdateDraft(c context.Context,
 }
 
 func (db *PGConnection) SaveStepContext(c context.Context,
-	workID uuid.UUID, stage string, data []byte, breakPoints []string) error {
+	workID uuid.UUID, stage string, data []byte, breakPoints []string, hasError bool) error {
 	c, span := trace.StartSpan(c, "pg_write_context")
 	defer span.End()
 
@@ -1181,11 +1181,11 @@ func (db *PGConnection) SaveStepContext(c context.Context,
 	timestamp := time.Now()
 	q := `
 	INSERT INTO pipeliner.variable_storage(
-	id, work_id, step_name, content, time, break_points)
-	VALUES ($1, $2, $3, $4, $5, $6);
+	id, work_id, step_name, content, time, break_points, has_error)
+	VALUES ($1, $2, $3, $4, $5, $6, $7);
 `
 
-	_, err = conn.Exec(c, q, id, workID, stage, data, timestamp, breakPoints)
+	_, err = conn.Exec(c, q, id, workID, stage, data, timestamp, breakPoints, hasError)
 	if err != nil {
 		return err
 	}
@@ -1601,7 +1601,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 	defer conn.Release()
 
 	q := `
-	SELECT vs.step_name, vs.time, vs.content, COALESCE(vs.break_points, '{}')
+	SELECT vs.step_name, vs.time, vs.content, COALESCE(vs.break_points, '{}'), COALESCE(vs.has_error, false)
 	FROM pipeliner.variable_storage vs 
 	WHERE work_id = $1
 	ORDER BY vs.time DESC;`
@@ -1616,7 +1616,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 		s := entity.Step{}
 		c := ""
 
-		err := rows.Scan(&s.Name, &s.Time, &c, &s.BreakPoints)
+		err := rows.Scan(&s.Name, &s.Time, &c, &s.BreakPoints, &s.HasError)
 		if err != nil {
 			return nil, err
 		}

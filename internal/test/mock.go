@@ -991,7 +991,7 @@ func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelin
 }
 
 func (m *MockDB) SaveStepContext(c context.Context,
-	workID uuid.UUID, stage string, data []byte, breakPoints []string) error {
+	workID uuid.UUID, stage string, data []byte, breakPoints []string, hasError bool) error {
 	return nil
 }
 

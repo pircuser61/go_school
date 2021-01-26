@@ -3,7 +3,6 @@
     "info": {
         "title": "Pipeliner API",
         "contact": {},
-        "license": {},
         "version": "0.1"
     },
     "host": "localhost:8181",
@@ -1746,7 +1745,6 @@
                     "example": "run,error,finished,created"
                 },
                 "task": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.EriusTask"
                 }
             }
@@ -2066,8 +2064,10 @@
                     "type": "string"
                 },
                 "steps": {
-                    "type": "object",
-                    "$ref": "#/definitions/entity.TaskSteps"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Step"
+                    }
                 },
                 "version_id": {
                     "type": "string"
@@ -2156,6 +2156,9 @@
                         "type": "string"
                     }
                 },
+                "has_error": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -2172,12 +2175,6 @@
                 "time": {
                     "type": "string"
                 }
-            }
-        },
-        "entity.TaskSteps": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/entity.Step"
             }
         },
         "entity.UsageResponse": {
