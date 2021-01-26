@@ -28,6 +28,10 @@ const (
 	actionResume   = "resume"
 )
 
+var (
+	errCantGetNextBlock = errors.New("can't get next block")
+)
+
 type DebugRunRequest struct {
 	TaskID      uuid.UUID `json:"task_id"`
 	BreakPoints []string  `json:"break_points"`
@@ -263,7 +267,7 @@ func variableStoreFromSteps(
 
 	if isFirstRun {
 		for key, value := range task.Parameters {
-			vs.SetValue(version.Name+"."+key, value)
+			vs.SetValue(version.Name+pipeline.KeyDelimiter+key, value)
 		}
 	}
 
@@ -311,7 +315,7 @@ func currentBlockStatus(
 }
 
 func stepStatus(task *entity.EriusTask, step *entity.Step) (stepStatus string) {
-	if _, ok := step.Storage[step.Name+"."+"error"]; ok {
+	if _, ok := step.Storage[step.Name+pipeline.KeyDelimiter+pipeline.ErrorKey]; ok || step.HasError {
 		return "error"
 	}
 
@@ -354,7 +358,13 @@ func (ae *APIEnv) runDebugTask(
 	}
 
 	stopPoints := store.NewStopPoints(ep.NowOnPoint)
-	nextSteps := ep.Blocks[ep.NowOnPoint].NextSteps()
+	nextBlock := ep.Blocks[ep.NowOnPoint]
+	if nextBlock == nil {
+		ae.Logger.Error(errCantGetNextBlock)
+
+		return nil, errors.Wrap(errCantGetNextBlock, "can't get next block")
+	}
+	nextSteps := nextBlock.NextSteps()
 
 	vs.SetStopPoints(*stopPoints)
 	vs.StopPoints.SetBreakPoints(breakPoints...)

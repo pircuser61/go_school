@@ -9,9 +9,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
+)
+
+const (
+	ErrorKey     = "error"
+	KeyDelimiter = "."
 )
 
 type FunctionBlock struct {
@@ -104,6 +111,12 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 		err = json.Unmarshal(body, &result)
 		if err != nil {
 			return err
+		}
+
+		if val, ok := result[ErrorKey].(string); ok {
+			funcError := errors.New(val)
+			runCtx.AddError(funcError)
+			runCtx.SetValue(fb.Name+KeyDelimiter+ErrorKey, val)
 		}
 
 		for ikey, gkey := range fb.FunctionOutput {
