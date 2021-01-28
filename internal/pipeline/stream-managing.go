@@ -148,7 +148,6 @@ type ForState struct {
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	LastElem       bool
 	OnTrue         string
 	OnFalse        string
 }
@@ -187,18 +186,14 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 		}
 	}
 
-	if e.LastElem {
-		index = 0
-		e.LastElem = false
-	}
-
 	if index < len(arr) {
 		val := fmt.Sprintf("%v", arr[index])
 		index++
 		runCtx.SetValue(e.FunctionOutput["index"], index)
 		runCtx.SetValue(e.FunctionOutput["now_on"], val)
 	} else {
-		e.LastElem = true
+		index++
+		runCtx.SetValue(e.FunctionOutput["index"], index)
 	}
 
 	return nil
@@ -220,7 +215,7 @@ func (e *ForState) Next(runCtx *store.VariableStore) (string, bool) {
 		return "", indexOk
 	}
 
-	if index >= len(arr) {
+	if index >= len(arr)+1 {
 		return e.OnTrue, true
 	}
 
