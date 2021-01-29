@@ -921,7 +921,7 @@ func (m *MockDB) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 		ID:            uuid.UUID{},
 		VersionID:     uuid.UUID{},
 		CreatedAt:     time.Time{},
-		ApprovedAt:    time.Time{},
+		ApprovedAt:    &time.Time{},
 		Author:        "",
 		Approver:      "",
 		Name:          "",

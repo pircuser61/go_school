@@ -137,7 +137,7 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 			return nil, err
 		}
 
-		version.ApprovedAt = t
+		version.ApprovedAt = &t
 
 		if finV, ok := vMap[version.ID]; ok {
 			if finV.ApprovedAt.After(t) {
@@ -1324,7 +1324,7 @@ func (db *PGConnection) GetExecutableScenarios(c context.Context) ([]entity.Eriu
 		p.ID = pID
 		p.Status = s
 		p.Name = name
-		p.ApproveDate = d
+		p.ApproveDate = &d
 		pipes = append(pipes, p)
 	}
 

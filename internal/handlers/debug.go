@@ -28,9 +28,7 @@ const (
 	actionResume   = "resume"
 )
 
-var (
-	errCantGetNextBlock = errors.New("can't get next block")
-)
+var errCantGetNextBlock = errors.New("can't get next block")
 
 type DebugRunRequest struct {
 	TaskID      uuid.UUID `json:"task_id"`
@@ -359,11 +357,13 @@ func (ae *APIEnv) runDebugTask(
 
 	stopPoints := store.NewStopPoints(ep.NowOnPoint)
 	nextBlock := ep.Blocks[ep.NowOnPoint]
+
 	if nextBlock == nil {
 		ae.Logger.Error(errCantGetNextBlock)
 
 		return nil, errors.Wrap(errCantGetNextBlock, "can't get next block")
 	}
+
 	nextSteps := nextBlock.NextSteps()
 
 	vs.SetStopPoints(*stopPoints)

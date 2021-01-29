@@ -58,6 +58,7 @@ func (c *VariableStore) AddStep(name string) {
 func (c *VariableStore) AddError(err error) {
 	c.Lock()
 	defer c.Unlock()
+
 	if err == nil {
 		err = errors.New("unknown err")
 	}
