@@ -852,9 +852,11 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 	p := entity.EriusScenario{}
 
 	qVersion := `
-	SELECT id, status, pipeline_id, content, comment_rejected, comment
-	FROM pipeliner.versions 
-	WHERE id = $1 LIMIT 1;`
+	SELECT pv.id, pv.status, pv.pipeline_id, pv.content, pv.comment_rejected, pv.comment, pph.date
+	FROM pipeliner.versions pv
+    LEFT JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
+	WHERE pv.id = $1
+	ORDER BY pph.date DESC LIMIT 1;`
 
 	rows, err := conn.Query(c, qVersion, id)
 	if err != nil {
@@ -870,9 +872,10 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 			c        string
 			cr       string
 			cm       string
+			d        *time.Time
 		)
 
-		err := rows.Scan(&vID, &s, &pID, &c, &cr, &cm)
+		err := rows.Scan(&vID, &s, &pID, &c, &cr, &cm, &d)
 		if err != nil {
 			return nil, err
 		}
@@ -887,6 +890,7 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 		p.Status = s
 		p.CommentRejected = cr
 		p.Comment = cm
+		p.ApproveDate = d
 
 		return &p, nil
 	}
