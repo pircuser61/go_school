@@ -890,7 +890,7 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 		p.Status = s
 		p.CommentRejected = cr
 		p.Comment = cm
-		p.ApproveDate = d
+		p.ApprovedAt = d
 
 		return &p, nil
 	}
@@ -1328,7 +1328,7 @@ func (db *PGConnection) GetExecutableScenarios(c context.Context) ([]entity.Eriu
 		p.ID = pID
 		p.Status = s
 		p.Name = name
-		p.ApproveDate = &d
+		p.ApprovedAt = &d
 		pipes = append(pipes, p)
 	}
 
@@ -1342,7 +1342,7 @@ func (db *PGConnection) GetExecutableScenarios(c context.Context) ([]entity.Eriu
 				return nil, err
 			}
 
-			if finV.ApproveDate.After(t) {
+			if finV.ApprovedAt.After(t) {
 				continue
 			}
 		}
