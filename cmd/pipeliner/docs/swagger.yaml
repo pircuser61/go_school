@@ -23,6 +23,7 @@ definitions:
         type: string
       task:
         $ref: '#/definitions/entity.EriusTask'
+        type: object
     type: object
   entity.EriusFunc:
     properties:
@@ -86,7 +87,7 @@ definitions:
     type: object
   entity.EriusScenario:
     properties:
-      approve_date:
+      approved_at:
         type: string
       comment:
         type: string
@@ -246,9 +247,8 @@ definitions:
       status:
         type: string
       steps:
-        items:
-          $ref: '#/definitions/entity.Step'
-        type: array
+        $ref: '#/definitions/entity.TaskSteps'
+        type: object
       version_id:
         type: string
     type: object
@@ -323,6 +323,10 @@ definitions:
       time:
         type: string
     type: object
+  entity.TaskSteps:
+    items:
+      $ref: '#/definitions/entity.Step'
+    type: array
   entity.UsageResponse:
     properties:
       name:
@@ -424,6 +428,7 @@ definitions:
 host: localhost:8181
 info:
   contact: {}
+  license: {}
   title: Pipeliner API
   version: "0.1"
 paths:

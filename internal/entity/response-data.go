@@ -60,7 +60,7 @@ type EriusScenario struct {
 		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
 	} `json:"pipeline"`
-	ApproveDate     *time.Time     `json:"approve_date"`
+	ApprovedAt      *time.Time     `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
 	Tags            []EriusTagInfo `json:"tags"`
 	Comment         string         `json:"comment"`
 	CommentRejected string         `json:"comment_rejected"`
