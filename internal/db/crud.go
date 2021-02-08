@@ -852,50 +852,26 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 	p := entity.EriusScenario{}
 
 	qVersion := `
-	SELECT pv.id, pv.status, pv.pipeline_id, pv.content, pv.comment_rejected, pv.comment, pph.date
+	SELECT pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.content, pv.comment_rejected, pv.comment, pph.date
 	FROM pipeliner.versions pv
     LEFT JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
 	WHERE pv.id = $1
 	ORDER BY pph.date DESC LIMIT 1;`
 
-	rows, err := conn.Query(c, qVersion, id)
+	row := conn.QueryRow(c, qVersion, id)
+	content := ""
+
+	err = row.Scan(&p.VersionID, &p.Status, &p.ID, &p.CreatedAt, &content, &p.CommentRejected, &p.Comment, &p.ApprovedAt)
 	if err != nil {
 		return nil, err
 	}
 
-	defer rows.Close()
-
-	if rows.Next() {
-		var (
-			vID, pID uuid.UUID
-			s        int
-			c        string
-			cr       string
-			cm       string
-			d        *time.Time
-		)
-
-		err := rows.Scan(&vID, &s, &pID, &c, &cr, &cm, &d)
-		if err != nil {
-			return nil, err
-		}
-
-		err = json.Unmarshal([]byte(c), &p)
-		if err != nil {
-			return nil, err
-		}
-
-		p.VersionID = vID
-		p.ID = pID
-		p.Status = s
-		p.CommentRejected = cr
-		p.Comment = cm
-		p.ApprovedAt = d
-
-		return &p, nil
+	err = json.Unmarshal([]byte(content), &p)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
+	return &p, nil
 }
 
 func (db *PGConnection) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error) {
