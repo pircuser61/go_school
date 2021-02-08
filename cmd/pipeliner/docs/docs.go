@@ -1858,13 +1858,18 @@ var doc = `{
             "type": "object",
             "properties": {
                 "approved_at": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2020-07-16T17:10:25.112704+03:00"
                 },
                 "comment": {
                     "type": "string"
                 },
                 "comment_rejected": {
                     "type": "string"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2020-07-16T17:10:25.112704+03:00"
                 },
                 "hasDraft": {
                     "type": "boolean"
