@@ -858,20 +858,46 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 	WHERE pv.id = $1
 	ORDER BY pph.date DESC LIMIT 1;`
 
-	row := conn.QueryRow(c, qVersion, id)
-	content := ""
-
-	err = row.Scan(&p.VersionID, &p.Status, &p.ID, &p.CreatedAt, &content, &p.CommentRejected, &p.Comment, &p.ApprovedAt)
+	rows, err := conn.Query(c, qVersion, id)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(content), &p)
-	if err != nil {
-		return nil, err
+	defer rows.Close()
+
+	if rows.Next() {
+		var (
+			vID, pID uuid.UUID
+			s        int
+			c        string
+			cr       string
+			cm       string
+			d        *time.Time
+			ca       *time.Time
+		)
+
+		err := rows.Scan(&vID, &s, &pID, &ca, &c, &cr, &cm, &d)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(c), &p)
+		if err != nil {
+			return nil, err
+		}
+
+		p.VersionID = vID
+		p.ID = pID
+		p.Status = s
+		p.CommentRejected = cr
+		p.Comment = cm
+		p.ApprovedAt = d
+		p.CreatedAt = ca
+
+		return &p, nil
 	}
 
-	return &p, nil
+	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
 }
 
 func (db *PGConnection) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error) {
