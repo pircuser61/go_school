@@ -5,14 +5,16 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-
 	"github.com/go-chi/chi"
+	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
 
 // GetModules godoc
@@ -29,10 +31,12 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager, ae.HTTPClient)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -55,7 +59,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -99,7 +103,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	eriusShapes, err := script.GetShapes()
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -108,7 +112,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, entity.EriusFunctionList{Functions: eriusFunctions, Shapes: eriusShapes})
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -129,10 +133,12 @@ func (ae *APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "all_modules_usage")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	scenarios, err := ae.DB.GetWorkedVersions(ctx)
 	if err != nil {
 		e := ModuleUsageError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -170,7 +176,7 @@ func (ae *APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, entity.AllUsageResponse{Functions: resp})
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -192,12 +198,14 @@ func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "module_usage")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	name := chi.URLParam(req, "moduleName")
 
 	allWorked, err := ae.DB.GetWorkedVersions(ctx)
 	if err != nil {
 		e := ModuleUsageError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -222,7 +230,7 @@ func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, Pipelines: usedBy, Used: used})
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -244,12 +252,14 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "module_run")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	name := chi.URLParam(req, "moduleName")
 
 	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager, ae.HTTPClient)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -267,7 +277,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 
 	if block.Title == "" {
 		e := ModuleUsageError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -297,7 +307,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -309,7 +319,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 		err = json.Unmarshal(b, &pipelineVars)
 		if err != nil {
 			e := PipelineRunError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return
@@ -323,7 +333,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 	result, err := fb.RunOnly(ctx, vs)
 	if err != nil {
 		e := PipelineRunError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -332,7 +342,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, result)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return

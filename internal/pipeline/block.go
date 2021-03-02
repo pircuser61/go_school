@@ -63,14 +63,11 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 	}
 
 	url := fmt.Sprintf(fb.RunURL, fb.FunctionName)
-	fmt.Println(url)
 
 	b, err := json.Marshal(values)
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(string(b))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
 	if err != nil {
@@ -102,8 +99,6 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("response:", string(body))
 
 	if len(body) != 0 {
 		result := make(map[string]interface{})
@@ -151,17 +146,12 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 		}
 	}
 
-	fmt.Println(values, fb.FunctionInput)
-
 	url := fmt.Sprintf(fb.RunURL, fb.FunctionName)
-	fmt.Println(url)
 
 	b, err := json.Marshal(values)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(string(b))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
 	if err != nil {
@@ -188,8 +178,6 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(string(body))
 
 	if len(body) != 0 {
 		result := make(map[string]interface{})

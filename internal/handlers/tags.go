@@ -7,12 +7,13 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/erius/admin/pkg/vars"
 
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/erius/admin/pkg/auth"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 )
 
 // GetTags
@@ -30,10 +31,12 @@ func (ae *APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tags")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Read)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -41,7 +44,7 @@ func (ae *APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 
 	if !grants.Allow {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -50,13 +53,13 @@ func (ae *APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 	tags, err := ae.DB.GetAllTags(ctx)
 	if err != nil {
 		e := GetAllTagsError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 	}
 
 	if err := sendResponse(w, http.StatusOK, tags); err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -79,10 +82,12 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_tag")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Create)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -90,7 +95,7 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 
 	if !grants.Allow {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -101,7 +106,7 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -112,7 +117,7 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &etag)
 	if err != nil {
 		e := TagParseError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -122,13 +127,13 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
-		ae.Logger.Error("user failed: ", err.Error())
+		log.WithError(err).Error("user failed")
 	}
 
 	created, err := ae.DB.CreateTag(ctx, &etag, user.UserName())
 	if err != nil {
 		e := TagCreateError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -137,7 +142,7 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, created)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -160,12 +165,14 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_tag")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
 		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -176,7 +183,7 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &etag)
 	if err != nil {
 		e := TagParseError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -185,7 +192,7 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Update)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -193,7 +200,7 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 
 	if !grants.Allow {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -203,7 +210,7 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 
 	if !(grants.Allow && grants.Contains(id)) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -212,7 +219,7 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.EditTag(ctx, &etag)
 	if err != nil {
 		e := TagEditError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -221,7 +228,7 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	edited, err := ae.DB.GetTag(ctx, &etag)
 	if err != nil {
 		e := GetTagError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -230,7 +237,7 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, edited)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -252,12 +259,14 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_tag")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	tagID := chi.URLParam(req, "ID")
 
 	tID, err := uuid.Parse(tagID)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -266,7 +275,7 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Delete)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -274,7 +283,7 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 
 	if !grants.Allow {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -284,7 +293,7 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 
 	if !(grants.Allow && grants.Contains(id)) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -293,7 +302,7 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.RemoveTag(ctx, tID)
 	if err != nil {
 		e := TagDeleteError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -302,7 +311,7 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
