@@ -13,6 +13,7 @@ var (
 	errValueNotAString = errors.New("value not a string")
 	errValueNotABool   = errors.New("value not a bool")
 	errNoSuchKey       = errors.New("no such key")
+	errUnknown         = errors.New("unknown")
 )
 
 type VariableStore struct {
@@ -60,7 +61,7 @@ func (c *VariableStore) AddError(err error) {
 	defer c.Unlock()
 
 	if err == nil {
-		err = errors.New("unknown err")
+		err = errUnknown
 	}
 
 	c.Errors = append(c.Errors, err.Error())

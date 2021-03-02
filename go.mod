@@ -7,7 +7,6 @@ require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/go-chi/cors v1.1.1
 	github.com/go-chi/render v1.0.1
 	github.com/go-openapi/jsonreference v0.19.4 // indirect
 	github.com/google/uuid v1.1.2
@@ -17,6 +16,7 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/common v0.10.0
 	github.com/stretchr/testify v1.6.1
 	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba
 	github.com/swaggo/swag v1.6.7
