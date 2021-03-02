@@ -204,7 +204,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	return nil
 }
 
-func (ep *ExecutablePipeline) Next(_ *store.VariableStore) (string, bool) {
+func (ep *ExecutablePipeline) Next(*store.VariableStore) (string, bool) {
 	return ep.NextStep, true
 }
 
