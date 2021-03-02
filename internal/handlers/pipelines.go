@@ -1291,19 +1291,6 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		log.Error(err)
 	}
 
-	err = ep.CreateTask(ctx, user.UserName(), false, []byte{})
-	if err != nil {
-		e := PipelineRunError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		if monErr := mon.RunError(ctx); monErr != nil {
-			log.WithError(monErr).Error("can't send data to monitoring")
-		}
-
-		return
-	}
-
 	vs := store.NewStore()
 
 	b, err := ioutil.ReadAll(req.Body)
@@ -1341,6 +1328,33 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 			vs.SetValue(p.Name+pipeline.KeyDelimiter+key, value)
 		}
 	}
+
+	parameters, err := json.Marshal(pipelineVars)
+	if err != nil {
+		e := PipelineRunError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		if monErr := mon.RunError(ctx); monErr != nil {
+			log.WithError(monErr).Error("can't send data to monitoring")
+		}
+
+		return
+	}
+
+	err = ep.CreateTask(ctx, user.UserName(), false, parameters)
+	if err != nil {
+		e := PipelineRunError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		if monErr := mon.RunError(ctx); monErr != nil {
+			log.WithError(monErr).Error("can't send data to monitoring")
+		}
+
+		return
+	}
+
 	//nolint:nestif //its simple
 	if withStop {
 		err = ep.DebugRun(ctx, vs)

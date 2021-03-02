@@ -425,10 +425,7 @@ func (db *PGConnection) SwitchApproved(c context.Context, pipelineID, versionID 
 
 	err = tx.Commit(c)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return err
-		}
+		_ = tx.Rollback(c)
 
 		return err
 	}
@@ -463,10 +460,7 @@ func (db *PGConnection) RollbackVersion(c context.Context, pipelineID, versionID
 
 	err = tx.Commit(c)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return err
-		}
+		_ = tx.Rollback(c)
 
 		return err
 	}
@@ -612,10 +606,7 @@ func (db *PGConnection) CreatePipeline(c context.Context,
 
 	err = tx.Commit(c)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return err
-		}
+		_ = tx.Rollback(c)
 
 		return err
 	}
@@ -1231,10 +1222,7 @@ func (db *PGConnection) CreateTask(c context.Context,
 
 	err = row.Scan(&id)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return nil, err
-		}
+		_ = tx.Rollback(c)
 
 		return nil, err
 	}
@@ -1243,20 +1231,14 @@ func (db *PGConnection) CreateTask(c context.Context,
 
 	_, err = tx.Exec(c, q, taskID, versionID)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return nil, err
-		}
+		_ = tx.Rollback(c)
 
 		return nil, err
 	}
 
 	err = tx.Commit(c)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return nil, err
-		}
+		_ = tx.Rollback(c)
 
 		return nil, err
 	}
@@ -1534,7 +1516,7 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 		return nil, err
 	}
 
-	if nullStringParameters.Valid {
+	if nullStringParameters.Valid && nullStringParameters.String != "" {
 		err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
 		if err != nil {
 			return nil, err
@@ -1582,7 +1564,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 			return nil, err
 		}
 
-		if nullStringParameters.Valid {
+		if nullStringParameters.Valid && nullStringParameters.String != "" {
 			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
 			if err != nil {
 				return nil, err
