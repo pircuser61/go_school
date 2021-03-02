@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -186,10 +185,7 @@ func CheckStatusForMetrics(ok bool) {
 		metrics.Stats.RemedyPushes.Fail.SetToCurrentTime()
 	}
 
-	errPush := metrics.Pusher.Add()
-	if errPush != nil {
-		fmt.Printf("can't push: %s\n", errPush.Error())
-	}
+	_ = metrics.Pusher.Add()
 }
 
 //nolint:gocritic //impossible to pass pointer

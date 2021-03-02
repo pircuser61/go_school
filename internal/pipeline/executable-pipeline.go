@@ -5,20 +5,20 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
 
-var unknownBlock = errors.New("unknown block")
+var errUnknownBlock = errors.New("unknown block")
 
 type ExecutablePipeline struct {
 	TaskID        uuid.UUID
@@ -37,8 +37,7 @@ type ExecutablePipeline struct {
 	HTTPClient    *http.Client
 	Remedy        string
 
-	Logger logger.Logger
-	FaaS   string
+	FaaS string
 }
 
 func (ep *ExecutablePipeline) Inputs() map[string]string {
@@ -116,6 +115,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	ep.VarStore = runCtx
 
 	if ep.NowOnPoint == "" {
@@ -128,11 +129,11 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	}
 
 	for ep.NowOnPoint != "" {
-		ep.Logger.Info("executing", ep.NowOnPoint)
+		log.Info("executing", ep.NowOnPoint)
 
 		now, ok := ep.Blocks[ep.NowOnPoint]
 		if !ok {
-			return ep.finallyError(ctx, unknownBlock)
+			return ep.finallyError(ctx, errUnknownBlock)
 		}
 
 		//nolint:nestif //its really complexive
@@ -203,7 +204,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	return nil
 }
 
-func (ep *ExecutablePipeline) Next(runCtx *store.VariableStore) (string, bool) {
+func (ep *ExecutablePipeline) Next(_ *store.VariableStore) (string, bool) {
 	return ep.NextStep, true
 }
 
@@ -254,7 +255,6 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.VersionID = p.VersionID
 			epi.Storage = ep.Storage
 			epi.EntryPoint = p.Pipeline.Entrypoint
-			epi.Logger = ep.Logger
 			epi.FaaS = ep.FaaS
 			epi.Input = make(map[string]string)
 			epi.Output = make(map[string]string)

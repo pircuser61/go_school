@@ -17,8 +17,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/admin/pkg/vars"
 
@@ -43,7 +41,6 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	mockDB := test.NewMockDB()
-	log := logger.CreateLogger(nil)
 
 	tests := []struct {
 		name string
@@ -206,7 +203,6 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 
 			ae := &APIEnv{
 				DB:            mockDB,
-				Logger:        log,
 				ScriptManager: "",
 				Remedy:        "",
 				FaaS:          FaaSMockServer.URL + "/",
@@ -232,6 +228,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 
 			resp, err := pipelinerServer.Client().Do(req)
 			_ = err
+
 			respBytes, _ := ioutil.ReadAll(resp.Body)
 
 			time.Sleep(5 * time.Second)

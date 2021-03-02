@@ -3,23 +3,22 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 
 	"go.opencensus.io/trace"
 
-	"github.com/go-chi/chi"
-	"github.com/google/uuid"
-
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/admin/pkg/vars"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
@@ -49,6 +48,8 @@ type RunContext struct {
 func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_pipelines")
 	defer s.End()
+
+	log := logger.GetLogger(ctx)
 
 	drafts, err := ae.draftVersions(ctx)
 	if err != nil {
@@ -87,7 +88,7 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 
 	if err := sendResponse(w, http.StatusOK, resp); err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -101,15 +102,17 @@ func (ae *APIEnv) draftVersions(ctx context.Context) ([]entity.EriusScenarioInfo
 	ctx, s := trace.StartSpan(ctx, "list_drafts")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineVersion, vars.Own)
 	if err != nil {
-		ae.Logger.Error(AuthServiceError.errorMessage(err))
+		log.Error(AuthServiceError.errorMessage(err))
 
 		return []entity.EriusScenarioInfo{}, &PipelinerError{AuthServiceError}
 	}
 
 	if !grants.Allow {
-		ae.Logger.Error(UnauthError.errorMessage(err))
+		log.Error(UnauthError.errorMessage(err))
 
 		return []entity.EriusScenarioInfo{}, nil
 	}
@@ -142,22 +145,24 @@ func (ae *APIEnv) onApprovedVersions(ctx context.Context) ([]entity.EriusScenari
 	ctx, s := trace.StartSpan(ctx, "list_on_approve_versions")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Approve)
 	if err != nil {
-		ae.Logger.Error(AuthServiceError.errorMessage(err))
+		log.Error(AuthServiceError.errorMessage(err))
 
 		return []entity.EriusScenarioInfo{}, &PipelinerError{AuthServiceError}
 	}
 
 	if !grants.Allow {
-		ae.Logger.Error(UnauthError.errorMessage(err))
+		log.Error(UnauthError.errorMessage(err))
 
 		return []entity.EriusScenarioInfo{}, nil
 	}
 
 	onApprove, err := ae.DB.GetOnApproveVersions(ctx)
 	if err != nil {
-		ae.Logger.Error(GetAllOnApproveError.errorMessage(err))
+		log.Error(GetAllOnApproveError.errorMessage(err))
 
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllOnApproveError}
 	}
@@ -172,22 +177,24 @@ func (ae *APIEnv) approvedVersions(ctx context.Context) ([]entity.EriusScenarioI
 	ctx, s := trace.StartSpan(ctx, "list_approved_versions")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
 	if err != nil {
-		ae.Logger.Error(AuthServiceError.errorMessage(err))
+		log.Error(AuthServiceError.errorMessage(err))
 
 		return []entity.EriusScenarioInfo{}, &PipelinerError{AuthServiceError}
 	}
 
 	if !grants.Allow {
-		ae.Logger.Error(UnauthError.errorMessage(err))
+		log.Error(UnauthError.errorMessage(err))
 
 		return []entity.EriusScenarioInfo{}, nil
 	}
 
 	approved, err := ae.DB.GetApprovedVersions(ctx)
 	if err != nil {
-		ae.Logger.Error(GetAllApprovedError.errorMessage(err))
+		log.Error(GetAllApprovedError.errorMessage(err))
 
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllApprovedError}
 	}
@@ -200,22 +207,24 @@ func (ae *APIEnv) tags(ctx context.Context) ([]entity.EriusTagInfo, *PipelinerEr
 	ctx, s := trace.StartSpan(ctx, "list_tags")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Read)
 	if err != nil {
-		ae.Logger.Error(AuthServiceError.errorMessage(err))
+		log.Error(AuthServiceError.errorMessage(err))
 
 		return []entity.EriusTagInfo{}, &PipelinerError{AuthServiceError}
 	}
 
 	if !grants.Allow {
-		ae.Logger.Error(UnauthError.errorMessage(err))
+		log.Error(UnauthError.errorMessage(err))
 
 		return []entity.EriusTagInfo{}, nil
 	}
 
 	tags, err := ae.DB.GetAllTags(ctx)
 	if err != nil {
-		ae.Logger.Error(GetAllTagsError.errorMessage(err))
+		log.Error(GetAllTagsError.errorMessage(err))
 
 		return []entity.EriusTagInfo{}, &PipelinerError{GetAllTagsError}
 	}
@@ -239,12 +248,14 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	versionID := chi.URLParam(req, "versionID")
 
 	versionUUID, err := uuid.Parse(versionID)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -253,7 +264,7 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	p, err := ae.DB.GetPipelineVersion(ctx, versionUUID)
 	if err != nil {
 		e := GetVersionError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -262,7 +273,7 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	tags, err := ae.DB.GetPipelineTag(ctx, p.ID)
 	if err != nil {
 		e := GetPipelineTagsError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 	}
 
@@ -271,7 +282,7 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -280,7 +291,7 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	// проверяем доступ к сценарию запрошенной версии
 	if !(grants.Allow && grants.Contains(p.ID.String())) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -289,7 +300,7 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, p)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -312,12 +323,14 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	idParam := chi.URLParam(req, "pipelineID")
 
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -326,7 +339,7 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -335,7 +348,7 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	// проверяем доступ на чтение запрошенного сценария
 	if !(grants.Allow && grants.Contains(idParam)) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -344,7 +357,7 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	p, err := ae.DB.GetPipeline(ctx, id)
 	if err != nil {
 		e := GetPipelineError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -353,7 +366,7 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	tags, err := ae.DB.GetPipelineTag(ctx, p.ID)
 	if err != nil {
 		e := GetPipelineTagsError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 	}
 
@@ -362,7 +375,7 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, p)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -386,12 +399,14 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	ctx, s := trace.StartSpan(req.Context(), "create_draft")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
 		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -402,7 +417,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -413,7 +428,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	p.ID, err = uuid.Parse(pipelineID)
 	if err != nil {
 		e := VersionCreateError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -424,7 +439,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Create)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -432,7 +447,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	if !grants.Allow {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -440,13 +455,13 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
-		ae.Logger.WithError(err).Error("user failed")
+		log.WithError(err).Error("user failed")
 	}
 	//nolint:govet //it doesn't shadow
 	canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, user.UserName())
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -454,7 +469,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	if !canCreate {
 		e := PipelineHasDraft
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -463,7 +478,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	err = ae.DB.CreateVersion(ctx, &p, user.UserName(), b)
 	if err != nil {
 		e := PipelineWriteError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -472,7 +487,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
 	if err != nil {
 		e := PipelineReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -484,7 +499,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		ResourceID:   created.VersionID.String(),
 	}); err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -493,7 +508,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	err = sendResponse(w, http.StatusOK, created)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -517,12 +532,14 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
 		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -533,7 +550,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -542,7 +559,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Create)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -550,7 +567,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 
 	if !grants.Allow {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -558,7 +575,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
-		ae.Logger.Error("user failed: ", err.Error())
+		log.Error("user failed: ", err.Error())
 	}
 
 	p.ID = uuid.New()
@@ -567,7 +584,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -575,7 +592,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 
 	if !canCreate {
 		e := PipelineNameUsed
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -584,7 +601,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.CreatePipeline(ctx, &p, user.UserName(), b)
 	if err != nil {
 		e := PipelineCreateError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -593,7 +610,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
 	if err != nil {
 		e := PipelineReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -605,7 +622,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		ResourceID:   created.VersionID.String(),
 	}); err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -614,7 +631,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, created)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -638,12 +655,14 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_draft")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
 		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -654,7 +673,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	err = json.Unmarshal(b, &p)
 	if err != nil {
 		e := PipelineParseError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -665,7 +684,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, resource, action)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -673,7 +692,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	if !(grants.Allow && grants.Contains(id)) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -682,7 +701,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -692,7 +711,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		err = ae.DB.RollbackVersion(ctx, p.ID, p.VersionID)
 		if err != nil {
 			e := ApproveError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return
@@ -701,7 +720,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		err = sendResponse(w, http.StatusOK, nil)
 		if err != nil {
 			e := UnknownError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return
@@ -713,7 +732,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.UpdateDraft(ctx, &p, b)
 	if err != nil {
 		e := PipelineWriteError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -721,14 +740,14 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
-		ae.Logger.Error(err.Error())
+		log.Error(err.Error())
 	}
 
 	if p.Status == db.StatusApproved {
 		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, user.UserName())
 		if err != nil {
 			e := ApproveError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return
@@ -739,7 +758,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, user.UserName())
 		if err != nil {
 			e := ApproveError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return
@@ -749,7 +768,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	edited, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
 	if err != nil {
 		e := PipelineReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -758,7 +777,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, edited)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -814,12 +833,14 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "delete_version")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	idParam := chi.URLParam(req, "versionID")
 
 	versionID, err := uuid.Parse(idParam)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -828,7 +849,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	p, err := ae.DB.GetPipelineVersion(ctx, versionID)
 	if err != nil {
 		e := PipelineDeleteError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -839,7 +860,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, resource, action)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -847,7 +868,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 
 	if !(grants.Allow && grants.Contains(id)) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -857,7 +878,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		err = ae.DeleteDraftPipeline(ctx, w, p)
 		if err != nil {
 			e := PipelineDeleteError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return
@@ -867,7 +888,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.DeleteVersion(ctx, versionID)
 	if err != nil {
 		e := PipelineDeleteError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -879,7 +900,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		ResourceID:   versionID.String(),
 	}); err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -888,7 +909,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -896,10 +917,15 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {
+	ctx, s := trace.StartSpan(ctx, "delete_draft_pipeline")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
 	canDelete, err := ae.DB.PipelineRemovable(ctx, p.ID)
 	if err != nil {
 		e := PipelineIsNotDraft
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return err
@@ -909,7 +935,7 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 		err = ae.DB.RemovePipelineTags(ctx, p.ID)
 		if err != nil {
 			e := TagDetachError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return err
@@ -918,7 +944,7 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 		err = ae.DB.DeletePipeline(ctx, p.ID)
 		if err != nil {
 			e := PipelineDeleteError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return err
@@ -943,12 +969,14 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "delete_pipeline")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	idParam := chi.URLParam(req, "pipelineID")
 
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -957,7 +985,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Delete)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -965,7 +993,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 
 	if !(grants.Allow && grants.Contains(id.String())) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -974,7 +1002,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	childPipelines, err := scenarioUsage(ctx, ae.DB, id)
 	if len(childPipelines) > 0 {
 		e := ScenarioIsUsedInOtherError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -983,7 +1011,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	err = ae.SchedulerClient.DeleteTasksByPipelineID(ctx, id)
 	if err != nil {
 		e := SchedulerClientFailed
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -992,7 +1020,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.RemovePipelineTags(ctx, id)
 	if err != nil {
 		e := TagDetachError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1001,7 +1029,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.DeletePipeline(ctx, id)
 	if err != nil {
 		e := PipelineDeleteError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1013,7 +1041,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 		ResourceID:   id.String(),
 	}); err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1022,7 +1050,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, id)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1044,12 +1072,14 @@ func (ae *APIEnv) ListSchedulerTasks(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "scheduler tasks list")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	idParam := chi.URLParam(req, "pipelineID")
 
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1058,7 +1088,7 @@ func (ae *APIEnv) ListSchedulerTasks(w http.ResponseWriter, req *http.Request) {
 	tasks, err := ae.SchedulerClient.GetTasksByPipelineID(ctx, id)
 	if err != nil {
 		e := SchedulerClientFailed
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1072,7 +1102,7 @@ func (ae *APIEnv) ListSchedulerTasks(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, result)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1096,6 +1126,8 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "run_pipeline")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	withStop := false
 
 	if withStopCtx := req.Context().Value("with_stop"); withStopCtx != nil {
@@ -1114,7 +1146,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1123,7 +1155,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	p, err := ae.DB.GetPipeline(ctx, id)
 	if err != nil {
 		e := GetPipelineError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1132,7 +1164,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Run)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1141,7 +1173,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	// проверяем права на запуск пайплайна
 	if !(grants.Allow && grants.Contains(p.ID.String())) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1167,12 +1199,14 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "run_pipeline")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	idParam := chi.URLParam(req, "versionID")
 
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1181,7 +1215,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	p, err := ae.DB.GetPipelineVersion(ctx, id)
 	if err != nil {
 		e := GetPipelineError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1190,7 +1224,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Run)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1199,7 +1233,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	// проверяем права на запуск пайплайна
 	if !(grants.Allow && grants.Contains(p.ID.String())) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1213,6 +1247,8 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	p *entity.EriusScenario, withStop bool) {
 	ctx, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
+
+	log := logger.GetLogger(ctx)
 
 	reqID := req.Header.Get(XRequestIDHeader)
 
@@ -1230,7 +1266,6 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	ep.VersionID = p.VersionID
 	ep.Storage = ae.DB
 	ep.EntryPoint = p.Pipeline.Entrypoint
-	ep.Logger = ae.Logger
 	ep.FaaS = ae.FaaS
 	ep.PipelineModel = p
 	ep.HTTPClient = ae.HTTPClient
@@ -1239,31 +1274,31 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	err := ep.CreateBlocks(ctx, p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		if monErr := mon.RunError(ctx); monErr != nil {
-			ae.Logger.WithError(monErr).Error("can't send data to monitoring")
+			log.WithError(monErr).Error("can't send data to monitoring")
 		}
 
 		return
 	}
 
-	ae.Logger.Info("--- running pipeline:", p.Name)
+	log.Info("--- running pipeline:", p.Name)
 
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
-		ae.Logger.Error(err)
+		log.Error(err)
 	}
 
 	err = ep.CreateTask(ctx, user.UserName(), false, []byte{})
 	if err != nil {
 		e := PipelineRunError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		if monErr := mon.RunError(ctx); monErr != nil {
-			ae.Logger.WithError(monErr).Error("can't send data to monitoring")
+			log.WithError(monErr).Error("can't send data to monitoring")
 		}
 
 		return
@@ -1276,11 +1311,11 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	if err != nil {
 		e := RequestReadError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		if monErr := mon.RunError(ctx); monErr != nil {
-			ae.Logger.WithError(monErr).Error("can't send data to monitoring")
+			log.WithError(monErr).Error("can't send data to monitoring")
 		}
 
 		return
@@ -1292,11 +1327,11 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		err = json.Unmarshal(b, &pipelineVars)
 		if err != nil {
 			e := PipelineRunError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			if monErr := mon.RunError(ctx); monErr != nil {
-				ae.Logger.WithError(monErr).Error("can't send data to monitoring")
+				log.WithError(monErr).Error("can't send data to monitoring")
 			}
 
 			return
@@ -1304,14 +1339,13 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 		for key, value := range pipelineVars {
 			vs.SetValue(p.Name+pipeline.KeyDelimiter+key, value)
-			fmt.Println(vs)
 		}
 	}
 	//nolint:nestif //its simple
 	if withStop {
 		err = ep.DebugRun(ctx, vs)
 		if err != nil {
-			ae.Logger.Error(PipelineExecutionError.errorMessage(err))
+			log.Error(PipelineExecutionError.errorMessage(err))
 			vs.AddError(err)
 		}
 
@@ -1321,7 +1355,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		})
 		if err != nil {
 			e := UnknownError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return
@@ -1331,21 +1365,21 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 			routineCtx := context.WithValue(context.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 
 			if monErr := mon.Run(routineCtx); monErr != nil {
-				ae.Logger.WithError(monErr).Error("can't send data to monitoring")
+				log.WithError(monErr).Error("can't send data to monitoring")
 			}
 
 			err = ep.DebugRun(routineCtx, vs)
 			if err != nil {
-				ae.Logger.Error(PipelineExecutionError.errorMessage(err))
+				log.Error(PipelineExecutionError.errorMessage(err))
 				vs.AddError(err)
 
 				if monErr := mon.RunError(routineCtx); monErr != nil {
-					ae.Logger.WithError(monErr).Error("can't send data to monitoring")
+					log.WithError(monErr).Error("can't send data to monitoring")
 				}
 			}
 
 			if monErr := mon.Done(routineCtx); monErr != nil {
-				ae.Logger.WithError(monErr).Error("can't send data to monitoring")
+				log.WithError(monErr).Error("can't send data to monitoring")
 			}
 		}()
 
@@ -1355,7 +1389,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		})
 		if err != nil {
 			e := UnknownError
-			ae.Logger.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(err))
 			_ = e.sendError(w)
 
 			return
@@ -1419,12 +1453,14 @@ func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tag")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	pipelineID := chi.URLParam(req, "pipelineID")
 
 	pID, err := uuid.Parse(pipelineID)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1433,7 +1469,7 @@ func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1441,7 +1477,7 @@ func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
 
 	if !grants.Allow {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1450,13 +1486,13 @@ func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
 	tags, err := ae.DB.GetPipelineTag(ctx, pID)
 	if err != nil {
 		e := GetPipelineTagsError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 	}
 
 	if err := sendResponse(w, http.StatusOK, tags); err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1480,12 +1516,14 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "attach_tag")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	pipelineID := chi.URLParam(req, "pipelineID")
 
 	pID, err := uuid.Parse(pipelineID)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1496,7 +1534,7 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	tID, err := uuid.Parse(tagID)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1505,7 +1543,7 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1513,7 +1551,7 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 
 	if !grants.Allow {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1523,7 +1561,7 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 
 	if !(grants.Allow && grants.Contains(id)) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1536,7 +1574,7 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	attached, err := ae.DB.GetTag(ctx, &etag)
 	if err != nil {
 		e := GetTagError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1545,7 +1583,7 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.AttachTag(ctx, pID, &etag)
 	if err != nil {
 		e := TagAttachError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1554,7 +1592,7 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, attached)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1578,12 +1616,14 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_pipeline_tag")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	pipelineID := chi.URLParam(req, "pipelineID")
 
 	pID, err := uuid.Parse(pipelineID)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1594,7 +1634,7 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	tID, err := uuid.Parse(tagID)
 	if err != nil {
 		e := UUIDParsingError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1603,7 +1643,7 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
 	if err != nil {
 		e := AuthServiceError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1611,7 +1651,7 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 
 	if !grants.Allow {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1621,7 +1661,7 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 
 	if !(grants.Allow && grants.Contains(id)) {
 		e := UnauthError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1634,7 +1674,7 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	_, err = ae.DB.GetTag(ctx, &etag)
 	if err != nil {
 		e := GetTagError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1643,7 +1683,7 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.DetachTag(ctx, pID, &etag)
 	if err != nil {
 		e := TagDetachError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -1652,7 +1692,7 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return

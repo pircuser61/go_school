@@ -16,7 +16,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/ctx"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
@@ -25,12 +24,15 @@ type PGConnection struct {
 	Pool *pgxpool.Pool
 }
 
-func ConnectPostgres(db *configs.Database) (PGConnection, error) {
+func ConnectPostgres(ctx context.Context, db *configs.Database) (PGConnection, error) {
 	maxConnections := strconv.Itoa(db.MaxConnections)
 	connString := "postgres://" + db.User + ":" + db.Pass + "@" + db.Host + ":" + db.Port + "/" + db.DBName +
 		"?sslmode=disable&pool_max_conns=" + maxConnections
 
-	conn, err := pgxpool.Connect(ctx.Context(db.Timeout), connString)
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(db.Timeout)*time.Second)
+	_ = cancel // no needed yet
+
+	conn, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
 		return PGConnection{}, err
 	}

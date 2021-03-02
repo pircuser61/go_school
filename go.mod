@@ -7,7 +7,6 @@ require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/go-chi/cors v1.1.1
 	github.com/go-chi/render v1.0.1
 	github.com/go-openapi/jsonreference v0.19.4 // indirect
 	github.com/google/uuid v1.1.2
