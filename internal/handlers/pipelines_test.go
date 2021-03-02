@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"bou.ke/monkey"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
@@ -211,8 +213,8 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 
 			pipelineRouter := chi.NewRouter()
 
-			// pipelineRouter.Use(AddWithStop)
 			pipelineRouter.Route("/", func(r chi.Router) {
+				r.Use(LoggerMiddleware(logger.GetLogger(context.Background())))
 				r.With(SetRequestID).Post("/pipeliner/{pipelineID}", ae.RunPipeline)
 			})
 
@@ -227,7 +229,9 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				bytes.NewReader(pipelineInputBytes))
 
 			resp, err := pipelinerServer.Client().Do(req)
-			_ = err
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			respBytes, _ := ioutil.ReadAll(resp.Body)
 

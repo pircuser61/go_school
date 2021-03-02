@@ -12,7 +12,6 @@ import (
 	"syscall"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
-	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 
 	"github.com/go-chi/chi"
@@ -167,7 +166,7 @@ func main() {
 func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
-	mux.Use(LoggerMiddleware(logger.GetLogger(ctx)))
+	mux.Use(handlers.LoggerMiddleware(logger.GetLogger(ctx)))
 	mux.Use(observability.MiddlewareChi())
 	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
 
@@ -223,25 +222,4 @@ func initSwagger(cfg *configs.Pipeliner) {
 	docs.SwaggerInfo.BasePath = cfg.Swag.BasePath
 	docs.SwaggerInfo.Version = cfg.Swag.Version
 	docs.SwaggerInfo.Host = cfg.Swag.Host + cfg.Swag.Port
-}
-
-func LoggerMiddleware(log logger.Logger) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return ochttp.Handler{
-			Handler: http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-				ctxLocal, span := trace.StartSpan(req.Context(), req.Method+" "+req.URL.String())
-				defer span.End()
-
-				newLogger := log.WithField("TraceID", trace.FromContext(ctxLocal).SpanContext().TraceID.String())
-				newLogger.WithFields(map[string]interface{}{
-					"method": req.Method,
-					"url":    req.URL.String(),
-					"host":   req.Host,
-				}).Info("got request")
-				ctx := logger.WithLogger(ctxLocal, newLogger)
-
-				next.ServeHTTP(res, req.WithContext(ctx))
-			}),
-		}.Handler
-	}
 }
