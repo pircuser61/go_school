@@ -12,7 +12,7 @@ import (
 
 const XRequestIDHeader = "X-Request-Id"
 
-func SetRequestID(next http.Handler) http.Handler {
+func RequestIDMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		reqID := r.Header.Get(XRequestIDHeader)
 		if reqID == "" {
@@ -34,12 +34,13 @@ func LoggerMiddleware(log logger.Logger) func(http.Handler) http.Handler {
 				ctxLocal, span := trace.StartSpan(req.Context(), req.Method+" "+req.URL.String())
 				defer span.End()
 
-				newLogger := log.WithField("TraceID", trace.FromContext(ctxLocal).SpanContext().TraceID.String())
-				newLogger.WithFields(map[string]interface{}{
+				newLogger := log.WithFields(map[string]interface{}{
 					"method": req.Method,
 					"url":    req.URL.String(),
 					"host":   req.Host,
-				}).Info("got request")
+				})
+
+				newLogger.Info("request")
 				ctx := logger.WithLogger(ctxLocal, newLogger)
 
 				next.ServeHTTP(res, req.WithContext(ctx))

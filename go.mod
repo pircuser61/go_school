@@ -16,14 +16,13 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
-	github.com/prometheus/common v0.10.0
 	github.com/stretchr/testify v1.6.1
 	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba
 	github.com/swaggo/swag v1.6.7
-	gitlab.services.mts.ru/abp/myosotis v0.3.0
-	gitlab.services.mts.ru/erius/admin v0.0.31
+	gitlab.services.mts.ru/abp/myosotis v0.4.0
+	gitlab.services.mts.ru/erius/admin v1.2.13
 	gitlab.services.mts.ru/erius/monitoring v0.1.0
-	gitlab.services.mts.ru/erius/scheduler_client v0.0.3
+	gitlab.services.mts.ru/erius/scheduler_client v0.0.5
 	go.opencensus.io v0.22.5
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
