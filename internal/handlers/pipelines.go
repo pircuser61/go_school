@@ -1364,6 +1364,8 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		go func() {
 			routineCtx := context.WithValue(context.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 
+			routineCtx = logger.WithLogger(routineCtx, log)
+
 			if monErr := mon.Run(routineCtx); monErr != nil {
 				log.WithError(monErr).Error("can't send data to monitoring")
 			}
