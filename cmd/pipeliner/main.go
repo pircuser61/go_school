@@ -168,6 +168,7 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 	mux.Use(middleware.NoCache)
 	mux.Use(handlers.LoggerMiddleware(logger.GetLogger(ctx)))
 	mux.Use(observability.MiddlewareChi())
+	mux.Use(handlers.RequestIDMiddleware)
 	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
 
 	const baseURL = "/api/pipeliner/v1"
@@ -201,8 +202,8 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 			r.Put("/tags/", pipeliner.EditTag)
 			r.Delete("/tags/{ID}", pipeliner.RemoveTag)
 
-			r.With(handlers.SetRequestID).Post("/run/{pipelineID}", pipeliner.RunPipeline)
-			r.With(handlers.SetRequestID).Post("/run/version/{versionID}", pipeliner.RunVersion)
+			r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
+			r.Post("/run/version/{versionID}", pipeliner.RunVersion)
 
 			r.Route("/tasks/", func(r chi.Router) {
 				r.Get("/{taskID}", pipeliner.GetTask)

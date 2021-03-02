@@ -215,7 +215,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 
 			pipelineRouter.Route("/", func(r chi.Router) {
 				r.Use(LoggerMiddleware(logger.GetLogger(context.Background())))
-				r.With(SetRequestID).Post("/pipeliner/{pipelineID}", ae.RunPipeline)
+				r.With(RequestIDMiddleware).Post("/pipeliner/{pipelineID}", ae.RunPipeline)
 			})
 
 			pipelinerServer := httptest.NewServer(pipelineRouter)
