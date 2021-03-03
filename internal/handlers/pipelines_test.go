@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"bou.ke/monkey"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/admin/pkg/vars"
@@ -43,7 +43,6 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 	defer monkey.UnpatchAll()
 
 	mockDB := test.NewMockDB()
-	log := logger.CreateLogger(nil)
 
 	tests := []struct {
 		name string
@@ -206,7 +205,6 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 
 			ae := &APIEnv{
 				DB:            mockDB,
-				Logger:        log,
 				ScriptManager: "",
 				Remedy:        "",
 				FaaS:          FaaSMockServer.URL + "/",
@@ -215,9 +213,9 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 
 			pipelineRouter := chi.NewRouter()
 
-			// pipelineRouter.Use(AddWithStop)
 			pipelineRouter.Route("/", func(r chi.Router) {
-				r.With(SetRequestID).Post("/pipeliner/{pipelineID}", ae.RunPipeline)
+				r.Use(LoggerMiddleware(logger.GetLogger(context.Background())))
+				r.With(RequestIDMiddleware).Post("/pipeliner/{pipelineID}", ae.RunPipeline)
 			})
 
 			pipelinerServer := httptest.NewServer(pipelineRouter)
@@ -231,7 +229,10 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				bytes.NewReader(pipelineInputBytes))
 
 			resp, err := pipelinerServer.Client().Do(req)
-			_ = err
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			respBytes, _ := ioutil.ReadAll(resp.Body)
 
 			time.Sleep(5 * time.Second)

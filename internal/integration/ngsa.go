@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"go.opencensus.io/trace"
@@ -76,10 +75,7 @@ func waitStatus(monChan <-chan bool) {
 		metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
 	}
 
-	errPush := metrics.Pusher.Add()
-	if errPush != nil {
-		fmt.Printf("can't push: %s\n", errPush.Error())
-	}
+	_ = metrics.Pusher.Add()
 }
 
 //nolint:gocyclo,nestif //need bigger cyclomatic, its necessary

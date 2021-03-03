@@ -16,7 +16,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/ctx"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
@@ -25,12 +24,15 @@ type PGConnection struct {
 	Pool *pgxpool.Pool
 }
 
-func ConnectPostgres(db *configs.Database) (PGConnection, error) {
+func ConnectPostgres(ctx context.Context, db *configs.Database) (PGConnection, error) {
 	maxConnections := strconv.Itoa(db.MaxConnections)
 	connString := "postgres://" + db.User + ":" + db.Pass + "@" + db.Host + ":" + db.Port + "/" + db.DBName +
 		"?sslmode=disable&pool_max_conns=" + maxConnections
 
-	conn, err := pgxpool.Connect(ctx.Context(db.Timeout), connString)
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(db.Timeout)*time.Second)
+	_ = cancel // no needed yet
+
+	conn, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
 		return PGConnection{}, err
 	}
@@ -137,7 +139,7 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 			return nil, err
 		}
 
-		version.ApprovedAt = t
+		version.ApprovedAt = &t
 
 		if finV, ok := vMap[version.ID]; ok {
 			if finV.ApprovedAt.After(t) {
@@ -423,10 +425,7 @@ func (db *PGConnection) SwitchApproved(c context.Context, pipelineID, versionID 
 
 	err = tx.Commit(c)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return err
-		}
+		_ = tx.Rollback(c)
 
 		return err
 	}
@@ -461,10 +460,7 @@ func (db *PGConnection) RollbackVersion(c context.Context, pipelineID, versionID
 
 	err = tx.Commit(c)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return err
-		}
+		_ = tx.Rollback(c)
 
 		return err
 	}
@@ -610,10 +606,7 @@ func (db *PGConnection) CreatePipeline(c context.Context,
 
 	err = tx.Commit(c)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return err
-		}
+		_ = tx.Rollback(c)
 
 		return err
 	}
@@ -852,9 +845,11 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 	p := entity.EriusScenario{}
 
 	qVersion := `
-	SELECT id, status, pipeline_id, content, comment_rejected, comment
-	FROM pipeliner.versions 
-	WHERE id = $1 LIMIT 1;`
+	SELECT pv.id, pv.status, pv.pipeline_id, pv.created_at, pv.content, pv.comment_rejected, pv.comment, pph.date
+	FROM pipeliner.versions pv
+    LEFT JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
+	WHERE pv.id = $1
+	ORDER BY pph.date DESC LIMIT 1;`
 
 	rows, err := conn.Query(c, qVersion, id)
 	if err != nil {
@@ -870,9 +865,11 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 			c        string
 			cr       string
 			cm       string
+			d        *time.Time
+			ca       *time.Time
 		)
 
-		err := rows.Scan(&vID, &s, &pID, &c, &cr, &cm)
+		err := rows.Scan(&vID, &s, &pID, &ca, &c, &cr, &cm, &d)
 		if err != nil {
 			return nil, err
 		}
@@ -887,6 +884,8 @@ func (db *PGConnection) GetPipelineVersion(c context.Context, id uuid.UUID) (*en
 		p.Status = s
 		p.CommentRejected = cr
 		p.Comment = cm
+		p.ApprovedAt = d
+		p.CreatedAt = ca
 
 		return &p, nil
 	}
@@ -1223,10 +1222,7 @@ func (db *PGConnection) CreateTask(c context.Context,
 
 	err = row.Scan(&id)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return nil, err
-		}
+		_ = tx.Rollback(c)
 
 		return nil, err
 	}
@@ -1235,20 +1231,14 @@ func (db *PGConnection) CreateTask(c context.Context,
 
 	_, err = tx.Exec(c, q, taskID, versionID)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return nil, err
-		}
+		_ = tx.Rollback(c)
 
 		return nil, err
 	}
 
 	err = tx.Commit(c)
 	if err != nil {
-		err = tx.Rollback(c)
-		if err != nil {
-			return nil, err
-		}
+		_ = tx.Rollback(c)
 
 		return nil, err
 	}
@@ -1324,7 +1314,7 @@ func (db *PGConnection) GetExecutableScenarios(c context.Context) ([]entity.Eriu
 		p.ID = pID
 		p.Status = s
 		p.Name = name
-		p.ApproveDate = d
+		p.ApprovedAt = &d
 		pipes = append(pipes, p)
 	}
 
@@ -1338,7 +1328,7 @@ func (db *PGConnection) GetExecutableScenarios(c context.Context) ([]entity.Eriu
 				return nil, err
 			}
 
-			if finV.ApproveDate.After(t) {
+			if finV.ApprovedAt.After(t) {
 				continue
 			}
 		}
@@ -1526,7 +1516,7 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 		return nil, err
 	}
 
-	if nullStringParameters.Valid {
+	if nullStringParameters.Valid && nullStringParameters.String != "" {
 		err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
 		if err != nil {
 			return nil, err
@@ -1574,7 +1564,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 			return nil, err
 		}
 
-		if nullStringParameters.Valid {
+		if nullStringParameters.Valid && nullStringParameters.String != "" {
 			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
 			if err != nil {
 				return nil, err

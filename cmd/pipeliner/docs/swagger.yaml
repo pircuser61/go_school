@@ -86,11 +86,15 @@ definitions:
     type: object
   entity.EriusScenario:
     properties:
-      approve_date:
+      approved_at:
+        example: "2020-07-16T17:10:25.112704+03:00"
         type: string
       comment:
         type: string
       comment_rejected:
+        type: string
+      created_at:
+        example: "2020-07-16T17:10:25.112704+03:00"
         type: string
       hasDraft:
         type: boolean
