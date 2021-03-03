@@ -211,9 +211,14 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 				r.Get("/pipeline/{pipelineID}", pipeliner.GetPipelineTasks)
 				r.Get("/version/{versionID}", pipeliner.GetVersionTasks)
 			})
+			r.Route("/debug/", func(r chi.Router) {
+				r.Post("/run", pipeliner.StartDebugTask)
+				r.Post("/", pipeliner.CreateDebugTask)
+				r.Get("/{taskID}", pipeliner.DebugTask)
+			})
 		})
 
-	mux.Mount(baseURL+"/debug/", middleware.Profiler())
+	mux.Mount(baseURL+"/pprof/", middleware.Profiler())
 	mux.Mount(baseURL+"/swagger/", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
 
 	return mux
