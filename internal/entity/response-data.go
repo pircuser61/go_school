@@ -62,6 +62,7 @@ type EriusScenario struct {
 	} `json:"pipeline"`
 	CreatedAt       *time.Time     `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
 	ApprovedAt      *time.Time     `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author          string         `json:"author" example:"testAuthor"`
 	Tags            []EriusTagInfo `json:"tags"`
 	Comment         string         `json:"comment"`
 	CommentRejected string         `json:"comment_rejected"`
