@@ -262,7 +262,12 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.Name = block.Title
 			epi.PipelineModel = p
 
-			parameters, err := json.Marshal(block.Input)
+			parametersMap := make(map[string]interface{})
+			for _, v := range block.Input {
+				parametersMap[v.Name] = v.Global
+			}
+
+			parameters, err := json.Marshal(parametersMap)
 			if err != nil {
 				return err
 			}
