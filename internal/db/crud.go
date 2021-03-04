@@ -1478,7 +1478,7 @@ func (db *PGConnection) GetTask(c context.Context, id uuid.UUID) (*entity.EriusT
 	c, span := trace.StartSpan(c, "pg_get_task")
 	defer span.End()
 
-	q := `SELECT w.id, w.started_at, ws.name, w.debug, w.parameters, w.author, w.version_id
+	q := `SELECT w.id, w.started_at, ws.name, w.debug, COALESCE(w.parameters, '{}'), w.author, w.version_id
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.work_status ws ON w.status = ws.id
