@@ -262,7 +262,12 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.Name = block.Title
 			epi.PipelineModel = p
 
-			err = epi.CreateTask(c, "Erius", false, []byte{})
+			parameters, err := json.Marshal(block.Input)
+			if err != nil {
+				return err
+			}
+
+			err = epi.CreateTask(c, "Erius", false, parameters)
 			if err != nil {
 				return err
 			}
