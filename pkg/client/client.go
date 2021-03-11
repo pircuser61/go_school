@@ -49,14 +49,14 @@ func (u *URL) UnmarshalYAML(unmarshal func(interface{}) error) error {
 type PipelinerClient struct {
 	client *http.Client
 	user   string
-	host   *url.URL
+	host   url.URL
 }
 
 func NewPipelinerClient(pc PipelinerConfig, httpClient *http.Client) *PipelinerClient {
 	return &PipelinerClient{
 		client: httpClient,
 		user:   pc.User,
-		host:   pc.Host.URL,
+		host:   *pc.Host.URL,
 	}
 }
 
