@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -60,7 +59,7 @@ func NewPipelinerClient(pc PipelinerConfig, httpClient *http.Client) *PipelinerC
 	}
 }
 
-func (pc *PipelinerClient) RunPipelineSync(ctx context.Context, pid fmt.Stringer, data interface{}) (map[string]interface{}, error) {
+func (pc *PipelinerClient) RunPipelineSync(ctx context.Context, pid fmt.Stringer, data interface{}) error {
 	params := url.Values{}
 	params.Add("with_stop", strconv.FormatBool(true))
 
@@ -70,12 +69,12 @@ func (pc *PipelinerClient) RunPipelineSync(ctx context.Context, pid fmt.Stringer
 
 	b, err := json.Marshal(data)
 	if err != nil {
-		return nil, errors.Wrap(err, MarshalJSONError)
+		return errors.Wrap(err, MarshalJSONError)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, urlCopy.String(), bytes.NewBuffer(b))
 	if err != nil {
-		return nil, errors.Wrap(err, CreateRequstError)
+		return errors.Wrap(err, CreateRequstError)
 	}
 
 	// fixme extract "X-Request-Id" to variable
@@ -84,29 +83,13 @@ func (pc *PipelinerClient) RunPipelineSync(ctx context.Context, pid fmt.Stringer
 
 	resp, err := pc.client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, HTTPClientError)
+		return errors.Wrap(err, HTTPClientError)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(PipelineRunFailed)
+		return errors.New(PipelineRunFailed)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, UnmarshalReadError)
-	}
-
-	if len(body) == 0 {
-		return nil, errors.New(EmptyResponse)
-	}
-
-	result := make(map[string]interface{})
-
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return nil, errors.Wrap(err, UnmarshalJSONError)
-	}
-
-	return result, nil
+	return nil
 }
