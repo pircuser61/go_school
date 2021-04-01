@@ -14,8 +14,8 @@ import (
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/trace"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/client_golang/prometheus/push"
 	httpSwagger "github.com/swaggo/http-swagger"

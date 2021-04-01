@@ -5,7 +5,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 )

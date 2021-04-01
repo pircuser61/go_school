@@ -6,7 +6,7 @@ require (
 	bou.ke/monkey v1.0.2
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
-	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/go-chi/chi/v5 v5.0.2
 	github.com/go-chi/render v1.0.1
 	github.com/go-openapi/jsonreference v0.19.4 // indirect
 	github.com/google/uuid v1.2.0
