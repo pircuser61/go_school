@@ -67,6 +67,7 @@ const (
 	RunDebugTaskFinishedError
 	RunDebugTaskAlreadyError
 	RunDebugInvalidStatusError
+	NetworkMonitorClientFailed
 )
 
 //nolint:dupl //its not duplicate
@@ -108,6 +109,7 @@ var errorText = map[Err]string{
 	ModuleFindError:             "can't find module",
 	PipelineHasDraft:            "pipeline already has a draft",
 	SchedulerClientFailed:       "scheduler client failed",
+	NetworkMonitorClientFailed:  "network monitor client failed",
 	ScenarioIsUsedInOtherError:  "scenario is used in other",
 	PipelineNameUsed:            "pipeline name is already used",
 	NoUserInContextError:        "no user in context",
@@ -162,6 +164,7 @@ var errorDescription = map[Err]string{
 	ModuleFindError:             "Не удалось найти функцию",
 	PipelineHasDraft:            "Черновик данного сценария создан в разделе \"Мои сценарии\"",
 	SchedulerClientFailed:       "Ошибка клиента планировщика",
+	NetworkMonitorClientFailed:  "Ошибка клиента сетевого мониторинга",
 	ScenarioIsUsedInOtherError:  "Невозможно удалить: сценарий используется в других сценариях",
 	PipelineNameUsed:            "Сценарий с таким именем уже существует",
 	NoUserInContextError:        "Пользователь не найден в контексте",

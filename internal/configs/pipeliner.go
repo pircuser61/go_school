@@ -13,23 +13,24 @@ const (
 )
 
 type Pipeliner struct {
-	Tracing          TracingConfig      `yaml:"tracing"`
-	Timeout          Duration           `yaml:"timeout"`
-	Proxy            string             `yaml:"proxy"`
-	Log              *logger.Config     `yaml:"log"`
-	ServeAddr        string             `yaml:"serve_addr"`
-	MetricsAddr      string             `yaml:"metrics_addr"`
-	DB               Database           `yaml:"database"`
-	ScriptManager    string             `yaml:"script_manager"`
-	Remedy           string             `yaml:"remedy"`
-	FaaS             string             `yaml:"faas"`
-	RunEnv           RunEnv             `yaml:"run_env"`
-	Swag             SwaggerGeneral     `yaml:"swagger"`
-	Monitoring       monconf.Monitoring `yaml:"monitoring"`
-	AuthBaseURL      *URL               `yaml:"auth"`
-	SchedulerBaseURL *URL               `yaml:"scheduler"`
-	Push             PushConfig         `yaml:"push"`
-	HTTPClientConfig *HTTPClient        `yaml:"http_client_config"`
+	Tracing               TracingConfig      `yaml:"tracing"`
+	Timeout               Duration           `yaml:"timeout"`
+	Proxy                 string             `yaml:"proxy"`
+	Log                   *logger.Config     `yaml:"log"`
+	ServeAddr             string             `yaml:"serve_addr"`
+	MetricsAddr           string             `yaml:"metrics_addr"`
+	DB                    Database           `yaml:"database"`
+	ScriptManager         string             `yaml:"script_manager"`
+	Remedy                string             `yaml:"remedy"`
+	FaaS                  string             `yaml:"faas"`
+	RunEnv                RunEnv             `yaml:"run_env"`
+	Swag                  SwaggerGeneral     `yaml:"swagger"`
+	Monitoring            monconf.Monitoring `yaml:"monitoring"`
+	AuthBaseURL           *URL               `yaml:"auth"`
+	SchedulerBaseURL      *URL               `yaml:"scheduler"`
+	NetworkMonitorBaseURL *URL               `yaml:"network_monitor"`
+	Push                  PushConfig         `yaml:"push"`
+	HTTPClientConfig      *HTTPClient        `yaml:"http_client_config"`
 }
 
 type RunEnv struct {
