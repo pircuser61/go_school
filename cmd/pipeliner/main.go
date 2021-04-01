@@ -24,6 +24,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
+	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
 	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
@@ -83,14 +84,17 @@ func main() {
 		return
 	}
 
+	networkMonitoringClient, err := netmon.NewClient(cfg.NetworkMonitorBaseURL.URL, httpClient)
+
 	pipeliner := handlers.APIEnv{
-		DB:              &dbConn,
-		ScriptManager:   cfg.ScriptManager,
-		Remedy:          cfg.Remedy,
-		FaaS:            cfg.FaaS,
-		AuthClient:      authClient,
-		SchedulerClient: schedulerClient,
-		HTTPClient:      httpClient,
+		DB:                   &dbConn,
+		ScriptManager:        cfg.ScriptManager,
+		Remedy:               cfg.Remedy,
+		FaaS:                 cfg.FaaS,
+		AuthClient:           authClient,
+		SchedulerClient:      schedulerClient,
+		NetworkMonitorClient: networkMonitoringClient,
+		HTTPClient:           httpClient,
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
