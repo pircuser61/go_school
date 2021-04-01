@@ -181,6 +181,8 @@ github.com/go-chi/chi v4.1.2+incompatible h1:fGFk2Gmi/YKXk0OmGfBh0WgmN3XB8lVnEyN
 github.com/go-chi/chi v4.1.2+incompatible/go.mod h1:eB3wogJHnLi3x/kFX2A+IbTBlXxmMeXJVKy9tTv1XzQ=
 github.com/go-chi/chi/v5 v5.0.1 h1:ALxjCrTf1aflOlkhMnCUP86MubbWFrzB3gkRPReLpTo=
 github.com/go-chi/chi/v5 v5.0.1/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
+github.com/go-chi/chi/v5 v5.0.2 h1:4xKeALZdMEsuI5s05PU2Bm89Uc5iM04qFubUCl5LfAQ=
+github.com/go-chi/chi/v5 v5.0.2/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
 github.com/go-chi/render v1.0.1 h1:4/5tis2cKaNdnv9zFLfXzcquC9HbeZgCnxGnKrltBS8=
 github.com/go-chi/render v1.0.1/go.mod h1:pq4Rr7HbnsdaeHagklXub+p6Wd16Af5l9koip1OvJns=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
@@ -689,15 +691,12 @@ gitlab.services.mts.ru/abp/myosotis v0.3.0 h1:/UXwWmXeA6qZpS9W0lcSZRBixFifv2rwmq
 gitlab.services.mts.ru/abp/myosotis v0.3.0/go.mod h1:+00/MWjU/e6w6T6GS2pAoXaYtA5AnKF59PkCN3uCCT0=
 gitlab.services.mts.ru/abp/myosotis v0.4.0 h1:tYEQo0k4BNU98naMokbrs/JSIWZaMDIIBDquXCQqPsc=
 gitlab.services.mts.ru/abp/myosotis v0.4.0/go.mod h1:+00/MWjU/e6w6T6GS2pAoXaYtA5AnKF59PkCN3uCCT0=
-gitlab.services.mts.ru/abp/myosotis v1.1.1 h1:qnkYXEFnRShdtQ8nAuV2WZUrPyhetxtl/Nc0y8cPQpg=
-gitlab.services.mts.ru/abp/myosotis v1.1.1/go.mod h1:Iz06tjmdqaZtgYi+Wzh/rlOEYYXUDNW1NghbOnUPD+Y=
 gitlab.services.mts.ru/abp/myosotis v1.1.2 h1:Efd6fOxc+K+MK0pO9lVZ3URiMxfM3d1eW3zqrD2MwT4=
 gitlab.services.mts.ru/abp/myosotis v1.1.2/go.mod h1:Iz06tjmdqaZtgYi+Wzh/rlOEYYXUDNW1NghbOnUPD+Y=
 gitlab.services.mts.ru/erius/admin v1.2.13 h1:BS7+FXxlGUJdJNiCYGtBBy6zn61Y/vRtqTb0BVsbbf4=
 gitlab.services.mts.ru/erius/admin v1.2.13/go.mod h1:YuGBgETXWrDb0fvQBEag7hjMJIBQf7FJOq+GZku2kVE=
 gitlab.services.mts.ru/erius/monitoring v0.1.0 h1:iu2eKuuoQ/zWP6MPqlBinYBoXv5Kyws/XtGEo4yVxrs=
 gitlab.services.mts.ru/erius/monitoring v0.1.0/go.mod h1:1NJtchxk6Smhtnk3c3BNv0ScbYZz0mhfEgncNbt4kxY=
-gitlab.services.mts.ru/erius/network-monitor-client v1.0.0/go.mod h1:vgXXbgE0NEHIKjlL5RdbSPA1Ij6MOPesGaG4CRVFJJo=
 gitlab.services.mts.ru/erius/network-monitor-client v1.0.1 h1:puVBkc1euT22A0g7rFn0z7x0lfRaPoHYsWJH+tzRR9o=
 gitlab.services.mts.ru/erius/network-monitor-client v1.0.1/go.mod h1:pZwL5/5DffFYBxZMf8WD2TBbMepawGfkS0y6Ke0hpaA=
 gitlab.services.mts.ru/erius/scheduler_client v0.0.5 h1:wjQl+H9GnRcGocj9klzmPY97QS8Iy8rKCkEs6RvkwUg=
