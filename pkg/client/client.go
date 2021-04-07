@@ -32,12 +32,22 @@ type PipelinerConfig struct {
 	User string `json:"user"`
 }
 
+type RunResponseHTTP struct {
+	StatusCode int         `json:"status_code"`
+	Data       RunResponse `json:"data,omitempty"`
+}
+
 type RunResponse struct {
 	PipelineID uuid.UUID   `json:"pipeline_id"`
 	TaskID     uuid.UUID   `json:"task_id"`
 	Status     string      `json:"status"`
 	Output     interface{} `json:"output"`
 	Errors     []string    `json:"errors"`
+}
+
+type EriusTasksHTTP struct {
+	StatusCode int        `json:"status_code"`
+	Data       EriusTasks `json:"data,omitempty"`
 }
 
 type EriusTasks struct {
@@ -120,7 +130,7 @@ func (pc *PipelinerClient) RunPipeline(ctx context.Context, pid fmt.Stringer, da
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-ERIUS-USER", pc.user)
 
-	result := RunResponse{}
+	result := RunResponseHTTP{}
 
 	statusCode, err := doRequest(ctx, pc.client, req, &result)
 	if err != nil {
@@ -131,7 +141,7 @@ func (pc *PipelinerClient) RunPipeline(ctx context.Context, pid fmt.Stringer, da
 		return nil, errors.New(PipelineRunFailed)
 	}
 
-	return &result, nil
+	return &result.Data, nil
 }
 
 func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*EriusTasks, error) {
@@ -147,7 +157,7 @@ func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-ERIUS-USER", pc.user)
 
-	result := EriusTasks{}
+	result := EriusTasksHTTP{}
 
 	statusCode, err := doRequest(ctx, pc.client, req, &result)
 	if err != nil {
@@ -158,7 +168,7 @@ func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*
 		return nil, errors.New(GetPipelineTaskFailed)
 	}
 
-	return &result, nil
+	return &result.Data, nil
 }
 
 // doRequest - рутинная функа, делает запрос и анмаршаллит данные
