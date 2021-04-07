@@ -45,13 +45,9 @@ type RunResponse struct {
 	Errors     []string    `json:"errors"`
 }
 
-type EriusTasksHTTP struct {
-	StatusCode int        `json:"status_code"`
-	Data       EriusTasks `json:"data,omitempty"`
-}
-
-type EriusTasks struct {
-	Tasks []EriusTask `json:"tasks"`
+type EriusTaskHTTP struct {
+	StatusCode int       `json:"status_code"`
+	Data       EriusTask `json:"data,omitempty"`
 }
 
 type EriusTask struct {
@@ -144,7 +140,7 @@ func (pc *PipelinerClient) RunPipeline(ctx context.Context, pid fmt.Stringer, da
 	return &result.Data, nil
 }
 
-func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*EriusTasks, error) {
+func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*EriusTask, error) {
 	urlCopy := pc.host
 	urlCopy.Path = path.Join(pc.host.Path, "api/pipeliner/v1/tasks", taskID.String())
 
@@ -157,7 +153,7 @@ func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-ERIUS-USER", pc.user)
 
-	result := EriusTasksHTTP{}
+	result := EriusTaskHTTP{}
 
 	statusCode, err := doRequest(ctx, pc.client, req, &result)
 	if err != nil {
