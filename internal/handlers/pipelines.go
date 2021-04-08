@@ -27,7 +27,9 @@ import (
 )
 
 const (
-	statusRunned = "runned"
+	statusRunned   = "runned"
+	statusFinished = "finished"
+	statusError    = "error"
 )
 
 type RunContext struct {
@@ -1372,10 +1374,16 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 			vs.AddError(err)
 		}
 
-		err = sendResponse(w, http.StatusOK, entity.RunResponse{
-			PipelineID: ep.PipelineID, TaskID: ep.TaskID,
-			Status: statusRunned,
-		})
+		err = sendResponse(
+			w,
+			http.StatusOK,
+			entity.RunResponse{
+				PipelineID: ep.PipelineID,
+				TaskID:     ep.TaskID,
+				Status:     map[bool]string{true: statusFinished, false: statusError}[len(vs.Errors) == 0],
+				Output:     getOutputValues(&ep, vs),
+				Errors:     vs.Errors,
+			})
 		if err != nil {
 			e := UnknownError
 			log.Error(e.errorMessage(err))
@@ -1420,6 +1428,18 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 			return
 		}
 	}
+}
+
+func getOutputValues(ep *pipeline.ExecutablePipeline, s *store.VariableStore) interface{} {
+	result := make(map[string]interface{})
+
+	for key := range ep.Output {
+		if val, ok := s.Values[key]; ok {
+			result[key] = val
+		}
+	}
+
+	return result
 }
 
 func filterVersionsByID(scenarios []entity.EriusScenarioInfo, isAll bool, allowedKeys map[string]struct{}) []entity.EriusScenarioInfo {
