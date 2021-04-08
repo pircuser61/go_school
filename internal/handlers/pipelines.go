@@ -1368,6 +1368,12 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	//nolint:nestif //its simple
 	if withStop {
+		ep.Output = make(map[string]string)
+
+		for _, item := range p.Output {
+			ep.Output[item.Global] = ""
+		}
+
 		err = ep.DebugRun(ctx, vs)
 		if err != nil {
 			log.Error(PipelineExecutionError.errorMessage(err))
@@ -1433,9 +1439,9 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 func getOutputValues(ep *pipeline.ExecutablePipeline, s *store.VariableStore) interface{} {
 	result := make(map[string]interface{})
 
-	for key := range ep.Output {
-		if val, ok := s.Values[key]; ok {
-			result[key] = val
+	for key := range ep.Outputs() {
+		if v, ok := s.Values[key]; ok {
+			result[key] = v
 		}
 	}
 
