@@ -11,12 +11,13 @@ import (
 	"os/signal"
 	"syscall"
 
+	"gitlab.services.mts.ru/erius/pipeliner/statistic"
+
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/trace"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/client_golang/prometheus/push"
 	httpSwagger "github.com/swaggo/http-swagger"
 
@@ -85,6 +86,18 @@ func main() {
 	}
 
 	networkMonitoringClient, err := netmon.NewClient(cfg.NetworkMonitorBaseURL.URL, httpClient)
+	if err != nil {
+		log.WithError(err).Error("can't create network moninoring client")
+
+		return
+	}
+
+	stat, err := statistic.InitStatistic()
+	if err != nil {
+		log.WithError(err).Error("can't init statistic")
+
+		return
+	}
 
 	pipeliner := handlers.APIEnv{
 		DB:                   &dbConn,
@@ -95,6 +108,7 @@ func main() {
 		SchedulerClient:      schedulerClient,
 		NetworkMonitorClient: networkMonitoringClient,
 		HTTPClient:           httpClient,
+		Statistic:            stat,
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
@@ -136,21 +150,6 @@ func main() {
 
 	monitoring.Setup(cfg.Monitoring.Addr, &http.Client{Timeout: cfg.Monitoring.Timeout.Duration})
 
-	go func() {
-		metricsMux := chi.NewRouter()
-		metricsMux.Handle("/metrics", promhttp.Handler())
-
-		log.Info("metrics for script manager service started on port", cfg.MetricsAddr)
-
-		if err = http.ListenAndServe(cfg.MetricsAddr, metricsMux); err != nil {
-			if errors.Is(err, http.ErrServerClosed) {
-				log.Info("graceful shutdown")
-			} else {
-				log.WithError(err).Fatal("script manager metrics")
-			}
-		}
-	}()
-
 	sgnl := make(chan os.Signal, 1)
 	signal.Notify(sgnl,
 		syscall.SIGHUP,
@@ -180,6 +179,8 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
 			r.Use(auth.UserMiddleware(pipeliner.AuthClient))
+			r.Use(handlers.StatisticMiddleware(pipeliner.Statistic))
+
 			r.Get("/pipelines/", pipeliner.ListPipelines)
 			r.Post("/pipelines/", pipeliner.CreatePipeline)
 			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
@@ -223,6 +224,7 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 		})
 
 	mux.Mount(baseURL+"/pprof/", middleware.Profiler())
+	mux.Handle(baseURL+"/metrics", pipeliner.ServePrometheus())
 	mux.Mount(baseURL+"/swagger/", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
 
 	return mux

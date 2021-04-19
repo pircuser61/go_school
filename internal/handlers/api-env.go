@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 
+	"gitlab.services.mts.ru/erius/pipeliner/statistic"
+
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
@@ -19,4 +21,5 @@ type APIEnv struct {
 	SchedulerClient      scheduler.Client
 	NetworkMonitorClient netmon.Client
 	HTTPClient           *http.Client
+	Statistic            *statistic.Statistic
 }

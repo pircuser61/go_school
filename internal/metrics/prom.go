@@ -8,10 +8,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const (
-	TagKek = "kek"
-)
-
 type NGSAStatus struct {
 	Ok   prometheus.Gauge
 	Fail prometheus.Gauge
@@ -23,9 +19,12 @@ type RemedyStatus struct {
 }
 
 type Statistic struct {
-	Requests     prometheus.Counter
 	NGSAPushes   NGSAStatus
 	RemedyPushes RemedyStatus
+
+	RequestCount   *prometheus.CounterVec
+	ResponseStatus *prometheus.CounterVec
+	HTTPDuration   *prometheus.HistogramVec
 }
 
 //nolint:gochecknoglobals //its good
@@ -38,13 +37,6 @@ var (
 
 func InitMetricsAuth() {
 	once.Do(func() {
-		Stats.Requests = prometheus.NewCounter(prometheus.CounterOpts{
-			Name: "requests_count",
-			Help: "count of requests",
-		})
-
-		prometheus.MustRegister(Stats.Requests)
-
 		Stats.NGSAPushes.Ok = prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "ngsa_push_ok_unixtime",
 			Help: "Last time success push to NGSA",

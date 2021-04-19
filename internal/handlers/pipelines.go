@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -1779,4 +1781,16 @@ func scenarioUsage(ctx context.Context, pipelineStorager db.PipelineStorager, id
 	}
 
 	return res, nil
+}
+
+// Metrics godoc
+// @Summary metrics
+// @Tags metrics
+// @Description Метрики
+// @ID metrics
+// @Produce plain
+// @Success 200 "metrics content"
+// @Router /api/pipeliner/v1/metrics [get]
+func (ae *APIEnv) ServePrometheus() http.Handler {
+	return promhttp.Handler()
 }
