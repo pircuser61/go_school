@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 )
 
@@ -15,23 +16,36 @@ type EriusScenarioList struct {
 }
 
 type EriusScenarioInfo struct {
-	ID            uuid.UUID   `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	VersionID     uuid.UUID   `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	CreatedAt     time.Time   `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	ApprovedAt    time.Time   `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	Author        string      `json:"author" example:"testAuthor"`
-	Approver      string      `json:"approver" example:"testApprover"`
-	Name          string      `json:"name" example:"ScenarioName"`
-	Tags          []time.Time `json:"tags"`
-	LastRun       *time.Time  `json:"last_run" example:"2020-07-16T17:10:25.112704+03:00"`
-	LastRunStatus *string     `json:"last_run_status"`
-	Status        int         `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+	ID              uuid.UUID          `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	VersionID       uuid.UUID          `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	CreatedAt       time.Time          `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt      *time.Time         `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author          string             `json:"author" example:"testAuthor"`
+	Approver        string             `json:"approver" example:"testApprover"`
+	Name            string             `json:"name" example:"ScenarioName"`
+	Tags            []EriusTagInfo     `json:"tags"`
+	LastRun         *time.Time         `json:"last_run" example:"2020-07-16T17:10:25.112704+03:00"`
+	LastRunStatus   *string            `json:"last_run_status"`
+	Status          int                `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+	Comment         string             `json:"comment"`
+	CommentRejected string             `json:"comment_rejected"`
+	History         []EriusVersionInfo `json:"version_history"`
+}
+
+type EriusVersionInfo struct {
+	VersionID  uuid.UUID `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	CreatedAt  time.Time `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt time.Time `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author     string    `json:"author" example:"testAuthor"`
+	Approver   string    `json:"approver" example:"testApprover"`
 }
 
 type EriusTagInfo struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Color string `json:"color"`
+	ID       uuid.UUID `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	Name     string    `json:"name"`
+	Status   int       `json:"status" enums:"1,3"` // 1 - Created, 3 - Deleted
+	Color    string    `json:"color"`
+	IsMarker bool      `json:"isMarker"`
 }
 
 type EriusScenario struct {
@@ -46,6 +60,12 @@ type EriusScenario struct {
 		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
 	} `json:"pipeline"`
+	CreatedAt       *time.Time     `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt      *time.Time     `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author          string         `json:"author" example:"testAuthor"`
+	Tags            []EriusTagInfo `json:"tags"`
+	Comment         string         `json:"comment"`
+	CommentRejected string         `json:"comment_rejected"`
 }
 
 type EriusFunctionList struct {
@@ -98,4 +118,71 @@ type RunResponse struct {
 	Status     string      `json:"status" example:"runned"`
 	Output     interface{} `json:"output"`
 	Errors     []string    `json:"errors"`
+}
+
+type EriusTasks struct {
+	Tasks []EriusTask `json:"tasks"`
+}
+
+type EriusTask struct {
+	ID          uuid.UUID              `json:"id"`
+	VersionID   uuid.UUID              `json:"version_id"`
+	StartedAt   time.Time              `json:"started_at"`
+	Status      string                 `json:"status"`
+	Author      string                 `json:"author"`
+	IsDebugMode bool                   `json:"debug"`
+	Parameters  map[string]interface{} `json:"parameters"`
+	Steps       TaskSteps              `json:"steps"`
+}
+
+func (et *EriusTask) IsRun() bool {
+	return et.Status == "run"
+}
+
+func (et *EriusTask) IsCreated() bool {
+	return et.Status == "created"
+}
+
+func (et *EriusTask) IsStopped() bool {
+	return et.Status == "stopped"
+}
+
+func (et *EriusTask) IsFinished() bool {
+	return et.Status == "finished"
+}
+
+func (et *EriusTask) IsError() bool {
+	return et.Status == "error"
+}
+
+type TaskSteps []*Step
+
+func (ts *TaskSteps) IsEmpty() bool {
+	return len(*ts) == 0
+}
+
+// @deprecated
+type EriusLog struct {
+	Steps []Step `json:"steps"`
+}
+
+type Step struct {
+	Time        time.Time              `json:"time"`
+	Name        string                 `json:"name"`
+	Storage     map[string]interface{} `json:"storage"`
+	Errors      []string               `json:"errors"`
+	Steps       []string               `json:"steps"`
+	BreakPoints []string               `json:"-"`
+	HasError    bool                   `json:"has_error"`
+}
+
+type SchedulerTasksResponse struct {
+	Result bool `json:"result"`
+}
+
+type DebugResult struct {
+	BlockName   string     `json:"block_name"`
+	BlockStatus string     `json:"status" example:"run,error,finished,created"` // todo define values
+	BreakPoints []string   `json:"break_points"`
+	Task        *EriusTask `json:"task"`
 }

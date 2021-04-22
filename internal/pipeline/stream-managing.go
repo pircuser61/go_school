@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
@@ -11,7 +12,8 @@ import (
 )
 
 var (
-	errCantGetIndex = errors.New("can't get index")
+	ErrCantGetNextStep    = errors.New("can't get next step")
+	errCantCastIndexToInt = errors.New("can't cast index to int")
 )
 
 type IF struct {
@@ -21,6 +23,25 @@ type IF struct {
 	Result        bool
 	OnTrue        string
 	OnFalse       string
+}
+
+func (e *IF) Next(runCtx *store.VariableStore) (string, bool) {
+	r, err := runCtx.GetBoolWithInput(e.FunctionInput, "check")
+	if err != nil {
+		return "", false
+	}
+
+	if r {
+		return e.OnTrue, true
+	}
+
+	return e.OnFalse, true
+}
+
+func (e *IF) NextSteps() []string {
+	nextSteps := []string{e.OnTrue, e.OnFalse}
+
+	return nextSteps
 }
 
 func (e *IF) Inputs() map[string]string {
@@ -53,14 +74,6 @@ func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	e.Result = r
 
 	return nil
-}
-
-func (e *IF) Next() string {
-	if e.Result {
-		return e.OnTrue
-	}
-
-	return e.OnFalse
 }
 
 type StringsEqual struct {
@@ -118,12 +131,16 @@ func (se *StringsEqual) DebugRun(ctx context.Context, runCtx *store.VariableStor
 	return nil
 }
 
-func (se *StringsEqual) Next() string {
+func (se *StringsEqual) Next(runCtx *store.VariableStore) (string, bool) {
 	if se.Result {
-		return se.OnTrue
+		return se.OnTrue, true
 	}
 
-	return se.OnFalse
+	return se.OnFalse, true
+}
+
+func (se *StringsEqual) NextSteps() []string {
+	return []string{se.OnTrue, se.OnFalse}
 }
 
 type ForState struct {
@@ -131,7 +148,6 @@ type ForState struct {
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	LastElem       bool
 	OnTrue         string
 	OnFalse        string
 }
@@ -164,15 +180,10 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	i, ok := runCtx.GetValue(e.FunctionOutput["index"])
 	if ok {
-		index, ok = i.(int)
+		index, ok = indexToInt(i)
 		if !ok {
-			return errCantGetIndex
+			return errCantCastIndexToInt
 		}
-	}
-
-	if e.LastElem {
-		index = 0
-		e.LastElem = false
 	}
 
 	if index < len(arr) {
@@ -181,16 +192,54 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 		runCtx.SetValue(e.FunctionOutput["index"], index)
 		runCtx.SetValue(e.FunctionOutput["now_on"], val)
 	} else {
-		e.LastElem = true
+		index++
+		runCtx.SetValue(e.FunctionOutput["index"], index)
 	}
 
 	return nil
 }
 
-func (e *ForState) Next() string {
-	if e.LastElem {
-		return e.OnTrue
+func (e *ForState) Next(runCtx *store.VariableStore) (string, bool) {
+	arr, _ := runCtx.GetArray(e.FunctionInput["iter"])
+	if len(arr) == 0 {
+		return e.OnTrue, true
 	}
 
-	return e.OnFalse
+	i, getValue := runCtx.GetValue(e.FunctionOutput["index"])
+	if !getValue {
+		return "", getValue
+	}
+
+	index, indexOk := indexToInt(i)
+	if !indexOk {
+		return "", indexOk
+	}
+
+	if index >= len(arr)+1 {
+		return e.OnTrue, true
+	}
+
+	return e.OnFalse, true
+}
+
+func (e *ForState) NextSteps() []string {
+	nextSteps := []string{e.OnTrue, e.OnFalse}
+
+	return nextSteps
+}
+
+func indexToInt(i interface{}) (int, bool) {
+	switch i.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		index, ok := i.(int)
+
+		return index, ok
+	case float32, float64:
+		floatIndex, ok := i.(float64)
+		index := int(math.Round(floatIndex))
+
+		return index, ok
+	default:
+		return 0, false
+	}
 }

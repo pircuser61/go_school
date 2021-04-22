@@ -4,6 +4,8 @@ import (
 	"errors"
 	"reflect"
 	"sync"
+
+	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 )
 
 var (
@@ -11,48 +13,71 @@ var (
 	errValueNotAString = errors.New("value not a string")
 	errValueNotABool   = errors.New("value not a bool")
 	errNoSuchKey       = errors.New("no such key")
+	errUnknown         = errors.New("unknown")
 )
 
 type VariableStore struct {
-	mut    *sync.Mutex
-	Values map[string]interface{}
-	Steps  []string
-	Errors []string
+	sync.Mutex
+	Values     map[string]interface{}
+	Steps      []string
+	Errors     []string
+	StopPoints StopPoints `json:"-"`
 }
 
 func NewStore() *VariableStore {
-	s := VariableStore{mut: &sync.Mutex{}, Values: make(map[string]interface{})}
-	s.Steps = make([]string, 0)
-	s.Errors = make([]string, 0)
+	s := VariableStore{
+		Values:     make(map[string]interface{}),
+		Steps:      make([]string, 0),
+		Errors:     make([]string, 0),
+		StopPoints: StopPoints{},
+	}
 
 	return &s
 }
 
+func NewFromStep(step *entity.Step) *VariableStore {
+	sp := NewStopPoints(step.Name)
+	sp.SetBreakPoints(step.BreakPoints...)
+
+	vs := VariableStore{
+		Values:     step.Storage,
+		Steps:      step.Steps,
+		Errors:     step.Errors,
+		StopPoints: *sp,
+	}
+
+	return &vs
+}
+
 func (c *VariableStore) AddStep(name string) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	c.Steps = append(c.Steps, name)
 }
 
-func (c *VariableStore) AddError(name error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+func (c *VariableStore) AddError(err error) {
+	c.Lock()
+	defer c.Unlock()
 
-	c.Errors = append(c.Errors, name.Error())
+	if err == nil {
+		err = errUnknown
+	}
+
+	c.Errors = append(c.Errors, err.Error())
 }
 
 func (c *VariableStore) GetValue(name string) (interface{}, bool) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 	val, ok := c.Values[name]
 
 	return val, ok
 }
 
 func (c *VariableStore) GetArray(name string) ([]interface{}, bool) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	val, ok := c.Values[name]
 	if !ok {
@@ -68,22 +93,22 @@ func (c *VariableStore) GetArray(name string) ([]interface{}, bool) {
 }
 
 func (c *VariableStore) GrabStorage() (map[string]interface{}, error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	return c.Values, nil
 }
 
 func (c *VariableStore) GrabSteps() ([]string, error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	return c.Steps, nil
 }
 
 func (c *VariableStore) GrabErrors() ([]string, error) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	return c.Errors, nil
 }
@@ -135,8 +160,8 @@ func (c *VariableStore) GetBoolWithInput(inMap map[string]string, key string) (b
 }
 
 func (c *VariableStore) SetValue(name string, value interface{}) {
-	c.mut.Lock()
-	defer c.mut.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	switch v := value.(type) {
 	case string:
@@ -170,4 +195,78 @@ func (c *VariableStore) SetBoolWithOutput(outMap map[string]string, key string, 
 	c.SetValue(outKey, val)
 
 	return nil
+}
+
+func (c *VariableStore) SetStopPoints(points StopPoints) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.StopPoints = points
+}
+
+type StopPoints struct {
+	BreakPoints    map[string]struct{}
+	StepOverPoints map[string]struct{}
+	ExcludedPoints map[string]struct{}
+	StartPoint     string
+}
+
+func NewStopPoints(startPoint string) *StopPoints {
+	sp := StopPoints{
+		BreakPoints:    make(map[string]struct{}),
+		StepOverPoints: make(map[string]struct{}),
+		ExcludedPoints: make(map[string]struct{}),
+		StartPoint:     startPoint,
+	}
+
+	return &sp
+}
+
+func (sp *StopPoints) SetStepOvers(steps ...string) {
+	for _, step := range steps {
+		if step != "" {
+			sp.StepOverPoints[step] = struct{}{}
+		}
+	}
+}
+
+func (sp *StopPoints) SetBreakPoints(steps ...string) {
+	for _, step := range steps {
+		if step != "" {
+			sp.BreakPoints[step] = struct{}{}
+		}
+	}
+}
+
+func (sp *StopPoints) BreakPointsList() []string {
+	breakPoints := make([]string, 0)
+	for k := range sp.BreakPoints {
+		breakPoints = append(breakPoints, k)
+	}
+
+	return breakPoints
+}
+
+func (sp *StopPoints) SetExcludedPoints(steps ...string) {
+	for _, step := range steps {
+		if step != "" {
+			sp.ExcludedPoints[step] = struct{}{}
+		}
+	}
+}
+
+func (sp *StopPoints) IsStopPoint(stepName string) bool {
+	if _, ok := sp.ExcludedPoints[stepName]; ok {
+		return false
+	}
+
+	if _, ok := sp.StepOverPoints[stepName]; ok {
+		return true
+	}
+
+	if _, ok := sp.BreakPoints[stepName]; ok {
+		return true
+	}
+
+	return false
 }

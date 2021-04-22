@@ -3,25 +3,29 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-
-	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/libs/logger"
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
 
+var errUnknownBlock = errors.New("unknown block")
+
 type ExecutablePipeline struct {
-	WorkID        uuid.UUID
+	TaskID        uuid.UUID
 	PipelineID    uuid.UUID
 	VersionID     uuid.UUID
 	Storage       db.Database
-	Entrypoint    string
+	EntryPoint    string
 	NowOnPoint    string
 	VarStore      *store.VariableStore
 	Blocks        map[string]Runner
@@ -30,9 +34,10 @@ type ExecutablePipeline struct {
 	Output        map[string]string
 	Name          string
 	PipelineModel *entity.EriusScenario
+	HTTPClient    *http.Client
+	Remedy        string
 
-	Logger logger.Logger
-	FaaS   string
+	FaaS string
 }
 
 func (ep *ExecutablePipeline) Inputs() map[string]string {
@@ -47,10 +52,10 @@ func (ep *ExecutablePipeline) IsScenario() bool {
 	return true
 }
 
-func (ep *ExecutablePipeline) CreateWork(ctx context.Context, author string) error {
-	ep.WorkID = uuid.New()
+func (ep *ExecutablePipeline) CreateTask(ctx context.Context, author string, isDebugMode bool, parameters []byte) error {
+	ep.TaskID = uuid.New()
 
-	err := ep.Storage.WriteTask(ctx, ep.WorkID, ep.VersionID, author)
+	_, err := ep.Storage.CreateTask(ctx, ep.TaskID, ep.VersionID, author, isDebugMode, parameters)
 	if err != nil {
 		return err
 	}
@@ -62,24 +67,77 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	return ep.DebugRun(ctx, runCtx)
 }
 
-//nolint:gocyclo // big cyclo for strong man
+func (ep *ExecutablePipeline) saveStep(ctx context.Context, hasError bool) error {
+	storageData, errSerialize := json.Marshal(ep.VarStore)
+	if errSerialize != nil {
+		return errSerialize
+	}
+
+	breakPoints := ep.VarStore.StopPoints.BreakPointsList()
+
+	errSaveStep := ep.Storage.SaveStepContext(ctx, ep.TaskID, ep.NowOnPoint, storageData, breakPoints, hasError)
+	if errSaveStep != nil {
+		return errSaveStep
+	}
+
+	return nil
+}
+
+func (ep *ExecutablePipeline) finallyError(ctx context.Context, err error) error {
+	ep.VarStore.AddError(err)
+
+	errChange := ep.changeTaskStatus(ctx, db.RunStatusError)
+	if errChange != nil {
+		return errChange
+	}
+
+	errSaveStep := ep.saveStep(ctx, true)
+	if errSaveStep != nil {
+		return errSaveStep
+	}
+
+	return err
+}
+
+func (ep *ExecutablePipeline) changeTaskStatus(ctx context.Context, taskStatus int) error {
+	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, taskStatus)
+	if errChange != nil {
+		ep.VarStore.AddError(errChange)
+
+		return errChange
+	}
+
+	return nil
+}
+
+//nolint:gocognit,gocyclo //its really complex
 func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
 	ep.VarStore = runCtx
 
 	if ep.NowOnPoint == "" {
-		ep.NowOnPoint = ep.Entrypoint
+		ep.NowOnPoint = ep.EntryPoint
+	}
+
+	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusRunning)
+	if errChange != nil {
+		return errChange
 	}
 
 	for ep.NowOnPoint != "" {
-		ep.Logger.Println("executing", ep.NowOnPoint)
-		ep.Logger.Println("  -- storage ---", runCtx.Values)
-		ep.Logger.Println("  -- steps ---", runCtx.Steps)
-		ep.Logger.Println("  -- errors ---", runCtx.Errors)
+		log.Info("executing", ep.NowOnPoint)
 
-		if ep.Blocks[ep.NowOnPoint].IsScenario() {
+		now, ok := ep.Blocks[ep.NowOnPoint]
+		if !ok {
+			return ep.finallyError(ctx, errUnknownBlock)
+		}
+
+		//nolint:nestif //its really complexive
+		if now.IsScenario() {
 			ep.VarStore.AddStep(ep.NowOnPoint)
 
 			nStore := store.NewStore()
@@ -92,7 +150,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
 			if err != nil {
-				ep.Logger.Error(err)
+				_ = ep.finallyError(ctx, err)
+				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 
 			out := ep.Blocks[ep.NowOnPoint].Outputs()
@@ -103,41 +162,37 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		} else {
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
 			if err != nil {
-				errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
-				if errChange != nil {
-					return errChange
-				}
+				_ = ep.finallyError(ctx, err)
 
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 		}
 
-		storageData, err := json.Marshal(ep.VarStore)
-		if err != nil {
-			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
-			if errChange != nil {
-				return errChange
-			}
+		_, hasError := runCtx.GetValue(ep.NowOnPoint + KeyDelimiter + ErrorKey)
 
-			return err
+		errSaveStep := ep.saveStep(ctx, hasError)
+		if errSaveStep != nil {
+			return ep.finallyError(ctx, errSaveStep)
 		}
 
-		err = ep.Storage.WriteContext(ctx, ep.WorkID, ep.NowOnPoint, storageData)
-		ep.NowOnPoint = ep.Blocks[ep.NowOnPoint].Next()
+		ep.NowOnPoint, ok = ep.Blocks[ep.NowOnPoint].Next(ep.VarStore)
+		if !ok {
+			return ep.finallyError(ctx, ErrCantGetNextStep)
+		}
 
-		if err != nil {
-			errChange := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusError)
-			if errChange != nil {
+		if runCtx.StopPoints.IsStopPoint(ep.NowOnPoint) {
+			errChangeStopped := ep.changeTaskStatus(ctx, db.RunStatusStopped)
+			if errChangeStopped != nil {
 				return errChange
 			}
 
-			return err
+			return nil
 		}
 	}
 
-	err := ep.Storage.ChangeWorkStatus(ctx, ep.WorkID, db.RunStatusFinished)
-	if err != nil {
-		return err
+	errChangeFinished := ep.changeTaskStatus(ctx, db.RunStatusFinished)
+	if errChangeFinished != nil {
+		return errChange
 	}
 
 	for _, glob := range ep.PipelineModel.Output {
@@ -148,8 +203,12 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	return nil
 }
 
-func (ep *ExecutablePipeline) Next() string {
-	return ep.NextStep
+func (ep *ExecutablePipeline) Next(*store.VariableStore) (string, bool) {
+	return ep.NextStep, true
+}
+
+func (ep *ExecutablePipeline) NextSteps() []string {
+	return []string{ep.NextStep}
 }
 
 func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]entity.EriusFunc) error {
@@ -172,8 +231,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 				FunctionInput:  make(map[string]string),
 				FunctionOutput: make(map[string]string),
 				NextStep:       block.Next,
-				runURL:         ep.FaaS + "function/%s",
-				//runURL: "https://openfaas.dev.autobp.mts.ru/function/%s.openfaas-fn",
+				RunURL:         ep.FaaS + "function/%s",
 			}
 
 			for _, v := range block.Input {
@@ -195,8 +253,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.PipelineID = p.ID
 			epi.VersionID = p.VersionID
 			epi.Storage = ep.Storage
-			epi.Entrypoint = p.Pipeline.Entrypoint
-			epi.Logger = ep.Logger
+			epi.EntryPoint = p.Pipeline.Entrypoint
 			epi.FaaS = ep.FaaS
 			epi.Input = make(map[string]string)
 			epi.Output = make(map[string]string)
@@ -204,7 +261,17 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			epi.Name = block.Title
 			epi.PipelineModel = p
 
-			err = epi.CreateWork(c, "Erius")
+			parametersMap := make(map[string]interface{})
+			for _, v := range block.Input {
+				parametersMap[v.Name] = v.Global
+			}
+
+			parameters, err := json.Marshal(parametersMap)
+			if err != nil {
+				return err
+			}
+
+			err = epi.CreateTask(c, "Erius", false, parameters)
 			if err != nil {
 				return err
 			}
@@ -215,7 +282,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 			}
 
 			for _, v := range block.Input {
-				epi.Input[p.Name+"."+v.Name] = v.Global
+				epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
 			}
 
 			for _, v := range block.Output {
@@ -270,7 +337,7 @@ func createForBlock(title, name, onTrue, onFalse string) *ForState {
 	}
 }
 
-//nolint:gocyclo // big cyclo for strong man
+//nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
 	switch ef.Title {
 	case "if":
@@ -302,7 +369,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		return con
 	case "ngsa-send-alarm":
-		ngsa := integration.NewNGSASendIntegration(ep.Storage, 3, name)
+		ngsa := integration.NewNGSASendIntegration(ep.Storage)
 		for _, v := range ef.Input {
 			ngsa.Input[v.Name] = v.Global
 		}
@@ -311,6 +378,66 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 		ngsa.NextBlock = ef.Next
 
 		return ngsa
+	case "remedy-send-createmi":
+		rem := integration.NewRemedySendCreateMI(ep.Remedy, ep.HTTPClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+
+		return rem
+	case "remedy-send-createproblem":
+		rem := integration.NewRemedySendCreateProblem(ep.Remedy, ep.HTTPClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+
+		return rem
+	case "remedy-send-creatework":
+		rem := integration.NewRemedySendCreateWork(ep.Remedy, ep.HTTPClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+
+		return rem
+	case "remedy-send-updatemi":
+		rem := integration.NewRemedySendUpdateMI(ep.Remedy, ep.HTTPClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+
+		return rem
+	case "remedy-send-updateproblem":
+		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HTTPClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+
+		return rem
+	case "remedy-send-updatework":
+		rem := integration.NewRemedySendUpdateWork(ep.Remedy, ep.HTTPClient)
+		for _, v := range ef.Input {
+			rem.Input[v.Name] = v.Global
+		}
+
+		rem.Name = ef.Title
+		rem.NextBlock = ef.Next
+
+		return rem
 	case "for":
 		f := createForBlock(ef.Title, name, ef.OnTrue, ef.OnFalse)
 

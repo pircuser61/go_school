@@ -1,21 +1,30 @@
-serve_addr: ":8181"
-timeout: "30s"
-script_manager: "manager"
-faas: "https://openfaas.dev.autobp.mts.ru/"
-
+serve_addr: ':8181'
+timeout: '30s'
+script_manager: 'localhost:8282'
+faas: 'https://openfaas.dev.autobp.mts.ru/'
+auth: 'http://admin.erius-develop/api/admin/v1/'
 
 database:
   kind: postgres
   host: localhost
   port: 5433
   user: erius
-  pass: "4L7Npbjee4s2XvTe"
-  dbname: postgres
+  pass: '4L7Npbjee4s2XvTe'
+  dbname: pipeliner
   max_connections: 10
   timeout: 10
 
 swagger:
-  base_path: "/api/pipeliner/v1"
-  version: "0.1"
-  host: "localhost"
-  port: "1234"
+  base_path: '/api/pipeliner/v1'
+  version: '0.1'
+  host: 'localhost'
+  port: '1234'
+
+http_client_config:
+  timeout: '30s'
+  keep_alive: '30s'
+  max_idle_conns: 100
+  idle_conn_timeout: '30s'
+  tls_handshake_timeout: '10s'
+  expect_continue_timeout: '1s'
+  proxy_url: ''

@@ -3,19 +3,20 @@ package integration
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"time"
 
+	"go.opencensus.io/trace"
+
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
-	"go.opencensus.io/trace"
 )
 
 type NGSASend struct {
 	Name      string
-	ttl       time.Duration
 	db        db.Database
 	NextBlock string
 	Input     map[string]string
@@ -43,9 +44,8 @@ const (
 	erius  = "Erius"
 )
 
-func NewNGSASendIntegration(database db.Database, ttl int, name string) NGSASend {
+func NewNGSASendIntegration(database db.Database) NGSASend {
 	return NGSASend{
-		ttl:   time.Duration(ttl) * time.Minute,
 		db:    database,
 		Input: make(map[string]string),
 	}
@@ -67,9 +67,25 @@ func (ns NGSASend) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return ns.DebugRun(ctx, runCtx)
 }
 
+func waitStatus(monChan <-chan bool) {
+	ok := <-monChan
+	if ok {
+		metrics.Stats.NGSAPushes.Ok.SetToCurrentTime()
+	} else {
+		metrics.Stats.NGSAPushes.Fail.SetToCurrentTime()
+	}
+
+	_ = metrics.Pusher.Add()
+}
+
+//nolint:gocyclo,nestif //need bigger cyclomatic, its necessary
 func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()
+
+	monChan := make(chan bool)
+
+	go waitStatus(monChan)
 
 	runCtx.AddStep(ns.Name)
 
@@ -77,10 +93,8 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	inputs := ns.Model().Inputs
 	for _, input := range inputs {
-		fmt.Println(ns.Input[input.Name])
-
-		v, ok := runCtx.GetValue(ns.Input[input.Name])
-		if !ok {
+		v, okV := runCtx.GetValue(ns.Input[input.Name])
+		if !okV {
 			continue
 		}
 
@@ -89,43 +103,58 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 
 	b, err := json.Marshal(vals)
 	if err != nil {
+		monChan <- false
+
 		return err
 	}
-
-	fmt.Println("input Data:", string(b))
 
 	m := NGSASendModel{}
 
 	err = json.Unmarshal(b, &m)
 	if err != nil {
+		monChan <- false
+
 		return err
 	}
 
 	if m.State != active && m.State != clear {
+		monChan <- false
+
 		return errors.New("unknown status")
 	}
 
 	if m.NotificationIdentifier == "" {
+		monChan <- false
+
 		return errors.New("notification id not found")
 	}
 
+	//nolint:nestif //its necessary
 	if m.TimeOut != 0 {
 		go func() {
 			time.Sleep(time.Duration(m.TimeOut) * time.Minute)
 
+			var errActive error
+
 			if m.State == active {
-				err = ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
+				errActive = ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
 					m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
 					m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
 					m.ManagedObjectClass)
-				if err != nil {
+				if errActive != nil {
 					runCtx.AddError(err)
 				}
 			}
 
-			err = ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
-			if err != nil {
+			errClear := ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
+			if errClear != nil {
 				runCtx.AddError(err)
+			}
+
+			if errClear != nil || errActive != nil {
+				monChan <- false
+			} else {
+				monChan <- true
 			}
 		}()
 
@@ -133,17 +162,29 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	}
 
 	if m.State == active {
-		return ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
+		errNGSA := ns.db.ActiveAlertNGSA(ctx, m.PerceivedSevernity,
 			m.State, erius, m.EventType, m.ProbableCause, m.AdditionalInformation, m.AdditionalText,
 			m.MOIdentifier, m.SpecificProblem, m.NotificationIdentifier, m.UserText, m.ManagedObjectInstance,
 			m.ManagedObjectClass)
+
+		monChan <- errNGSA == nil
+
+		return errNGSA
 	}
 
-	return ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
+	err = ns.db.ClearAlertNGSA(ctx, m.NotificationIdentifier)
+
+	monChan <- err == nil
+
+	return err
 }
 
-func (ns NGSASend) Next() string {
-	return ns.NextBlock
+func (ns NGSASend) Next(runCtx *store.VariableStore) (string, bool) {
+	return ns.NextBlock, true
+}
+
+func (ns NGSASend) NextSteps() []string {
+	return []string{ns.NextBlock}
 }
 
 func (ns NGSASend) Model() script.FunctionModel {

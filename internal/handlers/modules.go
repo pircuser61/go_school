@@ -1,14 +1,20 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
+	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/integration"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 )
 
 // GetModules godoc
@@ -21,14 +27,16 @@ import (
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /modules/ [get]
-func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(context.Background(), "list_modules")
+func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
 
-	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager)
+	log := logger.GetLogger(ctx)
+
+	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager, ae.HTTPClient)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -38,15 +46,20 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.IfState.Model(),
 		script.Input.Model(),
 		script.Equal.Model(),
-		script.Vars.Model(),
 		script.Connector.Model(),
 		script.ForState.Model(),
-		integration.NewNGSASendIntegration(ae.DB, 3, "").Model())
+		integration.NewNGSASendIntegration(ae.DB).Model(),
+		integration.NewRemedySendCreateMI(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendCreateWork(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendCreateProblem(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendUpdateMI(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendUpdateWork(ae.Remedy, ae.HTTPClient).Model(),
+		integration.NewRemedySendUpdateProblem(ae.Remedy, ae.HTTPClient).Model())
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -80,10 +93,17 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		eriusFunctions = append(eriusFunctions, b)
 	}
 
+	for i := range eriusFunctions {
+		v := eriusFunctions[i]
+		id := v.Title + v.BlockType
+		v.ID = id
+		eriusFunctions[i] = v
+	}
+
 	eriusShapes, err := script.GetShapes()
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -92,7 +112,7 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, entity.EriusFunctionList{Functions: eriusFunctions, Shapes: eriusShapes})
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -109,44 +129,54 @@ func (ae APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /modules/usage [get]
-//nolint //i rly want copy and big loop for simple read
-func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
-	c, s := trace.StartSpan(context.Background(), "all_modules_usage")
+func (ae *APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "all_modules_usage")
 	defer s.End()
 
-	scenarios, err := ae.DB.GetWorkedVersions(c)
+	log := logger.GetLogger(ctx)
+
+	scenarios, err := ae.DB.GetWorkedVersions(ctx)
 	if err != nil {
 		e := ModuleUsageError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
+
 		return
 	}
 
 	moduleUsageMap := make(map[string]map[string]struct{})
-	for _, scenario := range scenarios {
-		for _, block := range scenario.Pipeline.Blocks {
-			if block.BlockType != script.TypePython3 {
+
+	for i := range scenarios {
+		blocks := scenarios[i].Pipeline.Blocks
+		for k := range blocks {
+			if blocks[k].BlockType != script.TypePython3 {
 				continue
 			}
-			name := block.Title
+
+			name := blocks[k].Title
 			if _, ok := moduleUsageMap[name]; !ok {
 				moduleUsageMap[name] = make(map[string]struct{})
 			}
-			moduleUsageMap[name][scenario.Name] = struct{}{}
+
+			moduleUsageMap[name][scenarios[i].Name] = struct{}{}
 		}
 	}
+
 	resp := make(map[string][]string)
+
 	for module, pipes := range moduleUsageMap {
 		p := make([]string, 0, len(pipes))
 		for n := range pipes {
 			p = append(p, n)
 		}
+
 		resp[module] = p
 	}
+
 	err = sendResponse(w, http.StatusOK, entity.AllUsageResponse{Functions: resp})
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -164,16 +194,18 @@ func (ae APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /modules/{moduleName}/usage [get]
-func (ae APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
-	c, s := trace.StartSpan(context.Background(), "module_usage")
+func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "module_usage")
 	defer s.End()
+
+	log := logger.GetLogger(ctx)
 
 	name := chi.URLParam(req, "moduleName")
 
-	allWorked, err := ae.DB.GetWorkedVersions(c)
+	allWorked, err := ae.DB.GetWorkedVersions(ctx)
 	if err != nil {
 		e := ModuleUsageError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -198,7 +230,119 @@ func (ae APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, Pipelines: usedBy, Used: used})
 	if err != nil {
 		e := UnknownError
-		ae.Logger.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+// ModuleRun godoc
+// @Summary Run Module By Name
+// @Description Запустить блок
+// @Tags modules
+// @ID      module-usage-by-name
+// @Produce json
+// @Param moduleName path string true "module name"
+// @Success 200 {object} httpResponse{data=entity.UsageResponse}
+// @Failure 400 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /modules/{moduleName} [post]
+func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "module_run")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	name := chi.URLParam(req, "moduleName")
+
+	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager, ae.HTTPClient)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	block := script.FunctionModel{}
+
+	for i := range eriusFunctions {
+		if eriusFunctions[i].Title == name {
+			block = eriusFunctions[i]
+
+			break
+		}
+	}
+
+	if block.Title == "" {
+		e := ModuleUsageError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	fb := pipeline.FunctionBlock{
+		Name:           block.Title,
+		FunctionName:   block.Title,
+		FunctionInput:  make(map[string]string),
+		FunctionOutput: make(map[string]string),
+		NextStep:       "",
+		RunURL:         ae.FaaS + "function/%s",
+	}
+
+	for _, v := range block.Inputs {
+		fb.FunctionInput[v.Name] = v.Name
+	}
+
+	for _, v := range block.Outputs {
+		fb.FunctionOutput[v.Name] = v.Name
+	}
+
+	vs := store.NewStore()
+
+	b, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	pipelineVars := make(map[string]interface{})
+
+	if len(b) != 0 {
+		err = json.Unmarshal(b, &pipelineVars)
+		if err != nil {
+			e := PipelineRunError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		for key, value := range pipelineVars {
+			vs.SetValue(key, value)
+		}
+	}
+
+	result, err := fb.RunOnly(ctx, vs)
+	if err != nil {
+		e := PipelineRunError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, result)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return

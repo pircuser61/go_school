@@ -10,7 +10,7 @@ type httpResponse struct {
 	Data       interface{} `json:"data,omitempty"`
 }
 
-//nolint:unparam //todo may be used later
+//nolint:unparam //statuses not always ok in da future
 func sendResponse(w http.ResponseWriter, statusCode int, body interface{}) error {
 	resp := httpResponse{
 		StatusCode: statusCode,
@@ -23,6 +23,7 @@ func sendResponse(w http.ResponseWriter, statusCode int, body interface{}) error
 	if err != nil {
 		return err
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	return nil

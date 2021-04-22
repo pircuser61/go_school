@@ -11,6 +11,7 @@ import (
 	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
 
 	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
 	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
 )
@@ -32,11 +33,13 @@ type TestablePipeline struct {
 }
 
 var (
-	errNotFound = errors.New("not found")
+	errNotFound       = errors.New("not found")
+	errNotImplemented = errors.New("not implemented")
 )
 
+//nolint //need globals
 var (
-	LinearPipelineBlock = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	linearPipelineBlock = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		type InputStruct struct {
 			Input string `json:"Input"`
 		}
@@ -69,7 +72,7 @@ var (
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(bytesOutput)
 	})
-	StringIsEqualToBlockGenerator = func(equalsTo string) http.HandlerFunc {
+	stringIsEqualToBlockGenerator = func(equalsTo string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			type InputStruct struct {
 				Input string `json:"Input"`
@@ -104,32 +107,32 @@ var (
 			_, _ = w.Write(bytesOutput)
 		}
 	}
-	EmptyBlock = OnlyReturnBlockGenerator(map[string]interface{}{})
+	emptyBlock = OnlyReturnBlockGenerator(map[string]interface{}{})
 
-	LinearPipelineUUID        = uuid.New()
-	LinearPipelineVersionUUID = uuid.New()
+	linearPipelineUUID        = uuid.New()
+	linearPipelineVersionUUID = uuid.New()
 
-	IfPipelineUUID        = uuid.New()
-	IfPipelineVersionUUID = uuid.New()
+	ifPipelineUUID        = uuid.New()
+	ifPipelineVersionUUID = uuid.New()
 
-	ForPipelineUUID        = uuid.New()
-	ForPipelineVersionUUID = uuid.New()
+	forPipelineUUID        = uuid.New()
+	forPipelineVersionUUID = uuid.New()
 
-	PipelineWithPipelineUUID        = uuid.New()
-	PipelineWithPipelineVersionUUID = uuid.New()
+	pipelineWithPipelineUUID        = uuid.New()
+	pipelineWithPipelineVersionUUID = uuid.New()
 
-	ForInForPipelineUUID        = uuid.New()
-	ForInForPipelineVersionUUID = uuid.New()
+	forInForPipelineUUID        = uuid.New()
+	forInForPipelineVersionUUID = uuid.New()
 
-	StringsEqualPipelineUUID        = uuid.New()
-	StringsEqualPipelineVersionUUID = uuid.New()
+	stringsEqualPipelineUUID        = uuid.New()
+	stringsEqualPipelineVersionUUID = uuid.New()
 
-	ConnectorPipelineUUID        = uuid.New()
-	ConnectorPipelineVersionUUID = uuid.New()
+	connectorPipelineUUID        = uuid.New()
+	connectorPipelineVersionUUID = uuid.New()
 
 	linearPipeline = entity.EriusScenario{
-		ID:        LinearPipelineUUID,
-		VersionID: LinearPipelineVersionUUID,
+		ID:        linearPipelineUUID,
+		VersionID: linearPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "LinearPipeline",
@@ -218,19 +221,20 @@ var (
 	// Input string goes through pipeline
 	// Block1, Block2, Block3 should accept {"Input":"string"} and return {"Output":"string"}
 	// Test should check for block running sequence and block input
+	//nolint:gochecknoglobals //need this as global
 	LinearPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
-			"Block1": LinearPipelineBlock,
-			"Block2": LinearPipelineBlock,
-			"Block3": LinearPipelineBlock,
+			"Block1": linearPipelineBlock,
+			"Block2": linearPipelineBlock,
+			"Block3": linearPipelineBlock,
 		},
-		PipelineUUID: LinearPipelineUUID,
+		PipelineUUID: linearPipelineUUID,
 		pipeline:     &linearPipeline,
 	}
 
 	ifPipeline = entity.EriusScenario{
-		ID:        IfPipelineUUID,
-		VersionID: IfPipelineVersionUUID,
+		ID:        ifPipelineUUID,
+		VersionID: ifPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "IfPipeline",
@@ -311,19 +315,20 @@ var (
 	// Block1 should compare pipeline input with something inside and return bool
 	// Depending on Block1.Output runs BlockTrue or BlockFalse
 	// Test should check for block running sequence
+	//nolint:gochecknoglobals //need this as global
 	IfPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
-			"Block1":     StringIsEqualToBlockGenerator("Value"),
+			"Block1":     stringIsEqualToBlockGenerator("Value"),
 			"BlockTrue":  OnlyReturnBlockGenerator(map[string]interface{}{"Output": "true"}),
 			"BlockFalse": OnlyReturnBlockGenerator(map[string]interface{}{"Output": "false"}),
 		},
-		PipelineUUID: IfPipelineUUID,
+		PipelineUUID: ifPipelineUUID,
 		pipeline:     &ifPipeline,
 	}
 
 	forPipeline = entity.EriusScenario{
-		ID:        ForPipelineUUID,
-		VersionID: ForPipelineVersionUUID,
+		ID:        forPipelineUUID,
+		VersionID: forPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "ForPipeline",
@@ -408,19 +413,20 @@ var (
 	// For every item in array run Block2
 	// After loop run Block3
 	// Test should check for block running sequence
+	//nolint:gochecknoglobals //need this as global
 	ForPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"Block1": OnlyReturnBlockGenerator(map[string]interface{}{"Output": []string{"1", "2", "3"}}),
-			"Block2": EmptyBlock,
-			"Block3": EmptyBlock,
+			"Block2": emptyBlock,
+			"Block3": emptyBlock,
 		},
-		PipelineUUID: ForPipelineUUID,
+		PipelineUUID: forPipelineUUID,
 		pipeline:     &forPipeline,
 	}
 
 	pipelineWithPipeline = entity.EriusScenario{
-		ID:        PipelineWithPipelineUUID,
-		VersionID: PipelineWithPipelineVersionUUID,
+		ID:        pipelineWithPipelineUUID,
+		VersionID: pipelineWithPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "PipelineWithPipeline",
@@ -507,19 +513,20 @@ var (
 	// Same as linear pipeline, but with linear pipeline inside
 	// Block1, Block2, Block3 should accept {"Input":"string"} and return {"Output":"string"}
 	// Test should check for block running sequence and block input
+	//nolint:gochecknoglobals //need this as global
 	PipelineWithPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
-			"Block1": LinearPipelineBlock,
-			"Block2": LinearPipelineBlock,
-			"Block3": LinearPipelineBlock,
+			"Block1": linearPipelineBlock,
+			"Block2": linearPipelineBlock,
+			"Block3": linearPipelineBlock,
 		},
-		PipelineUUID: PipelineWithPipelineUUID,
+		PipelineUUID: pipelineWithPipelineUUID,
 		pipeline:     &pipelineWithPipeline,
 	}
 
 	forInForPipeline = entity.EriusScenario{
-		ID:        ForInForPipelineUUID,
-		VersionID: ForInForPipelineVersionUUID,
+		ID:        forInForPipelineUUID,
+		VersionID: forInForPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "ForInForPipeline",
@@ -615,18 +622,19 @@ var (
 	// Runs loop inside loop
 	// MasGen block should return {"Output":[]}, Block1 should be empty
 	// Test should check for block running sequence
+	//nolint:gochecknoglobals //need this as global
 	ForInForPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"MasGen": OnlyReturnBlockGenerator(map[string]interface{}{"Output": []string{"1", "2", "3"}}),
-			"Block1": EmptyBlock,
+			"Block1": emptyBlock,
 		},
-		PipelineUUID: ForInForPipelineUUID,
+		PipelineUUID: forInForPipelineUUID,
 		pipeline:     &forInForPipeline,
 	}
 
 	stringsEqualPipeline = entity.EriusScenario{
-		ID:        StringsEqualPipelineUUID,
-		VersionID: StringsEqualPipelineVersionUUID,
+		ID:        stringsEqualPipelineUUID,
+		VersionID: stringsEqualPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "StringsEqualPipeline",
@@ -714,33 +722,35 @@ var (
 
 	// Pipeline passes Output of Block1 and Block2 to StringsEqual
 	// Should run BlockTrue
+	//nolint:gochecknoglobals //need this as global
 	StringsEqualsPipelineTrueTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"Block1":     OnlyReturnBlockGenerator(map[string]interface{}{"Output": "value"}),
 			"Block2":     OnlyReturnBlockGenerator(map[string]interface{}{"Output": "value"}),
-			"BlockTrue":  EmptyBlock,
-			"BlockFalse": EmptyBlock,
+			"BlockTrue":  emptyBlock,
+			"BlockFalse": emptyBlock,
 		},
-		PipelineUUID: StringsEqualPipelineUUID,
+		PipelineUUID: stringsEqualPipelineUUID,
 		pipeline:     &stringsEqualPipeline,
 	}
 
 	// Pipeline passes Output of Block1 and Block2 to StringsEqual
 	// Should run BlockFalse
+	//nolint:gochecknoglobals //need this as global
 	StringsEqualsPipelineFalseTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"Block1":     OnlyReturnBlockGenerator(map[string]interface{}{"Output": "value"}),
 			"Block2":     OnlyReturnBlockGenerator(map[string]interface{}{"Output": "other value"}),
-			"BlockTrue":  EmptyBlock,
-			"BlockFalse": EmptyBlock,
+			"BlockTrue":  emptyBlock,
+			"BlockFalse": emptyBlock,
 		},
-		PipelineUUID: StringsEqualPipelineUUID,
+		PipelineUUID: stringsEqualPipelineUUID,
 		pipeline:     &stringsEqualPipeline,
 	}
 
 	connectorPipeline = entity.EriusScenario{
-		ID:        ConnectorPipelineUUID,
-		VersionID: ConnectorPipelineVersionUUID,
+		ID:        connectorPipelineUUID,
+		VersionID: connectorPipelineVersionUUID,
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "ConnectorPipeline",
@@ -819,15 +829,42 @@ var (
 		},
 	}
 
+	ngsaPipelineUUID        = uuid.New()
+	ngsaPipelineVersionUUID = uuid.New()
+	ngsaPipeline            = entity.EriusScenario{
+		ID:        ngsaPipelineUUID,
+		VersionID: ngsaPipelineVersionUUID,
+		Status:    db.StatusApproved,
+		HasDraft:  false,
+		Name:      "ngsa",
+		Input:     nil,
+		Output:    nil,
+		Pipeline: struct {
+			Entrypoint string                      `json:"entrypoint"`
+			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+		}{
+			Entrypoint: "ngsa",
+			Blocks: map[string]entity.EriusFunc{
+				"ngsa": {
+					BlockType: script.TypeInternal,
+					Title:     "ngsa-send-alarm",
+					Input:     nil,
+					Output:    nil,
+				},
+			},
+		},
+	}
+
 	// Pipeline passes output of Block1 and Block2 to connector block
 	// Block3 should receive Block1.Output
+	//nolint:gochecknoglobals //need this as global
 	ConnectorPipelineTestable = TestablePipeline{
 		FunctionHandlers: map[string]http.HandlerFunc{
 			"Block1": OnlyReturnBlockGenerator(map[string]interface{}{"Output": []string{"1", "2", "3"}}),
 			"Block2": OnlyReturnBlockGenerator(map[string]interface{}{}),
-			"Block3": EmptyBlock,
+			"Block3": emptyBlock,
 		},
-		PipelineUUID: ConnectorPipelineUUID,
+		PipelineUUID: connectorPipelineUUID,
 		pipeline:     &connectorPipeline,
 	}
 
@@ -839,6 +876,7 @@ var (
 		forInForPipeline,
 		stringsEqualPipeline,
 		connectorPipeline,
+		ngsaPipeline,
 	}
 )
 
@@ -846,6 +884,26 @@ type MockDB struct {
 	VersionList []entity.EriusScenarioInfo
 
 	pipelines []entity.EriusScenario
+}
+
+func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetVersionTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error) {
+	return nil, errNotFound
 }
 
 func NewMockDB() *MockDB {
@@ -863,7 +921,7 @@ func (m *MockDB) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 		ID:            uuid.UUID{},
 		VersionID:     uuid.UUID{},
 		CreatedAt:     time.Time{},
-		ApprovedAt:    time.Time{},
+		ApprovedAt:    &time.Time{},
 		Author:        "",
 		Approver:      "",
 		Name:          "",
@@ -878,44 +936,40 @@ func (m *MockDB) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 	return versionInfoList, nil
 }
 
-func (m *MockDB) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
-	panic("implement me")
+func (m *MockDB) GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+	return nil, errNotImplemented
 }
 
 func (m *MockDB) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
-	panic("implement me")
+	return nil, errNotImplemented
 }
 
 func (m *MockDB) GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error) {
-	panic("implement me")
-}
-
-func (m *MockDB) GetVersionsByStatusAndAuthor(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error) {
-	panic("implement me")
+	return nil, errNotImplemented
 }
 
 func (m *MockDB) SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) VersionEditable(c context.Context, versionID uuid.UUID) (bool, error) {
-	panic("implement me")
+	return false, errNotImplemented
 }
 
 func (m *MockDB) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) CreateVersion(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) DeleteVersion(c context.Context, versionID uuid.UUID) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) DeletePipeline(c context.Context, id uuid.UUID) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
 func (m *MockDB) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
@@ -933,23 +987,25 @@ func (m *MockDB) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 }
 
 func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelineData []byte) error {
-	panic("implement me")
+	return errNotImplemented
 }
 
-func (m *MockDB) WriteContext(c context.Context, workID uuid.UUID, stage string, data []byte) error {
+func (m *MockDB) SaveStepContext(c context.Context,
+	workID uuid.UUID, stage string, data []byte, breakPoints []string, hasError bool) error {
 	return nil
 }
 
-func (m *MockDB) WriteTask(c context.Context, workID, versionID uuid.UUID, author string) error {
-	return nil
+func (m *MockDB) CreateTask(c context.Context, workID, versionID uuid.UUID, author string, isDebugMode bool,
+	parameters []byte) (*entity.EriusTask, error) {
+	return &entity.EriusTask{}, nil
 }
 
-func (m *MockDB) ChangeWorkStatus(c context.Context, workID uuid.UUID, status int) error {
+func (m *MockDB) ChangeTaskStatus(c context.Context, workID uuid.UUID, status int) error {
 	return nil
 }
 
 func (m *MockDB) GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error) {
-	panic("implement me")
+	return []entity.EriusScenario{}, nil
 }
 
 func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error) {
@@ -964,9 +1020,73 @@ func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.Er
 
 func (m *MockDB) ActiveAlertNGSA(c context.Context, sever int, state, source,
 	eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error {
-	panic("implement me")
+	return nil
 }
 
 func (m *MockDB) ClearAlertNGSA(c context.Context, name string) error {
-	panic("implement me")
+	return nil
+}
+
+func (m *MockDB) CreateTag(c context.Context, e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) EditTag(c context.Context, e *entity.EriusTagInfo) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) RemoveTag(c context.Context, id uuid.UUID) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) GetAllTags(c context.Context) ([]entity.EriusTagInfo, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetPipelineTag(c context.Context, id uuid.UUID) ([]entity.EriusTagInfo, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) AttachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) DetachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) RemovePipelineTags(c context.Context, id uuid.UUID) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error) {
+	return false, errNotImplemented
+}
+
+func (m *MockDB) DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error) {
+	return false, errNotImplemented
+}
+
+func (m *MockDB) DeleteAllVersions(c context.Context, id uuid.UUID) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) PipelineNameCreatable(c context.Context, name string) (bool, error) {
+	return false, errNotImplemented
+}
+
+func (m *MockDB) SwitchRejected(c context.Context, versionID uuid.UUID, comment, author string) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error {
+	return errNotImplemented
 }

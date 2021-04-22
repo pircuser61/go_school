@@ -22,3 +22,37 @@ include:
 # build binary:
 #   dependencies:
 #     - generate swagger
+push tag staging:
+  trigger:
+    project: erius/kubernetes
+
+push tag production:  
+  trigger:
+    project: erius/kubernetes
+
+deploy staging manual:
+  stage: deploy
+  extends: .rollout_branch_deployment
+  variables:
+    K8S_CLUSTER_CONF: ${kube_config_staging}
+    STAND_NAME: staging
+    STAND_URL: ${STAGE_URL}
+    K8S_NS: ${NS_STAGING}
+  when: manual
+  needs:
+    - image build
+  only:
+    - develop
+
+push develop tag to staging:
+  stage: push_changes
+  extends: .common_trigger
+  trigger:
+    project: erius/kubernetes
+  variables:
+    KUSTOMIZE_STAND: staging
+    BRANCH_NAME: staging
+  only:
+    - develop
+  needs:
+    - deploy staging manual

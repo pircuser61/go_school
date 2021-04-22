@@ -3,27 +3,34 @@ package configs
 import (
 	"fmt"
 
-	"gitlab.services.mts.ru/libs/logger"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+	monconf "gitlab.services.mts.ru/erius/monitoring/pkg/configs"
 )
 
 const (
-	StrategyHttp  = "http"
+	StrategyHTTP  = "http"
 	StrategyKafka = "kafka"
 )
 
 type Pipeliner struct {
-	Tracing       TracingConfig  `yaml:"tracing"`
-	Timeout       Duration       `yaml:"timeout"`
-	Proxy         string         `yaml:"proxy"`
-	Log           *logger.Config `yaml:"log"`
-	ServeAddr     string         `yaml:"serve_addr"`
-	MetricsAddr   string         `yaml:"metrics_addr"`
-	DB            Database       `yaml:"database"`
-	ScriptManager string         `yaml:"script_manager"`
-	FaaS          string         `yaml:"faas"`
-	RunEnv        RunEnv         `yaml:"run_env"`
-	Swag          SwaggerGeneral `yaml:"swagger"`
-	AuthBaseURL   *URL           `yaml:"auth"`
+	Tracing               TracingConfig      `yaml:"tracing"`
+	Timeout               Duration           `yaml:"timeout"`
+	Proxy                 string             `yaml:"proxy"`
+	Log                   *logger.Config     `yaml:"log"`
+	ServeAddr             string             `yaml:"serve_addr"`
+	MetricsAddr           string             `yaml:"metrics_addr"`
+	DB                    Database           `yaml:"database"`
+	ScriptManager         string             `yaml:"script_manager"`
+	Remedy                string             `yaml:"remedy"`
+	FaaS                  string             `yaml:"faas"`
+	RunEnv                RunEnv             `yaml:"run_env"`
+	Swag                  SwaggerGeneral     `yaml:"swagger"`
+	Monitoring            monconf.Monitoring `yaml:"monitoring"`
+	AuthBaseURL           *URL               `yaml:"auth"`
+	SchedulerBaseURL      *URL               `yaml:"scheduler"`
+	NetworkMonitorBaseURL *URL               `yaml:"network_monitor"`
+	Push                  PushConfig         `yaml:"push"`
+	HTTPClientConfig      *HTTPClient        `yaml:"http_client_config"`
 }
 
 type RunEnv struct {
@@ -52,6 +59,11 @@ type Database struct {
 	Timeout        int    `yaml:"timeout"`
 }
 
+type PushConfig struct {
+	URL string `yaml:"url"`
+	Job string `yaml:"job"`
+}
+
 func (d *Database) String() string {
 	pass := ""
 	for range d.Pass {
@@ -61,4 +73,14 @@ func (d *Database) String() string {
 	return fmt.Sprintf(
 		"DB: (Kind: %s, Host: %s, Port: %s, User: %s, Pass: %s, DBName: %s, MaxConn: %d, Timeout: %d)",
 		d.Kind, d.Host, d.Port, d.User, pass, d.DBName, d.MaxConnections, d.Timeout)
+}
+
+type HTTPClient struct {
+	Timeout               Duration `yaml:"timeout"`
+	KeepAlive             Duration `yaml:"keep_alive"`
+	MaxIdleConns          int      `yaml:"max_idle_conns"`
+	IdleConnTimeout       Duration `yaml:"idle_conn_timeout"`
+	TLSHandshakeTimeout   Duration `yaml:"tls_handshake_timeout"`
+	ExpectContinueTimeout Duration `yaml:"expect_continue_timeout"`
+	ProxyURL              URL      `yaml:"proxy_url"`
 }

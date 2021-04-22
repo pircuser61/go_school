@@ -9,9 +9,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
+)
+
+const (
+	ErrorKey     = "error"
+	KeyDelimiter = "."
 )
 
 type FunctionBlock struct {
@@ -20,7 +27,7 @@ type FunctionBlock struct {
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
 	NextStep       string
-	runURL         string
+	RunURL         string
 }
 
 func (fb *FunctionBlock) Inputs() map[string]string {
@@ -55,23 +62,24 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 		}
 	}
 
-	url := fmt.Sprintf(fb.runURL, fb.FunctionName)
-	fmt.Println(url)
+	url := fmt.Sprintf(fb.RunURL, fb.FunctionName)
 
 	b, err := json.Marshal(values)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(string(b))
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
 
 	// fixme extract "X-Request-Id" to variable
-	req.Header.Set("X-Request-Id", ctx.Value("X-Request-Id").(string))
+
+	if xReqID, ok := ctx.Value("X-Request-Id").(string); ok {
+		req.Header.Set("X-Request-Id", xReqID)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	const timeoutMinutes = 15
@@ -92,14 +100,18 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 		return err
 	}
 
-	fmt.Println("response:", string(body))
-
 	if len(body) != 0 {
 		result := make(map[string]interface{})
 
 		err = json.Unmarshal(body, &result)
 		if err != nil {
 			return err
+		}
+
+		if val, ok := result[ErrorKey].(string); ok {
+			funcError := errors.New(val)
+			runCtx.AddError(funcError)
+			runCtx.SetValue(fb.Name+KeyDelimiter+ErrorKey, val)
 		}
 
 		for ikey, gkey := range fb.FunctionOutput {
@@ -111,6 +123,72 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 	return nil
 }
 
-func (fb *FunctionBlock) Next() string {
-	return fb.NextStep
+func (fb *FunctionBlock) Next(runCtx *store.VariableStore) (string, bool) {
+	return fb.NextStep, true
+}
+
+func (fb *FunctionBlock) NextSteps() []string {
+	nextSteps := []string{fb.NextStep}
+
+	return nextSteps
+}
+
+func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStore) (interface{}, error) {
+	_, s := trace.StartSpan(ctx, "run_function_block")
+	defer s.End()
+
+	values := make(map[string]interface{})
+
+	for ikey, gkey := range fb.FunctionInput {
+		val, ok := runCtx.GetValue(gkey) // if no value - empty value
+		if ok {
+			values[ikey] = val
+		}
+	}
+
+	url := fmt.Sprintf(fb.RunURL, fb.FunctionName)
+
+	b, err := json.Marshal(values)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	// fixme extract "X-Request-Id" to variable
+	req.Header.Set("Content-Type", "application/json")
+
+	const timeoutMinutes = 15
+
+	client := &http.Client{
+		Timeout: timeoutMinutes * time.Minute,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(body) != 0 {
+		result := make(map[string]interface{})
+		err = json.Unmarshal(body, &result)
+
+		if err != nil {
+			return string(body), nil
+		}
+
+		return result, nil
+	}
+
+	return string(body), nil
 }

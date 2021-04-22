@@ -48,8 +48,12 @@ func (cb *ConnectorBlock) DebugRun(ctx context.Context, runCtx *store.VariableSt
 	return nil
 }
 
-func (cb *ConnectorBlock) Next() string {
-	return cb.NextStep
+func (cb *ConnectorBlock) Next(runCtx *store.VariableStore) (string, bool) {
+	return cb.NextStep, true
+}
+
+func (cb *ConnectorBlock) NextSteps() []string {
+	return []string{cb.NextStep}
 }
 
 func (cb ConnectorBlock) IsScenario() bool {

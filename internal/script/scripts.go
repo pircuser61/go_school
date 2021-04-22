@@ -19,7 +19,7 @@ type ShapeEntity struct {
 	Icon  string `json:"icon"`
 }
 
-type ScriptManagerResponse struct {
+type SMResponse struct {
 	Function []SMFunctionEntity `json:"function"`
 }
 
@@ -46,8 +46,8 @@ type FunctionTag struct {
 	Approved bool      `json:"approved"`
 }
 
-func GetReadyFuncs(ctx context.Context, scriptManager string) (FunctionModels, error) {
-	_, s := trace.StartSpan(context.Background(), "get_ready_modules")
+func GetReadyFuncs(ctx context.Context, scriptManager string, httpClient *http.Client) (FunctionModels, error) {
+	_, s := trace.StartSpan(ctx, "get_ready_modules")
 	defer s.End()
 
 	u, err := url.Parse(scriptManager)
@@ -66,7 +66,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) (FunctionModels, e
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	resp, err := httpClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string) (FunctionModels, e
 		return nil, err
 	}
 
-	smf := ScriptManagerResponse{}
+	smf := SMResponse{}
 
 	err = json.Unmarshal(b, &smf)
 	if err != nil {
