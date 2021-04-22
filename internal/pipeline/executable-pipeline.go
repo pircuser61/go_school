@@ -151,7 +151,6 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
 			if err != nil {
 				_ = ep.finallyError(ctx, err)
-
 				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
 			}
 
