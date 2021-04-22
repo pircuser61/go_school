@@ -661,8 +661,8 @@ gitlab.services.mts.ru/erius/admin v1.2.13 h1:BS7+FXxlGUJdJNiCYGtBBy6zn61Y/vRtqT
 gitlab.services.mts.ru/erius/admin v1.2.13/go.mod h1:YuGBgETXWrDb0fvQBEag7hjMJIBQf7FJOq+GZku2kVE=
 gitlab.services.mts.ru/erius/monitoring v0.1.0 h1:iu2eKuuoQ/zWP6MPqlBinYBoXv5Kyws/XtGEo4yVxrs=
 gitlab.services.mts.ru/erius/monitoring v0.1.0/go.mod h1:1NJtchxk6Smhtnk3c3BNv0ScbYZz0mhfEgncNbt4kxY=
-gitlab.services.mts.ru/erius/network-monitor-client v1.0.2 h1:b9xv1mWe+Jh1WyTuESOMcyCixGN0iCj5rpQQocMqp3I=
-gitlab.services.mts.ru/erius/network-monitor-client v1.0.2/go.mod h1:pZwL5/5DffFYBxZMf8WD2TBbMepawGfkS0y6Ke0hpaA=
+gitlab.services.mts.ru/erius/network-monitor-client v1.0.3 h1:tX2dWlJvkRTtiwa2W2+MK9F/MkUwI0A3NC0WcxF7x4Y=
+gitlab.services.mts.ru/erius/network-monitor-client v1.0.3/go.mod h1:pZwL5/5DffFYBxZMf8WD2TBbMepawGfkS0y6Ke0hpaA=
 gitlab.services.mts.ru/erius/scheduler_client v0.0.5 h1:wjQl+H9GnRcGocj9klzmPY97QS8Iy8rKCkEs6RvkwUg=
 gitlab.services.mts.ru/erius/scheduler_client v0.0.5/go.mod h1:5LM12WrgQ0mrw78Bghydat7YfPrjYRX+g7/damC0MxQ=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
