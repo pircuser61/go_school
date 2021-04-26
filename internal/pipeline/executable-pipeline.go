@@ -150,8 +150,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
 			if err != nil {
-				_ = ep.finallyError(ctx, err)
-				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
+				key := ep.NowOnPoint+KeyDelimiter+ErrorKey
+				nStore.SetValue(key, err.Error())
 			}
 
 			out := ep.Blocks[ep.NowOnPoint].Outputs()
@@ -162,9 +162,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		} else {
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
 			if err != nil {
-				_ = ep.finallyError(ctx, err)
-
-				return errors.Errorf("error while executing pipeline on step %s: %s", ep.NowOnPoint, err.Error())
+				key := ep.NowOnPoint+KeyDelimiter+ErrorKey
+				ep.VarStore.SetValue(key, err.Error())
 			}
 		}
 
