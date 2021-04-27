@@ -37,10 +37,12 @@ const (
 
 	functionDeployed string = "deployed"
 
-	TypeIF       = "term"
-	TypeInternal = "internal"
-	TypeScenario = "scenario"
-	TypePython3  = "python3"
+	TypeIF          = "term"
+	TypeInternal    = "internal"
+	TypeScenario    = "scenario"
+	TypePython3     = "python3"
+	TypePythonFlask = "python3-flask"
+	TypePythonHTTP  = "python3-http"
 )
 
 type FunctionModels []FunctionModel

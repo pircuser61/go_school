@@ -150,7 +150,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
 			if err != nil {
-				key := ep.NowOnPoint+KeyDelimiter+ErrorKey
+				key := ep.NowOnPoint + KeyDelimiter + ErrorKey
 				nStore.SetValue(key, err.Error())
 			}
 
@@ -162,7 +162,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		} else {
 			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
 			if err != nil {
-				key := ep.NowOnPoint+KeyDelimiter+ErrorKey
+				key := ep.NowOnPoint + KeyDelimiter + ErrorKey
 				ep.VarStore.SetValue(key, err.Error())
 			}
 		}
@@ -221,9 +221,9 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 
 		block := source[k]
 		switch block.BlockType {
-		case script.TypeInternal, "term":
+		case script.TypeInternal, script.TypeIF:
 			ep.Blocks[bn] = ep.CreateInternal(&block, bn)
-		case script.TypePython3:
+		case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 			fb := FunctionBlock{
 				Name:           bn,
 				FunctionName:   block.Title,
