@@ -1,58 +1,13 @@
 include:
   - project: 'abp/ci-templates'
-    ref: v3
-    file: '/templates/go_base_auto_mr.yml'
+    ref: v5
+    file: '/entrypoints/app/go_base_auto_push.yml'
 
-# stages:
-#   - generate
-#   - lint
-#   - build
-#   - image
-#   - deploy
-#   - push_changes
 
-# generate swagger:
-#   extends: .go_swagger
-#   stage: generate
-
-# test:
-#   dependencies:
-#     - generate swagger
-
-# build binary:
-#   dependencies:
-#     - generate swagger
-push tag staging:
-  trigger:
-    project: erius/kubernetes
-
-push tag production:  
-  trigger:
-    project: erius/kubernetes
-
-deploy staging manual:
-  stage: deploy
-  extends: .rollout_branch_deployment
-  variables:
-    K8S_CLUSTER_CONF: ${kube_config_staging}
-    STAND_NAME: staging
-    STAND_URL: ${STAGE_URL}
-    K8S_NS: ${NS_STAGING}
-  when: manual
-  needs:
-    - image build
-  only:
-    - develop
-
-push develop tag to staging:
-  stage: push_changes
-  extends: .common_trigger
-  trigger:
-    project: erius/kubernetes
-  variables:
-    KUSTOMIZE_STAND: staging
-    BRANCH_NAME: staging
-  only:
-    - develop
-  needs:
-    - deploy staging manual
+variables:
+  ENABLED_DEPLOY: "false"
+  ENABLED_LINT: 'allow-failure-true'
+  ENABLED_REVIEW: 'allow-failure-true'
+  ENABLED_DEP_CHECK: 'allow-failure-true'
+  ENABLED_TEST: 'allow-failure-true'
+  CONFIG_PATH: example/config/config.yaml
