@@ -5,7 +5,7 @@ include:
 
 
 variables:
-  ENABLED_DEPLOY: "false"
+  ENABLED_DEPLOY: "true"
   ENABLED_LINT: 'allow-failure-true'
   ENABLED_REVIEW: 'allow-failure-true'
   ENABLED_DEP_CHECK: 'allow-failure-true'
