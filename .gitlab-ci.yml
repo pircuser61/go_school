@@ -5,6 +5,8 @@ include:
 
 
 variables:
+  KUBERNETES_MEMORY_LIMIT: 1Gi
+  KUBERNETES_CPU_LIMIT: 500m
   ENABLED_DEPLOY: "true"
   ENABLED_LINT: 'allow-failure-true'
   ENABLED_REVIEW: 'allow-failure-true'
