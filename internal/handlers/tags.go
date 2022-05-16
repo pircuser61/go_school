@@ -10,7 +10,6 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
@@ -89,12 +88,7 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 
 	etag.ID = uuid.New()
 
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		log.WithError(err).Error("user failed")
-	}
-
-	created, err := ae.DB.CreateTag(ctx, &etag, user.UserName())
+	created, err := ae.DB.CreateTag(ctx, &etag, "")
 	if err != nil {
 		e := TagCreateError
 		log.Error(e.errorMessage(err))

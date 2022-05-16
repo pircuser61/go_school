@@ -14,7 +14,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -179,11 +178,6 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		log.Error("user failed: ", err.Error())
-	}
-
 	parameters, err := json.Marshal(d.Parameters)
 	if err != nil {
 		e := CreateDebugInputsError
@@ -193,7 +187,7 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := ae.DB.CreateTask(ctx, uuid.New(), version.VersionID, user.UserName(), true, parameters)
+	task, err := ae.DB.CreateTask(ctx, uuid.New(), version.VersionID, "", true, parameters)
 	if err != nil {
 		e := CreateWorkError
 		log.Error(e.errorMessage(err))
@@ -499,18 +493,7 @@ func (ae *APIEnv) LastVersionDebugTask(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		if err != nil {
-			e := NoUserInContextError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
-	}
-
-	task, err := ae.DB.GetLastDebugTask(ctx, id, user.UserName())
+	task, err := ae.DB.GetLastDebugTask(ctx, id, "")
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))

@@ -16,7 +16,6 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -351,12 +350,8 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	p.VersionID = uuid.New()
 
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		log.WithError(err).Error("user failed")
-	}
 	//nolint:govet //it doesn't shadow
-	canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, user.UserName())
+	canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, "")
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
@@ -373,7 +368,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = ae.DB.CreateVersion(ctx, &p, user.UserName(), b)
+	err = ae.DB.CreateVersion(ctx, &p, "", b)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
@@ -442,11 +437,6 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		log.Error("user failed: ", err.Error())
-	}
-
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 
@@ -467,7 +457,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.CreatePipeline(ctx, &p, user.UserName(), b)
+	err = ae.DB.CreatePipeline(ctx, &p, "", b)
 	if err != nil {
 		e := PipelineCreateError
 		log.Error(e.errorMessage(err))
@@ -576,13 +566,8 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		log.Error(err.Error())
-	}
-
 	if p.Status == db.StatusApproved {
-		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, user.UserName())
+		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, "")
 		if err != nil {
 			e := ApproveError
 			log.Error(e.errorMessage(err))
@@ -593,7 +578,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if p.Status == db.StatusRejected {
-		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, user.UserName())
+		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, "")
 		if err != nil {
 			e := ApproveError
 			log.Error(e.errorMessage(err))
@@ -1003,11 +988,6 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	log.Info("--- running pipeline:", p.Name)
 
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		log.Error(err)
-	}
-
 	vs := store.NewStore()
 
 	b, err := ioutil.ReadAll(req.Body)
@@ -1059,7 +1039,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		return
 	}
 
-	err = ep.CreateTask(ctx, user.UserName(), false, parameters)
+	err = ep.CreateTask(ctx, "", false, parameters)
 	if err != nil {
 		e := PipelineRunError
 		log.Error(e.errorMessage(err))

@@ -23,7 +23,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
@@ -69,7 +68,6 @@ func main() {
 	}
 
 	httpClient := httpclient.HTTPClient(cfg.HTTPClientConfig)
-	auth.InjectTransport(httpClient)
 
 	schedulerClient, err := scheduler.NewClient(cfg.SchedulerBaseURL.URL, httpClient)
 	if err != nil {
