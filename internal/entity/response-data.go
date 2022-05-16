@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type EriusScenarioList struct {

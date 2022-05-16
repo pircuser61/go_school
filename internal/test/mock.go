@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"time"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
 	"github.com/google/uuid"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 func OnlyReturnBlockGenerator(ret map[string]interface{}) http.HandlerFunc {

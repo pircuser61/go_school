@@ -1,4 +1,4 @@
-module gitlab.services.mts.ru/erius/pipeliner
+module gitlab.services.mts.ru/jocasta/pipeliner
 
 go 1.16
 

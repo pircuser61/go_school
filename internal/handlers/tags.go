@@ -10,10 +10,8 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/erius/admin/pkg/vars"
-
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 // GetTags
@@ -32,23 +30,6 @@ func (ae *APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Read)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
 
 	tags, err := ae.DB.GetAllTags(ctx)
 	if err != nil {
@@ -83,23 +64,6 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Create)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
 
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
@@ -189,33 +153,6 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Update)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	id := etag.ID.String()
-
-	if !(grants.Allow && grants.Contains(id)) {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	err = ae.DB.EditTag(ctx, &etag)
 	if err != nil {
 		e := TagEditError
@@ -266,33 +203,6 @@ func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
 	tID, err := uuid.Parse(tagID)
 	if err != nil {
 		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.PipelineTag, vars.Delete)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	id := tID.String()
-
-	if !(grants.Allow && grants.Contains(id)) {
-		e := UnauthError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 

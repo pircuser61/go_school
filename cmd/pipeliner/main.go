@@ -11,7 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"gitlab.services.mts.ru/erius/pipeliner/statistic"
+	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/trace"
@@ -28,15 +28,15 @@ import (
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
-	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/httpclient"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/cmd/pipeliner/docs"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 )
 
-const serviceName = "erius.pipeliner"
+const serviceName = "jocasta.pipeliner"
 
 // @title Pipeliner API
 // @version 0.1
@@ -71,13 +71,6 @@ func main() {
 	httpClient := httpclient.HTTPClient(cfg.HTTPClientConfig)
 	auth.InjectTransport(httpClient)
 
-	authClient, err := auth.NewClient(cfg.AuthBaseURL.URL, httpClient)
-	if err != nil {
-		log.WithError(err).Error("can't create auth client")
-
-		return
-	}
-
 	schedulerClient, err := scheduler.NewClient(cfg.SchedulerBaseURL.URL, httpClient)
 	if err != nil {
 		log.WithError(err).Error("can't create scheduler client")
@@ -104,7 +97,6 @@ func main() {
 		ScriptManager:        cfg.ScriptManager,
 		Remedy:               cfg.Remedy,
 		FaaS:                 cfg.FaaS,
-		AuthClient:           authClient,
 		SchedulerClient:      schedulerClient,
 		NetworkMonitorClient: networkMonitoringClient,
 		HTTPClient:           httpClient,
@@ -178,7 +170,6 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
-			r.Use(auth.UserMiddleware(pipeliner.AuthClient))
 			r.Use(handlers.StatisticMiddleware(pipeliner.Statistic))
 
 			r.Get("/pipelines/", pipeliner.ListPipelines)

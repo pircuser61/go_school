@@ -3,7 +3,7 @@ package pipeline
 import (
 	"context"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"

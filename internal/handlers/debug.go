@@ -15,11 +15,9 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-	"gitlab.services.mts.ru/erius/admin/pkg/vars"
-
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 const (
@@ -175,24 +173,6 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 	version, err := ae.DB.GetPipelineVersion(ctx, d.VersionID)
 	if err != nil {
 		e := GetVersionError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	// права на создание дебаг сессии проверяем относительно запуска сценария
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Run)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow && grants.Contains(version.ID.String()) {
-		e := UnauthError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -405,7 +385,6 @@ func (ae *APIEnv) runDebugTask(
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /debug/{taskID} [get]
-// nolint:dupl //its unique
 func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_debug_task")
 	defer s.End()
@@ -503,7 +482,6 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /tasks/last-by-version/{versionID} [get]
-// nolint:dupl //its unique
 func (ae *APIEnv) LastVersionDebugTask(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_last_version_tasks")
 	defer s.End()
