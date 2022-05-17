@@ -1,4 +1,4 @@
-module gitlab.services.mts.ru/erius/pipeliner
+module gitlab.services.mts.ru/jocasta/pipeliner
 
 go 1.16
 
@@ -19,7 +19,6 @@ require (
 	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba
 	github.com/swaggo/swag v1.6.7
 	gitlab.services.mts.ru/abp/myosotis v1.1.2
-	gitlab.services.mts.ru/erius/admin v1.2.13
 	gitlab.services.mts.ru/erius/monitoring v0.1.0
 	gitlab.services.mts.ru/erius/network-monitor-client v1.0.5
 	gitlab.services.mts.ru/erius/scheduler_client v0.0.5

@@ -23,10 +23,10 @@ import (
 	"gitlab.services.mts.ru/erius/admin/pkg/vars"
 
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	ptest "gitlab.services.mts.ru/erius/pipeliner/internal/handlers/test"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/test"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	ptest "gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers/test"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
 )
 
 func AddWithStop(next http.Handler) http.Handler {
@@ -208,7 +208,6 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 				ScriptManager: "",
 				Remedy:        "",
 				FaaS:          FaaSMockServer.URL + "/",
-				AuthClient:    &auth.Client{},
 			}
 
 			pipelineRouter := chi.NewRouter()

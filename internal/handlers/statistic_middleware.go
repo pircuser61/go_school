@@ -6,7 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"gitlab.services.mts.ru/erius/pipeliner/statistic"
+	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
 
 type responseWriter struct {

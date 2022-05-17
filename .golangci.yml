@@ -12,6 +12,10 @@ linters-settings:
   goconst:
     min-len: 2
     min-occurrences: 2
+  depguard:
+    list-type: blacklist
+    packages:
+      - gitlab.services.mts.ru/3click/core2
   misspell:
     locale: US
   lll:
@@ -27,25 +31,41 @@ linters-settings:
       - wrapperFunc
 
 linters:
-  enable-all: true
-  disable:
-    - godox # disable errors on TODO's
-    - funlen
-    - rowserrcheck
-    - gci
-    - godot
+  disable-all: true
+  enable:
+    - govet
+    - gocyclo
+    - dupl
+    - lll
+    - gosec
+    - dupl
+    - goconst
+    - depguard
+    - misspell
+    - goimports
+    - gocritic
+    - staticcheck
+    - deadcode
+    - errcheck
+    - unused
+    - gosimple
+    - structcheck
+    - varcheck
+    - ineffassign
+    - typecheck
+    - bodyclose
+    - unconvert
+    - unparam
+    - prealloc
+    - whitespace
+    - scopelint
 
 run:
-  timeout: 5m
   tests: false
   skip-dirs:
     - swagger-ui
-    - docs
+    - configs
     - templates
-    - migrations
     - \.go
-# golangci.com configuration
-# https://github.com/golangci/golangci/wiki/Configuration
-
-# example
-# https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
+  skip-files:
+    - .*-local.*

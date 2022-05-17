@@ -15,9 +15,9 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type PGConnection struct {
@@ -120,7 +120,6 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 	return versionHistoryList, nil
 }
 
-//nolint:gocritic // copies for slice is allowed
 func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_list_approved_versions")
 	defer span.End()
@@ -175,7 +174,6 @@ func (db *PGConnection) GetApprovedVersions(c context.Context) ([]entity.EriusSc
 	return final, nil
 }
 
-//nolint:staticcheck // TODO remove break
 func (db *PGConnection) findApproveDate(c context.Context, id uuid.UUID) (time.Time, error) {
 	c, span := trace.StartSpan(c, "pg_find_approve_time")
 	defer span.End()
@@ -263,7 +261,6 @@ func (db *PGConnection) GetRejectedVersions(c context.Context) ([]entity.EriusSc
 	return db.GetVersionsByStatus(c, StatusRejected)
 }
 
-//nolint:dupl //its unique
 func (db *PGConnection) GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_all_not_deleted_versions")
 	defer span.End()
@@ -1272,7 +1269,6 @@ func (db *PGConnection) ChangeTaskStatus(c context.Context,
 	return nil
 }
 
-//nolint:dupl //its unique
 func (db *PGConnection) GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_all_not_deleted_versions")
 	defer span.End()
