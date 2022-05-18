@@ -1256,8 +1256,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 }
 
 //nolint //need big cyclo,need equal string for all usages
-func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,
-	p *entity.EriusScenario, withStop bool) {
+func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request, p *entity.EriusScenario, withStop bool) {
 	ctx, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
@@ -1265,12 +1264,47 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	reqID := req.Header.Get(XRequestIDHeader)
 
+	b, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
+
 	mon := monitoring.New()
 	mon.Set(reqID, monitor.PipelinerData{
 		PipelineUUID: p.ID.String(),
 		VersionUUID:  p.VersionID.String(),
 		Name:         p.Name,
 	})
+
+	var pipelineVars map[string]interface{}
+	if len(b) != 0 {
+		err = json.Unmarshal(b, &pipelineVars)
+		if err != nil {
+			e := PipelineRunError
+			if monErr := mon.RunError(ctx); monErr != nil {
+				log.WithError(monErr).Error("can't send data to monitoring")
+			}
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+		}
+	}
+
+	log.Info("--- running pipeline:", p.Name)
+
+	ep, e, err := ae.execVersionInternal(ctx, reqID, p, pipelineVars, withStop)
+	if err != nil {
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	_ = sendResponse(w, http.StatusOK, entity.RunResponse{
+		PipelineID: ep.PipelineID, TaskID: ep.TaskID,
+		Status: statusRunned,
+	})
+}
+
+func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *entity.EriusScenario, vars map[string]interface{}, withStop bool) (*pipeline.ExecutablePipeline, Err, error) {
+
+	log := logger.GetLogger(ctx)
 
 	ctx = context.WithValue(ctx, XRequestIDHeader, reqID)
 
@@ -1287,85 +1321,33 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	err := ep.CreateBlocks(ctx, p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		if monErr := mon.RunError(ctx); monErr != nil {
-			log.WithError(monErr).Error("can't send data to monitoring")
-		}
-
-		return
+		return &ep, e, err
 	}
-
-	log.Info("--- running pipeline:", p.Name)
 
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
-		log.Error(err)
+		return &ep, UnauthError, err
 	}
 
 	vs := store.NewStore()
 
-	b, err := ioutil.ReadAll(req.Body)
-	defer req.Body.Close()
-
 	if err != nil {
 		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		if monErr := mon.RunError(ctx); monErr != nil {
-			log.WithError(monErr).Error("can't send data to monitoring")
-		}
-
-		return
+		return &ep, e, err
 	}
 
-	pipelineVars := make(map[string]interface{})
-
-	if len(b) != 0 {
-		err = json.Unmarshal(b, &pipelineVars)
-		if err != nil {
-			e := PipelineRunError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			if monErr := mon.RunError(ctx); monErr != nil {
-				log.WithError(monErr).Error("can't send data to monitoring")
-			}
-
-			return
-		}
-
-		for key, value := range pipelineVars {
-			vs.SetValue(p.Name+pipeline.KeyDelimiter+key, value)
-		}
-	}
+	pipelineVars := vars
 
 	parameters, err := json.Marshal(pipelineVars)
 	if err != nil {
 		e := PipelineRunError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		if monErr := mon.RunError(ctx); monErr != nil {
-			log.WithError(monErr).Error("can't send data to monitoring")
-		}
-
-		return
+		return &ep, e, err
 	}
 
 	err = ep.CreateTask(ctx, user.UserName(), false, parameters)
 	if err != nil {
 		e := PipelineRunError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		if monErr := mon.RunError(ctx); monErr != nil {
-			log.WithError(monErr).Error("can't send data to monitoring")
-		}
-
-		return
+		return &ep, e, err
 	}
 
 	//nolint:nestif //its simple
@@ -1378,64 +1360,25 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 		err = ep.DebugRun(ctx, vs)
 		if err != nil {
-			log.Error(PipelineExecutionError.errorMessage(err))
 			vs.AddError(err)
+			return nil, PipelineExecutionError, err
 		}
 
-		err = sendResponse(
-			w,
-			http.StatusOK,
-			entity.RunResponse{
-				PipelineID: ep.PipelineID,
-				TaskID:     ep.TaskID,
-				Status:     map[bool]string{true: statusFinished, false: statusError}[len(vs.Errors) == 0],
-				Output:     getOutputValues(&ep, vs),
-				Errors:     vs.Errors,
-			})
-		if err != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
 	} else {
 		go func() {
 			routineCtx := context.WithValue(context.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 
 			routineCtx = logger.WithLogger(routineCtx, log)
 
-			if monErr := mon.Run(routineCtx); monErr != nil {
-				log.WithError(monErr).Error("can't send data to monitoring")
-			}
-
 			err = ep.DebugRun(routineCtx, vs)
 			if err != nil {
-				log.Error(PipelineExecutionError.errorMessage(err))
 				vs.AddError(err)
-
-				if monErr := mon.RunError(routineCtx); monErr != nil {
-					log.WithError(monErr).Error("can't send data to monitoring")
-				}
-			}
-
-			if monErr := mon.Done(routineCtx); monErr != nil {
-				log.WithError(monErr).Error("can't send data to monitoring")
 			}
 		}()
 
-		err = sendResponse(w, http.StatusOK, entity.RunResponse{
-			PipelineID: ep.PipelineID, TaskID: ep.TaskID,
-			Status: statusRunned,
-		})
-		if err != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
 	}
+
+	return &ep, 0, nil
 }
 
 func getOutputValues(ep *pipeline.ExecutablePipeline, s *store.VariableStore) interface{} {

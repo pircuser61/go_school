@@ -563,3 +563,53 @@ func Test_scenarioUsage(t *testing.T) {
 		})
 	}
 }
+
+func Test_execVersion(t *testing.T) {
+	pipeliner := APIEnv{
+		DB:                   nil,
+		ScriptManager:        "",
+		Remedy:               "",
+		FaaS:                 "",
+		AuthClient:           nil,
+		SchedulerClient:      nil,
+		NetworkMonitorClient: nil,
+		HTTPClient:           nil,
+		Statistic:            nil,
+	}
+
+	t.Run("name", func(t *testing.T) {
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*100)
+		defer cancel()
+
+		reqId := "123"
+		p := &entity.EriusScenario{
+			ID:        uuid.UUID{},
+			VersionID: uuid.UUID{},
+			Status:    0,
+			HasDraft:  false,
+			Name:      "",
+			Input:     nil,
+			Output:    nil,
+			Pipeline: struct {
+				Entrypoint string                      `json:"entrypoint"`
+				Blocks     map[string]entity.EriusFunc `json:"blocks"`
+			}{},
+			CreatedAt:       nil,
+			ApprovedAt:      nil,
+			Author:          "",
+			Tags:            nil,
+			Comment:         "",
+			CommentRejected: "",
+		}
+
+		vars := map[string]interface{}{}
+
+		auth.UserFromContext()
+
+		if _, _, err := pipeliner.execVersionInternal(ctx, reqId, p, vars, false); err != nil {
+			assert.NoError(t, err)
+		}
+	})
+
+}
