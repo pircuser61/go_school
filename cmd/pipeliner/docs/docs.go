@@ -19,12 +19,29 @@ var doc = `{
         "description": "{{.Description}}",
         "title": "{{.Title}}",
         "contact": {},
-        "license": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/pipeliner/v1/metrics": {
+            "get": {
+                "description": "Метрики",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "metrics",
+                "operationId": "metrics",
+                "responses": {
+                    "200": {
+                        "description": "metrics content"
+                    }
+                }
+            }
+        },
         "/debug/": {
             "post": {
                 "description": "Создать сессию отладки",
@@ -1762,7 +1779,6 @@ var doc = `{
                     "example": "run,error,finished,created"
                 },
                 "task": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.EriusTask"
                 }
             }
@@ -2091,8 +2107,10 @@ var doc = `{
                     "type": "string"
                 },
                 "steps": {
-                    "type": "object",
-                    "$ref": "#/definitions/entity.TaskSteps"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Step"
+                    }
                 },
                 "version_id": {
                     "type": "string"
@@ -2200,12 +2218,6 @@ var doc = `{
                 "time": {
                     "type": "string"
                 }
-            }
-        },
-        "entity.TaskSteps": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/entity.Step"
             }
         },
         "entity.UsageResponse": {

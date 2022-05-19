@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -566,7 +567,7 @@ func Test_scenarioUsage(t *testing.T) {
 
 func Test_execVersion(t *testing.T) {
 	pipeliner := APIEnv{
-		DB:                   nil,
+		DB:                   test.NewMockDB(),
 		ScriptManager:        "",
 		Remedy:               "",
 		FaaS:                 "",
@@ -582,32 +583,19 @@ func Test_execVersion(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*100)
 		defer cancel()
 
+		b, err := os.ReadFile("testdata/put_version_extra.json")
+		assert.NoError(t, err)
+		var p entity.EriusScenario
+		err = json.Unmarshal(b, &p)
+		assert.NoError(t, err)
+
 		reqId := "123"
-		p := &entity.EriusScenario{
-			ID:        uuid.UUID{},
-			VersionID: uuid.UUID{},
-			Status:    0,
-			HasDraft:  false,
-			Name:      "",
-			Input:     nil,
-			Output:    nil,
-			Pipeline: struct {
-				Entrypoint string                      `json:"entrypoint"`
-				Blocks     map[string]entity.EriusFunc `json:"blocks"`
-			}{},
-			CreatedAt:       nil,
-			ApprovedAt:      nil,
-			Author:          "",
-			Tags:            nil,
-			Comment:         "",
-			CommentRejected: "",
-		}
 
 		vars := map[string]interface{}{}
 
 		userName := "242"
 
-		if _, _, err := pipeliner.execVersionInternal(ctx, reqId, p, vars, false, userName); err != nil {
+		if _, _, err := pipeliner.execVersionInternal(ctx, reqId, &p, vars, true, userName); err != nil {
 			assert.NoError(t, err)
 		}
 	})
