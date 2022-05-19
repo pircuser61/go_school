@@ -68,6 +68,7 @@ const (
 	RunDebugTaskAlreadyError
 	RunDebugInvalidStatusError
 	NetworkMonitorClientFailed
+	GetUserinfoErr
 )
 
 //nolint:dupl //its not duplicate
@@ -122,6 +123,7 @@ var errorText = map[Err]string{
 	RunDebugTaskFinishedError:   "can't start debug task with finished status",
 	RunDebugTaskAlreadyError:    "can't start debug task with error status",
 	RunDebugInvalidStatusError:  "can't start debug task with this status",
+	GetUserinfoErr:              "can't get userinfo",
 }
 
 // JOKE.
@@ -177,12 +179,14 @@ var errorDescription = map[Err]string{
 	RunDebugTaskFinishedError:   "Невозможно запустить отладочный сценарий с статусом finished",
 	RunDebugTaskAlreadyError:    "Невозможно запустить отладочный сценарий с статусом error",
 	RunDebugInvalidStatusError:  "Невозможно запустить отладочный сценарий с таким статусом",
+	GetUserinfoErr:              "Не удалось получить информацию о пользователе",
 }
 
 var errorStatus = map[Err]int{
 	Teapot:           http.StatusTeapot,
 	UnauthError:      http.StatusUnauthorized,
 	UUIDParsingError: http.StatusBadRequest,
+	GetUserinfoErr:   http.StatusUnauthorized,
 }
 
 type httpError struct {

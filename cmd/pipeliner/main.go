@@ -33,6 +33,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 const serviceName = "jocasta.pipeliner"
@@ -83,6 +84,13 @@ func main() {
 		return
 	}
 
+	ssoService, err := sso.NewService(cfg.SSO, httpClient)
+	if err != nil {
+		log.WithError(err).Error("can't create sso service")
+
+		return
+	}
+
 	stat, err := statistic.InitStatistic()
 	if err != nil {
 		log.WithError(err).Error("can't init statistic")
@@ -122,7 +130,7 @@ func main() {
 	initSwagger(cfg)
 
 	server := http.Server{
-		Handler: registerRouter(ctx, cfg, &pipeliner),
+		Handler: registerRouter(ctx, cfg, &pipeliner, ssoService),
 		Addr:    cfg.ServeAddr,
 	}
 
@@ -156,13 +164,14 @@ func main() {
 	log.WithField("signal", stop).Info("stopping")
 }
 
-func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv) *chi.Mux {
+func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv, ssoService *sso.Service) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
 	mux.Use(handlers.LoggerMiddleware(logger.GetLogger(ctx)))
 	mux.Use(observability.MiddlewareChi())
 	mux.Use(handlers.RequestIDMiddleware)
 	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
+	mux.Use(handlers.WithUserInfo(ssoService, logger.GetLogger(ctx)))
 
 	const baseURL = "/api/pipeliner/v1"
 
