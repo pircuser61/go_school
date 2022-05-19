@@ -1289,7 +1289,15 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	log.Info("--- running pipeline:", p.Name)
 
-	ep, e, err := ae.execVersionInternal(ctx, reqID, p, pipelineVars, withStop)
+	user, err := auth.UserFromContext(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	ep, e, err := ae.execVersionInternal(ctx, reqID, p, pipelineVars, withStop, user.UserName())
 	if err != nil {
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -1302,7 +1310,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	})
 }
 
-func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *entity.EriusScenario, vars map[string]interface{}, withStop bool) (*pipeline.ExecutablePipeline, Err, error) {
+func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *entity.EriusScenario, vars map[string]interface{}, syncExecution bool, userName string) (*pipeline.ExecutablePipeline, Err, error) {
 
 	log := logger.GetLogger(ctx)
 
@@ -1324,11 +1332,6 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *enti
 		return &ep, e, err
 	}
 
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		return &ep, UnauthError, err
-	}
-
 	vs := store.NewStore()
 
 	if err != nil {
@@ -1344,14 +1347,14 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *enti
 		return &ep, e, err
 	}
 
-	err = ep.CreateTask(ctx, user.UserName(), false, parameters)
+	err = ep.CreateTask(ctx, userName, false, parameters)
 	if err != nil {
 		e := PipelineRunError
 		return &ep, e, err
 	}
 
 	//nolint:nestif //its simple
-	if withStop {
+	if syncExecution {
 		ep.Output = make(map[string]string)
 
 		for _, item := range p.Output {

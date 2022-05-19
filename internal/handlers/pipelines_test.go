@@ -605,9 +605,9 @@ func Test_execVersion(t *testing.T) {
 
 		vars := map[string]interface{}{}
 
-		auth.UserFromContext()
+		userName := "242"
 
-		if _, _, err := pipeliner.execVersionInternal(ctx, reqId, p, vars, false); err != nil {
+		if _, _, err := pipeliner.execVersionInternal(ctx, reqId, p, vars, false, userName); err != nil {
 			assert.NoError(t, err)
 		}
 	})
