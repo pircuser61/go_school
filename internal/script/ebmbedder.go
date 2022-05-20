@@ -43,6 +43,8 @@ const (
 	TypePython3     = "python3"
 	TypePythonFlask = "python3-flask"
 	TypePythonHTTP  = "python3-http"
+
+	TypeGo = "go"
 )
 
 type FunctionModels []FunctionModel

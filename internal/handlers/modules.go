@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -150,7 +151,7 @@ func (ae *APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 		blocks := scenarios[i].Pipeline.Blocks
 		for k := range blocks {
 			if blocks[k].BlockType != script.TypePython3 && blocks[k].BlockType != script.TypePythonFlask &&
-				blocks[k].BlockType != script.TypePythonHTTP {
+				blocks[k].BlockType != script.TypePythonHTTP && blocks[k].BlockType != script.TypeGo {
 				continue
 			}
 

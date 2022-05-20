@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -222,6 +223,8 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 		switch block.BlockType {
 		case script.TypeInternal, script.TypeIF:
 			ep.Blocks[bn] = ep.CreateInternal(&block, bn)
+		case script.TypeGo:
+			ep.Blocks[bn] = ep.CreateGoBlock(&block, bn)
 		case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 			fb := FunctionBlock{
 				Name:           bn,
@@ -451,4 +454,30 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 	}
 
 	return nil
+}
+
+//nolint:gocyclo //need bigger cyclomatic
+func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) Runner {
+	switch ef.Title {
+	case "test":
+
+		b := &GoTestBlock{
+			Name:     name,
+			Title:    ef.Title,
+			Input:    map[string]string{},
+			Output:   map[string]string{},
+			NextStep: ef.Next,
+		}
+
+		for _, v := range ef.Input {
+			b.Input[v.Name] = v.Global
+		}
+
+		return b
+
+	default:
+		// todo: предотвратить панику!!!
+	}
+
+	return nil // todo: предотвратить панику!!!
 }
