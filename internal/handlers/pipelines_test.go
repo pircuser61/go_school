@@ -273,232 +273,6 @@ func patchAuthClient() {
 		})
 }
 
-func newUUID(val string) uuid.UUID {
-	res, _ := uuid.Parse(val)
-	return res
-}
-
-func Test_filterVersionsByID(t *testing.T) {
-	tests := []struct {
-		name  string
-		items []entity.EriusScenarioInfo
-		isAll bool
-		keys  map[string]struct{}
-		want  []entity.EriusScenarioInfo
-	}{
-		{
-			name: "ok with all",
-			items: []entity.EriusScenarioInfo{
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
-			},
-			want: []entity.EriusScenarioInfo{
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
-			},
-			isAll: true,
-		},
-		{
-			name: "ok with keys",
-			items: []entity.EriusScenarioInfo{
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf2")},
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf3")},
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf4")},
-			},
-			keys: map[string]struct{}{
-				"42bdafca-dce8-4c3d-84c6-4971854d1cf1": {},
-				"42bdafca-dce8-4c3d-84c6-4971854d1cf3": {},
-			},
-			want: []entity.EriusScenarioInfo{
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf3")},
-			},
-		},
-		{
-			name:  "return empty if empty items",
-			items: []entity.EriusScenarioInfo{},
-			keys: map[string]struct{}{
-				"42bdafca-dce8-4c3d-84c6-4971854d1cf1": {},
-				"42bdafca-dce8-4c3d-84c6-4971854d1cf3": {},
-			},
-			want: make([]entity.EriusScenarioInfo, 0),
-		},
-		{
-			name: "return input slice if nil map",
-			items: []entity.EriusScenarioInfo{
-				{VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-			},
-			keys: nil,
-			want: []entity.EriusScenarioInfo{},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, filterVersionsByID(tt.items, tt.isAll, tt.keys), "%v", tt.name)
-		})
-	}
-}
-
-func Test_filterPipelinesByID(t *testing.T) {
-	tests := []struct {
-		name  string
-		items []entity.EriusScenarioInfo
-		isAll bool
-		keys  map[string]struct{}
-		want  []entity.EriusScenarioInfo
-	}{
-		{
-			name: "ok with all",
-			items: []entity.EriusScenarioInfo{
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
-			},
-			want: []entity.EriusScenarioInfo{
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
-			},
-			isAll: true,
-		},
-		{
-			name: "ok with keys",
-			items: []entity.EriusScenarioInfo{
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf2")},
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf3")},
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf4")},
-			},
-			keys: map[string]struct{}{
-				"42bdafca-dce8-4c3d-84c6-4971854d1cf1": {},
-				"42bdafca-dce8-4c3d-84c6-4971854d1cf3": {},
-			},
-			want: []entity.EriusScenarioInfo{
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf1")},
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf3")},
-			},
-		},
-		{
-			name:  "return empty if empty items",
-			items: []entity.EriusScenarioInfo{},
-			keys: map[string]struct{}{
-				"42bdafca-dce8-4c3d-84c6-4971854d1cf1": {},
-				"42bdafca-dce8-4c3d-84c6-4971854d1cf3": {},
-			},
-			want: make([]entity.EriusScenarioInfo, 0),
-		},
-		{
-			name: "return input slice if nil map",
-			items: []entity.EriusScenarioInfo{
-				{ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-			},
-			keys: nil,
-			want: []entity.EriusScenarioInfo{},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, filterPipelinesByID(tt.items, tt.isAll, tt.keys), "%v", tt.name)
-		})
-	}
-}
-
-func Test_authUpdateParametersByPipelineStatus(t *testing.T) {
-	tests := []struct {
-		name         string
-		p            entity.EriusScenario
-		wantResource vars.ResourceType
-		wantAction   vars.ActionType
-		wantID       string
-	}{
-		{
-			name:         "draft",
-			p:            entity.EriusScenario{Status: db.StatusDraft, VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-			wantResource: vars.PipelineVersion,
-			wantAction:   vars.Own,
-			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
-		},
-		{
-			name:         "on approve",
-			p:            entity.EriusScenario{Status: db.StatusOnApprove, VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-			wantResource: vars.PipelineVersion,
-			wantAction:   vars.Own,
-			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
-		},
-		{
-			name:         "approved",
-			p:            entity.EriusScenario{Status: db.StatusApproved, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-			wantResource: vars.Pipeline,
-			wantAction:   vars.Approve,
-			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
-		},
-		{
-			name:         "rejected",
-			p:            entity.EriusScenario{Status: db.StatusRejected, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-			wantResource: vars.Pipeline,
-			wantAction:   vars.Approve,
-			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			gotResource, gotAction, gotID := authUpdateParametersByPipelineStatus(&tt.p)
-
-			assert.Equal(t, tt.wantResource, gotResource, "%v", tt.name)
-			assert.Equal(t, tt.wantAction, gotAction, "%v", tt.name)
-			assert.Equal(t, tt.wantID, gotID, "%v", tt.name)
-		})
-	}
-}
-
-func Test_authDeleteParametersByPipelineStatus(t *testing.T) {
-	tests := []struct {
-		name         string
-		p            entity.EriusScenario
-		wantResource vars.ResourceType
-		wantAction   vars.ActionType
-		wantID       string
-	}{
-		{
-			name:         "draft",
-			p:            entity.EriusScenario{Status: db.StatusDraft, VersionID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-			wantResource: vars.PipelineVersion,
-			wantAction:   vars.Own,
-			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
-		},
-		{
-			name:         "on approve",
-			p:            entity.EriusScenario{Status: db.StatusOnApprove, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-			wantResource: vars.Pipeline,
-			wantAction:   vars.Delete,
-			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
-		},
-		{
-			name:         "approved",
-			p:            entity.EriusScenario{Status: db.StatusApproved, ID: newUUID("42bdafca-dce8-4c3d-84c6-4971854d1cf0")},
-			wantResource: vars.Pipeline,
-			wantAction:   vars.Delete,
-			wantID:       "42bdafca-dce8-4c3d-84c6-4971854d1cf0",
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			gotResource, gotAction, gotID := authDeleteParametersByPipelineStatus(&tt.p)
-
-			assert.Equal(t, tt.wantResource, gotResource, "%v", tt.name)
-			assert.Equal(t, tt.wantAction, gotAction, "%v", tt.name)
-			assert.Equal(t, tt.wantID, gotID, "%v", tt.name)
-		})
-	}
-}
-
 func Test_scenarioUsage(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -570,7 +344,6 @@ func Test_execVersion(t *testing.T) {
 		ScriptManager:        "",
 		Remedy:               "",
 		FaaS:                 "",
-		AuthClient:           nil,
 		SchedulerClient:      nil,
 		NetworkMonitorClient: nil,
 		HTTPClient:           nil,
@@ -594,7 +367,13 @@ func Test_execVersion(t *testing.T) {
 
 		userName := "242"
 
-		if _, _, err := pipeliner.execVersionInternal(ctx, reqId, &p, vars, true, userName); err != nil {
+		if _, _, err := pipeliner.execVersionInternal(ctx, &execVersionInternalParams{
+			reqID:         reqId,
+			p:             &p,
+			vars:          vars,
+			syncExecution: true,
+			userName:      userName,
+		}); err != nil {
 			assert.NoError(t, err)
 		}
 	})

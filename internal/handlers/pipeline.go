@@ -3,6 +3,10 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -11,9 +15,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"go.opencensus.io/trace"
-	"io/ioutil"
-	"net/http"
-	"strconv"
 )
 
 // @Summary Create pipeline
@@ -122,6 +123,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/pipeline/{pipelineID} [get]
+//nolint:dupl //its different
 func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
 	defer s.End()
@@ -484,46 +486,6 @@ func (ae *APIEnv) tags(ctx context.Context) ([]entity.EriusTagInfo, *PipelinerEr
 	}
 
 	return tags, nil
-}
-
-func filterVersionsByID(scenarios []entity.EriusScenarioInfo, isAll bool, allowedKeys map[string]struct{}) []entity.EriusScenarioInfo {
-	if isAll {
-		return scenarios
-	}
-
-	if len(allowedKeys) == 0 {
-		return []entity.EriusScenarioInfo{}
-	}
-
-	res := make([]entity.EriusScenarioInfo, 0)
-
-	for i := range scenarios {
-		if _, ok := allowedKeys[scenarios[i].VersionID.String()]; ok {
-			res = append(res, scenarios[i])
-		}
-	}
-
-	return res
-}
-
-func filterPipelinesByID(scenarios []entity.EriusScenarioInfo, isAll bool, allowedKeys map[string]struct{}) []entity.EriusScenarioInfo {
-	if isAll {
-		return scenarios
-	}
-
-	if len(allowedKeys) == 0 {
-		return []entity.EriusScenarioInfo{}
-	}
-
-	res := make([]entity.EriusScenarioInfo, 0)
-
-	for i := range scenarios {
-		if _, ok := allowedKeys[scenarios[i].ID.String()]; ok {
-			res = append(res, scenarios[i])
-		}
-	}
-
-	return res
 }
 
 func scenarioUsage(ctx context.Context, pipelineStorager db.PipelineStorager, id uuid.UUID) ([]entity.EriusScenario, error) {

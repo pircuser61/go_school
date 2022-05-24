@@ -242,6 +242,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /pipelines/version/{versionID} [get]
+//nolint:dupl //its different
 func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version")
 	defer s.End()
@@ -456,7 +457,15 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		return
 	}
 
-	ep, e, err := ae.execVersionInternal(ctx, reqID, p, pipelineVars, withStop, user.Username)
+	arg := &execVersionInternalParams{
+		reqID:         reqID,
+		p:             p,
+		vars:          pipelineVars,
+		syncExecution: withStop,
+		userName:      user.Username,
+	}
+
+	ep, e, err := ae.execVersionInternal(ctx, arg)
 	if err != nil {
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -469,23 +478,30 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	})
 }
 
-func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *entity.EriusScenario, vars map[string]interface{}, syncExecution bool, userName string) (*pipeline.ExecutablePipeline, Err, error) {
+type execVersionInternalParams struct {
+	reqID         string
+	p             *entity.EriusScenario
+	vars          map[string]interface{}
+	syncExecution bool
+	userName      string
+}
 
+func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInternalParams) (*pipeline.ExecutablePipeline, Err, error) {
 	log := logger.GetLogger(ctx)
 
-	ctx = context.WithValue(ctx, XRequestIDHeader, reqID)
+	ctx = context.WithValue(ctx, XRequestIDHeader, p.reqID)
 
 	ep := pipeline.ExecutablePipeline{}
-	ep.PipelineID = p.ID
-	ep.VersionID = p.VersionID
+	ep.PipelineID = p.p.ID
+	ep.VersionID = p.p.VersionID
 	ep.Storage = ae.DB
-	ep.EntryPoint = p.Pipeline.Entrypoint
+	ep.EntryPoint = p.p.Pipeline.Entrypoint
 	ep.FaaS = ae.FaaS
-	ep.PipelineModel = p
+	ep.PipelineModel = p.p
 	ep.HTTPClient = ae.HTTPClient
 	ep.Remedy = ae.Remedy
 
-	err := ep.CreateBlocks(ctx, p.Pipeline.Blocks)
+	err := ep.CreateBlocks(ctx, p.p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
 		return &ep, e, err
@@ -498,7 +514,7 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *enti
 		return &ep, e, err
 	}
 
-	pipelineVars := vars
+	pipelineVars := p.vars
 
 	parameters, err := json.Marshal(pipelineVars)
 	if err != nil {
@@ -506,17 +522,17 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *enti
 		return &ep, e, err
 	}
 
-	err = ep.CreateTask(ctx, userName, false, parameters)
+	err = ep.CreateTask(ctx, p.userName, false, parameters)
 	if err != nil {
 		e := PipelineRunError
 		return &ep, e, err
 	}
 
 	//nolint:nestif //its simple
-	if syncExecution {
+	if p.syncExecution {
 		ep.Output = make(map[string]string)
 
-		for _, item := range p.Output {
+		for _, item := range p.p.Output {
 			ep.Output[item.Global] = ""
 		}
 
@@ -525,20 +541,15 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *enti
 			vs.AddError(err)
 			return nil, PipelineExecutionError, err
 		}
-
 	} else {
 		go func() {
 			routineCtx := context.WithValue(context.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-
 			routineCtx = logger.WithLogger(routineCtx, log)
-
 			err = ep.Run(routineCtx, vs)
 			if err != nil {
 				vs.AddError(err)
 			}
 		}()
-
 	}
-
 	return &ep, 0, nil
 }
