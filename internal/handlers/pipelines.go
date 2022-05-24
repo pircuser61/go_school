@@ -15,9 +15,7 @@ import (
 )
 
 const (
-	statusRunned   = "runned"
-	statusFinished = "finished"
-	statusError    = "error"
+	statusRunned = "runned"
 )
 
 type RunContext struct {
