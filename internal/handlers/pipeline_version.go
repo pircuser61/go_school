@@ -6,14 +6,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-	"gitlab.services.mts.ru/erius/admin/pkg/vars"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"go.opencensus.io/trace"
 	"io/ioutil"
 	"net/http"
@@ -73,29 +71,12 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	p.VersionID = uuid.New()
 
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Create)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	user, err := auth.UserFromContext(ctx)
+	user, err := GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.WithError(err).Error("user failed")
 	}
 	//nolint:govet //it doesn't shadow
-	canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, user.UserName())
+	canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, user.Username)
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
@@ -112,7 +93,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = ae.DB.CreateVersion(ctx, &p, user.UserName(), b)
+	err = ae.DB.CreateVersion(ctx, &p, user.Username, b)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
@@ -124,18 +105,6 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
 	if err != nil {
 		e := PipelineReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if err = ae.AuthClient.Notice(ctx, &auth.Notice{
-		NoticeType:   vars.CreateNotice,
-		ResourceType: vars.PipelineVersion,
-		ResourceID:   created.VersionID.String(),
-	}); err != nil {
-		e := AuthServiceError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -191,24 +160,6 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Run)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	// проверяем права на запуск пайплайна
-	if !(grants.Allow && grants.Contains(p.ID.String())) {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	ae.execVersion(ctx, w, req, p, false)
 }
 
@@ -249,25 +200,6 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resource, action, id := authDeleteParametersByPipelineStatus(p)
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, resource, action)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !(grants.Allow && grants.Contains(id)) {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	if p.Status == db.StatusDraft {
 		err = ae.DeleteDraftPipeline(ctx, w, p)
 		if err != nil {
@@ -282,18 +214,6 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	err = ae.DB.DeleteVersion(ctx, versionID)
 	if err != nil {
 		e := PipelineDeleteError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if err = ae.AuthClient.Notice(ctx, &auth.Notice{
-		NoticeType:   vars.DeleteNotice,
-		ResourceType: vars.PipelineVersion,
-		ResourceID:   versionID.String(),
-	}); err != nil {
-		e := AuthServiceError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -357,24 +277,6 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 
 	p.Tags = tags
 
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	// проверяем доступ к сценарию запрошенной версии
-	if !(grants.Allow && grants.Contains(p.ID.String())) {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	err = sendResponse(w, http.StatusOK, p)
 	if err != nil {
 		e := UnknownError
@@ -426,25 +328,6 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resource, action, id := authUpdateParametersByPipelineStatus(&p)
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, resource, action)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !(grants.Allow && grants.Contains(id)) {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
 	if err != nil {
 		e := UnknownError
@@ -485,13 +368,13 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := auth.UserFromContext(ctx)
+	user, err := GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.Error(err.Error())
 	}
 
 	if p.Status == db.StatusApproved {
-		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, user.UserName())
+		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, user.Username)
 		if err != nil {
 			e := ApproveError
 			log.Error(e.errorMessage(err))
@@ -502,7 +385,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if p.Status == db.StatusRejected {
-		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, user.UserName())
+		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, user.Username)
 		if err != nil {
 			e := ApproveError
 			log.Error(e.errorMessage(err))
@@ -565,7 +448,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	log.Info("--- running pipeline:", p.Name)
 
-	user, err := auth.UserFromContext(ctx)
+	user, err := GetUserInfoFromCtx(ctx)
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
@@ -573,7 +456,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		return
 	}
 
-	ep, e, err := ae.execVersionInternal(ctx, reqID, p, pipelineVars, withStop, user.UserName())
+	ep, e, err := ae.execVersionInternal(ctx, reqID, p, pipelineVars, withStop, user.Username)
 	if err != nil {
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -658,38 +541,4 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, reqID string, p *enti
 	}
 
 	return &ep, 0, nil
-}
-
-func authUpdateParametersByPipelineStatus(p *entity.EriusScenario) (resource vars.ResourceType, action vars.ActionType, id string) {
-	switch p.Status {
-	case db.StatusDraft, db.StatusOnApprove:
-		resource = vars.PipelineVersion
-		action = vars.Own
-		id = p.VersionID.String()
-	case db.StatusApproved, db.StatusRejected:
-		resource = vars.Pipeline
-		action = vars.Approve
-		id = p.ID.String() // pipeline id
-	default:
-		resource = vars.Pipeline
-		action = vars.Update
-		id = p.ID.String() // pipeline id
-	}
-
-	return resource, action, id
-}
-
-func authDeleteParametersByPipelineStatus(p *entity.EriusScenario) (resource vars.ResourceType, action vars.ActionType, id string) {
-	switch p.Status {
-	case db.StatusDraft:
-		resource = vars.PipelineVersion
-		action = vars.Own
-		id = p.VersionID.String()
-	default:
-		resource = vars.Pipeline
-		action = vars.Delete
-		id = p.ID.String() // pipeline id
-	}
-
-	return resource, action, id
 }

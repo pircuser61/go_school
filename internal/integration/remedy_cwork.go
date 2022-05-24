@@ -10,8 +10,8 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type RemedySendCreateWork struct {

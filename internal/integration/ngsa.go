@@ -9,10 +9,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type NGSASend struct {
@@ -78,7 +78,6 @@ func waitStatus(monChan <-chan bool) {
 	_ = metrics.Pusher.Add()
 }
 
-//nolint:gocyclo,nestif //need bigger cyclomatic, its necessary
 func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	ctx, s := trace.StartSpan(ctx, "run_ngsa_send")
 	defer s.End()

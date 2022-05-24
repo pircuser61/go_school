@@ -2,8 +2,8 @@ package pipeline
 
 import (
 	"context"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"go.opencensus.io/trace"
 )
 
@@ -56,7 +56,7 @@ func (gb *GoTestBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore
 	return nil
 }
 
-func (gb *GoTestBlock) Next(runCtx *store.VariableStore) (string, bool) {
+func (gb *GoTestBlock) Next(_ *store.VariableStore) (string, bool) {
 	return gb.NextStep, true
 }
 

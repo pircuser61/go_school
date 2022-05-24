@@ -7,7 +7,7 @@ import (
 
 	"go.opencensus.io/plugin/ochttp"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 )
 
 func NewProxyFunc(proxyAddr string) func(*http.Request) (*url.URL, error) {

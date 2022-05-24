@@ -22,7 +22,6 @@ import (
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /tasks/{taskID} [get]
-//nolint:dupl //diff logic
 func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
 	defer s.End()

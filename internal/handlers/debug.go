@@ -14,12 +14,9 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-	"gitlab.services.mts.ru/erius/admin/pkg/vars"
-
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/pipeline"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 const (
@@ -181,29 +178,6 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// права на создание дебаг сессии проверяем относительно запуска сценария
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Run)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow && grants.Contains(version.ID.String()) {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		log.Error("user failed: ", err.Error())
-	}
-
 	parameters, err := json.Marshal(d.Parameters)
 	if err != nil {
 		e := CreateDebugInputsError
@@ -213,7 +187,7 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := ae.DB.CreateTask(ctx, uuid.New(), version.VersionID, user.UserName(), true, parameters)
+	task, err := ae.DB.CreateTask(ctx, uuid.New(), version.VersionID, "", true, parameters)
 	if err != nil {
 		e := CreateWorkError
 		log.Error(e.errorMessage(err))
@@ -405,7 +379,6 @@ func (ae *APIEnv) runDebugTask(
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /debug/{taskID} [get]
-// nolint:dupl //its unique
 func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_debug_task")
 	defer s.End()
@@ -503,7 +476,6 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /tasks/last-by-version/{versionID} [get]
-// nolint:dupl //its unique
 func (ae *APIEnv) LastVersionDebugTask(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_last_version_tasks")
 	defer s.End()
@@ -521,18 +493,7 @@ func (ae *APIEnv) LastVersionDebugTask(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	user, err := auth.UserFromContext(ctx)
-	if err != nil {
-		if err != nil {
-			e := NoUserInContextError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
-	}
-
-	task, err := ae.DB.GetLastDebugTask(ctx, id, user.UserName())
+	task, err := ae.DB.GetLastDebugTask(ctx, id, "")
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))

@@ -4,8 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/erius/admin/pkg/vars"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"go.opencensus.io/trace"
 	"net/http"
 )
@@ -33,23 +32,6 @@ func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
 	pID, err := uuid.Parse(pipelineID)
 	if err != nil {
 		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Read)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow {
-		e := UnauthError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -107,33 +89,6 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	tID, err := uuid.Parse(tagID)
 	if err != nil {
 		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	id := pID.String()
-
-	if !(grants.Allow && grants.Contains(id)) {
-		e := UnauthError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -207,33 +162,6 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 	tID, err := uuid.Parse(tagID)
 	if err != nil {
 		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	grants, err := ae.AuthClient.CheckGrants(ctx, vars.Pipeline, vars.Update)
-	if err != nil {
-		e := AuthServiceError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !grants.Allow {
-		e := UnauthError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	id := pID.String()
-
-	if !(grants.Allow && grants.Contains(id)) {
-		e := UnauthError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 

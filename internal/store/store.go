@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"sync"
 
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 var (

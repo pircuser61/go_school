@@ -9,7 +9,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 const (

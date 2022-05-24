@@ -11,7 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"gitlab.services.mts.ru/erius/pipeliner/statistic"
+	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/trace"
@@ -23,20 +23,20 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
-	"gitlab.services.mts.ru/erius/pipeliner/cmd/pipeliner/docs"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/configs"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/db"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/handlers"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/httpclient"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/cmd/pipeliner/docs"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
-const serviceName = "erius.pipeliner"
+const serviceName = "jocasta.pipeliner"
 
 // @title Pipeliner API
 // @version 0.1
@@ -69,14 +69,6 @@ func main() {
 	}
 
 	httpClient := httpclient.HTTPClient(cfg.HTTPClientConfig)
-	auth.InjectTransport(httpClient)
-
-	authClient, err := auth.NewClient(cfg.AuthBaseURL.URL, httpClient)
-	if err != nil {
-		log.WithError(err).Error("can't create auth client")
-
-		return
-	}
 
 	schedulerClient, err := scheduler.NewClient(cfg.SchedulerBaseURL.URL, httpClient)
 	if err != nil {
@@ -88,6 +80,13 @@ func main() {
 	networkMonitoringClient, err := netmon.NewClient(cfg.NetworkMonitorBaseURL.URL, httpClient)
 	if err != nil {
 		log.WithError(err).Error("can't create network moninoring client")
+
+		return
+	}
+
+	ssoService, err := sso.NewService(cfg.SSO, httpClient)
+	if err != nil {
+		log.WithError(err).Error("can't create sso service")
 
 		return
 	}
@@ -104,7 +103,6 @@ func main() {
 		ScriptManager:        cfg.ScriptManager,
 		Remedy:               cfg.Remedy,
 		FaaS:                 cfg.FaaS,
-		AuthClient:           authClient,
 		SchedulerClient:      schedulerClient,
 		NetworkMonitorClient: networkMonitoringClient,
 		HTTPClient:           httpClient,
@@ -132,7 +130,7 @@ func main() {
 	initSwagger(cfg)
 
 	server := http.Server{
-		Handler: registerRouter(ctx, cfg, &pipeliner),
+		Handler: registerRouter(ctx, cfg, &pipeliner, ssoService),
 		Addr:    cfg.ServeAddr,
 	}
 
@@ -166,19 +164,19 @@ func main() {
 	log.WithField("signal", stop).Info("stopping")
 }
 
-func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv) *chi.Mux {
+func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv, ssoService *sso.Service) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
 	mux.Use(handlers.LoggerMiddleware(logger.GetLogger(ctx)))
 	mux.Use(observability.MiddlewareChi())
 	mux.Use(handlers.RequestIDMiddleware)
 	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
+	mux.Use(handlers.WithUserInfo(ssoService, logger.GetLogger(ctx)))
 
 	const baseURL = "/api/pipeliner/v1"
 
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
-			r.Use(auth.UserMiddleware(pipeliner.AuthClient))
 			r.Use(handlers.StatisticMiddleware(pipeliner.Statistic))
 
 			r.Get("/pipelines/", pipeliner.ListPipelines)

@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/erius/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 var errMocked = errors.New("mocked")
