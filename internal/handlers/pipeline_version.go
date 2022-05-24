@@ -3,8 +3,14 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
@@ -12,9 +18,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-	"go.opencensus.io/trace"
-	"io/ioutil"
-	"net/http"
 )
 
 // @Summary Create pipeline version

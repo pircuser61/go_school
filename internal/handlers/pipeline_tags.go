@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
+
 	"github.com/google/uuid"
+
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"go.opencensus.io/trace"
-	"net/http"
 )
 
 // GetPipelineTags

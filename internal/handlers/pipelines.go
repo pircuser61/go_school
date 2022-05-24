@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
