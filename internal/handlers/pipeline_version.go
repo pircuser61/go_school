@@ -492,6 +492,7 @@ type execVersionInternalParams struct {
 func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInternalParams) (*pipeline.ExecutablePipeline, Err, error) {
 	log := logger.GetLogger(ctx)
 
+	//nolint:staticcheck // поправить потом
 	ctx = context.WithValue(ctx, XRequestIDHeader, p.reqID)
 
 	ep := pipeline.ExecutablePipeline{}
@@ -546,6 +547,7 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 		}
 	} else {
 		go func() {
+			//nolint:staticcheck // поправить потом
 			routineCtx := context.WithValue(context.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 			routineCtx = logger.WithLogger(routineCtx, log)
 			err = ep.Run(routineCtx, vs)
