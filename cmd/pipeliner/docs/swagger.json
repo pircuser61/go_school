@@ -3,12 +3,29 @@
     "info": {
         "title": "Pipeliner API",
         "contact": {},
-        "license": {},
         "version": "0.1"
     },
     "host": "localhost:8181",
     "basePath": "/api/pipeliner/v1",
     "paths": {
+        "/api/pipeliner/v1/metrics": {
+            "get": {
+                "description": "Метрики",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "metrics",
+                "operationId": "metrics",
+                "responses": {
+                    "200": {
+                        "description": "metrics content"
+                    }
+                }
+            }
+        },
         "/debug/": {
             "post": {
                 "description": "Создать сессию отладки",
@@ -1746,7 +1763,6 @@
                     "example": "run,error,finished,created"
                 },
                 "task": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.EriusTask"
                 }
             }
@@ -2075,8 +2091,10 @@
                     "type": "string"
                 },
                 "steps": {
-                    "type": "object",
-                    "$ref": "#/definitions/entity.TaskSteps"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Step"
+                    }
                 },
                 "version_id": {
                     "type": "string"
@@ -2184,12 +2202,6 @@
                 "time": {
                     "type": "string"
                 }
-            }
-        },
-        "entity.TaskSteps": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/entity.Step"
             }
         },
         "entity.UsageResponse": {
