@@ -1,6 +1,8 @@
 serve_addr: ":8181"
 timeout: "30s"
 script_manager: "manager"
+scheduler: "http://scheduler"
+network_monitor: "http://network-monitor/api/netmon/v1/"
 faas: "https://openfaas.dev.autobp.mts.ru/"
 auth: 'http://admin.erius-develop/api/admin/v1/'
 
@@ -8,7 +10,7 @@ database:
   kind: postgres
   host: localhost
   port: 5433
-  user: erius
+  user: jocasta
   pass: "4L7Npbjee4s2XvTe"
   dbname: pipeliner
   max_connections: 10
