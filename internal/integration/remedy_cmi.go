@@ -86,6 +86,11 @@ func NewRemedySendCreateMI(remedyPath string, httpClient *http.Client) RemedySen
 }
 
 //nolint:gocritic //impossible to pass pointer
+func (rs RemedySendCreateMI) GetType() string {
+	return BlockIntegrationRemedyCreateMi
+}
+
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateMI) Inputs() map[string]string {
 	return rs.Input
 }

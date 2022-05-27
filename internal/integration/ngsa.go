@@ -51,6 +51,10 @@ func NewNGSASendIntegration(database db.Database) NGSASend {
 	}
 }
 
+func (ns NGSASend) GetType() string {
+	return BlockIntegrationNGSASend
+}
+
 func (ns NGSASend) Inputs() map[string]string {
 	return ns.Input
 }

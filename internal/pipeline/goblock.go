@@ -3,8 +3,9 @@ package pipeline
 import (
 	"context"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type GoTestBlock struct {
@@ -13,6 +14,10 @@ type GoTestBlock struct {
 	Input    map[string]string
 	Output   map[string]string
 	NextStep string
+}
+
+func (gb *GoTestBlock) GetType() string {
+	return BlockGoTest
 }
 
 func (gb *GoTestBlock) Inputs() map[string]string {
