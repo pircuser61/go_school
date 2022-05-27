@@ -20,6 +20,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+var (
+	NullUuid = [16]byte{}
+)
+
 type PGConnection struct {
 	Pool *pgxpool.Pool
 }
@@ -1418,14 +1422,13 @@ func (db *PGConnection) UpdateDraft(c context.Context,
 	return nil
 }
 
-func (db *PGConnection) SaveStepContext(c context.Context,
-	workID uuid.UUID, stage string, data []byte, breakPoints []string, hasError bool) error {
-	c, span := trace.StartSpan(c, "pg_save_step_context")
+func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(ctx)
 	if err != nil {
-		return err
+		return NullUuid, err
 	}
 
 	defer conn.Release()
@@ -1438,11 +1441,13 @@ func (db *PGConnection) SaveStepContext(c context.Context,
 	INSERT INTO pipeliner.variable_storage (
 		id, 
 		work_id, 
+		step_type,
 		step_name, 
 		content, 
 		time, 
 		break_points, 
-		has_error
+		has_error,
+		is_finished
 	)
 	VALUES (
 		$1, 
@@ -1451,11 +1456,65 @@ func (db *PGConnection) SaveStepContext(c context.Context,
 		$4, 
 		$5, 
 		$6, 
-		$7
+		$7,
+	    $8,
+	    $9
 	)
 `
 
-	_, err = conn.Exec(c, q, id, workID, stage, data, timestamp, breakPoints, hasError)
+	_, err = conn.Exec(
+		ctx,
+		q,
+		id,
+		dto.WorkID,
+		dto.StepType,
+		dto.StepName,
+		dto.Content,
+		timestamp,
+		dto.BreakPoints,
+		dto.HasError,
+		dto.IsFinished,
+	)
+	if err != nil {
+		return NullUuid, err
+	}
+
+	return id, nil
+}
+
+func (db *PGConnection) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) error {
+	c, span := trace.StartSpan(ctx, "pg_update_step_context")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	UPDATE pipeliner.variable_storage
+	SET
+	    content = $2,
+	    break_points = $3,
+		has_error = $4,
+	    is_finished = $5
+	WHERE
+		id = $1
+`
+
+	_, err = conn.Exec(
+		c,
+		q,
+		dto.Id,
+		dto.Content,
+		dto.BreakPoints,
+		dto.HasError,
+		dto.IsFinished,
+	)
 	if err != nil {
 		return err
 	}
