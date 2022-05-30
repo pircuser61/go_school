@@ -32,7 +32,7 @@ import (
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /pipelines/ [post]
+// @Router /pipelines [post]
 //nolint:dupl //diff logic
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
@@ -182,7 +182,7 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 // @success 200 {object} httpResponse{data=entity.EriusScenarioList}
 // @success 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /pipelines/ [get]
+// @Router /pipelines [get]
 func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_pipelines")
 	defer s.End()
