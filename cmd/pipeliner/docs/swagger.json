@@ -1230,6 +1230,93 @@
                 }
             }
         },
+        "/tasks": {
+            "get": {
+                "description": "Получить задачи",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline",
+                    "tasks"
+                ],
+                "summary": "Get Tasks",
+                "operationId": "get-tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pipeline name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Task IDs",
+                        "name": "taskIDs",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created after",
+                        "name": "created[start]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created before",
+                        "name": "created[end]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/last-by-version/{versionID}": {
             "get": {
                 "description": "Получить последнюю debug-задачу версии сценария",

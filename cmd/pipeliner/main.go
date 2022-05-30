@@ -35,6 +35,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
@@ -94,6 +95,13 @@ func main() {
 		return
 	}
 
+	peopleService, err := people.NewService(cfg.People, ssoService)
+	if err != nil {
+		log.WithError(err).Error("can't create people service")
+
+		return
+	}
+
 	stat, err := statistic.InitStatistic()
 	if err != nil {
 		log.WithError(err).Error("can't init statistic")
@@ -133,7 +141,7 @@ func main() {
 	initSwagger(cfg)
 
 	server := http.Server{
-		Handler: registerRouter(ctx, cfg, &pipeliner, ssoService),
+		Handler: registerRouter(ctx, cfg, &pipeliner, ssoService, peopleService),
 		Addr:    cfg.ServeAddr,
 	}
 
@@ -167,7 +175,8 @@ func main() {
 	log.WithField("signal", stop).Info("stopping")
 }
 
-func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv, ssoService *sso.Service) *chi.Mux {
+func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv, ssoService *sso.Service,
+	peopleService *people.Service) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
 	mux.Use(handlers.LoggerMiddleware(logger.GetLogger(ctx)))
@@ -184,6 +193,7 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
 			r.Use(handlers.WithUserInfo(ssoService, logger.GetLogger(ctx)))
+			r.Use(handlers.WithAsOtherUserInfo(peopleService, logger.GetLogger(ctx)))
 			r.Use(handlers.StatisticMiddleware(pipeliner.Statistic))
 
 			r.Get("/pipelines", pipeliner.ListPipelines)
@@ -214,6 +224,8 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 
 			r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
 			r.Post("/run/version/{versionID}", pipeliner.RunVersion)
+
+			r.Get("/tasks", pipeliner.GetTasks)
 
 			r.Route("/tasks/", func(r chi.Router) {
 				r.Get("/{taskID}", pipeliner.GetTask)

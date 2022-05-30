@@ -69,6 +69,7 @@ const (
 	RunDebugInvalidStatusError
 	NetworkMonitorClientFailed
 	GetUserinfoErr
+	BadFiltersError
 )
 
 //nolint:dupl //its not duplicate
@@ -124,6 +125,7 @@ var errorText = map[Err]string{
 	RunDebugTaskAlreadyError:    "can't start debug task with error status",
 	RunDebugInvalidStatusError:  "can't start debug task with this status",
 	GetUserinfoErr:              "can't get userinfo",
+	BadFiltersError:             "can't parse filters",
 }
 
 // JOKE.
@@ -180,12 +182,14 @@ var errorDescription = map[Err]string{
 	RunDebugTaskAlreadyError:    "Невозможно запустить отладочный сценарий с статусом error",
 	RunDebugInvalidStatusError:  "Невозможно запустить отладочный сценарий с таким статусом",
 	GetUserinfoErr:              "Не удалось получить информацию о пользователе",
+	BadFiltersError:             "Получены некорректные значения фильтров",
 }
 
 var errorStatus = map[Err]int{
 	Teapot:           http.StatusTeapot,
 	UnauthError:      http.StatusUnauthorized,
 	UUIDParsingError: http.StatusBadRequest,
+	BadFiltersError:  http.StatusBadRequest,
 	GetUserinfoErr:   http.StatusUnauthorized,
 }
 

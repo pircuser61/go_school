@@ -26,15 +26,23 @@ type EriusTasks struct {
 	Tasks []EriusTask `json:"tasks"`
 }
 
+type EriusTasksPage struct {
+	Tasks []EriusTask `json:"tasks"`
+	Total int         `json:"total"`
+}
+
 type EriusTask struct {
-	ID          uuid.UUID              `json:"id"`
-	VersionID   uuid.UUID              `json:"version_id"`
-	StartedAt   time.Time              `json:"started_at"`
-	Status      string                 `json:"status"`
-	Author      string                 `json:"author"`
-	IsDebugMode bool                   `json:"debug"`
-	Parameters  map[string]interface{} `json:"parameters"`
-	Steps       TaskSteps              `json:"steps"`
+	ID            uuid.UUID              `json:"id"`
+	VersionID     uuid.UUID              `json:"version_id"`
+	StartedAt     time.Time              `json:"started_at"`
+	LastChangedAt time.Time              `json:"last_changed_at"`
+	Name          string                 `json:"name"`
+	Status        string                 `json:"status"`
+	Author        string                 `json:"author"`
+	IsDebugMode   bool                   `json:"debug"`
+	Parameters    map[string]interface{} `json:"parameters"`
+	Steps         TaskSteps              `json:"steps"`
+	WorkNumber    string                 `json:"work_number"`
 }
 
 func (et *EriusTask) IsRun() bool {
@@ -63,6 +71,7 @@ type GetTaskParams struct {
 	Order   *string     `json:"order"`
 	Limit   *int        `json:"limit"`
 	Offset  *int        `json:"offset"`
+	TaskIDs *[]string   `json:"task_ids"`
 }
 
 type TimePeriod struct {
@@ -73,5 +82,4 @@ type TimePeriod struct {
 type TaskFilter struct {
 	GetTaskParams
 	CurrentUser string
-	TaskID      string
 }
