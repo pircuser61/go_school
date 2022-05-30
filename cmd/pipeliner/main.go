@@ -6,22 +6,25 @@ import (
 	"context"
 	"errors"
 	"flag"
-	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
-
 	"contrib.go.opencensus.io/exporter/jaeger"
+
 	"go.opencensus.io/trace"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
 	"github.com/prometheus/client_golang/prometheus/push"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
+
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
@@ -33,6 +36,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
+	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
 
 const serviceName = "jocasta.pipeliner"
