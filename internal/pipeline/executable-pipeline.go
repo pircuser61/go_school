@@ -27,6 +27,7 @@ type ExecutablePipeline struct {
 	VersionID     uuid.UUID
 	Storage       db.Database
 	EntryPoint    string
+	StepType      string
 	NowOnPoint    string
 	VarStore      *store.VariableStore
 	Blocks        map[string]Runner
@@ -39,6 +40,10 @@ type ExecutablePipeline struct {
 	Remedy        string
 
 	FaaS string
+}
+
+func (ep *ExecutablePipeline) GetType() string {
+	return BlockScenario
 }
 
 func (ep *ExecutablePipeline) Inputs() map[string]string {
@@ -68,36 +73,40 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	return ep.DebugRun(ctx, runCtx)
 }
 
-func (ep *ExecutablePipeline) saveStep(ctx context.Context, hasError bool) error {
+func (ep *ExecutablePipeline) createStep(ctx context.Context, hasError, isFinished bool) (uuid.UUID, error) {
 	storageData, errSerialize := json.Marshal(ep.VarStore)
 	if errSerialize != nil {
-		return errSerialize
+		return db.NullUuid, errSerialize
 	}
 
 	breakPoints := ep.VarStore.StopPoints.BreakPointsList()
 
-	errSaveStep := ep.Storage.SaveStepContext(ctx, ep.TaskID, ep.NowOnPoint, storageData, breakPoints, hasError)
-	if errSaveStep != nil {
-		return errSaveStep
-	}
-
-	return nil
+	return ep.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
+		WorkID:      ep.TaskID,
+		StepType:    ep.StepType,
+		StepName:    ep.NowOnPoint,
+		Content:     storageData,
+		BreakPoints: breakPoints,
+		HasError:    hasError,
+		IsFinished:  isFinished,
+	})
 }
 
-func (ep *ExecutablePipeline) finallyError(ctx context.Context, err error) error {
-	ep.VarStore.AddError(err)
-
-	errChange := ep.changeTaskStatus(ctx, db.RunStatusError)
-	if errChange != nil {
-		return errChange
+func (ep *ExecutablePipeline) updateStep(ctx context.Context, id uuid.UUID, hasError, isFinished bool) error {
+	storageData, err := json.Marshal(ep.VarStore)
+	if err != nil {
+		return err
 	}
 
-	errSaveStep := ep.saveStep(ctx, true)
-	if errSaveStep != nil {
-		return errSaveStep
-	}
+	breakPoints := ep.VarStore.StopPoints.BreakPointsList()
 
-	return err
+	return ep.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          id,
+		Content:     storageData,
+		BreakPoints: breakPoints,
+		HasError:    hasError,
+		IsFinished:  isFinished,
+	})
 }
 
 func (ep *ExecutablePipeline) changeTaskStatus(ctx context.Context, taskStatus int) error {
@@ -133,9 +142,18 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		log.Info("executing", ep.NowOnPoint)
 
 		now, ok := ep.Blocks[ep.NowOnPoint]
-		if !ok {
-			return ep.finallyError(ctx, errUnknownBlock)
+		if !ok || now == nil {
+			_, err := ep.createStep(ctx, true, true)
+			if err != nil {
+				return err
+			}
+
+			return errUnknownBlock
 		}
+		ep.StepType = now.GetType()
+
+		var id uuid.UUID
+		var err error
 
 		if now.IsScenario() {
 			ep.VarStore.AddStep(ep.NowOnPoint)
@@ -148,7 +166,12 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				nStore.SetValue(local, val)
 			}
 
-			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
+			id, err = ep.createStep(ctx, false, false)
+			if err != nil {
+				return err
+			}
+
+			err = ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
 			if err != nil {
 				key := ep.NowOnPoint + KeyDelimiter + ErrorKey
 				nStore.SetValue(key, err.Error())
@@ -160,23 +183,31 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				ep.VarStore.SetValue(outer, val)
 			}
 		} else {
-			err := ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
+			id, err = ep.createStep(ctx, false, false)
+			if err != nil {
+				return err
+			}
+
+			err = ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
 			if err != nil {
 				key := ep.NowOnPoint + KeyDelimiter + ErrorKey
 				ep.VarStore.SetValue(key, err.Error())
 			}
 		}
 
-		_, hasError := runCtx.GetValue(ep.NowOnPoint + KeyDelimiter + ErrorKey)
-
-		errSaveStep := ep.saveStep(ctx, hasError)
-		if errSaveStep != nil {
-			return ep.finallyError(ctx, errSaveStep)
+		updErr := ep.updateStep(ctx, id, err != nil, true)
+		if updErr != nil {
+			return updErr
 		}
 
 		ep.NowOnPoint, ok = ep.Blocks[ep.NowOnPoint].Next(ep.VarStore)
 		if !ok {
-			return ep.finallyError(ctx, ErrCantGetNextStep)
+			updStepErr := ep.updateStep(ctx, id, true, true)
+			if updStepErr != nil {
+				return updStepErr
+			}
+
+			return ErrCantGetNextStep
 		}
 
 		if runCtx.StopPoints.IsStopPoint(ep.NowOnPoint) {
@@ -228,6 +259,7 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 		case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 			fb := FunctionBlock{
 				Name:           bn,
+				Type:           block.BlockType,
 				FunctionName:   block.Title,
 				FunctionInput:  make(map[string]string),
 				FunctionOutput: make(map[string]string),

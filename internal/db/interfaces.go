@@ -27,6 +27,24 @@ type TaskStorager interface {
 	GetLastDebugTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error)
 }
 
+type SaveStepRequest struct {
+	WorkID      uuid.UUID
+	StepType    string
+	StepName    string
+	Content     []byte
+	BreakPoints []string
+	HasError    bool
+	IsFinished  bool
+}
+
+type UpdateStepRequest struct {
+	Id          uuid.UUID
+	Content     []byte
+	BreakPoints []string
+	HasError    bool
+	IsFinished  bool
+}
+
 type Database interface {
 	PipelineStorager
 	TaskStorager
@@ -43,8 +61,8 @@ type Database interface {
 	GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
 	UpdateDraft(c context.Context,
 		p *entity.EriusScenario, pipelineData []byte) error
-	SaveStepContext(c context.Context,
-		workID uuid.UUID, stage string, data []byte, breakPoints []string, hasError bool) error
+	SaveStepContext(c context.Context, dto *SaveStepRequest) (uuid.UUID, error)
+	UpdateStepContext(c context.Context, dto *UpdateStepRequest) error
 
 	GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error)
 	GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error)

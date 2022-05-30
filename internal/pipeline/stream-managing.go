@@ -25,6 +25,10 @@ type IF struct {
 	OnFalse       string
 }
 
+func (e *IF) GetType() string {
+	return BlockInternalIf
+}
+
 func (e *IF) Next(runCtx *store.VariableStore) (string, bool) {
 	r, err := runCtx.GetBoolWithInput(e.FunctionInput, "check")
 	if err != nil {
@@ -83,6 +87,10 @@ type StringsEqual struct {
 	Result        bool
 	OnTrue        string
 	OnFalse       string
+}
+
+func (se *StringsEqual) GetType() string {
+	return BlockInternalStringsEqual
 }
 
 func (se *StringsEqual) IsScenario() bool {
@@ -150,6 +158,10 @@ type ForState struct {
 	FunctionOutput map[string]string
 	OnTrue         string
 	OnFalse        string
+}
+
+func (e *ForState) GetType() string {
+	return BlockInternalForState
 }
 
 func (e *ForState) Inputs() map[string]string {

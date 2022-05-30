@@ -16,6 +16,10 @@ type ConnectorBlock struct {
 	NextStep       string
 }
 
+func (cb *ConnectorBlock) GetType() string {
+	return BlockInternalConnector
+}
+
 func (cb *ConnectorBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return cb.DebugRun(ctx, runCtx)
 }

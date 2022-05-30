@@ -23,11 +23,16 @@ const (
 
 type FunctionBlock struct {
 	Name           string
+	Type           string
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
 	NextStep       string
 	RunURL         string
+}
+
+func (fb *FunctionBlock) GetType() string {
+	return fb.Type
 }
 
 func (fb *FunctionBlock) Inputs() map[string]string {
