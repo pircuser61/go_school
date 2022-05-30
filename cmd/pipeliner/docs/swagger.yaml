@@ -985,6 +985,64 @@ paths:
       summary: Remove Tag
       tags:
       - tags
+  /tasks:
+    get:
+      description: Получить задачи
+      operationId: get-tasks
+      parameters:
+      - description: Pipeline name
+        in: query
+        name: name
+        type: string
+      - description: Task IDs
+        in: query
+        items:
+          type: string
+        name: taskIDs
+        type: array
+      - description: Created after
+        in: query
+        name: created[start]
+        type: string
+      - description: Created before
+        in: query
+        name: created[end]
+        type: string
+      - description: Order
+        in: query
+        name: order
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: string
+      - description: Offset
+        in: query
+        name: offset
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.httpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get Tasks
+      tags:
+      - pipeline
+      - tasks
   /tasks/{pipelineID}:
     get:
       description: Получить задачи по сценарию

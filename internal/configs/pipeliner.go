@@ -5,6 +5,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 
 	monconf "gitlab.services.mts.ru/erius/monitoring/pkg/configs"
@@ -35,6 +36,7 @@ type Pipeliner struct {
 	Push                  PushConfig         `yaml:"push"`
 	HTTPClientConfig      *HTTPClient        `yaml:"http_client_config"`
 	SSO                   sso.Config         `yaml:"sso"`
+	People                people.Config      `yaml:"people"`
 }
 
 type RunEnv struct {

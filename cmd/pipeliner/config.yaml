@@ -9,6 +9,9 @@ faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
 
+people:
+  url: "https://iga.dev.autobp.mts.ru/api/archivist/v2"
+
 database:
   kind: postgres
   host: localhost
