@@ -23,7 +23,7 @@ import (
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /tags/ [get]
+// @Router /tags [get]
 func (ae *APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tags")
 	defer s.End()
@@ -57,7 +57,7 @@ func (ae *APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /tags/ [post]
+// @Router /tags [post]
 func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_tag")
 	defer s.End()
@@ -118,7 +118,7 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /tags/ [put]
+// @Router /tags [put]
 func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_tag")
 	defer s.End()
