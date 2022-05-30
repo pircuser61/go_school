@@ -33,32 +33,32 @@ linters-settings:
 linters:
   disable-all: true
   enable:
-    - govet
-    - gocyclo
-    - dupl
+#    - govet
+#    - gocyclo
+#    - dupl
     - lll
-    - gosec
-    - dupl
-    - goconst
-    - depguard
-    - misspell
-    - goimports
-    - gocritic
-    - staticcheck
-    - deadcode
-    - errcheck
-    - unused
-    - gosimple
-    - structcheck
-    - varcheck
-    - ineffassign
-    - typecheck
-    - bodyclose
-    - unconvert
-    - unparam
-    - prealloc
-    - whitespace
-    - scopelint
+#    - gosec
+#    - dupl
+#    - goconst
+#    - depguard
+#    - misspell
+#    - goimports
+#    - gocritic
+#    - staticcheck
+#    - deadcode
+#    - errcheck
+#    - unused
+#    - gosimple
+#    - structcheck
+#    - varcheck
+#    - ineffassign
+#    - typecheck
+#    - bodyclose
+#    - unconvert
+#    - unparam
+#    - prealloc
+#    - whitespace
+#    - scopelint
 
 run:
   tests: false

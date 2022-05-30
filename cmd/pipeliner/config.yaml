@@ -8,6 +8,8 @@ script_manager: 'http://localhost:8001'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
+grpc_gw_port: ":3000"
+grpc_port: ":3001"
 
 database:
   kind: postgres
