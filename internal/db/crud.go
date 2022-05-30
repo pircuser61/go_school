@@ -1775,6 +1775,66 @@ func (db *PGConnection) GetExecutableByName(c context.Context, name string) (*en
 	return nil, nil
 }
 
+func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface{}) {
+	// nolint:gocritic
+	// language=PostgreSQL
+	q = `SELECT 
+			w.id, 
+			w.started_at, 
+			ws.name, 
+			w.debug, 
+			w.parameters, 
+			w.author, 
+			w.version_id
+		FROM pipeliner.works w 
+		JOIN pipeliner.versions v ON v.id = w.version_id
+		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
+		JOIN pipeliner.work_status ws ON w.status = ws.id
+		WHERE w.author = $1`
+
+	args = append(args, filters.CurrentUser)
+
+	order := "ASC"
+	if filters.Order != nil {
+		order = *filters.Order
+	}
+
+	switch {
+	case filters.TaskID != "":
+		args = append(args, filters.TaskID)
+		q = fmt.Sprintf("%s AND w.work_number = $%d", q, len(args))
+		fallthrough
+	case filters.Name != nil:
+		args = append(args, *filters.Name)
+		q = fmt.Sprintf("%s AND p.name ILIKE $%d || '%%'", q, len(args))
+		fallthrough
+	case filters.Created != nil:
+		args = append(args, time.Unix(int64(filters.Created.Start), 0).UTC(), time.Unix(int64(filters.Created.End), 0).UTC())
+		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
+		fallthrough
+	case order != "":
+		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
+		fallthrough
+	case filters.Limit != nil:
+		args = append(args, *filters.Limit)
+		q = fmt.Sprintf("%s\n FETCH FIRST $%d ROW ONLY", q, *filters.Limit)
+		fallthrough
+	case filters.Offset != nil:
+		args = append(args, *filters.Offset)
+		q = fmt.Sprintf("%s\n LIMIT $%d", q, *filters.Offset)
+	}
+
+	return q, args
+}
+
+func (db *PGConnection) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasks, error) {
+	c, span := trace.StartSpan(c, "pg_get_tasks")
+	defer span.End()
+
+	q, args := compileGetTasksQuery(filters)
+	return db.getTasks(c, q, args)
+}
+
 func (db *PGConnection) GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()
@@ -1797,7 +1857,7 @@ func (db *PGConnection) GetPipelineTasks(c context.Context, pipelineID uuid.UUID
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
-	return db.getTasks(c, q, pipelineID)
+	return db.getTasks(c, q, []interface{}{pipelineID})
 }
 
 func (db *PGConnection) GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
@@ -1821,7 +1881,7 @@ func (db *PGConnection) GetVersionTasks(c context.Context, versionID uuid.UUID) 
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
-	return db.getTasks(c, q, versionID)
+	return db.getTasks(c, q, []interface{}{versionID})
 }
 
 func (db *PGConnection) GetLastDebugTask(c context.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
@@ -1933,7 +1993,7 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 	return &et, nil
 }
 
-func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*entity.EriusTasks, error) {
+func (db *PGConnection) getTasks(c context.Context, q string, args []interface{}) (*entity.EriusTasks, error) {
 	c, span := trace.StartSpan(c, "pg_get_tasks")
 	defer span.End()
 
@@ -1948,7 +2008,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, id uuid.UUID) (*en
 
 	defer conn.Release()
 
-	rows, err := conn.Query(c, q, id)
+	rows, err := conn.Query(c, q, args...)
 	if err != nil {
 		return nil, err
 	}
