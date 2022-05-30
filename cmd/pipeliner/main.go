@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,8 +20,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/push"
-	httpSwagger "github.com/swaggo/http-swagger"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
@@ -171,38 +170,42 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 	mux.Use(observability.MiddlewareChi())
 	mux.Use(handlers.RequestIDMiddleware)
 	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
-	mux.Use(handlers.WithUserInfo(ssoService, logger.GetLogger(ctx)))
 
 	const baseURL = "/api/pipeliner/v1"
 
+	mux.Mount(baseURL+"/pprof", middleware.Profiler())
+	mux.Handle(baseURL+"/metrics", pipeliner.ServePrometheus())
+	mux.Mount(baseURL+"/swagger", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
+
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
+			r.Use(handlers.WithUserInfo(ssoService, logger.GetLogger(ctx)))
 			r.Use(handlers.StatisticMiddleware(pipeliner.Statistic))
 
-			r.Get("/pipelines/", pipeliner.ListPipelines)
-			r.Post("/pipelines/", pipeliner.CreatePipeline)
+			r.Get("/pipelines", pipeliner.ListPipelines)
+			r.Post("/pipelines", pipeliner.CreatePipeline)
 			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
 			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
 
 			r.Get("/pipelines/{pipelineID}/scheduler-tasks", pipeliner.ListSchedulerTasks)
 
 			r.Put("/pipelines/{pipelineID}/tags/{ID}", pipeliner.AttachTag)
-			r.Get("/pipelines/{pipelineID}/tags/", pipeliner.GetPipelineTag)
+			r.Get("/pipelines/{pipelineID}/tags", pipeliner.GetPipelineTag)
 			r.Delete("/pipelines/{pipelineID}/tags/{ID}", pipeliner.DetachTag)
 
 			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
 			r.Post("/pipelines/version/{pipelineID}", pipeliner.CreatePipelineVersion)
-			r.Put("/pipelines/version/", pipeliner.EditVersion)
+			r.Put("/pipelines/version", pipeliner.EditVersion)
 			r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
 
-			r.Get("/modules/", pipeliner.GetModules)
+			r.Get("/modules", pipeliner.GetModules)
 			r.Get("/modules/usage", pipeliner.AllModulesUsage)
 			r.Get("/modules/{moduleName}/usage", pipeliner.ModuleUsage)
 			r.Post("/modules/{moduleName}", pipeliner.ModuleRun)
 
-			r.Get("/tags/", pipeliner.GetTags)
-			r.Post("/tags/", pipeliner.CreateTag)
-			r.Put("/tags/", pipeliner.EditTag)
+			r.Get("/tags", pipeliner.GetTags)
+			r.Post("/tags", pipeliner.CreateTag)
+			r.Put("/tags", pipeliner.EditTag)
 			r.Delete("/tags/{ID}", pipeliner.RemoveTag)
 
 			r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
@@ -220,10 +223,6 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 				r.Get("/{taskID}", pipeliner.DebugTask)
 			})
 		})
-
-	mux.Mount(baseURL+"/pprof/", middleware.Profiler())
-	mux.Handle(baseURL+"/metrics", pipeliner.ServePrometheus())
-	mux.Mount(baseURL+"/swagger/", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
 
 	return mux
 }
