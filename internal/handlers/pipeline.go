@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -62,7 +63,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := GetUserInfoFromCtx(ctx)
+	user, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.Error("user failed: ", err.Error())
 	}

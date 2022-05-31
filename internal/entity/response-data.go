@@ -48,6 +48,41 @@ type EriusTagInfo struct {
 	IsMarker bool      `json:"isMarker"`
 }
 
+type EriusScenarioV2 struct {
+	ID        uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	VersionID uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	Status    int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+	HasDraft  bool                 `json:"hasDraft,omitempty"`
+	Name      string               `json:"name" example:"ScenarioName"`
+	Input     []EriusFunctionValue `json:"input"`
+	Output    []EriusFunctionValue `json:"output"`
+	Pipeline  struct {
+		Entrypoint string                 `json:"entrypoint"`
+		Blocks     map[string]EriusFuncV2 `json:"blocks"`
+	} `json:"pipeline"`
+	CreatedAt       *time.Time     `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt      *time.Time     `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author          string         `json:"author" example:"testAuthor"`
+	Tags            []EriusTagInfo `json:"tags"`
+	Comment         string         `json:"comment"`
+	CommentRejected string         `json:"comment_rejected"`
+}
+
+type EriusFuncV2 struct {
+	X         int                  `json:"x,omitempty"`
+	Y         int                  `json:"y,omitempty"`
+	BlockType string               `json:"block_type" enums:"python3,internal,term,scenario" example:"python3"`
+	Title     string               `json:"title" example:"lock-bts"`
+	Input     []EriusFunctionValue `json:"input"`
+	Output    []EriusFunctionValue `json:"output,omitempty"`
+	OnTrue    string               `json:"on_true,omitempty"`
+	OnFalse   string               `json:"on_false,omitempty"`
+	Final     string               `json:"final,omitempty"`
+	OnIter    string               `json:"on_iter"`
+	Next      []string             `json:"next,omitempty" example:"send-data_0"`
+}
+
+// deprecated
 type EriusScenario struct {
 	ID        uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
 	VersionID uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
@@ -73,6 +108,7 @@ type EriusFunctionList struct {
 	Shapes    []script.ShapeEntity   `json:"shapes"`
 }
 
+// deprecated
 type EriusFunc struct {
 	X         int                  `json:"x,omitempty"`
 	Y         int                  `json:"y,omitempty"`

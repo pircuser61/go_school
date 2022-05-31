@@ -25,6 +25,9 @@ func (h *scenarioHandler) DeleteScenarioById(context.Context, *pb.DeleteScenario
 func (h *scenarioHandler) RunScenarioById(context.Context, *pb.RunScenarioRequest) (*pb.RunScenarioResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RunScenarioById not implemented")
 }
+func (h *scenarioHandler) CreateScenario(context.Context, *pb.CreateScenarioRequest) (*pb.CreateScenarioResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateScenario not implemented")
+}
 
 func (h *scenarioHandler) Mount(s *grpc.Server) {
 	pb.RegisterScenarioServiceServer(s, h)

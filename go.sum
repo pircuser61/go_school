@@ -728,8 +728,8 @@ gitlab.services.mts.ru/erius/network-monitor-client v1.0.5 h1:AIQZ4SgtrwkmY3ti22
 gitlab.services.mts.ru/erius/network-monitor-client v1.0.5/go.mod h1:pZwL5/5DffFYBxZMf8WD2TBbMepawGfkS0y6Ke0hpaA=
 gitlab.services.mts.ru/erius/scheduler_client v0.0.5 h1:wjQl+H9GnRcGocj9klzmPY97QS8Iy8rKCkEs6RvkwUg=
 gitlab.services.mts.ru/erius/scheduler_client v0.0.5/go.mod h1:5LM12WrgQ0mrw78Bghydat7YfPrjYRX+g7/damC0MxQ=
-gitlab.services.mts.ru/jocasta/proto v0.0.1-1 h1:72B6uPK1vsoYRE69zlMmTo7Ggztl1xqKpYiAPoUSWOs=
-gitlab.services.mts.ru/jocasta/proto v0.0.1-1/go.mod h1:uIUZTuWmiLCU/ql2g8MBnYG9FyefIzpL4cpNN9rXfJI=
+gitlab.services.mts.ru/jocasta/proto v0.0.1-2 h1:J8FMHoG1ANgg+uMacuY0+i9yP8aB+Z6SGMUK4lU0Wbo=
+gitlab.services.mts.ru/jocasta/proto v0.0.1-2/go.mod h1:uIUZTuWmiLCU/ql2g8MBnYG9FyefIzpL4cpNN9rXfJI=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738/go.mod h1:dnLIgRNXwCJa5e+c6mIZCrds/GIG4ncV9HhK5PX7jPg=
 go.mongodb.org/mongo-driver v1.1.0/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=

@@ -27,7 +27,7 @@ require (
 	gitlab.services.mts.ru/erius/monitoring v0.1.0
 	gitlab.services.mts.ru/erius/network-monitor-client v1.0.5
 	gitlab.services.mts.ru/erius/scheduler_client v0.0.5
-	gitlab.services.mts.ru/jocasta/proto v0.0.1-1
+	gitlab.services.mts.ru/jocasta/proto v0.0.1-2
 	go.opencensus.io v0.23.0
 	golang.org/x/crypto v0.0.0-20220210151621-f4118a5b28e2 // indirect
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect

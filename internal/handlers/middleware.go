@@ -1,15 +1,13 @@
 package handlers
 
 import (
-	"context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"net/http"
 
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
-
-	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -55,26 +53,6 @@ func LoggerMiddleware(log logger.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-type userInfoCtx struct{}
-
-func GetUserInfoFromCtx(ctx context.Context) (*sso.UserInfo, error) {
-	uii := ctx.Value(userInfoCtx{})
-	if uii == nil {
-		return nil, errors.New("can't find userinfo in context")
-	}
-
-	ui, ok := uii.(*sso.UserInfo)
-	if !ok {
-		return nil, errors.New("not userinfo in context")
-	}
-
-	return ui, nil
-}
-
-func SetUserInfoToCtx(ctx context.Context, ui *sso.UserInfo) context.Context {
-	return context.WithValue(ctx, userInfoCtx{}, ui)
-}
-
 func WithUserInfo(ssoS *sso.Service, log logger.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +67,7 @@ func WithUserInfo(ssoS *sso.Service, log logger.Logger) func(next http.Handler) 
 				return
 			}
 
-			ctxUI := SetUserInfoToCtx(ctx, ui)
+			ctxUI := user.SetUserInfoToCtx(ctx, ui)
 			rUI := r.WithContext(ctxUI)
 
 			next.ServeHTTP(w, rUI)
