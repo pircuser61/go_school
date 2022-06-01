@@ -4,23 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/google/uuid"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scenario/rep"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 type Service struct {
-	store db.PipelineStorager
+	store *rep.ScenarioRepository
 }
 
-func NewService(store db.PipelineStorager) *Service {
+func NewService(store *rep.ScenarioRepository) *Service {
 	return &Service{
 		store: store,
 	}
 }
 
 func (s *Service) CreateScenario(ctx context.Context, scenario *entity.EriusScenarioV2) (*entity.EriusScenarioV2, error) {
-
 	var b []byte
 	if err := json.Unmarshal(b, scenario); err != nil {
 		return nil, err
@@ -43,7 +42,7 @@ func (s *Service) CreateScenario(ctx context.Context, scenario *entity.EriusScen
 		return nil, nil
 	}
 
-	err = s.store.CreatePipelineV2(ctx, scenario, u.Username, b)
+	err = s.store.CreatePipeline(ctx, scenario, u.Username, b)
 	if err != nil {
 		return nil, err
 	}
@@ -53,5 +52,5 @@ func (s *Service) CreateScenario(ctx context.Context, scenario *entity.EriusScen
 		return nil, err
 	}
 
-	return nil, nil
+	return created, nil
 }
