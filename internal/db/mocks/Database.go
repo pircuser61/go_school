@@ -607,6 +607,29 @@ func (_m *MockedDatabase) GetTaskSteps(c context.Context, id uuid.UUID) (entity.
 	return r0, r1
 }
 
+// GetTasks provides a mock function with given fields: c, filters
+func (_m *MockedDatabase) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
+	ret := _m.Called(c, filters)
+
+	var r0 *entity.EriusTasksPage
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter) *entity.EriusTasksPage); ok {
+		r0 = rf(c, filters)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.EriusTasksPage)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, entity.TaskFilter) error); ok {
+		r1 = rf(c, filters)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetVersionTasks provides a mock function with given fields: c, versionID
 func (_m *MockedDatabase) GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
 	ret := _m.Called(c, versionID)

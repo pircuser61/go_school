@@ -168,7 +168,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "nil on done context",
+			name: "context canceled",
 			fields: fields{
 				Name:     stepName,
 				Title:    "",
@@ -202,15 +202,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 					return res
 				}(),
 			},
-			wantStorage: func() *store.VariableStore {
-				res := store.NewStore()
-
-				res.AddStep(stepName)
-				res.SetValue(getWorkIdKey(stepName), stepId)
-
-				return res
-			}(),
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "approved case",
