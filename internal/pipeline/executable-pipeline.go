@@ -19,6 +19,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+const (
+	// TODO maybe there is a better way to save work id in variable store
+	keyStepWorkId = "work_id"
+)
+
 var errUnknownBlock = errors.New("unknown block")
 
 type ExecutablePipeline struct {
@@ -141,7 +146,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	for ep.NowOnPoint != "" {
 		log.Info("executing", ep.NowOnPoint)
 
-		now, ok := ep.Blocks[ep.NowOnPoint]
+		currentBlock, ok := ep.Blocks[ep.NowOnPoint]
 		if !ok {
 			_, err := ep.createStep(ctx, true, true)
 			if err != nil {
@@ -150,17 +155,17 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			return errUnknownBlock
 		}
-		ep.StepType = now.GetType()
+		ep.StepType = currentBlock.GetType()
 
 		var id uuid.UUID
 		var err error
 
-		if now.IsScenario() {
+		if currentBlock.IsScenario() {
 			ep.VarStore.AddStep(ep.NowOnPoint)
 
 			nStore := store.NewStore()
 
-			input := ep.Blocks[ep.NowOnPoint].Inputs()
+			input := currentBlock.Inputs()
 			for local, global := range input {
 				val, _ := runCtx.GetValue(global)
 				nStore.SetValue(local, val)
@@ -171,13 +176,15 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				return err
 			}
 
-			err = ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
+			nStore.SetValue(getWorkIdKey(ep.NowOnPoint), id)
+
+			err = currentBlock.DebugRun(ctx, nStore)
 			if err != nil {
 				key := ep.NowOnPoint + KeyDelimiter + ErrorKey
 				nStore.SetValue(key, err.Error())
 			}
 
-			out := ep.Blocks[ep.NowOnPoint].Outputs()
+			out := currentBlock.Outputs()
 			for inner, outer := range out {
 				val, _ := nStore.GetValue(inner)
 				ep.VarStore.SetValue(outer, val)
@@ -188,7 +195,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				return err
 			}
 
-			err = ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
+			ep.VarStore.SetValue(getWorkIdKey(ep.NowOnPoint), id)
+
+			err = currentBlock.DebugRun(ctx, ep.VarStore)
 			if err != nil {
 				key := ep.NowOnPoint + KeyDelimiter + ErrorKey
 				ep.VarStore.SetValue(key, err.Error())
@@ -507,9 +516,27 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) R
 
 		return b
 
-	default:
-		// todo: предотвратить панику!!!
+	case "approver":
+		b := &GoApproverBlock{
+			Storage: ep.Storage,
+
+			Name:     name,
+			Title:    ef.Title,
+			Input:    map[string]string{},
+			Output:   map[string]string{},
+			NextStep: ef.Next,
+		}
+
+		for _, v := range ef.Input {
+			b.Input[v.Name] = v.Global
+		}
+
+		return b
 	}
 
-	return nil // todo: предотвратить панику!!!
+	return nil
+}
+
+func getWorkIdKey(stepName string) string {
+	return stepName + "." + keyStepWorkId
 }

@@ -74,17 +74,19 @@ type EriusFunctionList struct {
 }
 
 type EriusFunc struct {
-	X         int                  `json:"x,omitempty"`
-	Y         int                  `json:"y,omitempty"`
+	X int `json:"x,omitempty"`
+	Y int `json:"y,omitempty"`
+	// TODO
 	BlockType string               `json:"block_type" enums:"python3,internal,term,scenario" example:"python3"`
 	Title     string               `json:"title" example:"lock-bts"`
 	Input     []EriusFunctionValue `json:"input"`
 	Output    []EriusFunctionValue `json:"output,omitempty"`
-	OnTrue    string               `json:"on_true,omitempty"`
-	OnFalse   string               `json:"on_false,omitempty"`
-	Final     string               `json:"final,omitempty"`
-	OnIter    string               `json:"on_iter"`
-	Next      string               `json:"next,omitempty" example:"send-data_0"`
+	// Params
+	OnTrue  string `json:"on_true,omitempty"`
+	OnFalse string `json:"on_false,omitempty"`
+	Final   string `json:"final,omitempty"`
+	OnIter  string `json:"on_iter"`
+	Next    string `json:"next,omitempty" example:"send-data_0"`
 }
 
 type EriusFunctionValue struct {
@@ -168,12 +170,14 @@ type EriusLog struct {
 
 type Step struct {
 	Time        time.Time              `json:"time"`
+	Type        string                 `json:"type"`
 	Name        string                 `json:"name"`
 	Storage     map[string]interface{} `json:"storage"`
 	Errors      []string               `json:"errors"`
 	Steps       []string               `json:"steps"`
 	BreakPoints []string               `json:"-"`
 	HasError    bool                   `json:"has_error"`
+	IsFinished  bool                   `json:"is_finished"`
 }
 
 type SchedulerTasksResponse struct {

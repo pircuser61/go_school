@@ -2001,11 +2001,13 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 	// language=PostgreSQL
 	q := `
 	SELECT 
+	    vs.step_type,
 		vs.step_name, 
 		vs.time, 
 		vs.content, 
 		COALESCE(vs.break_points, '{}') AS break_points, 
-		vs.has_error
+		vs.has_error,
+		vs.is_finished
 	FROM pipeliner.variable_storage vs 
 	WHERE work_id = $1
 	ORDER BY vs.time DESC`
@@ -2018,16 +2020,24 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 
 	for rows.Next() {
 		s := entity.Step{}
-		c := ""
+		var content string
 
-		err := rows.Scan(&s.Name, &s.Time, &c, &s.BreakPoints, &s.HasError)
+		err = rows.Scan(
+			&s.Type,
+			&s.Name,
+			&s.Time,
+			&content,
+			&s.BreakPoints,
+			&s.HasError,
+			&s.IsFinished,
+		)
 		if err != nil {
 			return nil, err
 		}
 
 		storage := store.NewStore()
 
-		err = json.Unmarshal([]byte(c), storage)
+		err = json.Unmarshal([]byte(content), storage)
 		if err != nil {
 			return nil, err
 		}
@@ -2039,6 +2049,63 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 	}
 
 	return el, nil
+}
+
+// TODO create, get
+
+func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_step")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	SELECT 
+	    vs.step_type,
+		vs.step_name, 
+		vs.time, 
+		vs.content, 
+		COALESCE(vs.break_points, '{}') AS break_points, 
+		vs.has_error,
+		vs.is_finished
+	FROM pipeliner.variable_storage vs 
+	WHERE id = $1
+	LIMIT 1`
+
+	var s entity.Step
+	var content string
+	err = conn.QueryRow(ctx, q, id).Scan(
+		&s.Type,
+		&s.Name,
+		&s.Time,
+		&content,
+		&s.BreakPoints,
+		&s.HasError,
+		&s.IsFinished,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	storage := store.NewStore()
+
+	err = json.Unmarshal([]byte(content), storage)
+	if err != nil {
+		return nil, err
+	}
+
+	s.Steps = storage.Steps
+	s.Errors = storage.Errors
+	s.Storage = storage.Values
+
+	return &s, nil
 }
 
 func (db *PGConnection) getVersionHistory(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error) {

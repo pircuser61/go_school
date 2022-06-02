@@ -20,6 +20,7 @@ type TaskStorager interface {
 	GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error)
 	GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error)
 	GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error)
+	GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error)
 	CreateTask(c context.Context,
 		taskID, versionID uuid.UUID, author string, isDebugMode bool, parameters []byte) (*entity.EriusTask, error)
 	ChangeTaskStatus(c context.Context, taskID uuid.UUID, status int) error
@@ -45,6 +46,7 @@ type UpdateStepRequest struct {
 	IsFinished  bool
 }
 
+//go:generate mockery --name=Database --structname=MockedDatabase
 type Database interface {
 	PipelineStorager
 	TaskStorager
