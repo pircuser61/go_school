@@ -121,11 +121,6 @@ type RunResponse struct {
 	Errors     []string    `json:"errors"`
 }
 
-// @deprecated
-type EriusLog struct {
-	Steps []Step `json:"steps"`
-}
-
 type SchedulerTasksResponse struct {
 	Result bool `json:"result"`
 }
