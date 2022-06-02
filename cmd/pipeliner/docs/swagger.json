@@ -1136,7 +1136,7 @@
                         "name": "variables",
                         "in": "body",
                         "schema": {
-                            "type": "object"
+                            "type": "primitive"
                         }
                     },
                     {
@@ -1208,7 +1208,7 @@
                         "name": "variables",
                         "in": "body",
                         "schema": {
-                            "type": "object"
+                            "type": "primitive"
                         }
                     },
                     {
@@ -1771,9 +1771,11 @@
             "type": "object",
             "properties": {
                 "block_type": {
+                    "description": "TODO",
                     "type": "string",
                     "enum": [
                         "python3",
+                        "go",
                         "internal",
                         "term",
                         "scenario"
@@ -1800,6 +1802,7 @@
                     "type": "string"
                 },
                 "on_true": {
+                    "description": "Params",
                     "type": "string"
                 },
                 "output": {
@@ -2147,9 +2150,7 @@
                         "type": "string"
                     }
                 },
-                "output": {
-                    "type": "object"
-                },
+                "output": {},
                 "pipeline_id": {
                     "type": "string",
                     "format": "uuid",
@@ -2186,6 +2187,9 @@
                 "has_error": {
                     "type": "boolean"
                 },
+                "is_finished": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -2200,6 +2204,9 @@
                     "additionalProperties": true
                 },
                 "time": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -2282,9 +2289,7 @@
         "handlers.httpResponse": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "object"
-                },
+                "data": {},
                 "status_code": {
                     "type": "integer"
                 }

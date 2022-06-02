@@ -27,8 +27,10 @@ definitions:
   entity.EriusFunc:
     properties:
       block_type:
+        description: TODO
         enum:
         - python3
+        - go
         - internal
         - term
         - scenario
@@ -48,6 +50,7 @@ definitions:
       on_iter:
         type: string
       on_true:
+        description: Params
         type: string
       output:
         items:
@@ -291,8 +294,7 @@ definitions:
         items:
           type: string
         type: array
-      output:
-        type: object
+      output: {}
       pipeline_id:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
@@ -318,6 +320,8 @@ definitions:
         type: array
       has_error:
         type: boolean
+      is_finished:
+        type: boolean
       name:
         type: string
       steps:
@@ -328,6 +332,8 @@ definitions:
         additionalProperties: true
         type: object
       time:
+        type: string
+      type:
         type: string
     type: object
   entity.UsageResponse:
@@ -382,8 +388,7 @@ definitions:
     type: object
   handlers.httpResponse:
     properties:
-      data:
-        type: object
+      data: {}
       status_code:
         type: integer
     type: object
@@ -1136,7 +1141,7 @@ paths:
         in: body
         name: variables
         schema:
-          type: object
+          type: primitive
       - description: Pipeline ID
         in: path
         name: pipelineID
@@ -1181,7 +1186,7 @@ paths:
         in: body
         name: variables
         schema:
-          type: object
+          type: primitive
       - description: Version ID
         in: path
         name: versionID

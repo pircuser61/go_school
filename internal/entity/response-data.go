@@ -77,7 +77,7 @@ type EriusFunc struct {
 	X int `json:"x,omitempty"`
 	Y int `json:"y,omitempty"`
 	// TODO
-	BlockType string               `json:"block_type" enums:"python3,internal,term,scenario" example:"python3"`
+	BlockType string               `json:"block_type" enums:"python3,go,internal,term,scenario" example:"python3"`
 	Title     string               `json:"title" example:"lock-bts"`
 	Input     []EriusFunctionValue `json:"input"`
 	Output    []EriusFunctionValue `json:"output,omitempty"`
