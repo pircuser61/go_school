@@ -1964,13 +1964,17 @@ func (db *PGConnection) GetTask(c context.Context, id uuid.UUID) (*entity.EriusT
 	const q = `SELECT 
 			w.id, 
 			w.started_at, 
+			w.started_at, 
 			ws.name, 
 			w.debug, 
 			COALESCE(w.parameters, '{}') AS parameters,
 			w.author,
-			w.version_id
+			w.version_id,
+			w.work_number,
+			p.name
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
+		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
 		JOIN pipeliner.work_status ws ON w.status = ws.id
 		WHERE w.id = $1`
 
@@ -1997,11 +2001,15 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 	err = row.Scan(
 		&et.ID,
 		&et.StartedAt,
+		&et.LastChangedAt,
 		&et.Status,
 		&et.IsDebugMode,
 		&nullStringParameters,
 		&et.Author,
-		&et.VersionID)
+		&et.VersionID,
+		&et.WorkNumber,
+		&et.Name,
+	)
 	if err != nil {
 		return nil, err
 	}
