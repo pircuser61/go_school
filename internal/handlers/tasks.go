@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -16,6 +17,61 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
+type eriusTaskResponse struct {
+	ID            uuid.UUID              `json:"id"`
+	VersionID     uuid.UUID              `json:"version_id"`
+	StartedAt     time.Time              `json:"started_at"`
+	LastChangedAt time.Time              `json:"last_changed_at"`
+	Name          string                 `json:"name"`
+	Status        string                 `json:"status"`
+	Author        string                 `json:"author"`
+	IsDebugMode   bool                   `json:"debug"`
+	Parameters    map[string]interface{} `json:"parameters"`
+	Steps         taskSteps              `json:"steps"`
+	WorkNumber    string                 `json:"work_number"`
+}
+
+type step struct {
+	Time        time.Time              `json:"time"`
+	Name        string                 `json:"name"`
+	Storage     map[string]interface{} `json:"storage"`
+	Errors      []string               `json:"errors"`
+	Steps       []string               `json:"steps"`
+	HasError    bool                   `json:"has_error"`
+}
+
+type taskSteps []step
+
+func getTaskToResponse(in *entity.EriusTask) *eriusTaskResponse {
+	steps := make([]step, 0, len(in.Steps))
+	for i := range in.Steps {
+		steps = append(steps, step{
+			Time:        in.Steps[i].Time,
+			Name:        in.Steps[i].Name,
+			Storage:     in.Steps[i].Storage,
+			Errors:      in.Steps[i].Errors,
+			Steps:       in.Steps[i].Steps,
+			HasError:    in.Steps[i].HasError,
+		})
+	}
+
+	out := &eriusTaskResponse{
+		ID:            in.ID,
+		VersionID:     in.VersionID,
+		StartedAt:     in.StartedAt,
+		LastChangedAt: in.LastChangedAt,
+		Name:          in.Name,
+		Status:        in.Status,
+		Author:        in.Author,
+		IsDebugMode:   in.IsDebugMode,
+		Parameters:    in.Parameters,
+		Steps:         steps,
+		WorkNumber:    in.WorkNumber,
+	}
+
+	return out
+}
+
 // GetTask
 // @Summary Get Task
 // @Description Получить экземпляр задачи
@@ -23,7 +79,7 @@ import (
 // @ID      get-task-entity
 // @Produce json
 // @Param taskID path string true "Task ID"
-// @success 200 {object} httpResponse{data=entity.EriusTask}
+// @success 200 {object} httpResponse{data=EriusTask}
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
@@ -65,7 +121,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 
 	resp.Steps = steps
 
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+	if err = sendResponse(w, http.StatusOK, getTaskToResponse(resp)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)

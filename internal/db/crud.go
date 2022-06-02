@@ -1961,7 +1961,7 @@ func (db *PGConnection) GetTask(c context.Context, id uuid.UUID) (*entity.EriusT
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `SELECT 
+	const q = `SELECT 
 			w.id, 
 			w.started_at, 
 			ws.name, 
