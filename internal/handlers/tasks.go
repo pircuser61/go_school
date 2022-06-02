@@ -2,12 +2,18 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/google/uuid"
+
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 // GetTask
@@ -68,6 +74,125 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err error) {
+	user, err := GetEffectiveUserInfoFromCtx(req.Context())
+	if err != nil {
+		return filters, err
+	}
+	filters.CurrentUser = user.Username
+
+	taskIDs := req.URL.Query().Get("taskIDs")
+	if taskIDs != "" {
+		ids := strings.Split(taskIDs, ",")
+		filters.TaskIDs = &ids
+	}
+
+	name := req.URL.Query().Get("name")
+	if name != "" {
+		filters.Name = &name
+	}
+
+	createdStart := req.URL.Query().Get("created[start]")
+	if createdStart != "" {
+		createdEnd := req.URL.Query().Get("created[end]")
+		if createdEnd != "" {
+			st, convErr := strconv.Atoi(createdStart)
+			if convErr != nil {
+				return filters, convErr
+			}
+
+			end, convErr := strconv.Atoi(createdEnd)
+			if convErr != nil {
+				return filters, convErr
+			}
+
+			filters.Created = &entity.TimePeriod{
+				Start: st,
+				End:   end,
+			}
+		}
+	}
+
+	order := req.URL.Query().Get("order")
+	if order != "" {
+		filters.Order = &order
+	}
+
+	lim := 10
+	limit := req.URL.Query().Get("limit")
+	if limit != "" {
+		lim, err = strconv.Atoi(limit)
+		if err != nil {
+			return
+		}
+	}
+	filters.Limit = &lim
+
+	off := 0
+	offset := req.URL.Query().Get("offset")
+	if offset != "" {
+		off, err = strconv.Atoi(offset)
+		if err != nil {
+			return
+		}
+	}
+	filters.Offset = &off
+
+	return
+}
+
+// GetTasks
+// @Summary Get Tasks
+// @Description Получить задачи
+// @Tags pipeline, tasks
+// @ID      get-tasks
+// @Produce json
+// @Param name query string false "Pipeline name"
+// @Param taskIDs query []string false "Task IDs"
+// @Param created[start] query string false "Created after"
+// @Param created[end] query string false "Created before"
+// @Param order query string false "Order"
+// @Param limit query string false "Limit"
+// @Param offset query string false "Offset"
+// @success 200 {object} httpResponse{data=entity.EriusTasksPage}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /tasks [get]
+//nolint:dupl //diff logic
+func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	filters, err := compileGetTasksFilters(req)
+	if err != nil {
+		e := BadFiltersError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	resp, err := ae.DB.GetTasks(ctx, filters)
+	if err != nil {
+		e := GetTasksError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 // GetPipelineTasks
 // @Summary Get Pipeline Tasks
 // @Description Получить задачи по сценарию
@@ -82,7 +207,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 // @Router /tasks/{pipelineID} [get]
 //nolint:dupl //diff logic
 func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_logs")
+	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tasks")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)

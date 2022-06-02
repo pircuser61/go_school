@@ -230,7 +230,7 @@ var doc = `{
                 }
             }
         },
-        "/modules/": {
+        "/modules": {
             "get": {
                 "description": "Список блоков",
                 "produces": [
@@ -428,7 +428,7 @@ var doc = `{
                 }
             }
         },
-        "/pipelines/": {
+        "/pipelines": {
             "get": {
                 "description": "Список сценариев",
                 "produces": [
@@ -944,7 +944,7 @@ var doc = `{
                 }
             }
         },
-        "/pipelines/{pipelineID}/tags/": {
+        "/pipelines/{pipelineID}/tags": {
             "get": {
                 "description": "Список тегов сценария",
                 "produces": [
@@ -1274,7 +1274,7 @@ var doc = `{
                 }
             }
         },
-        "/tags/": {
+        "/tags": {
             "get": {
                 "description": "Cписок тегов",
                 "produces": [
@@ -1479,6 +1479,105 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/handlers.httpResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks": {
+            "get": {
+                "description": "Получить задачи",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline",
+                    "tasks"
+                ],
+                "summary": "Get Tasks",
+                "operationId": "get-tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pipeline name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Task IDs",
+                        "name": "taskIDs",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created after",
+                        "name": "created[start]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created before",
+                        "name": "created[end]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTasksPage"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1786,7 +1885,6 @@ var doc = `{
             "type": "object",
             "properties": {
                 "block_type": {
-                    "description": "TODO",
                     "type": "string",
                     "enum": [
                         "python3",
@@ -2098,6 +2196,12 @@ var doc = `{
                 "id": {
                     "type": "string"
                 },
+                "last_changed_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
                 "parameters": {
                     "type": "object",
                     "additionalProperties": true
@@ -2116,6 +2220,9 @@ var doc = `{
                 },
                 "version_id": {
                     "type": "string"
+                },
+                "work_number": {
+                    "type": "string"
                 }
             }
         },
@@ -2127,6 +2234,20 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/entity.EriusTask"
                     }
+                }
+            }
+        },
+        "entity.EriusTasksPage": {
+            "type": "object",
+            "properties": {
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusTask"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

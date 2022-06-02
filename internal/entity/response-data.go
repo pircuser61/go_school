@@ -121,62 +121,9 @@ type RunResponse struct {
 	Errors     []string    `json:"errors"`
 }
 
-type EriusTasks struct {
-	Tasks []EriusTask `json:"tasks"`
-}
-
-type EriusTask struct {
-	ID          uuid.UUID              `json:"id"`
-	VersionID   uuid.UUID              `json:"version_id"`
-	StartedAt   time.Time              `json:"started_at"`
-	Status      string                 `json:"status"`
-	Author      string                 `json:"author"`
-	IsDebugMode bool                   `json:"debug"`
-	Parameters  map[string]interface{} `json:"parameters"`
-	Steps       TaskSteps              `json:"steps"`
-}
-
-func (et *EriusTask) IsRun() bool {
-	return et.Status == "run"
-}
-
-func (et *EriusTask) IsCreated() bool {
-	return et.Status == "created"
-}
-
-func (et *EriusTask) IsStopped() bool {
-	return et.Status == "stopped"
-}
-
-func (et *EriusTask) IsFinished() bool {
-	return et.Status == "finished"
-}
-
-func (et *EriusTask) IsError() bool {
-	return et.Status == "error"
-}
-
-type TaskSteps []*Step
-
-func (ts *TaskSteps) IsEmpty() bool {
-	return len(*ts) == 0
-}
-
 // @deprecated
 type EriusLog struct {
 	Steps []Step `json:"steps"`
-}
-
-type Step struct {
-	Time        time.Time              `json:"time"`
-	Type        string                 `json:"type"`
-	Name        string                 `json:"name"`
-	Storage     map[string]interface{} `json:"storage"`
-	Errors      []string               `json:"errors"`
-	Steps       []string               `json:"steps"`
-	BreakPoints []string               `json:"-"`
-	HasError    bool                   `json:"has_error"`
-	IsFinished  bool                   `json:"is_finished"`
 }
 
 type SchedulerTasksResponse struct {

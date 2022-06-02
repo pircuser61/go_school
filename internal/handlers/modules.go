@@ -27,7 +27,7 @@ import (
 // @Success 200 {object} httpResponse{data=entity.EriusFunctionList}
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /modules/ [get]
+// @Router /modules [get]
 func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()

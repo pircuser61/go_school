@@ -147,7 +147,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		log.Info("executing", ep.NowOnPoint)
 
 		currentBlock, ok := ep.Blocks[ep.NowOnPoint]
-		if !ok {
+		if !ok || currentBlock == nil {
 			_, err := ep.createStep(ctx, true, true)
 			if err != nil {
 				return err
