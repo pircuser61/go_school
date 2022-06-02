@@ -514,6 +514,10 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) R
 			b.Input[v.Name] = v.Global
 		}
 
+		for _, v := range ef.Output {
+			b.Output[v.Name] = v.Global
+		}
+
 		return b
 
 	case "approver":
