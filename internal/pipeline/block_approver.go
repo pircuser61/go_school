@@ -144,6 +144,7 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 			}
 
 			// get state from step.Storage
+			// TODO: check key, maybe it should be changed
 			data, ok := step.Storage[gb.Name]
 			if !ok {
 				continue
