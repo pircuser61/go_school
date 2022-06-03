@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -14,6 +12,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
