@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -216,6 +218,22 @@ func (gb *GoApproverBlock) NextSteps() []string {
 	nextSteps := []string{gb.NextStep}
 
 	return nextSteps
+}
+
+func (gb *GoApproverBlock) Model() script.FunctionModel {
+	return script.FunctionModel{
+		BlockType: script.TypeGo,
+		Title:     BlockGoApprover,
+		Inputs:    nil,
+		Outputs: []script.FunctionValueModel{
+			{
+				Name:    keyApproverDecision,
+				Type:    "string",
+				Comment: "block result",
+			},
+		},
+		NextFuncs: []string{script.Next},
+	}
 }
 
 func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoApproverBlock, error) {

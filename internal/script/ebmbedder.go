@@ -57,6 +57,8 @@ type FunctionModel struct {
 	ShapeType int                  `json:"shape_type"`
 	NextFuncs []string             `json:"next_funcs"`
 	ID        string               `json:"id"`
+	// TODO: Params (interface{})
+	// type => string => name of struct?
 }
 
 type FunctionValueModel struct {
