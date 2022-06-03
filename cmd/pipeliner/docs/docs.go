@@ -2431,6 +2431,17 @@ var doc = `{
                 }
             }
         },
+        "script.ApproverParams": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "script.FunctionModel": {
             "type": "object",
             "properties": {
@@ -2458,11 +2469,29 @@ var doc = `{
                         "$ref": "#/definitions/script.FunctionValueModel"
                     }
                 },
+                "params": {
+                    "$ref": "#/definitions/script.FunctionParams"
+                },
                 "shape_type": {
                     "type": "integer"
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "script.FunctionParams": {
+            "type": "object",
+            "properties": {
+                "approver": {
+                    "$ref": "#/definitions/script.ApproverParams"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "approver"
+                    ],
+                    "example": "approver"
                 }
             }
         },

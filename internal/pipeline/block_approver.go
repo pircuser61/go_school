@@ -20,35 +20,6 @@ const (
 	keyApproverDecision = "approver"
 )
 
-type ApproverType string
-
-func (a ApproverType) String() string {
-	return string(a)
-}
-
-const (
-	ApproverTypeUser  ApproverType = "user"
-	ApproverTypeGroup ApproverType = "group"
-	ApproverTypeHead  ApproverType = "head"
-)
-
-type ApproverParams struct {
-	Type      ApproverType `json:"type"`
-	Approvers []string     `json:"approvers"`
-}
-
-func (a *ApproverParams) Validate() error {
-	if len(a.Approvers) == 0 {
-		return errors.New("approver list is empty")
-	}
-
-	if a.Type != ApproverTypeUser && a.Type != ApproverTypeGroup && a.Type != ApproverTypeHead {
-		return fmt.Errorf("unknown approver type: %s", a.Type)
-	}
-
-	return nil
-}
-
 type ApproverDecision string
 
 func (a ApproverDecision) String() string {
@@ -66,7 +37,7 @@ type Approver struct {
 }
 
 type ApproverData struct {
-	Type           ApproverType        `json:"type"`
+	Type           script.ApproverType `json:"type"`
 	Approvers      map[string]struct{} `json:"approvers"`
 	Decision       *ApproverDecision   `json:"decision,omitempty"`
 	Comment        *string             `json:"comment,omitempty"`
@@ -110,12 +81,13 @@ type GoApproverBlock struct {
 	Input    map[string]string
 	Output   map[string]string
 	NextStep string
+	State    *ApproverData
 
 	Storage db.Database
 }
 
 func (gb *GoApproverBlock) GetType() string {
-	return BlockGoApprover
+	return BlockGoApproverID
 }
 
 func (gb *GoApproverBlock) Inputs() map[string]string {
@@ -184,8 +156,10 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 				continue
 			}
 
+			gb.State = state
+
 			// check decision
-			decision = state.GetDecision()
+			decision = gb.State.GetDecision()
 			if decision != nil {
 				var actualApprover, comment string
 
@@ -221,8 +195,9 @@ func (gb *GoApproverBlock) NextSteps() []string {
 
 func (gb *GoApproverBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
+		ID:        BlockGoApproverID,
 		BlockType: script.TypeGo,
-		Title:     BlockGoApprover,
+		Title:     BlockGoApproverTitle,
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
@@ -230,6 +205,9 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 				Type:    "string",
 				Comment: "block result",
 			},
+		},
+		Params: &script.FunctionParams{
+			Type: BlockGoApproverID,
 		},
 		NextFuncs: []string{script.Next},
 	}
@@ -256,7 +234,7 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Databas
 		b.Output[v.Name] = v.Global
 	}
 
-	params, ok := ef.Params.(*ApproverParams)
+	params, ok := ef.Params.(*script.ApproverParams)
 	if !ok || params == nil {
 		return nil, errors.New("can not get approver parameters")
 	}
@@ -265,8 +243,12 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Databas
 		return nil, errors.Wrap(err, "invalid approver parameters")
 	}
 
-	// TODO: set default state
-	// will be done on adding "Update" method
+	b.State = &ApproverData{
+		Type: params.Type,
+		Approvers: map[string]struct{}{
+			params.ApproverLogin: {},
+		},
+	}
 
 	return b, nil
 }

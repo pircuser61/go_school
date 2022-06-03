@@ -406,6 +406,13 @@ definitions:
       status_code:
         type: integer
     type: object
+  script.ApproverParams:
+    properties:
+      login:
+        type: string
+      type:
+        type: string
+    type: object
   script.FunctionModel:
     properties:
       block_type:
@@ -424,9 +431,21 @@ definitions:
         items:
           $ref: '#/definitions/script.FunctionValueModel'
         type: array
+      params:
+        $ref: '#/definitions/script.FunctionParams'
       shape_type:
         type: integer
       title:
+        type: string
+    type: object
+  script.FunctionParams:
+    properties:
+      approver:
+        $ref: '#/definitions/script.ApproverParams'
+      type:
+        enum:
+        - approver
+        example: approver
         type: string
     type: object
   script.FunctionValueModel:

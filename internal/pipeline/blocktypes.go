@@ -8,6 +8,7 @@ const (
 	BlockInternalForState     = "for_state"
 	BlockInternalConnector    = "connector"
 
-	BlockGoTest     = "go_test_block"
-	BlockGoApprover = "approver"
+	BlockGoTest          = "go_test_block"
+	BlockGoApproverTitle = "approver"
+	BlockGoApproverID    = "approver"
 )

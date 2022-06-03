@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -139,7 +141,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 					).Return(
 						&entity.Step{
 							Time: time.Time{},
-							Type: BlockGoApprover,
+							Type: BlockGoApproverID,
 							Name: stepName,
 							Storage: map[string]interface{}{
 								stepName: "invalid",
@@ -223,11 +225,11 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 					).Return(
 						&entity.Step{
 							Time: time.Time{},
-							Type: BlockGoApprover,
+							Type: BlockGoApproverID,
 							Name: stepName,
 							Storage: map[string]interface{}{
 								stepName: &ApproverData{
-									Type: ApproverTypeUser,
+									Type: script.ApproverTypeUser,
 									Approvers: map[string]struct{}{
 										login: {},
 									},
@@ -305,7 +307,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 	)
 
 	type fields struct {
-		Type           ApproverType
+		Type           script.ApproverType
 		Approvers      map[string]struct{}
 		Decision       *ApproverDecision
 		Comment        *string
@@ -325,7 +327,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "approver not found",
 			fields: fields{
-				Type: ApproverTypeHead,
+				Type: script.ApproverTypeHead,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
@@ -343,7 +345,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "decision already set",
 			fields: fields{
-				Type: ApproverTypeHead,
+				Type: script.ApproverTypeHead,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
@@ -370,7 +372,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "unknown decision",
 			fields: fields{
-				Type: ApproverTypeHead,
+				Type: script.ApproverTypeHead,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
@@ -388,7 +390,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "valid case",
 			fields: fields{
-				Type: ApproverTypeHead,
+				Type: script.ApproverTypeHead,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
@@ -426,54 +428,6 @@ func TestApproverData_SetDecision(t *testing.T) {
 	}
 }
 
-func TestApproverParams_Validate(t *testing.T) {
-	type fields struct {
-		Type      ApproverType
-		Approvers []string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
-	}{
-		{
-			name: "approver list is empty",
-			fields: fields{
-				Type:      ApproverTypeUser,
-				Approvers: make([]string, 0),
-			},
-			wantErr: true,
-		},
-		{
-			name: "unknown approver type",
-			fields: fields{
-				Type:      ApproverType("unknown"),
-				Approvers: make([]string, 1),
-			},
-			wantErr: true,
-		},
-		{
-			name: "acceptance test",
-			fields: fields{
-				Type:      ApproverTypeUser,
-				Approvers: []string{"example"},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &ApproverParams{
-				Type:      tt.fields.Type,
-				Approvers: tt.fields.Approvers,
-			}
-			if err := a.Validate(); (err != nil) != tt.wantErr {
-				t.Errorf("%v Validate()", a)
-			}
-		})
-	}
-}
-
 func Test_createGoApproverBlock(t *testing.T) {
 	const (
 		example = "example"
@@ -498,7 +452,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoApprover,
+					BlockType: BlockGoApproverID,
 					Title:     title,
 					Input:     nil,
 					Output:    nil,
@@ -515,11 +469,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoApprover,
+					BlockType: BlockGoApproverID,
 					Title:     title,
 					Input:     nil,
 					Output:    nil,
-					Params:    &ApproverParams{},
+					Params:    &script.ApproverParams{},
 					Next:      next,
 				},
 				storage: nil,
@@ -532,7 +486,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoApprover,
+					BlockType: BlockGoApproverID,
 					Title:     title,
 					Input: []entity.EriusFunctionValue{
 						{
@@ -548,9 +502,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 							Global: example,
 						},
 					},
-					Params: &ApproverParams{
-						Type:      ApproverTypeUser,
-						Approvers: []string{login},
+					Params: &script.ApproverParams{
+						Type:          script.ApproverTypeUser,
+						ApproverLogin: login,
 					},
 					Next: next,
 				},
