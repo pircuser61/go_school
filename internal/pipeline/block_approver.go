@@ -26,10 +26,27 @@ func (a ApproverType) String() string {
 }
 
 const (
-	ApproverTypeUser       ApproverType = "user"
-	ApproverTypeGroup      ApproverType = "group"
-	ApproverTypeSupervisor ApproverType = "supervisor"
+	ApproverTypeUser  ApproverType = "user"
+	ApproverTypeGroup ApproverType = "group"
+	ApproverTypeHead  ApproverType = "head"
 )
+
+type ApproverParams struct {
+	Type      ApproverType `json:"type"`
+	Approvers []string     `json:"approvers"`
+}
+
+func (a *ApproverParams) Validate() error {
+	if len(a.Approvers) == 0 {
+		return errors.New("approver list is empty")
+	}
+
+	if a.Type != ApproverTypeUser && a.Type != ApproverTypeGroup && a.Type != ApproverTypeHead {
+		return fmt.Errorf("unknown approver type: %s", a.Type)
+	}
+
+	return nil
+}
 
 type ApproverDecision string
 
@@ -199,4 +216,40 @@ func (gb *GoApproverBlock) NextSteps() []string {
 	nextSteps := []string{gb.NextStep}
 
 	return nextSteps
+}
+
+func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoApproverBlock, error) {
+	b := &GoApproverBlock{
+		Storage: storage,
+
+		Name:     name,
+		Title:    ef.Title,
+		Input:    map[string]string{},
+		Output:   map[string]string{},
+		NextStep: ef.Next,
+	}
+
+	for _, v := range ef.Input {
+		b.Input[v.Name] = v.Global
+	}
+
+	// TODO: check existence of keyApproverDecision in Output
+
+	for _, v := range ef.Output {
+		b.Output[v.Name] = v.Global
+	}
+
+	params, ok := ef.Params.(*ApproverParams)
+	if !ok || params == nil {
+		return nil, errors.New("can not get approver parameters")
+	}
+
+	if err := params.Validate(); err != nil {
+		return nil, errors.Wrap(err, "invalid approver parameters")
+	}
+
+	// TODO: set default state
+	// will be done on adding "Update" method
+
+	return b, nil
 }

@@ -80,12 +80,12 @@ type EriusFunc struct {
 	Title     string               `json:"title" example:"lock-bts"`
 	Input     []EriusFunctionValue `json:"input"`
 	Output    []EriusFunctionValue `json:"output,omitempty"`
-	// Params
-	OnTrue  string `json:"on_true,omitempty"`
-	OnFalse string `json:"on_false,omitempty"`
-	Final   string `json:"final,omitempty"`
-	OnIter  string `json:"on_iter"`
-	Next    string `json:"next,omitempty" example:"send-data_0"`
+	Params    interface{}          `json:"params,omitempty"`
+	OnTrue    string               `json:"on_true,omitempty"`
+	OnFalse   string               `json:"on_false,omitempty"`
+	Final     string               `json:"final,omitempty"`
+	OnIter    string               `json:"on_iter"`
+	Next      string               `json:"next,omitempty" example:"send-data_0"`
 }
 
 type EriusFunctionValue struct {

@@ -49,12 +49,12 @@ definitions:
       on_iter:
         type: string
       on_true:
-        description: Params
         type: string
       output:
         items:
           $ref: '#/definitions/entity.EriusFunctionValue'
         type: array
+      params: {}
       title:
         example: lock-bts
         type: string

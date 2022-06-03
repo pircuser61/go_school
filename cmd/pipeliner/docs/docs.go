@@ -1915,7 +1915,6 @@ var doc = `{
                     "type": "string"
                 },
                 "on_true": {
-                    "description": "Params",
                     "type": "string"
                 },
                 "output": {
@@ -1924,6 +1923,7 @@ var doc = `{
                         "$ref": "#/definitions/entity.EriusFunctionValue"
                     }
                 },
+                "params": {},
                 "title": {
                     "type": "string",
                     "example": "lock-bts"

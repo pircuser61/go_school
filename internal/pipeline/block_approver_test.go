@@ -325,7 +325,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "approver not found",
 			fields: fields{
-				Type: ApproverTypeSupervisor,
+				Type: ApproverTypeHead,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
@@ -343,7 +343,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "decision already set",
 			fields: fields{
-				Type: ApproverTypeSupervisor,
+				Type: ApproverTypeHead,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
@@ -370,7 +370,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "unknown decision",
 			fields: fields{
-				Type: ApproverTypeSupervisor,
+				Type: ApproverTypeHead,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
@@ -388,7 +388,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "valid case",
 			fields: fields{
-				Type: ApproverTypeSupervisor,
+				Type: ApproverTypeHead,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
@@ -422,6 +422,160 @@ func TestApproverData_SetDecision(t *testing.T) {
 					tt.args.comment,
 				)
 			}
+		})
+	}
+}
+
+func TestApproverParams_Validate(t *testing.T) {
+	type fields struct {
+		Type      ApproverType
+		Approvers []string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr bool
+	}{
+		{
+			name: "approver list is empty",
+			fields: fields{
+				Type:      ApproverTypeUser,
+				Approvers: make([]string, 0),
+			},
+			wantErr: true,
+		},
+		{
+			name: "unknown approver type",
+			fields: fields{
+				Type:      ApproverType("unknown"),
+				Approvers: make([]string, 1),
+			},
+			wantErr: true,
+		},
+		{
+			name: "acceptance test",
+			fields: fields{
+				Type:      ApproverTypeUser,
+				Approvers: []string{"example"},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &ApproverParams{
+				Type:      tt.fields.Type,
+				Approvers: tt.fields.Approvers,
+			}
+			if err := a.Validate(); (err != nil) != tt.wantErr {
+				t.Errorf("%v Validate()", a)
+			}
+		})
+	}
+}
+
+func Test_createGoApproverBlock(t *testing.T) {
+	const (
+		example = "example"
+		title   = "title"
+		next    = "next"
+		login   = "login1"
+	)
+
+	type args struct {
+		name    string
+		ef      *entity.EriusFunc
+		storage db.Database
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *GoApproverBlock
+		wantErr bool
+	}{
+		{
+			name: "can not get approver parameters",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoApprover,
+					Title:     title,
+					Input:     nil,
+					Output:    nil,
+					Params:    nil,
+					Next:      next,
+				},
+				storage: nil,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid approver parameters",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoApprover,
+					Title:     title,
+					Input:     nil,
+					Output:    nil,
+					Params:    &ApproverParams{},
+					Next:      next,
+				},
+				storage: nil,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "acceptance test",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoApprover,
+					Title:     title,
+					Input: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Output: []entity.EriusFunctionValue{
+						{
+							Name:   keyApproverDecision,
+							Type:   "string",
+							Global: example,
+						},
+					},
+					Params: &ApproverParams{
+						Type:      ApproverTypeUser,
+						Approvers: []string{login},
+					},
+					Next: next,
+				},
+				storage: nil,
+			},
+			want: &GoApproverBlock{
+				Name:  example,
+				Title: title,
+				Input: map[string]string{
+					"foo": "bar",
+				},
+				Output: map[string]string{
+					keyApproverDecision: example,
+				},
+				NextStep: next,
+				Storage:  nil,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := createGoApproverBlock(tt.args.name, tt.args.ef, tt.args.storage)
+			assert.Equalf(t, tt.wantErr, err != nil, "createGoApproverBlock(%v, %v, %v)", tt.args.name, tt.args.ef, tt.args.storage)
+			assert.Equalf(t, tt.want, got, "createGoApproverBlock(%v, %v, %v)", tt.args.name, tt.args.ef, tt.args.storage)
 		})
 	}
 }

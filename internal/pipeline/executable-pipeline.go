@@ -264,7 +264,11 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 		case script.TypeInternal, script.TypeIF:
 			ep.Blocks[bn] = ep.CreateInternal(&block, bn)
 		case script.TypeGo:
-			ep.Blocks[bn] = ep.CreateGoBlock(&block, bn)
+			var err error
+			ep.Blocks[bn], err = ep.CreateGoBlock(&block, bn)
+			if err != nil {
+				return err
+			}
 		case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 			fb := FunctionBlock{
 				Name:           bn,
@@ -498,7 +502,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 }
 
 //nolint:gocyclo //need bigger cyclomatic
-func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) Runner {
+func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (Runner, error) {
 	switch ef.Title {
 	case "test":
 
@@ -518,31 +522,13 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) R
 			b.Output[v.Name] = v.Global
 		}
 
-		return b
+		return b, nil
 
 	case "approver":
-		b := &GoApproverBlock{
-			Storage: ep.Storage,
-
-			Name:     name,
-			Title:    ef.Title,
-			Input:    map[string]string{},
-			Output:   map[string]string{},
-			NextStep: ef.Next,
-		}
-
-		for _, v := range ef.Input {
-			b.Input[v.Name] = v.Global
-		}
-
-		for _, v := range ef.Output {
-			b.Output[v.Name] = v.Global
-		}
-
-		return b
+		return createGoApproverBlock(name, ef, ep.Storage)
 	}
 
-	return nil
+	return nil, errors.New("unknown go-block type")
 }
 
 func getWorkIdKey(stepName string) string {
