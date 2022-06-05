@@ -42,7 +42,7 @@ type step struct {
 
 type taskSteps []step
 
-func getTaskToResponse(in *entity.EriusTask) *eriusTaskResponse {
+func (eriusTaskResponse) getTaskToResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	for i := range in.Steps {
 		steps = append(steps, step{
@@ -101,7 +101,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp, err := ae.DB.GetTask(ctx, id)
+	dbTask, err := ae.DB.GetTask(ctx, id)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -119,9 +119,10 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp.Steps = steps
+	dbTask.Steps = steps
 
-	if err = sendResponse(w, http.StatusOK, getTaskToResponse(resp)); err != nil {
+	resp := &eriusTaskResponse{}
+	if err = sendResponse(w, http.StatusOK, resp.getTaskToResponse(dbTask)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
