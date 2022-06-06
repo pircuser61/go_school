@@ -126,7 +126,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /pipelines/pipeline/{pipelineID} [get]
+// @Router /pipelines/{pipelineID} [get]
 //nolint:dupl //its different
 func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")

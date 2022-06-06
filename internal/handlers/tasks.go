@@ -204,7 +204,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /tasks/{pipelineID} [get]
+// @Router /tasks/pipeline/{pipelineID} [get]
 //nolint:dupl //diff logic
 func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tasks")
