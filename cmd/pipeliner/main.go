@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/prometheus/client_golang/prometheus/push"
+
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"

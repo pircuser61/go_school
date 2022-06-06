@@ -8,7 +8,13 @@ const (
 	BlockInternalForState     = "for_state"
 	BlockInternalConnector    = "connector"
 
-	BlockGoTest          = "go_test_block"
+	// BlockGoTestTitle represents title of approver block (using in script.FunctionModel)
+	BlockGoTestTitle = "go_test_block"
+	// BlockGoTestID represents id/type of approver block (using in script.FunctionModel)
+	BlockGoTestID = "go_test_block"
+
+	// BlockGoApproverTitle represents title of approver block (using in script.FunctionModel)
 	BlockGoApproverTitle = "approver"
-	BlockGoApproverID    = "approver"
+	// BlockGoApproverID represents id/type of approver block (using in script.FunctionModel)
+	BlockGoApproverID = "approver"
 )

@@ -2159,8 +2159,6 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 	return el, nil
 }
 
-// TODO create, get
-
 func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_step")
 	defer span.End()

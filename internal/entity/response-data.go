@@ -76,6 +76,7 @@ type EriusFunctionList struct {
 type EriusFunc struct {
 	X         int                  `json:"x,omitempty"`
 	Y         int                  `json:"y,omitempty"`
+	ID        string               `json:"id" example:"approver"`
 	BlockType string               `json:"block_type" enums:"python3,go,internal,term,scenario" example:"python3"`
 	Title     string               `json:"title" example:"lock-bts"`
 	Input     []EriusFunctionValue `json:"input"`

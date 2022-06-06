@@ -1896,6 +1896,10 @@ var doc = `{
                 "final": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "string",
+                    "example": "approver"
+                },
                 "input": {
                     "type": "array",
                     "items": {
@@ -2444,7 +2448,7 @@ var doc = `{
         "script.ApproverParams": {
             "type": "object",
             "properties": {
-                "login": {
+                "approver": {
                     "type": "string"
                 },
                 "type": {

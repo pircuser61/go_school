@@ -17,7 +17,7 @@ type GoTestBlock struct {
 }
 
 func (gb *GoTestBlock) GetType() string {
-	return BlockGoTest
+	return BlockGoTestID
 }
 
 func (gb *GoTestBlock) Inputs() map[string]string {

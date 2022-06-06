@@ -5,16 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -503,8 +504,8 @@ func Test_createGoApproverBlock(t *testing.T) {
 						},
 					},
 					Params: &script.ApproverParams{
-						Type:          script.ApproverTypeUser,
-						ApproverLogin: login,
+						Type:     script.ApproverTypeUser,
+						Approver: login,
 					},
 					Next: next,
 				},

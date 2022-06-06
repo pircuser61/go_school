@@ -18,13 +18,12 @@ const (
 )
 
 type ApproverParams struct {
-	Type          ApproverType `json:"type"`
-	ApproverLogin string       `json:"login"`
-	// TODO GroupID
+	Type     ApproverType `json:"type"`
+	Approver string       `json:"approver"`
 }
 
 func (a *ApproverParams) Validate() error {
-	if a.ApproverLogin == "" {
+	if a.Approver == "" {
 		return errors.New("approver is empty")
 	}
 

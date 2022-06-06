@@ -3,9 +3,9 @@ package pipeline
 import (
 	"context"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type ConnectorBlock struct {

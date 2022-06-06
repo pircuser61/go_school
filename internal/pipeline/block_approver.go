@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -251,10 +252,12 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Databas
 		return nil, errors.Wrap(err, "invalid approver parameters")
 	}
 
+	// TODO add support for group
+
 	b.State = &ApproverData{
 		Type: params.Type,
 		Approvers: map[string]struct{}{
-			params.ApproverLogin: {},
+			params.Approver: {},
 		},
 	}
 

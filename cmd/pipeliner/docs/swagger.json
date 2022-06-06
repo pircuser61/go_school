@@ -1881,6 +1881,10 @@
                 "final": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "string",
+                    "example": "approver"
+                },
                 "input": {
                     "type": "array",
                     "items": {
@@ -2429,7 +2433,7 @@
         "script.ApproverParams": {
             "type": "object",
             "properties": {
-                "login": {
+                "approver": {
                     "type": "string"
                 },
                 "type": {

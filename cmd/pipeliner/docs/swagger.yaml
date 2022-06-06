@@ -37,6 +37,9 @@ definitions:
         type: string
       final:
         type: string
+      id:
+        example: approver
+        type: string
       input:
         items:
           $ref: '#/definitions/entity.EriusFunctionValue'
@@ -417,7 +420,7 @@ definitions:
     type: object
   script.ApproverParams:
     properties:
-      login:
+      approver:
         type: string
       type:
         type: string

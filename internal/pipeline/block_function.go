@@ -11,9 +11,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 const (

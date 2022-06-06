@@ -40,8 +40,8 @@ func TestApproverParams_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &ApproverParams{
-				Type:          tt.fields.Type,
-				ApproverLogin: tt.fields.ApproverLogin,
+				Type:     tt.fields.Type,
+				Approver: tt.fields.ApproverLogin,
 			}
 			if err := a.Validate(); (err != nil) != tt.wantErr {
 				t.Errorf("%v Validate()", a)

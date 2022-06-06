@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -513,7 +514,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 //nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (Runner, error) {
 	switch ef.Title {
-	case "test":
+	case BlockGoTestID:
 
 		b := &GoTestBlock{
 			Name:     name,
@@ -533,7 +534,7 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 
 		return b, nil
 
-	case "approver":
+	case BlockGoApproverID:
 		return createGoApproverBlock(name, ef, ep.Storage)
 	}
 
