@@ -385,6 +385,12 @@ definitions:
       task_id:
         type: string
     type: object
+  handlers.RunPipelineBody:
+    additionalProperties: true
+    type: object
+  handlers.RunVersionBody:
+    additionalProperties: true
+    type: object
   handlers.httpError:
     properties:
       description:
@@ -1148,7 +1154,7 @@ paths:
         in: body
         name: variables
         schema:
-          type: primitive
+          $ref: '#/definitions/handlers.RunPipelineBody'
       - description: Pipeline ID
         in: path
         name: pipelineID
@@ -1193,7 +1199,7 @@ paths:
         in: body
         name: variables
         schema:
-          type: primitive
+          $ref: '#/definitions/handlers.RunVersionBody'
       - description: Version ID
         in: path
         name: versionID
