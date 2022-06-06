@@ -373,7 +373,7 @@ func (ae *APIEnv) runDebugTask(
 // @Tags tasks
 // @ID      debug-task
 // @Produce json
-// @Param taskID path string true "Task ID"
+// @Param workNumber path string true "work number"
 // @success 200 {object} httpResponse{data=entity.DebugResult}
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
@@ -385,10 +385,10 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	workNumber := chi.URLParam(req, "taskID")
+	workNumber := chi.URLParam(req, "workNumber")
 	if workNumber == "" {
 		e := UUIDParsingError
-		log.Error(e.errorMessage(errors.New("taskID is empty")))
+		log.Error(e.errorMessage(errors.New("workNumber is empty")))
 		_ = e.sendError(w)
 
 		return

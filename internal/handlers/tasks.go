@@ -1,11 +1,12 @@
 package handlers
 
 import (
-	"github.com/pkg/errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/go-chi/chi/v5"
 
@@ -79,7 +80,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 // @Tags tasks
 // @ID      get-task-entity
 // @Produce json
-// @Param taskID path string true "Task ID"
+// @Param workNumber path string true "work number"
 // @success 200 {object} httpResponse{data=eriusTaskResponse}
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
@@ -91,10 +92,10 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	workNumber := chi.URLParam(req, "taskID")
+	workNumber := chi.URLParam(req, "workNumber")
 	if workNumber == "" {
 		e := UUIDParsingError
-		log.Error(e.errorMessage(errors.New("taskID is empty")))
+		log.Error(e.errorMessage(errors.New("workNumber is empty")))
 		_ = e.sendError(w)
 
 		return
