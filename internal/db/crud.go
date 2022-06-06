@@ -33,8 +33,6 @@ func ConnectPostgres(ctx context.Context, db *configs.Database) (PGConnection, e
 	connString := "postgres://" + db.User + ":" + db.Pass + "@" + db.Host + ":" + db.Port + "/" + db.DBName +
 		"?sslmode=disable&pool_max_conns=" + maxConnections
 
-	fmt.Println(connString)
-
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(db.Timeout)*time.Second)
 	_ = cancel // no needed yet
 
