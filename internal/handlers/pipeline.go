@@ -316,13 +316,15 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+type RunPipelineBody map[string]interface{}
+
 // @Summary Run Pipeline
 // @Description Запустить сценарий
 // @Tags pipeline, run
 // @ID run-pipeline
 // @Accept json
 // @Produce json
-// @Param variables body object false "pipeline input"
+// @Param variables body RunPipelineBody false "pipeline input"
 // @Param pipelineID path string true "Pipeline ID"
 // @Success 200 {object} httpResponse{data=entity.RunResponse}
 // @Failure 400 {object} httpError
