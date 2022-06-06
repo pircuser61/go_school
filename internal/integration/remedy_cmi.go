@@ -209,6 +209,11 @@ func (rs RemedySendCreateMI) GetState() interface{} {
 }
 
 //nolint:gocritic //impossible to pass pointer
+func (rs RemedySendCreateMI) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendCreateMI) Model() script.FunctionModel {
 	return script.FunctionModel{
 		BlockType: script.TypeInternal,

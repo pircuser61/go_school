@@ -197,6 +197,10 @@ func (gb *GoApproverBlock) GetState() interface{} {
 	return gb.State
 }
 
+func (gb *GoApproverBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}
+
 func (gb *GoApproverBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockGoApproverID,

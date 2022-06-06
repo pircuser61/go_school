@@ -255,6 +255,10 @@ func (ep *ExecutablePipeline) GetState() interface{} {
 	return nil
 }
 
+func (ep *ExecutablePipeline) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}
+
 func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]entity.EriusFunc) error {
 	ep.Blocks = make(map[string]Runner)
 

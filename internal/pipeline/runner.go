@@ -16,4 +16,5 @@ type Runner interface {
 	IsScenario() bool
 	Inputs() map[string]string
 	Outputs() map[string]string
+	Update(ctx context.Context, data interface{}) (interface{}, error)
 }

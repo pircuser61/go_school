@@ -194,6 +194,10 @@ func (ns NGSASend) GetState() interface{} {
 	return nil
 }
 
+func (ns NGSASend) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}
+
 func (ns NGSASend) Model() script.FunctionModel {
 	return script.FunctionModel{
 		BlockType: script.TypeInternal,

@@ -181,6 +181,11 @@ func (rs RemedySendUpdateProblem) GetState() interface{} {
 }
 
 //nolint:gocritic //impossible to pass pointer
+func (rs RemedySendUpdateProblem) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+//nolint:gocritic //impossible to pass pointer
 func (rs RemedySendUpdateProblem) Model() script.FunctionModel {
 	return script.FunctionModel{
 		BlockType: script.TypeInternal,

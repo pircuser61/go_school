@@ -201,3 +201,7 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 func (fb *FunctionBlock) GetState() interface{} {
 	return nil
 }
+
+func (fb *FunctionBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}

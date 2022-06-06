@@ -74,3 +74,7 @@ func (gb *GoTestBlock) NextSteps() []string {
 func (gb *GoTestBlock) GetState() interface{} {
 	return nil
 }
+
+func (gb *GoTestBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}

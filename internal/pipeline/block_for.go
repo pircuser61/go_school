@@ -101,3 +101,7 @@ func (e *ForState) NextSteps() []string {
 func (e *ForState) GetState() interface{} {
 	return nil
 }
+
+func (e *ForState) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}

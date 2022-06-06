@@ -82,3 +82,7 @@ func (se *StringsEqual) NextSteps() []string {
 func (se *StringsEqual) GetState() interface{} {
 	return nil
 }
+
+func (se *StringsEqual) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}

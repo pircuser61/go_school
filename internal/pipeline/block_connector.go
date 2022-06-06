@@ -75,3 +75,7 @@ func (cb ConnectorBlock) Outputs() map[string]string {
 func (cb ConnectorBlock) GetState() interface{} {
 	return nil
 }
+
+func (cb ConnectorBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}
