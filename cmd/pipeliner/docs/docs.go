@@ -536,66 +536,6 @@ var doc = `{
                 }
             }
         },
-        "/pipelines/pipeline/{pipelineID}": {
-            "get": {
-                "description": "Получить сценарий по ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "pipeline"
-                ],
-                "summary": "Get pipeline",
-                "operationId": "get-pipeline",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Pipeline ID",
-                        "name": "pipelineID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/handlers.httpResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/entity.EriusScenario"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    }
-                }
-            }
-        },
         "/pipelines/version": {
             "put": {
                 "description": "Изменить черновик",
@@ -840,6 +780,64 @@ var doc = `{
             }
         },
         "/pipelines/{pipelineID}": {
+            "get": {
+                "description": "Получить сценарий по ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "Get pipeline",
+                "operationId": "get-pipeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pipeline ID",
+                        "name": "pipelineID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusScenario"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "description": "Удалить сценарий",
                 "produces": [
@@ -1661,23 +1659,23 @@ var doc = `{
                 }
             }
         },
-        "/tasks/version/{versionID}": {
+        "/tasks/pipeline/{pipelineID}": {
             "get": {
-                "description": "Получить задачи по версии сценарию",
+                "description": "Получить задачи по сценарию",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "version",
+                    "pipeline",
                     "tasks"
                 ],
-                "summary": "Get Version Tasks",
-                "operationId": "get-version-tasks",
+                "summary": "Get Pipeline Tasks",
+                "operationId": "get-pipeline-tasks",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Version ID",
-                        "name": "versionID",
+                        "description": "Pipeline ID",
+                        "name": "pipelineID",
                         "in": "path",
                         "required": true
                     }
@@ -1722,23 +1720,23 @@ var doc = `{
                 }
             }
         },
-        "/tasks/{pipelineID}": {
+        "/tasks/version/{versionID}": {
             "get": {
-                "description": "Получить задачи по сценарию",
+                "description": "Получить задачи по версии сценарию",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "pipeline",
+                    "version",
                     "tasks"
                 ],
-                "summary": "Get Pipeline Tasks",
-                "operationId": "get-pipeline-tasks",
+                "summary": "Get Version Tasks",
+                "operationId": "get-version-tasks",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Pipeline ID",
-                        "name": "pipelineID",
+                        "description": "Version ID",
+                        "name": "versionID",
                         "in": "path",
                         "required": true
                     }
