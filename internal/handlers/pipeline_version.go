@@ -124,13 +124,15 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 }
 
+type RunVersionBody map[string]interface{}
+
 // @Summary Run Version
 // @Description Запустить версию
 // @Tags version, run
 // @ID run-version
 // @Accept json
 // @Produce json
-// @Param variables body object false "pipeline input"
+// @Param variables body RunVersionBody false "pipeline input"
 // @Param versionID path string true "Version ID"
 // @Success 200 {object} httpResponse{data=entity.RunResponse}
 // @Failure 400 {object} httpError
