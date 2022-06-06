@@ -126,7 +126,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /pipelines/pipeline/{pipelineID} [get]
+// @Router /pipelines/{pipelineID} [get]
 //nolint:dupl //its different
 func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
@@ -316,13 +316,15 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+type RunPipelineBody map[string]interface{}
+
 // @Summary Run Pipeline
 // @Description Запустить сценарий
 // @Tags pipeline, run
 // @ID run-pipeline
 // @Accept json
 // @Produce json
-// @Param variables body object false "pipeline input"
+// @Param variables body RunPipelineBody false "pipeline input"
 // @Param pipelineID path string true "Pipeline ID"
 // @Success 200 {object} httpResponse{data=entity.RunResponse}
 // @Failure 400 {object} httpError
