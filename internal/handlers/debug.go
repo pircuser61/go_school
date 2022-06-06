@@ -27,9 +27,9 @@ const (
 var errCantGetNextBlock = errors.New("can't get next block")
 
 type DebugRunRequest struct {
-	TaskID      uuid.UUID `json:"task_id"`
-	BreakPoints []string  `json:"break_points"`
-	Action      string    `json:"action" example:"step_over,resume"`
+	WorkNumber  string   `json:"work_number"`
+	BreakPoints []string `json:"break_points"`
+	Action      string   `json:"action" example:"step_over,resume"`
 }
 
 func (d DebugRunRequest) Bind(r *http.Request) error {
@@ -68,7 +68,7 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, debugRequest.TaskID)
+	task, err := ae.DB.GetTask(ctx, debugRequest.WorkNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -385,18 +385,16 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "taskID")
-
-	taskID, err := uuid.Parse(idParam)
-	if err != nil {
+	workNumber := chi.URLParam(req, "taskID")
+	if workNumber == "" {
 		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(errors.New("taskID is empty")))
 		_ = e.sendError(w)
 
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, taskID)
+	task, err := ae.DB.GetTask(ctx, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))

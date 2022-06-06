@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/pkg/errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,26 +33,26 @@ type eriusTaskResponse struct {
 }
 
 type step struct {
-	Time        time.Time              `json:"time"`
-	Name        string                 `json:"name"`
-	Storage     map[string]interface{} `json:"storage"`
-	Errors      []string               `json:"errors"`
-	Steps       []string               `json:"steps"`
-	HasError    bool                   `json:"has_error"`
+	Time     time.Time              `json:"time"`
+	Name     string                 `json:"name"`
+	Storage  map[string]interface{} `json:"storage"`
+	Errors   []string               `json:"errors"`
+	Steps    []string               `json:"steps"`
+	HasError bool                   `json:"has_error"`
 }
 
 type taskSteps []step
 
-func (eriusTaskResponse) getTaskToResponse(in *entity.EriusTask) *eriusTaskResponse {
+func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	for i := range in.Steps {
 		steps = append(steps, step{
-			Time:        in.Steps[i].Time,
-			Name:        in.Steps[i].Name,
-			Storage:     in.Steps[i].Storage,
-			Errors:      in.Steps[i].Errors,
-			Steps:       in.Steps[i].Steps,
-			HasError:    in.Steps[i].HasError,
+			Time:     in.Steps[i].Time,
+			Name:     in.Steps[i].Name,
+			Storage:  in.Steps[i].Storage,
+			Errors:   in.Steps[i].Errors,
+			Steps:    in.Steps[i].Steps,
+			HasError: in.Steps[i].HasError,
 		})
 	}
 
@@ -90,18 +91,16 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "taskID")
-
-	id, err := uuid.Parse(idParam)
-	if err != nil {
+	workNumber := chi.URLParam(req, "taskID")
+	if workNumber == "" {
 		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(errors.New("taskID is empty")))
 		_ = e.sendError(w)
 
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, id)
+	dbTask, err := ae.DB.GetTask(ctx, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -110,7 +109,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	steps, err := ae.DB.GetTaskSteps(ctx, id)
+	steps, err := ae.DB.GetTaskSteps(ctx, dbTask.ID)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -122,7 +121,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 	dbTask.Steps = steps
 
 	resp := &eriusTaskResponse{}
-	if err = sendResponse(w, http.StatusOK, resp.getTaskToResponse(dbTask)); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
