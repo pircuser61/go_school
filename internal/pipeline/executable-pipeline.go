@@ -157,12 +157,13 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		}
 		ep.StepType = currentBlock.GetType()
 
+		ep.VarStore.AddStep(ep.NowOnPoint)
+		ep.VarStore.ReplaceState(ep.NowOnPoint, currentBlock.GetState())
+
 		var id uuid.UUID
 		var err error
 
 		if currentBlock.IsScenario() {
-			ep.VarStore.AddStep(ep.NowOnPoint)
-
 			nStore := store.NewStore()
 
 			input := currentBlock.Inputs()
@@ -248,6 +249,10 @@ func (ep *ExecutablePipeline) Next(*store.VariableStore) (string, bool) {
 
 func (ep *ExecutablePipeline) NextSteps() []string {
 	return []string{ep.NextStep}
+}
+
+func (ep *ExecutablePipeline) GetState() interface{} {
+	return nil
 }
 
 func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]entity.EriusFunc) error {

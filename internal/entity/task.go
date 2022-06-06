@@ -10,6 +10,7 @@ type Step struct {
 	Time        time.Time              `json:"time"`
 	Type        string                 `json:"type"`
 	Name        string                 `json:"name"`
+	State       map[string]interface{} `json:"state"`
 	Storage     map[string]interface{} `json:"storage"`
 	Errors      []string               `json:"errors"`
 	Steps       []string               `json:"steps"`

@@ -143,9 +143,8 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 				continue
 			}
 
-			// get state from step.Storage
-			// TODO: check key, maybe it should be changed
-			data, ok := step.Storage[gb.Name]
+			// get state from step.State
+			data, ok := step.State[gb.Name]
 			if !ok {
 				continue
 			}
@@ -192,6 +191,10 @@ func (gb *GoApproverBlock) NextSteps() []string {
 	nextSteps := []string{gb.NextStep}
 
 	return nextSteps
+}
+
+func (gb *GoApproverBlock) GetState() interface{} {
+	return gb.State
 }
 
 func (gb *GoApproverBlock) Model() script.FunctionModel {

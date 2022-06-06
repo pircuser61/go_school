@@ -75,3 +75,7 @@ func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 
 	return nil
 }
+
+func (e *IF) GetState() interface{} {
+	return nil
+}

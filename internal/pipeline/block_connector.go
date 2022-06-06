@@ -71,3 +71,7 @@ func (cb ConnectorBlock) Inputs() map[string]string {
 func (cb ConnectorBlock) Outputs() map[string]string {
 	return cb.FunctionOutput
 }
+
+func (cb ConnectorBlock) GetState() interface{} {
+	return nil
+}

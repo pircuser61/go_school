@@ -143,7 +143,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 							Time: time.Time{},
 							Type: BlockGoApproverID,
 							Name: stepName,
-							Storage: map[string]interface{}{
+							State: map[string]interface{}{
 								stepName: "invalid",
 							},
 							Errors:      nil,
@@ -227,7 +227,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 							Time: time.Time{},
 							Type: BlockGoApproverID,
 							Name: stepName,
-							Storage: map[string]interface{}{
+							State: map[string]interface{}{
 								stepName: &ApproverData{
 									Type: script.ApproverTypeUser,
 									Approvers: map[string]struct{}{
@@ -518,6 +518,15 @@ func Test_createGoApproverBlock(t *testing.T) {
 				},
 				Output: map[string]string{
 					keyApproverDecision: example,
+				},
+				State: &ApproverData{
+					Type: script.ApproverTypeUser,
+					Approvers: map[string]struct{}{
+						login: {},
+					},
+					Decision:       nil,
+					Comment:        nil,
+					ActualApprover: nil,
 				},
 				NextStep: next,
 				Storage:  nil,

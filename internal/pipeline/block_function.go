@@ -197,3 +197,7 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 
 	return string(body), nil
 }
+
+func (fb *FunctionBlock) GetState() interface{} {
+	return nil
+}

@@ -97,3 +97,7 @@ func (e *ForState) NextSteps() []string {
 
 	return nextSteps
 }
+
+func (e *ForState) GetState() interface{} {
+	return nil
+}

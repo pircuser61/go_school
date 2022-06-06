@@ -2149,6 +2149,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 			return nil, err
 		}
 
+		s.State = storage.State
 		s.Steps = storage.Steps
 		s.Errors = storage.Errors
 		s.Storage = storage.Values
@@ -2208,6 +2209,7 @@ func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*ent
 		return nil, err
 	}
 
+	s.State = storage.State
 	s.Steps = storage.Steps
 	s.Errors = storage.Errors
 	s.Storage = storage.Values

@@ -78,3 +78,7 @@ func (se *StringsEqual) Next(runCtx *store.VariableStore) (string, bool) {
 func (se *StringsEqual) NextSteps() []string {
 	return []string{se.OnTrue, se.OnFalse}
 }
+
+func (se *StringsEqual) GetState() interface{} {
+	return nil
+}

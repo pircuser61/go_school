@@ -8,6 +8,7 @@ import (
 
 type Runner interface {
 	GetType() string
+	GetState() interface{}
 	DebugRun(ctx context.Context, runCtx *store.VariableStore) error
 	Run(ctx context.Context, runCtx *store.VariableStore) error
 	Next(runCtx *store.VariableStore) (string, bool)

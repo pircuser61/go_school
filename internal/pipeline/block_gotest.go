@@ -70,3 +70,7 @@ func (gb *GoTestBlock) NextSteps() []string {
 
 	return nextSteps
 }
+
+func (gb *GoTestBlock) GetState() interface{} {
+	return nil
+}
