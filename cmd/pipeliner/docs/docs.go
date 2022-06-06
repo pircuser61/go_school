@@ -1149,7 +1149,7 @@ var doc = `{
                         "name": "variables",
                         "in": "body",
                         "schema": {
-                            "type": "primitive"
+                            "$ref": "#/definitions/handlers.RunVersionBody"
                         }
                     },
                     {
@@ -1221,7 +1221,7 @@ var doc = `{
                         "name": "variables",
                         "in": "body",
                         "schema": {
-                            "type": "primitive"
+                            "$ref": "#/definitions/handlers.RunPipelineBody"
                         }
                     },
                     {
@@ -2409,6 +2409,14 @@ var doc = `{
                     "type": "string"
                 }
             }
+        },
+        "handlers.RunPipelineBody": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "handlers.RunVersionBody": {
+            "type": "object",
+            "additionalProperties": true
         },
         "handlers.httpError": {
             "type": "object",
