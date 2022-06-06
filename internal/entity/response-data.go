@@ -49,23 +49,25 @@ type EriusTagInfo struct {
 }
 
 type EriusScenarioV2 struct {
-	ID        uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	VersionID uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	Status    int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
-	HasDraft  bool                 `json:"hasDraft,omitempty"`
-	Name      string               `json:"name" example:"ScenarioName"`
-	Input     []EriusFunctionValue `json:"input"`
-	Output    []EriusFunctionValue `json:"output"`
-	Pipeline  struct {
-		Entrypoint string                 `json:"entrypoint"`
-		Blocks     map[string]EriusFuncV2 `json:"blocks"`
-	} `json:"pipeline"`
-	CreatedAt       *time.Time     `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	ApprovedAt      *time.Time     `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	Author          string         `json:"author" example:"testAuthor"`
-	Tags            []EriusTagInfo `json:"tags"`
-	Comment         string         `json:"comment"`
-	CommentRejected string         `json:"comment_rejected"`
+	ID              uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	VersionID       uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	Status          int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+	HasDraft        bool                 `json:"hasDraft,omitempty"`
+	Name            string               `json:"name" example:"ScenarioName"`
+	Input           []EriusFunctionValue `json:"input"`
+	Output          []EriusFunctionValue `json:"output"`
+	Pipeline        Pipeline             `json:"pipeline"`
+	CreatedAt       *time.Time           `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt      *time.Time           `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author          string               `json:"author" example:"testAuthor"`
+	Tags            []EriusTagInfo       `json:"tags"`
+	Comment         string               `json:"comment"`
+	CommentRejected string               `json:"comment_rejected"`
+}
+
+type Pipeline struct {
+	Entrypoint string                 `json:"entrypoint"`
+	Blocks     map[string]EriusFuncV2 `json:"blocks"`
 }
 
 type EriusFuncV2 struct {

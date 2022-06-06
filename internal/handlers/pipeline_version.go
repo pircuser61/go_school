@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"io/ioutil"
 	"net/http"
 
@@ -74,7 +75,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	p.VersionID = uuid.New()
 
-	user, err := GetUserInfoFromCtx(ctx)
+	user, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.WithError(err).Error("user failed")
 	}
@@ -372,7 +373,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := GetUserInfoFromCtx(ctx)
+	user, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -452,7 +453,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	log.Info("--- running pipeline:", p.Name)
 
-	user, err := GetUserInfoFromCtx(ctx)
+	user, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))

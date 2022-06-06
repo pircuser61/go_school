@@ -58,24 +58,24 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			name: "Linear pipeline",
 
 			pipelineInput: map[string]interface{}{
-				"Input": "Value",
+				"Output": "Value",
 			},
 			tp: test.LinearPipelineTestable,
 			HandlersExpectedInput: map[string]string{
-				"Block1": "{\"Input\":\"Value\"}",
-				"Block2": "{\"Input\":\"Value\"}",
-				"Block3": "{\"Input\":\"Value\"}",
+				"Block1": "{\"Output\":\"Value\"}",
+				"Block2": "{\"Output\":\"Value\"}",
+				"Block3": "{\"Output\":\"Value\"}",
 			},
 
 			PipelinerExpectedOutput: map[string]string{
-				"Input": "Value",
+				"Output": "Value",
 			},
 			ExpectedRunningSequence: []string{"Block1", "Block2", "Block3"},
 		},
 		{
 			name: "If Pipeline True",
 			pipelineInput: map[string]interface{}{
-				"Input": "Value",
+				"Output": "Value",
 			},
 			tp:                      test.IfPipelineTestable,
 			PipelinerExpectedOutput: nil,
@@ -84,7 +84,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		{
 			name: "If Pipeline False",
 			pipelineInput: map[string]interface{}{
-				"Input": "Unexpected",
+				"Output": "Unexpected",
 			},
 			tp:                      test.IfPipelineTestable,
 			PipelinerExpectedOutput: nil,
@@ -94,7 +94,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		//{
 		//	name: "Pipeline with broken function block",
 		//	pipelineInput: map[string]interface{}{
-		//		"Input": "Value",
+		//		"Output": "Value",
 		//	},
 		//	pipelineUUID: test.linearPipelineUUID,
 		//	FunctionHandlers: map[string]http.HandlerFunc{
@@ -109,7 +109,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		//{
 		//	name: "For Pipeline",
 		//	pipelineInput: map[string]interface{}{
-		//		"Input": 3,
+		//		"Output": 3,
 		//	},
 		//	tp:                      test.ForPipelineTestable,
 		//	HandlersExpectedInput:   nil,
@@ -119,13 +119,13 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 		{
 			name: "Pipeline with pipeline",
 			pipelineInput: map[string]interface{}{
-				"Input": "Value",
+				"Output": "Value",
 			},
 			tp: test.PipelineWithPipelineTestable,
 			HandlersExpectedInput: map[string]string{
-				"Block1": "{\"Input\":\"Value\"}",
-				"Block2": "{\"Input\":\"Value\"}",
-				"Block3": "{\"Input\":\"Value\"}",
+				"Block1": "{\"Output\":\"Value\"}",
+				"Block2": "{\"Output\":\"Value\"}",
+				"Block3": "{\"Output\":\"Value\"}",
 			},
 			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "Block1", "Block2", "Block3", "Block2"},
@@ -155,7 +155,7 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 			pipelineInput: nil,
 			tp:            test.ConnectorPipelineTestable,
 			HandlersExpectedInput: map[string]string{
-				"Block3": "{\"Input\":[\"1\",\"2\",\"3\"]}",
+				"Block3": "{\"Output\":[\"1\",\"2\",\"3\"]}",
 			},
 			PipelinerExpectedOutput: nil,
 			ExpectedRunningSequence: []string{"Block1", "Block2", "Block3"},

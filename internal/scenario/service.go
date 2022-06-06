@@ -2,11 +2,8 @@ package scenario
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/google/uuid"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scenario/rep"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 type Service struct {
@@ -19,38 +16,11 @@ func NewService(store *rep.ScenarioRepository) *Service {
 	}
 }
 
-func (s *Service) CreateScenario(ctx context.Context, scenario *entity.EriusScenarioV2) (*entity.EriusScenarioV2, error) {
-	var b []byte
-	if err := json.Unmarshal(b, scenario); err != nil {
-		return nil, err
-	}
-
-	u, err := user.GetUserInfoFromCtx(ctx)
+func (s *Service) GetScenario(ctx context.Context, id string) (*entity.EriusScenarioV2, error) {
+	scenario, err := s.store.GetPipelineVersion(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	scenario.ID = uuid.New()
-	scenario.VersionID = uuid.New()
-
-	canCreate, err := s.store.PipelineNameCreatable(ctx, scenario.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	if !canCreate {
-		return nil, nil
-	}
-
-	err = s.store.CreatePipeline(ctx, scenario, u.Username, b)
-	if err != nil {
-		return nil, err
-	}
-
-	created, err := s.store.GetPipelineVersion(ctx, scenario.VersionID)
-	if err != nil {
-		return nil, err
-	}
-
-	return created, nil
+	return scenario, nil
 }

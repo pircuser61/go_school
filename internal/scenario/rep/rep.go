@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"go.opencensus.io/trace"
 	"time"
@@ -25,12 +26,13 @@ type ScenarioRepository struct {
 	Pool *pgxpool.Pool
 }
 
-func NewScenarioRepository() *ScenarioRepository {
-	return &ScenarioRepository{}
+func NewScenarioRepository(conn db.PGConnection) *ScenarioRepository {
+	return &ScenarioRepository{
+		Pool: conn.Pool,
+	}
 }
 
-func (db *ScenarioRepository) CreatePipeline(c context.Context,
-	p *entity.EriusScenarioV2, author string, pipelineData []byte) error {
+func (db *ScenarioRepository) CreatePipeline(c context.Context, p *entity.EriusScenarioV2, author string, pipelineData []byte) error {
 	c, span := trace.StartSpan(c, "pg_create_pipeline")
 	defer span.End()
 
@@ -116,7 +118,7 @@ func (db *ScenarioRepository) CreateVersion(c context.Context,
 	return nil
 }
 
-func (db *ScenarioRepository) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenarioV2, error) {
+func (db *ScenarioRepository) GetPipelineVersion(c context.Context, id string) (*entity.EriusScenarioV2, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline_version")
 	defer span.End()
 
@@ -192,7 +194,7 @@ func (db *ScenarioRepository) GetPipelineVersion(c context.Context, id uuid.UUID
 	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
 }
 
-func (db *ScenarioRepository) PipelineNameCreatable(c context.Context, name string) (bool, error) {
+func (db *ScenarioRepository) IsScenarioNameExist(c context.Context, name string) (bool, error) {
 	c, span := trace.StartSpan(c, "pg_pipeline_name_creatable")
 	defer span.End()
 
@@ -220,8 +222,8 @@ func (db *ScenarioRepository) PipelineNameCreatable(c context.Context, name stri
 	}
 
 	if count != 0 {
-		return false, nil
+		return true, nil
 	}
 
-	return true, nil
+	return false, nil
 }

@@ -3,7 +3,10 @@ package server
 import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	handler "gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers/grpc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scenario"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scenario/rep"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
 	"google.golang.org/grpc"
@@ -12,6 +15,7 @@ import (
 
 type GRPCConfig struct {
 	Port string
+	Conn db.PGConnection
 }
 
 type GRPC struct {
@@ -26,7 +30,9 @@ func NewGRPC(config *GRPCConfig) *GRPC {
 		),
 		grpc.StatsHandler(&ocgrpc.ServerHandler{}),
 	)
-	handler.NewScenarioHandler().Mount(grpcServer)
+
+	s := scenario.NewService(rep.NewScenarioRepository(config.Conn))
+	handler.NewScenarioHandler(s).Mount(grpcServer)
 
 	return &GRPC{
 		config: config,

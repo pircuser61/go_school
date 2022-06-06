@@ -148,7 +148,10 @@ func main() {
 		}
 	}()
 
-	grpcServer := server.NewGRPC(&server.GRPCConfig{Port: cfg.GRPCPort})
+	grpcServer := server.NewGRPC(&server.GRPCConfig{
+		Port: cfg.GRPCPort,
+		Conn: dbConn,
+	})
 	go func() {
 		if err := grpcServer.Listen(); err != nil {
 			os.Exit(-2)
