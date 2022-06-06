@@ -338,6 +338,9 @@ definitions:
         type: boolean
       name:
         type: string
+      state:
+        additionalProperties: true
+        type: object
       steps:
         items:
           type: string
@@ -818,6 +821,42 @@ paths:
       summary: Delete Pipeline
       tags:
       - pipeline
+    get:
+      description: Получить сценарий по ID
+      operationId: get-pipeline
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipelineID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusScenario'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get pipeline
+      tags:
+      - pipeline
   /pipelines/{pipelineID}/scheduler-tasks:
     post:
       consumes:
@@ -973,43 +1012,6 @@ paths:
       tags:
       - pipeline
       - tags
-  /pipelines/pipeline/{pipelineID}:
-    get:
-      description: Получить сценарий по ID
-      operationId: get-pipeline
-      parameters:
-      - description: Pipeline ID
-        in: path
-        name: pipelineID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusScenario'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-      summary: Get pipeline
-      tags:
-      - pipeline
   /pipelines/version:
     put:
       consumes:
@@ -1459,44 +1461,6 @@ paths:
       tags:
       - pipeline
       - tasks
-  /tasks/{pipelineID}:
-    get:
-      description: Получить задачи по сценарию
-      operationId: get-pipeline-tasks
-      parameters:
-      - description: Pipeline ID
-        in: path
-        name: pipelineID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTasks'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-      summary: Get Pipeline Tasks
-      tags:
-      - pipeline
-      - tasks
   /tasks/{taskID}:
     get:
       description: Получить экземпляр задачи
@@ -1570,6 +1534,44 @@ paths:
             $ref: '#/definitions/handlers.httpError'
       summary: Get last debug task for version
       tags:
+      - tasks
+  /tasks/pipeline/{pipelineID}:
+    get:
+      description: Получить задачи по сценарию
+      operationId: get-pipeline-tasks
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipelineID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTasks'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get Pipeline Tasks
+      tags:
+      - pipeline
       - tasks
   /tasks/version/{versionID}:
     get:
