@@ -906,7 +906,7 @@ func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error) {
+func (m *MockDB) GetTask(c context.Context, workNumber string) (*entity.EriusTask, error) {
 	return nil, errNotFound
 }
 

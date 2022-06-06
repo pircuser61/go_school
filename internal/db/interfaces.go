@@ -19,7 +19,7 @@ type PipelineStorager interface {
 type TaskStorager interface {
 	GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error)
 	GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error)
-	GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error)
+	GetTask(c context.Context, workNumber string) (*entity.EriusTask, error)
 	GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error)
 	CreateTask(c context.Context,
 		taskID, versionID uuid.UUID, author string, isDebugMode bool, parameters []byte) (*entity.EriusTask, error)
