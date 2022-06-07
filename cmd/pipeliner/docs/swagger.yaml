@@ -394,7 +394,7 @@ definitions:
         items:
           type: string
         type: array
-      task_id:
+      work_number:
         type: string
     type: object
   handlers.RunPipelineBody:
@@ -402,6 +402,34 @@ definitions:
     type: object
   handlers.RunVersionBody:
     additionalProperties: true
+    type: object
+  handlers.eriusTaskResponse:
+    properties:
+      author:
+        type: string
+      debug:
+        type: boolean
+      id:
+        type: string
+      last_changed_at:
+        type: string
+      name:
+        type: string
+      parameters:
+        additionalProperties: true
+        type: object
+      started_at:
+        type: string
+      status:
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/handlers.step'
+        type: array
+      version_id:
+        type: string
+      work_number:
+        type: string
     type: object
   handlers.httpError:
     properties:
@@ -417,6 +445,26 @@ definitions:
       data: {}
       status_code:
         type: integer
+    type: object
+  handlers.step:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      has_error:
+        type: boolean
+      name:
+        type: string
+      steps:
+        items:
+          type: string
+        type: array
+      storage:
+        additionalProperties: true
+        type: object
+      time:
+        type: string
     type: object
   script.ApproverParams:
     properties:
@@ -541,9 +589,9 @@ paths:
       description: Получить debug-задачу
       operationId: debug-task
       parameters:
-      - description: Task ID
+      - description: work number
         in: path
-        name: taskID
+        name: workNumber
         required: true
         type: string
       produces:
@@ -1475,9 +1523,9 @@ paths:
       description: Получить экземпляр задачи
       operationId: get-task-entity
       parameters:
-      - description: Task ID
+      - description: work number
         in: path
-        name: taskID
+        name: workNumber
         required: true
         type: string
       produces:
@@ -1490,7 +1538,7 @@ paths:
             - $ref: '#/definitions/handlers.httpResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/entity.EriusTask'
+                  $ref: '#/definitions/handlers.eriusTaskResponse'
               type: object
         "400":
           description: Bad Request

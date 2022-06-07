@@ -1561,14 +1561,14 @@ func (db *PGConnection) CreateTask(c context.Context,
 		$6, 
 		$7
 	)
-	RETURNING id
+	RETURNING works_number
 `
 
 	row := tx.QueryRow(c, q, taskID, versionID, startedAt, RunStatusCreated, author, isDebugMode, parameters)
 
-	var id uuid.UUID
+	var worksNumber string
 
-	err = row.Scan(&id)
+	err = row.Scan(&worksNumber)
 	if err != nil {
 		_ = tx.Rollback(c)
 
@@ -1596,7 +1596,7 @@ func (db *PGConnection) CreateTask(c context.Context,
 		return nil, err
 	}
 
-	return db.GetTask(c, id)
+	return db.GetTask(c, worksNumber)
 }
 
 func (db *PGConnection) ChangeTaskStatus(c context.Context,
@@ -1955,29 +1955,33 @@ func (db *PGConnection) GetLastDebugTask(c context.Context, id uuid.UUID, author
 	return &et, nil
 }
 
-func (db *PGConnection) GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error) {
+func (db *PGConnection) GetTask(c context.Context, workNumber string) (*entity.EriusTask, error) {
 	c, span := trace.StartSpan(c, "pg_get_task")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `SELECT 
+	const q = `SELECT 
 			w.id, 
 			w.started_at, 
-			ws.name, 
+			w.started_at, 
+			ws.name,
 			w.debug, 
 			COALESCE(w.parameters, '{}') AS parameters,
 			w.author,
-			w.version_id
+			w.version_id,
+			w.work_number,
+			p.name
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
+		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
 		JOIN pipeliner.work_status ws ON w.status = ws.id
-		WHERE w.id = $1`
+		WHERE w.work_number = $1`
 
-	return db.getTask(c, q, id)
+	return db.getTask(c, q, workNumber)
 }
 
-func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*entity.EriusTask, error) {
+func (db *PGConnection) getTask(c context.Context, q, workNumber string) (*entity.EriusTask, error) {
 	c, span := trace.StartSpan(c, "pg_get_task_private")
 	defer span.End()
 
@@ -1992,16 +1996,20 @@ func (db *PGConnection) getTask(c context.Context, q string, id uuid.UUID) (*ent
 
 	defer conn.Release()
 
-	row := conn.QueryRow(c, q, id)
+	row := conn.QueryRow(c, q, workNumber)
 
 	err = row.Scan(
 		&et.ID,
 		&et.StartedAt,
+		&et.LastChangedAt,
 		&et.Status,
 		&et.IsDebugMode,
 		&nullStringParameters,
 		&et.Author,
-		&et.VersionID)
+		&et.VersionID,
+		&et.WorkNumber,
+		&et.Name,
+	)
 	if err != nil {
 		return nil, err
 	}

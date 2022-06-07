@@ -184,8 +184,8 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Task ID",
-                        "name": "taskID",
+                        "description": "work number",
+                        "name": "workNumber",
                         "in": "path",
                         "required": true
                     }
@@ -1795,8 +1795,8 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Task ID",
-                        "name": "taskID",
+                        "description": "work number",
+                        "name": "workNumber",
                         "in": "path",
                         "required": true
                     }
@@ -1813,7 +1813,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/entity.EriusTask"
+                                            "$ref": "#/definitions/handlers.eriusTaskResponse"
                                         }
                                     }
                                 }
@@ -2409,7 +2409,7 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "task_id": {
+                "work_number": {
                     "type": "string"
                 }
             }
@@ -2421,6 +2421,48 @@ var doc = `{
         "handlers.RunVersionBody": {
             "type": "object",
             "additionalProperties": true
+        },
+        "handlers.eriusTaskResponse": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "debug": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_changed_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parameters": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.step"
+                    }
+                },
+                "version_id": {
+                    "type": "string"
+                },
+                "work_number": {
+                    "type": "string"
+                }
+            }
         },
         "handlers.httpError": {
             "type": "object",
@@ -2442,6 +2484,36 @@ var doc = `{
                 "data": {},
                 "status_code": {
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.step": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "has_error": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "storage": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "time": {
+                    "type": "string"
                 }
             }
         },
