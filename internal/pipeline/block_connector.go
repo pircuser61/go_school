@@ -3,9 +3,9 @@ package pipeline
 import (
 	"context"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type ConnectorBlock struct {
@@ -70,4 +70,12 @@ func (cb ConnectorBlock) Inputs() map[string]string {
 
 func (cb ConnectorBlock) Outputs() map[string]string {
 	return cb.FunctionOutput
+}
+
+func (cb ConnectorBlock) GetState() interface{} {
+	return nil
+}
+
+func (cb ConnectorBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
 }
