@@ -3,11 +3,13 @@ package pipeline
 import (
 	"context"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
+
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type Pipeline struct {

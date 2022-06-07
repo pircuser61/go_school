@@ -11,9 +11,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 const (
@@ -196,4 +196,12 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 	}
 
 	return string(body), nil
+}
+
+func (fb *FunctionBlock) GetState() interface{} {
+	return nil
+}
+
+func (fb *FunctionBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
 }

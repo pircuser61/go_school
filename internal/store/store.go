@@ -17,7 +17,9 @@ var (
 )
 
 type VariableStore struct {
+	// TODO: RWMutex?
 	sync.Mutex
+	State      map[string]interface{}
 	Values     map[string]interface{}
 	Steps      []string
 	Errors     []string
@@ -26,6 +28,7 @@ type VariableStore struct {
 
 func NewStore() *VariableStore {
 	s := VariableStore{
+		State:      make(map[string]interface{}),
 		Values:     make(map[string]interface{}),
 		Steps:      make([]string, 0),
 		Errors:     make([]string, 0),
@@ -40,6 +43,7 @@ func NewFromStep(step *entity.Step) *VariableStore {
 	sp.SetBreakPoints(step.BreakPoints...)
 
 	vs := VariableStore{
+		State:      step.State,
 		Values:     step.Storage,
 		Steps:      step.Steps,
 		Errors:     step.Errors,
@@ -202,6 +206,21 @@ func (c *VariableStore) SetStopPoints(points StopPoints) {
 	defer c.Unlock()
 
 	c.StopPoints = points
+}
+
+func (c *VariableStore) GetState(stepName string) (interface{}, bool) {
+	c.Lock()
+	defer c.Unlock()
+
+	val, ok := c.State[stepName]
+	return val, ok
+}
+
+func (c *VariableStore) ReplaceState(stepName string, value interface{}) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.State[stepName] = value
 }
 
 type StopPoints struct {

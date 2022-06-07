@@ -1871,6 +1871,7 @@
                     "type": "string",
                     "enum": [
                         "python3",
+                        "go",
                         "internal",
                         "term",
                         "scenario"
@@ -1905,9 +1906,14 @@
                         "$ref": "#/definitions/entity.EriusFunctionValue"
                     }
                 },
+                "params": {},
                 "title": {
                     "type": "string",
                     "example": "lock-bts"
+                },
+                "type_id": {
+                    "type": "string",
+                    "example": "approver"
                 },
                 "x": {
                     "type": "integer"
@@ -2267,9 +2273,7 @@
                         "type": "string"
                     }
                 },
-                "output": {
-                    "type": "object"
-                },
+                "output": {},
                 "pipeline_id": {
                     "type": "string",
                     "format": "uuid",
@@ -2306,8 +2310,15 @@
                 "has_error": {
                     "type": "boolean"
                 },
+                "is_finished": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
+                },
+                "state": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "steps": {
                     "type": "array",
@@ -2320,6 +2331,9 @@
                     "additionalProperties": true
                 },
                 "time": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -2452,9 +2466,7 @@
         "handlers.httpResponse": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "object"
-                },
+                "data": {},
                 "status_code": {
                     "type": "integer"
                 }
@@ -2490,6 +2502,17 @@
                 }
             }
         },
+        "script.ApproverParams": {
+            "type": "object",
+            "properties": {
+                "approver": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "script.FunctionModel": {
             "type": "object",
             "properties": {
@@ -2517,11 +2540,29 @@
                         "$ref": "#/definitions/script.FunctionValueModel"
                     }
                 },
+                "params": {
+                    "$ref": "#/definitions/script.FunctionParams"
+                },
                 "shape_type": {
                     "type": "integer"
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "script.FunctionParams": {
+            "type": "object",
+            "properties": {
+                "approver": {
+                    "$ref": "#/definitions/script.ApproverParams"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "approver"
+                    ],
+                    "example": "approver"
                 }
             }
         },

@@ -29,6 +29,7 @@ definitions:
       block_type:
         enum:
         - python3
+        - go
         - internal
         - term
         - scenario
@@ -53,8 +54,12 @@ definitions:
         items:
           $ref: '#/definitions/entity.EriusFunctionValue'
         type: array
+      params: {}
       title:
         example: lock-bts
+        type: string
+      type_id:
+        example: approver
         type: string
       x:
         type: integer
@@ -306,8 +311,7 @@ definitions:
         items:
           type: string
         type: array
-      output:
-        type: object
+      output: {}
       pipeline_id:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
@@ -333,8 +337,13 @@ definitions:
         type: array
       has_error:
         type: boolean
+      is_finished:
+        type: boolean
       name:
         type: string
+      state:
+        additionalProperties: true
+        type: object
       steps:
         items:
           type: string
@@ -343,6 +352,8 @@ definitions:
         additionalProperties: true
         type: object
       time:
+        type: string
+      type:
         type: string
     type: object
   entity.UsageResponse:
@@ -431,8 +442,7 @@ definitions:
     type: object
   handlers.httpResponse:
     properties:
-      data:
-        type: object
+      data: {}
       status_code:
         type: integer
     type: object
@@ -456,6 +466,13 @@ definitions:
       time:
         type: string
     type: object
+  script.ApproverParams:
+    properties:
+      approver:
+        type: string
+      type:
+        type: string
+    type: object
   script.FunctionModel:
     properties:
       block_type:
@@ -474,9 +491,21 @@ definitions:
         items:
           $ref: '#/definitions/script.FunctionValueModel'
         type: array
+      params:
+        $ref: '#/definitions/script.FunctionParams'
       shape_type:
         type: integer
       title:
+        type: string
+    type: object
+  script.FunctionParams:
+    properties:
+      approver:
+        $ref: '#/definitions/script.ApproverParams'
+      type:
+        enum:
+        - approver
+        example: approver
         type: string
     type: object
   script.FunctionValueModel:

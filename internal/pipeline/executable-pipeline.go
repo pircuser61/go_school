@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -17,6 +18,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integration"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+)
+
+const (
+	// TODO maybe there is a better way to save work id in variable store
+	keyStepWorkId = "work_id"
 )
 
 var errUnknownBlock = errors.New("unknown block")
@@ -141,8 +147,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	for ep.NowOnPoint != "" {
 		log.Info("executing", ep.NowOnPoint)
 
-		now, ok := ep.Blocks[ep.NowOnPoint]
-		if !ok || now == nil {
+		currentBlock, ok := ep.Blocks[ep.NowOnPoint]
+		if !ok || currentBlock == nil {
 			_, err := ep.createStep(ctx, true, true)
 			if err != nil {
 				return err
@@ -150,17 +156,18 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			return errUnknownBlock
 		}
-		ep.StepType = now.GetType()
+		ep.StepType = currentBlock.GetType()
+
+		ep.VarStore.AddStep(ep.NowOnPoint)
+		ep.VarStore.ReplaceState(ep.NowOnPoint, currentBlock.GetState())
 
 		var id uuid.UUID
 		var err error
 
-		if now.IsScenario() {
-			ep.VarStore.AddStep(ep.NowOnPoint)
-
+		if currentBlock.IsScenario() {
 			nStore := store.NewStore()
 
-			input := ep.Blocks[ep.NowOnPoint].Inputs()
+			input := currentBlock.Inputs()
 			for local, global := range input {
 				val, _ := runCtx.GetValue(global)
 				nStore.SetValue(local, val)
@@ -171,13 +178,15 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				return err
 			}
 
-			err = ep.Blocks[ep.NowOnPoint].DebugRun(ctx, nStore)
+			nStore.SetValue(getWorkIdKey(ep.NowOnPoint), id)
+
+			err = currentBlock.DebugRun(ctx, nStore)
 			if err != nil {
 				key := ep.NowOnPoint + KeyDelimiter + ErrorKey
 				nStore.SetValue(key, err.Error())
 			}
 
-			out := ep.Blocks[ep.NowOnPoint].Outputs()
+			out := currentBlock.Outputs()
 			for inner, outer := range out {
 				val, _ := nStore.GetValue(inner)
 				ep.VarStore.SetValue(outer, val)
@@ -188,7 +197,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				return err
 			}
 
-			err = ep.Blocks[ep.NowOnPoint].DebugRun(ctx, ep.VarStore)
+			ep.VarStore.SetValue(getWorkIdKey(ep.NowOnPoint), id)
+
+			err = currentBlock.DebugRun(ctx, ep.VarStore)
 			if err != nil {
 				key := ep.NowOnPoint + KeyDelimiter + ErrorKey
 				ep.VarStore.SetValue(key, err.Error())
@@ -241,6 +252,14 @@ func (ep *ExecutablePipeline) NextSteps() []string {
 	return []string{ep.NextStep}
 }
 
+func (ep *ExecutablePipeline) GetState() interface{} {
+	return nil
+}
+
+func (ep *ExecutablePipeline) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
+}
+
 func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]entity.EriusFunc) error {
 	ep.Blocks = make(map[string]Runner)
 
@@ -255,7 +274,11 @@ func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]
 		case script.TypeInternal, script.TypeIF:
 			ep.Blocks[bn] = ep.CreateInternal(&block, bn)
 		case script.TypeGo:
-			ep.Blocks[bn] = ep.CreateGoBlock(&block, bn)
+			var err error
+			ep.Blocks[bn], err = ep.CreateGoBlock(&block, bn)
+			if err != nil {
+				return err
+			}
 		case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 			fb := FunctionBlock{
 				Name:           bn,
@@ -489,9 +512,9 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 }
 
 //nolint:gocyclo //need bigger cyclomatic
-func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) Runner {
+func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (Runner, error) {
 	switch ef.Title {
-	case "test":
+	case BlockGoTestID:
 
 		b := &GoTestBlock{
 			Name:     name,
@@ -505,11 +528,19 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) R
 			b.Input[v.Name] = v.Global
 		}
 
-		return b
+		for _, v := range ef.Output {
+			b.Output[v.Name] = v.Global
+		}
 
-	default:
-		// todo: предотвратить панику!!!
+		return b, nil
+
+	case BlockGoApproverID:
+		return createGoApproverBlock(name, ef, ep.Storage)
 	}
 
-	return nil // todo: предотвратить панику!!!
+	return nil, errors.New("unknown go-block type")
+}
+
+func getWorkIdKey(stepName string) string {
+	return stepName + "." + keyStepWorkId
 }

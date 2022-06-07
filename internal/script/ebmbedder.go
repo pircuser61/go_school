@@ -57,6 +57,14 @@ type FunctionModel struct {
 	ShapeType int                  `json:"shape_type"`
 	NextFuncs []string             `json:"next_funcs"`
 	ID        string               `json:"id"`
+	Params    *FunctionParams      `json:"params,omitempty"`
+}
+
+// TODO: find a better way to implement oneOf
+
+type FunctionParams struct {
+	Type           string          `json:"type" enums:"approver" example:"approver"`
+	ApproverParams *ApproverParams `json:"approver,omitempty"`
 }
 
 type FunctionValueModel struct {

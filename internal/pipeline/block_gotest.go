@@ -17,7 +17,7 @@ type GoTestBlock struct {
 }
 
 func (gb *GoTestBlock) GetType() string {
-	return BlockGoTest
+	return BlockGoTestID
 }
 
 func (gb *GoTestBlock) Inputs() map[string]string {
@@ -69,4 +69,12 @@ func (gb *GoTestBlock) NextSteps() []string {
 	nextSteps := []string{gb.NextStep}
 
 	return nextSteps
+}
+
+func (gb *GoTestBlock) GetState() interface{} {
+	return nil
+}
+
+func (gb *GoTestBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+	return nil, nil
 }
