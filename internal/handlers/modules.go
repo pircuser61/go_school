@@ -45,7 +45,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	approverBlock := &pipeline.GoApproverBlock{}
 
-	sdBlock := &pipeline.GoSdBlock{}
+	sdBlock := &pipeline.GoSdApplicationBlock{}
 
 	eriusFunctions = append(eriusFunctions,
 		script.IfState.Model(),

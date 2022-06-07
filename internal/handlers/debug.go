@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -148,7 +148,7 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	b, err := ioutil.ReadAll(r.Body)
+	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		e := RequestReadError
 		log.Error(e.errorMessage(err))

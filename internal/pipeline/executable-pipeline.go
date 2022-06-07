@@ -536,8 +536,8 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 
 	case BlockGoApproverID:
 		return createGoApproverBlock(name, ef, ep.Storage)
-	case BlockGoSdID:
-		return createGoSdBlock(name, ef, ep.Storage)
+	case BlockGoSdApplicationID:
+		return createGoSdApplicationBlock(name, ef, ep.Storage)
 	}
 
 	return nil, errors.New("unknown go-block type")

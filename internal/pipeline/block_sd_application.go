@@ -3,6 +3,8 @@ package pipeline
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -17,9 +19,9 @@ type ApplicationData struct {
 	Description     string
 }
 
-type SdResult struct{}
+type SdApplicationResult struct{}
 
-type GoSdBlock struct {
+type GoSdApplicationBlock struct {
 	Name     string
 	Title    string
 	Input    map[string]string
@@ -30,63 +32,58 @@ type GoSdBlock struct {
 	Storage db.Database
 }
 
-func (gb *GoSdBlock) GetType() string {
-	return BlockGoSdID
+func (gb *GoSdApplicationBlock) GetType() string {
+	return BlockGoSdApplicationID
 }
 
-func (gb *GoSdBlock) Inputs() map[string]string {
+func (gb *GoSdApplicationBlock) Inputs() map[string]string {
 	return gb.Input
 }
 
-func (gb *GoSdBlock) Outputs() map[string]string {
+func (gb *GoSdApplicationBlock) Outputs() map[string]string {
 	return gb.Output
 }
 
-func (gb *GoSdBlock) IsScenario() bool {
+func (gb *GoSdApplicationBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoSdBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
+func (gb *GoSdApplicationBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return gb.DebugRun(ctx, runCtx)
 }
 
-func (gb *GoSdBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) (err error) {
+func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) (err error) {
 	_, s := trace.StartSpan(ctx, "run_go_sd_block")
 	defer s.End()
 
 	runCtx.AddStep(gb.Name)
 
-
-	// get params from context
-	// put in output
-
-
-	return nil
+	return err
 }
 
-func (gb *GoSdBlock) Next(_ *store.VariableStore) (string, bool) {
+func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) (string, bool) {
 	return gb.NextStep, true
 }
 
-func (gb *GoSdBlock) NextSteps() []string {
+func (gb *GoSdApplicationBlock) NextSteps() []string {
 	nextSteps := []string{gb.NextStep}
 
 	return nextSteps
 }
 
-func (gb *GoSdBlock) GetState() interface{} {
+func (gb *GoSdApplicationBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *GoSdBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+func (gb *GoSdApplicationBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *GoSdBlock) Model() script.FunctionModel {
+func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
-		ID:        BlockGoSdID,
+		ID:        BlockGoSdApplicationID,
 		BlockType: script.TypeGo,
-		Title:     BlockGoSdTitle,
+		Title:     BlockGoSdApplicationTitle,
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
@@ -96,14 +93,14 @@ func (gb *GoSdBlock) Model() script.FunctionModel {
 			},
 		},
 		Params: &script.FunctionParams{
-			Type: BlockGoSdID,
+			Type: BlockGoSdApplicationID,
 		},
 		NextFuncs: []string{script.Next},
 	}
 }
 
-func createGoSdBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoSdBlock, error) {
-	b := &GoSdBlock{
+func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoSdApplicationBlock, error) {
+	b := &GoSdApplicationBlock{
 		Storage: storage,
 
 		Name:     name,
@@ -119,6 +116,15 @@ func createGoSdBlock(name string, ef *entity.EriusFunc, storage db.Database) (*G
 
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
+	}
+
+	params, ok := ef.Params.(*script.ApproverParams)
+	if !ok || params == nil {
+		return nil, errors.New("can not get sd_application parameters")
+	}
+
+	if err := params.Validate(); err != nil {
+		return nil, errors.Wrap(err, "invalid sd_application parameters")
 	}
 
 	return b, nil

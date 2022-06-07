@@ -168,7 +168,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(ctx, w, req, p, false)
 }
 
-//todo сделать метод для запуска по blueprintID
+// todo сделать метод для запуска по blueprintID
 func (ae *APIEnv) RunVersionByBlueprintID(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "run_version_by_blueprint_id")
 	defer s.End()
