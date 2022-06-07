@@ -14,7 +14,7 @@ func TestGoSdBlock_DebugRun(t *testing.T) {
 		Input    map[string]string
 		Output   map[string]string
 		NextStep string
-		State    *SdData
+		State    *ApplicationData
 		Storage  db.Database
 	}
 	type args struct {

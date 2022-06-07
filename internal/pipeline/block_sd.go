@@ -10,9 +10,13 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-type SdData struct {}
+type ApplicationData struct {
+	BlueprintID     string
+	ApplicationBody map[string]interface{}
+	Description     string
+}
 
-type SdResult struct {}
+type SdResult struct{}
 
 type GoSdBlock struct {
 	Name     string
@@ -20,7 +24,7 @@ type GoSdBlock struct {
 	Input    map[string]string
 	Output   map[string]string
 	NextStep string
-	State    *SdData
+	State    *ApplicationData
 
 	Storage db.Database
 }
@@ -80,9 +84,9 @@ func (gb *GoSdBlock) Model() script.FunctionModel {
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
-				Name:    "",
+				Name:    "application",
 				Type:    "string",
-				Comment: "result",
+				Comment: "application body",
 			},
 		},
 		Params: &script.FunctionParams{
@@ -106,7 +110,6 @@ func createGoSdBlock(name string, ef *entity.EriusFunc, storage db.Database) (*G
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
 	}
-
 
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
