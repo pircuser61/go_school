@@ -538,13 +538,13 @@ func (_m *MockedDatabase) GetTag(c context.Context, e *entity.EriusTagInfo) (*en
 	return r0, r1
 }
 
-// GetTask provides a mock function with given fields: c, id
-func (_m *MockedDatabase) GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error) {
-	ret := _m.Called(c, id)
+// GetTask provides a mock function with given fields: c, workNumber
+func (_m *MockedDatabase) GetTask(c context.Context, workNumber string) (*entity.EriusTask, error) {
+	ret := _m.Called(c, workNumber)
 
 	var r0 *entity.EriusTask
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *entity.EriusTask); ok {
-		r0 = rf(c, id)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *entity.EriusTask); ok {
+		r0 = rf(c, workNumber)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusTask)
@@ -552,8 +552,8 @@ func (_m *MockedDatabase) GetTask(c context.Context, id uuid.UUID) (*entity.Eriu
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(c, id)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(c, workNumber)
 	} else {
 		r1 = ret.Error(1)
 	}

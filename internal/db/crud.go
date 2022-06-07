@@ -12,6 +12,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -1561,7 +1562,7 @@ func (db *PGConnection) CreateTask(c context.Context,
 		$6, 
 		$7
 	)
-	RETURNING works_number
+	RETURNING work_number
 `
 
 	row := tx.QueryRow(c, q, taskID, versionID, startedAt, RunStatusCreated, author, isDebugMode, parameters)
