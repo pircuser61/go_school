@@ -118,7 +118,7 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, storage db.Da
 		b.Output[v.Name] = v.Global
 	}
 
-	params, ok := ef.Params.(*script.ApproverParams)
+	params, ok := ef.Params.(*script.SdApplicationParams)
 	if !ok || params == nil {
 		return nil, errors.New("can not get sd_application parameters")
 	}
