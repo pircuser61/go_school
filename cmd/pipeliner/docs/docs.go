@@ -1896,10 +1896,6 @@ var doc = `{
                 "final": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "string",
-                    "example": "approver"
-                },
                 "input": {
                     "type": "array",
                     "items": {
@@ -1929,6 +1925,10 @@ var doc = `{
                 "title": {
                     "type": "string",
                     "example": "lock-bts"
+                },
+                "type_id": {
+                    "type": "string",
+                    "example": "approver"
                 },
                 "x": {
                     "type": "integer"

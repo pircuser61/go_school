@@ -37,9 +37,6 @@ definitions:
         type: string
       final:
         type: string
-      id:
-        example: approver
-        type: string
       input:
         items:
           $ref: '#/definitions/entity.EriusFunctionValue'
@@ -60,6 +57,9 @@ definitions:
       params: {}
       title:
         example: lock-bts
+        type: string
+      type_id:
+        example: approver
         type: string
       x:
         type: integer
