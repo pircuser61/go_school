@@ -1906,7 +1906,9 @@
                         "$ref": "#/definitions/entity.EriusFunctionValue"
                     }
                 },
-                "params": {},
+                "params": {
+                    "type": "object"
+                },
                 "title": {
                     "type": "string",
                     "example": "lock-bts"
@@ -2273,7 +2275,9 @@
                         "type": "string"
                     }
                 },
-                "output": {},
+                "output": {
+                    "type": "object"
+                },
                 "pipeline_id": {
                     "type": "string",
                     "format": "uuid",
@@ -2466,7 +2470,9 @@
         "handlers.httpResponse": {
             "type": "object",
             "properties": {
-                "data": {},
+                "data": {
+                    "type": "object"
+                },
                 "status_code": {
                     "type": "integer"
                 }
@@ -2557,10 +2563,14 @@
                 "approver": {
                     "$ref": "#/definitions/script.ApproverParams"
                 },
+                "sd_application": {
+                    "$ref": "#/definitions/script.SdApplicationParams"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
-                        "approver"
+                        "approver",
+                        "sd_application"
                     ],
                     "example": "approver"
                 }
@@ -2576,6 +2586,21 @@
                     "type": "string"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "script.SdApplicationParams": {
+            "type": "object",
+            "properties": {
+                "application_body": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "blueprint_id": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 }
             }

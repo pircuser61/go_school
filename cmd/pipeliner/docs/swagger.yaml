@@ -54,7 +54,8 @@ definitions:
         items:
           $ref: '#/definitions/entity.EriusFunctionValue'
         type: array
-      params: {}
+      params:
+        type: object
       title:
         example: lock-bts
         type: string
@@ -311,7 +312,8 @@ definitions:
         items:
           type: string
         type: array
-      output: {}
+      output:
+        type: object
       pipeline_id:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
@@ -442,7 +444,8 @@ definitions:
     type: object
   handlers.httpResponse:
     properties:
-      data: {}
+      data:
+        type: object
       status_code:
         type: integer
     type: object
@@ -502,9 +505,12 @@ definitions:
     properties:
       approver:
         $ref: '#/definitions/script.ApproverParams'
+      sd_application:
+        $ref: '#/definitions/script.SdApplicationParams'
       type:
         enum:
         - approver
+        - sd_application
         example: approver
         type: string
     type: object
@@ -515,6 +521,16 @@ definitions:
       name:
         type: string
       type:
+        type: string
+    type: object
+  script.SdApplicationParams:
+    properties:
+      application_body:
+        additionalProperties: true
+        type: object
+      blueprint_id:
+        type: string
+      description:
         type: string
     type: object
   script.ShapeEntity:

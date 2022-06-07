@@ -63,8 +63,9 @@ type FunctionModel struct {
 // TODO: find a better way to implement oneOf
 
 type FunctionParams struct {
-	Type           string          `json:"type" enums:"approver" example:"approver"`
-	ApproverParams *ApproverParams `json:"approver,omitempty"`
+	Type                string               `json:"type" enums:"approver,sd_application" example:"approver"`
+	ApproverParams      *ApproverParams      `json:"approver,omitempty"`
+	SdApplicationParams *SdApplicationParams `json:"sd_application,omitempty"`
 }
 
 type FunctionValueModel struct {

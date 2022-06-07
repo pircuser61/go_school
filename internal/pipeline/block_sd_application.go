@@ -14,9 +14,8 @@ import (
 )
 
 type ApplicationData struct {
-	BlueprintID     string
-	ApplicationBody map[string]interface{}
-	Description     string
+	ApplicationBody map[string]interface{} `json:"application_body"`
+	Description     string                 `json:"description"`
 }
 
 type SdApplicationResult struct{}
@@ -125,6 +124,11 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, storage db.Da
 
 	if err := params.Validate(); err != nil {
 		return nil, errors.Wrap(err, "invalid sd_application parameters")
+	}
+
+	b.State = &ApplicationData{
+		ApplicationBody: params.ApplicationBody,
+		Description:     params.Description,
 	}
 
 	return b, nil
