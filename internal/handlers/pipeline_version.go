@@ -168,34 +168,14 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(ctx, w, req, p, false)
 }
 
-
+//todo сделать метод для запуска по blueprintID
 func (ae *APIEnv) RunVersionByBlueprintID(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "run_pipeline")
+	ctx, s := trace.StartSpan(req.Context(), "run_version_by_blueprint_id")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	_ = logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "versionID")
-
-	id, err := uuid.Parse(idParam)
-	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	p, err := ae.DB.GetPipelineVersion(ctx, id)
-	if err != nil {
-		e := GetPipelineError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	ae.execVersion(ctx, w, req, p, false)
+	_ = chi.URLParam(req, "blueprintID")
 }
 
 // @Summary Delete Version
