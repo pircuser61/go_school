@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -45,6 +45,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	approverBlock := &pipeline.GoApproverBlock{}
 
+	sdBlock := &pipeline.GoSdApplicationBlock{}
+
 	eriusFunctions = append(eriusFunctions,
 		script.IfState.Model(),
 		script.Input.Model(),
@@ -59,6 +61,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		integration.NewRemedySendUpdateWork(ae.Remedy, ae.HTTPClient).Model(),
 		integration.NewRemedySendUpdateProblem(ae.Remedy, ae.HTTPClient).Model(),
 		approverBlock.Model(),
+		sdBlock.Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
@@ -308,7 +311,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 
 	vs := store.NewStore()
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {

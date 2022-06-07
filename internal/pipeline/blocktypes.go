@@ -17,4 +17,9 @@ const (
 	BlockGoApproverTitle = "approver"
 	// BlockGoApproverID represents id/type of approver block (using in script.FunctionModel)
 	BlockGoApproverID = "approver"
+
+	// BlockGoSdApplicationTitle represents id/type of sd block (using in script.FunctionModel)
+	BlockGoSdApplicationTitle = "servicedesk_application"
+	// BlockGoSdApplicationID represents id/type of sd block (using in script.FunctionModel)
+	BlockGoSdApplicationID = "servicedesk_application"
 )

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -39,7 +40,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	log := logger.GetLogger(ctx)
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
@@ -166,6 +167,16 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	}
 
 	ae.execVersion(ctx, w, req, p, false)
+}
+
+// todo сделать метод для запуска по blueprintID
+func (ae *APIEnv) RunVersionByBlueprintID(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "run_version_by_blueprint_id")
+	defer s.End()
+
+	_ = logger.GetLogger(ctx)
+
+	_ = chi.URLParam(req, "blueprintID")
 }
 
 // @Summary Delete Version
@@ -312,7 +323,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
