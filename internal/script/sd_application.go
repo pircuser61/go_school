@@ -15,4 +15,3 @@ func (a *SdApplicationParams) Validate() error {
 
 	return nil
 }
-
