@@ -168,6 +168,36 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	ae.execVersion(ctx, w, req, p, false)
 }
 
+
+func (ae *APIEnv) RunVersionByBlueprintID(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "run_pipeline")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	idParam := chi.URLParam(req, "versionID")
+
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		e := UUIDParsingError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	p, err := ae.DB.GetPipelineVersion(ctx, id)
+	if err != nil {
+		e := GetPipelineError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	ae.execVersion(ctx, w, req, p, false)
+}
+
 // @Summary Delete Version
 // @Description Удалить версию
 // @Tags version

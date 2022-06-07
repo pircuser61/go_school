@@ -64,7 +64,7 @@ type FunctionModel struct {
 
 type FunctionParams struct {
 	Type           string          `json:"type" enums:"approver" example:"approver"`
-	ApproverParams *ApproverParams `json:"approver"`
+	ApproverParams *ApproverParams `json:"approver,omitempty"`
 }
 
 type FunctionValueModel struct {

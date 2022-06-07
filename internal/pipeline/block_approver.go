@@ -18,7 +18,9 @@ import (
 )
 
 const (
-	keyApproverDecision = "approver"
+	keyOutputApprover = "approver"
+	keyOutputDecision = "decision"
+	keyOutputComment  = "comment"
 )
 
 type ApproverDecision string
@@ -172,11 +174,9 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 					comment = *state.Comment
 				}
 
-				runCtx.SetValue(gb.Output[keyApproverDecision], &ApproverResult{
-					Login:    actualApprover,
-					Decision: *decision,
-					Comment:  comment,
-				})
+				runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
+				runCtx.SetValue(gb.Output[keyOutputDecision], decision.String())
+				runCtx.SetValue(gb.Output[keyOutputComment], comment)
 
 				return nil
 			}
@@ -210,9 +210,19 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
-				Name:    keyApproverDecision,
+				Name:    keyOutputApprover,
 				Type:    "string",
-				Comment: "block result",
+				Comment: "approver login which made a decision",
+			},
+			{
+				Name:    keyOutputDecision,
+				Type:    "string",
+				Comment: "block decision",
+			},
+			{
+				Name:    keyOutputComment,
+				Type:    "string",
+				Comment: "approver comment",
 			},
 		},
 		Params: &script.FunctionParams{

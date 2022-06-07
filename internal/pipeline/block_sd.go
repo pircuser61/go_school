@@ -55,6 +55,11 @@ func (gb *GoSdBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) 
 
 	runCtx.AddStep(gb.Name)
 
+
+	// get params from context
+	// put in output
+
+
 	return nil
 }
 

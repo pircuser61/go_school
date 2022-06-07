@@ -22,7 +22,9 @@ import (
 func TestGoApproverBlock_DebugRun(t *testing.T) {
 	const (
 		stepName    = "approver1"
-		decisionKey = "decision1"
+		approverKey = "approverKey"
+		decisionKey = "decisionKey"
+		commentKey  = "commentKey"
 	)
 
 	var (
@@ -214,7 +216,9 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title: "",
 				Input: nil,
 				Output: map[string]string{
-					keyApproverDecision: decisionKey,
+					keyOutputApprover: approverKey,
+					keyOutputDecision: decisionKey,
+					keyOutputComment:  commentKey,
 				},
 				NextStep: "",
 				Storage: func() db.Database {
@@ -266,11 +270,9 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				res.AddStep(stepName)
 
 				res.SetValue(getWorkIdKey(stepName), stepId)
-				res.SetValue(decisionKey, &ApproverResult{
-					Login:    login,
-					Decision: decision,
-					Comment:  comment,
-				})
+				res.SetValue(approverKey, login)
+				res.SetValue(decisionKey, decision.String())
+				res.SetValue(commentKey, comment)
 
 				return res
 			}(),
@@ -498,7 +500,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 					},
 					Output: []entity.EriusFunctionValue{
 						{
-							Name:   keyApproverDecision,
+							Name:   keyOutputApprover,
 							Type:   "string",
 							Global: example,
 						},
@@ -518,7 +520,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 					"foo": "bar",
 				},
 				Output: map[string]string{
-					keyApproverDecision: example,
+					keyOutputApprover: example,
 				},
 				State: &ApproverData{
 					Type: script.ApproverTypeUser,
