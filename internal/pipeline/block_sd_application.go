@@ -94,6 +94,9 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 		},
 		Params: &script.FunctionParams{
 			Type: BlockGoSdApplicationID,
+			Params: &script.SdApplicationParams{
+				BlueprintID: "",
+			},
 		},
 		NextFuncs: []string{script.Next},
 	}

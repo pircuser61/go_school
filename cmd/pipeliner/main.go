@@ -228,7 +228,7 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 			r.Get("/tasks", pipeliner.GetTasks)
 
 			r.Route("/tasks/", func(r chi.Router) {
-				r.Get("/{taskID}", pipeliner.GetTask)
+				r.Get("/{workNumber}", pipeliner.GetTask)
 				r.Get("/last-by-version/{versionID}", pipeliner.LastVersionDebugTask)
 				r.Get("/pipeline/{pipelineID}", pipeliner.GetPipelineTasks)
 				r.Get("/version/{versionID}", pipeliner.GetVersionTasks)
@@ -236,7 +236,7 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 			r.Route("/debug/", func(r chi.Router) {
 				r.Post("/run", pipeliner.StartDebugTask)
 				r.Post("/", pipeliner.CreateDebugTask)
-				r.Get("/{taskID}", pipeliner.DebugTask)
+				r.Get("/{workNumber}", pipeliner.DebugTask)
 			})
 		})
 
