@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -166,17 +167,99 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ae.execVersion(ctx, w, req, p, false)
+	runResponse := ae.execVersion(ctx, w, req, p, false)
+	if runResponse != nil {
+		_ = sendResponse(w, http.StatusOK, entity.RunResponse{
+			PipelineID: runResponse.PipelineID,
+			TaskID:     runResponse.TaskID,
+			Status:     statusRunned,
+		})
+	}
 }
 
-// todo сделать метод для запуска по blueprintID
-func (ae *APIEnv) RunVersionByBlueprintID(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "run_version_by_blueprint_id")
+type RunVersionsByBlueprintIdRequest struct {
+	BlueprintID     string                 `json:"blueprint_id"`
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+}
+
+type RunVersionsByBlueprintIdResponse struct {
+	Versions []*entity.RunResponse `json:"versions"`
+}
+
+// @Summary Run Version
+// @Description Запустить версии c blueprintID
+// @Tags version, run
+// @ID run-versions-by-blueprint-id
+// @Accept json
+// @Produce json
+// @Param variables body RunVersionsByBlueprintIdRequest false "pipeline input"
+// @Success 200 {object} httpResponse
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /run/versions/blueprint_id [post]
+func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "run_versions_by_blueprint_id")
 	defer s.End()
 
-	_ = logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx)
 
-	_ = chi.URLParam(req, "blueprintID")
+	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	req := &RunVersionsByBlueprintIdRequest{}
+
+	err = json.Unmarshal(body, req)
+	if err != nil {
+		e := GetVersionsByBlueprintParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if req.BlueprintID == "" {
+		e := UnknownError
+		log.Error(e.errorMessage(errors.New("blueprintID is empty")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	versions := make([]entity.EriusScenario, 0)
+	versions, err = ae.DB.GetVersionsByBlueprintID(ctx, req.BlueprintID)
+	if err != nil {
+		e := GetVersionsByBlueprintIdError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var runVersions RunVersionsByBlueprintIdResponse
+
+	for i := range versions {
+		v := ae.execVersion(ctx, w, r, &versions[i], false)
+		runVersions.Versions = append(runVersions.Versions, v)
+	}
+
+	err = sendResponse(w, http.StatusOK, runVersions)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }
 
 // @Summary Delete Version
@@ -432,7 +515,9 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 }
 
 //nolint //need big cyclo,need equal string for all usages
-func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request, p *entity.EriusScenario, withStop bool) {
+func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,
+	p *entity.EriusScenario, withStop bool) *entity.RunResponse {
+
 	ctx, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
@@ -470,7 +555,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-		return
+		return nil
 	}
 
 	arg := &execVersionInternalParams{
@@ -485,13 +570,13 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	if err != nil {
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-		return
+		return nil
 	}
 
-	_ = sendResponse(w, http.StatusOK, entity.RunResponse{
+	return &entity.RunResponse{
 		PipelineID: ep.PipelineID, TaskID: ep.TaskID,
 		Status: statusRunned,
-	})
+	}
 }
 
 type execVersionInternalParams struct {
@@ -525,11 +610,6 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 	}
 
 	vs := store.NewStore()
-
-	if err != nil {
-		e := RequestReadError
-		return &ep, e, err
-	}
 
 	pipelineVars := p.vars
 

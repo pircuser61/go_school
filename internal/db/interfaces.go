@@ -88,4 +88,5 @@ type Database interface {
 	SwitchRejected(c context.Context, versionID uuid.UUID, comment, author string) error
 	GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error
+	GetVersionsByBlueprintID(c context.Context, blueprintID string) ([]entity.EriusScenario, error)
 }

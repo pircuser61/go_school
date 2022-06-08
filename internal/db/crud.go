@@ -2265,3 +2265,81 @@ func (db *PGConnection) getVersionHistory(c context.Context, id uuid.UUID) ([]en
 
 	return res, nil
 }
+
+func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) ([]entity.EriusScenario, error) {
+	c, span := trace.StartSpan(c, "pg_get_versions_by_blueprint_id")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT 
+			pv.id, 
+			pv.status, 
+			pv.pipeline_id, 
+			pv.created_at, 
+			pv.content, 
+			pv.comment_rejected, 
+			pv.comment, 
+			pv.author, 
+			pph.date
+		FROM pipeliner.versions pv
+			LEFT JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
+		WHERE pv.content::json#>>'{pipeline,entrypoint}' = 'servicedesk_application_0' AND
+			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,block_type}' = 'servicedesk_application' AND
+			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,params,blueprint_id}' = $1`
+
+	rows, err := conn.Query(c, query, bID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	res := make([]entity.EriusScenario, 0)
+
+	if rows.Next() {
+		var (
+			vID, pID uuid.UUID
+			s        int
+			c        string
+			cr       string
+			cm       string
+			d        *time.Time
+			ca       *time.Time
+			a        string
+		)
+
+		err = rows.Scan(&vID, &s, &pID, &ca, &c, &cr, &cm, &a, &d)
+		if err != nil {
+			return nil, err
+		}
+
+		p := entity.EriusScenario{}
+
+		err = json.Unmarshal([]byte(c), &p)
+		if err != nil {
+			return nil, err
+		}
+
+		p.VersionID = vID
+		p.ID = pID
+		p.Status = s
+		p.CommentRejected = cr
+		p.Comment = cm
+		p.ApprovedAt = d
+		p.CreatedAt = ca
+		p.Author = a
+
+		res = append(res, p)
+	}
+
+	return res, nil
+}

@@ -370,7 +370,14 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ae.execVersion(ctx, w, req, p, withStop)
+	runResponse := ae.execVersion(ctx, w, req, p, withStop)
+	if runResponse != nil {
+		_ = sendResponse(w, http.StatusOK, entity.RunResponse{
+			PipelineID: runResponse.PipelineID,
+			TaskID:     runResponse.TaskID,
+			Status:     statusRunned,
+		})
+	}
 }
 
 func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {
