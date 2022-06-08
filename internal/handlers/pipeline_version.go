@@ -236,8 +236,7 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	versions := make([]entity.EriusScenario, 0)
-	versions, err = ae.DB.GetVersionsByBlueprintID(ctx, req.BlueprintID)
+	versions, err := ae.DB.GetVersionsByBlueprintID(ctx, req.BlueprintID)
 	if err != nil {
 		e := GetVersionsByBlueprintIdError
 		log.Error(e.errorMessage(err))
@@ -257,15 +256,15 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 			defer wg.Done()
 
 			v := ae.execVersion(ctx, w, r, &version, false)
-			respChan <- v
+			ch <- v
 		}(&wg, versions[j], respChan)
 	}
 
 	wg.Wait()
 	close(respChan)
 
-	for range respChan {
-		v := <- respChan
+	for i := range respChan {
+		v := i
 		runVersions.Versions = append(runVersions.Versions, v)
 	}
 
