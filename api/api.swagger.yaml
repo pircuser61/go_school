@@ -1276,26 +1276,9 @@ paths:
         500:
           $ref: '#/components/responses/WentWrongError'
 
-  /pipelines/version/{versionID}:
+  /pipelines/version/{pipelineID}:
     parameters:
       - $ref: '#/components/parameters/pipelineID'
-      - $ref: '#/components/parameters/versionID'
-
-    get:
-      operationId: GetPipelineVersion
-      summary: Get pipeline version
-      description: Get an existing pipeline version
-      tags:
-        - version
-      responses:
-        200:
-          $ref: '#/components/responses/ScenarioResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
 
     post:
       operationId: CreatePipelineVersion
@@ -1309,6 +1292,26 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/scenario'
+      responses:
+        200:
+          $ref: '#/components/responses/ScenarioResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /pipelines/version/{versionID}:
+    parameters:
+      - $ref: '#/components/parameters/versionID'
+
+    get:
+      operationId: GetPipelineVersion
+      summary: Get pipeline version
+      description: Get an existing pipeline version
+      tags:
+        - version
       responses:
         200:
           $ref: '#/components/responses/ScenarioResp'
