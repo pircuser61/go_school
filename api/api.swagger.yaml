@@ -404,6 +404,24 @@ components:
         - $ref: '#/components/schemas/approverParams'
         - $ref: '#/components/schemas/sdApplicationParams'
 
+    paramsType:
+      type: string
+      description: Params type
+      enum:
+        - approver
+        - servicedesk_application
+
+    functionsParams:
+      type: object
+      description: Block params description
+      properties:
+        type:
+          $ref: '#/components/schemas/paramsType'
+        params:
+          $ref: '#/components/schemas/params'
+      required:
+        - type
+
     block_type:
       type: string
       description: Block type (language)
@@ -463,7 +481,7 @@ components:
           type: string
           description: Block unique ID
         params:
-          $ref: '#/components/schemas/params'
+          $ref: '#/components/schemas/functionsParams'
       required:
         - block_type
         - title
@@ -501,6 +519,8 @@ components:
           description: Ourput vars
           items:
             $ref: '#/components/schemas/functionValue'
+        param_type:
+          $ref: '#/components/schemas/paramsType'
         params:
           $ref: '#/components/schemas/params'
         on_true:
