@@ -81,7 +81,7 @@ type EriusFunc struct {
 	Title     string               `json:"title" example:"lock-bts"`
 	Input     []EriusFunctionValue `json:"input"`
 	Output    []EriusFunctionValue `json:"output,omitempty"`
-	ParamType string               `json:"param_type"`
+	ParamType string               `json:"param_type,omitempty"`
 	Params    interface{}          `json:"params,omitempty"`
 	OnTrue    string               `json:"on_true,omitempty"`
 	OnFalse   string               `json:"on_false,omitempty"`
