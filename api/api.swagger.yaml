@@ -419,7 +419,7 @@ components:
       description: Entity shape
       properties:
         id:
-          type: string
+          type: integer
           description: Shape unique ID
         title:
           type: string
