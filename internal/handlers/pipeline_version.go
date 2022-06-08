@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -171,7 +172,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	if runResponse != nil {
 		_ = sendResponse(w, http.StatusOK, entity.RunResponse{
 			PipelineID: runResponse.PipelineID,
-			TaskID:     runResponse.TaskID,
+			WorkNumber: runResponse.WorkNumber,
 			Status:     statusRunned,
 		})
 	}
@@ -194,7 +195,7 @@ type RunVersionsByBlueprintIdResponse struct {
 // @Accept json
 // @Produce json
 // @Param variables body RunVersionsByBlueprintIdRequest false "pipeline input"
-// @Success 200 {object} httpResponse
+// @Success 200 {object} RunVersionsByBlueprintIdResponse
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
@@ -245,10 +246,26 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(len(versions))
+	respChan := make(chan *entity.RunResponse, len(versions))
 	var runVersions RunVersionsByBlueprintIdResponse
 
 	for i := range versions {
-		v := ae.execVersion(ctx, w, r, &versions[i], false)
+		j := i
+		go func(wg *sync.WaitGroup, version entity.EriusScenario, ch chan *entity.RunResponse) {
+			defer wg.Done()
+
+			v := ae.execVersion(ctx, w, r, &version, false)
+			respChan <- v
+		}(&wg, versions[j], respChan)
+	}
+
+	wg.Wait()
+	close(respChan)
+
+	for range respChan {
+		v := <- respChan
 		runVersions.Versions = append(runVersions.Versions, v)
 	}
 
@@ -574,7 +591,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	}
 
 	return &entity.RunResponse{
-		PipelineID: ep.PipelineID, TaskID: ep.TaskID,
+		PipelineID: ep.PipelineID, WorkNumber: ep.WorkNumber,
 		Status: statusRunned,
 	}
 }

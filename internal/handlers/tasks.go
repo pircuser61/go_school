@@ -34,12 +34,15 @@ type eriusTaskResponse struct {
 }
 
 type step struct {
-	Time     time.Time              `json:"time"`
-	Name     string                 `json:"name"`
-	Storage  map[string]interface{} `json:"storage"`
-	Errors   []string               `json:"errors"`
-	Steps    []string               `json:"steps"`
-	HasError bool                   `json:"has_error"`
+	Time       time.Time              `json:"time"`
+	Type       string                 `json:"type"`
+	Name       string                 `json:"name"`
+	State      map[string]interface{} `json:"state"`
+	Storage    map[string]interface{} `json:"storage"`
+	Errors     []string               `json:"errors"`
+	Steps      []string               `json:"steps"`
+	HasError   bool                   `json:"has_error"`
+	IsFinished bool                   `json:"is_finished"`
 }
 
 type taskSteps []step
@@ -48,12 +51,15 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	for i := range in.Steps {
 		steps = append(steps, step{
-			Time:     in.Steps[i].Time,
-			Name:     in.Steps[i].Name,
-			Storage:  in.Steps[i].Storage,
-			Errors:   in.Steps[i].Errors,
-			Steps:    in.Steps[i].Steps,
-			HasError: in.Steps[i].HasError,
+			Time:       in.Steps[i].Time,
+			Type:       in.Steps[i].Type,
+			Name:       in.Steps[i].Name,
+			State:      in.Steps[i].State,
+			Storage:    in.Steps[i].Storage,
+			Errors:     in.Steps[i].Errors,
+			Steps:      in.Steps[i].Steps,
+			HasError:   in.Steps[i].HasError,
+			IsFinished: in.Steps[i].IsFinished,
 		})
 	}
 

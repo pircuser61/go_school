@@ -14,8 +14,7 @@ import (
 )
 
 type ApplicationData struct {
-	ApplicationBody map[string]interface{} `json:"application_body"`
-	Description     string                 `json:"description"`
+	BlueprintID string `json:"blueprint_id"`
 }
 
 type SdApplicationResult struct{}
@@ -93,6 +92,9 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 		},
 		Params: &script.FunctionParams{
 			Type: BlockGoSdApplicationID,
+			Params: &script.SdApplicationParams{
+				BlueprintID: "",
+			},
 		},
 		NextFuncs: []string{script.Next},
 	}
@@ -127,8 +129,7 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, storage db.Da
 	}
 
 	b.State = &ApplicationData{
-		ApplicationBody: params.ApplicationBody,
-		Description:     params.Description,
+		BlueprintID: params.BlueprintID,
 	}
 
 	return b, nil

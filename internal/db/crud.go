@@ -304,8 +304,8 @@ func (db *PGConnection) GetRejectedVersions(c context.Context) ([]entity.EriusSc
 	return db.GetVersionsByStatus(c, StatusRejected)
 }
 
-func (db *PGConnection) GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error) {
-	c, span := trace.StartSpan(c, "pg_get_worked_versions")
+func (db *PGConnection) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_worked_versions")
 	defer span.End()
 
 	// nolint:gocritic
@@ -324,7 +324,7 @@ func (db *PGConnection) GetWorkedVersions(c context.Context) ([]entity.EriusScen
 	AND pp.deleted_at IS NULL
 	ORDER BY pv.created_at`
 
-	rows, err := db.Pool.Query(c, q, StatusDeleted)
+	rows, err := db.Pool.Query(ctx, q, StatusDeleted)
 	if err != nil {
 		return nil, err
 	}

@@ -227,6 +227,10 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 		},
 		Params: &script.FunctionParams{
 			Type: BlockGoApproverID,
+			Params: &script.ApproverParams{
+				Approver: "",
+				Type:     "",
+			},
 		},
 		NextFuncs: []string{script.Next},
 	}

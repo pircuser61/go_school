@@ -374,7 +374,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 	if runResponse != nil {
 		_ = sendResponse(w, http.StatusOK, entity.RunResponse{
 			PipelineID: runResponse.PipelineID,
-			TaskID:     runResponse.TaskID,
+			WorkNumber: runResponse.WorkNumber,
 			Status:     statusRunned,
 		})
 	}
