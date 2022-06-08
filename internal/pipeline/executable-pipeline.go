@@ -29,6 +29,7 @@ var errUnknownBlock = errors.New("unknown block")
 
 type ExecutablePipeline struct {
 	TaskID        uuid.UUID
+	WorkNumber    string
 	PipelineID    uuid.UUID
 	VersionID     uuid.UUID
 	Storage       db.Database
@@ -67,11 +68,12 @@ func (ep *ExecutablePipeline) IsScenario() bool {
 func (ep *ExecutablePipeline) CreateTask(ctx context.Context, author string, isDebugMode bool, parameters []byte) error {
 	ep.TaskID = uuid.New()
 
-	_, err := ep.Storage.CreateTask(ctx, ep.TaskID, ep.VersionID, author, isDebugMode, parameters)
+	task, err := ep.Storage.CreateTask(ctx, ep.TaskID, ep.VersionID, author, isDebugMode, parameters)
 	if err != nil {
 		return err
 	}
 
+	ep.WorkNumber = task.WorkNumber
 	return nil
 }
 
@@ -260,6 +262,7 @@ func (ep *ExecutablePipeline) Update(_ context.Context, _ interface{}) (interfac
 	return nil, nil
 }
 
+//nolint:gocyclo //ok
 func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]entity.EriusFunc) error {
 	ep.Blocks = make(map[string]Runner)
 

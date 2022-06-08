@@ -1,29 +1,5 @@
 basePath: /api/pipeliner/v1
 definitions:
-  entity.AllUsageResponse:
-    properties:
-      pipelines:
-        additionalProperties:
-          items:
-            type: string
-          type: array
-        type: object
-    type: object
-  entity.DebugResult:
-    properties:
-      block_name:
-        type: string
-      break_points:
-        items:
-          type: string
-        type: array
-      status:
-        description: todo define values
-        example: run,error,finished,created
-        type: string
-      task:
-        $ref: '#/definitions/entity.EriusTask'
-    type: object
   entity.EriusFunc:
     properties:
       block_type:
@@ -65,17 +41,6 @@ definitions:
         type: integer
       "y":
         type: integer
-    type: object
-  entity.EriusFunctionList:
-    properties:
-      funcs:
-        items:
-          $ref: '#/definitions/script.FunctionModel'
-        type: array
-      shapes:
-        items:
-          $ref: '#/definitions/script.ShapeEntity'
-        type: array
     type: object
   entity.EriusFunctionValue:
     properties:
@@ -147,81 +112,6 @@ definitions:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
         type: string
-    type: object
-  entity.EriusScenarioInfo:
-    properties:
-      approved_at:
-        example: "2020-07-16T17:10:25.112704+03:00"
-        type: string
-      approver:
-        example: testApprover
-        type: string
-      author:
-        example: testAuthor
-        type: string
-      comment:
-        type: string
-      comment_rejected:
-        type: string
-      created_at:
-        example: "2020-07-16T17:10:25.112704+03:00"
-        type: string
-      id:
-        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-        format: uuid
-        type: string
-      last_run:
-        example: "2020-07-16T17:10:25.112704+03:00"
-        type: string
-      last_run_status:
-        type: string
-      name:
-        example: ScenarioName
-        type: string
-      status:
-        description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
-        enum:
-        - 1
-        - 2
-        - 3
-        - 4
-        - 5
-        type: integer
-      tags:
-        items:
-          $ref: '#/definitions/entity.EriusTagInfo'
-        type: array
-      version_history:
-        items:
-          $ref: '#/definitions/entity.EriusVersionInfo'
-        type: array
-      version_id:
-        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-        format: uuid
-        type: string
-    type: object
-  entity.EriusScenarioList:
-    properties:
-      drafts:
-        description: Черновики
-        items:
-          $ref: '#/definitions/entity.EriusScenarioInfo'
-        type: array
-      on_approve:
-        description: Сценарии на одобрении
-        items:
-          $ref: '#/definitions/entity.EriusScenarioInfo'
-        type: array
-      pipelines:
-        description: Согласованные сценарии
-        items:
-          $ref: '#/definitions/entity.EriusScenarioInfo'
-        type: array
-      tags:
-        description: Теги
-        items:
-          $ref: '#/definitions/entity.EriusTagInfo'
-        type: array
     type: object
   entity.EriusTagInfo:
     properties:
@@ -431,6 +321,12 @@ definitions:
       work_number:
         type: string
     type: object
+  handlers.RunPipelineBody:
+    additionalProperties: true
+    type: object
+  handlers.RunVersionBody:
+    additionalProperties: true
+    type: object
   handlers.httpError:
     properties:
       description:
@@ -523,12 +419,11 @@ definitions:
         type: string
       id:
         type: integer
-      title:
-        type: string
     type: object
 host: localhost:8181
 info:
   contact: {}
+  license: {}
   title: Pipeliner API
   version: "0.1"
 paths:
@@ -563,12 +458,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTask'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -600,12 +490,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.DebugResult'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -639,12 +524,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTask'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -670,12 +550,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusFunctionList'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -703,12 +578,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.UsageResponse'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -736,12 +606,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.UsageResponse'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -763,12 +628,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.AllUsageResponse'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -790,12 +650,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusScenarioList'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "401":
           description: Unauthorized
           schema:
@@ -825,12 +680,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusScenario'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -893,12 +743,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusScenario'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -932,12 +777,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.SchedulerTasksResponse'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -965,14 +805,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/entity.EriusTagInfo'
-                  type: array
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1047,12 +880,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTagInfo'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1088,12 +916,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusScenario'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1133,12 +956,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusScenario'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1201,12 +1019,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusScenario'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1245,12 +1058,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.RunResponse'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1290,12 +1098,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.RunResponse'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1322,14 +1125,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/entity.EriusTagInfo'
-                  type: array
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1363,12 +1159,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTagInfo'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1402,12 +1193,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTagInfo'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1496,12 +1282,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTasksPage'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1571,12 +1352,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTask'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1608,12 +1384,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTasks'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:
@@ -1646,12 +1417,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusTasks'
-              type: object
+            $ref: '#/definitions/handlers.httpResponse'
         "400":
           description: Bad Request
           schema:

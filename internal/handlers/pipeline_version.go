@@ -489,7 +489,8 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	}
 
 	_ = sendResponse(w, http.StatusOK, entity.RunResponse{
-		PipelineID: ep.PipelineID, TaskID: ep.TaskID,
+		PipelineID: ep.PipelineID,
+		WorkNumber: ep.WorkNumber,
 		Status: statusRunned,
 	})
 }
