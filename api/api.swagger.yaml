@@ -485,8 +485,6 @@ components:
       required:
         - block_type
         - title
-        - inputs
-        - outputs
         - shape_type
         - next_funcs
         - id
@@ -618,8 +616,6 @@ components:
         - version_id
         - status
         - name
-        - input
-        - output
         - pipeline
         - author
         - tags

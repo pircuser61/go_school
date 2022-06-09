@@ -54,8 +54,8 @@ type EriusScenario struct {
 	Status    int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	HasDraft  bool                 `json:"hasDraft,omitempty"`
 	Name      string               `json:"name" example:"ScenarioName"`
-	Input     []EriusFunctionValue `json:"input"`
-	Output    []EriusFunctionValue `json:"output"`
+	Input     []EriusFunctionValue `json:"input,omitempty"`
+	Output    []EriusFunctionValue `json:"output,omitempty"`
 	Pipeline  struct {
 		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
