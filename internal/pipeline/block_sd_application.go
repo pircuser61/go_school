@@ -13,6 +13,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+type SdApplicationDataCtx struct {}
+
 type ApplicationData struct {
 	BlueprintID string `json:"blueprint_id"`
 }
@@ -55,6 +57,8 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, runCtx *store.Vari
 	defer s.End()
 
 	runCtx.AddStep(gb.Name)
+
+	// get from req context and put in stage
 
 	return err
 }

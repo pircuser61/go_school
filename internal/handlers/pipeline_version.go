@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"sync"
 
@@ -168,14 +167,20 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	runResponse := ae.execVersion(ctx, w, req, p, false)
-	if runResponse != nil {
-		_ = sendResponse(w, http.StatusOK, entity.RunResponse{
-			PipelineID: runResponse.PipelineID,
-			WorkNumber: runResponse.WorkNumber,
-			Status:     statusRunned,
-		})
+	runResponse, err := ae.execVersion(ctx, w, req, p, false)
+	if err != nil {
+		e := GetPipelineError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
+
+	_ = sendResponse(w, http.StatusOK, entity.RunResponse{
+		PipelineID: runResponse.PipelineID,
+		WorkNumber: runResponse.WorkNumber,
+		Status:     statusRunned,
+	})
 }
 
 type RunVersionsByBlueprintIdRequest struct {
@@ -188,8 +193,8 @@ type RunVersionsByBlueprintIdResponse struct {
 	Versions []*entity.RunResponse `json:"versions"`
 }
 
-// @Summary Run Version
-// @Description Запустить версии c blueprintID
+// @Summary Run Version By blueprintID
+// @Description Запустить все версии c blueprintID и первым блоком sd_application
 // @Tags version, run
 // @ID run-versions-by-blueprint-id
 // @Accept json
@@ -221,7 +226,7 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 
 	err = json.Unmarshal(body, req)
 	if err != nil {
-		e := GetVersionsByBlueprintParseError
+		e := BodyParseError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -229,7 +234,7 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	}
 
 	if req.BlueprintID == "" {
-		e := UnknownError
+		e := ValidationError
 		log.Error(e.errorMessage(errors.New("blueprintID is empty")))
 		_ = e.sendError(w)
 
@@ -250,12 +255,18 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	respChan := make(chan *entity.RunResponse, len(versions))
 	var runVersions RunVersionsByBlueprintIdResponse
 
+	context.WithValue(ctx, pipeline.SdApplicationDataCtx{}, req)
+
 	for i := range versions {
 		j := i
 		go func(wg *sync.WaitGroup, version entity.EriusScenario, ch chan *entity.RunResponse) {
 			defer wg.Done()
 
-			v := ae.execVersion(ctx, w, r, &version, false)
+			v, execErr := ae.execVersion(ctx, w, r, &version, false)
+			if execErr != nil {
+				log.Error(execErr)
+				return
+			}
 			ch <- v
 		}(&wg, versions[j], respChan)
 	}
@@ -532,7 +543,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 //nolint //need big cyclo,need equal string for all usages
 func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,
-	p *entity.EriusScenario, withStop bool) *entity.RunResponse {
+	p *entity.EriusScenario, withStop bool) (*entity.RunResponse, error) {
 
 	ctx, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
@@ -541,7 +552,11 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	reqID := req.Header.Get(XRequestIDHeader)
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+
 	defer req.Body.Close()
 
 	mon := monitoring.New()
@@ -570,8 +585,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return nil
+		return nil, errors.Wrap(err, e.error())
 	}
 
 	arg := &execVersionInternalParams{
@@ -585,14 +599,13 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	ep, e, err := ae.execVersionInternal(ctx, arg)
 	if err != nil {
 		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return nil
+		return nil, errors.Wrap(err, e.error())
 	}
 
 	return &entity.RunResponse{
 		PipelineID: ep.PipelineID, WorkNumber: ep.WorkNumber,
 		Status: statusRunned,
-	}
+	}, nil
 }
 
 type execVersionInternalParams struct {
