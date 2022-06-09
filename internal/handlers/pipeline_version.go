@@ -169,7 +169,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 
 	runResponse, err := ae.execVersion(ctx, w, req, p, false)
 	if err != nil {
-		e := GetPipelineError
+		e := PipelineExecutionError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -255,7 +255,9 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	respChan := make(chan *entity.RunResponse, len(versions))
 	var runVersions RunVersionsByBlueprintIdResponse
 
-	context.WithValue(ctx, pipeline.SdApplicationDataCtx{}, req)
+	context.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
+		BlueprintID: "",
+	})
 
 	for i := range versions {
 		j := i
