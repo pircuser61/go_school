@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
