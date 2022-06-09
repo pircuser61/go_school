@@ -54,8 +54,8 @@ type EriusScenario struct {
 	Status    int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	HasDraft  bool                 `json:"hasDraft,omitempty"`
 	Name      string               `json:"name" example:"ScenarioName"`
-	Input     []EriusFunctionValue `json:"input"`
-	Output    []EriusFunctionValue `json:"output"`
+	Input     []EriusFunctionValue `json:"input,omitempty"`
+	Output    []EriusFunctionValue `json:"output,omitempty"`
 	Pipeline  struct {
 		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
@@ -79,8 +79,9 @@ type EriusFunc struct {
 	TypeID    string               `json:"type_id" example:"approver"`
 	BlockType string               `json:"block_type" enums:"python3,go,internal,term,scenario" example:"python3"`
 	Title     string               `json:"title" example:"lock-bts"`
-	Input     []EriusFunctionValue `json:"input"`
+	Input     []EriusFunctionValue `json:"input,omitempty"`
 	Output    []EriusFunctionValue `json:"output,omitempty"`
+	ParamType string               `json:"param_type,omitempty"`
 	Params    interface{}          `json:"params,omitempty"`
 	OnTrue    string               `json:"on_true,omitempty"`
 	OnFalse   string               `json:"on_false,omitempty"`

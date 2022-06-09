@@ -419,6 +419,24 @@ components:
         - $ref: '#/components/schemas/approverParams'
         - $ref: '#/components/schemas/sdApplicationParams'
 
+    paramsType:
+      type: string
+      description: Params type
+      enum:
+        - approver
+        - servicedesk_application
+
+    functionsParams:
+      type: object
+      description: Block params description
+      properties:
+        type:
+          $ref: '#/components/schemas/paramsType'
+        params:
+          $ref: '#/components/schemas/params'
+      required:
+        - type
+
     block_type:
       type: string
       description: Block type (language)
@@ -434,7 +452,7 @@ components:
       description: Entity shape
       properties:
         id:
-          type: string
+          type: integer
           description: Shape unique ID
         title:
           type: string
@@ -478,12 +496,10 @@ components:
           type: string
           description: Block unique ID
         params:
-          $ref: '#/components/schemas/params'
+          $ref: '#/components/schemas/functionsParams'
       required:
         - block_type
         - title
-        - inputs
-        - outputs
         - shape_type
         - next_funcs
         - id
@@ -516,6 +532,8 @@ components:
           description: Ourput vars
           items:
             $ref: '#/components/schemas/functionValue'
+        param_type:
+          $ref: '#/components/schemas/paramsType'
         params:
           $ref: '#/components/schemas/params'
         on_true:
@@ -537,7 +555,6 @@ components:
         - type_id
         - block_type
         - title
-        - input
         - on_iter
 
     pipeline:
@@ -614,8 +631,6 @@ components:
         - version_id
         - status
         - name
-        - input
-        - output
         - pipeline
         - author
         - tags
@@ -1326,26 +1341,9 @@ paths:
         500:
           $ref: '#/components/responses/WentWrongError'
 
-  /pipelines/version/{versionID}:
+  /pipelines/version/{pipelineID}:
     parameters:
       - $ref: '#/components/parameters/pipelineID'
-      - $ref: '#/components/parameters/versionID'
-
-    get:
-      operationId: GetPipelineVersion
-      summary: Get pipeline version
-      description: Get an existing pipeline version
-      tags:
-        - version
-      responses:
-        200:
-          $ref: '#/components/responses/ScenarioResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
 
     post:
       operationId: CreatePipelineVersion
@@ -1359,6 +1357,26 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/scenario'
+      responses:
+        200:
+          $ref: '#/components/responses/ScenarioResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /pipelines/version/{versionID}:
+    parameters:
+      - $ref: '#/components/parameters/versionID'
+
+    get:
+      operationId: GetPipelineVersion
+      summary: Get pipeline version
+      description: Get an existing pipeline version
+      tags:
+        - version
       responses:
         200:
           $ref: '#/components/responses/ScenarioResp'
