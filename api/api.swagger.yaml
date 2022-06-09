@@ -188,6 +188,7 @@ components:
         application_body:
           type: object
           description: template fields with values. map key - value
+          additionalProperties: true
 
     tagInfo:
       type: object
@@ -870,27 +871,6 @@ components:
         - break_points
         - task
 
-    entityRunResponseItem:
-      type: object
-      properties:
-        pipeline_id:
-          type: string
-          description: pipeline id
-        work_number:
-          type: string
-          description: work number
-        status:
-          type: string
-          description: status
-        output:
-          type: object
-          description: output params
-        errors:
-          type: array
-          description: errors
-          items:
-            type: string
-
     tasksPage:
       type: object
       description: Tasks page
@@ -1152,7 +1132,7 @@ components:
               versions:
                 type: array
                 description: started versions
-                items: '#/components/schemas/entityRunResponseItem'
+                items: '#/components/schemas/runInfo'
               required:
                 - status_code
 
