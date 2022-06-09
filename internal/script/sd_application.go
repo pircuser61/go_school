@@ -10,7 +10,7 @@ type SdApplicationParams struct {
 
 func (a *SdApplicationParams) Validate() error {
 	if a.BlueprintID == "" {
-		return errors.New("name is empty")
+		return errors.New("blueprintID is empty")
 	}
 
 	return nil

@@ -45,7 +45,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	approverBlock := &pipeline.GoApproverBlock{}
 
-	sdBlock := &pipeline.GoSdApplicationBlock{}
+	sdApplicationBlock := &pipeline.GoSdApplicationBlock{}
 
 	eriusFunctions = append(eriusFunctions,
 		script.IfState.Model(),
@@ -61,7 +61,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		integration.NewRemedySendUpdateWork(ae.Remedy, ae.HTTPClient).Model(),
 		integration.NewRemedySendUpdateProblem(ae.Remedy, ae.HTTPClient).Model(),
 		approverBlock.Model(),
-		sdBlock.Model(),
+		sdApplicationBlock.Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)

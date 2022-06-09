@@ -174,6 +174,22 @@ components:
          * 1 - Created
          * 3 - Deleted
 
+    runVersionsByBlueprintIdRequest:
+      type: object
+      description: Data for run versions by blueprint_id
+      properties:
+        blueprint_id:
+          type: string
+          description: servicedesk template id
+          format: uuid
+        description:
+          type: string
+          description: template description
+        application_body:
+          type: object
+          description: template fields with values. map key - value
+          additionalProperties: true
+
     tagInfo:
       type: object
       description: Scenario tag
@@ -1106,6 +1122,20 @@ components:
             required:
               - status_code
 
+    RunVersionsByBlueprintIdResponse:
+      description: info about started versions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              versions:
+                type: array
+                description: started versions
+                items: '#/components/schemas/runInfo'
+              required:
+                - status_code
+
     DebugTaskResp:
       description: Debug task
       content:
@@ -1762,9 +1792,28 @@ paths:
         500:
           $ref: '#/components/responses/WentWrongError'
 
-
-
-
+  /run/versions/blueprint_id:
+    post:
+      operationId: RunVersionsByBlueprintID
+      summary: Run Versions by blueprint_id
+      description: Запустить все версии c blueprintID и первым блоком sd_application
+      tags:
+        - versions, run, blueprint_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/runVersionsByBlueprintIdRequest'
+      responses:
+        200:
+          $ref: '#/components/responses/RunVersionsByBlueprintIdResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
 
 
 

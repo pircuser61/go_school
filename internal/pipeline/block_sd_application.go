@@ -13,13 +13,23 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+const (
+	keyOutputBlueprintID       = "blueprint_id"
+	keyOutputSdApplicationDesc = "description"
+	keyOutputSdApplication     = "application_body"
+)
+
+type SdApplicationDataCtx struct{}
+
 type ApplicationData struct {
-	BlueprintID     string
-	ApplicationBody map[string]interface{}
-	Description     string
+	BlueprintID string `json:"blueprint_id"`
 }
 
-type SdApplicationResult struct{}
+type SdApplicationData struct {
+	BlueprintID     string                 `json:"blueprint_id"`
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+}
 
 type GoSdApplicationBlock struct {
 	Name     string
@@ -58,6 +68,20 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, runCtx *store.Vari
 
 	runCtx.AddStep(gb.Name)
 
+	data := ctx.Value(SdApplicationDataCtx{})
+	if data == nil {
+		return errors.New("can't find application data in context")
+	}
+
+	appData, ok := data.(SdApplicationData)
+	if !ok {
+		return errors.New("invalid application data in context")
+	}
+
+	runCtx.SetValue(gb.Output[keyOutputBlueprintID], appData.BlueprintID)
+	runCtx.SetValue(gb.Output[keyOutputSdApplicationDesc], appData.Description)
+	runCtx.SetValue(gb.Output[keyOutputSdApplication], appData.ApplicationBody)
+
 	return err
 }
 
@@ -87,7 +111,17 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
-				Name:    "application",
+				Name:    keyOutputBlueprintID,
+				Type:    "string",
+				Comment: "application blueprint id",
+			},
+			{
+				Name:    keyOutputSdApplicationDesc,
+				Type:    "string",
+				Comment: "application description",
+			},
+			{
+				Name:    keyOutputSdApplication,
 				Type:    "string",
 				Comment: "application body",
 			},
@@ -128,6 +162,10 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, storage db.Da
 
 	if err := params.Validate(); err != nil {
 		return nil, errors.Wrap(err, "invalid sd_application parameters")
+	}
+
+	b.State = &ApplicationData{
+		BlueprintID: params.BlueprintID,
 	}
 
 	return b, nil
