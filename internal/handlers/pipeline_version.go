@@ -255,8 +255,10 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	respChan := make(chan *entity.RunResponse, len(versions))
 	var runVersions RunVersionsByBlueprintIdResponse
 
-	context.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
-		BlueprintID: "",
+	ctx = context.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
+		BlueprintID:     req.BlueprintID,
+		Description:     req.Description,
+		ApplicationBody: req.ApplicationBody,
 	})
 
 	for i := range versions {
