@@ -429,11 +429,11 @@ components:
       type: object
       description: SD Application params
       properties:
-        blueprintID:
+        blueprintId:
           type: string
           description: Application ID
       required:
-        - blueprintID
+        - blueprintId
 
     params:
       type: object
