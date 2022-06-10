@@ -1105,3 +1105,7 @@ func (m *MockDB) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioI
 func (m *MockDB) RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error {
 	return errNotImplemented
 }
+
+func (m *MockDB) GetVersionsByBlueprintID(c context.Context, blueprintID string) ([]entity.EriusScenario, error) {
+	return nil, errNotImplemented
+}

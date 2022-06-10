@@ -34,11 +34,11 @@ type EriusScenarioInfo struct {
 }
 
 type EriusVersionInfo struct {
-	VersionID  uuid.UUID `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	CreatedAt  time.Time `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	ApprovedAt time.Time `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	Author     string    `json:"author" example:"testAuthor"`
-	Approver   string    `json:"approver" example:"testApprover"`
+	VersionID  uuid.UUID  `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	CreatedAt  time.Time  `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt *time.Time `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author     string     `json:"author" example:"testAuthor"`
+	Approver   string     `json:"approver" example:"testApprover"`
 }
 
 type EriusTagInfo struct {
