@@ -70,6 +70,12 @@ const (
 	NetworkMonitorClientFailed
 	GetUserinfoErr
 	BadFiltersError
+	WorkNumberParsingError
+	UpdateTaskParsingError
+	UpdateTaskValidationError
+	UpdateNotRunningTaskError
+	UpdateBlockError
+	BlockNotFoundError
 	GetVersionsByBlueprintIdError
 	BodyParseError
 	ValidationError
@@ -129,6 +135,12 @@ var errorText = map[Err]string{
 	RunDebugInvalidStatusError:    "can't start debug task with this status",
 	GetUserinfoErr:                "can't get userinfo",
 	BadFiltersError:               "can't parse filters",
+	WorkNumberParsingError:        "can't find work number",
+	UpdateTaskParsingError:        "can't parse data to update task",
+	UpdateTaskValidationError:     "can't validate data to update task",
+	UpdateNotRunningTaskError:     "can't update not running work",
+	UpdateBlockError:              "can't update block",
+	BlockNotFoundError:            "can't find block",
 	GetVersionsByBlueprintIdError: "can't get get versions by blueprintId",
 	BodyParseError:                "can't parse body to struct",
 	ValidationError:               "run version by blueprint id request is invalid",
@@ -189,19 +201,30 @@ var errorDescription = map[Err]string{
 	RunDebugInvalidStatusError:    "Невозможно запустить отладочный сценарий с таким статусом",
 	GetUserinfoErr:                "Не удалось получить информацию о пользователе",
 	BadFiltersError:               "Получены некорректные значения фильтров",
+	WorkNumberParsingError:        "Не удалось прочитать идентификатор задачи",
+	UpdateTaskParsingError:        "Не удалось прочитать информацию об обновлении задачи",
+	UpdateTaskValidationError:     "Не удалось прочитать информацию об обновлении задачи",
+	UpdateNotRunningTaskError:     "Невозможно обновить незапущенную задачу",
+	UpdateBlockError:              "Не удалось обновить блок задачи",
+	BlockNotFoundError:            "Не удалось получить блок задачи",
 	GetVersionsByBlueprintIdError: "Ошибка при получении версий по id шаблона",
 	BodyParseError:                "Ошибка при разборе тела запроса",
 	ValidationError:               "Ошибка при валидации запроса",
 }
 
 var errorStatus = map[Err]int{
-	Teapot:           http.StatusTeapot,
-	UnauthError:      http.StatusUnauthorized,
-	UUIDParsingError: http.StatusBadRequest,
-	BadFiltersError:  http.StatusBadRequest,
-	GetUserinfoErr:   http.StatusUnauthorized,
-	BodyParseError:   http.StatusBadRequest,
-	ValidationError:  http.StatusBadRequest,
+	Teapot:                    http.StatusTeapot,
+	UnauthError:               http.StatusUnauthorized,
+	UUIDParsingError:          http.StatusBadRequest,
+	BadFiltersError:           http.StatusBadRequest,
+	GetUserinfoErr:            http.StatusUnauthorized,
+	WorkNumberParsingError:    http.StatusBadRequest,
+	UpdateTaskParsingError:    http.StatusBadRequest,
+	UpdateTaskValidationError: http.StatusBadRequest,
+	UpdateNotRunningTaskError: http.StatusBadRequest,
+	BlockNotFoundError:        http.StatusBadRequest,
+	BodyParseError:            http.StatusBadRequest,
+	ValidationError:           http.StatusBadRequest,
 }
 
 type httpError struct {

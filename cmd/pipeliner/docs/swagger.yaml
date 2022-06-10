@@ -1,5 +1,29 @@
 basePath: /api/pipeliner/v1
 definitions:
+  entity.AllUsageResponse:
+    properties:
+      pipelines:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+    type: object
+  entity.DebugResult:
+    properties:
+      block_name:
+        type: string
+      break_points:
+        items:
+          type: string
+        type: array
+      status:
+        description: todo define values
+        example: run,error,finished,created
+        type: string
+      task:
+        $ref: '#/definitions/entity.EriusTask'
+    type: object
   entity.EriusFunc:
     properties:
       block_type:
@@ -30,6 +54,8 @@ definitions:
         items:
           $ref: '#/definitions/entity.EriusFunctionValue'
         type: array
+      param_type:
+        type: string
       params:
         type: object
       title:
@@ -42,6 +68,17 @@ definitions:
         type: integer
       "y":
         type: integer
+    type: object
+  entity.EriusFunctionList:
+    properties:
+      funcs:
+        items:
+          $ref: '#/definitions/script.FunctionModel'
+        type: array
+      shapes:
+        items:
+          $ref: '#/definitions/script.ShapeEntity'
+        type: array
     type: object
   entity.EriusFunctionValue:
     properties:
@@ -113,6 +150,81 @@ definitions:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
         type: string
+    type: object
+  entity.EriusScenarioInfo:
+    properties:
+      approved_at:
+        example: "2020-07-16T17:10:25.112704+03:00"
+        type: string
+      approver:
+        example: testApprover
+        type: string
+      author:
+        example: testAuthor
+        type: string
+      comment:
+        type: string
+      comment_rejected:
+        type: string
+      created_at:
+        example: "2020-07-16T17:10:25.112704+03:00"
+        type: string
+      id:
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
+      last_run:
+        example: "2020-07-16T17:10:25.112704+03:00"
+        type: string
+      last_run_status:
+        type: string
+      name:
+        example: ScenarioName
+        type: string
+      status:
+        description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+        enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        type: integer
+      tags:
+        items:
+          $ref: '#/definitions/entity.EriusTagInfo'
+        type: array
+      version_history:
+        items:
+          $ref: '#/definitions/entity.EriusVersionInfo'
+        type: array
+      version_id:
+        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        format: uuid
+        type: string
+    type: object
+  entity.EriusScenarioList:
+    properties:
+      drafts:
+        description: Черновики
+        items:
+          $ref: '#/definitions/entity.EriusScenarioInfo'
+        type: array
+      on_approve:
+        description: Сценарии на одобрении
+        items:
+          $ref: '#/definitions/entity.EriusScenarioInfo'
+        type: array
+      pipelines:
+        description: Согласованные сценарии
+        items:
+          $ref: '#/definitions/entity.EriusScenarioInfo'
+        type: array
+      tags:
+        description: Теги
+        items:
+          $ref: '#/definitions/entity.EriusTagInfo'
+        type: array
     type: object
   entity.EriusTagInfo:
     properties:
@@ -202,8 +314,7 @@ definitions:
         items:
           type: string
         type: array
-      output:
-        type: object
+      output: {}
       pipeline_id:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
@@ -211,9 +322,7 @@ definitions:
       status:
         example: runned
         type: string
-      task_id:
-        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-        format: uuid
+      work_number:
         type: string
     type: object
   entity.SchedulerTasksResponse:
@@ -234,7 +343,6 @@ definitions:
       name:
         type: string
       state:
-        additionalProperties: true
         type: object
       steps:
         items:
@@ -247,6 +355,16 @@ definitions:
         type: string
       type:
         type: string
+    type: object
+  entity.TaskUpdate:
+    properties:
+      action:
+        enum:
+        - approvement
+        example: approvement
+        type: string
+      parameters:
+        type: object
     type: object
   entity.UsageResponse:
     properties:
@@ -295,6 +413,23 @@ definitions:
   handlers.RunVersionBody:
     additionalProperties: true
     type: object
+  handlers.RunVersionsByBlueprintIdRequest:
+    properties:
+      application_body:
+        additionalProperties: true
+        type: object
+      blueprint_id:
+        type: string
+      description:
+        type: string
+    type: object
+  handlers.RunVersionsByBlueprintIdResponse:
+    properties:
+      versions:
+        items:
+          $ref: '#/definitions/entity.RunResponse'
+        type: array
+    type: object
   handlers.eriusTaskResponse:
     properties:
       author:
@@ -323,12 +458,6 @@ definitions:
       work_number:
         type: string
     type: object
-  handlers.RunPipelineBody:
-    additionalProperties: true
-    type: object
-  handlers.RunVersionBody:
-    additionalProperties: true
-    type: object
   handlers.httpError:
     properties:
       description:
@@ -340,8 +469,7 @@ definitions:
     type: object
   handlers.httpResponse:
     properties:
-      data:
-        type: object
+      data: {}
       status_code:
         type: integer
     type: object
@@ -353,8 +481,12 @@ definitions:
         type: array
       has_error:
         type: boolean
+      is_finished:
+        type: boolean
       name:
         type: string
+      state:
+        type: object
       steps:
         items:
           type: string
@@ -363,11 +495,6 @@ definitions:
         additionalProperties: true
         type: object
       time:
-        type: string
-    type: object
-  script.ApproverParams:
-    properties:
-      approver:
         type: string
       type:
         type: string
@@ -399,14 +526,11 @@ definitions:
     type: object
   script.FunctionParams:
     properties:
-      approver:
-        $ref: '#/definitions/script.ApproverParams'
-      sd_application:
-        $ref: '#/definitions/script.SdApplicationParams'
+      params: {}
       type:
         enum:
         - approver
-        - sd_application
+        - servicedesk_application
         example: approver
         type: string
     type: object
@@ -419,27 +543,18 @@ definitions:
       type:
         type: string
     type: object
-  script.SdApplicationParams:
-    properties:
-      application_body:
-        additionalProperties: true
-        type: object
-      blueprint_id:
-        type: string
-      description:
-        type: string
-    type: object
   script.ShapeEntity:
     properties:
       icon:
         type: string
       id:
         type: integer
+      title:
+        type: string
     type: object
 host: localhost:8181
 info:
   contact: {}
-  license: {}
   title: Pipeliner API
   version: "0.1"
 paths:
@@ -474,7 +589,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTask'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -506,7 +626,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.DebugResult'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -540,7 +665,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTask'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -566,7 +696,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusFunctionList'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -594,7 +729,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.UsageResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -622,7 +762,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.UsageResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -644,7 +789,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.AllUsageResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -666,7 +816,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusScenarioList'
+              type: object
         "401":
           description: Unauthorized
           schema:
@@ -696,7 +851,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusScenario'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -759,7 +919,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusScenario'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -793,7 +958,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.SchedulerTasksResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -821,7 +991,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.EriusTagInfo'
+                  type: array
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -896,7 +1073,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTagInfo'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -932,7 +1114,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusScenario'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -972,7 +1159,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusScenario'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1035,7 +1227,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusScenario'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1074,7 +1271,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.RunResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1114,7 +1316,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.RunResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1131,6 +1338,41 @@ paths:
       tags:
       - version
       - run
+  /run/versions/blueprint_id:
+    post:
+      consumes:
+      - application/json
+      description: Запустить все версии c blueprintID и первым блоком sd_application
+      operationId: run-versions-by-blueprint-id
+      parameters:
+      - description: pipeline input
+        in: body
+        name: variables
+        schema:
+          $ref: '#/definitions/handlers.RunVersionsByBlueprintIdRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.RunVersionsByBlueprintIdResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Run Version By blueprintID
+      tags:
+      - version
+      - run
   /tags:
     get:
       description: Cписок тегов
@@ -1141,7 +1383,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.EriusTagInfo'
+                  type: array
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1175,7 +1424,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTagInfo'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1209,7 +1463,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTagInfo'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1298,7 +1557,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTasksPage'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1352,6 +1616,45 @@ paths:
       summary: Get Task
       tags:
       - tasks
+    post:
+      consumes:
+      - application/json
+      description: Update task
+      operationId: update-task-entity
+      parameters:
+      - description: work number
+        in: path
+        name: workNumber
+        required: true
+        type: string
+      - description: Task update data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/entity.TaskUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.httpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Update Task
+      tags:
+      - tasks
   /tasks/last-by-version/{versionID}:
     get:
       description: Получить последнюю debug-задачу версии сценария
@@ -1368,7 +1671,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTask'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1400,7 +1708,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTasks'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1433,7 +1746,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.httpResponse'
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTasks'
+              type: object
         "400":
           description: Bad Request
           schema:

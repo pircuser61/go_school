@@ -3,7 +3,6 @@
     "info": {
         "title": "Pipeliner API",
         "contact": {},
-        "license": {},
         "version": "0.1"
     },
     "host": "localhost:8181",
@@ -56,7 +55,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTask"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -108,7 +119,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTask"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -156,7 +179,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.DebugResult"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -195,7 +230,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusFunctionList"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -228,7 +275,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.AllUsageResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -270,7 +329,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.UsageResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -312,7 +383,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.UsageResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -345,7 +428,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusScenarioList"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
@@ -390,7 +485,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusScenario"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -443,7 +550,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusScenario"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -503,7 +622,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusScenario"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -551,7 +682,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusScenario"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -645,7 +788,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusScenario"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -742,7 +897,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.SchedulerTasksResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -785,7 +952,22 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.EriusTagInfo"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -841,7 +1023,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTagInfo"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -955,7 +1149,72 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.RunResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/run/versions/blueprint_id": {
+            "post": {
+                "description": "Запустить все версии c blueprintID и первым блоком sd_application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "version",
+                    "run"
+                ],
+                "summary": "Run Version By blueprintID",
+                "operationId": "run-versions-by-blueprint-id",
+                "parameters": [
+                    {
+                        "description": "pipeline input",
+                        "name": "variables",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RunVersionsByBlueprintIdRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RunVersionsByBlueprintIdResponse"
                         }
                     },
                     "400": {
@@ -1015,7 +1274,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.RunResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1054,7 +1325,22 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.EriusTagInfo"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1105,7 +1391,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTagInfo"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1156,7 +1454,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTagInfo"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1291,7 +1601,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTasksPage"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1339,7 +1661,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTask"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1388,7 +1722,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTasks"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1437,7 +1783,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.httpResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTasks"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1519,10 +1877,104 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "Update task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Update Task",
+                "operationId": "update-task-entity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "work number",
+                        "name": "workNumber",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Task update data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entity.TaskUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
             }
         }
     },
     "definitions": {
+        "entity.AllUsageResponse": {
+            "type": "object",
+            "properties": {
+                "pipelines": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "entity.DebugResult": {
+            "type": "object",
+            "properties": {
+                "block_name": {
+                    "type": "string"
+                },
+                "break_points": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "status": {
+                    "description": "todo define values",
+                    "type": "string",
+                    "example": "run,error,finished,created"
+                },
+                "task": {
+                    "$ref": "#/definitions/entity.EriusTask"
+                }
+            }
+        },
         "entity.EriusFunc": {
             "type": "object",
             "properties": {
@@ -1565,6 +2017,9 @@
                         "$ref": "#/definitions/entity.EriusFunctionValue"
                     }
                 },
+                "param_type": {
+                    "type": "string"
+                },
                 "params": {
                     "type": "object"
                 },
@@ -1581,6 +2036,23 @@
                 },
                 "y": {
                     "type": "integer"
+                }
+            }
+        },
+        "entity.EriusFunctionList": {
+            "type": "object",
+            "properties": {
+                "funcs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/script.FunctionModel"
+                    }
+                },
+                "shapes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/script.ShapeEntity"
+                    }
                 }
             }
         },
@@ -1681,6 +2153,110 @@
                     "type": "string",
                     "format": "uuid",
                     "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+                }
+            }
+        },
+        "entity.EriusScenarioInfo": {
+            "type": "object",
+            "properties": {
+                "approved_at": {
+                    "type": "string",
+                    "example": "2020-07-16T17:10:25.112704+03:00"
+                },
+                "approver": {
+                    "type": "string",
+                    "example": "testApprover"
+                },
+                "author": {
+                    "type": "string",
+                    "example": "testAuthor"
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "comment_rejected": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2020-07-16T17:10:25.112704+03:00"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+                },
+                "last_run": {
+                    "type": "string",
+                    "example": "2020-07-16T17:10:25.112704+03:00"
+                },
+                "last_run_status": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "ScenarioName"
+                },
+                "status": {
+                    "description": "1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve",
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5
+                    ]
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusTagInfo"
+                    }
+                },
+                "version_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusVersionInfo"
+                    }
+                },
+                "version_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+                }
+            }
+        },
+        "entity.EriusScenarioList": {
+            "type": "object",
+            "properties": {
+                "drafts": {
+                    "description": "Черновики",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusScenarioInfo"
+                    }
+                },
+                "on_approve": {
+                    "description": "Сценарии на одобрении",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusScenarioInfo"
+                    }
+                },
+                "pipelines": {
+                    "description": "Согласованные сценарии",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusScenarioInfo"
+                    }
+                },
+                "tags": {
+                    "description": "Теги",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusTagInfo"
+                    }
                 }
             }
         },
@@ -1813,9 +2389,7 @@
                         "type": "string"
                     }
                 },
-                "output": {
-                    "type": "object"
-                },
+                "output": {},
                 "pipeline_id": {
                     "type": "string",
                     "format": "uuid",
@@ -1825,10 +2399,8 @@
                     "type": "string",
                     "example": "runned"
                 },
-                "task_id": {
-                    "type": "string",
-                    "format": "uuid",
-                    "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+                "work_number": {
+                    "type": "string"
                 }
             }
         },
@@ -1859,8 +2431,7 @@
                     "type": "string"
                 },
                 "state": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "type": "object"
                 },
                 "steps": {
                     "type": "array",
@@ -1877,6 +2448,21 @@
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "entity.TaskUpdate": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "approvement"
+                    ],
+                    "example": "approvement"
+                },
+                "parameters": {
+                    "type": "object"
                 }
             }
         },
@@ -1949,6 +2535,32 @@
             "type": "object",
             "additionalProperties": true
         },
+        "handlers.RunVersionsByBlueprintIdRequest": {
+            "type": "object",
+            "properties": {
+                "application_body": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "blueprint_id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RunVersionsByBlueprintIdResponse": {
+            "type": "object",
+            "properties": {
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.RunResponse"
+                    }
+                }
+            }
+        },
         "handlers.eriusTaskResponse": {
             "type": "object",
             "properties": {
@@ -1991,14 +2603,6 @@
                 }
             }
         },
-        "handlers.RunPipelineBody": {
-            "type": "object",
-            "additionalProperties": true
-        },
-        "handlers.RunVersionBody": {
-            "type": "object",
-            "additionalProperties": true
-        },
         "handlers.httpError": {
             "type": "object",
             "properties": {
@@ -2016,9 +2620,7 @@
         "handlers.httpResponse": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "object"
-                },
+                "data": {},
                 "status_code": {
                     "type": "integer"
                 }
@@ -2036,8 +2638,14 @@
                 "has_error": {
                     "type": "boolean"
                 },
+                "is_finished": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
+                },
+                "state": {
+                    "type": "object"
                 },
                 "steps": {
                     "type": "array",
@@ -2050,14 +2658,6 @@
                     "additionalProperties": true
                 },
                 "time": {
-                    "type": "string"
-                }
-            }
-        },
-        "script.ApproverParams": {
-            "type": "object",
-            "properties": {
-                "approver": {
                     "type": "string"
                 },
                 "type": {
@@ -2106,17 +2706,12 @@
         "script.FunctionParams": {
             "type": "object",
             "properties": {
-                "approver": {
-                    "$ref": "#/definitions/script.ApproverParams"
-                },
-                "sd_application": {
-                    "$ref": "#/definitions/script.SdApplicationParams"
-                },
+                "params": {},
                 "type": {
                     "type": "string",
                     "enum": [
                         "approver",
-                        "sd_application"
+                        "servicedesk_application"
                     ],
                     "example": "approver"
                 }
@@ -2132,21 +2727,6 @@
                     "type": "string"
                 },
                 "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "script.SdApplicationParams": {
-            "type": "object",
-            "properties": {
-                "application_body": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "blueprint_id": {
-                    "type": "string"
-                },
-                "description": {
                     "type": "string"
                 }
             }

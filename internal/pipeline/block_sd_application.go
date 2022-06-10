@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/pkg/errors"
 
@@ -99,7 +100,7 @@ func (gb *GoSdApplicationBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *GoSdApplicationBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+func (gb *GoSdApplicationBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
 
@@ -155,12 +156,13 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, storage db.Da
 		b.Output[v.Name] = v.Global
 	}
 
-	params, ok := ef.Params.(*script.SdApplicationParams)
-	if !ok || params == nil {
-		return nil, errors.New("can not get sd_application parameters")
+	var params script.SdApplicationParams
+	err := json.Unmarshal(ef.Params, &params)
+	if err != nil {
+		return nil, errors.Wrap(err, "can not get sd_application parameters")
 	}
 
-	if err := params.Validate(); err != nil {
+	if err = params.Validate(); err != nil {
 		return nil, errors.Wrap(err, "invalid sd_application parameters")
 	}
 

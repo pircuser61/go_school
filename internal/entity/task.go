@@ -1,22 +1,26 @@
 package entity
 
 import (
+	"encoding/json"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
 type Step struct {
-	Time        time.Time              `json:"time"`
-	Type        string                 `json:"type"`
-	Name        string                 `json:"name"`
-	State       map[string]interface{} `json:"state"`
-	Storage     map[string]interface{} `json:"storage"`
-	Errors      []string               `json:"errors"`
-	Steps       []string               `json:"steps"`
-	BreakPoints []string               `json:"-"`
-	HasError    bool                   `json:"has_error"`
-	IsFinished  bool                   `json:"is_finished"`
+	ID          uuid.UUID                  `json:"-"`
+	Time        time.Time                  `json:"time"`
+	Type        string                     `json:"type"`
+	Name        string                     `json:"name"`
+	State       map[string]json.RawMessage `json:"state" swaggertype:"object"`
+	Storage     map[string]interface{}     `json:"storage"`
+	Errors      []string                   `json:"errors"`
+	Steps       []string                   `json:"steps"`
+	BreakPoints []string                   `json:"-"`
+	HasError    bool                       `json:"has_error"`
+	IsFinished  bool                       `json:"is_finished"`
 }
 
 type TaskSteps []*Step
@@ -85,4 +89,23 @@ type TimePeriod struct {
 type TaskFilter struct {
 	GetTaskParams
 	CurrentUser string
+}
+
+type TaskUpdateAction string
+
+const (
+	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
+)
+
+type TaskUpdate struct {
+	Action     TaskUpdateAction `json:"action" enums:"approvement" example:"approvement"`
+	Parameters json.RawMessage  `json:"parameters" swaggertype:"object"`
+}
+
+func (t *TaskUpdate) Validate() error {
+	if t.Action != TaskUpdateActionApprovement {
+		return errors.New("unknown action")
+	}
+
+	return nil
 }

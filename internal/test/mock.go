@@ -894,6 +894,14 @@ func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter) (*entity
 	return nil, errNotImplemented
 }
 
+func (m *MockDB) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
+	return nil, errNotImplemented
+}
+
 func (m *MockDB) GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
 	return nil, errNotImplemented
 }

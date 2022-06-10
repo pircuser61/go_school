@@ -32,6 +32,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/cmd/pipeliner/docs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
@@ -108,6 +109,9 @@ func main() {
 
 		return
 	}
+
+	// don't forget to update mock
+	var _ db.Database = (*mocks.MockedDatabase)(nil)
 
 	pipeliner := handlers.APIEnv{
 		DB:                   &dbConn,
@@ -229,6 +233,7 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 
 			r.Route("/tasks/", func(r chi.Router) {
 				r.Get("/{workNumber}", pipeliner.GetTask)
+				r.Post("/{workNumber}", pipeliner.UpdateTask)
 				r.Get("/last-by-version/{versionID}", pipeliner.LastVersionDebugTask)
 				r.Get("/pipeline/{pipelineID}", pipeliner.GetPipelineTasks)
 				r.Get("/version/{versionID}", pipeliner.GetVersionTasks)

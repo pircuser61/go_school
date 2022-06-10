@@ -5,6 +5,7 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -75,6 +76,6 @@ func (gb *GoTestBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoTestBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+func (gb *GoTestBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }

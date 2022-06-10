@@ -1,5 +1,11 @@
 package script
 
+import (
+	"encoding/json"
+
+	"github.com/google/uuid"
+)
+
 type Block int
 
 const (
@@ -121,4 +127,10 @@ func (m Block) Model() FunctionModel {
 	}
 
 	return f
+}
+
+type BlockUpdateData struct {
+	Id         uuid.UUID
+	ByLogin    string
+	Parameters json.RawMessage
 }

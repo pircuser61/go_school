@@ -630,6 +630,29 @@ func (_m *MockedDatabase) GetTasks(c context.Context, filters entity.TaskFilter)
 	return r0, r1
 }
 
+// GetUnfinishedTaskStepsByWorkIdAndStepType provides a mock function with given fields: c, id, stepType
+func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(c context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error) {
+	ret := _m.Called(c, id, stepType)
+
+	var r0 entity.TaskSteps
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) entity.TaskSteps); ok {
+		r0 = rf(c, id, stepType)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(entity.TaskSteps)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = rf(c, id, stepType)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetVersionTasks provides a mock function with given fields: c, versionID
 func (_m *MockedDatabase) GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
 	ret := _m.Called(c, versionID)
@@ -646,6 +669,29 @@ func (_m *MockedDatabase) GetVersionTasks(c context.Context, versionID uuid.UUID
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
 		r1 = rf(c, versionID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetVersionsByBlueprintID provides a mock function with given fields: c, blueprintID
+func (_m *MockedDatabase) GetVersionsByBlueprintID(c context.Context, blueprintID string) ([]entity.EriusScenario, error) {
+	ret := _m.Called(c, blueprintID)
+
+	var r0 []entity.EriusScenario
+	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.EriusScenario); ok {
+		r0 = rf(c, blueprintID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.EriusScenario)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(c, blueprintID)
 	} else {
 		r1 = ret.Error(1)
 	}
