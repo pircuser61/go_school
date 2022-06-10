@@ -241,7 +241,6 @@ components:
       required:
         - version_id
         - created_at
-        - approved_at
         - author
         - approver
 

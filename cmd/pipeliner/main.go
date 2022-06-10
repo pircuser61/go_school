@@ -38,6 +38,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
 
@@ -111,7 +112,9 @@ func main() {
 	}
 
 	// don't forget to update mock
+	// TODO: remove MockDB and use MockedDatabase in tests
 	var _ db.Database = (*mocks.MockedDatabase)(nil)
+	var _ db.Database = (*test.MockDB)(nil)
 
 	pipeliner := handlers.APIEnv{
 		DB:                   &dbConn,

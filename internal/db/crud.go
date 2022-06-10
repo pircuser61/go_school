@@ -103,8 +103,19 @@ func parseRowsVersionList(c context.Context, rows pgx.Rows) ([]entity.EriusScena
 
 		var approver sql.NullString
 
-		err := rows.Scan(&e.VersionID, &e.Status, &e.ID, &e.CreatedAt, &e.Author, &approver, &e.Name,
-			&e.LastRun, &e.LastRunStatus, &e.CommentRejected, &e.Comment)
+		err := rows.Scan(
+			&e.VersionID,
+			&e.Status,
+			&e.ID,
+			&e.CreatedAt,
+			&e.Author,
+			&approver,
+			&e.Name,
+			&e.LastRun,
+			&e.LastRunStatus,
+			&e.CommentRejected,
+			&e.Comment,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +141,13 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 
 		var approver sql.NullString
 
-		err := rows.Scan(&e.VersionID, &e.CreatedAt, &e.Author, &approver, &e.ApprovedAt)
+		err := rows.Scan(
+			&e.VersionID,
+			&e.CreatedAt,
+			&e.Author,
+			&approver,
+			&e.ApprovedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
