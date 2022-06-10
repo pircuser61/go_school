@@ -194,7 +194,7 @@ func CheckStatusForMetrics(ok bool) {
 }
 
 //nolint:gocritic //impossible to pass pointer
-func (rs RemedySendCreateMI) Next(runCtx *store.VariableStore) (string, bool) {
+func (rs RemedySendCreateMI) Next(_ *store.VariableStore) (string, bool) {
 	return rs.NextBlock, true
 }
 
@@ -209,7 +209,7 @@ func (rs RemedySendCreateMI) GetState() interface{} {
 }
 
 //nolint:gocritic //impossible to pass pointer
-func (rs RemedySendCreateMI) Update(_ context.Context, _ interface{}) (interface{}, error) {
+func (rs RemedySendCreateMI) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
 

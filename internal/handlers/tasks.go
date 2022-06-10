@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,6 +19,8 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type eriusTaskResponse struct {
@@ -34,15 +38,15 @@ type eriusTaskResponse struct {
 }
 
 type step struct {
-	Time       time.Time              `json:"time"`
-	Type       string                 `json:"type"`
-	Name       string                 `json:"name"`
-	State      map[string]interface{} `json:"state"`
-	Storage    map[string]interface{} `json:"storage"`
-	Errors     []string               `json:"errors"`
-	Steps      []string               `json:"steps"`
-	HasError   bool                   `json:"has_error"`
-	IsFinished bool                   `json:"is_finished"`
+	Time       time.Time                  `json:"time"`
+	Type       string                     `json:"type"`
+	Name       string                     `json:"name"`
+	State      map[string]json.RawMessage `json:"state" swaggertype:"object"`
+	Storage    map[string]interface{}     `json:"storage"`
+	Errors     []string                   `json:"errors"`
+	Steps      []string                   `json:"steps"`
+	HasError   bool                       `json:"has_error"`
+	IsFinished bool                       `json:"is_finished"`
 }
 
 type taskSteps []step
@@ -350,4 +354,185 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+}
+
+// UpdateTask
+// @Summary Update Task
+// @Description Update task
+// @Tags tasks
+// @ID update-task-entity
+// @Accept json
+// @Produce json
+// @Param workNumber path string true "work number"
+// @Param data body entity.TaskUpdate true "Task update data"
+// @success 200 {object} httpResponse
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /tasks/{taskID} [post]
+//nolint:gocyclo //its ok here
+func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_task")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	workNumber := chi.URLParam(req, "workNumber")
+	if workNumber == "" {
+		e := WorkNumberParsingError
+		log.Error(e.errorMessage(errors.New("workNumber is empty")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	b, err := io.ReadAll(req.Body)
+	defer req.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var updateData entity.TaskUpdate
+	err = json.Unmarshal(b, &updateData)
+	if err != nil {
+		e := UpdateTaskParsingError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	user, err := GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	err = updateData.Validate()
+	if err != nil {
+		e := UpdateTaskValidationError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	blockType := getTaskStepNameByAction(updateData.Action)
+	if blockType == "" {
+		e := UpdateTaskValidationError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	dbTask, err := ae.DB.GetTask(ctx, workNumber)
+	if err != nil {
+		e := GetTaskError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// can update only running tasks
+	if !dbTask.IsRun() {
+		e := UpdateNotRunningTaskError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	scenario, err := ae.DB.GetPipelineVersion(ctx, dbTask.VersionID)
+	if err != nil {
+		e := GetVersionError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	steps, err := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
+	if err != nil {
+		e := GetTaskError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if len(steps) == 0 {
+		e := GetTaskError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	ep := pipeline.ExecutablePipeline{
+		Storage:    ae.DB,
+		Remedy:     ae.Remedy,
+		FaaS:       ae.FaaS,
+		HTTPClient: ae.HTTPClient,
+		PipelineID: scenario.ID,
+		VersionID:  scenario.VersionID,
+		EntryPoint: scenario.Pipeline.Entrypoint,
+	}
+
+	for _, item := range steps {
+		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
+		if !ok {
+			e := BlockNotFoundError
+			log.Error(e.errorMessage(nil))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		block, blockErr := ep.CreateBlock(ctx, item.Name, &blockFunc)
+		if blockErr != nil {
+			e := UpdateBlockError
+			log.Error(e.errorMessage(blockErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		_, blockErr = block.Update(ctx, &script.BlockUpdateData{
+			Id:         item.ID,
+			ByLogin:    user.Username,
+			Parameters: updateData.Parameters,
+		})
+		if blockErr != nil {
+			e := UpdateBlockError
+			log.Error(e.errorMessage(blockErr))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
+	if action == entity.TaskUpdateActionApprovement {
+		return pipeline.BlockGoApproverID
+	}
+
+	return ""
 }

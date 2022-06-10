@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -82,7 +83,7 @@ type EriusFunc struct {
 	Input     []EriusFunctionValue `json:"input,omitempty"`
 	Output    []EriusFunctionValue `json:"output,omitempty"`
 	ParamType string               `json:"param_type,omitempty"`
-	Params    interface{}          `json:"params,omitempty"`
+	Params    json.RawMessage      `json:"params,omitempty" swaggertype:"object"`
 	OnTrue    string               `json:"on_true,omitempty"`
 	OnFalse   string               `json:"on_false,omitempty"`
 	Final     string               `json:"final,omitempty"`

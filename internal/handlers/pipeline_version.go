@@ -607,8 +607,9 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 	}
 
 	return &entity.RunResponse{
-		PipelineID: ep.PipelineID, WorkNumber: ep.WorkNumber,
-		Status: statusRunned,
+		PipelineID: ep.PipelineID,
+		WorkNumber: ep.WorkNumber,
+		Status:     statusRunned,
 	}, nil
 }
 

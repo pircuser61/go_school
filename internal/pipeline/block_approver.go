@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -72,6 +73,19 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	return nil
 }
 
+type ApproverUpdateParams struct {
+	Decision ApproverDecision `json:"decision"`
+	Comment  string           `json:"comment"`
+}
+
+func (a *ApproverUpdateParams) Validate() error {
+	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
+		return errors.New("unknown decision")
+	}
+
+	return nil
+}
+
 type ApproverResult struct {
 	Login    string           `json:"login"`
 	Decision ApproverDecision `json:"decision"`
@@ -114,6 +128,7 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	defer s.End()
 
 	runCtx.AddStep(gb.Name)
+
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
 		return errors.New("can't get work id from variable store")
@@ -152,14 +167,13 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 				continue
 			}
 
-			state, ok := (data).(*ApproverData)
-			if !ok {
-				return errors.New("invalid format of go-approver-block state")
-			} else if state == nil {
-				continue
+			var state ApproverData
+			err = json.Unmarshal(data, &state)
+			if err != nil {
+				return errors.Wrap(err, "invalid format of go-approver-block state")
 			}
 
-			gb.State = state
+			gb.State = &state
 
 			// check decision
 			decision = gb.State.GetDecision()
@@ -177,6 +191,14 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 				runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
 				runCtx.SetValue(gb.Output[keyOutputDecision], decision.String())
 				runCtx.SetValue(gb.Output[keyOutputComment], comment)
+
+				var stateBytes []byte
+				stateBytes, err = json.Marshal(gb.State)
+				if err != nil {
+					return err
+				}
+
+				runCtx.ReplaceState(gb.Name, stateBytes)
 
 				return nil
 			}
@@ -198,7 +220,68 @@ func (gb *GoApproverBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *GoApproverBlock) Update(_ context.Context, _ interface{}) (interface{}, error) {
+func (gb *GoApproverBlock) Update(ctx context.Context, data *script.BlockUpdateData) (interface{}, error) {
+	if data == nil {
+		return nil, errors.New("empty data")
+	}
+
+	var updateParams ApproverUpdateParams
+	err := json.Unmarshal(data.Parameters, &updateParams)
+	if err != nil {
+		return nil, errors.New("can't assert provided data")
+	}
+
+	step, err := gb.Storage.GetTaskStepById(ctx, data.Id)
+	if err != nil {
+		return nil, err
+	} else if step == nil {
+		return nil, errors.New("can't get step from database")
+	}
+
+	// get state from step.State
+	stepData, ok := step.State[gb.Name]
+	if !ok {
+		return nil, errors.New("can't get step state")
+	}
+
+	var state ApproverData
+	err = json.Unmarshal(stepData, &state)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid format of go-approver-block state")
+	}
+
+	gb.State = &state
+
+	err = gb.State.SetDecision(
+		data.ByLogin,
+		updateParams.Decision,
+		updateParams.Comment,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	content, err := json.Marshal(step)
+	if err != nil {
+		return nil, err
+	}
+
+	err = gb.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          data.Id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		HasError:    false,
+		IsFinished:  false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 
@@ -257,12 +340,13 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Databas
 		b.Output[v.Name] = v.Global
 	}
 
-	params, ok := ef.Params.(*script.ApproverParams)
-	if !ok || params == nil {
-		return nil, errors.New("can not get approver parameters")
+	var params script.ApproverParams
+	err := json.Unmarshal(ef.Params, &params)
+	if err != nil {
+		return nil, errors.Wrap(err, "can not get approver parameters")
 	}
 
-	if err := params.Validate(); err != nil {
+	if err = params.Validate(); err != nil {
 		return nil, errors.Wrap(err, "invalid approver parameters")
 	}
 

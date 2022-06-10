@@ -160,13 +160,18 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		}
 		ep.StepType = currentBlock.GetType()
 
-		ep.VarStore.AddStep(ep.NowOnPoint)
-		ep.VarStore.ReplaceState(ep.NowOnPoint, currentBlock.GetState())
+		state, stateErr := json.Marshal(currentBlock.GetState())
+		if stateErr != nil {
+			return stateErr
+		}
+		ep.VarStore.ReplaceState(ep.NowOnPoint, state)
 
 		var id uuid.UUID
 		var err error
 
 		if currentBlock.IsScenario() {
+			ep.VarStore.AddStep(ep.NowOnPoint)
+
 			nStore := store.NewStore()
 
 			input := currentBlock.Inputs()
@@ -258,101 +263,110 @@ func (ep *ExecutablePipeline) GetState() interface{} {
 	return nil
 }
 
-func (ep *ExecutablePipeline) Update(_ context.Context, _ interface{}) (interface{}, error) {
+func (ep *ExecutablePipeline) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
 
-//nolint:gocyclo //ok
-func (ep *ExecutablePipeline) CreateBlocks(c context.Context, source map[string]entity.EriusFunc) error {
+func (ep *ExecutablePipeline) CreateBlocks(ctx context.Context, source map[string]entity.EriusFunc) error {
 	ep.Blocks = make(map[string]Runner)
 
-	c, s := trace.StartSpan(c, "create_blocks")
+	ctx, s := trace.StartSpan(ctx, "create_blocks")
 	defer s.End()
 
 	for k := range source {
-		bn := k
+		bl := source[k]
 
-		block := source[k]
-		switch block.BlockType {
-		case script.TypeInternal, script.TypeIF:
-			ep.Blocks[bn] = ep.CreateInternal(&block, bn)
-		case script.TypeGo:
-			var err error
-			ep.Blocks[bn], err = ep.CreateGoBlock(&block, bn)
-			if err != nil {
-				return err
-			}
-		case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
-			fb := FunctionBlock{
-				Name:           bn,
-				Type:           block.BlockType,
-				FunctionName:   block.Title,
-				FunctionInput:  make(map[string]string),
-				FunctionOutput: make(map[string]string),
-				NextStep:       block.Next,
-				RunURL:         ep.FaaS + "function/%s",
-			}
-
-			for _, v := range block.Input {
-				fb.FunctionInput[v.Name] = v.Global
-			}
-
-			for _, v := range block.Output {
-				fb.FunctionOutput[v.Name] = v.Global
-			}
-
-			ep.Blocks[bn] = &fb
-		case script.TypeScenario:
-			p, err := ep.Storage.GetExecutableByName(c, block.Title)
-			if err != nil {
-				return err
-			}
-
-			epi := ExecutablePipeline{}
-			epi.PipelineID = p.ID
-			epi.VersionID = p.VersionID
-			epi.Storage = ep.Storage
-			epi.EntryPoint = p.Pipeline.Entrypoint
-			epi.FaaS = ep.FaaS
-			epi.Input = make(map[string]string)
-			epi.Output = make(map[string]string)
-			epi.NextStep = block.Next
-			epi.Name = block.Title
-			epi.PipelineModel = p
-
-			parametersMap := make(map[string]interface{})
-			for _, v := range block.Input {
-				parametersMap[v.Name] = v.Global
-			}
-
-			parameters, err := json.Marshal(parametersMap)
-			if err != nil {
-				return err
-			}
-
-			err = epi.CreateTask(c, "Erius", false, parameters)
-			if err != nil {
-				return err
-			}
-
-			err = epi.CreateBlocks(c, p.Pipeline.Blocks)
-			if err != nil {
-				return err
-			}
-
-			for _, v := range block.Input {
-				epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
-			}
-
-			for _, v := range block.Output {
-				epi.Output[v.Name] = v.Global
-			}
-
-			ep.Blocks[bn] = &epi
+		block, err := ep.CreateBlock(ctx, k, &bl)
+		if err != nil {
+			return err
 		}
+
+		ep.Blocks[k] = block
 	}
 
 	return nil
+}
+
+//nolint:gocyclo //ok
+func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, block *entity.EriusFunc) (Runner, error) {
+	ctx, s := trace.StartSpan(ctx, "create_block")
+	defer s.End()
+
+	switch block.BlockType {
+	case script.TypeInternal, script.TypeIF:
+		return ep.CreateInternal(block, name), nil
+	case script.TypeGo:
+		return ep.CreateGoBlock(block, name)
+	case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
+		fb := FunctionBlock{
+			Name:           name,
+			Type:           block.BlockType,
+			FunctionName:   block.Title,
+			FunctionInput:  make(map[string]string),
+			FunctionOutput: make(map[string]string),
+			NextStep:       block.Next,
+			RunURL:         ep.FaaS + "function/%s",
+		}
+
+		for _, v := range block.Input {
+			fb.FunctionInput[v.Name] = v.Global
+		}
+
+		for _, v := range block.Output {
+			fb.FunctionOutput[v.Name] = v.Global
+		}
+
+		return &fb, nil
+	case script.TypeScenario:
+		p, err := ep.Storage.GetExecutableByName(ctx, block.Title)
+		if err != nil {
+			return nil, err
+		}
+
+		epi := ExecutablePipeline{}
+		epi.PipelineID = p.ID
+		epi.VersionID = p.VersionID
+		epi.Storage = ep.Storage
+		epi.EntryPoint = p.Pipeline.Entrypoint
+		epi.FaaS = ep.FaaS
+		epi.Input = make(map[string]string)
+		epi.Output = make(map[string]string)
+		epi.NextStep = block.Next
+		epi.Name = block.Title
+		epi.PipelineModel = p
+
+		parametersMap := make(map[string]interface{})
+		for _, v := range block.Input {
+			parametersMap[v.Name] = v.Global
+		}
+
+		parameters, err := json.Marshal(parametersMap)
+		if err != nil {
+			return nil, err
+		}
+
+		err = epi.CreateTask(ctx, "Erius", false, parameters)
+		if err != nil {
+			return nil, err
+		}
+
+		err = epi.CreateBlocks(ctx, p.Pipeline.Blocks)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range block.Input {
+			epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
+		}
+
+		for _, v := range block.Output {
+			epi.Output[v.Name] = v.Global
+		}
+
+		return &epi, nil
+	}
+
+	return nil, errors.Errorf("can't create block with type: %s", block.BlockType)
 }
 
 func createIF(title, name, onTrue, onFalse string) *IF {

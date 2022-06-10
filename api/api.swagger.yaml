@@ -390,6 +390,16 @@ components:
          * group - Approver group ID
          * head - Receiver's head
 
+    approverDecision:
+      type: string
+      enum:
+        - approved
+        - rejected
+      description: >
+        Approver decision:
+         * approved - approver approved block 
+         * rejected - approver rejected block
+
     approverParams:
       type: object
       description: Approver params
@@ -401,6 +411,19 @@ components:
           description: Apprver value (depends on type)
       required:
         - type
+        - approver
+
+    approverUpdateParams:
+      type: object
+      description: Approver update params
+      properties:
+        decision:
+          $ref: '#/components/schemas/approverDecision'
+        comment:
+          type: string
+          description: Comment from approver
+      required:
+        - decision
         - approver
 
     sdApplicationParams:
@@ -920,6 +943,22 @@ components:
           additionalProperties: true
       required:
         - version_id
+        - parameters
+
+    updateTaskData:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - approvement
+        parameters:
+          type: object
+          description: Task update params
+          oneOf:
+            - $ref: '#/components/schemas/approverUpdateParams'
+      required:
+        - action
         - parameters
 
   responses:
@@ -1656,6 +1695,28 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/TaskResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+    post:
+      operationId: UpdateTask
+      summary: Update task
+      description: Update existing task by work number and provided data
+      tags:
+        - tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateTaskData'
+      responses:
+        200:
+          $ref: '#/components/responses/OKResp'
         400:
           $ref: '#/components/responses/BadRequestError'
         401:

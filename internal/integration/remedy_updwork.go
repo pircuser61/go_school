@@ -148,7 +148,7 @@ func (rs RemedySendUpdateWork) DebugRun(ctx context.Context, runCtx *store.Varia
 }
 
 //nolint:gocritic //impossible to pass pointer
-func (rs RemedySendUpdateWork) Next(runCtx *store.VariableStore) (string, bool) {
+func (rs RemedySendUpdateWork) Next(_ *store.VariableStore) (string, bool) {
 	return rs.NextBlock, true
 }
 
@@ -163,7 +163,7 @@ func (rs RemedySendUpdateWork) GetState() interface{} {
 }
 
 //nolint:gocritic //impossible to pass pointer
-func (rs RemedySendUpdateWork) Update(_ context.Context, _ interface{}) (interface{}, error) {
+func (rs RemedySendUpdateWork) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
 

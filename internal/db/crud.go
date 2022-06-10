@@ -2117,6 +2117,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 	// language=PostgreSQL
 	q := `
 	SELECT 
+	    vs.id,
 	    vs.step_type,
 		vs.step_name, 
 		vs.time, 
@@ -2139,6 +2140,87 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 		var content string
 
 		err = rows.Scan(
+			&s.ID,
+			&s.Type,
+			&s.Name,
+			&s.Time,
+			&content,
+			&s.BreakPoints,
+			&s.HasError,
+			&s.IsFinished,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		storage := store.NewStore()
+
+		err = json.Unmarshal([]byte(content), storage)
+		if err != nil {
+			return nil, err
+		}
+
+		s.State = storage.State
+		s.Steps = storage.Steps
+		s.Errors = storage.Errors
+		s.Storage = storage.Values
+		el = append(el, &s)
+	}
+
+	return el, nil
+}
+
+func (db *PGConnection) GetUnfinishedTaskStepsByWorkIdAndStepType(
+	ctx context.Context,
+	id uuid.UUID,
+	stepType string,
+) (entity.TaskSteps, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
+	defer span.End()
+
+	el := entity.TaskSteps{}
+
+	conn, err := db.Pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	SELECT 
+	    vs.id,
+	    vs.step_type,
+		vs.step_name, 
+		vs.time, 
+		vs.content, 
+		COALESCE(vs.break_points, '{}') AS break_points, 
+		vs.has_error,
+		vs.is_finished
+	FROM pipeliner.variable_storage vs 
+	WHERE 
+	    work_id = $1 AND 
+	    step_type = $2 AND
+	    is_finished = false
+	ORDER BY vs.time ASC`
+
+	rows, err := conn.Query(ctx, q, id, stepType)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		s := entity.Step{}
+		var content string
+
+		err = rows.Scan(
+			&s.ID,
 			&s.Type,
 			&s.Name,
 			&s.Time,
@@ -2183,6 +2265,7 @@ func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*ent
 	// language=PostgreSQL
 	q := `
 	SELECT 
+	    vs.id,
 	    vs.step_type,
 		vs.step_name, 
 		vs.time, 
@@ -2197,6 +2280,7 @@ func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*ent
 	var s entity.Step
 	var content string
 	err = conn.QueryRow(ctx, q, id).Scan(
+		&s.ID,
 		&s.Type,
 		&s.Name,
 		&s.Time,

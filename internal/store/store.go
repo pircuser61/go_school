@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"sync"
@@ -19,7 +20,7 @@ var (
 type VariableStore struct {
 	// TODO: RWMutex?
 	sync.Mutex
-	State      map[string]interface{}
+	State      map[string]json.RawMessage
 	Values     map[string]interface{}
 	Steps      []string
 	Errors     []string
@@ -28,7 +29,7 @@ type VariableStore struct {
 
 func NewStore() *VariableStore {
 	s := VariableStore{
-		State:      make(map[string]interface{}),
+		State:      make(map[string]json.RawMessage),
 		Values:     make(map[string]interface{}),
 		Steps:      make([]string, 0),
 		Errors:     make([]string, 0),
@@ -216,7 +217,7 @@ func (c *VariableStore) GetState(stepName string) (interface{}, bool) {
 	return val, ok
 }
 
-func (c *VariableStore) ReplaceState(stepName string, value interface{}) {
+func (c *VariableStore) ReplaceState(stepName string, value json.RawMessage) {
 	c.Lock()
 	defer c.Unlock()
 

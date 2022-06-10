@@ -182,7 +182,7 @@ func (ns NGSASend) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	return err
 }
 
-func (ns NGSASend) Next(runCtx *store.VariableStore) (string, bool) {
+func (ns NGSASend) Next(_ *store.VariableStore) (string, bool) {
 	return ns.NextBlock, true
 }
 
@@ -194,7 +194,7 @@ func (ns NGSASend) GetState() interface{} {
 	return nil
 }
 
-func (ns NGSASend) Update(_ context.Context, _ interface{}) (interface{}, error) {
+func (ns NGSASend) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
 
