@@ -231,6 +231,7 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 
 			r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
 			r.Post("/run/version/{versionID}", pipeliner.RunVersion)
+			r.Post("/run/versions/blueprint_id", pipeliner.RunVersionsByBlueprintID)
 
 			r.Get("/tasks", pipeliner.GetTasks)
 
