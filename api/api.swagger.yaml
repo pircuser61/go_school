@@ -431,7 +431,7 @@ components:
       properties:
         blueprintId:
           type: string
-          description: Application ID
+          description: Template application ID
       required:
         - blueprintId
 
