@@ -271,6 +271,11 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 				log.Error(execErr)
 				return
 			}
+
+			if v == nil {
+				log.Error(execErr)
+				return
+			}
 			ch <- v
 		}(&wg, versions[j], respChan)
 	}
