@@ -189,10 +189,6 @@ type RunVersionsByBlueprintIdRequest struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
 }
 
-type RunVersionsByBlueprintIdResponse struct {
-	Versions []*entity.RunResponse `json:"data"`
-}
-
 // @Summary Run Version By blueprintID
 // @Description Запустить все версии c blueprintID и первым блоком sd_application
 // @Tags version, run
@@ -253,7 +249,6 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	var wg sync.WaitGroup
 	wg.Add(len(versions))
 	respChan := make(chan *entity.RunResponse, len(versions))
-	var runVersions RunVersionsByBlueprintIdResponse
 
 	ctx = context.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
 		BlueprintID:     req.BlueprintID,
@@ -283,10 +278,10 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	wg.Wait()
 	close(respChan)
 
-	runVersions.Versions = make([]*entity.RunResponse, 0, len(versions))
+	runVersions := make([]*entity.RunResponse, 0, len(versions))
 	for i := range respChan {
 		v := i
-		runVersions.Versions = append(runVersions.Versions, v)
+		runVersions = append(runVersions, v)
 	}
 
 	err = sendResponse(w, http.StatusOK, runVersions)
