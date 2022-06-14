@@ -429,11 +429,11 @@ components:
       type: object
       description: SD Application params
       properties:
-        blueprintId:
+        blueprint_id:
           type: string
           description: Template application ID
       required:
-        - blueprintId
+        - blueprint_id
 
     params:
       type: object
