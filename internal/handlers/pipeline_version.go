@@ -278,6 +278,7 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	wg.Wait()
 	close(respChan)
 
+	runVersions.Versions = make([]*entity.RunResponse, 0, len(versions))
 	for i := range respChan {
 		v := i
 		runVersions.Versions = append(runVersions.Versions, v)
