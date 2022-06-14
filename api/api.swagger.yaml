@@ -1170,7 +1170,8 @@ components:
               versions:
                 type: array
                 description: started versions
-                items: '#/components/schemas/runInfo'
+                items:
+                  $ref: '#/components/schemas/runInfo'
               required:
                 - status_code
 
