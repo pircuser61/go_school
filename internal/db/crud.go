@@ -2395,7 +2395,7 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 			LEFT JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
 		WHERE pv.content::json#>>'{pipeline,entrypoint}' = 'servicedesk_application_0' AND
 			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,block_type}' = 'servicedesk_application' AND
-			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,params,blueprint_id}' = $1`
+			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,params,blueprintId}' = $1`
 
 	rows, err := conn.Query(c, query, bID)
 	if err != nil {
