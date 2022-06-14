@@ -1175,7 +1175,7 @@ components:
             required:
               - status_code
 
-    DebugTaskResp
+    DebugTaskResp:
       description: Debug task
       content:
         application/json:
