@@ -295,7 +295,7 @@ func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, bloc
 	switch block.BlockType {
 	case script.TypeInternal, script.TypeIF:
 		return ep.CreateInternal(block, name), nil
-	case script.TypeGo:
+	case script.TypeGo, BlockGoSdApplicationID, BlockGoApproverID:
 		return ep.CreateGoBlock(block, name)
 	case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 		fb := FunctionBlock{
