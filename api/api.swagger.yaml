@@ -1172,10 +1172,10 @@ components:
                 description: started versions
                 items:
                   $ref: '#/components/schemas/runInfo'
-              required:
-                - status_code
+            required:
+              - status_code
 
-    DebugTaskResp:
+    DebugTaskResp
       description: Debug task
       content:
         application/json:
