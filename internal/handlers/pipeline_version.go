@@ -190,7 +190,7 @@ type RunVersionsByBlueprintIdRequest struct {
 }
 
 type RunVersionsByBlueprintIdResponse struct {
-	Versions []*entity.RunResponse `json:"versions"`
+	Versions []*entity.RunResponse `json:"data"`
 }
 
 // @Summary Run Version By blueprintID
