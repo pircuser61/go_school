@@ -1167,13 +1167,13 @@ components:
           schema:
             type: object
             properties:
-              versions:
+              data:
                 type: array
                 description: started versions
                 items:
                   $ref: '#/components/schemas/runInfo'
-              required:
-                - status_code
+            required:
+              - status_code
 
     DebugTaskResp:
       description: Debug task
