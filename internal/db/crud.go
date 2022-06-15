@@ -2443,7 +2443,7 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 		WHERE pv.status = 2 AND 
 			pv.created_at = (SELECT MAX(v.created_at) FROM pipeliner.versions v WHERE v.pipeline_id = pv.pipeline_id) AND
 			pv.content::json#>>'{pipeline,entrypoint}' = 'servicedesk_application_0' AND
-			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,block_type}' = 'servicedesk_application' AND
+			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,type_id}' = 'servicedesk_application' AND
 			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,params,blueprint_id}' = $1
 `
 
