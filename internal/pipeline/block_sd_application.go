@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"github.com/pkg/errors"
 
@@ -67,6 +68,8 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, runCtx *store.Vari
 	_, s := trace.StartSpan(ctx, "run_go_sd_block")
 	defer s.End()
 
+	log := logger.CreateLogger(nil)
+
 	runCtx.AddStep(gb.Name)
 
 	data := ctx.Value(SdApplicationDataCtx{})
@@ -78,6 +81,8 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, runCtx *store.Vari
 	if !ok {
 		return errors.New("invalid application data in context")
 	}
+
+	log.WithField("blueprintID", appData.BlueprintID).Info("run sd_application block")
 
 	runCtx.SetValue(gb.Output[keyOutputBlueprintID], appData.BlueprintID)
 	runCtx.SetValue(gb.Output[keyOutputSdApplicationDesc], appData.Description)
@@ -138,6 +143,9 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 }
 
 func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoSdApplicationBlock, error) {
+	log := logger.CreateLogger(nil)
+	log.WithField("params", ef.Params).Info("sd_application parameters")
+
 	b := &GoSdApplicationBlock{
 		Storage: storage,
 
