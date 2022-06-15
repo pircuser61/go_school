@@ -18,6 +18,10 @@ type StringsEqual struct {
 	OnFalse       string
 }
 
+func (se *StringsEqual) GetTaskStatus() TaskHumanStatus {
+	return ""
+}
+
 func (se *StringsEqual) GetType() string {
 	return BlockInternalStringsEqual
 }

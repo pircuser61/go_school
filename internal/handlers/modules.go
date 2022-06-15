@@ -12,7 +12,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integration"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -53,13 +52,6 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.Equal.Model(),
 		script.Connector.Model(),
 		script.ForState.Model(),
-		integration.NewNGSASendIntegration(ae.DB).Model(),
-		integration.NewRemedySendCreateMI(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendCreateWork(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendCreateProblem(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendUpdateMI(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendUpdateWork(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendUpdateProblem(ae.Remedy, ae.HTTPClient).Model(),
 		approverBlock.Model(),
 		sdApplicationBlock.Model(),
 	)

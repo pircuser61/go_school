@@ -30,6 +30,7 @@ type eriusTaskResponse struct {
 	LastChangedAt time.Time              `json:"last_changed_at"`
 	Name          string                 `json:"name"`
 	Status        string                 `json:"status"`
+	HumanStatus   string                 `json:"human_status"`
 	Author        string                 `json:"author"`
 	IsDebugMode   bool                   `json:"debug"`
 	Parameters    map[string]interface{} `json:"parameters"`
@@ -74,6 +75,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 		LastChangedAt: in.LastChangedAt,
 		Name:          in.Name,
 		Status:        in.Status,
+		HumanStatus:   in.HumanStatus,
 		Author:        in.Author,
 		IsDebugMode:   in.IsDebugMode,
 		Parameters:    in.Parameters,
@@ -159,30 +161,44 @@ func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err e
 		filters.Name = &name
 	}
 
-	createdStart := req.URL.Query().Get("created[start]")
-	if createdStart != "" {
-		createdEnd := req.URL.Query().Get("created[end]")
-		if createdEnd != "" {
-			st, convErr := strconv.Atoi(createdStart)
-			if convErr != nil {
-				return filters, convErr
-			}
+	type created struct {
+		Start int `json:"start"`
+		End   int `json:"end"`
+	}
 
-			end, convErr := strconv.Atoi(createdEnd)
-			if convErr != nil {
-				return filters, convErr
-			}
+	createdTime := req.URL.Query().Get("created")
+	if createdTime != "" {
+		var cr created
+		if unmErr := json.Unmarshal([]byte(createdTime), &cr); unmErr != nil {
+			return filters, unmErr
+		}
 
-			filters.Created = &entity.TimePeriod{
-				Start: st,
-				End:   end,
-			}
+		filters.Created = &entity.TimePeriod{
+			Start: cr.Start,
+			End:   cr.End,
 		}
 	}
 
 	order := req.URL.Query().Get("order")
 	if order != "" {
 		filters.Order = &order
+	}
+
+	archived := req.URL.Query().Get("archived")
+	if archived != "" {
+		a, convErr := strconv.ParseBool(archived)
+		if err != nil {
+			return filters, convErr
+		}
+		filters.Archived = &a
+	} else {
+		a := false
+		filters.Archived = &a
+	}
+
+	selectAs := req.URL.Query().Get("selectAs")
+	if selectAs != "" {
+		filters.SelectAs = &selectAs
 	}
 
 	lim := 10
@@ -216,8 +232,6 @@ func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err e
 // @Produce json
 // @Param name query string false "Pipeline name"
 // @Param taskIDs query []string false "Task IDs"
-// @Param created[start] query string false "Created after"
-// @Param created[end] query string false "Created before"
 // @Param order query string false "Order"
 // @Param limit query string false "Limit"
 // @Param offset query string false "Offset"

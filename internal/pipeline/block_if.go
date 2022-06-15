@@ -22,6 +22,10 @@ type IF struct {
 	OnFalse       string
 }
 
+func (e *IF) GetTaskStatus() TaskHumanStatus {
+	return ""
+}
+
 func (e *IF) GetType() string {
 	return BlockInternalIf
 }

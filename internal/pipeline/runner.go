@@ -18,4 +18,5 @@ type Runner interface {
 	Inputs() map[string]string
 	Outputs() map[string]string
 	Update(ctx context.Context, data *script.BlockUpdateData) (interface{}, error)
+	GetTaskStatus() TaskHumanStatus
 }

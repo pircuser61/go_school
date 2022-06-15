@@ -45,6 +45,7 @@ type EriusTask struct {
 	LastChangedAt time.Time              `json:"last_changed_at"`
 	Name          string                 `json:"name"`
 	Status        string                 `json:"status"`
+	HumanStatus   string                 `json:"human_status"`
 	Author        string                 `json:"author"`
 	IsDebugMode   bool                   `json:"debug"`
 	Parameters    map[string]interface{} `json:"parameters"`
@@ -73,12 +74,14 @@ func (et *EriusTask) IsError() bool {
 }
 
 type GetTaskParams struct {
-	Name    *string     `json:"name"`
-	Created *TimePeriod `json:"created"`
-	Order   *string     `json:"order"`
-	Limit   *int        `json:"limit"`
-	Offset  *int        `json:"offset"`
-	TaskIDs *[]string   `json:"task_ids"`
+	Name     *string     `json:"name"`
+	Created  *TimePeriod `json:"created"`
+	Order    *string     `json:"order"`
+	Limit    *int        `json:"limit"`
+	Offset   *int        `json:"offset"`
+	TaskIDs  *[]string   `json:"task_ids"`
+	SelectAs *string     `json:"select_as"`
+	Archived *bool       `json:"archived"`
 }
 
 type TimePeriod struct {

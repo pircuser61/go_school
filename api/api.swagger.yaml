@@ -113,6 +113,25 @@ components:
           - asc
           - desc
 
+    selectAs:
+      name: selectAs
+      in: query
+      required: false
+      description: Select as
+      schema:
+        type: string
+        enum:
+          - approver
+          - executor
+
+    archived:
+      name: archived
+      in: query
+      required: false
+      description: Archived tasks
+      schema:
+        type: boolean
+
     limit:
       name: limit
       in: query
@@ -423,7 +442,7 @@ components:
           description: Comment from approver
       required:
         - decision
-        - approver
+        - comment
 
     sdApplicationParams:
       type: object
@@ -814,6 +833,15 @@ components:
         - has_error
         - is_finished
 
+    humanStatus:
+      type: string
+      description: Task human readable status
+      enum:
+        - new
+        - approvement
+        - approved
+        - done
+
     task:
       type: object
       description: Runned task
@@ -840,6 +868,8 @@ components:
         status:
           type: string
           description: Task status
+        human_status:
+          $ref: '#/components/schemas/humanStatus'
         author:
           type: string
           description: Author login
@@ -865,6 +895,7 @@ components:
         - last_changed_at
         - name
         - status
+        - human_status
         - author
         - debug
         - parameters
@@ -1663,6 +1694,8 @@ paths:
       - $ref: '#/components/parameters/taskIDs'
       - $ref: '#/components/parameters/created'
       - $ref: '#/components/parameters/order'
+      - $ref: '#/components/parameters/selectAs'
+      - $ref: '#/components/parameters/archived'
       - $ref: '#/components/parameters/limit'
       - $ref: '#/components/parameters/offset'
 

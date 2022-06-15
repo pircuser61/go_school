@@ -550,7 +550,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,
 	p *entity.EriusScenario, withStop bool) (*entity.RunResponse, error) {
 
-	ctx, s := trace.StartSpan(ctx, "exec_version")
+	_, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -675,8 +675,9 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 		}
 	} else {
 		go func() {
-			//nolint:staticcheck // поправить потом
+			//nolint:staticcheck // поправить потом TODO
 			routineCtx := context.WithValue(context.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+			routineCtx = context.WithValue(routineCtx, pipeline.SdApplicationDataCtx{}, ctx.Value(pipeline.SdApplicationDataCtx{}))
 			routineCtx = logger.WithLogger(routineCtx, log)
 			err = ep.Run(routineCtx, vs)
 			if err != nil {

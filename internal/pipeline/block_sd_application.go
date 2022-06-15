@@ -25,7 +25,9 @@ const (
 type SdApplicationDataCtx struct{}
 
 type ApplicationData struct {
-	BlueprintID string `json:"blueprint_id"`
+	BlueprintID     string                 `json:"blueprint_id"`
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
 }
 
 type SdApplicationData struct {
@@ -43,6 +45,10 @@ type GoSdApplicationBlock struct {
 	State    *ApplicationData
 
 	Storage db.Database
+}
+
+func (gb *GoSdApplicationBlock) GetTaskStatus() TaskHumanStatus {
+	return StatusNew
 }
 
 func (gb *GoSdApplicationBlock) GetType() string {
@@ -88,6 +94,17 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, runCtx *store.Vari
 	runCtx.SetValue(gb.Output[keyOutputBlueprintID], appData.BlueprintID)
 	runCtx.SetValue(gb.Output[keyOutputSdApplicationDesc], appData.Description)
 	runCtx.SetValue(gb.Output[keyOutputSdApplication], appData.ApplicationBody)
+
+	gb.State.ApplicationBody = appData.ApplicationBody
+	gb.State.Description = appData.Description
+
+	var stateBytes []byte
+	stateBytes, err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	runCtx.ReplaceState(gb.Name, stateBytes)
 
 	return err
 }

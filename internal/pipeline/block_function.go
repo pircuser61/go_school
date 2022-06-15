@@ -32,6 +32,10 @@ type FunctionBlock struct {
 	RunURL         string
 }
 
+func (fb *FunctionBlock) GetTaskStatus() TaskHumanStatus {
+	return ""
+}
+
 func (fb *FunctionBlock) GetType() string {
 	return fb.Type
 }

@@ -103,6 +103,13 @@ type GoApproverBlock struct {
 	Storage db.Database
 }
 
+func (gb *GoApproverBlock) GetTaskStatus() TaskHumanStatus {
+	if gb.State != nil && gb.State.Decision != nil {
+		return StatusApproved
+	}
+	return StatusApprovement
+}
+
 func (gb *GoApproverBlock) GetType() string {
 	return BlockGoApproverID
 }
