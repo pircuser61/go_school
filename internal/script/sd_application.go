@@ -5,7 +5,7 @@ import (
 )
 
 type SdApplicationParams struct {
-	BlueprintID string `json:"blueprintId"`
+	BlueprintID string `json:"blueprint_id"`
 }
 
 func (a *SdApplicationParams) Validate() error {
