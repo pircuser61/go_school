@@ -17,6 +17,10 @@ type GoTestBlock struct {
 	NextStep string
 }
 
+func (gb *GoTestBlock) GetTaskStatus() TaskHumanStatus {
+	return ""
+}
+
 func (gb *GoTestBlock) GetType() string {
 	return BlockGoTestID
 }

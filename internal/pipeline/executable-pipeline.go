@@ -15,7 +15,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integration"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -47,6 +46,13 @@ type ExecutablePipeline struct {
 	Remedy        string
 
 	FaaS string
+}
+
+func (ep *ExecutablePipeline) GetTaskStatus() TaskHumanStatus {
+	if ep.NowOnPoint == "" {
+		return StatusDone
+	}
+	return StatusNew
 }
 
 func (ep *ExecutablePipeline) GetType() string {
@@ -128,9 +134,17 @@ func (ep *ExecutablePipeline) changeTaskStatus(ctx context.Context, taskStatus i
 	return nil
 }
 
+// TODO
+func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskHumanStatus) error {
+	if status != "" {
+		return ep.Storage.UpdateTaskHumanStatus(c, ep.TaskID, string(status))
+	}
+	return nil
+}
+
 //nolint:gocognit,gocyclo //its really complex
 func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
-	ctx, s := trace.StartSpan(ctx, "pipeline_flow")
+	_, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -144,6 +158,11 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusRunning)
 	if errChange != nil {
 		return errChange
+	}
+
+	errUpdate := ep.updateStatusByStep(ctx, ep.GetTaskStatus())
+	if errUpdate != nil {
+		return errUpdate
 	}
 
 	for ep.NowOnPoint != "" {
@@ -204,12 +223,22 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				return err
 			}
 
+			errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskStatus())
+			if errUpdate != nil {
+				return errUpdate
+			}
+
 			ep.VarStore.SetValue(getWorkIdKey(ep.NowOnPoint), id)
 
 			err = currentBlock.DebugRun(ctx, ep.VarStore)
 			if err != nil {
 				key := ep.NowOnPoint + KeyDelimiter + ErrorKey
 				ep.VarStore.SetValue(key, err.Error())
+			}
+
+			errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskStatus())
+			if errUpdate != nil {
+				return errUpdate
 			}
 		}
 
@@ -241,6 +270,11 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	errChangeFinished := ep.changeTaskStatus(ctx, db.RunStatusFinished)
 	if errChangeFinished != nil {
 		return errChange
+	}
+
+	errUpdate = ep.updateStatusByStep(ctx, ep.GetTaskStatus())
+	if errUpdate != nil {
+		return errUpdate
 	}
 
 	for _, glob := range ep.PipelineModel.Output {
@@ -441,76 +475,6 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 		}
 
 		return con
-	case "ngsa-send-alarm":
-		ngsa := integration.NewNGSASendIntegration(ep.Storage)
-		for _, v := range ef.Input {
-			ngsa.Input[v.Name] = v.Global
-		}
-
-		ngsa.Name = ef.Title
-		ngsa.NextBlock = ef.Next
-
-		return ngsa
-	case "remedy-send-createmi":
-		rem := integration.NewRemedySendCreateMI(ep.Remedy, ep.HTTPClient)
-		for _, v := range ef.Input {
-			rem.Input[v.Name] = v.Global
-		}
-
-		rem.Name = ef.Title
-		rem.NextBlock = ef.Next
-
-		return rem
-	case "remedy-send-createproblem":
-		rem := integration.NewRemedySendCreateProblem(ep.Remedy, ep.HTTPClient)
-		for _, v := range ef.Input {
-			rem.Input[v.Name] = v.Global
-		}
-
-		rem.Name = ef.Title
-		rem.NextBlock = ef.Next
-
-		return rem
-	case "remedy-send-creatework":
-		rem := integration.NewRemedySendCreateWork(ep.Remedy, ep.HTTPClient)
-		for _, v := range ef.Input {
-			rem.Input[v.Name] = v.Global
-		}
-
-		rem.Name = ef.Title
-		rem.NextBlock = ef.Next
-
-		return rem
-	case "remedy-send-updatemi":
-		rem := integration.NewRemedySendUpdateMI(ep.Remedy, ep.HTTPClient)
-		for _, v := range ef.Input {
-			rem.Input[v.Name] = v.Global
-		}
-
-		rem.Name = ef.Title
-		rem.NextBlock = ef.Next
-
-		return rem
-	case "remedy-send-updateproblem":
-		rem := integration.NewRemedySendUpdateProblem(ep.Remedy, ep.HTTPClient)
-		for _, v := range ef.Input {
-			rem.Input[v.Name] = v.Global
-		}
-
-		rem.Name = ef.Title
-		rem.NextBlock = ef.Next
-
-		return rem
-	case "remedy-send-updatework":
-		rem := integration.NewRemedySendUpdateWork(ep.Remedy, ep.HTTPClient)
-		for _, v := range ef.Input {
-			rem.Input[v.Name] = v.Global
-		}
-
-		rem.Name = ef.Title
-		rem.NextBlock = ef.Next
-
-		return rem
 	case "for":
 		f := createForBlock(ef.Title, name, ef.OnTrue, ef.OnFalse)
 

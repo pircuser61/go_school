@@ -17,6 +17,10 @@ type ConnectorBlock struct {
 	NextStep       string
 }
 
+func (cb *ConnectorBlock) GetTaskStatus() TaskHumanStatus {
+	return ""
+}
+
 func (cb *ConnectorBlock) GetType() string {
 	return BlockInternalConnector
 }

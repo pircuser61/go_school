@@ -28,6 +28,7 @@ type TaskStorager interface {
 	ChangeTaskStatus(c context.Context, taskID uuid.UUID, status int) error
 	GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error)
 	GetLastDebugTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error)
+	UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, status string) error
 }
 
 type SaveStepRequest struct {

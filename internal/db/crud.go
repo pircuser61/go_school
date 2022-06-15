@@ -1794,14 +1794,17 @@ func (db *PGConnection) GetExecutableByName(c context.Context, name string) (*en
 }
 
 //TODO:last_updated_at
+//nolint:gocritic //filters
 func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface{}) {
 	// nolint:gocritic
 	// language=PostgreSQL
-	q = `SELECT 
+	q = `
+		SELECT 
 			w.id,
 			w.started_at,
        		w.started_at,
 			ws.name, 
+			w.human_status, 
 			w.debug, 
 			w.parameters, 
 			w.author, 
@@ -1812,13 +1815,27 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
 		JOIN pipeliner.work_status ws ON w.status = ws.id
-		WHERE w.author = $1`
-
-	args = append(args, filters.CurrentUser)
+		LEFT JOIN LATERAL (
+             SELECT * FROM pipeliner.variable_storage vs
+             WHERE vs.work_id = w.id
+             ORDER BY vs.time DESC
+             LIMIT 1
+        ) approvers ON approvers.work_id = w.id
+		WHERE 1=1`
 
 	order := "ASC"
 	if filters.Order != nil {
 		order = *filters.Order
+	}
+
+	if filters.SelectAs != nil {
+		if *filters.SelectAs == "approver" {
+			args = append(args, filters.CurrentUser)
+			q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'approvers'->$%d IS NOT NULL", q, len(args))
+		}
+	} else {
+		args = append(args, filters.CurrentUser)
+		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
 	}
 
 	if filters.TaskIDs != nil {
@@ -1833,6 +1850,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		args = append(args, time.Unix(int64(filters.Created.Start), 0).UTC(), time.Unix(int64(filters.Created.End), 0).UTC())
 		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
 	}
+	// TODO: archived
 	if order != "" {
 		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
 	}
@@ -1848,6 +1866,27 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	return q, args
 }
 
+func (db *PGConnection) UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, status string) error {
+	c, span := trace.StartSpan(c, "update_task_status")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `UPDATE pipeliner.works
+		SET human_status = $1
+		WHERE id = $2`
+
+	_, err = conn.Exec(c, q, status, taskID)
+	return err
+}
+
+//nolint:gocritic //filters
 func (db *PGConnection) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
 	c, span := trace.StartSpan(c, "pg_get_tasks")
 	defer span.End()
@@ -1884,6 +1923,7 @@ func (db *PGConnection) GetPipelineTasks(c context.Context, pipelineID uuid.UUID
 			w.id, 
 			w.started_at, 
 			ws.name, 
+			w.human_status, 
 			w.debug, 
 			w.parameters, 
 			w.author, 
@@ -1909,7 +1949,8 @@ func (db *PGConnection) GetVersionTasks(c context.Context, versionID uuid.UUID) 
 	q := `SELECT 
 			w.id, 
 			w.started_at, 
-			ws.name, 
+			ws.name,
+       		w.human_status,
 			w.debug, 
 			w.parameters,
 			w.author, 
@@ -1935,6 +1976,7 @@ func (db *PGConnection) GetLastDebugTask(c context.Context, id uuid.UUID, author
 			w.id, 
 			w.started_at, 
 			ws.name, 
+       		w.human_status,
 			w.debug, 
 			w.parameters, 
 			w.author, 
@@ -1960,7 +2002,7 @@ func (db *PGConnection) GetLastDebugTask(c context.Context, id uuid.UUID, author
 	row := conn.QueryRow(c, q, id, author)
 	parameters := ""
 
-	err = row.Scan(&et.ID, &et.StartedAt, &et.Status, &et.IsDebugMode, &parameters, &et.Author, &et.VersionID)
+	err = row.Scan(&et.ID, &et.StartedAt, &et.Status, &et.HumanStatus, &et.IsDebugMode, &parameters, &et.Author, &et.VersionID)
 	if err != nil {
 		return nil, err
 	}
@@ -1984,6 +2026,7 @@ func (db *PGConnection) GetTask(c context.Context, workNumber string) (*entity.E
 			w.started_at, 
 			w.started_at, 
 			ws.name,
+       		w.human_status,
 			w.debug, 
 			COALESCE(w.parameters, '{}') AS parameters,
 			w.author,
@@ -2021,6 +2064,7 @@ func (db *PGConnection) getTask(c context.Context, q, workNumber string) (*entit
 		&et.StartedAt,
 		&et.LastChangedAt,
 		&et.Status,
+		&et.HumanStatus,
 		&et.IsDebugMode,
 		&nullStringParameters,
 		&et.Author,
@@ -2093,6 +2137,7 @@ func (db *PGConnection) getTasks(c context.Context, q string, args []interface{}
 			&et.StartedAt,
 			&et.LastChangedAt,
 			&et.Status,
+			&et.HumanStatus,
 			&et.IsDebugMode,
 			&nullStringParameters,
 			&et.Author,
@@ -2152,6 +2197,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 	}
 	defer rows.Close()
 
+	//nolint:dupl //scan
 	for rows.Next() {
 		s := entity.Step{}
 		var content string
@@ -2232,6 +2278,7 @@ func (db *PGConnection) GetUnfinishedTaskStepsByWorkIdAndStepType(
 	}
 	defer rows.Close()
 
+	//nolint:dupl //scan
 	for rows.Next() {
 		s := entity.Step{}
 		var content string

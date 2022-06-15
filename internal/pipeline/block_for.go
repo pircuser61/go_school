@@ -19,6 +19,10 @@ type ForState struct {
 	OnFalse        string
 }
 
+func (e *ForState) GetTaskStatus() TaskHumanStatus {
+	return ""
+}
+
 func (e *ForState) GetType() string {
 	return BlockInternalForState
 }
