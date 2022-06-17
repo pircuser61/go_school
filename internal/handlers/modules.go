@@ -12,7 +12,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integration"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -48,14 +47,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		script.Input.Model(),
 		script.Equal.Model(),
 		script.Connector.Model(),
-		script.ForState.Model(),
-		integration.NewNGSASendIntegration(ae.DB).Model(),
-		integration.NewRemedySendCreateMI(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendCreateWork(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendCreateProblem(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendUpdateMI(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendUpdateWork(ae.Remedy, ae.HTTPClient).Model(),
-		integration.NewRemedySendUpdateProblem(ae.Remedy, ae.HTTPClient).Model())
+		script.ForState.Model())
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
 	if err != nil {
@@ -290,7 +282,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 		FunctionName:   block.Title,
 		FunctionInput:  make(map[string]string),
 		FunctionOutput: make(map[string]string),
-		NextStep:       "",
+		NextStep:       []string{},
 		RunURL:         ae.FaaS + "function/%s",
 	}
 

@@ -14,14 +14,10 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"bou.ke/monkey"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-
-	"gitlab.services.mts.ru/erius/admin/pkg/auth"
-	"gitlab.services.mts.ru/erius/admin/pkg/vars"
 
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -41,7 +37,7 @@ func AddWithStop(next http.Handler) http.Handler {
 
 func TestAPIEnv_RunPipeline(t *testing.T) {
 	patchAuthClient()
-	defer monkey.UnpatchAll()
+	//defer monkey.UnpatchAll()
 
 	mockDB := test.NewMockDB()
 
@@ -256,21 +252,21 @@ func TestAPIEnv_RunPipeline(t *testing.T) {
 
 func patchAuthClient() {
 	// patch auth client
-	monkey.PatchInstanceMethod(
-		reflect.TypeOf(&auth.Client{}),
-		"CheckGrants",
-		func(*auth.Client, context.Context, vars.ResourceType, vars.ActionType) (*auth.Grants, error) {
-			alwaysGrantsAll := &auth.Grants{Allow: true, All: true}
-
-			return alwaysGrantsAll, nil
-		})
-
-	monkey.PatchInstanceMethod(
-		reflect.TypeOf(&auth.Client{}),
-		"Notice",
-		func(*auth.Client, context.Context, *auth.Notice) error {
-			return nil
-		})
+	//monkey.PatchInstanceMethod(
+	//	reflect.TypeOf(&auth.Client{}),
+	//	"CheckGrants",
+	//	func(*auth.Client, context.Context, vars.ResourceType, vars.ActionType) (*auth.Grants, error) {
+	//		alwaysGrantsAll := &auth.Grants{Allow: true, All: true}
+	//
+	//		return alwaysGrantsAll, nil
+	//	})
+	//
+	//monkey.PatchInstanceMethod(
+	//	reflect.TypeOf(&auth.Client{}),
+	//	"Notice",
+	//	func(*auth.Client, context.Context, *auth.Notice) error {
+	//		return nil
+	//	})
 }
 
 func Test_scenarioUsage(t *testing.T) {

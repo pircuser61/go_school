@@ -13,7 +13,7 @@ type ConnectorBlock struct {
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	NextStep       string
+	NextStep       []string
 }
 
 func (cb *ConnectorBlock) GetType() string {
@@ -52,12 +52,12 @@ func (cb *ConnectorBlock) DebugRun(ctx context.Context, runCtx *store.VariableSt
 	return nil
 }
 
-func (cb *ConnectorBlock) Next(runCtx *store.VariableStore) (string, bool) {
+func (cb *ConnectorBlock) Next(runCtx *store.VariableStore) ([]string, bool) {
 	return cb.NextStep, true
 }
 
 func (cb *ConnectorBlock) NextSteps() []string {
-	return []string{cb.NextStep}
+	return cb.NextStep
 }
 
 func (cb ConnectorBlock) IsScenario() bool {

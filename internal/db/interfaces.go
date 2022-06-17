@@ -8,16 +8,9 @@ import (
 )
 
 type PipelineStorager interface {
-	// deprecated
 	CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error
-	//CreatePipelineV2(c context.Context, p *entity.EriusScenarioV2, author string, pipelineData []byte) error
-	// deprecated
 	GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error)
-	//GetWorkedVersionsV2(c context.Context) ([]entity.EriusScenarioV2, error)
-	// deprecated
 	GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
-	//GetPipelineV2(c context.Context, id uuid.UUID) (*entity.EriusScenarioV2, error)
-
 	PipelineRemovable(c context.Context, id uuid.UUID) (bool, error)
 	DeletePipeline(c context.Context, id uuid.UUID) error
 }

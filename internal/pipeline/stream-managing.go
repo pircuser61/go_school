@@ -29,17 +29,17 @@ func (e *IF) GetType() string {
 	return BlockInternalIf
 }
 
-func (e *IF) Next(runCtx *store.VariableStore) (string, bool) {
+func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
 	r, err := runCtx.GetBoolWithInput(e.FunctionInput, "check")
 	if err != nil {
-		return "", false
+		return []string{""}, false
 	}
 
 	if r {
-		return e.OnTrue, true
+		return []string{e.OnTrue}, true
 	}
 
-	return e.OnFalse, true
+	return []string{e.OnFalse}, true
 }
 
 func (e *IF) NextSteps() []string {
@@ -139,12 +139,12 @@ func (se *StringsEqual) DebugRun(ctx context.Context, runCtx *store.VariableStor
 	return nil
 }
 
-func (se *StringsEqual) Next(runCtx *store.VariableStore) (string, bool) {
+func (se *StringsEqual) Next(runCtx *store.VariableStore) ([]string, bool) {
 	if se.Result {
-		return se.OnTrue, true
+		return []string{se.OnTrue}, true
 	}
 
-	return se.OnFalse, true
+	return []string{se.OnFalse}, true
 }
 
 func (se *StringsEqual) NextSteps() []string {
@@ -211,27 +211,27 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	return nil
 }
 
-func (e *ForState) Next(runCtx *store.VariableStore) (string, bool) {
+func (e *ForState) Next(runCtx *store.VariableStore) ([]string, bool) {
 	arr, _ := runCtx.GetArray(e.FunctionInput["iter"])
 	if len(arr) == 0 {
-		return e.OnTrue, true
+		return []string{e.OnTrue}, true
 	}
 
 	i, getValue := runCtx.GetValue(e.FunctionOutput["index"])
 	if !getValue {
-		return "", getValue
+		return []string{""}, getValue
 	}
 
 	index, indexOk := indexToInt(i)
 	if !indexOk {
-		return "", indexOk
+		return []string{""}, indexOk
 	}
 
 	if index >= len(arr)+1 {
-		return e.OnTrue, true
+		return []string{e.OnTrue}, true
 	}
 
-	return e.OnFalse, true
+	return []string{e.OnFalse}, true
 }
 
 func (e *ForState) NextSteps() []string {

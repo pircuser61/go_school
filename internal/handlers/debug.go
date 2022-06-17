@@ -269,7 +269,9 @@ func currentStepName(
 			return "", pipeline.ErrCantGetNextStep
 		}
 
-		return currentStep, nil
+		if len(currentStep) > 1 {
+			return currentStep[0], nil // todo: must переделать
+		}
 	}
 
 	return steps[0].Name, nil
@@ -328,13 +330,18 @@ func (ae *APIEnv) runDebugTask(
 	vs := variableStoreFromSteps(task, version, steps)
 
 	if steps.IsEmpty() {
-		ep.NowOnPoint = ep.EntryPoint
+		ep.NowOnPoint = []string{ep.EntryPoint} // todo: must переделать
 	} else {
 		ep.NowOnPoint, _ = ep.Blocks[steps[0].Name].Next(vs)
 	}
 
-	stopPoints := store.NewStopPoints(ep.NowOnPoint)
-	nextBlock := ep.Blocks[ep.NowOnPoint]
+	g := "" // todo: must переделать
+
+	//stopPoints := store.NewStopPoints(ep.NowOnPoint)
+	//nextBlock := ep.Blocks[ep.NowOnPoint]
+
+	stopPoints := store.NewStopPoints(g)
+	nextBlock := ep.Blocks[g]
 
 	if nextBlock == nil {
 		log.Error(errCantGetNextBlock)
