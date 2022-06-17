@@ -5,6 +5,7 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -16,8 +17,12 @@ type GoTestBlock struct {
 	NextStep []string
 }
 
+func (gb *GoTestBlock) GetTaskStatus() TaskHumanStatus {
+	return ""
+}
+
 func (gb *GoTestBlock) GetType() string {
-	return BlockGoTest
+	return BlockGoTestID
 }
 
 func (gb *GoTestBlock) Inputs() map[string]string {
@@ -69,4 +74,12 @@ func (gb *GoTestBlock) NextSteps() []string {
 	nextSteps := gb.NextStep
 
 	return nextSteps
+}
+
+func (gb *GoTestBlock) GetState() interface{} {
+	return nil
+}
+
+func (gb *GoTestBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+	return nil, nil
 }

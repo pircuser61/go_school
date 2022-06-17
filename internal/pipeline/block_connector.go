@@ -3,9 +3,10 @@ package pipeline
 import (
 	"context"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type ConnectorBlock struct {
@@ -14,6 +15,10 @@ type ConnectorBlock struct {
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
 	NextStep       []string
+}
+
+func (cb *ConnectorBlock) GetTaskStatus() TaskHumanStatus {
+	return ""
 }
 
 func (cb *ConnectorBlock) GetType() string {
@@ -70,4 +75,12 @@ func (cb ConnectorBlock) Inputs() map[string]string {
 
 func (cb ConnectorBlock) Outputs() map[string]string {
 	return cb.FunctionOutput
+}
+
+func (cb ConnectorBlock) GetState() interface{} {
+	return nil
+}
+
+func (cb ConnectorBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+	return nil, nil
 }

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,11 +34,11 @@ type EriusScenarioInfo struct {
 }
 
 type EriusVersionInfo struct {
-	VersionID  uuid.UUID `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	CreatedAt  time.Time `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	ApprovedAt time.Time `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	Author     string    `json:"author" example:"testAuthor"`
-	Approver   string    `json:"approver" example:"testApprover"`
+	VersionID  uuid.UUID  `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	CreatedAt  time.Time  `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt *time.Time `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author     string     `json:"author" example:"testAuthor"`
+	Approver   string     `json:"approver" example:"testApprover"`
 }
 
 type EriusTagInfo struct {
@@ -54,8 +55,8 @@ type EriusScenario struct {
 	Status    int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	HasDraft  bool                 `json:"hasDraft,omitempty"`
 	Name      string               `json:"name" example:"ScenarioName"`
-	Input     []EriusFunctionValue `json:"input"`
-	Output    []EriusFunctionValue `json:"output"`
+	Input     []EriusFunctionValue `json:"input,omitempty"`
+	Output    []EriusFunctionValue `json:"output,omitempty"`
 	Pipeline  struct {
 		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
@@ -76,10 +77,13 @@ type EriusFunctionList struct {
 type EriusFunc struct {
 	X         int                  `json:"x,omitempty"`
 	Y         int                  `json:"y,omitempty"`
-	BlockType string               `json:"block_type" enums:"python3,internal,term,scenario" example:"python3"`
+	TypeID    string               `json:"type_id" example:"approver"`
+	BlockType string               `json:"block_type" enums:"python3,go,internal,term,scenario" example:"python3"`
 	Title     string               `json:"title" example:"lock-bts"`
-	Input     []EriusFunctionValue `json:"input"`
+	Input     []EriusFunctionValue `json:"input,omitempty"`
 	Output    []EriusFunctionValue `json:"output,omitempty"`
+	ParamType string               `json:"param_type,omitempty"`
+	Params    json.RawMessage      `json:"params,omitempty" swaggertype:"object"`
 	OnTrue    string               `json:"on_true,omitempty"`
 	OnFalse   string               `json:"on_false,omitempty"`
 	Final     string               `json:"final,omitempty"`
@@ -114,66 +118,10 @@ type Shapes struct {
 
 type RunResponse struct {
 	PipelineID uuid.UUID   `json:"pipeline_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	TaskID     uuid.UUID   `json:"task_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	WorkNumber string      `json:"work_number"`
 	Status     string      `json:"status" example:"runned"`
 	Output     interface{} `json:"output"`
 	Errors     []string    `json:"errors"`
-}
-
-type EriusTasks struct {
-	Tasks []EriusTask `json:"tasks"`
-}
-
-type EriusTask struct {
-	ID          uuid.UUID              `json:"id"`
-	VersionID   uuid.UUID              `json:"version_id"`
-	StartedAt   time.Time              `json:"started_at"`
-	Status      string                 `json:"status"`
-	Author      string                 `json:"author"`
-	IsDebugMode bool                   `json:"debug"`
-	Parameters  map[string]interface{} `json:"parameters"`
-	Steps       TaskSteps              `json:"steps"`
-}
-
-func (et *EriusTask) IsRun() bool {
-	return et.Status == "run"
-}
-
-func (et *EriusTask) IsCreated() bool {
-	return et.Status == "created"
-}
-
-func (et *EriusTask) IsStopped() bool {
-	return et.Status == "stopped"
-}
-
-func (et *EriusTask) IsFinished() bool {
-	return et.Status == "finished"
-}
-
-func (et *EriusTask) IsError() bool {
-	return et.Status == "error"
-}
-
-type TaskSteps []*Step
-
-func (ts *TaskSteps) IsEmpty() bool {
-	return len(*ts) == 0
-}
-
-// @deprecated
-type EriusLog struct {
-	Steps []Step `json:"steps"`
-}
-
-type Step struct {
-	Time        time.Time              `json:"time"`
-	Name        string                 `json:"name"`
-	Storage     map[string]interface{} `json:"storage"`
-	Errors      []string               `json:"errors"`
-	Steps       []string               `json:"steps"`
-	BreakPoints []string               `json:"-"`
-	HasError    bool                   `json:"has_error"`
 }
 
 type SchedulerTasksResponse struct {

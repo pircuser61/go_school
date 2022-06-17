@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -144,7 +144,7 @@ func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*
 	urlCopy := pc.host
 	urlCopy.Path = path.Join(pc.host.Path, "api/pipeliner/v1/tasks", taskID.String())
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlCopy.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlCopy.String(), http.NoBody)
 	if err != nil {
 		return nil, errors.Wrap(err, CreateRequstError)
 	}
@@ -187,7 +187,7 @@ func doRequest(ctx context.Context, client *http.Client, req *http.Request, resp
 }
 
 func unmarshalBody(res *http.Response, structToFill interface{}) error {
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return errors.Wrap(err, UnmarshalReadError)
 	}

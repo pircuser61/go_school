@@ -61,7 +61,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string, httpClient *http.C
 
 	u.Path = path.Join(u.Path, "/api/manager/function/list")
 
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -33,7 +34,7 @@ import (
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /pipelines/ [post]
+// @Router /pipelines [post]
 //nolint:dupl //diff logic
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
@@ -41,7 +42,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
@@ -127,7 +128,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 // @Failure 400 {object} httpError
 // @Failure 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /pipelines/pipeline/{pipelineID} [get]
+// @Router /pipelines/{pipelineID} [get]
 //nolint:dupl //its different
 func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
@@ -183,7 +184,7 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 // @success 200 {object} httpResponse{data=entity.EriusScenarioList}
 // @success 401 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /pipelines/ [get]
+// @Router /pipelines [get]
 func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_pipelines")
 	defer s.End()
@@ -317,13 +318,15 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+type RunPipelineBody map[string]interface{}
+
 // @Summary Run Pipeline
 // @Description Запустить сценарий
 // @Tags pipeline, run
 // @ID run-pipeline
 // @Accept json
 // @Produce json
-// @Param variables body object false "pipeline input"
+// @Param variables body RunPipelineBody false "pipeline input"
 // @Param pipelineID path string true "Pipeline ID"
 // @Success 200 {object} httpResponse{data=entity.RunResponse}
 // @Failure 400 {object} httpError
@@ -369,7 +372,20 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ae.execVersion(ctx, w, req, p, withStop)
+	runResponse, err := ae.execVersion(ctx, w, req, p, withStop)
+	if err != nil {
+		e := PipelineExecutionError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	_ = sendResponse(w, http.StatusOK, entity.RunResponse{
+		PipelineID: runResponse.PipelineID,
+		WorkNumber: runResponse.WorkNumber,
+		Status:     statusRunned,
+	})
 }
 
 func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter, p *entity.EriusScenario) error {

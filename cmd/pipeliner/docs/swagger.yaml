@@ -29,6 +29,7 @@ definitions:
       block_type:
         enum:
         - python3
+        - go
         - internal
         - term
         - scenario
@@ -53,8 +54,15 @@ definitions:
         items:
           $ref: '#/definitions/entity.EriusFunctionValue'
         type: array
+      param_type:
+        type: string
+      params:
+        type: object
       title:
         example: lock-bts
+        type: string
+      type_id:
+        example: approver
         type: string
       x:
         type: integer
@@ -245,6 +253,10 @@ definitions:
         type: boolean
       id:
         type: string
+      last_changed_at:
+        type: string
+      name:
+        type: string
       parameters:
         additionalProperties: true
         type: object
@@ -258,6 +270,8 @@ definitions:
         type: array
       version_id:
         type: string
+      work_number:
+        type: string
     type: object
   entity.EriusTasks:
     properties:
@@ -265,6 +279,15 @@ definitions:
         items:
           $ref: '#/definitions/entity.EriusTask'
         type: array
+    type: object
+  entity.EriusTasksPage:
+    properties:
+      tasks:
+        items:
+          $ref: '#/definitions/entity.EriusTask'
+        type: array
+      total:
+        type: integer
     type: object
   entity.EriusVersionInfo:
     properties:
@@ -291,8 +314,7 @@ definitions:
         items:
           type: string
         type: array
-      output:
-        type: object
+      output: {}
       pipeline_id:
         example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         format: uuid
@@ -300,9 +322,7 @@ definitions:
       status:
         example: runned
         type: string
-      task_id:
-        example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-        format: uuid
+      work_number:
         type: string
     type: object
   entity.SchedulerTasksResponse:
@@ -318,8 +338,12 @@ definitions:
         type: array
       has_error:
         type: boolean
+      is_finished:
+        type: boolean
       name:
         type: string
+      state:
+        type: object
       steps:
         items:
           type: string
@@ -329,6 +353,18 @@ definitions:
         type: object
       time:
         type: string
+      type:
+        type: string
+    type: object
+  entity.TaskUpdate:
+    properties:
+      action:
+        enum:
+        - approvement
+        example: approvement
+        type: string
+      parameters:
+        type: object
     type: object
   entity.UsageResponse:
     properties:
@@ -368,7 +404,58 @@ definitions:
         items:
           type: string
         type: array
-      task_id:
+      work_number:
+        type: string
+    type: object
+  handlers.RunPipelineBody:
+    additionalProperties: true
+    type: object
+  handlers.RunVersionBody:
+    additionalProperties: true
+    type: object
+  handlers.RunVersionsByBlueprintIdRequest:
+    properties:
+      application_body:
+        additionalProperties: true
+        type: object
+      blueprint_id:
+        type: string
+      description:
+        type: string
+    type: object
+  handlers.RunVersionsByBlueprintIdResponse:
+    properties:
+      versions:
+        items:
+          $ref: '#/definitions/entity.RunResponse'
+        type: array
+    type: object
+  handlers.eriusTaskResponse:
+    properties:
+      author:
+        type: string
+      debug:
+        type: boolean
+      id:
+        type: string
+      last_changed_at:
+        type: string
+      name:
+        type: string
+      parameters:
+        additionalProperties: true
+        type: object
+      started_at:
+        type: string
+      status:
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/handlers.step'
+        type: array
+      version_id:
+        type: string
+      work_number:
         type: string
     type: object
   handlers.httpError:
@@ -382,10 +469,35 @@ definitions:
     type: object
   handlers.httpResponse:
     properties:
-      data:
-        type: object
+      data: {}
       status_code:
         type: integer
+    type: object
+  handlers.step:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      has_error:
+        type: boolean
+      is_finished:
+        type: boolean
+      name:
+        type: string
+      state:
+        type: object
+      steps:
+        items:
+          type: string
+        type: array
+      storage:
+        additionalProperties: true
+        type: object
+      time:
+        type: string
+      type:
+        type: string
     type: object
   script.FunctionModel:
     properties:
@@ -405,9 +517,21 @@ definitions:
         items:
           $ref: '#/definitions/script.FunctionValueModel'
         type: array
+      params:
+        $ref: '#/definitions/script.FunctionParams'
       shape_type:
         type: integer
       title:
+        type: string
+    type: object
+  script.FunctionParams:
+    properties:
+      params: {}
+      type:
+        enum:
+        - approver
+        - servicedesk_application
+        example: approver
         type: string
     type: object
   script.FunctionValueModel:
@@ -491,9 +615,9 @@ paths:
       description: Получить debug-задачу
       operationId: debug-task
       parameters:
-      - description: Task ID
+      - description: work number
         in: path
-        name: taskID
+        name: workNumber
         required: true
         type: string
       produces:
@@ -562,7 +686,7 @@ paths:
       summary: Start debug task
       tags:
       - debug
-  /modules/:
+  /modules:
     get:
       description: Список блоков
       operationId: get-modules
@@ -682,7 +806,7 @@ paths:
       summary: Get list of modules usage
       tags:
       - modules
-  /pipelines/:
+  /pipelines:
     get:
       description: Список сценариев
       operationId: list-pipelines
@@ -780,6 +904,42 @@ paths:
       summary: Delete Pipeline
       tags:
       - pipeline
+    get:
+      description: Получить сценарий по ID
+      operationId: get-pipeline
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipelineID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusScenario'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get pipeline
+      tags:
+      - pipeline
   /pipelines/{pipelineID}/scheduler-tasks:
     post:
       consumes:
@@ -815,7 +975,7 @@ paths:
       summary: Active scheduler tasks
       tags:
       - pipeline
-  /pipelines/{pipelineID}/tags/:
+  /pipelines/{pipelineID}/tags:
     get:
       description: Список тегов сценария
       operationId: get-pipeline-tags
@@ -935,43 +1095,6 @@ paths:
       tags:
       - pipeline
       - tags
-  /pipelines/pipeline/{pipelineID}:
-    get:
-      description: Получить сценарий по ID
-      operationId: get-pipeline
-      parameters:
-      - description: Pipeline ID
-        in: path
-        name: pipelineID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/handlers.httpResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/entity.EriusScenario'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.httpError'
-      summary: Get pipeline
-      tags:
-      - pipeline
   /pipelines/version:
     put:
       consumes:
@@ -1136,7 +1259,7 @@ paths:
         in: body
         name: variables
         schema:
-          type: object
+          $ref: '#/definitions/handlers.RunPipelineBody'
       - description: Pipeline ID
         in: path
         name: pipelineID
@@ -1181,7 +1304,7 @@ paths:
         in: body
         name: variables
         schema:
-          type: object
+          $ref: '#/definitions/handlers.RunVersionBody'
       - description: Version ID
         in: path
         name: versionID
@@ -1215,7 +1338,42 @@ paths:
       tags:
       - version
       - run
-  /tags/:
+  /run/versions/blueprint_id:
+    post:
+      consumes:
+      - application/json
+      description: Запустить все версии c blueprintID и первым блоком sd_application
+      operationId: run-versions-by-blueprint-id
+      parameters:
+      - description: pipeline input
+        in: body
+        name: variables
+        schema:
+          $ref: '#/definitions/handlers.RunVersionsByBlueprintIdRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.RunVersionsByBlueprintIdResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Run Version By blueprintID
+      tags:
+      - version
+      - run
+  /tags:
     get:
       description: Cписок тегов
       operationId: get-tags
@@ -1358,15 +1516,40 @@ paths:
       summary: Remove Tag
       tags:
       - tags
-  /tasks/{pipelineID}:
+  /tasks:
     get:
-      description: Получить задачи по сценарию
-      operationId: get-pipeline-tasks
+      description: Получить задачи
+      operationId: get-tasks
       parameters:
-      - description: Pipeline ID
-        in: path
-        name: pipelineID
-        required: true
+      - description: Pipeline name
+        in: query
+        name: name
+        type: string
+      - description: Task IDs
+        in: query
+        items:
+          type: string
+        name: taskIDs
+        type: array
+      - description: Created after
+        in: query
+        name: created[start]
+        type: string
+      - description: Created before
+        in: query
+        name: created[end]
+        type: string
+      - description: Order
+        in: query
+        name: order
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: string
+      - description: Offset
+        in: query
+        name: offset
         type: string
       produces:
       - application/json
@@ -1378,7 +1561,7 @@ paths:
             - $ref: '#/definitions/handlers.httpResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/entity.EriusTasks'
+                  $ref: '#/definitions/entity.EriusTasksPage'
               type: object
         "400":
           description: Bad Request
@@ -1392,7 +1575,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.httpError'
-      summary: Get Pipeline Tasks
+      summary: Get Tasks
       tags:
       - pipeline
       - tasks
@@ -1401,9 +1584,9 @@ paths:
       description: Получить экземпляр задачи
       operationId: get-task-entity
       parameters:
-      - description: Task ID
+      - description: work number
         in: path
-        name: taskID
+        name: workNumber
         required: true
         type: string
       produces:
@@ -1416,7 +1599,7 @@ paths:
             - $ref: '#/definitions/handlers.httpResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/entity.EriusTask'
+                  $ref: '#/definitions/handlers.eriusTaskResponse'
               type: object
         "400":
           description: Bad Request
@@ -1431,6 +1614,45 @@ paths:
           schema:
             $ref: '#/definitions/handlers.httpError'
       summary: Get Task
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Update task
+      operationId: update-task-entity
+      parameters:
+      - description: work number
+        in: path
+        name: workNumber
+        required: true
+        type: string
+      - description: Task update data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/entity.TaskUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.httpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Update Task
       tags:
       - tasks
   /tasks/last-by-version/{versionID}:
@@ -1469,6 +1691,44 @@ paths:
             $ref: '#/definitions/handlers.httpError'
       summary: Get last debug task for version
       tags:
+      - tasks
+  /tasks/pipeline/{pipelineID}:
+    get:
+      description: Получить задачи по сценарию
+      operationId: get-pipeline-tasks
+      parameters:
+      - description: Pipeline ID
+        in: path
+        name: pipelineID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.httpResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.EriusTasks'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.httpError'
+      summary: Get Pipeline Tasks
+      tags:
+      - pipeline
       - tasks
   /tasks/version/{versionID}:
     get:

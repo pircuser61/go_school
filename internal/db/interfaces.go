@@ -16,13 +16,18 @@ type PipelineStorager interface {
 }
 
 type TaskStorager interface {
+	GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error)
 	GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error)
-	GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error)
+	GetTask(c context.Context, workNumber string) (*entity.EriusTask, error)
 	GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error)
-	CreateTask(c context.Context, taskID, versionID uuid.UUID, author string, isDebugMode bool, parameters []byte) (*entity.EriusTask, error)
+	GetUnfinishedTaskStepsByWorkIdAndStepType(c context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error)
+	GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error)
+	CreateTask(c context.Context,
+		taskID, versionID uuid.UUID, author string, isDebugMode bool, parameters []byte) (*entity.EriusTask, error)
 	ChangeTaskStatus(c context.Context, taskID uuid.UUID, status int) error
 	GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error)
 	GetLastDebugTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error)
+	UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, status string) error
 }
 
 type SaveStepRequest struct {
@@ -43,6 +48,7 @@ type UpdateStepRequest struct {
 	IsFinished  bool
 }
 
+//go:generate mockery --name=Database --structname=MockedDatabase
 type Database interface {
 	PipelineStorager
 	TaskStorager
@@ -83,4 +89,5 @@ type Database interface {
 	SwitchRejected(c context.Context, versionID uuid.UUID, comment, author string) error
 	GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error
+	GetVersionsByBlueprintID(c context.Context, blueprintID string) ([]entity.EriusScenario, error)
 }

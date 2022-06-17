@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -26,7 +26,7 @@ import (
 // @Success 200 {object} httpResponse{data=entity.EriusFunctionList}
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
-// @Router /modules/ [get]
+// @Router /modules [get]
 func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
@@ -42,12 +42,19 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	approverBlock := &pipeline.GoApproverBlock{}
+
+	sdApplicationBlock := &pipeline.GoSdApplicationBlock{}
+
 	eriusFunctions = append(eriusFunctions,
 		script.IfState.Model(),
 		script.Input.Model(),
 		script.Equal.Model(),
 		script.Connector.Model(),
-		script.ForState.Model())
+		script.ForState.Model(),
+		approverBlock.Model(),
+		sdApplicationBlock.Model(),
+	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
 	if err != nil {
@@ -296,7 +303,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 
 	vs := store.NewStore()
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {

@@ -5,15 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 const (
@@ -29,6 +30,10 @@ type FunctionBlock struct {
 	FunctionOutput map[string]string
 	NextStep       []string
 	RunURL         string
+}
+
+func (fb *FunctionBlock) GetTaskStatus() TaskHumanStatus {
+	return ""
 }
 
 func (fb *FunctionBlock) GetType() string {
@@ -100,7 +105,7 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -177,7 +182,7 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -194,4 +199,12 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 	}
 
 	return string(body), nil
+}
+
+func (fb *FunctionBlock) GetState() interface{} {
+	return nil
+}
+
+func (fb *FunctionBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+	return nil, nil
 }

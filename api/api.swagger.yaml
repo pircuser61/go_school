@@ -1,0 +1,1917 @@
+openapi: '3.0.0'
+info:
+  title: Pipeliner
+  version: 1.0.0
+
+servers:
+  - url: https://dev.jocasta.mts-corp.ru/{basePath}
+    description: Dev
+    variables:
+      basePath:
+        default: api/pipeliner/v1
+  - url: http://localhost:8000/{basePath}
+    description: Local
+    variables:
+      basePath:
+        default: api/pipeliner/v1
+
+security:
+  - OAuth2:
+      - openid
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://isso-dev.mts.ru/auth/realms/mts/protocol/openid-connect/auth
+          tokenUrl: https://isso-dev.mts.ru/auth/realms/mts/protocol/openid-connect/token
+          scopes:
+            openid: Main scope
+
+  parameters:
+    pipelineID:
+      name: pipelineID
+      in: path
+      required: true
+      description: Pipeline UUID
+      schema:
+        type: string
+        format: uuid
+
+    versionID:
+      name: versionID
+      in: path
+      required: true
+      description: Version UUID
+      schema:
+        type: string
+        format: uuid
+
+    tagID:
+      name: tagID
+      in: path
+      required: true
+      description: Tag UUID
+      schema:
+        type: string
+        format: uuid
+
+    moduleName:
+      name: moduleName
+      in: path
+      required: true
+      description: Module name
+      schema:
+        type: string
+
+    workNumber:
+      name: workNumber
+      in: path
+      required: true
+      description: Unique work number
+      schema:
+        type: string
+
+    name:
+      name: name
+      in: query
+      required: false
+      description: Task name
+      schema:
+        type: string
+
+    taskIDs:
+      name: taskIDs
+      in: query
+      required: false
+      description: Task IDs
+      schema:
+        type: array
+        items:
+          type: string
+
+    created:
+      name: created
+      in: query
+      required: false
+      description: Task creation date
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/timePeriod'
+
+    order:
+      name: order
+      in: query
+      required: false
+      description: Sort order
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+
+    selectAs:
+      name: selectAs
+      in: query
+      required: false
+      description: Select as
+      schema:
+        type: string
+        enum:
+          - approver
+          - executor
+
+    archived:
+      name: archived
+      in: query
+      required: false
+      description: Archived tasks
+      schema:
+        type: boolean
+
+    limit:
+      name: limit
+      in: query
+      required: false
+      description: Res limit
+      schema:
+        type: integer
+        default: 10
+
+    offset:
+      name: offset
+      in: query
+      required: false
+      description: Res offset
+      schema:
+        type: integer
+
+  schemas:
+    timePeriod:
+      type: object
+      description: A certain time period
+      properties:
+        start:
+          type: integer
+          description: Timestamp (in seconds)
+        end:
+          type: integer
+          description: Timestamp (in seconds)
+      required:
+        - start
+        - end
+
+
+    error:
+      type: object
+      description: Error object
+      properties:
+        status_code:
+          type: integer
+          description: Error internal status code
+        error:
+          type: string
+          description: Error
+        description:
+          type: string
+          description: Ru error
+      required:
+        - status_code
+        - error
+        - description
+
+    tagStatus:
+      type: integer
+      enum:
+        - 1
+        - 3
+      description: >
+        Tag status:
+         * 1 - Created
+         * 3 - Deleted
+
+    runVersionsByBlueprintIdRequest:
+      type: object
+      description: Data for run versions by blueprint_id
+      properties:
+        blueprint_id:
+          type: string
+          description: servicedesk template id
+          format: uuid
+        description:
+          type: string
+          description: template description
+        application_body:
+          type: object
+          description: template fields with values. map key - value
+          additionalProperties: true
+
+    tagInfo:
+      type: object
+      description: Scenario tag
+      properties:
+        id:
+          type: string
+          description: Tag UUID
+          format: uuid
+        name:
+          type: string
+          description: Tag name
+        status:
+          $ref: '#/components/schemas/tagStatus'
+        color:
+          type: string
+          description: Tag color
+        isMarker:
+          type: boolean
+          description: If tag is a marker
+      required:
+        - id
+        - name
+        - status
+        - color
+        - isMarker
+
+    versionInfo:
+      type: object
+      description: Version info
+      properties:
+        version_id:
+          type: string
+          description: Version UUID
+          format: uuid
+        created_at:
+          type: string
+          description: Version creation time
+          format: date-time
+        approved_at:
+          type: string
+          description: Version approvement time
+          format: date-time
+        author:
+          type: string
+          description: Author login
+        approver:
+          type: string
+          description: Approver login
+      required:
+        - version_id
+        - created_at
+        - author
+        - approver
+
+    scenarioStatus:
+      type: integer
+      enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+      description: >
+        Tag status:
+         * 1 - Draft
+         * 2 - Approved
+         * 3 - Deleted
+         * 4 - Rejected
+         * 5 - On approve
+
+    scenarioInfo:
+      type: object
+      description: Scenario info
+      properties:
+        id:
+          type: string
+          description: Scenario UUID
+          format: uuid
+        version_id:
+          type: string
+          description: Version UUID
+          format: uuid
+        created_at:
+          type: string
+          description: Version creation time
+          format: date-time
+        approved_at:
+          type: string
+          description: Version approvement time
+          format: date-time
+        author:
+          type: string
+          description: Author login
+        approver:
+          type: string
+          description: Approver login
+        name:
+          type: string
+          description: Name
+        tags:
+          type: array
+          description: Scenario tags
+          items:
+            $ref: '#/components/schemas/tagInfo'
+        last_run:
+          type: string
+          description: Version last run time
+          format: date-time
+        last_run_status:
+          type: string
+          description: Version last run status
+        status:
+          $ref: '#/components/schemas/scenarioStatus'
+        comment:
+          type: string
+          description: Scenario comment
+        comment_rejected:
+          type: string
+          description: Scenario comment (if it was rejected)
+        history:
+          type: array
+          description: Scenario versions history
+          items:
+            $ref: '#/components/schemas/versionInfo'
+      required:
+        - id
+        - version_id
+        - created_at
+        - author
+        - approver
+        - name
+        - tags
+        - status
+        - comment
+        - comment_rejected
+        - version_history
+
+    scenarios:
+      type: object
+      description: List of scenarios
+      properties:
+        pipelines:
+          type: array
+          description: Approved scenarios
+          items:
+            $ref: '#/components/schemas/scenarioInfo'
+        drafts:
+          type: array
+          description: Scenario drafts
+          items:
+            $ref: '#/components/schemas/scenarioInfo'
+        on_approve:
+          type: array
+          description: Scenarios on approve
+          items:
+            $ref: '#/components/schemas/scenarioInfo'
+        tags:
+          type: array
+          description: Scenario tags
+          items:
+            $ref: '#/components/schemas/tagInfo'
+      required:
+        - pipelines
+        - drafts
+        - on_approve
+        - tags
+
+    functionValue:
+      type: object
+      description: Variable
+      properties:
+        name:
+          type: string
+          description: Variable name
+          example: some_data
+        type:
+          type: string
+          description: Variable type
+        global:
+          type: string
+          description: Variable global identifier
+          example: block.some_data
+      required:
+        - name
+        - type
+        - global
+
+    approverType:
+      type: string
+      enum:
+        - user
+        - group
+        - head
+      description: >
+        Approver type:
+         * user - Single user
+         * group - Approver group ID
+         * head - Receiver's head
+
+    approverDecision:
+      type: string
+      enum:
+        - approved
+        - rejected
+      description: >
+        Approver decision:
+         * approved - approver approved block 
+         * rejected - approver rejected block
+
+    approverParams:
+      type: object
+      description: Approver params
+      properties:
+        type:
+          $ref: '#/components/schemas/approverType'
+        approver:
+          type: string
+          description: Apprver value (depends on type)
+      required:
+        - type
+        - approver
+
+    approverUpdateParams:
+      type: object
+      description: Approver update params
+      properties:
+        decision:
+          $ref: '#/components/schemas/approverDecision'
+        comment:
+          type: string
+          description: Comment from approver
+      required:
+        - decision
+        - comment
+
+    sdApplicationParams:
+      type: object
+      description: SD Application params
+      properties:
+        blueprint_id:
+          type: string
+          description: Template application ID
+      required:
+        - blueprint_id
+
+    params:
+      type: object
+      description: Block constant params
+      oneOf:
+        - $ref: '#/components/schemas/approverParams'
+        - $ref: '#/components/schemas/sdApplicationParams'
+
+    paramsType:
+      type: string
+      description: Params type
+      enum:
+        - approver
+        - servicedesk_application
+
+    functionsParams:
+      type: object
+      description: Block params description
+      properties:
+        type:
+          $ref: '#/components/schemas/paramsType'
+        params:
+          $ref: '#/components/schemas/params'
+      required:
+        - type
+
+    block_type:
+      type: string
+      description: Block type (language)
+      enum:
+        - python3
+        - go
+        - internal
+        - term
+        - scenario
+
+    shapeEntity:
+      type: object
+      description: Entity shape
+      properties:
+        id:
+          type: integer
+          description: Shape unique ID
+        title:
+          type: string
+          description: Block name
+        icon:
+          type: string
+          description: Shape icon
+      required:
+        - id
+        - title
+        - icon
+
+    functionModel:
+      type: object
+      description: Function block model
+      properties:
+        block_type:
+          $ref: '#/components/schemas/block_type'
+        title:
+          type: string
+          description: Block title
+        inputs:
+          type: array
+          description: Input vars
+          items:
+            $ref: '#/components/schemas/functionValue'
+        outputs:
+          type: array
+          description: Ourput vars
+          items:
+            $ref: '#/components/schemas/functionValue'
+        shape_type:
+          type: integer
+          description: Block shape type
+        next_funcs:
+          type: array
+          description: Next blocks
+          items:
+            type: string
+        id:
+          type: string
+          description: Block unique ID
+        params:
+          $ref: '#/components/schemas/functionsParams'
+      required:
+        - block_type
+        - title
+        - shape_type
+        - next_funcs
+        - id
+
+    func:
+      type: object
+      description: Function block
+      properties:
+        x:
+          type: integer
+          description: X coord
+        y:
+          type: integer
+          description: Y coord
+        type_id:
+          type: string
+          description: Function type id
+        block_type:
+          $ref: '#/components/schemas/block_type'
+        title:
+          type: string
+          description: Block title
+        input:
+          type: array
+          description: Input vars
+          items:
+            $ref: '#/components/schemas/functionValue'
+        output:
+          type: array
+          description: Ourput vars
+          items:
+            $ref: '#/components/schemas/functionValue'
+        param_type:
+          $ref: '#/components/schemas/paramsType'
+        params:
+          $ref: '#/components/schemas/params'
+        on_true:
+          type: string
+          description: Next block (if this block return true)
+        on_false:
+          type: string
+          description: Next block (if this block return false)
+        final:
+          type: string
+          description: Next block (final iter)
+        on_iter:
+          type: string
+          description: Next block (if this block repeats)
+        next:
+          type: string
+          description: Next block
+      required:
+        - type_id
+        - block_type
+        - title
+        - on_iter
+
+    pipeline:
+      type: object
+      description: Chain of blocks
+      properties:
+        entrypoint:
+          type: string
+          description: Entrypoint block name
+        blocks:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/func'
+      required:
+        - entrypoint
+        - blocks
+
+    scenario:
+      type: object
+      description: A single scenario with all content
+      properties:
+        id:
+          type: string
+          description: Scenario UUID
+          format: uuid
+        version_id:
+          type: string
+          description: Version UUID
+          format: uuid
+        status:
+          $ref: '#/components/schemas/scenarioStatus'
+        has_draft:
+          type: boolean
+          description: If scenario has draft
+        name:
+          type: string
+          description: Name
+        input:
+          type: array
+          description: Input vars
+          items:
+            $ref: '#/components/schemas/functionValue'
+        output:
+          type: array
+          description: Ourput vars
+          items:
+            $ref: '#/components/schemas/functionValue'
+        pipeline:
+          $ref: '#/components/schemas/pipeline'
+        created_at:
+          type: string
+          description: Version creation time
+          format: date-time
+        approved_at:
+          type: string
+          description: Version approvement time
+          format: date-time
+        author:
+          type: string
+          description: Author login
+        tags:
+          type: array
+          description: Scenario tags
+          items:
+            $ref: '#/components/schemas/tagInfo'
+        comment:
+          type: string
+          description: Scenario comment
+        comment_rejected:
+          type: string
+          description: Scenario comment (if it was rejected)
+      required:
+        - id
+        - version_id
+        - status
+        - name
+        - pipeline
+        - author
+        - tags
+        - comment
+        - comment_rejected
+
+    schedulerTasks:
+      type: object
+      properties:
+        result:
+          type: boolean
+          description: If active tasks exist
+      required:
+        - result
+
+    functionList:
+      type: object
+      description: Existing modules
+      properties:
+        funcs:
+          type: array
+          description: Block modules
+          items:
+            $ref: '#/components/schemas/functionModel'
+        shapes:
+          type: array
+          description: Block shapes
+          items:
+            $ref: '#/components/schemas/shapeEntity'
+      required:
+        - funcs
+        - shapes
+
+    modulesUsage:
+      type: object
+      description: Modules usage
+      properties:
+        pipelines:
+          type: object
+          description: Pipelines lists
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required:
+        - pipelines
+
+    usedBy:
+      type: object
+      description: Module usage
+      properties:
+        name:
+          type: string
+          description: Scenario name
+        id:
+          type: string
+          description: Scenario UUID
+          format: uuid
+      required:
+        - name
+        - id
+
+    moduleUsage:
+      type: object
+      description: Module usage
+      properties:
+        name:
+          type: string
+          description: Module name
+        used:
+          type: boolean
+          description: If module is used
+        pipelines:
+          type: array
+          description: Which pipelines use module
+          items:
+            $ref: '#/components/schemas/usedBy'
+      required:
+        - name
+        - used
+        - pipelines
+
+    runInfo:
+      type: object
+      description: Pipeleine run info
+      properties:
+        pipeline_id:
+          type: string
+          description: Pipeline UUID
+          format: uuid
+        work_number:
+          type: string
+          description: Spawned work number
+        status:
+          type: string
+          description: Task status
+        output:
+          type: object
+          description: Run output
+        errors:
+          type: array
+          description: Run errors
+          items:
+            type: string
+      required:
+        - pipeline_id
+        - work_number
+        - status
+        - output
+        - errors
+
+    taskStep:
+      type: object
+      description: Task step
+      properties:
+        time:
+          type: string
+          description: Task step time
+          format: date-time
+        type:
+          type: string
+          description: Step type
+        name:
+          type: string
+          description: Step name
+        state:
+          type: object
+          description: Step state
+          additionalProperties: true
+        storage:
+          type: object
+          description: Step variable storage
+          additionalProperties: true
+        errors:
+          type: array
+          description: Current errors
+          items:
+            type: string
+        steps:
+          type: array
+          description: Current steps
+          items:
+            type: string
+        has_error:
+          type: boolean
+          description: If step has error
+        is_finished:
+          type: boolean
+          description: If step is finished
+      required:
+        - time
+        - type
+        - name
+        - state
+        - storage
+        - errors
+        - steps
+        - has_error
+        - is_finished
+
+    humanStatus:
+      type: string
+      description: Task human readable status
+      enum:
+        - new
+        - approvement
+        - approved
+        - done
+
+    task:
+      type: object
+      description: Runned task
+      properties:
+        id:
+          type: string
+          description: Task UUID
+          format: uuid
+        version_id:
+          type: string
+          description: Version UUID
+          format: uuid
+        started_at:
+          type: string
+          description: Task start time
+          format: date-time
+        last_changed_at:
+          type: string
+          description: Task last update time
+          format: date-time
+        name:
+          type: string
+          description: Task name
+        status:
+          type: string
+          description: Task status
+        human_status:
+          $ref: '#/components/schemas/humanStatus'
+        author:
+          type: string
+          description: Author login
+        debug:
+          type: boolean
+          description: If task is run in debug mode
+        parameters:
+          type: object
+          description: Task start params
+          additionalProperties: true
+        steps:
+          type: array
+          description: Task current steps
+          items:
+            $ref: '#/components/schemas/taskStep'
+        work_number:
+          type: string
+          description: Work unique number
+      required:
+        - id
+        - version_id
+        - started_at
+        - last_changed_at
+        - name
+        - status
+        - human_status
+        - author
+        - debug
+        - parameters
+        - steps
+        - work_number
+
+    debugTask:
+      type: object
+      properties:
+        block_name:
+          type: string
+          description: Current exec block name
+        status:
+          type: string
+          description: Current exec block status
+        break_points:
+          type: array
+          description: Run breakpoints
+          items:
+            type: string
+        task:
+          $ref: '#/components/schemas/task'
+      required:
+        - block_name
+        - status
+        - break_points
+        - task
+
+    tasksPage:
+      type: object
+      description: Tasks page
+      properties:
+        tasks:
+          type: array
+          description: Tasks on page
+          items:
+            $ref: '#/components/schemas/task'
+        total:
+          type: integer
+          description: Total number of tasks
+      required:
+        - tasks
+        - total
+
+    debugRunData:
+      type: object
+      description: Data to start debugging
+      properties:
+        work_number:
+          type: string
+          description: Work unique number
+        break_points:
+          type: array
+          description: Run breakpoints
+          items:
+            type: string
+        action:
+          type: string
+          description: Task action
+      required:
+        - work_number
+        - break_points
+        - action
+
+    createTaskData:
+      type: object
+      properties:
+        version_id:
+          type: string
+          description: Version UUID
+          format: uuid
+        parameters:
+          type: object
+          description: Task start params
+          additionalProperties: true
+      required:
+        - version_id
+        - parameters
+
+    updateTaskData:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - approvement
+        parameters:
+          type: object
+          description: Task update params
+          oneOf:
+            - $ref: '#/components/schemas/approverUpdateParams'
+      required:
+        - action
+        - parameters
+
+  responses:
+    ListPipelinesResp:
+      description: Pipelines list
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/scenarios'
+            required:
+              - status_code
+
+    ScenarioResp:
+      description: A scenario
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/scenario'
+            required:
+              - status_code
+
+    ModulesResp:
+      description: Existing modules
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/functionList'
+            required:
+              - status_code
+
+    ModulesUsageResp:
+      description: Existing modules usage
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/modulesUsage'
+            required:
+              - status_code
+
+    ModuleUsageResp:
+      description: Certain module usage
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/moduleUsage'
+            required:
+              - status_code
+
+    OKResp:
+      description: OK resp
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+            required:
+              - status_code
+
+    SchedulerTasksResp:
+      description: If there are any existing tasks
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/schedulerTasks'
+            required:
+              - status_code
+
+    PipelineTagResp:
+      description: Pipeline tag info
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/tagInfo'
+            required:
+              - status_code
+
+    PipelineTagsResp:
+      description: Pipeline tags info
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                type: array
+                description: Pipeline tags
+                items:
+                  $ref: '#/components/schemas/tagInfo'
+            required:
+              - status_code
+
+    RunResp:
+      description: Pipeline run response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/runInfo'
+            required:
+              - status_code
+
+    TasksPageResp:
+      description: Page with tasks
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/tasksPage'
+            required:
+              - status_code
+
+    TaskResp:
+      description: Task
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/task'
+            required:
+              - status_code
+
+    TasksResp:
+      description: Tasks
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                type: array
+                description: Tasks
+                items:
+                  $ref: '#/components/schemas/task'
+            required:
+              - status_code
+
+    RunVersionsByBlueprintIdResponse:
+      description: info about started versions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                description: started versions
+                items:
+                  $ref: '#/components/schemas/runInfo'
+            required:
+              - status_code
+
+    DebugTaskResp:
+      description: Debug task
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/debugTask'
+            required:
+              - status_code
+
+    BadRequestError:
+      description: Got bad request data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+
+    AccessTokenError:
+      description: Got no or an invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+
+    WentWrongError:
+      description: Smth went wrong on backend
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+
+
+
+paths:
+  /pipelines:
+    get:
+      operationId: ListPipelines
+      summary: List existing pipelines
+      description: List all the existing pipelines
+      tags:
+        - pipeline
+      responses:
+        200:
+          $ref: '#/components/responses/ListPipelinesResp'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+    post:
+      operationId: CreatePipeline
+      summary: Create new pipeline
+      description: Create new pipeline
+      tags:
+        - pipeline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/scenario'
+      responses:
+        200:
+          $ref: '#/components/responses/ScenarioResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /pipelines/{pipelineID}:
+    parameters:
+      - $ref: '#/components/parameters/pipelineID'
+
+    get:
+      operationId: GetPipeline
+      summary: Get a pipeline
+      description: Get a pipeline by its UUID
+      tags:
+        - pipeline
+      responses:
+        200:
+          $ref: '#/components/responses/ScenarioResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+    delete:
+      operationId: DeletePipeline
+      summary: Delete a pipeline
+      description: Delete a pipeline by its UUID
+      tags:
+        - pipeline
+      responses:
+        200:
+          $ref: '#/components/responses/OKResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /pipelines/{pipelineID}/scheduler-tasks:
+    parameters:
+      - $ref: '#/components/parameters/pipelineID'
+
+    get:
+      operationId: ListSchedulerTasks
+      summary: Checks active tasks existance
+      description: Checks if there are any active tasks
+      tags:
+        - pipeline
+      responses:
+        200:
+          $ref: '#/components/responses/SchedulerTasksResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /pipelines/{pipelineID}/tags/{tagID}:
+    parameters:
+      - $ref: '#/components/parameters/pipelineID'
+      - $ref: '#/components/parameters/tagID'
+
+    put:
+      operationId: AttachTag
+      summary: Add a tag
+      description: Add an existing tag to a pipeline
+      tags:
+        - tags
+      responses:
+        200:
+          $ref: '#/components/responses/PipelineTagResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+    get:
+      operationId: GetPipelineTag
+      summary: Get pipeline tags
+      description: Get existing tags, attached to a pipeline
+      tags:
+        - tags
+      responses:
+        200:
+          $ref: '#/components/responses/PipelineTagsResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+    delete:
+      operationId: DetachTag
+      summary: Delete pipeline tag
+      description: Detach a tag from pipeline
+      tags:
+        - tags
+      responses:
+        200:
+          $ref: '#/components/responses/OKResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /pipelines/version/{pipelineID}:
+    parameters:
+      - $ref: '#/components/parameters/pipelineID'
+
+    post:
+      operationId: CreatePipelineVersion
+      summary: Create pipeline version
+      description: Create a new pipeline version
+      tags:
+        - version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/scenario'
+      responses:
+        200:
+          $ref: '#/components/responses/ScenarioResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /pipelines/version/{versionID}:
+    parameters:
+      - $ref: '#/components/parameters/versionID'
+
+    get:
+      operationId: GetPipelineVersion
+      summary: Get pipeline version
+      description: Get an existing pipeline version
+      tags:
+        - version
+      responses:
+        200:
+          $ref: '#/components/responses/ScenarioResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+    delete:
+      operationId: DeleteVersion
+      summary: Delete pipeline version
+      description: Delete an existing pipeline version
+      tags:
+        - version
+      responses:
+        200:
+          $ref: '#/components/responses/OKResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /pipelines/version:
+    parameters:
+      - $ref: '#/components/parameters/pipelineID'
+
+    put:
+      operationId: EditVersion
+      summary: Edit pipeline version
+      description: Edit a pipeline version
+      tags:
+        - version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/scenario'
+      responses:
+        200:
+          $ref: '#/components/responses/ScenarioResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /modules:
+    get:
+      operationId: GetModules
+      summary: Get modules
+      description: Get all existing movdules
+      tags:
+        - modules
+      responses:
+        200:
+          $ref: '#/components/responses/ModulesResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /modules/usage:
+    get:
+      operationId: AllModulesUsage
+      summary: Get all modules usage
+      description: Get all modules usage
+      tags:
+        - modules
+      responses:
+        200:
+          $ref: '#/components/responses/ModulesUsageResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /modules/{moduleName}/usage:
+    parameters:
+      - $ref: '#/components/parameters/moduleName'
+
+    get:
+      operationId: ModuleUsage
+      summary: Get module usage
+      description: Get module usage
+      tags:
+        - modules
+      responses:
+        200:
+          $ref: '#/components/responses/ModuleUsageResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /modules/{moduleName}:
+    parameters:
+      - $ref: '#/components/parameters/moduleName'
+
+    post:
+      operationId: ModuleRun
+      summary: Run a module
+      description: Run a module
+      tags:
+        - modules
+      responses:
+        200:
+          $ref: '#/components/responses/ModuleUsageResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /tags:
+    get:
+      operationId: GetTags
+      summary: Get tags
+      description: Get tags
+      tags:
+        - tags
+      responses:
+        200:
+          $ref: '#/components/responses/PipelineTagsResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+    post:
+      operationId: CreateTag
+      summary: Create a tag
+      description: Create a new tag
+      tags:
+        - tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tagInfo'
+      responses:
+        200:
+          $ref: '#/components/responses/PipelineTagResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+    put:
+      operationId: EditTag
+      summary: Edit a tag
+      description: Edit an existing tag
+      tags:
+        - tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tagInfo'
+      responses:
+        200:
+          $ref: '#/components/responses/PipelineTagResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /tags/{tagID}:
+    parameters:
+      - $ref: '#/components/parameters/tagID'
+
+    get:
+      operationId: RemoveTag
+      summary: Delete a tag
+      description: Delete an existing tag
+      tags:
+        - tags
+      responses:
+        200:
+          $ref: '#/components/responses/OKResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /run/{pipelineID}:
+    parameters:
+      - $ref: '#/components/parameters/pipelineID'
+
+    post:
+      operationId: RunPipeline
+      summary: Run pipeline
+      description: Run pipeline latest version
+      tags:
+        - pipeline
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        200:
+          $ref: '#/components/responses/RunResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /run/version/{versionID}:
+    parameters:
+      - $ref: '#/components/parameters/versionID'
+
+    post:
+      operationId: RunVersion
+      summary: Run pipeline version
+      description: Run pipeline version
+      tags:
+        - pipeline
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        200:
+          $ref: '#/components/responses/RunResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /tasks:
+    parameters:
+      - $ref: '#/components/parameters/name'
+      - $ref: '#/components/parameters/taskIDs'
+      - $ref: '#/components/parameters/created'
+      - $ref: '#/components/parameters/order'
+      - $ref: '#/components/parameters/selectAs'
+      - $ref: '#/components/parameters/archived'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+
+    get:
+      operationId: GetTasks
+      summary: Get tasks
+      description: Get existing tasks
+      tags:
+        - tasks
+      responses:
+        200:
+          $ref: '#/components/responses/TasksPageResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /tasks/{workNumber}:
+    parameters:
+      - $ref: '#/components/parameters/workNumber'
+
+    get:
+      operationId: GetTask
+      summary: Get task
+      description: Get existing task by work number
+      tags:
+        - tasks
+      responses:
+        200:
+          $ref: '#/components/responses/TaskResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+    post:
+      operationId: UpdateTask
+      summary: Update task
+      description: Update existing task by work number and provided data
+      tags:
+        - tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateTaskData'
+      responses:
+        200:
+          $ref: '#/components/responses/OKResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /tasks/last-by-version/{versionID}:
+    parameters:
+      - $ref: '#/components/parameters/versionID'
+
+    get:
+      operationId: LastVersionDebugTask
+      summary: Get last debug task by version
+      description: Get last debug task by version
+      tags:
+        - tasks
+      responses:
+        200:
+          $ref: '#/components/responses/TaskResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /tasks/pipeline/{pipelineID}:
+    parameters:
+      - $ref: '#/components/parameters/pipelineID'
+
+    get:
+      operationId: GetPipelineTasks
+      summary: Get tasks by pipeline ID
+      description: Get tasks by pipeline ID
+      tags:
+        - tasks
+      responses:
+        200:
+          $ref: '#/components/responses/TasksResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /tasks/version/{versionID}:
+    parameters:
+      - $ref: '#/components/parameters/versionID'
+
+    get:
+      operationId: GetVersionTasks
+      summary: Get tasks by version ID
+      description: Get tasks by version ID
+      tags:
+        - tasks
+      responses:
+        200:
+          $ref: '#/components/responses/TasksResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /debug/:
+    post:
+      operationId: CreateDebugTask
+      summary: Create debug task
+      description: Create debug task
+      tags:
+        - tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/debugRunData'
+      responses:
+        200:
+          $ref: '#/components/responses/TaskResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /debug/run:
+    parameters:
+      - $ref: '#/components/parameters/versionID'
+
+    post:
+      operationId: StartDebugTask
+      summary: Start debug task
+      description: Start debug task
+      tags:
+        - tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/debugRunData'
+      responses:
+        200:
+          $ref: '#/components/responses/TaskResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /debug/{workNumber}:
+    parameters:
+      - $ref: '#/components/parameters/workNumber'
+
+    post:
+      operationId: DebugTask
+      summary: Get debug task
+      description: Get debug task
+      tags:
+        - tasks
+      responses:
+        200:
+          $ref: '#/components/responses/DebugTaskResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /run/versions/blueprint_id:
+    post:
+      operationId: RunVersionsByBlueprintID
+      summary: Run Versions by blueprint_id
+      description: Запустить все версии c blueprintID и первым блоком sd_application
+      tags:
+        - versions, run, blueprint_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/runVersionsByBlueprintIdRequest'
+      responses:
+        200:
+          $ref: '#/components/responses/RunVersionsByBlueprintIdResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+
+
+
+
+
+

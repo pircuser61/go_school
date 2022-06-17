@@ -52,11 +52,18 @@ type FunctionModels []FunctionModel
 type FunctionModel struct {
 	BlockType string               `json:"block_type"`
 	Title     string               `json:"title"`
-	Inputs    []FunctionValueModel `json:"inputs"`
-	Outputs   []FunctionValueModel `json:"outputs"`
+	Inputs    []FunctionValueModel `json:"inputs,omitempty"`
+	Outputs   []FunctionValueModel `json:"outputs,omitempty"`
 	ShapeType int                  `json:"shape_type"`
 	NextFuncs []string             `json:"next_funcs"`
 	ID        string               `json:"id"`
+	Params    *FunctionParams      `json:"params,omitempty"`
+}
+
+// TODO: find a better way to implement oneOf
+type FunctionParams struct {
+	Type   string      `json:"type" enums:"approver,servicedesk_application" example:"approver"`
+	Params interface{} `json:"params,omitempty"`
 }
 
 type FunctionValueModel struct {

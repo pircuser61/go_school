@@ -890,6 +890,23 @@ func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author
 	return nil, errNotImplemented
 }
 
+func (m *MockDB) UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, status string) error {
+	return nil
+}
+
+//nolint:gocritic //filters
+func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
+	return nil, errNotImplemented
+}
+
 func (m *MockDB) GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.EriusTasks, error) {
 	return nil, errNotImplemented
 }
@@ -902,7 +919,7 @@ func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTask(c context.Context, id uuid.UUID) (*entity.EriusTask, error) {
+func (m *MockDB) GetTask(c context.Context, workNumber string) (*entity.EriusTask, error) {
 	return nil, errNotFound
 }
 
@@ -1092,4 +1109,8 @@ func (m *MockDB) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioI
 
 func (m *MockDB) RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error {
 	return errNotImplemented
+}
+
+func (m *MockDB) GetVersionsByBlueprintID(c context.Context, blueprintID string) ([]entity.EriusScenario, error) {
+	return nil, errNotImplemented
 }

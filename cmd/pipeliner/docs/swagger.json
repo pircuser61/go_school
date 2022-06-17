@@ -169,8 +169,8 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Task ID",
-                        "name": "taskID",
+                        "description": "work number",
+                        "name": "workNumber",
                         "in": "path",
                         "required": true
                     }
@@ -215,7 +215,7 @@
                 }
             }
         },
-        "/modules/": {
+        "/modules": {
             "get": {
                 "description": "Список блоков",
                 "produces": [
@@ -413,7 +413,7 @@
                 }
             }
         },
-        "/pipelines/": {
+        "/pipelines": {
             "get": {
                 "description": "Список сценариев",
                 "produces": [
@@ -479,66 +479,6 @@
                         "schema": {
                             "$ref": "#/definitions/entity.EriusScenario"
                         }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/handlers.httpResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/entity.EriusScenario"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.httpError"
-                        }
-                    }
-                }
-            }
-        },
-        "/pipelines/pipeline/{pipelineID}": {
-            "get": {
-                "description": "Получить сценарий по ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "pipeline"
-                ],
-                "summary": "Get pipeline",
-                "operationId": "get-pipeline",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Pipeline ID",
-                        "name": "pipelineID",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -825,6 +765,64 @@
             }
         },
         "/pipelines/{pipelineID}": {
+            "get": {
+                "description": "Получить сценарий по ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "Get pipeline",
+                "operationId": "get-pipeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pipeline ID",
+                        "name": "pipelineID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusScenario"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "description": "Удалить сценарий",
                 "produces": [
@@ -929,7 +927,7 @@
                 }
             }
         },
-        "/pipelines/{pipelineID}/tags/": {
+        "/pipelines/{pipelineID}/tags": {
             "get": {
                 "description": "Список тегов сценария",
                 "produces": [
@@ -1136,7 +1134,7 @@
                         "name": "variables",
                         "in": "body",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/handlers.RunVersionBody"
                         }
                     },
                     {
@@ -1187,6 +1185,59 @@
                 }
             }
         },
+        "/run/versions/blueprint_id": {
+            "post": {
+                "description": "Запустить все версии c blueprintID и первым блоком sd_application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "version",
+                    "run"
+                ],
+                "summary": "Run Version By blueprintID",
+                "operationId": "run-versions-by-blueprint-id",
+                "parameters": [
+                    {
+                        "description": "pipeline input",
+                        "name": "variables",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RunVersionsByBlueprintIdRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RunVersionsByBlueprintIdResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
         "/run/{pipelineID}": {
             "post": {
                 "description": "Запустить сценарий",
@@ -1208,7 +1259,7 @@
                         "name": "variables",
                         "in": "body",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/handlers.RunPipelineBody"
                         }
                     },
                     {
@@ -1259,7 +1310,7 @@
                 }
             }
         },
-        "/tags/": {
+        "/tags": {
             "get": {
                 "description": "Cписок тегов",
                 "produces": [
@@ -1487,6 +1538,105 @@
                 }
             }
         },
+        "/tasks": {
+            "get": {
+                "description": "Получить задачи",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline",
+                    "tasks"
+                ],
+                "summary": "Get Tasks",
+                "operationId": "get-tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pipeline name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Task IDs",
+                        "name": "taskIDs",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created after",
+                        "name": "created[start]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created before",
+                        "name": "created[end]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTasksPage"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/last-by-version/{versionID}": {
             "get": {
                 "description": "Получить последнюю debug-задачу версии сценария",
@@ -1520,6 +1670,67 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/entity.EriusTask"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/pipeline/{pipelineID}": {
+            "get": {
+                "description": "Получить задачи по сценарию",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline",
+                    "tasks"
+                ],
+                "summary": "Get Pipeline Tasks",
+                "operationId": "get-pipeline-tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Pipeline ID",
+                        "name": "pipelineID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.EriusTasks"
                                         }
                                     }
                                 }
@@ -1608,23 +1819,22 @@
                 }
             }
         },
-        "/tasks/{pipelineID}": {
+        "/tasks/{taskID}": {
             "get": {
-                "description": "Получить задачи по сценарию",
+                "description": "Получить экземпляр задачи",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "pipeline",
                     "tasks"
                 ],
-                "summary": "Get Pipeline Tasks",
-                "operationId": "get-pipeline-tasks",
+                "summary": "Get Task",
+                "operationId": "get-task-entity",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Pipeline ID",
-                        "name": "pipelineID",
+                        "description": "work number",
+                        "name": "workNumber",
                         "in": "path",
                         "required": true
                     }
@@ -1641,7 +1851,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/entity.EriusTasks"
+                                            "$ref": "#/definitions/handlers.eriusTaskResponse"
                                         }
                                     }
                                 }
@@ -1667,45 +1877,43 @@
                         }
                     }
                 }
-            }
-        },
-        "/tasks/{taskID}": {
-            "get": {
-                "description": "Получить экземпляр задачи",
+            },
+            "post": {
+                "description": "Update task",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "tasks"
                 ],
-                "summary": "Get Task",
-                "operationId": "get-task-entity",
+                "summary": "Update Task",
+                "operationId": "update-task-entity",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Task ID",
-                        "name": "taskID",
+                        "description": "work number",
+                        "name": "workNumber",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Task update data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entity.TaskUpdate"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/handlers.httpResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/entity.EriusTask"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/handlers.httpResponse"
                         }
                     },
                     "400": {
@@ -1774,6 +1982,7 @@
                     "type": "string",
                     "enum": [
                         "python3",
+                        "go",
                         "internal",
                         "term",
                         "scenario"
@@ -1808,9 +2017,19 @@
                         "$ref": "#/definitions/entity.EriusFunctionValue"
                     }
                 },
+                "param_type": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "object"
+                },
                 "title": {
                     "type": "string",
                     "example": "lock-bts"
+                },
+                "type_id": {
+                    "type": "string",
+                    "example": "approver"
                 },
                 "x": {
                     "type": "integer"
@@ -2080,6 +2299,12 @@
                 "id": {
                     "type": "string"
                 },
+                "last_changed_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
                 "parameters": {
                     "type": "object",
                     "additionalProperties": true
@@ -2098,6 +2323,9 @@
                 },
                 "version_id": {
                     "type": "string"
+                },
+                "work_number": {
+                    "type": "string"
                 }
             }
         },
@@ -2109,6 +2337,20 @@
                     "items": {
                         "$ref": "#/definitions/entity.EriusTask"
                     }
+                }
+            }
+        },
+        "entity.EriusTasksPage": {
+            "type": "object",
+            "properties": {
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.EriusTask"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -2147,9 +2389,7 @@
                         "type": "string"
                     }
                 },
-                "output": {
-                    "type": "object"
-                },
+                "output": {},
                 "pipeline_id": {
                     "type": "string",
                     "format": "uuid",
@@ -2159,10 +2399,8 @@
                     "type": "string",
                     "example": "runned"
                 },
-                "task_id": {
-                    "type": "string",
-                    "format": "uuid",
-                    "example": "916ad995-8d13-49fb-82ee-edd4f97649e2"
+                "work_number": {
+                    "type": "string"
                 }
             }
         },
@@ -2186,8 +2424,14 @@
                 "has_error": {
                     "type": "boolean"
                 },
+                "is_finished": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
+                },
+                "state": {
+                    "type": "object"
                 },
                 "steps": {
                     "type": "array",
@@ -2201,6 +2445,24 @@
                 },
                 "time": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.TaskUpdate": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "approvement"
+                    ],
+                    "example": "approvement"
+                },
+                "parameters": {
+                    "type": "object"
                 }
             }
         },
@@ -2260,7 +2522,83 @@
                         "type": "string"
                     }
                 },
-                "task_id": {
+                "work_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RunPipelineBody": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "handlers.RunVersionBody": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "handlers.RunVersionsByBlueprintIdRequest": {
+            "type": "object",
+            "properties": {
+                "application_body": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "blueprint_id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RunVersionsByBlueprintIdResponse": {
+            "type": "object",
+            "properties": {
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.RunResponse"
+                    }
+                }
+            }
+        },
+        "handlers.eriusTaskResponse": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "debug": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_changed_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parameters": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.step"
+                    }
+                },
+                "version_id": {
+                    "type": "string"
+                },
+                "work_number": {
                     "type": "string"
                 }
             }
@@ -2282,11 +2620,48 @@
         "handlers.httpResponse": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "object"
-                },
+                "data": {},
                 "status_code": {
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.step": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "has_error": {
+                    "type": "boolean"
+                },
+                "is_finished": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "object"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "storage": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "time": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -2317,11 +2692,28 @@
                         "$ref": "#/definitions/script.FunctionValueModel"
                     }
                 },
+                "params": {
+                    "$ref": "#/definitions/script.FunctionParams"
+                },
                 "shape_type": {
                     "type": "integer"
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "script.FunctionParams": {
+            "type": "object",
+            "properties": {
+                "params": {},
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "approver",
+                        "servicedesk_application"
+                    ],
+                    "example": "approver"
                 }
             }
         },

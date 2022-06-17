@@ -13,18 +13,20 @@ import (
 	"syscall"
 	"time"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
-
 	"contrib.go.opencensus.io/exporter/jaeger"
+
 	"go.opencensus.io/trace"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
 	"github.com/prometheus/client_golang/prometheus/push"
+
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
+
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
@@ -32,10 +34,14 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/cmd/pipeliner/docs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
+	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
 
 const serviceName = "jocasta.pipeliner"
@@ -93,12 +99,24 @@ func main() {
 		return
 	}
 
+	peopleService, err := people.NewService(cfg.People, ssoService)
+	if err != nil {
+		log.WithError(err).Error("can't create people service")
+
+		return
+	}
+
 	stat, err := statistic.InitStatistic()
 	if err != nil {
 		log.WithError(err).Error("can't init statistic")
 
 		return
 	}
+
+	// don't forget to update mock
+	// TODO: remove MockDB and use MockedDatabase in tests
+	var _ db.Database = (*mocks.MockedDatabase)(nil)
+	var _ db.Database = (*test.MockDB)(nil)
 
 	pipeliner := handlers.APIEnv{
 		DB:                   &dbConn,
@@ -132,7 +150,7 @@ func main() {
 	initSwagger(cfg)
 
 	httpServer := http.Server{
-		Handler: registerRouter(ctx, cfg, &pipeliner, ssoService),
+		Handler: registerRouter(ctx, cfg, &pipeliner, ssoService, peopleService),
 		Addr:    cfg.ServeAddr,
 	}
 
@@ -186,52 +204,62 @@ func main() {
 	log.WithField("signal", stop).Info("stopping")
 }
 
-func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv, ssoService *sso.Service) *chi.Mux {
+func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv, ssoService *sso.Service,
+	peopleService *people.Service) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
 	mux.Use(handlers.LoggerMiddleware(logger.GetLogger(ctx)))
 	mux.Use(observability.MiddlewareChi())
 	mux.Use(handlers.RequestIDMiddleware)
 	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
-	mux.Use(handlers.WithUserInfo(ssoService, logger.GetLogger(ctx)))
 
 	const baseURL = "/api/pipeliner/v1"
 
+	mux.Mount(baseURL+"/pprof", middleware.Profiler())
+	mux.Handle(baseURL+"/metrics", pipeliner.ServePrometheus())
+	mux.Mount(baseURL+"/swagger", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
+
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
+			r.Use(handlers.WithUserInfo(ssoService, logger.GetLogger(ctx)))
+			r.Use(handlers.WithAsOtherUserInfo(peopleService, logger.GetLogger(ctx)))
 			r.Use(handlers.StatisticMiddleware(pipeliner.Statistic))
 
-			r.Get("/pipelines/", pipeliner.ListPipelines)
-			r.Post("/pipelines/", pipeliner.CreatePipeline)
+			r.Get("/pipelines", pipeliner.ListPipelines)
+			r.Post("/pipelines", pipeliner.CreatePipeline)
 			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
 			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
 
 			r.Get("/pipelines/{pipelineID}/scheduler-tasks", pipeliner.ListSchedulerTasks)
 
 			r.Put("/pipelines/{pipelineID}/tags/{ID}", pipeliner.AttachTag)
-			r.Get("/pipelines/{pipelineID}/tags/", pipeliner.GetPipelineTag)
+			r.Get("/pipelines/{pipelineID}/tags", pipeliner.GetPipelineTag)
 			r.Delete("/pipelines/{pipelineID}/tags/{ID}", pipeliner.DetachTag)
 
 			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
 			r.Post("/pipelines/version/{pipelineID}", pipeliner.CreatePipelineVersion)
-			r.Put("/pipelines/version/", pipeliner.EditVersion)
+			r.Put("/pipelines/version", pipeliner.EditVersion)
 			r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
 
-			r.Get("/modules/", pipeliner.GetModules)
+			r.Get("/modules", pipeliner.GetModules)
 			r.Get("/modules/usage", pipeliner.AllModulesUsage)
 			r.Get("/modules/{moduleName}/usage", pipeliner.ModuleUsage)
 			r.Post("/modules/{moduleName}", pipeliner.ModuleRun)
 
-			r.Get("/tags/", pipeliner.GetTags)
-			r.Post("/tags/", pipeliner.CreateTag)
-			r.Put("/tags/", pipeliner.EditTag)
+			r.Get("/tags", pipeliner.GetTags)
+			r.Post("/tags", pipeliner.CreateTag)
+			r.Put("/tags", pipeliner.EditTag)
 			r.Delete("/tags/{ID}", pipeliner.RemoveTag)
 
 			r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
 			r.Post("/run/version/{versionID}", pipeliner.RunVersion)
+			r.Post("/run/versions/blueprint_id", pipeliner.RunVersionsByBlueprintID)
+
+			r.Get("/tasks", pipeliner.GetTasks)
 
 			r.Route("/tasks/", func(r chi.Router) {
-				r.Get("/{taskID}", pipeliner.GetTask)
+				r.Get("/{workNumber}", pipeliner.GetTask)
+				r.Post("/{workNumber}", pipeliner.UpdateTask)
 				r.Get("/last-by-version/{versionID}", pipeliner.LastVersionDebugTask)
 				r.Get("/pipeline/{pipelineID}", pipeliner.GetPipelineTasks)
 				r.Get("/version/{versionID}", pipeliner.GetVersionTasks)
@@ -239,13 +267,9 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 			r.Route("/debug/", func(r chi.Router) {
 				r.Post("/run", pipeliner.StartDebugTask)
 				r.Post("/", pipeliner.CreateDebugTask)
-				r.Get("/{taskID}", pipeliner.DebugTask)
+				r.Get("/{workNumber}", pipeliner.DebugTask)
 			})
 		})
-
-	mux.Mount(baseURL+"/pprof/", middleware.Profiler())
-	mux.Handle(baseURL+"/metrics", pipeliner.ServePrometheus())
-	mux.Mount(baseURL+"/swagger/", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
 
 	return mux
 }
