@@ -41,7 +41,7 @@ type GoSdApplicationBlock struct {
 	Title    string
 	Input    map[string]string
 	Output   map[string]string
-	NextStep string
+	NextStep []string
 	State    *ApplicationData
 
 	Storage db.Database
@@ -109,14 +109,12 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, runCtx *store.Vari
 	return err
 }
 
-func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) (string, bool) {
+func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return gb.NextStep, true
 }
 
 func (gb *GoSdApplicationBlock) NextSteps() []string {
-	nextSteps := []string{gb.NextStep}
-
-	return nextSteps
+	return gb.NextStep
 }
 
 func (gb *GoSdApplicationBlock) GetState() interface{} {

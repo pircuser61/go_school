@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"

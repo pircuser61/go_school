@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"io"
 	"net/http"
 	"sync"
 
@@ -637,6 +638,8 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 	ep.PipelineModel = p.p
 	ep.HTTPClient = ae.HTTPClient
 	ep.Remedy = ae.Remedy
+	ep.NowOnPoint = []string{}
+	ep.EntryPoint = pipeline.BlockGoStartId
 
 	err := ep.CreateBlocks(ctx, p.p.Pipeline.Blocks)
 	if err != nil {

@@ -97,7 +97,7 @@ type GoApproverBlock struct {
 	Title    string
 	Input    map[string]string
 	Output   map[string]string
-	NextStep string
+	NextStep []string
 	State    *ApproverData
 
 	Storage db.Database
@@ -213,14 +213,12 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	}
 }
 
-func (gb *GoApproverBlock) Next(_ *store.VariableStore) (string, bool) {
+func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return gb.NextStep, true
 }
 
 func (gb *GoApproverBlock) NextSteps() []string {
-	nextSteps := []string{gb.NextStep}
-
-	return nextSteps
+	return gb.NextStep
 }
 
 func (gb *GoApproverBlock) GetState() interface{} {

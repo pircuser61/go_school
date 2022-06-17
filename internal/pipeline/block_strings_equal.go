@@ -72,12 +72,12 @@ func (se *StringsEqual) DebugRun(ctx context.Context, runCtx *store.VariableStor
 	return nil
 }
 
-func (se *StringsEqual) Next(runCtx *store.VariableStore) (string, bool) {
+func (se *StringsEqual) Next(runCtx *store.VariableStore) ([]string, bool) {
 	if se.Result {
-		return se.OnTrue, true
+		return []string{se.OnTrue}, true
 	}
 
-	return se.OnFalse, true
+	return []string{se.OnFalse}, true
 }
 
 func (se *StringsEqual) NextSteps() []string {

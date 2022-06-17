@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 

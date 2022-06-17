@@ -30,17 +30,17 @@ func (e *IF) GetType() string {
 	return BlockInternalIf
 }
 
-func (e *IF) Next(runCtx *store.VariableStore) (string, bool) {
+func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
 	r, err := runCtx.GetBoolWithInput(e.FunctionInput, keyIf)
 	if err != nil {
-		return "", false
+		return []string{}, false
 	}
 
 	if r {
-		return e.OnTrue, true
+		return []string{e.OnTrue}, true
 	}
 
-	return e.OnFalse, true
+	return []string{e.OnFalse}, true
 }
 
 func (e *IF) NextSteps() []string {
