@@ -2429,23 +2429,33 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		SELECT 
-			pv.id, 
-			pv.status, 
-			pv.pipeline_id, 
-			pv.created_at, 
-			pv.content, 
-			pv.comment_rejected, 
-			pv.comment, 
-			pv.author, 
+		SELECT
+    		pv.id,
+    		pv.status,
+			pv.pipeline_id,
+			pv.created_at,
+			pv.content,
+			pv.comment_rejected,
+			pv.comment,
+			pv.author,
 			(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = pv.pipeline_id) last_approve
-		FROM pipeliner.versions pv
-			LEFT JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
-		WHERE pv.status = 2 AND 
-			pv.created_at = (SELECT MAX(v.created_at) FROM pipeliner.versions v WHERE v.pipeline_id = pv.pipeline_id) AND
-			pv.content::json#>>'{pipeline,entrypoint}' = 'servicedesk_application_0' AND
-			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,type_id}' = 'servicedesk_application' AND
-			pv.content::json#>>'{pipeline,blocks,servicedesk_application_0,params,blueprint_id}' = $1
+		FROM (
+			SELECT
+				   be.id as pipeline_version_id,
+				   be.blocks -> be.entrypoint ->> 'type_id' AS type_id,
+				   be.blocks -> be.entrypoint -> 'params' ->> 'blueprint_id' AS blueprint_id
+			FROM (
+				SELECT
+					   id,
+					   content -> 'pipeline' #> '{blocks}' as blocks,
+					   content -> 'pipeline' ->> 'entrypoint' as entrypoint
+				FROM pipeliner.versions
+				) AS be
+		) AS entrypoint_block
+		LEFT JOIN pipeliner.versions pv ON pv.id = entrypoint_block.pipeline_version_id
+		WHERE pv.status = 2 AND
+				entrypoint_block.blueprint_id = '4238cc8d-ed3e-11ec-bbf2-3e05762c8e74' AND
+				entrypoint_block.type_id = 'servicedesk_application'
 `
 
 	rows, err := conn.Query(c, query, bID)
