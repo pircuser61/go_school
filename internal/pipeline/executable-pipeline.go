@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 
 	"github.com/google/uuid"
 
@@ -34,7 +35,7 @@ type ExecutablePipeline struct {
 	Storage       db.Database
 	EntryPoint    string
 	StepType      string
-	NowOnPoint    []string
+	ActiveBlocks  map[string]bool
 	VarStore      *store.VariableStore
 	Blocks        map[string]Runner
 	NextStep      []string
@@ -46,14 +47,28 @@ type ExecutablePipeline struct {
 	Remedy        string
 
 	FaaS string
+	mu   *sync.Mutex
+}
+
+func (ep *ExecutablePipeline) IsOver() bool {
+	return len(ep.ActiveBlocks) == 0
+}
+
+func (ep *ExecutablePipeline) MergeActiveBlocks(blocks []string) {
+	for _, block := range blocks {
+		_, exist := ep.ActiveBlocks[block]
+		if !exist {
+			ep.ActiveBlocks[block] = true
+		}
+	}
 }
 
 func (ep *ExecutablePipeline) ReadyToStart() bool {
-	return len(ep.NowOnPoint) == 0 && ep.EntryPoint == BlockGoStartId
+	return len(ep.ActiveBlocks) == 0 && ep.EntryPoint == BlockGoStartId
 }
 
 func (ep *ExecutablePipeline) GetTaskStatus() TaskHumanStatus {
-	if len(ep.NowOnPoint) == 0 {
+	if len(ep.ActiveBlocks) == 0 {
 		return StatusDone
 	}
 	return StatusNew
@@ -102,7 +117,7 @@ func (ep *ExecutablePipeline) createStep(ctx context.Context, hasError, isFinish
 	return ep.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
 		WorkID:   ep.TaskID,
 		StepType: ep.StepType,
-		//StepName:    ep.NowOnPoint, todo: что-нибудь придумать
+		//StepName:    ep.ActiveBlocks, todo: что-нибудь придумать
 		Content:     storageData,
 		BreakPoints: breakPoints,
 		HasError:    hasError,
@@ -156,7 +171,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	ep.VarStore = runCtx
 
 	if ep.ReadyToStart() {
-		ep.NowOnPoint = []string{ep.EntryPoint}
+		ep.ActiveBlocks[ep.EntryPoint] = true
 	}
 
 	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusRunning)
@@ -169,10 +184,10 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		return errUpdate
 	}
 
-	for len(ep.NowOnPoint) != 0 {
-		for _, step := range ep.NowOnPoint {
+	for !ep.IsOver() {
+		for step := range ep.ActiveBlocks {
 
-			log.Info("executing", ep.NowOnPoint)
+			log.Info("executing", ep.ActiveBlocks)
 
 			currentBlock, ok := ep.Blocks[step]
 			if !ok || currentBlock == nil {
@@ -253,7 +268,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				return updErr
 			}
 
-			ep.NowOnPoint, ok = ep.Blocks[step].Next(ep.VarStore)
+			activeBlocks, ok := ep.Blocks[step].Next(ep.VarStore)
 			if !ok {
 				updStepErr := ep.updateStep(ctx, id, true, true)
 				if updStepErr != nil {
@@ -262,6 +277,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 				return ErrCantGetNextStep
 			}
+
+			ep.MergeActiveBlocks(activeBlocks)
 
 			if runCtx.StopPoints.IsStopPoint(step) {
 				errChangeStopped := ep.changeTaskStatus(ctx, db.RunStatusStopped)

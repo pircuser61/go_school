@@ -7,6 +7,15 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+type Status string
+
+var (
+	StatusIdle     Status = "idle"
+	StatusReady    Status = "ready"
+	StatusRunning  Status = "running"
+	StatusFinished Status = "finished"
+)
+
 type Runner interface {
 	GetType() string
 	GetState() interface{}

@@ -638,7 +638,7 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 	ep.PipelineModel = p.p
 	ep.HTTPClient = ae.HTTPClient
 	ep.Remedy = ae.Remedy
-	ep.NowOnPoint = []string{}
+	ep.ActiveBlocks = map[string]bool{}
 	ep.EntryPoint = pipeline.BlockGoStartId
 
 	err := ep.CreateBlocks(ctx, p.p.Pipeline.Blocks)

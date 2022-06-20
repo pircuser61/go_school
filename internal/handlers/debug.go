@@ -330,15 +330,15 @@ func (ae *APIEnv) runDebugTask(
 	vs := variableStoreFromSteps(task, version, steps)
 
 	if steps.IsEmpty() {
-		ep.NowOnPoint = []string{ep.EntryPoint} // todo: must переделать
+		ep.ActiveBlocks = []string{ep.EntryPoint} // todo: must переделать
 	} else {
-		ep.NowOnPoint, _ = ep.Blocks[steps[0].Name].Next(vs)
+		ep.ActiveBlocks, _ = ep.Blocks[steps[0].Name].Next(vs)
 	}
 
 	g := "" // todo: must переделать
 
-	//stopPoints := store.NewStopPoints(ep.NowOnPoint)
-	//nextBlock := ep.Blocks[ep.NowOnPoint]
+	//stopPoints := store.NewStopPoints(ep.ActiveBlocks)
+	//nextBlock := ep.Blocks[ep.ActiveBlocks]
 
 	stopPoints := store.NewStopPoints(g)
 	nextBlock := ep.Blocks[g]
