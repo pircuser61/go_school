@@ -2454,7 +2454,7 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 		) AS entrypoint_block
 		LEFT JOIN pipeliner.versions pv ON pv.id = entrypoint_block.pipeline_version_id
 		WHERE pv.status = 2 AND
-				entrypoint_block.blueprint_id = '4238cc8d-ed3e-11ec-bbf2-3e05762c8e74' AND
+				entrypoint_block.blueprint_id = $1 AND
 				entrypoint_block.type_id = 'servicedesk_application'
 `
 
