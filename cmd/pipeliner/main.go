@@ -6,7 +6,7 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
+
 	"net/http"
 	"os"
 	"os/signal"
@@ -39,6 +39,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
@@ -171,14 +172,14 @@ func main() {
 		Conn: dbConn,
 	})
 	go func() {
-		if err := grpcServer.Listen(); err != nil {
+		if err = grpcServer.Listen(); err != nil {
 			os.Exit(-2)
 		}
 	}()
 
 	go func() {
 		time.Sleep(time.Second)
-		if err := server.ListenGRPCGW(&server.GRPCGWConfig{
+		if err = server.ListenGRPCGW(&server.GRPCGWConfig{
 			GRPCPort:   cfg.GRPCPort,
 			GRPCGWPort: cfg.GRPCGWPort,
 		}); err != nil {

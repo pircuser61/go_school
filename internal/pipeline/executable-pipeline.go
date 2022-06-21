@@ -153,7 +153,7 @@ func (ep *ExecutablePipeline) changeTaskStatus(ctx context.Context, taskStatus i
 	return nil
 }
 
-// TODO
+// TODO что-то сделать
 func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskHumanStatus) error {
 	if status != "" {
 		return ep.Storage.UpdateTaskHumanStatus(c, ep.TaskID, string(status))
@@ -163,6 +163,9 @@ func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskH
 
 //nolint:gocognit,gocyclo //its really complex
 func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+	ep.mu.Lock()
+	defer ep.mu.Unlock()
+
 	_, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
@@ -186,7 +189,6 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 	for !ep.IsOver() {
 		for step := range ep.ActiveBlocks {
-
 			log.Info("executing", ep.ActiveBlocks)
 
 			currentBlock, ok := ep.Blocks[step]
@@ -520,13 +522,13 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (Runner, error) {
 	switch ef.Title {
 	case BlockGoTestID:
-		return createGoTestBlock(name, ef)
+		return createGoTestBlock(name, ef), nil
 	case BlockGoApproverID:
 		return createGoApproverBlock(name, ef, ep.Storage)
 	case BlockGoSdApplicationID:
 		return createGoSdApplicationBlock(name, ef, ep.Storage)
 	case BlockGoStartId, BlockGoEndId:
-		return createGoTestBlock(name, ef)
+		return createGoTestBlock(name, ef), nil
 	}
 
 	return nil, errors.New("unknown go-block type")
@@ -536,7 +538,7 @@ func getWorkIdKey(stepName string) string {
 	return stepName + "." + keyStepWorkId
 }
 
-func createGoTestBlock(name string, ef *entity.EriusFunc) (*GoTestBlock, error) {
+func createGoTestBlock(name string, ef *entity.EriusFunc) *GoTestBlock {
 	b := &GoTestBlock{
 		Name:     name,
 		Title:    ef.Title,
@@ -552,5 +554,5 @@ func createGoTestBlock(name string, ef *entity.EriusFunc) (*GoTestBlock, error) 
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
 	}
-	return b, nil
+	return b
 }
