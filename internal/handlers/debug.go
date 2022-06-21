@@ -305,71 +305,71 @@ func (ae *APIEnv) runDebugTask(
 	breakPoints []string,
 	action string,
 ) (*entity.DebugResult, error) {
-	ctx, s := trace.StartSpan(ctx, "run debug task")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	_ = action
-
-	version, err := ae.DB.GetPipelineVersion(ctx, task.VersionID)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get version")
-	}
-
-	ep, err := ae.executablePipeline(ctx, task, version)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get executable pipeline")
-	}
-
-	steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get task steps")
-	}
-
-	vs := variableStoreFromSteps(task, version, steps)
-
-	if steps.IsEmpty() {
-		ep.ActiveBlocks = []string{ep.EntryPoint} // todo: must переделать
-	} else {
-		ep.ActiveBlocks, _ = ep.Blocks[steps[0].Name].Next(vs)
-	}
-
-	g := "" // todo: must переделать
-
-	//stopPoints := store.NewStopPoints(ep.ActiveBlocks)
-	//nextBlock := ep.Blocks[ep.ActiveBlocks]
-
-	stopPoints := store.NewStopPoints(g)
-	nextBlock := ep.Blocks[g]
-
-	if nextBlock == nil {
-		log.Error(errCantGetNextBlock)
-
-		return nil, errors.Wrap(errCantGetNextBlock, "can't get next block")
-	}
-
-	nextSteps := nextBlock.NextSteps()
-
-	vs.SetStopPoints(*stopPoints)
-	vs.StopPoints.SetBreakPoints(breakPoints...)
-
-	if action == actionStepOver {
-		vs.StopPoints.SetStepOvers(nextSteps...)
-	}
-
-	// игнорируем точки останова на блоках, следующих за тем с которого выполняется resume
-	// это не касается случая когда task был только создан и точка останова стоит на блоках следующих за стартовым
-	if action == actionResume && !task.IsCreated() {
-		vs.StopPoints.SetExcludedPoints(nextSteps...)
-	}
-
-	err = ep.DebugRun(ctx, vs)
-	if err != nil {
-		log.Error(err)
-
-		return nil, errors.Wrap(err, "unable to run debug")
-	}
+	//ctx, s := trace.StartSpan(ctx, "run debug task")
+	//defer s.End()
+	//
+	//log := logger.GetLogger(ctx)
+	//
+	//_ = action
+	//
+	//version, err := ae.DB.GetPipelineVersion(ctx, task.VersionID)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "unable to get version")
+	//}
+	//
+	//ep, err := ae.executablePipeline(ctx, task, version)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "unable to get executable pipeline")
+	//}
+	//
+	//steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "unable to get task steps")
+	//}
+	//
+	//vs := variableStoreFromSteps(task, version, steps)
+	//
+	//if steps.IsEmpty() {
+	//	ep.ActiveBlocks = []string{ep.EntryPoint} // todo: must переделать
+	//} else {
+	//	ep.ActiveBlocks, _ = ep.Blocks[steps[0].Name].Next(vs)
+	//}
+	//
+	//g := "" // todo: must переделать
+	//
+	////stopPoints := store.NewStopPoints(ep.ActiveBlocks)
+	////nextBlock := ep.Blocks[ep.ActiveBlocks]
+	//
+	//stopPoints := store.NewStopPoints(g)
+	//nextBlock := ep.Blocks[g]
+	//
+	//if nextBlock == nil {
+	//	log.Error(errCantGetNextBlock)
+	//
+	//	return nil, errors.Wrap(errCantGetNextBlock, "can't get next block")
+	//}
+	//
+	//nextSteps := nextBlock.NextSteps()
+	//
+	//vs.SetStopPoints(*stopPoints)
+	//vs.StopPoints.SetBreakPoints(breakPoints...)
+	//
+	//if action == actionStepOver {
+	//	vs.StopPoints.SetStepOvers(nextSteps...)
+	//}
+	//
+	//// игнорируем точки останова на блоках, следующих за тем с которого выполняется resume
+	//// это не касается случая когда task был только создан и точка останова стоит на блоках следующих за стартовым
+	//if action == actionResume && !task.IsCreated() {
+	//	vs.StopPoints.SetExcludedPoints(nextSteps...)
+	//}
+	//
+	//err = ep.DebugRun(ctx, vs)
+	//if err != nil {
+	//	log.Error(err)
+	//
+	//	return nil, errors.Wrap(err, "unable to run debug")
+	//}
 
 	return &entity.DebugResult{}, nil
 }
