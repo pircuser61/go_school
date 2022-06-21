@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -110,7 +111,7 @@ func TestIF_Next(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   string
+		want   []string
 		ok     bool
 	}{
 		{
@@ -119,9 +120,11 @@ func TestIF_Next(t *testing.T) {
 			args: args{
 				runCtx: store.NewStore(),
 			},
-			ok: false,
+			ok:   false,
+			want: []string{},
 		},
 		{
+			want: []string{},
 			name: "error - value not a bool",
 			fields: fields{
 				FunctionInput: map[string]string{
@@ -154,7 +157,7 @@ func TestIF_Next(t *testing.T) {
 					return res
 				}(),
 			},
-			want: "onTrue",
+			want: []string{"onTrue"},
 			ok:   true,
 		},
 		{
@@ -173,7 +176,7 @@ func TestIF_Next(t *testing.T) {
 					return res
 				}(),
 			},
-			want: "onFalse",
+			want: []string{"onFalse"},
 			ok:   true,
 		},
 	}
@@ -187,13 +190,8 @@ func TestIF_Next(t *testing.T) {
 				OnTrue:        tt.fields.OnTrue,
 				OnFalse:       tt.fields.OnFalse,
 			}
-			got, ok := e.Next(tt.args.runCtx)
-			if got != tt.want {
-				t.Errorf("Next() got = %v, want %v", got, tt.want)
-			}
-			if ok != tt.ok {
-				t.Errorf("Next() ok = %v, want %v", ok, tt.ok)
-			}
+			got, _ := e.Next(tt.args.runCtx)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

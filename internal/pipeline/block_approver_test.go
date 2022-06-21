@@ -42,7 +42,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 		Title    string
 		Input    map[string]string
 		Output   map[string]string
-		NextStep string
+		NextStep []string
 		Storage  db.Database
 	}
 	type args struct {
@@ -63,7 +63,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: "",
+				NextStep: []string{},
 				Storage:  nil,
 			},
 			args: args{
@@ -80,7 +80,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: "",
+				NextStep: []string{},
 				Storage:  nil,
 			},
 			args: args{
@@ -103,7 +103,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: "",
+				NextStep: []string{},
 				Storage: func() db.Database {
 					res := &mocks.MockedDatabase{}
 
@@ -136,7 +136,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: "",
+				NextStep: []string{},
 				Storage: func() db.Database {
 					res := &mocks.MockedDatabase{}
 
@@ -181,7 +181,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: "",
+				NextStep: []string{},
 				Storage: func() db.Database {
 					res := &mocks.MockedDatabase{}
 
@@ -222,7 +222,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 					keyOutputDecision: decisionKey,
 					keyOutputComment:  commentKey,
 				},
-				NextStep: "",
+				NextStep: []string{},
 				Storage: func() db.Database {
 					res := &mocks.MockedDatabase{}
 
@@ -453,9 +453,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 	const (
 		example = "example"
 		title   = "title"
-		next    = "next"
 		login   = "login1"
 	)
+	next := []string{"next"}
 
 	type args struct {
 		name    string
@@ -581,7 +581,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 		Title    string
 		Input    map[string]string
 		Output   map[string]string
-		NextStep string
+		NextStep []string
 		State    *ApproverData
 		Storage  db.Database
 	}
