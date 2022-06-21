@@ -10,8 +10,9 @@ type GRPCGW struct {
 	config *GRPCGWConfig
 }
 
-func ListenGRPCGW(config *GRPCGWConfig) error { //conn, err := grpc.Dial(config.GRPCPort, grpc.WithInsecure())
-	//if err != nil {
+func ListenGRPCGW(config *GRPCGWConfig) error {
+	//conn, err := grpc.Dial(config.GRPCPort, grpc.WithInsecure())
+	// if err != nil {
 	//	return err
 	//}
 	//mux := runtime.NewServeMux()
