@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"io"
 	"net/http"
 	"sync"
@@ -21,6 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 // @Summary Create pipeline version

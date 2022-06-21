@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+
 	"io"
 	"net/http"
 	"strconv"
@@ -20,6 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 // @Summary Create pipeline
@@ -42,7 +43,9 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	log := logger.GetLogger(ctx)
 
 	b, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
+	defer func() {
+		_ = req.Body.Close()
+	}()
 
 	if err != nil {
 		e := RequestReadError
@@ -63,7 +66,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := user.GetUserInfoFromCtx(ctx)
+	userFromContext, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.Error("user failed: ", err.Error())
 	}
@@ -88,7 +91,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.CreatePipeline(ctx, &p, user.Username, b)
+	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
 	if err != nil {
 		e := PipelineCreateError
 		log.Error(e.errorMessage(err))
