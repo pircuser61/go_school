@@ -16,6 +16,7 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/pkg/errors v0.9.1
+	github.com/pressly/goose v2.7.0+incompatible // indirect
 	github.com/prometheus/client_golang v1.11.1
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
