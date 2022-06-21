@@ -19,20 +19,13 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-const (
-	actionStepOver = "step_over"
-	actionResume   = "resume"
-)
-
-var errCantGetNextBlock = errors.New("can't get next block")
-
 type DebugRunRequest struct {
 	WorkNumber  string   `json:"work_number"`
 	BreakPoints []string `json:"break_points"`
 	Action      string   `json:"action" example:"step_over,resume"`
 }
 
-func (d DebugRunRequest) Bind(r *http.Request) error {
+func (d DebugRunRequest) Bind(_ *http.Request) error {
 	return nil
 }
 
@@ -156,7 +149,9 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 
 	d := CreateTaskRequest{}
 
@@ -300,10 +295,10 @@ func stepStatus(task *entity.EriusTask, step *entity.Step) (stepStatus string) {
 
 // todo monitoring
 func (ae *APIEnv) runDebugTask(
-	ctx context.Context,
-	task *entity.EriusTask,
-	breakPoints []string,
-	action string,
+	_ context.Context,
+	_ *entity.EriusTask,
+	_ []string,
+	_ string,
 ) (*entity.DebugResult, error) {
 	//ctx, s := trace.StartSpan(ctx, "run debug task")
 	//defer s.End()
