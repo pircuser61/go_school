@@ -11,19 +11,19 @@ type GRPCGW struct {
 }
 
 func ListenGRPCGW(config *GRPCGWConfig) error {
-	//conn, err := grpc.Dial(config.GRPCPort, grpc.WithInsecure())
+	// conn, err := grpc.Dial(config.GRPCPort, grpc.WithInsecure())
 	// if err != nil {
 	//	return err
 	//}
-	//mux := runtime.NewServeMux()
-	//ctx := context.TODO()
-	//if err := pb.RegisterScenarioServiceHandler(ctx, mux, conn); err != nil {
-	//	return err
-	//}
-	//h := http.Handler(mux)
-	//err = http.ListenAndServe(config.GRPCGWPort, h)
-	//if err != nil && err != http.ErrServerClosed {
-	//	return err
-	//}
+	// mux := runtime.NewServeMux()
+	// ctx := context.TODO()
+	// if err := pb.RegisterScenarioServiceHandler(ctx, mux, conn); err != nil {
+	//  	return err
+	// }
+	// h := http.Handler(mux)
+	// err = http.ListenAndServe(config.GRPCGWPort, h)
+	// if err != nil && err != http.ErrServerClosed {
+	//	  return err
+	// }
 	return nil
 }
