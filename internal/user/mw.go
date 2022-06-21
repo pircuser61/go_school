@@ -2,8 +2,8 @@ package user
 
 import (
 	"context"
-	"github.com/pkg/errors"
 
+	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 

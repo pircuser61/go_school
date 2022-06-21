@@ -3,12 +3,12 @@ package server
 import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
 	"google.golang.org/grpc"
+
 	"net"
 )
 

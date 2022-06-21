@@ -2,17 +2,17 @@ package handlers
 
 import (
 	"context"
+	"net/http"
+	"strings"
+
 	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
-	"net/http"
-	"strings"
 
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
