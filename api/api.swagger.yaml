@@ -591,8 +591,10 @@ components:
           type: string
           description: Next block (if this block repeats)
         next:
-          type: string
+          type: array
           description: Next block
+          items:
+            type: string
       required:
         - type_id
         - block_type
