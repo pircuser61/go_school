@@ -14,7 +14,17 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+const (
+	keyOutputExecutionType    = "type"
+	keyOutputExecutionLogin   = "login"
+	keyOutputExecutionStatus  = "status"
+	keyOutputExecutionComment = "comment"
+)
+
 type ExecutionData struct {
+	ApplicationID string               `json:"application_id"`
+	ExecutionType script.ExecutionType `json:"execution_type"`
+	Executors     map[string]struct{}  `json:"executors"`
 }
 
 type GoExecutionBlock struct {
@@ -33,7 +43,7 @@ func (gb *GoExecutionBlock) GetTaskStatus() TaskHumanStatus {
 }
 
 func (gb *GoExecutionBlock) GetType() string {
-	return BlockGoSdApplicationID
+	return BlockGoExecutionID
 }
 
 func (gb *GoExecutionBlock) Inputs() map[string]string {
@@ -57,6 +67,13 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 	defer s.End()
 
 	runCtx.AddStep(gb.Name)
+
+	_, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
+	if !isOk {
+		return errors.New("can't get work id from variable store")
+	}
+
+	//TODO check executor decision here
 
 	return err
 }
@@ -85,8 +102,36 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     BlockGoExecutionTitle,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{},
-		Params: &script.FunctionParams{},
+		Outputs: []script.FunctionValueModel{
+			{
+				Name:    keyOutputExecutionType,
+				Type:    "string",
+				Comment: "execution type (user, group)",
+			},
+			{
+				Name:    keyOutputExecutionLogin,
+				Type:    "string",
+				Comment: "executor login",
+			},
+			{
+				Name:    keyOutputExecutionStatus,
+				Type:    "string",
+				Comment: "execution status",
+			},
+			{
+				Name:    keyOutputExecutionComment,
+				Type:    "string",
+				Comment: "execution status comment",
+			},
+		},
+		Params: &script.FunctionParams{
+			Type: BlockGoExecutionID,
+			Params: &script.ExecutionParams{
+				Executors:     []string{},
+				Type:          "",
+				ApplicationID: "",
+			},
+		},
 		NextFuncs: []string{script.Next},
 	}
 }
@@ -110,7 +155,7 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Databa
 		b.Output[v.Name] = v.Global
 	}
 
-	var params script.SdApplicationParams
+	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return nil, errors.Wrap(err, "can not get execution parameters")
@@ -118,6 +163,17 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Databa
 
 	if err = params.Validate(); err != nil {
 		return nil, errors.Wrap(err, "invalid execution parameters")
+	}
+
+	executors := map[string]struct{}{}
+	for i := range params.Executors {
+		executors[params.Executors[i]] = struct{}{}
+	}
+
+	b.State = &ExecutionData{
+		ExecutionType: params.Type,
+		ApplicationID: params.ApplicationID,
+		Executors:     executors,
 	}
 
 	return b, nil
