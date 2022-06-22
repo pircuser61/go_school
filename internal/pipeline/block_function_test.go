@@ -55,7 +55,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 		FunctionName   string
 		FunctionInput  map[string]string
 		FunctionOutput map[string]string
-		NextStep       string
+		NextStep       []string
 		runURL         string
 	}
 	type args struct {
@@ -82,7 +82,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				FunctionName:   "RunOnlyFunction",
 				FunctionInput:  nil,
 				FunctionOutput: nil,
-				NextStep:       "",
+				NextStep:       []string{},
 				runURL:         "",
 			},
 			args: args{
@@ -103,7 +103,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				FunctionOutput: map[string]string{
 					"sOutput": "global.sOutput",
 				},
-				NextStep: "",
+				NextStep: []string{},
 				runURL:   "",
 			},
 			args: args{

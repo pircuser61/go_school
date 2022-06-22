@@ -289,7 +289,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 		FunctionName:   block.Title,
 		FunctionInput:  make(map[string]string),
 		FunctionOutput: make(map[string]string),
-		NextStep:       "",
+		NextStep:       []string{},
 		RunURL:         ae.FaaS + "function/%s",
 	}
 

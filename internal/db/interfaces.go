@@ -8,8 +8,7 @@ import (
 )
 
 type PipelineStorager interface {
-	CreatePipeline(c context.Context,
-		p *entity.EriusScenario, author string, pipelineData []byte) error
+	CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error
 	GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error)
 	GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
 	PipelineRemovable(c context.Context, id uuid.UUID) (bool, error)
@@ -38,7 +37,7 @@ type SaveStepRequest struct {
 	Content     []byte
 	BreakPoints []string
 	HasError    bool
-	IsFinished  bool
+	Status      string
 }
 
 type UpdateStepRequest struct {
@@ -46,7 +45,7 @@ type UpdateStepRequest struct {
 	Content     []byte
 	BreakPoints []string
 	HasError    bool
-	IsFinished  bool
+	Status      string
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase

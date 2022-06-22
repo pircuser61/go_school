@@ -20,7 +20,7 @@ type Step struct {
 	Steps       []string                   `json:"steps"`
 	BreakPoints []string                   `json:"-"`
 	HasError    bool                       `json:"has_error"`
-	IsFinished  bool                       `json:"is_finished"`
+	Status      string                     `json:"status"`
 }
 
 type TaskSteps []*Step

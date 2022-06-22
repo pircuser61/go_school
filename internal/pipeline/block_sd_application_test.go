@@ -15,7 +15,7 @@ func TestGoSdBlock_DebugRun(t *testing.T) {
 		Title    string
 		Input    map[string]string
 		Output   map[string]string
-		NextStep string
+		NextStep []string
 		State    *ApplicationData
 		Storage  db.Database
 	}
@@ -37,7 +37,7 @@ func TestGoSdBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: "",
+				NextStep: []string{},
 				Storage:  nil,
 			},
 			args: args{

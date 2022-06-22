@@ -28,11 +28,15 @@ type FunctionBlock struct {
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	NextStep       string
+	NextStep       []string
 	RunURL         string
 }
 
-func (fb *FunctionBlock) GetTaskStatus() TaskHumanStatus {
+func (fb *FunctionBlock) GetStatus() Status {
+	return StatusFinished
+}
+
+func (fb *FunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
@@ -133,14 +137,12 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 	return nil
 }
 
-func (fb *FunctionBlock) Next(runCtx *store.VariableStore) (string, bool) {
+func (fb *FunctionBlock) Next(runCtx *store.VariableStore) ([]string, bool) {
 	return fb.NextStep, true
 }
 
 func (fb *FunctionBlock) NextSteps() []string {
-	nextSteps := []string{fb.NextStep}
-
-	return nextSteps
+	return fb.NextStep
 }
 
 func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStore) (interface{}, error) {
