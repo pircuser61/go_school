@@ -73,7 +73,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 		return errors.New("can't get work id from variable store")
 	}
 
-	//TODO check executor decision here
+	// TODO check executor decision here
 
 	return err
 }
