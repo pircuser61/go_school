@@ -2,8 +2,9 @@ package pipeline
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )

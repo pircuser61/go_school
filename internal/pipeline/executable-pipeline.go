@@ -20,6 +20,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+type void = bool
+
 const (
 	// TODO maybe there is a better way to save work id in variable store
 	keyStepWorkId = "work_id"
@@ -35,7 +37,7 @@ type ExecutablePipeline struct {
 	Storage       db.Database
 	EntryPoint    string
 	StepType      string
-	ActiveBlocks  map[string]bool
+	ActiveBlocks  map[string]void
 	VarStore      *store.VariableStore
 	Blocks        map[string]Runner
 	NextStep      []string
@@ -68,6 +70,7 @@ func (ep *ExecutablePipeline) ReadyToStart() bool {
 }
 
 func (ep *ExecutablePipeline) GetTaskStatus() TaskHumanStatus {
+	// TODO: проверять, что нет ошибок (потому что только тогда мы Done)
 	if len(ep.ActiveBlocks) == 0 {
 		return StatusDone
 	}
@@ -106,7 +109,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	return ep.DebugRun(ctx, runCtx)
 }
 
-func (ep *ExecutablePipeline) createStep(ctx context.Context, hasError, isFinished bool) (uuid.UUID, error) {
+func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasError, isFinished bool) (uuid.UUID, error) {
 	storageData, errSerialize := json.Marshal(ep.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, errSerialize
@@ -115,9 +118,9 @@ func (ep *ExecutablePipeline) createStep(ctx context.Context, hasError, isFinish
 	breakPoints := ep.VarStore.StopPoints.BreakPointsList()
 
 	return ep.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
-		WorkID:   ep.TaskID,
-		StepType: ep.StepType,
-		//StepName:    ep.ActiveBlocks, todo: что-нибудь придумать
+		WorkID:      ep.TaskID,
+		StepType:    ep.StepType,
+		StepName:    name,
 		Content:     storageData,
 		BreakPoints: breakPoints,
 		HasError:    hasError,
@@ -193,7 +196,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			currentBlock, ok := ep.Blocks[step]
 			if !ok || currentBlock == nil {
-				_, err := ep.createStep(ctx, true, true)
+				_, err := ep.createStep(ctx, step, true, true)
 				if err != nil {
 					return err
 				}
@@ -222,7 +225,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 					nStore.SetValue(local, val)
 				}
 
-				id, err = ep.createStep(ctx, false, false)
+				id, err = ep.createStep(ctx, step, false, false)
 				if err != nil {
 					return err
 				}
@@ -241,7 +244,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 					ep.VarStore.SetValue(outer, val)
 				}
 			} else {
-				id, err = ep.createStep(ctx, false, false)
+				id, err = ep.createStep(ctx, step, false, false)
 				if err != nil {
 					return err
 				}
