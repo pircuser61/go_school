@@ -236,9 +236,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 					return errUpdate
 				}
 
-				if currentBlock.GetStatus() == StatusIdle {
-					ep.VarStore.SetValue(getWorkIdKey(step), id)
-				}
+				ep.VarStore.SetValue(getWorkIdKey(step), id)
 
 				err = currentBlock.DebugRun(ctx, ep.VarStore)
 				if err != nil {
