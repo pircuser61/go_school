@@ -21,6 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 type eriusTaskResponse struct {
@@ -39,15 +40,15 @@ type eriusTaskResponse struct {
 }
 
 type step struct {
-	Time       time.Time                  `json:"time"`
-	Type       string                     `json:"type"`
-	Name       string                     `json:"name"`
-	State      map[string]json.RawMessage `json:"state" swaggertype:"object"`
-	Storage    map[string]interface{}     `json:"storage"`
-	Errors     []string                   `json:"errors"`
-	Steps      []string                   `json:"steps"`
-	HasError   bool                       `json:"has_error"`
-	IsFinished bool                       `json:"is_finished"`
+	Time     time.Time                  `json:"time"`
+	Type     string                     `json:"type"`
+	Name     string                     `json:"name"`
+	State    map[string]json.RawMessage `json:"state" swaggertype:"object"`
+	Storage  map[string]interface{}     `json:"storage"`
+	Errors   []string                   `json:"errors"`
+	Steps    []string                   `json:"steps"`
+	HasError bool                       `json:"has_error"`
+	Status   pipeline.Status            `json:"status"`
 }
 
 type taskSteps []step
@@ -56,15 +57,15 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	for i := range in.Steps {
 		steps = append(steps, step{
-			Time:       in.Steps[i].Time,
-			Type:       in.Steps[i].Type,
-			Name:       in.Steps[i].Name,
-			State:      in.Steps[i].State,
-			Storage:    in.Steps[i].Storage,
-			Errors:     in.Steps[i].Errors,
-			Steps:      in.Steps[i].Steps,
-			HasError:   in.Steps[i].HasError,
-			IsFinished: in.Steps[i].IsFinished,
+			Time:     in.Steps[i].Time,
+			Type:     in.Steps[i].Type,
+			Name:     in.Steps[i].Name,
+			State:    in.Steps[i].State,
+			Storage:  in.Steps[i].Storage,
+			Errors:   in.Steps[i].Errors,
+			Steps:    in.Steps[i].Steps,
+			HasError: in.Steps[i].HasError,
+			Status:   pipeline.Status(in.Steps[i].Status),
 		})
 	}
 
@@ -144,11 +145,11 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 }
 
 func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err error) {
-	user, err := GetEffectiveUserInfoFromCtx(req.Context())
+	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
 	if err != nil {
 		return filters, err
 	}
-	filters.CurrentUser = user.Username
+	filters.CurrentUser = ui.Username
 
 	taskIDs := req.URL.Query().Get("taskIDs")
 	if taskIDs != "" {
@@ -421,7 +422,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := GetUserInfoFromCtx(ctx)
+	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
@@ -522,7 +523,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 
 		_, blockErr = block.Update(ctx, &script.BlockUpdateData{
 			Id:         item.ID,
-			ByLogin:    user.Username,
+			ByLogin:    ui.Username,
 			Parameters: updateData.Parameters,
 		})
 		if blockErr != nil {

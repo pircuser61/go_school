@@ -17,7 +17,11 @@ type ConnectorBlock struct {
 	NextStep       []string
 }
 
-func (cb *ConnectorBlock) GetTaskStatus() TaskHumanStatus {
+func (cb *ConnectorBlock) GetStatus() Status {
+	return StatusFinished
+}
+
+func (cb *ConnectorBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 

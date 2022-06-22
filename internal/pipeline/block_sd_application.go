@@ -47,7 +47,14 @@ type GoSdApplicationBlock struct {
 	Storage db.Database
 }
 
-func (gb *GoSdApplicationBlock) GetTaskStatus() TaskHumanStatus {
+func (gb *GoSdApplicationBlock) GetStatus() Status {
+	if gb.State.ApplicationBody != nil {
+		return StatusFinished
+	}
+	return StatusRunning
+}
+
+func (gb *GoSdApplicationBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return StatusNew
 }
 

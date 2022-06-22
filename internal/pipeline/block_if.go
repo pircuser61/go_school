@@ -22,7 +22,11 @@ type IF struct {
 	OnFalse       string
 }
 
-func (e *IF) GetTaskStatus() TaskHumanStatus {
+func (e *IF) GetStatus() Status {
+	return StatusFinished
+}
+
+func (e *IF) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 

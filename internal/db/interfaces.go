@@ -37,7 +37,7 @@ type SaveStepRequest struct {
 	Content     []byte
 	BreakPoints []string
 	HasError    bool
-	IsFinished  bool
+	Status      string
 }
 
 type UpdateStepRequest struct {
@@ -45,7 +45,7 @@ type UpdateStepRequest struct {
 	Content     []byte
 	BreakPoints []string
 	HasError    bool
-	IsFinished  bool
+	Status      string
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase

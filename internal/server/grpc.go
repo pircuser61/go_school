@@ -30,6 +30,7 @@ func NewGRPC(config *GRPCConfig) *GRPC {
 		grpc.StatsHandler(&ocgrpc.ServerHandler{}),
 	)
 
+	// nolint:gocritic // example
 	// s := scenario.NewService(rep.NewScenarioRepository(config.Conn))
 	// handler.NewScenarioHandler(s).Mount(grpcServer)
 

@@ -18,7 +18,11 @@ type StringsEqual struct {
 	OnFalse       string
 }
 
-func (se *StringsEqual) GetTaskStatus() TaskHumanStatus {
+func (se *StringsEqual) GetStatus() Status {
+	return StatusFinished
+}
+
+func (se *StringsEqual) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 

@@ -19,7 +19,11 @@ type ForState struct {
 	OnFalse        string
 }
 
-func (e *ForState) GetTaskStatus() TaskHumanStatus {
+func (e *ForState) GetStatus() Status {
+	return StatusFinished
+}
+
+func (e *ForState) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 

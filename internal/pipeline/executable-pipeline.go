@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -20,7 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-type void = bool
+type void = struct{}
 
 const (
 	// TODO maybe there is a better way to save work id in variable store
@@ -49,7 +49,19 @@ type ExecutablePipeline struct {
 	Remedy        string
 
 	FaaS string
-	mu   *sync.Mutex
+}
+
+func (ep *ExecutablePipeline) GetStatus() Status {
+	switch {
+	case ep.IsOver():
+		return StatusFinished
+	case ep.ReadyToStart():
+		return StatusReady
+	case len(ep.ActiveBlocks) != 0:
+		return StatusRunning
+	default:
+		return StatusIdle
+	}
 }
 
 func (ep *ExecutablePipeline) IsOver() bool {
@@ -60,7 +72,7 @@ func (ep *ExecutablePipeline) MergeActiveBlocks(blocks []string) {
 	for _, block := range blocks {
 		_, exist := ep.ActiveBlocks[block]
 		if !exist {
-			ep.ActiveBlocks[block] = true
+			ep.ActiveBlocks[block] = void{}
 		}
 	}
 }
@@ -69,7 +81,7 @@ func (ep *ExecutablePipeline) ReadyToStart() bool {
 	return len(ep.ActiveBlocks) == 0 && ep.EntryPoint == BlockGoStartId
 }
 
-func (ep *ExecutablePipeline) GetTaskStatus() TaskHumanStatus {
+func (ep *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
 	// TODO: проверять, что нет ошибок (потому что только тогда мы Done)
 	if len(ep.ActiveBlocks) == 0 {
 		return StatusDone
@@ -109,7 +121,7 @@ func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableSto
 	return ep.DebugRun(ctx, runCtx)
 }
 
-func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasError, isFinished bool) (uuid.UUID, error) {
+func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasError bool, status Status) (uuid.UUID, error) {
 	storageData, errSerialize := json.Marshal(ep.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, errSerialize
@@ -124,11 +136,11 @@ func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasEr
 		Content:     storageData,
 		BreakPoints: breakPoints,
 		HasError:    hasError,
-		IsFinished:  isFinished,
+		Status:      string(status),
 	})
 }
 
-func (ep *ExecutablePipeline) updateStep(ctx context.Context, id uuid.UUID, hasError, isFinished bool) error {
+func (ep *ExecutablePipeline) updateStep(ctx context.Context, id uuid.UUID, hasError bool, status Status) error {
 	storageData, err := json.Marshal(ep.VarStore)
 	if err != nil {
 		return err
@@ -141,7 +153,7 @@ func (ep *ExecutablePipeline) updateStep(ctx context.Context, id uuid.UUID, hasE
 		Content:     storageData,
 		BreakPoints: breakPoints,
 		HasError:    hasError,
-		IsFinished:  isFinished,
+		Status:      string(status),
 	})
 }
 
@@ -156,7 +168,7 @@ func (ep *ExecutablePipeline) changeTaskStatus(ctx context.Context, taskStatus i
 	return nil
 }
 
-// TODO что-то сделать
+// TODO: что-то сделать
 func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskHumanStatus) error {
 	if status != "" {
 		return ep.Storage.UpdateTaskHumanStatus(c, ep.TaskID, string(status))
@@ -166,9 +178,6 @@ func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskH
 
 //nolint:gocognit,gocyclo //its really complex
 func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
-	ep.mu.Lock()
-	defer ep.mu.Unlock()
-
 	_, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
@@ -177,7 +186,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 	ep.VarStore = runCtx
 
 	if ep.ReadyToStart() {
-		ep.ActiveBlocks[ep.EntryPoint] = true
+		ep.ActiveBlocks[ep.EntryPoint] = void{}
 	}
 
 	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusRunning)
@@ -185,7 +194,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		return errChange
 	}
 
-	errUpdate := ep.updateStatusByStep(ctx, ep.GetTaskStatus())
+	errUpdate := ep.updateStatusByStep(ctx, ep.GetTaskHumanStatus())
 	if errUpdate != nil {
 		return errUpdate
 	}
@@ -196,7 +205,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			currentBlock, ok := ep.Blocks[step]
 			if !ok || currentBlock == nil {
-				_, err := ep.createStep(ctx, step, true, true)
+				_, err := ep.createStep(ctx, step, true, StatusFinished)
 				if err != nil {
 					return err
 				}
@@ -215,67 +224,48 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			var err error
 
 			if currentBlock.IsScenario() {
-				ep.VarStore.AddStep(step)
-
-				nStore := store.NewStore()
-
-				input := currentBlock.Inputs()
-				for local, global := range input {
-					val, _ := runCtx.GetValue(global)
-					nStore.SetValue(local, val)
-				}
-
-				id, err = ep.createStep(ctx, step, false, false)
-				if err != nil {
-					return err
-				}
-
-				nStore.SetValue(getWorkIdKey(step), id)
-
-				err = currentBlock.DebugRun(ctx, nStore)
-				if err != nil {
-					key := step + KeyDelimiter + ErrorKey
-					nStore.SetValue(key, err.Error())
-				}
-
-				out := currentBlock.Outputs()
-				for inner, outer := range out {
-					val, _ := nStore.GetValue(inner)
-					ep.VarStore.SetValue(outer, val)
-				}
+				// TODO: handle
 			} else {
-				id, err = ep.createStep(ctx, step, false, false)
+				id, err = ep.createStep(ctx, step, false, StatusIdle)
 				if err != nil {
 					return err
 				}
 
-				errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskStatus())
+				errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskHumanStatus())
 				if errUpdate != nil {
 					return errUpdate
 				}
 
-				ep.VarStore.SetValue(getWorkIdKey(step), id)
+				if currentBlock.GetStatus() == StatusIdle {
+					ep.VarStore.SetValue(getWorkIdKey(step), id)
+				}
 
 				err = currentBlock.DebugRun(ctx, ep.VarStore)
 				if err != nil {
 					key := step + KeyDelimiter + ErrorKey
 					ep.VarStore.SetValue(key, err.Error())
 				}
-
-				errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskStatus())
-				if errUpdate != nil {
-					return errUpdate
-				}
 			}
 
-			updErr := ep.updateStep(ctx, id, err != nil, true)
+			updErr := ep.updateStep(ctx, id, err != nil, currentBlock.GetStatus())
 			if updErr != nil {
 				return updErr
 			}
 
+			errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskHumanStatus())
+			if errUpdate != nil {
+				return errUpdate
+			}
+
+			if currentBlock.GetStatus() != StatusFinished {
+				continue
+			}
+
+			delete(ep.ActiveBlocks, step)
+
 			activeBlocks, ok := ep.Blocks[step].Next(ep.VarStore)
 			if !ok {
-				updStepErr := ep.updateStep(ctx, id, true, true)
+				updStepErr := ep.updateStep(ctx, id, true, StatusFinished)
 				if updStepErr != nil {
 					return updStepErr
 				}
@@ -294,21 +284,24 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				return nil
 			}
 		}
+		// prevent spamming
+		// TODO: rewrite
+		time.Sleep(2 * time.Second)
+	}
 
-		errChangeFinished := ep.changeTaskStatus(ctx, db.RunStatusFinished)
-		if errChangeFinished != nil {
-			return errChange
-		}
+	errChangeFinished := ep.changeTaskStatus(ctx, db.RunStatusFinished)
+	if errChangeFinished != nil {
+		return errChange
+	}
 
-		errUpdate = ep.updateStatusByStep(ctx, ep.GetTaskStatus())
-		if errUpdate != nil {
-			return errUpdate
-		}
+	errUpdate = ep.updateStatusByStep(ctx, ep.GetTaskHumanStatus())
+	if errUpdate != nil {
+		return errUpdate
+	}
 
-		for _, glob := range ep.PipelineModel.Output {
-			val, _ := runCtx.GetValue(glob.Global)
-			runCtx.SetValue(glob.Name, val)
-		}
+	for _, glob := range ep.PipelineModel.Output {
+		val, _ := runCtx.GetValue(glob.Global)
+		runCtx.SetValue(glob.Name, val)
 	}
 
 	return nil

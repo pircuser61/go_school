@@ -32,7 +32,11 @@ type FunctionBlock struct {
 	RunURL         string
 }
 
-func (fb *FunctionBlock) GetTaskStatus() TaskHumanStatus {
+func (fb *FunctionBlock) GetStatus() Status {
+	return StatusFinished
+}
+
+func (fb *FunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 

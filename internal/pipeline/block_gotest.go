@@ -17,7 +17,11 @@ type GoTestBlock struct {
 	NextStep []string
 }
 
-func (gb *GoTestBlock) GetTaskStatus() TaskHumanStatus {
+func (gb *GoTestBlock) GetStatus() Status {
+	return StatusFinished
+}
+
+func (gb *GoTestBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 

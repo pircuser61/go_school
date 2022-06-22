@@ -2,7 +2,7 @@ tracing:
   url: 'http://jaeger-prod-collector.observability:14268/api/traces'
   sample_fraction: 1.0
 
-serve_addr: ':8001'
+serve_addr: ':8000'
 timeout: '30s'
 script_manager: 'http://localhost:8001'
 faas: 'https://openfaas.dev.autobp.mts.ru/'

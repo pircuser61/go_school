@@ -1451,11 +1451,27 @@ func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepReques
 
 	defer conn.Release()
 
-	id := uuid.New()
+	var id uuid.UUID
+
+	q := `
+	SELECT id 
+	FROM pipeliner.variable_storage 
+	WHERE work_id = $1 AND step_name = $2
+`
+	if scanErr := conn.QueryRow(ctx, q,
+		dto.WorkID,
+		dto.StepName).Scan(&id); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
+		return NullUuid, nil
+	}
+	if id != NullUuid {
+		return id, nil
+	}
+
+	id = uuid.New()
 	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
+	q = `
 	INSERT INTO pipeliner.variable_storage (
 		id, 
 		work_id, 
@@ -1465,7 +1481,7 @@ func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepReques
 		time, 
 		break_points, 
 		has_error,
-		is_finished
+		status
 	)
 	VALUES (
 		$1, 
@@ -1491,7 +1507,7 @@ func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepReques
 		timestamp,
 		dto.BreakPoints,
 		dto.HasError,
-		dto.IsFinished,
+		dto.Status,
 	)
 	if err != nil {
 		return NullUuid, err
@@ -1519,7 +1535,7 @@ func (db *PGConnection) UpdateStepContext(ctx context.Context, dto *UpdateStepRe
 	    content = $2,
 	    break_points = $3,
 		has_error = $4,
-	    is_finished = $5
+	    status = $5
 	WHERE
 		id = $1
 `
@@ -1531,7 +1547,7 @@ func (db *PGConnection) UpdateStepContext(ctx context.Context, dto *UpdateStepRe
 		dto.Content,
 		dto.BreakPoints,
 		dto.HasError,
-		dto.IsFinished,
+		dto.Status,
 	)
 	if err != nil {
 		return err
@@ -1832,7 +1848,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		if *filters.SelectAs == "approver" {
 			args = append(args, filters.CurrentUser)
 			q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'approvers'->$%d "+
-				"IS NOT NULL AND approvers.is_finished = FALSE", q, len(args))
+				"IS NOT NULL AND approvers.status != finished", q, len(args))
 		}
 	} else {
 		args = append(args, filters.CurrentUser)
@@ -2187,7 +2203,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 		vs.content, 
 		COALESCE(vs.break_points, '{}') AS break_points, 
 		vs.has_error,
-		vs.is_finished
+		vs.status
 	FROM pipeliner.variable_storage vs 
 	WHERE work_id = $1
 	ORDER BY vs.time DESC`
@@ -2211,7 +2227,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 			&content,
 			&s.BreakPoints,
 			&s.HasError,
-			&s.IsFinished,
+			&s.Status,
 		)
 		if err != nil {
 			return nil, err
@@ -2262,12 +2278,12 @@ func (db *PGConnection) GetUnfinishedTaskStepsByWorkIdAndStepType(
 		vs.content, 
 		COALESCE(vs.break_points, '{}') AS break_points, 
 		vs.has_error,
-		vs.is_finished
+		vs.status
 	FROM pipeliner.variable_storage vs 
 	WHERE 
 	    work_id = $1 AND 
 	    step_type = $2 AND
-	    is_finished = false
+	    status != 'finished'
 	ORDER BY vs.time ASC`
 
 	rows, err := conn.Query(ctx, q, id, stepType)
@@ -2292,7 +2308,7 @@ func (db *PGConnection) GetUnfinishedTaskStepsByWorkIdAndStepType(
 			&content,
 			&s.BreakPoints,
 			&s.HasError,
-			&s.IsFinished,
+			&s.Status,
 		)
 		if err != nil {
 			return nil, err
@@ -2337,7 +2353,7 @@ func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*ent
 		vs.content, 
 		COALESCE(vs.break_points, '{}') AS break_points, 
 		vs.has_error,
-		vs.is_finished
+		vs.status
 	FROM pipeliner.variable_storage vs 
 	WHERE id = $1
 	LIMIT 1`
@@ -2352,7 +2368,7 @@ func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*ent
 		&content,
 		&s.BreakPoints,
 		&s.HasError,
-		&s.IsFinished,
+		&s.Status,
 	)
 	if err != nil {
 		return nil, err

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -103,7 +102,14 @@ type GoApproverBlock struct {
 	Storage db.Database
 }
 
-func (gb *GoApproverBlock) GetTaskStatus() TaskHumanStatus {
+func (gb *GoApproverBlock) GetStatus() Status {
+	if d := gb.State.GetDecision(); d != nil && d.String() != "" {
+		return StatusFinished
+	}
+	return StatusRunning
+}
+
+func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 	if gb.State != nil && gb.State.Decision != nil {
 		return StatusApproved
 	}
@@ -134,7 +140,8 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	_, s := trace.StartSpan(ctx, "run_go_approver_block")
 	defer s.End()
 
-	runCtx.AddStep(gb.Name)
+	// TODO: fix
+	// runCtx.AddStep(gb.Name)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
@@ -146,71 +153,58 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 		return errors.New("can't assert type of work id")
 	}
 
-	var waitTime time.Duration
 	var decision *ApproverDecision
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-
-		case <-time.After(waitTime):
-			// update waiting time
-			waitTime = time.Second * 10
-
-			// check state from database
-			var step *entity.Step
-			step, err = gb.Storage.GetTaskStepById(ctx, id)
-			if err != nil {
-				return err
-			} else if step == nil {
-				// still waiting
-				continue
-			}
-
-			// get state from step.State
-			data, ok := step.State[gb.Name]
-			if !ok {
-				continue
-			}
-
-			var state ApproverData
-			err = json.Unmarshal(data, &state)
-			if err != nil {
-				return errors.Wrap(err, "invalid format of go-approver-block state")
-			}
-
-			gb.State = &state
-
-			// check decision
-			decision = gb.State.GetDecision()
-			if decision != nil {
-				var actualApprover, comment string
-
-				if state.ActualApprover != nil {
-					actualApprover = *state.ActualApprover
-				}
-
-				if state.Comment != nil {
-					comment = *state.Comment
-				}
-
-				runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
-				runCtx.SetValue(gb.Output[keyOutputDecision], decision.String())
-				runCtx.SetValue(gb.Output[keyOutputComment], comment)
-
-				var stateBytes []byte
-				stateBytes, err = json.Marshal(gb.State)
-				if err != nil {
-					return err
-				}
-
-				runCtx.ReplaceState(gb.Name, stateBytes)
-
-				return nil
-			}
-		}
+	// check state from database
+	var step *entity.Step
+	step, err = gb.Storage.GetTaskStepById(ctx, id)
+	if err != nil {
+		return err
+	} else if step == nil {
+		// still waiting
+		return nil //TODO: log error?
 	}
+
+	// get state from step.State
+	data, ok := step.State[gb.Name]
+	if !ok {
+		return nil //TODO: log error?
+	}
+
+	var state ApproverData
+	err = json.Unmarshal(data, &state)
+	if err != nil {
+		return errors.Wrap(err, "invalid format of go-approver-block state")
+	}
+
+	gb.State = &state
+
+	// check decision
+	decision = gb.State.GetDecision()
+	if decision != nil {
+		var actualApprover, comment string
+
+		if state.ActualApprover != nil {
+			actualApprover = *state.ActualApprover
+		}
+
+		if state.Comment != nil {
+			comment = *state.Comment
+		}
+
+		runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
+		runCtx.SetValue(gb.Output[keyOutputDecision], decision.String())
+		runCtx.SetValue(gb.Output[keyOutputComment], comment)
+
+		var stateBytes []byte
+		stateBytes, err = json.Marshal(gb.State)
+		if err != nil {
+			return err
+		}
+
+		runCtx.ReplaceState(gb.Name, stateBytes)
+	}
+	return nil
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -281,7 +275,7 @@ func (gb *GoApproverBlock) Update(ctx context.Context, data *script.BlockUpdateD
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
-		IsFinished:  false,
+		Status:      string(StatusFinished),
 	})
 	if err != nil {
 		return nil, err

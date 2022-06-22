@@ -155,7 +155,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 							Steps:       nil,
 							BreakPoints: nil,
 							HasError:    false,
-							IsFinished:  false,
+							Status:      "",
 						}, nil,
 					)
 
@@ -164,43 +164,6 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-
-					res.SetValue(getWorkIdKey(stepName), stepId)
-
-					return res
-				}(),
-			},
-			wantErr: true,
-		},
-		{
-			name: "context canceled",
-			fields: fields{
-				Name:     stepName,
-				Title:    "",
-				Input:    nil,
-				Output:   nil,
-				NextStep: []string{},
-				Storage: func() db.Database {
-					res := &mocks.MockedDatabase{}
-
-					res.On("GetTaskStepById",
-						mock.MatchedBy(func(ctx context.Context) bool { return true }),
-						stepId,
-					).Return(
-						nil, nil,
-					)
-
-					return res
-				}(),
-			},
-			args: args{
-				ctx: func() context.Context {
-					ctx, cancel := context.WithCancel(context.Background())
-					cancel()
-					return ctx
-				}(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 
@@ -253,7 +216,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 							Steps:       nil,
 							BreakPoints: nil,
 							HasError:    false,
-							IsFinished:  false,
+							Status:      "",
 						}, nil,
 					)
 
@@ -694,7 +657,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							Steps:       nil,
 							BreakPoints: nil,
 							HasError:    false,
-							IsFinished:  false,
+							Status:      "",
 						}, nil,
 					)
 
@@ -733,7 +696,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							Steps:       nil,
 							BreakPoints: nil,
 							HasError:    false,
-							IsFinished:  false,
+							Status:      "",
 						}, nil,
 					)
 
@@ -790,7 +753,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							Steps:       nil,
 							BreakPoints: nil,
 							HasError:    false,
-							IsFinished:  false,
+							Status:      "",
 						}, nil,
 					)
 
@@ -838,7 +801,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							Steps:       nil,
 							BreakPoints: nil,
 							HasError:    false,
-							IsFinished:  false,
+							Status:      "",
 						}, nil,
 					)
 
@@ -893,7 +856,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 							Steps:       nil,
 							BreakPoints: nil,
 							HasError:    false,
-							IsFinished:  false,
+							Status:      "",
 						}, nil,
 					)
 
