@@ -132,9 +132,8 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockGoExecutionID,
 			Params: &script.ExecutionParams{
-				Executors:     []string{},
-				Type:          "",
-				ApplicationID: "",
+				Executors: []string{},
+				Type:      "",
 			},
 		},
 		NextFuncs: []string{script.Next},
