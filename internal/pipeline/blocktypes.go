@@ -25,4 +25,9 @@ const (
 	BlockGoSdApplicationTitle = "servicedesk_application"
 	// BlockGoSdApplicationID represents id/type of sd block (using in script.FunctionModel)
 	BlockGoSdApplicationID = "servicedesk_application"
+
+	// BlockGoExecutionTitle represents id/type of execution block (using in script.FunctionModel)
+	BlockGoExecutionTitle = "execution"
+	// BlockGoExecutionID represents id/type of execution block (using in script.FunctionModel)
+	BlockGoExecutionID = "execution"
 )

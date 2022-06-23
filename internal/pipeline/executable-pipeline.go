@@ -521,6 +521,8 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 		return createGoApproverBlock(name, ef, ep.Storage)
 	case BlockGoSdApplicationID:
 		return createGoSdApplicationBlock(name, ef, ep.Storage)
+	case BlockGoExecutionID:
+		return createGoExecutionBlock(name, ef, ep.Storage)
 	case BlockGoStartId, BlockGoEndId:
 		return createGoTestBlock(name, ef), nil
 	}
