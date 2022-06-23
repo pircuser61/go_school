@@ -57,7 +57,7 @@ func NewFromStep(step *entity.Step) *VariableStore {
 func (c *VariableStore) AddStep(name string) {
 	lenSteps := len(c.Steps)
 
-	if lenSteps > 0 && c.Steps[lenSteps - 1] == name {
+	if lenSteps > 0 && c.Steps[lenSteps-1] == name {
 		return
 	}
 
