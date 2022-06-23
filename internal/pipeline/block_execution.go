@@ -3,6 +3,9 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+
+	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 
@@ -15,15 +18,57 @@ import (
 )
 
 const (
-	keyOutputExecutionType    = "type"
-	keyOutputExecutionLogin   = "login"
-	keyOutputExecutionStatus  = "status"
-	keyOutputExecutionComment = "comment"
+	keyOutputExecutionType     = "type"
+	keyOutputExecutionLogin    = "login"
+	keyOutputExecutionDecision = "decision"
+	keyOutputExecutionComment  = "comment"
+
+	ExecutionDecisionExecuted    ExecutionDecision = "executed"
+	ExecutionDecisionNotExecuted ExecutionDecision = "not_executed"
 )
 
+type ExecutionUpdateParams struct {
+	Decision ExecutionDecision `json:"decision"`
+	Comment  string            `json:"comment"`
+}
+
+type ExecutionDecision string
+
+func (a ExecutionDecision) String() string {
+	return string(a)
+}
+
 type ExecutionData struct {
-	ExecutionType script.ExecutionType `json:"execution_type"`
-	Executors     map[string]struct{}  `json:"executors"`
+	ExecutionType  script.ExecutionType `json:"execution_type"`
+	Executors      map[string]struct{}  `json:"executors"`
+	Decision       *ExecutionDecision   `json:"decision,omitempty"`
+	Comment        *string              `json:"comment,omitempty"`
+	ActualExecutor *string              `json:"actual_executor,omitempty"`
+}
+
+func (a *ExecutionData) GetDecision() *ExecutionDecision {
+	return a.Decision
+}
+
+func (a *ExecutionData) SetDecision(login string, decision ExecutionDecision, comment string) error {
+	_, ok := a.Executors[login]
+	if !ok {
+		return fmt.Errorf("%s not found in executors", login)
+	}
+
+	if a.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	if decision != ExecutionDecisionExecuted && decision != ExecutionDecisionNotExecuted {
+		return fmt.Errorf("unknown decision %s", decision.String())
+	}
+
+	a.Decision = &decision
+	a.Comment = &comment
+	a.ActualExecutor = &login
+
+	return nil
 }
 
 type GoExecutionBlock struct {
@@ -75,12 +120,62 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 
 	runCtx.AddStep(gb.Name)
 
-	_, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
+	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
 		return errors.New("can't get work id from variable store")
 	}
 
-	// TODO add executors to application(s) here
+	id, isOk := val.(uuid.UUID)
+	if !isOk {
+		return errors.New("can't assert type of work id")
+	}
+
+	var step *entity.Step
+	step, err = gb.Storage.GetTaskStepById(ctx, id)
+	if err != nil {
+		return err
+	} else if step == nil {
+		// still waiting
+		return nil
+	}
+
+	data, ok := step.State[gb.Name]
+	if !ok {
+		return nil
+	}
+
+	var state ExecutionData
+	if err = json.Unmarshal(data, &state); err != nil {
+		return errors.Wrap(err, "invalid format of go-execution-block state")
+	}
+
+	gb.State = &state
+
+	decision := gb.State.GetDecision()
+
+	if decision != nil {
+		var executor, comment string
+
+		if state.ActualExecutor != nil {
+			executor = *state.ActualExecutor
+		}
+
+		if state.Comment != nil {
+			comment = *state.Comment
+		}
+
+		runCtx.SetValue(gb.Output[keyOutputExecutionLogin], executor)
+		runCtx.SetValue(gb.Output[keyOutputExecutionDecision], decision.String())
+		runCtx.SetValue(gb.Output[keyOutputExecutionComment], comment)
+
+		var stateBytes []byte
+		stateBytes, err = json.Marshal(gb.State)
+		if err != nil {
+			return err
+		}
+
+		runCtx.ReplaceState(gb.Name, stateBytes)
+	}
 
 	return err
 }
@@ -97,7 +192,64 @@ func (gb *GoExecutionBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *GoExecutionBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoExecutionBlock) Update(ctx context.Context, data *script.BlockUpdateData) (interface{}, error) {
+	if data == nil {
+		return nil, errors.New("update data is empty")
+	}
+
+	var updateParams ExecutionUpdateParams
+	err := json.Unmarshal(data.Parameters, &updateParams)
+	if err != nil {
+		return nil, errors.New("can't assert provided update data")
+	}
+
+	step, err := gb.Storage.GetTaskStepById(ctx, data.Id)
+	if err != nil {
+		return nil, err
+	} else if step == nil {
+		return nil, errors.New("can't get step from database")
+	}
+
+	stepData, ok := step.State[gb.Name]
+	if !ok {
+		return nil, errors.New("can't get step state")
+	}
+
+	var state ExecutionData
+	if err = json.Unmarshal(stepData, &state); err != nil {
+		return nil, errors.Wrap(err, "invalid format of go-execution-block state")
+	}
+
+	gb.State = &state
+
+	if errSet := gb.State.SetDecision(
+		data.ByLogin,
+		updateParams.Decision,
+		updateParams.Comment,
+	); errSet != nil {
+		return nil, errSet
+	}
+
+	step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	content, err := json.Marshal(step)
+	if err != nil {
+		return nil, err
+	}
+
+	err = gb.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          data.Id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		Status:      string(StatusFinished),
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 
@@ -119,7 +271,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 				Comment: "executor login",
 			},
 			{
-				Name:    keyOutputExecutionStatus,
+				Name:    keyOutputExecutionDecision,
 				Type:    "string",
 				Comment: "execution status",
 			},
