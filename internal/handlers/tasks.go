@@ -188,7 +188,7 @@ func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err e
 	archived := req.URL.Query().Get("archived")
 	if archived != "" {
 		a, convErr := strconv.ParseBool(archived)
-		if err != nil {
+		if convErr != nil {
 			return filters, convErr
 		}
 		filters.Archived = &a

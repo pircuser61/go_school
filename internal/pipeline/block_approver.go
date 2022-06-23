@@ -141,7 +141,7 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	defer s.End()
 
 	// TODO: fix
-	// runCtx.AddStep(gb.Name)
+	runCtx.AddStep(gb.Name)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
@@ -152,8 +152,6 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	if !isOk {
 		return errors.New("can't assert type of work id")
 	}
-
-	var decision *ApproverDecision
 
 	// check state from database
 	var step *entity.Step
@@ -180,7 +178,7 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	gb.State = &state
 
 	// check decision
-	decision = gb.State.GetDecision()
+	decision := gb.State.GetDecision()
 	if decision != nil {
 		var actualApprover, comment string
 
