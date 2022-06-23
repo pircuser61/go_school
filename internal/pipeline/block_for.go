@@ -19,7 +19,11 @@ type ForState struct {
 	OnFalse        string
 }
 
-func (e *ForState) GetTaskStatus() TaskHumanStatus {
+func (e *ForState) GetStatus() Status {
+	return StatusFinished
+}
+
+func (e *ForState) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
@@ -74,27 +78,27 @@ func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) er
 	return nil
 }
 
-func (e *ForState) Next(runCtx *store.VariableStore) (string, bool) {
+func (e *ForState) Next(runCtx *store.VariableStore) ([]string, bool) {
 	arr, _ := runCtx.GetArray(e.FunctionInput["iter"])
 	if len(arr) == 0 {
-		return e.OnTrue, true
+		return []string{e.OnTrue}, true
 	}
 
 	i, getValue := runCtx.GetValue(e.FunctionOutput["index"])
 	if !getValue {
-		return "", getValue
+		return []string{}, getValue
 	}
 
 	index, indexOk := indexToInt(i)
 	if !indexOk {
-		return "", indexOk
+		return []string{}, indexOk
 	}
 
 	if index >= len(arr)+1 {
-		return e.OnTrue, true
+		return []string{e.OnTrue}, true
 	}
 
-	return e.OnFalse, true
+	return []string{e.OnFalse}, true
 }
 
 func (e *ForState) NextSteps() []string {

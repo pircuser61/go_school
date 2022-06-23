@@ -22,7 +22,6 @@ const (
 )
 
 type ExecutionData struct {
-	ApplicationID string               `json:"application_id"`
 	ExecutionType script.ExecutionType `json:"execution_type"`
 	Executors     map[string]struct{}  `json:"executors"`
 }
@@ -32,10 +31,18 @@ type GoExecutionBlock struct {
 	Title    string
 	Input    map[string]string
 	Output   map[string]string
-	NextStep string
+	NextStep []string
 	State    *ExecutionData
 
 	Storage db.Database
+}
+
+func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
+	return StatusExecution
+}
+
+func (gb *GoExecutionBlock) GetStatus() Status {
+	return StatusRunning
 }
 
 func (gb *GoExecutionBlock) GetTaskStatus() TaskHumanStatus {
@@ -73,19 +80,17 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 		return errors.New("can't get work id from variable store")
 	}
 
-	// TODO check executor decision here
+	// TODO add executors to application(s) here
 
 	return err
 }
 
-func (gb *GoExecutionBlock) Next(_ *store.VariableStore) (string, bool) {
+func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return gb.NextStep, true
 }
 
 func (gb *GoExecutionBlock) NextSteps() []string {
-	nextSteps := []string{gb.NextStep}
-
-	return nextSteps
+	return gb.NextStep
 }
 
 func (gb *GoExecutionBlock) GetState() interface{} {
@@ -172,7 +177,6 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Databa
 
 	b.State = &ExecutionData{
 		ExecutionType: params.Type,
-		ApplicationID: params.ApplicationID,
 		Executors:     executors,
 	}
 

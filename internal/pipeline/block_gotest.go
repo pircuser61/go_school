@@ -14,10 +14,14 @@ type GoTestBlock struct {
 	Title    string
 	Input    map[string]string
 	Output   map[string]string
-	NextStep string
+	NextStep []string
 }
 
-func (gb *GoTestBlock) GetTaskStatus() TaskHumanStatus {
+func (gb *GoTestBlock) GetStatus() Status {
+	return StatusFinished
+}
+
+func (gb *GoTestBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
@@ -66,12 +70,12 @@ func (gb *GoTestBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore
 	return nil
 }
 
-func (gb *GoTestBlock) Next(_ *store.VariableStore) (string, bool) {
+func (gb *GoTestBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return gb.NextStep, true
 }
 
 func (gb *GoTestBlock) NextSteps() []string {
-	nextSteps := []string{gb.NextStep}
+	nextSteps := gb.NextStep
 
 	return nextSteps
 }

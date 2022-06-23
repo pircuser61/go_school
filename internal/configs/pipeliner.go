@@ -37,6 +37,8 @@ type Pipeliner struct {
 	HTTPClientConfig      *HTTPClient        `yaml:"http_client_config"`
 	SSO                   sso.Config         `yaml:"sso"`
 	People                people.Config      `yaml:"people"`
+	GRPCPort              string             `yaml:"grpc_gw_port"`
+	GRPCGWPort            string             `yaml:"grpc_port"`
 }
 
 type RunEnv struct {

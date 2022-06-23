@@ -41,7 +41,7 @@ var (
 var (
 	linearPipelineBlock = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		type InputStruct struct {
-			Input string `json:"Input"`
+			Input string `json:"Output"`
 		}
 		type OutputStruct struct {
 			Output string `json:"Output"`
@@ -75,7 +75,7 @@ var (
 	stringIsEqualToBlockGenerator = func(equalsTo string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			type InputStruct struct {
-				Input string `json:"Input"`
+				Input string `json:"Output"`
 			}
 			type OutputStruct struct {
 				Output bool `json:"Output"`
@@ -138,9 +138,9 @@ var (
 		Name:      "LinearPipeline",
 		Input: []entity.EriusFunctionValue{
 			{
-				Name:   "Input",
+				Name:   "Output",
 				Type:   "string",
-				Global: "LinearPipeline.Input",
+				Global: "LinearPipeline.Output",
 			},
 		},
 		Output: []entity.EriusFunctionValue{
@@ -161,9 +161,9 @@ var (
 					Title:     "Block1",
 					Input: []entity.EriusFunctionValue{
 						{
-							Name:   "Input",
+							Name:   "Output",
 							Type:   "string",
-							Global: "LinearPipeline.Input",
+							Global: "LinearPipeline.Output",
 						},
 					},
 					Output: []entity.EriusFunctionValue{
@@ -173,14 +173,14 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: "Block2",
+					Next: []string{"Block2"},
 				},
 				"Block2": {
 					BlockType: script.TypePython3,
 					Title:     "Block2",
 					Input: []entity.EriusFunctionValue{
 						{
-							Name:   "Input",
+							Name:   "Output",
 							Type:   "string",
 							Global: "Block1.Output",
 						},
@@ -192,14 +192,14 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Next: "Block3",
+					Next: []string{"Block3"},
 				},
 				"Block3": {
 					BlockType: script.TypePython3,
 					Title:     "Block3",
 					Input: []entity.EriusFunctionValue{
 						{
-							Name:   "Input",
+							Name:   "Output",
 							Type:   "string",
 							Global: "Block2.Output",
 						},
@@ -211,15 +211,15 @@ var (
 							Global: "Block3.Output",
 						},
 					},
-					Next: "",
+					Next: []string{},
 				},
 			},
 		},
 	}
 
-	// Pipeline accept {"Input":"string"} and return {"Output":"string"}
-	// Input string goes through pipeline
-	// Block1, Block2, Block3 should accept {"Input":"string"} and return {"Output":"string"}
+	// Pipeline accept {"Output":"string"} and return {"Output":"string"}
+	// Output string goes through pipeline
+	// Block1, Block2, Block3 should accept {"Output":"string"} and return {"Output":"string"}
 	// Test should check for block running sequence and block input
 	//nolint:gochecknoglobals //need this as global
 	LinearPipelineTestable = TestablePipeline{
@@ -240,9 +240,9 @@ var (
 		Name:      "IfPipeline",
 		Input: []entity.EriusFunctionValue{
 			{
-				Name:   "Input",
+				Name:   "Output",
 				Type:   script.TypeString,
-				Global: "IfPipeline.Input",
+				Global: "IfPipeline.Output",
 			},
 		},
 		Pipeline: struct {
@@ -256,9 +256,9 @@ var (
 					Title:     "Block1",
 					Input: []entity.EriusFunctionValue{
 						{
-							Name:   "Input",
+							Name:   "Output",
 							Type:   script.TypeString,
-							Global: "IfPipeline.Input",
+							Global: "IfPipeline.Output",
 						},
 					},
 					Output: []entity.EriusFunctionValue{
@@ -268,7 +268,7 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: "BlockIf",
+					Next: []string{"BlockIf"},
 				},
 				"BlockIf": {
 					BlockType: script.TypeInternal,
@@ -293,7 +293,7 @@ var (
 							Global: "BlockTrue.Output",
 						},
 					},
-					Next: "",
+					Next: []string{},
 				},
 				"BlockFalse": {
 					BlockType: script.TypePython3,
@@ -305,13 +305,13 @@ var (
 							Global: "BlockTrue.Output",
 						},
 					},
-					Next: "",
+					Next: []string{},
 				},
 			},
 		},
 	}
 
-	// Pipeline accept {"Input":"string"} and returns none
+	// Pipeline accept {"Output":"string"} and returns none
 	// Block1 should compare pipeline input with something inside and return bool
 	// Depending on Block1.Output runs BlockTrue or BlockFalse
 	// Test should check for block running sequence
@@ -334,9 +334,9 @@ var (
 		Name:      "ForPipeline",
 		Input: []entity.EriusFunctionValue{
 			{
-				Name:   "Input",
+				Name:   "Output",
 				Type:   script.TypeNumber,
-				Global: "ForPipeline.Input",
+				Global: "ForPipeline.Output",
 			},
 		},
 		Output: []entity.EriusFunctionValue{},
@@ -351,9 +351,9 @@ var (
 					Title:     "Block1",
 					Input: []entity.EriusFunctionValue{
 						{
-							Name:   "Input",
+							Name:   "Output",
 							Type:   script.TypeNumber,
-							Global: "Block1.Input",
+							Global: "Block1.Output",
 						},
 					},
 					Output: []entity.EriusFunctionValue{
@@ -363,7 +363,7 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: "For",
+					Next: []string{"For"},
 				},
 				"For": {
 					BlockType: script.TypeInternal,
@@ -395,20 +395,20 @@ var (
 					Title:     "Block2",
 					Input:     nil,
 					Output:    nil,
-					Next:      "For",
+					Next:      []string{"For"},
 				},
 				"Block3": {
 					BlockType: script.TypePython3,
 					Title:     "Block3",
 					Input:     []entity.EriusFunctionValue{},
 					Output:    []entity.EriusFunctionValue{},
-					Next:      "",
+					Next:      []string{},
 				},
 			},
 		},
 	}
 
-	// Pipeline accept {"Input":123} and returns none
+	// Pipeline accept {"Output":123} and returns none
 	// Block1 generates array
 	// For every item in array run Block2
 	// After loop run Block3
@@ -432,9 +432,9 @@ var (
 		Name:      "PipelineWithPipeline",
 		Input: []entity.EriusFunctionValue{
 			{
-				Name:   "Input",
+				Name:   "Output",
 				Type:   script.TypeString,
-				Global: "PipelineWithPipeline.Input",
+				Global: "PipelineWithPipeline.Output",
 			},
 		},
 		Output: []entity.EriusFunctionValue{
@@ -455,9 +455,9 @@ var (
 					Title:     "Block1",
 					Input: []entity.EriusFunctionValue{
 						{
-							Name:   "Input",
+							Name:   "Output",
 							Type:   "string",
-							Global: "PipelineWithPipeline.Input",
+							Global: "PipelineWithPipeline.Output",
 						},
 					},
 					Output: []entity.EriusFunctionValue{
@@ -467,14 +467,14 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: "Scenario",
+					Next: []string{"Scenario"},
 				},
 				"Scenario": {
 					BlockType: script.TypeScenario,
 					Title:     "LinearPipeline",
 					Input: []entity.EriusFunctionValue{
 						{
-							Name:   "Input",
+							Name:   "Output",
 							Type:   script.TypeString,
 							Global: "Block1.Output",
 						},
@@ -486,14 +486,14 @@ var (
 							Global: "Scenario.Output",
 						},
 					},
-					Next: "Block2",
+					Next: []string{"Block2"},
 				},
 				"Block2": {
 					BlockType: script.TypePython3,
 					Title:     "Block2",
 					Input: []entity.EriusFunctionValue{
 						{
-							Name:   "Input",
+							Name:   "Output",
 							Type:   "string",
 							Global: "Scenario.Output",
 						},
@@ -511,7 +511,7 @@ var (
 	}
 
 	// Same as linear pipeline, but with linear pipeline inside
-	// Block1, Block2, Block3 should accept {"Input":"string"} and return {"Output":"string"}
+	// Block1, Block2, Block3 should accept {"Output":"string"} and return {"Output":"string"}
 	// Test should check for block running sequence and block input
 	//nolint:gochecknoglobals //need this as global
 	PipelineWithPipelineTestable = TestablePipeline{
@@ -546,7 +546,7 @@ var (
 							Global: "MasGen1.Output",
 						},
 					},
-					Next: "For1",
+					Next: []string{"For1"},
 				},
 				"For1": {
 					BlockType: script.TypeInternal,
@@ -583,7 +583,7 @@ var (
 							Global: "MasGen2.Output",
 						},
 					},
-					Next: "For2",
+					Next: []string{"For2"},
 				},
 				"For2": {
 					BlockType: script.TypeInternal,
@@ -613,7 +613,7 @@ var (
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
-					Next:      "For2",
+					Next:      []string{"For2"},
 				},
 			},
 		},
@@ -657,7 +657,7 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: "Block2",
+					Next: []string{"Block2"},
 				},
 				"Block2": {
 					BlockType: script.TypePython3,
@@ -670,7 +670,7 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Next: "StringsEqual",
+					Next: []string{"StringsEqual"},
 				},
 				"StringsEqual": {
 					BlockType: script.TypeInternal,
@@ -701,7 +701,7 @@ var (
 							Global: "BlockTrue.Output",
 						},
 					},
-					Next: "",
+					Next: []string{},
 				},
 				"BlockFalse": {
 					BlockType: script.TypePython3,
@@ -714,7 +714,7 @@ var (
 							Global: "BlockTrue.Output",
 						},
 					},
-					Next: "",
+					Next: []string{},
 				},
 			},
 		},
@@ -773,7 +773,7 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: "Block2",
+					Next: []string{"Block2"},
 				},
 				"Block2": {
 					BlockType: script.TypePython3,
@@ -786,7 +786,7 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Next: "Connector",
+					Next: []string{"Connector"},
 				},
 				"Connector": {
 					BlockType: script.TypeInternal,
@@ -810,20 +810,20 @@ var (
 							Global: "Connector.Output",
 						},
 					},
-					Next: "Block3",
+					Next: []string{"Block3"},
 				},
 				"Block3": {
 					BlockType: script.TypePython3,
 					Title:     "Block3",
 					Input: []entity.EriusFunctionValue{
 						{
-							Name:   "Input",
+							Name:   "Output",
 							Type:   script.TypeArray,
 							Global: "Connector.Output",
 						},
 					},
 					Output: nil,
-					Next:   "",
+					Next:   []string{},
 				},
 			},
 		},

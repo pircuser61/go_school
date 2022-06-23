@@ -2,12 +2,14 @@ tracing:
   url: 'http://jaeger-prod-collector.observability:14268/api/traces'
   sample_fraction: 1.0
 
-serve_addr: ':8001'
+serve_addr: ':8000'
 timeout: '30s'
 script_manager: 'http://localhost:8001'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
+grpc_gw_port: ":3000"
+grpc_port: ":3001"
 
 people:
   url: "https://iga.dev.autobp.mts.ru/api/archivist/v2"

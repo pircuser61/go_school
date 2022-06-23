@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
@@ -10,12 +9,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/pkg/errors"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 const (
@@ -61,55 +59,6 @@ func LoggerMiddleware(log logger.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-type userInfoCtx struct{}
-type asOtherUserInfoCtx struct{}
-
-func GetUserInfoFromCtx(ctx context.Context) (*sso.UserInfo, error) {
-	uii := ctx.Value(userInfoCtx{})
-	if uii == nil {
-		return nil, errors.New("can't find userinfo in context")
-	}
-
-	ui, ok := uii.(*sso.UserInfo)
-	if !ok {
-		return nil, errors.New("not userinfo in context")
-	}
-
-	return ui, nil
-}
-
-func GetEffectiveUserInfoFromCtx(ctx context.Context) (*sso.UserInfo, error) {
-	// first check if we use other userinfo
-	uii := ctx.Value(asOtherUserInfoCtx{})
-	if uii != nil {
-		ui, ok := uii.(*sso.UserInfo)
-		if !ok {
-			return nil, errors.New("not userinfo in context")
-		}
-		return ui, nil
-	}
-
-	uii = ctx.Value(userInfoCtx{})
-	if uii == nil {
-		return nil, errors.New("can't find userinfo in context")
-	}
-
-	ui, ok := uii.(*sso.UserInfo)
-	if !ok {
-		return nil, errors.New("not userinfo in context")
-	}
-
-	return ui, nil
-}
-
-func SetUserInfoToCtx(ctx context.Context, ui *sso.UserInfo) context.Context {
-	return context.WithValue(ctx, userInfoCtx{}, ui)
-}
-
-func SetAsOtherUserInfoToCtx(ctx context.Context, ui *sso.UserInfo) context.Context {
-	return context.WithValue(ctx, asOtherUserInfoCtx{}, ui)
-}
-
 func WithUserInfo(ssoS *sso.Service, log logger.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +73,7 @@ func WithUserInfo(ssoS *sso.Service, log logger.Logger) func(next http.Handler) 
 				return
 			}
 
-			ctxUI := SetUserInfoToCtx(ctx, ui)
+			ctxUI := user.SetUserInfoToCtx(ctx, ui)
 			rUI := r.WithContext(ctxUI)
 
 			next.ServeHTTP(w, rUI)
@@ -140,7 +89,7 @@ func WithAsOtherUserInfo(ps *people.Service, log logger.Logger) func(next http.H
 			username := r.Header.Get(AsOtherHeader)
 
 			if username != "" {
-				user, err := ps.GetUser(ctx, strings.ToLower(username))
+				u, err := ps.GetUser(ctx, strings.ToLower(username))
 				if err != nil {
 					e := GetUserinfoErr
 					log.Error(e.errorMessage(err))
@@ -148,7 +97,7 @@ func WithAsOtherUserInfo(ps *people.Service, log logger.Logger) func(next http.H
 
 					return
 				}
-				ui, err := user.ToUserinfo()
+				ui, err := u.ToUserinfo()
 				if err != nil {
 					e := GetUserinfoErr
 					log.Error(e.errorMessage(err))
@@ -157,7 +106,7 @@ func WithAsOtherUserInfo(ps *people.Service, log logger.Logger) func(next http.H
 					return
 				}
 
-				ctx = SetAsOtherUserInfoToCtx(ctx, ui)
+				ctx = user.SetAsOtherUserInfoToCtx(ctx, ui)
 				r = r.WithContext(ctx)
 			}
 

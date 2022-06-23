@@ -19,20 +19,13 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-const (
-	actionStepOver = "step_over"
-	actionResume   = "resume"
-)
-
-var errCantGetNextBlock = errors.New("can't get next block")
-
 type DebugRunRequest struct {
 	WorkNumber  string   `json:"work_number"`
 	BreakPoints []string `json:"break_points"`
 	Action      string   `json:"action" example:"step_over,resume"`
 }
 
-func (d DebugRunRequest) Bind(r *http.Request) error {
+func (d DebugRunRequest) Bind(_ *http.Request) error {
 	return nil
 }
 
@@ -156,7 +149,9 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 
 	d := CreateTaskRequest{}
 
@@ -269,7 +264,9 @@ func currentStepName(
 			return "", pipeline.ErrCantGetNextStep
 		}
 
-		return currentStep, nil
+		if len(currentStep) > 1 {
+			return currentStep[0], nil // todo: must переделать
+		}
 	}
 
 	return steps[0].Name, nil
@@ -298,72 +295,11 @@ func stepStatus(task *entity.EriusTask, step *entity.Step) (stepStatus string) {
 
 // todo monitoring
 func (ae *APIEnv) runDebugTask(
-	ctx context.Context,
-	task *entity.EriusTask,
-	breakPoints []string,
-	action string,
+	_ context.Context,
+	_ *entity.EriusTask,
+	_ []string,
+	_ string,
 ) (*entity.DebugResult, error) {
-	ctx, s := trace.StartSpan(ctx, "run debug task")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	_ = action
-
-	version, err := ae.DB.GetPipelineVersion(ctx, task.VersionID)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get version")
-	}
-
-	ep, err := ae.executablePipeline(ctx, task, version)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get executable pipeline")
-	}
-
-	steps, err := ae.DB.GetTaskSteps(ctx, task.ID)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get task steps")
-	}
-
-	vs := variableStoreFromSteps(task, version, steps)
-
-	if steps.IsEmpty() {
-		ep.NowOnPoint = ep.EntryPoint
-	} else {
-		ep.NowOnPoint, _ = ep.Blocks[steps[0].Name].Next(vs)
-	}
-
-	stopPoints := store.NewStopPoints(ep.NowOnPoint)
-	nextBlock := ep.Blocks[ep.NowOnPoint]
-
-	if nextBlock == nil {
-		log.Error(errCantGetNextBlock)
-
-		return nil, errors.Wrap(errCantGetNextBlock, "can't get next block")
-	}
-
-	nextSteps := nextBlock.NextSteps()
-
-	vs.SetStopPoints(*stopPoints)
-	vs.StopPoints.SetBreakPoints(breakPoints...)
-
-	if action == actionStepOver {
-		vs.StopPoints.SetStepOvers(nextSteps...)
-	}
-
-	// игнорируем точки останова на блоках, следующих за тем с которого выполняется resume
-	// это не касается случая когда task был только создан и точка останова стоит на блоках следующих за стартовым
-	if action == actionResume && !task.IsCreated() {
-		vs.StopPoints.SetExcludedPoints(nextSteps...)
-	}
-
-	err = ep.DebugRun(ctx, vs)
-	if err != nil {
-		log.Error(err)
-
-		return nil, errors.Wrap(err, "unable to run debug")
-	}
-
 	return &entity.DebugResult{}, nil
 }
 

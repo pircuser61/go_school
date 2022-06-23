@@ -88,7 +88,7 @@ type EriusFunc struct {
 	OnFalse   string               `json:"on_false,omitempty"`
 	Final     string               `json:"final,omitempty"`
 	OnIter    string               `json:"on_iter"`
-	Next      string               `json:"next,omitempty" example:"send-data_0"`
+	Next      []string             `json:"next,omitempty" example:"send-data_0"`
 }
 
 type EriusFunctionValue struct {

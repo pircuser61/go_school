@@ -20,6 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 // @Summary Create pipeline version
@@ -76,12 +77,12 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	p.VersionID = uuid.New()
 
-	user, err := GetUserInfoFromCtx(ctx)
+	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.WithError(err).Error("user failed")
 	}
 	//nolint:govet //it doesn't shadow
-	canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, user.Username)
+	canCreate, err := ae.DB.DraftPipelineCreatable(ctx, p.ID, ui.Username)
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
@@ -98,7 +99,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = ae.DB.CreateVersion(ctx, &p, user.Username, b)
+	err = ae.DB.CreateVersion(ctx, &p, ui.Username, b)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
@@ -500,13 +501,13 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := GetUserInfoFromCtx(ctx)
+	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.Error(err.Error())
 	}
 
 	if p.Status == db.StatusApproved {
-		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, user.Username)
+		err = ae.DB.SwitchApproved(ctx, p.ID, p.VersionID, ui.Username)
 		if err != nil {
 			e := ApproveError
 			log.Error(e.errorMessage(err))
@@ -517,7 +518,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if p.Status == db.StatusRejected {
-		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, user.Username)
+		err = ae.DB.SwitchRejected(ctx, p.VersionID, p.CommentRejected, ui.Username)
 		if err != nil {
 			e := ApproveError
 			log.Error(e.errorMessage(err))
@@ -586,7 +587,7 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 
 	log.Info("--- running pipeline:", p.Name)
 
-	user, err := GetUserInfoFromCtx(ctx)
+	user, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
@@ -637,6 +638,8 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 	ep.PipelineModel = p.p
 	ep.HTTPClient = ae.HTTPClient
 	ep.Remedy = ae.Remedy
+	ep.ActiveBlocks = map[string]struct{}{}
+	ep.EntryPoint = pipeline.BlockGoStartId
 
 	err := ep.CreateBlocks(ctx, p.p.Pipeline.Blocks)
 	if err != nil {

@@ -6,10 +6,12 @@ import (
 	"context"
 	"errors"
 	"flag"
+
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
 
@@ -37,6 +39,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
@@ -147,20 +150,40 @@ func main() {
 
 	initSwagger(cfg)
 
-	server := http.Server{
+	httpServer := http.Server{
 		Handler: registerRouter(ctx, cfg, &pipeliner, ssoService, peopleService),
 		Addr:    cfg.ServeAddr,
 	}
 
 	go func() {
-		log.Info("script manager service started on port", server.Addr)
+		log.Info("script manager service started on port", httpServer.Addr)
 
-		if err = server.ListenAndServe(); err != nil {
+		if err = httpServer.ListenAndServe(); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
 				log.Info("graceful shutdown")
 			} else {
 				log.WithError(err).Fatal("script manager service")
 			}
+		}
+	}()
+
+	grpcServer := server.NewGRPC(&server.GRPCConfig{
+		Port: cfg.GRPCPort,
+		Conn: dbConn,
+	})
+	go func() {
+		if err = grpcServer.Listen(); err != nil {
+			os.Exit(-2)
+		}
+	}()
+
+	go func() {
+		time.Sleep(time.Second)
+		if err = server.ListenGRPCGW(&server.GRPCGWConfig{
+			GRPCPort:   cfg.GRPCPort,
+			GRPCGWPort: cfg.GRPCGWPort,
+		}); err != nil {
+			os.Exit(-3)
 		}
 	}()
 
@@ -175,7 +198,7 @@ func main() {
 
 	stop := <-sgnl
 
-	if err = server.Shutdown(ctx); err != nil {
+	if err = httpServer.Shutdown(ctx); err != nil {
 		log.WithError(err).Error("error on shutdown")
 	}
 

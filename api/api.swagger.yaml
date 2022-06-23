@@ -592,8 +592,10 @@ components:
           type: string
           description: Next block (if this block repeats)
         next:
-          type: string
+          type: array
           description: Next block
+          items:
+            type: string
       required:
         - type_id
         - block_type
@@ -785,6 +787,15 @@ components:
         - output
         - errors
 
+    taskStepStatus:
+      type: string
+      description: Task step execution status
+      enum:
+        - idle
+        - ready
+        - running
+        - finished
+
     taskStep:
       type: object
       description: Task step
@@ -820,9 +831,8 @@ components:
         has_error:
           type: boolean
           description: If step has error
-        is_finished:
-          type: boolean
-          description: If step is finished
+        status:
+          $ref: '#/components/schemas/taskStepStatus'
       required:
         - time
         - type
@@ -832,9 +842,9 @@ components:
         - errors
         - steps
         - has_error
-        - is_finished
+        - status
 
-    humanStatus:
+    taskHumanStatus:
       type: string
       description: Task human readable status
       enum:
@@ -870,7 +880,7 @@ components:
           type: string
           description: Task status
         human_status:
-          $ref: '#/components/schemas/humanStatus'
+          $ref: '#/components/schemas/taskHumanStatus'
         author:
           type: string
           description: Author login

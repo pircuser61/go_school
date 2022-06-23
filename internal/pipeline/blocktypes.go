@@ -18,6 +18,9 @@ const (
 	// BlockGoApproverID represents id/type of approver block (using in script.FunctionModel)
 	BlockGoApproverID = "approver"
 
+	BlockGoStartId = "start"
+	BlockGoEndId   = "end"
+
 	// BlockGoSdApplicationTitle represents id/type of sd block (using in script.FunctionModel)
 	BlockGoSdApplicationTitle = "servicedesk_application"
 	// BlockGoSdApplicationID represents id/type of sd block (using in script.FunctionModel)
