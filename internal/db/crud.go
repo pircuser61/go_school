@@ -2429,33 +2429,41 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		SELECT
-    		pv.id,
-    		pv.status,
-			pv.pipeline_id,
-			pv.created_at,
-			pv.content,
-			pv.comment_rejected,
-			pv.comment,
-			pv.author,
-			(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = pv.pipeline_id) last_approve
-		FROM (
-			SELECT
-				   be.id as pipeline_version_id,
-				   be.blocks -> be.entrypoint ->> 'type_id' AS type_id,
-				   be.blocks -> be.entrypoint -> 'params' ->> 'blueprint_id' AS blueprint_id
-			FROM (
-				SELECT
-					   id,
-					   content -> 'pipeline' #> '{blocks}' as blocks,
-					   content -> 'pipeline' ->> 'entrypoint' as entrypoint
-				FROM pipeliner.versions
-				) AS be
-		) AS entrypoint_block
-		LEFT JOIN pipeliner.versions pv ON pv.id = entrypoint_block.pipeline_version_id
-		WHERE pv.status = 2 AND
-				entrypoint_block.blueprint_id = $1 AND
-				entrypoint_block.type_id = 'servicedesk_application'
+	SELECT
+		pv.id,
+		pv.status,
+		pv.pipeline_id,
+		pv.created_at,
+		pv.content,
+		pv.comment_rejected,
+		pv.comment,
+		pv.author,
+		(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = pv.pipeline_id) last_approve
+	FROM (
+			 SELECT servicedesk_node.id                                                              as pipeline_version_id,
+					servicedesk_node.blocks -> servicedesk_node.nodes ->> 'type_id'                  AS type_id,
+					servicedesk_node.blocks -> servicedesk_node.nodes -> 'params' ->> 'blueprint_id' AS blueprint_id
+			 FROM (
+					  SELECT id, blocks, nodes
+					  FROM (
+							   SELECT id,
+									  pipeline.blocks                                                               as blocks,
+									  jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint #> '{next}') as nodes
+							   FROM (
+										SELECT id,
+											   content -> 'pipeline' #> '{blocks}'    as blocks,
+											   content -> 'pipeline' ->> 'entrypoint' as entrypoint
+										FROM pipeliner.versions
+									) as pipeline
+						   ) as next_from_start
+					  WHERE next_from_start.nodes LIKE 'servicedesk_application%'
+					  LIMIT 1
+				  ) as servicedesk_node
+	) as servicedesk_node_params
+		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
+	WHERE pv.status = 2 AND
+			servicedesk_node_params.blueprint_id = 'bc07e22a-f625-11ec-9f95-2e9b0ba11592' AND
+			servicedesk_node_params.type_id = 'servicedesk_application';
 `
 
 	rows, err := conn.Query(c, query, bID)
