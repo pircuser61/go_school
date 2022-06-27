@@ -2462,7 +2462,7 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 	) as servicedesk_node_params
 		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
 	WHERE pv.status = 2 AND
-			servicedesk_node_params.blueprint_id = 'bc07e22a-f625-11ec-9f95-2e9b0ba11592' AND
+			servicedesk_node_params.blueprint_id = $1 AND
 			servicedesk_node_params.type_id = 'servicedesk_application';
 `
 
