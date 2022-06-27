@@ -10,7 +10,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-type GoTestBlock struct {
+type GoStartBlock struct {
 	Name     string
 	Title    string
 	Input    map[string]string
@@ -18,36 +18,36 @@ type GoTestBlock struct {
 	NextStep []string
 }
 
-func (gb *GoTestBlock) GetStatus() Status {
+func (gb *GoStartBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoTestBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+func (gb *GoStartBlock) GetTaskHumanStatus() TaskHumanStatus {
+	return StatusNew
 }
 
-func (gb *GoTestBlock) GetType() string {
-	return BlockGoTestID
+func (gb *GoStartBlock) GetType() string {
+	return BlockGoStartId
 }
 
-func (gb *GoTestBlock) Inputs() map[string]string {
+func (gb *GoStartBlock) Inputs() map[string]string {
 	return gb.Input
 }
 
-func (gb *GoTestBlock) Outputs() map[string]string {
+func (gb *GoStartBlock) Outputs() map[string]string {
 	return gb.Output
 }
 
-func (gb *GoTestBlock) IsScenario() bool {
+func (gb *GoStartBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoTestBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
+func (gb *GoStartBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
 	return gb.DebugRun(ctx, runCtx)
 }
 
 // nolint:dupl // not dupl?
-func (gb *GoTestBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (gb *GoStartBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_go_block")
 	defer s.End()
 
@@ -72,26 +72,37 @@ func (gb *GoTestBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore
 	return nil
 }
 
-func (gb *GoTestBlock) Next(_ *store.VariableStore) ([]string, bool) {
+func (gb *GoStartBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return gb.NextStep, true
 }
 
-func (gb *GoTestBlock) NextSteps() []string {
+func (gb *GoStartBlock) NextSteps() []string {
 	nextSteps := gb.NextStep
 
 	return nextSteps
 }
 
-func (gb *GoTestBlock) GetState() interface{} {
+func (gb *GoStartBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoTestBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoStartBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
 
-func createGoTestBlock(name string, ef *entity.EriusFunc) *GoTestBlock {
-	b := &GoTestBlock{
+func (gb *GoStartBlock) Model() script.FunctionModel {
+	return script.FunctionModel{
+		ID:        BlockGoStartId,
+		BlockType: script.TypeGo,
+		Title:     BlockGoStartTitle,
+		Inputs:    nil,
+		Outputs:   nil,
+		NextFuncs: []string{script.Next},
+	}
+}
+
+func createGoStartBlock(name string, ef *entity.EriusFunc) *GoStartBlock {
+	b := &GoStartBlock{
 		Name:     name,
 		Title:    ef.Title,
 		Input:    map[string]string{},

@@ -153,6 +153,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 
 	decision := gb.State.GetDecision()
 
+	// nolint:dupl // not dupl?
 	if decision != nil {
 		var executor, comment string
 
