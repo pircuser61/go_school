@@ -523,8 +523,10 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 		return createGoSdApplicationBlock(name, ef, ep.Storage)
 	case BlockGoExecutionID:
 		return createGoExecutionBlock(name, ef, ep.Storage)
-	case BlockGoStartId, BlockGoEndId:
-		return createGoTestBlock(name, ef), nil
+	case BlockGoStartId:
+		return createGoStartBlock(name, ef), nil
+	case BlockGoEndId:
+		return createGoEndBlock(name, ef), nil
 	}
 
 	return nil, errors.New("unknown go-block type")
@@ -532,23 +534,4 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 
 func getWorkIdKey(stepName string) string {
 	return stepName + "." + keyStepWorkId
-}
-
-func createGoTestBlock(name string, ef *entity.EriusFunc) *GoTestBlock {
-	b := &GoTestBlock{
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		NextStep: ef.Next,
-	}
-
-	for _, v := range ef.Input {
-		b.Input[v.Name] = v.Global
-	}
-
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
-	}
-	return b
 }

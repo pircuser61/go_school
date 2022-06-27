@@ -179,6 +179,8 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 
 	// check decision
 	decision := gb.State.GetDecision()
+
+	// nolint:dupl // not dupl?
 	if decision != nil {
 		var actualApprover, comment string
 

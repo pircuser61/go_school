@@ -48,6 +48,10 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	executionBlock := &pipeline.GoExecutionBlock{}
 
+	startBlock := &pipeline.GoStartBlock{}
+
+	endBlock := &pipeline.GoEndBlock{}
+
 	eriusFunctions = append(eriusFunctions,
 		script.IfState.Model(),
 		script.Input.Model(),
@@ -57,6 +61,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		approverBlock.Model(),
 		sdApplicationBlock.Model(),
 		executionBlock.Model(),
+		startBlock.Model(),
+		endBlock.Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
