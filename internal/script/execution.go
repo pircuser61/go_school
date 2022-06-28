@@ -17,12 +17,12 @@ const (
 )
 
 type ExecutionParams struct {
-	Type      ExecutionType `json:"type"`
-	Executors []string      `json:"executors"`
+	Type     ExecutionType `json:"type"`
+	Executor string        `json:"executor"`
 }
 
 func (a *ExecutionParams) Validate() error {
-	if len(a.Executors) == 0 {
+	if a.Executor == "" {
 		return errors.New("executor is empty")
 	}
 

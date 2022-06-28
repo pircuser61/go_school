@@ -285,8 +285,8 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockGoExecutionID,
 			Params: &script.ExecutionParams{
-				Executors: []string{},
-				Type:      "",
+				Executor: "",
+				Type:     "",
 			},
 		},
 		NextFuncs: []string{script.Next},
@@ -322,14 +322,9 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Databa
 		return nil, errors.Wrap(err, "invalid execution parameters")
 	}
 
-	executors := map[string]struct{}{}
-	for i := range params.Executors {
-		executors[params.Executors[i]] = struct{}{}
-	}
-
 	b.State = &ExecutionData{
 		ExecutionType: params.Type,
-		Executors:     executors,
+		Executors:     map[string]struct{}{params.Executor: {}},
 	}
 
 	return b, nil
