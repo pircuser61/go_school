@@ -5,6 +5,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 
@@ -39,6 +40,7 @@ type Pipeliner struct {
 	People                people.Config      `yaml:"people"`
 	GRPCPort              string             `yaml:"grpc_gw_port"`
 	GRPCGWPort            string             `yaml:"grpc_port"`
+	Mail                  mail.Config        `yaml:"mail"`
 }
 
 type RunEnv struct {
