@@ -550,6 +550,8 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 		return createGoStartBlock(name, ef), nil
 	case BlockGoEndId:
 		return createGoEndBlock(name, ef), nil
+	case BlockWaitForAllInputsId:
+		return createGoWaitForAllInputsBlock(name, ef), nil
 	}
 
 	return nil, errors.New("unknown go-block type")
