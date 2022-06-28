@@ -238,13 +238,6 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 					return err
 				}
 
-				errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskHumanStatus())
-				if errUpdate != nil {
-					return errUpdate
-				}
-
-				ep.VarStore.SetValue(getWorkIdKey(step), id)
-
 				// завершаем запущенный блок, если на другом блоке в этом цикле возникло неуспешное выполнениеч
 				if ep.stepNotSuccessful {
 					updErr := ep.updateStep(ctx, id, err != nil, StatusCancel)
@@ -254,6 +247,13 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 					delete(ep.ActiveBlocks, step)
 					continue
 				}
+
+				errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskHumanStatus())
+				if errUpdate != nil {
+					return errUpdate
+				}
+
+				ep.VarStore.SetValue(getWorkIdKey(step), id)
 
 				err = currentBlock.DebugRun(ctx, ep.VarStore)
 				if err != nil {
