@@ -532,7 +532,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	if couldUpdateOne == false {
+	if !couldUpdateOne {
 		e := UpdateBlockError
 		log.Error(e.errorMessage(errors.New("couldn't update work")))
 		_ = e.sendError(w)

@@ -148,7 +148,7 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	defer s.End()
 
 	// TODO: fix
-	//runCtx.AddStep(gb.Name)
+	// runCtx.AddStep(gb.Name)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {

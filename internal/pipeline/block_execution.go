@@ -119,7 +119,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 	defer s.End()
 
 	// TODO: fix
-	//runCtx.AddStep(gb.Name)
+	// runCtx.AddStep(gb.Name)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
