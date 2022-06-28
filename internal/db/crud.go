@@ -2473,7 +2473,6 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 									) as pipeline
 						   ) as next_from_start
 					  WHERE next_from_start.nodes LIKE 'servicedesk_application%'
-					  LIMIT 1
 				  ) as servicedesk_node
 	) as servicedesk_node_params
 		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
