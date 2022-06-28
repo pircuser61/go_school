@@ -17,7 +17,7 @@ const (
 )
 
 type ExecutionParams struct {
-	Type     ExecutionType `json:"type"`
+	Type      ExecutionType `json:"type"`
 	Executors string        `json:"executors"`
 }
 
