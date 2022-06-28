@@ -38,8 +38,8 @@ mail:
   queue: "mail"
   database: "0"
   from:
-    name: "Jocasta Service"
-    email: "jocasta_noreply@mts.ru"
+    name: "Service Desk"
+    email: "servicedesk_noreply@mts.ru"
 
 remedy: "http://remedy"
 
