@@ -49,12 +49,16 @@ type ExecutablePipeline struct {
 	Remedy        string
 
 	FaaS string
+
+	stepNotSuccessful bool
 }
 
 func (ep *ExecutablePipeline) GetStatus() Status {
 	switch {
-	case ep.IsOver():
+	case len(ep.ActiveBlocks) == 0:
 		return StatusFinished
+	case ep.stepNotSuccessful:
+		return StatusNoSuccess
 	case ep.ReadyToStart():
 		return StatusReady
 	case len(ep.ActiveBlocks) != 0:
@@ -65,7 +69,7 @@ func (ep *ExecutablePipeline) GetStatus() Status {
 }
 
 func (ep *ExecutablePipeline) IsOver() bool {
-	return len(ep.ActiveBlocks) == 0
+	return len(ep.ActiveBlocks) == 0 || ep.stepNotSuccessful
 }
 
 func (ep *ExecutablePipeline) MergeActiveBlocks(blocks []string) {
@@ -84,6 +88,9 @@ func (ep *ExecutablePipeline) ReadyToStart() bool {
 func (ep *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
 	// TODO: проверять, что нет ошибок (потому что только тогда мы Done)
 	if len(ep.ActiveBlocks) == 0 {
+		if ep.stepNotSuccessful {
+			return "" // не обновляем статус т.к. блок, завершившийся неуспешно, сам проставляет статус
+		}
 		return StatusDone
 	}
 	return StatusNew
@@ -238,6 +245,16 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 				ep.VarStore.SetValue(getWorkIdKey(step), id)
 
+				// завершаем запущенный блок, если на другом блоке в этом цикле возникло неуспешное выполнениеч
+				if ep.stepNotSuccessful {
+					updErr := ep.updateStep(ctx, id, err != nil, StatusCancel)
+					if updErr != nil {
+						return updErr
+					}
+					delete(ep.ActiveBlocks, step)
+					continue
+				}
+
 				err = currentBlock.DebugRun(ctx, ep.VarStore)
 				if err != nil {
 					key := step + KeyDelimiter + ErrorKey
@@ -255,7 +272,13 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 				return errUpdate
 			}
 
-			if currentBlock.GetStatus() != StatusFinished {
+			switch currentBlock.GetStatus() {
+			case StatusFinished:
+			case StatusNoSuccess:
+				ep.stepNotSuccessful = true
+				delete(ep.ActiveBlocks, step)
+				continue
+			default:
 				continue
 			}
 

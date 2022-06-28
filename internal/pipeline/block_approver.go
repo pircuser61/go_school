@@ -103,16 +103,23 @@ type GoApproverBlock struct {
 }
 
 func (gb *GoApproverBlock) GetStatus() Status {
-	if d := gb.State.GetDecision(); d != nil && d.String() != "" {
-		return StatusFinished
+	if gb.State != nil && gb.State.Decision != nil {
+		if *gb.State.Decision == ApproverDecisionApproved {
+			return StatusFinished
+		}
+		return StatusNoSuccess
 	}
 	return StatusRunning
 }
 
 func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 	if gb.State != nil && gb.State.Decision != nil {
-		return StatusApproved
+		if *gb.State.Decision == ApproverDecisionApproved {
+			return StatusApproved
+		}
+		return StatusApprovementRejected
 	}
+
 	return StatusApprovement
 }
 
@@ -140,7 +147,6 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	_, s := trace.StartSpan(ctx, "run_go_approver_block")
 	defer s.End()
 
-	// TODO: fix
 	runCtx.AddStep(gb.Name)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
@@ -318,6 +324,7 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 	}
 }
 
+// nolint:dupl // another block
 func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoApproverBlock, error) {
 	b := &GoApproverBlock{
 		Storage: storage,
