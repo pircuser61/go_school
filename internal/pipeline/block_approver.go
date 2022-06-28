@@ -147,7 +147,8 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	_, s := trace.StartSpan(ctx, "run_go_approver_block")
 	defer s.End()
 
-	runCtx.AddStep(gb.Name)
+	// TODO: fix
+	// runCtx.AddStep(gb.Name)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {

@@ -118,7 +118,8 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 	_, s := trace.StartSpan(ctx, "run_go_execution_block")
 	defer s.End()
 
-	runCtx.AddStep(gb.Name)
+	// TODO: fix
+	// runCtx.AddStep(gb.Name)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {

@@ -502,6 +502,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 		EntryPoint: scenario.Pipeline.Entrypoint,
 	}
 
+	couldUpdateOne := false
 	for _, item := range steps {
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
 		if !ok {
@@ -526,13 +527,17 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 			ByLogin:    ui.Username,
 			Parameters: updateData.Parameters,
 		})
-		if blockErr != nil {
-			e := UpdateBlockError
-			log.Error(e.errorMessage(blockErr))
-			_ = e.sendError(w)
-
-			return
+		if blockErr == nil {
+			couldUpdateOne = true
 		}
+	}
+
+	if !couldUpdateOne {
+		e := UpdateBlockError
+		log.Error(e.errorMessage(errors.New("couldn't update work")))
+		_ = e.sendError(w)
+
+		return
 	}
 
 	if err = sendResponse(w, http.StatusOK, nil); err != nil {
