@@ -19,6 +19,7 @@ const (
 	BlockGoApproverID = "approver"
 
 	BlockGoStartId    = "start"
+	BlockGoFirstStart = "start_0"
 	BlockGoStartTitle = "start"
 	BlockGoEndId      = "end"
 	BlockGoEndTitle   = "end"
