@@ -285,8 +285,8 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockGoExecutionID,
 			Params: &script.ExecutionParams{
-				Executor: "",
-				Type:     "",
+				Executors: "",
+				Type:      "",
 			},
 		},
 		NextFuncs: []string{script.Next},
@@ -324,7 +324,7 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Databa
 
 	b.State = &ExecutionData{
 		ExecutionType: params.Type,
-		Executors:     map[string]struct{}{params.Executor: {}},
+		Executors:     map[string]struct{}{params.Executors: {}},
 	}
 
 	return b, nil
