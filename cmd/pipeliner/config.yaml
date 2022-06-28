@@ -31,6 +31,16 @@ sso:
   realm: "mts"
   access_cookie_name: "kc-access"
 
+mail:
+  broker: "redis"
+  host: "localhost"
+  port: 6380
+  queue: "mail"
+  database: "0"
+  from:
+    name: "Jocasta Service"
+    email: "jocasta_noreply@mts.ru"
+
 remedy: "http://remedy"
 
 swagger:

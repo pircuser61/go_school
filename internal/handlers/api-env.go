@@ -9,6 +9,7 @@ import (
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 )
 
 type APIEnv struct {
@@ -20,4 +21,5 @@ type APIEnv struct {
 	NetworkMonitorClient netmon.Client
 	HTTPClient           *http.Client
 	Statistic            *statistic.Statistic
+	Mail                 *mail.Service
 }
