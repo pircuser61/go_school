@@ -322,14 +322,9 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Databa
 		return nil, errors.Wrap(err, "invalid execution parameters")
 	}
 
-
-	// TODO add support for group
-
 	b.State = &ExecutionData{
 		ExecutionType: params.Type,
-		Executors:     map[string]struct{}{
-			params.Executor: {},
-		},
+		Executors:     map[string]struct{}{params.Executor: {}},
 	}
 
 	return b, nil

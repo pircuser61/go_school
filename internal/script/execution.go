@@ -22,7 +22,7 @@ type ExecutionParams struct {
 }
 
 func (a *ExecutionParams) Validate() error {
-	if len(a.Executor) == 0 {
+	if a.Executor == "" {
 		return errors.New("executor is empty")
 	}
 
