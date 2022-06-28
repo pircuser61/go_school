@@ -293,6 +293,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 	}
 }
 
+// nolint:dupl // another block
 func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoExecutionBlock, error) {
 	b := &GoExecutionBlock{
 		Storage: storage,

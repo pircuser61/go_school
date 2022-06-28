@@ -10,10 +10,12 @@ import (
 type Status string
 
 var (
-	StatusIdle     Status = "idle"
-	StatusReady    Status = "ready"
-	StatusRunning  Status = "running"
-	StatusFinished Status = "finished"
+	StatusIdle      Status = "idle"
+	StatusReady     Status = "ready"
+	StatusRunning   Status = "running"
+	StatusFinished  Status = "finished"
+	StatusNoSuccess Status = "no_success"
+	StatusCancel    Status = "cancel"
 )
 
 type Runner interface {
