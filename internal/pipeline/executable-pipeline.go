@@ -82,7 +82,7 @@ func (ep *ExecutablePipeline) MergeActiveBlocks(blocks []string) {
 }
 
 func (ep *ExecutablePipeline) ReadyToStart() bool {
-	return len(ep.ActiveBlocks) == 0 && ep.EntryPoint == BlockGoStartId
+	return len(ep.ActiveBlocks) == 0 && ep.EntryPoint == BlockGoFirstStart
 }
 
 func (ep *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {

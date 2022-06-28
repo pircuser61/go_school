@@ -639,7 +639,7 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 	ep.HTTPClient = ae.HTTPClient
 	ep.Remedy = ae.Remedy
 	ep.ActiveBlocks = map[string]struct{}{}
-	ep.EntryPoint = pipeline.BlockGoStartId
+	ep.EntryPoint = pipeline.BlockGoFirstStart
 
 	err := ep.CreateBlocks(ctx, p.p.Pipeline.Blocks)
 	if err != nil {
