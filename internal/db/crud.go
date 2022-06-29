@@ -1844,14 +1844,27 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		order = *filters.Order
 	}
 
+	args = append(args, filters.CurrentUser)
 	if filters.SelectAs != nil {
-		if *filters.SelectAs == "approver" {
-			args = append(args, filters.CurrentUser)
-			q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'approvers'->$%d "+
-				"IS NOT NULL AND approvers.status != 'finished'", q, len(args))
+		switch *filters.SelectAs {
+		case "approver":
+			{
+				q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'approvers'->$%d "+
+					"IS NOT NULL AND approvers.status != 'finished'", q, len(args))
+			}
+		case "executor":
+			{
+				q = fmt.Sprintf("%s AND executors.content::json->'State'->executors.step_name->'executors'->$%d "+
+					"IS NOT NULL AND executors.status != 'finished'", q, len(args))
+			}
 		}
+		//if *filters.SelectAs == "approver" {
+		//	args = append(args, filters.CurrentUser)
+		//	q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'approvers'->$%d "+
+		//		"IS NOT NULL AND approvers.status != 'finished'", q, len(args))
+		//}
 	} else {
-		args = append(args, filters.CurrentUser)
+		//args = append(args, filters.CurrentUser)
 		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
 	}
 
