@@ -24,6 +24,9 @@ const (
 	BlockGoEndId      = "end"
 	BlockGoEndTitle   = "end"
 
+	BlockWaitForAllInputsId      = "wait_for_all_inputs"
+	BlockGoWaitForAllInputsTitle = "wait_for_all_inputs"
+
 	// BlockGoSdApplicationTitle represents id/type of sd block (using in script.FunctionModel)
 	BlockGoSdApplicationTitle = "servicedesk_application"
 	// BlockGoSdApplicationID represents id/type of sd block (using in script.FunctionModel)
