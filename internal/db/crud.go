@@ -1854,8 +1854,13 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND executors.content::json->'State'->executors.step_name->'executors'->$%d "+
-					"IS NOT NULL AND executors.status != 'finished'", q, len(args))
+				q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'executors'->$%d "+
+					"IS NOT NULL AND approvers.status != 'finished'", q, len(args))
+			}
+		case "finished_executor":
+			{
+				q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'executors'->$%d "+
+					"IS NOT NULL AND approvers.status == 'finished'", q, len(args))
 			}
 		}
 		//if *filters.SelectAs == "approver" {
