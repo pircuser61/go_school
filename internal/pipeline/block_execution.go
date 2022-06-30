@@ -83,10 +83,23 @@ type GoExecutionBlock struct {
 }
 
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
+	if gb.State != nil && gb.State.Decision != nil {
+		if *gb.State.Decision == ExecutionDecisionExecuted {
+			return StatusExecuted
+		}
+		return StatusExecutionRejected
+	}
+
 	return StatusExecution
 }
 
 func (gb *GoExecutionBlock) GetStatus() Status {
+	if gb.State != nil && gb.State.Decision != nil {
+		if *gb.State.Decision == ExecutionDecisionExecuted {
+			return StatusFinished
+		}
+		return StatusNoSuccess
+	}
 	return StatusRunning
 }
 
