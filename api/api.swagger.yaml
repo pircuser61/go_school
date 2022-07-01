@@ -454,11 +454,35 @@ components:
       required:
         - blueprint_id
 
+    executionParams:
+      type: object
+      description: Execution params
+      properties:
+        type:
+          $ref: '#/components/schemas/executionType'
+        approver:
+          type: string
+          description: Executor value (depends on type)
+      required:
+        - type
+        - execution
+
+    executionType:
+      type: string
+      enum:
+        - user
+        - group
+      description: >
+        Execution type:
+         * user - Single user
+         * group - Execution group ID
+
     params:
       type: object
       description: Block constant params
       oneOf:
         - $ref: '#/components/schemas/approverParams'
+        - $ref: '#/components/schemas/executionParams'
         - $ref: '#/components/schemas/sdApplicationParams'
 
     paramsType:
