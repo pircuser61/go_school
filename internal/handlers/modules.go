@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -104,8 +105,11 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	for i := range eriusFunctions {
 		v := eriusFunctions[i]
+		fmt.Println(v.ID)
+		fmt.Println(v.Title)
 		id := v.Title + v.BlockType
 		v.ID = id
+
 		eriusFunctions[i] = v
 	}
 

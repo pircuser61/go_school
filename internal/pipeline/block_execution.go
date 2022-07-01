@@ -272,7 +272,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockGoExecutionID,
 		BlockType: script.TypeGo,
-		Title:     BlockGoExecutionTitle,
+		Title:     gb.Title,
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{

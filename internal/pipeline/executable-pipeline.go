@@ -489,7 +489,7 @@ func createForBlock(title, name, onTrue, onFalse string) *ForState {
 
 //nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
-	switch ef.Title {
+	switch ef.TypeID {
 	case "if":
 		i := createIF(ef.Title, name, ef.OnTrue, ef.OnFalse)
 
@@ -537,7 +537,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 //nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (Runner, error) {
-	switch ef.Title {
+	switch ef.TypeID {
 	case BlockGoTestID:
 		return createGoTestBlock(name, ef), nil
 	case BlockGoApproverID:

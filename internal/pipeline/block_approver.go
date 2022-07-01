@@ -295,7 +295,7 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockGoApproverID,
 		BlockType: script.TypeGo,
-		Title:     BlockGoApproverTitle,
+		Title:     gb.Title,
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
