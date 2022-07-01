@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -104,13 +103,30 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for i := range eriusFunctions {
-		v := eriusFunctions[i]
-		fmt.Println(v.ID)
-		fmt.Println(v.Title)
-		id := v.Title + v.BlockType
-		v.ID = id
-
-		eriusFunctions[i] = v
+		switch eriusFunctions[i].ID {
+		case "if":
+			eriusFunctions[i].Title = "if"
+		case "strings_is_equal":
+			eriusFunctions[i].Title = "strings_is_equal"
+		case "connector":
+			eriusFunctions[i].Title = "connector"
+		case "for":
+			eriusFunctions[i].Title = "for"
+		case "go_test_block":
+			eriusFunctions[i].Title = "input"
+		case "approver":
+			eriusFunctions[i].Title = "Согласование"
+		case "servicedesk_application":
+			eriusFunctions[i].Title = "Заявка Servicedesk"
+		case "execution":
+			eriusFunctions[i].Title = "Исполнение"
+		case "start":
+			eriusFunctions[i].Title = "Начало"
+		case "end":
+			eriusFunctions[i].Title = "Конец"
+		case "wait_for_all_inputs":
+			eriusFunctions[i].Title = "wait_for_all_inputs"
+		}
 	}
 
 	eriusShapes, err := script.GetShapes()
