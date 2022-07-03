@@ -17,8 +17,7 @@ func TestIF_DebugRun(t *testing.T) {
 		FunctionName  string
 		FunctionInput map[string]string
 		Result        bool
-		OnTrue        string
-		OnFalse       string
+		Nexts         map[string][]string
 	}
 	type args struct {
 		ctx    context.Context
@@ -83,8 +82,7 @@ func TestIF_DebugRun(t *testing.T) {
 				FunctionName:  tt.fields.FunctionName,
 				FunctionInput: tt.fields.FunctionInput,
 				Result:        tt.fields.Result,
-				OnTrue:        tt.fields.OnTrue,
-				OnFalse:       tt.fields.OnFalse,
+				Nexts:         tt.fields.Nexts,
 			}
 
 			if err := e.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
@@ -102,8 +100,7 @@ func TestIF_Next(t *testing.T) {
 		FunctionName  string
 		FunctionInput map[string]string
 		Result        bool
-		OnTrue        string
-		OnFalse       string
+		Nexts         map[string][]string
 	}
 	type args struct {
 		runCtx *store.VariableStore
@@ -148,7 +145,7 @@ func TestIF_Next(t *testing.T) {
 				FunctionInput: map[string]string{
 					keyIf: checkKey,
 				},
-				OnTrue: "onTrue",
+				Nexts: map[string][]string{trueSocket: []string{"onTrue"}},
 			},
 			args: args{
 				runCtx: func() *store.VariableStore {
@@ -167,7 +164,7 @@ func TestIF_Next(t *testing.T) {
 				FunctionInput: map[string]string{
 					keyIf: checkKey,
 				},
-				OnFalse: "onFalse",
+				Nexts: map[string][]string{falseSocket: []string{"onFalse"}},
 			},
 			args: args{
 				runCtx: func() *store.VariableStore {
@@ -188,8 +185,7 @@ func TestIF_Next(t *testing.T) {
 				FunctionName:  tt.fields.FunctionName,
 				FunctionInput: tt.fields.FunctionInput,
 				Result:        tt.fields.Result,
-				OnTrue:        tt.fields.OnTrue,
-				OnFalse:       tt.fields.OnFalse,
+				Nexts:         tt.fields.Nexts,
 			}
 			got, _ := e.Next(tt.args.runCtx)
 			assert.Equal(t, tt.want, got)

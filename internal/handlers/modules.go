@@ -85,7 +85,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			Inputs:    make([]script.FunctionValueModel, 0),
 			Outputs:   make([]script.FunctionValueModel, 0),
 			ShapeType: script.ShapeScenario,
-			NextFuncs: []string{script.Next},
+			Sockets:   []string{pipeline.DefaultSocket},
 		}
 
 		for _, v := range scenario.Input {
@@ -301,7 +301,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 		FunctionName:   block.Title,
 		FunctionInput:  make(map[string]string),
 		FunctionOutput: make(map[string]string),
-		NextStep:       []string{},
+		Nexts:          map[string][]string{pipeline.DefaultSocket: []string{}},
 		RunURL:         ae.FaaS + "function/%s",
 	}
 

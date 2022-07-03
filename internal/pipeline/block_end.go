@@ -11,11 +11,11 @@ import (
 )
 
 type GoEndBlock struct {
-	Name     string
-	Title    string
-	Input    map[string]string
-	Output   map[string]string
-	NextStep []string
+	Name   string
+	Title  string
+	Input  map[string]string
+	Output map[string]string
+	Nexts  map[string][]string
 }
 
 func (gb *GoEndBlock) GetStatus() Status {
@@ -73,13 +73,7 @@ func (gb *GoEndBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore)
 }
 
 func (gb *GoEndBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	return gb.NextStep, true
-}
-
-func (gb *GoEndBlock) NextSteps() []string {
-	nextSteps := gb.NextStep
-
-	return nextSteps
+	return nil, true
 }
 
 func (gb *GoEndBlock) GetState() interface{} {
@@ -97,17 +91,17 @@ func (gb *GoEndBlock) Model() script.FunctionModel {
 		Title:     BlockGoEndTitle,
 		Inputs:    nil,
 		Outputs:   nil,
-		NextFuncs: []string{}, // TODO: по идее, тут нет никаких некстов, возможно, в будущем они понадобятся
+		Sockets:   []string{}, // TODO: по идее, тут нет никаких некстов, возможно, в будущем они понадобятся
 	}
 }
 
 func createGoEndBlock(name string, ef *entity.EriusFunc) *GoEndBlock {
 	b := &GoEndBlock{
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		NextStep: ef.Next,
+		Name:   name,
+		Title:  ef.Title,
+		Input:  map[string]string{},
+		Output: map[string]string{},
+		Nexts:  ef.Next,
 	}
 
 	for _, v := range ef.Input {
