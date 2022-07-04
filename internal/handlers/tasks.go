@@ -501,6 +501,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 		VersionID:  scenario.VersionID,
 		EntryPoint: scenario.Pipeline.Entrypoint,
 		Sender:     ae.Mail,
+		People:     ae.People,
 	}
 
 	couldUpdateOne := false

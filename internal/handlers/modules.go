@@ -35,7 +35,7 @@ const (
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /modules [get]
-// nolint: gocyclo // future rewrite
+// nolint:gocyclo // future rewrite
 func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
