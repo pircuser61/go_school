@@ -92,12 +92,12 @@ type ApproverResult struct {
 }
 
 type GoApproverBlock struct {
-	Name     string
-	Title    string
-	Input    map[string]string
-	Output   map[string]string
-	NextStep []string
-	State    *ApproverData
+	Name   string
+	Title  string
+	Input  map[string]string
+	Output map[string]string
+	Nexts  map[string][]string
+	State  *ApproverData
 
 	Storage db.Database
 }
@@ -215,11 +215,15 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	return gb.NextStep, true
-}
-
-func (gb *GoApproverBlock) NextSteps() []string {
-	return gb.NextStep
+	key := rejectedSocket
+	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
+		key = approvedSocket
+	}
+	nexts, ok := gb.Nexts[key]
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
 }
 
 func (gb *GoApproverBlock) GetState() interface{} {
@@ -321,7 +325,7 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 				Type:     "",
 			},
 		},
-		NextFuncs: []string{script.Next},
+		Sockets: []string{approvedSocket, rejectedSocket},
 	}
 }
 
@@ -330,11 +334,11 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Databas
 	b := &GoApproverBlock{
 		Storage: storage,
 
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		NextStep: ef.Next,
+		Name:   name,
+		Title:  ef.Title,
+		Input:  map[string]string{},
+		Output: map[string]string{},
+		Nexts:  ef.Next,
 	}
 
 	for _, v := range ef.Input {

@@ -31,7 +31,7 @@ func (m Block) Model() FunctionModel {
 					Type: TypeBool,
 				},
 			},
-			NextFuncs: []string{OnTrue, OnFalse},
+			Sockets:   []string{trueSocket, falseSocket},
 			ShapeType: shapeRhombus,
 		}
 	case Input:
@@ -50,7 +50,7 @@ func (m Block) Model() FunctionModel {
 				},
 			},
 			ShapeType: shapeFunction,
-			NextFuncs: []string{Next},
+			Sockets:   []string{defaultSocket},
 		}
 	case Equal:
 		f = FunctionModel{
@@ -67,7 +67,7 @@ func (m Block) Model() FunctionModel {
 				},
 			},
 			Outputs:   nil,
-			NextFuncs: []string{OnTrue, OnFalse},
+			Sockets:   []string{trueSocket, falseSocket},
 			ShapeType: shapeRhombus,
 		}
 	case Vars:
@@ -76,7 +76,7 @@ func (m Block) Model() FunctionModel {
 			Title:     "variables",
 			Inputs:    nil,
 			Outputs:   []FunctionValueModel{},
-			NextFuncs: []string{Next},
+			Sockets:   []string{defaultSocket},
 			ShapeType: shapeVariable,
 		}
 	case Connector:
@@ -98,7 +98,7 @@ func (m Block) Model() FunctionModel {
 					Type: TypeArray,
 				},
 			},
-			NextFuncs: []string{Next},
+			Sockets:   []string{defaultSocket},
 			ShapeType: shapeConnector,
 		}
 	case ForState:
@@ -122,7 +122,7 @@ func (m Block) Model() FunctionModel {
 				},
 			},
 			ShapeType: shapeRhombus,
-			NextFuncs: []string{OnTrue, OnFalse},
+			Sockets:   []string{trueSocket, falseSocket},
 		}
 	}
 

@@ -18,8 +18,7 @@ type IF struct {
 	FunctionName  string
 	FunctionInput map[string]string
 	Result        bool
-	OnTrue        string
-	OnFalse       string
+	Nexts         map[string][]string
 }
 
 func (e *IF) GetStatus() Status {
@@ -41,16 +40,18 @@ func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
 	}
 
 	if r {
-		return []string{e.OnTrue}, true
+		nexts, ok := e.Nexts[trueSocket]
+		if !ok {
+			return nil, false
+		}
+		return nexts, true
 	}
 
-	return []string{e.OnFalse}, true
-}
-
-func (e *IF) NextSteps() []string {
-	nextSteps := []string{e.OnTrue, e.OnFalse}
-
-	return nextSteps
+	nexts, ok := e.Nexts[falseSocket]
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
 }
 
 func (e *IF) Inputs() map[string]string {

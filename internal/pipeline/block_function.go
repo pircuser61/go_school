@@ -28,7 +28,7 @@ type FunctionBlock struct {
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	NextStep       []string
+	Nexts          map[string][]string
 	RunURL         string
 }
 
@@ -138,11 +138,11 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableSto
 }
 
 func (fb *FunctionBlock) Next(runCtx *store.VariableStore) ([]string, bool) {
-	return fb.NextStep, true
-}
-
-func (fb *FunctionBlock) NextSteps() []string {
-	return fb.NextStep
+	nexts, ok := fb.Nexts[DefaultSocket]
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
 }
 
 func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStore) (interface{}, error) {

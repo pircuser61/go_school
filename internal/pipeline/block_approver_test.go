@@ -23,7 +23,6 @@ import (
 
 func TestGoApproverBlock_DebugRun(t *testing.T) {
 	const (
-		stepName    = "approver1"
 		approverKey = "approverKey"
 		decisionKey = "decisionKey"
 		commentKey  = "commentKey"
@@ -42,7 +41,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 		Title    string
 		Input    map[string]string
 		Output   map[string]string
-		NextStep []string
+		NextStep map[string][]string
 		Storage  db.Database
 	}
 	type args struct {
@@ -63,7 +62,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: []string{},
+				NextStep: map[string][]string{},
 				Storage:  nil,
 			},
 			args: args{
@@ -80,15 +79,13 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: []string{},
+				NextStep: map[string][]string{},
 				Storage:  nil,
 			},
 			args: args{
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
-
-					res.SetValue(getWorkIdKey(stepName), "foo")
 
 					return res
 				}(),
@@ -103,7 +100,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: []string{},
+				NextStep: map[string][]string{},
 				Storage: func() db.Database {
 					res := &mocks.MockedDatabase{}
 
@@ -122,8 +119,6 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 
-					res.SetValue(getWorkIdKey(stepName), stepId)
-
 					return res
 				}(),
 			},
@@ -136,7 +131,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: []string{},
+				NextStep: map[string][]string{},
 				Storage: func() db.Database {
 					res := &mocks.MockedDatabase{}
 
@@ -167,8 +162,6 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 
-					res.SetValue(getWorkIdKey(stepName), stepId)
-
 					return res
 				}(),
 			},
@@ -185,7 +178,7 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 					keyOutputDecision: decisionKey,
 					keyOutputComment:  commentKey,
 				},
-				NextStep: []string{},
+				NextStep: map[string][]string{},
 				Storage: func() db.Database {
 					res := &mocks.MockedDatabase{}
 
@@ -236,8 +229,6 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 			wantStorage: func() *store.VariableStore {
 				res := store.NewStore()
 
-				res.AddStep(stepName)
-
 				res.SetValue(getWorkIdKey(stepName), stepId)
 				res.SetValue(approverKey, login)
 				res.SetValue(decisionKey, decision.String())
@@ -263,12 +254,12 @@ func TestGoApproverBlock_DebugRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoApproverBlock{
-				Name:     tt.fields.Name,
-				Title:    tt.fields.Title,
-				Input:    tt.fields.Input,
-				Output:   tt.fields.Output,
-				NextStep: tt.fields.NextStep,
-				Storage:  tt.fields.Storage,
+				Name:    tt.fields.Name,
+				Title:   tt.fields.Title,
+				Input:   tt.fields.Input,
+				Output:  tt.fields.Output,
+				Nexts:   tt.fields.NextStep,
+				Storage: tt.fields.Storage,
 			}
 			if err := gb.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
 				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
@@ -418,7 +409,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 		title   = "title"
 		login   = "login1"
 	)
-	next := []string{"next"}
+	next := map[string][]string{approvedSocket: []string{"next_0"}, rejectedSocket: []string{"next_1"}}
 
 	type args struct {
 		name    string
@@ -516,8 +507,8 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Comment:        nil,
 					ActualApprover: nil,
 				},
-				NextStep: next,
-				Storage:  nil,
+				Nexts:   next,
+				Storage: nil,
 			},
 			wantErr: false,
 		},
@@ -535,16 +526,12 @@ func TestGoApproverBlock_Update(t *testing.T) {
 	stepId := uuid.New()
 	exampleApprover := "example"
 
-	const (
-		stepName = "approver1"
-	)
-
 	type fields struct {
 		Name     string
 		Title    string
 		Input    map[string]string
 		Output   map[string]string
-		NextStep []string
+		NextStep map[string][]string
 		State    *ApproverData
 		Storage  db.Database
 	}
@@ -884,13 +871,13 @@ func TestGoApproverBlock_Update(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoApproverBlock{
-				Name:     tt.fields.Name,
-				Title:    tt.fields.Title,
-				Input:    tt.fields.Input,
-				Output:   tt.fields.Output,
-				NextStep: tt.fields.NextStep,
-				State:    tt.fields.State,
-				Storage:  tt.fields.Storage,
+				Name:    tt.fields.Name,
+				Title:   tt.fields.Title,
+				Input:   tt.fields.Input,
+				Output:  tt.fields.Output,
+				Nexts:   tt.fields.NextStep,
+				State:   tt.fields.State,
+				Storage: tt.fields.Storage,
 			}
 			got, err := gb.Update(tt.args.ctx, tt.args.data)
 			assert.Equalf(t, tt.wantErr, err != nil, fmt.Sprintf("Update(%v, %v)", tt.args.ctx, tt.args.data))

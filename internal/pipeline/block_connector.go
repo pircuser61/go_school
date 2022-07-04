@@ -14,7 +14,7 @@ type ConnectorBlock struct {
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	NextStep       []string
+	Nexts          map[string][]string
 }
 
 func (cb *ConnectorBlock) GetStatus() Status {
@@ -62,11 +62,11 @@ func (cb *ConnectorBlock) DebugRun(ctx context.Context, runCtx *store.VariableSt
 }
 
 func (cb *ConnectorBlock) Next(runCtx *store.VariableStore) ([]string, bool) {
-	return cb.NextStep, true
-}
-
-func (cb *ConnectorBlock) NextSteps() []string {
-	return cb.NextStep
+	nexts, ok := cb.Nexts[DefaultSocket]
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
 }
 
 func (cb ConnectorBlock) IsScenario() bool {

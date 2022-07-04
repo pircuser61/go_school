@@ -96,7 +96,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string, httpClient *http.C
 				Inputs:    v.Input.Fields,
 				Outputs:   v.Output.Fields,
 				ShapeType: shapeFunction,
-				NextFuncs: []string{Next},
+				Sockets:   []string{defaultSocket},
 			}
 
 			if b.Title == "cedar-test-1" || b.Title == "get-no-energy-action" || b.Title == "send-ngsa" {
