@@ -47,7 +47,7 @@ type ApproverData struct {
 	ActualApprover *string             `json:"actual_approver,omitempty"`
 
 	SLA        int                `json:"sla"`
-	AutoAction *script.AutoAction `json:"auto_action"`
+	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {

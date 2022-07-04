@@ -27,7 +27,7 @@ type ApproverParams struct {
 	Approver string       `json:"approver"`
 
 	SLA        int         `json:"sla"`
-	AutoAction *AutoAction `json:"auto_action"`
+	AutoAction *AutoAction `json:"auto_action,omitempty"`
 }
 
 func (a *ApproverParams) Validate() error {
