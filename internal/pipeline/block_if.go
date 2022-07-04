@@ -44,6 +44,8 @@ func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
 	}
 
 	return []string{e.OnFalse}, true
+
+	//todo: выйти из выбранной ноды
 }
 
 func (e *IF) NextSteps() []string {
@@ -80,6 +82,10 @@ func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	}
 
 	e.Result = r
+
+	// todo: определить выходы из ноды (проитерироваться по полученным группам)
+
+	// todo: выбрать ту группу условий, которая соблюдается (либо выход по умолчанию)
 
 	return nil
 }

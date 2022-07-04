@@ -151,8 +151,10 @@ func getValue() {
 }
 
 func tryGetVariableReference(value interface{}) string {
-	const referencePrefix = "ref#"
-	const empty = ""
+	const (
+		referencePrefix = "ref#"
+		empty           = ""
+	)
 
 	if val, ok := value.(string); ok {
 		if strings.HasPrefix(val, referencePrefix) {
