@@ -467,6 +467,27 @@ components:
         - type
         - execution
 
+    notificationParams:
+      type: object
+      description: Notification params
+      properties:
+        people:
+          type: array
+          description: People to get notifications
+          items:
+            type: string
+            description: Email or login
+        subject:
+          type: string
+          description: Notification subject
+        text:
+          type: string
+          description: Notification body
+      required:
+        - people
+        - subject
+        - text
+
     executionType:
       type: string
       enum:
@@ -484,6 +505,7 @@ components:
         - $ref: '#/components/schemas/approverParams'
         - $ref: '#/components/schemas/executionParams'
         - $ref: '#/components/schemas/sdApplicationParams'
+        - $ref: '#/components/schemas/notificationParams'
 
     paramsType:
       type: string
@@ -492,6 +514,7 @@ components:
         - approver
         - servicedesk_application
         - execution
+        - notification
 
     functionsParams:
       type: object
