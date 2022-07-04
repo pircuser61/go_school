@@ -43,7 +43,7 @@ func (a *ApproverParams) Validate() error {
 		return fmt.Errorf("bad SLA value: %d", a.SLA)
 	}
 
-	if a.AutoAction != nil && *a.AutoAction != AutoActionApprove && *a.AutoAction != AutoActionReject{
+	if a.AutoAction != nil && *a.AutoAction != AutoActionApprove && *a.AutoAction != AutoActionReject {
 		return fmt.Errorf("unknown auto action type: %s", *a.AutoAction)
 	}
 
