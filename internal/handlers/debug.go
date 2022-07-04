@@ -216,6 +216,7 @@ func (ae *APIEnv) executablePipeline(
 		PipelineModel: version,
 		HTTPClient:    ae.HTTPClient,
 		Remedy:        ae.Remedy,
+		Sender:        ae.Mail,
 	}
 
 	err := ep.CreateBlocks(ctx, version.Pipeline.Blocks)
