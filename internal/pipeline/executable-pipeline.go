@@ -40,7 +40,7 @@ type ExecutablePipeline struct {
 	ActiveBlocks  map[string]void
 	VarStore      *store.VariableStore
 	Blocks        map[string]Runner
-	NextStep      []string
+	Nexts         map[string][]string
 	Input         map[string]string
 	Output        map[string]string
 	Name          string
@@ -329,11 +329,11 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 }
 
 func (ep *ExecutablePipeline) Next(*store.VariableStore) ([]string, bool) {
-	return ep.NextStep, true
-}
-
-func (ep *ExecutablePipeline) NextSteps() []string {
-	return ep.NextStep
+	nexts, ok := ep.Nexts[DefaultSocket]
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
 }
 
 func (ep *ExecutablePipeline) GetState() interface{} {
@@ -381,7 +381,7 @@ func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, bloc
 			FunctionName:   block.Title,
 			FunctionInput:  make(map[string]string),
 			FunctionOutput: make(map[string]string),
-			NextStep:       block.Next,
+			Nexts:          block.Next,
 			RunURL:         ep.FaaS + "function/%s",
 		}
 
@@ -408,7 +408,7 @@ func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, bloc
 		epi.FaaS = ep.FaaS
 		epi.Input = make(map[string]string)
 		epi.Output = make(map[string]string)
-		epi.NextStep = block.Next
+		epi.Nexts = block.Next
 		epi.Name = block.Title
 		epi.PipelineModel = p
 
@@ -446,42 +446,39 @@ func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, bloc
 	return nil, errors.Errorf("can't create block with type: %s", block.BlockType)
 }
 
-func createIF(title, name, onTrue, onFalse string) *IF {
+func createIF(title, name string, nexts map[string][]string) *IF {
 	return &IF{
 		Name:          name,
 		FunctionName:  title,
-		OnTrue:        onTrue,
-		OnFalse:       onFalse,
+		Nexts:         nexts,
 		FunctionInput: make(map[string]string),
 	}
 }
 
-func createStringsEqual(title, name, onTrue, onFalse string) *StringsEqual {
+func createStringsEqual(title, name string, nexts map[string][]string) *StringsEqual {
 	return &StringsEqual{
 		Name:          name,
 		FunctionName:  title,
-		OnTrue:        onTrue,
-		OnFalse:       onFalse,
+		Nexts:         nexts,
 		FunctionInput: make(map[string]string),
 	}
 }
 
-func createConnectorBlock(title, name string, next []string) *ConnectorBlock {
+func createConnectorBlock(title, name string, nexts map[string][]string) *ConnectorBlock {
 	return &ConnectorBlock{
 		Name:           name,
 		FunctionName:   title,
 		FunctionInput:  make(map[string]string),
 		FunctionOutput: make(map[string]string),
-		NextStep:       next,
+		Nexts:          nexts,
 	}
 }
 
-func createForBlock(title, name, onTrue, onFalse string) *ForState {
+func createForBlock(title, name string, nexts map[string][]string) *ForState {
 	return &ForState{
 		Name:           name,
 		FunctionName:   title,
-		OnTrue:         onTrue,
-		OnFalse:        onFalse,
+		Nexts:          nexts,
 		FunctionInput:  make(map[string]string),
 		FunctionOutput: make(map[string]string),
 	}
@@ -489,9 +486,9 @@ func createForBlock(title, name, onTrue, onFalse string) *ForState {
 
 //nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
-	switch ef.Title {
+	switch ef.TypeID {
 	case "if":
-		i := createIF(ef.Title, name, ef.OnTrue, ef.OnFalse)
+		i := createIF(ef.Title, name, ef.Next)
 
 		for _, v := range ef.Input {
 			i.FunctionInput[v.Name] = v.Global
@@ -499,7 +496,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		return i
 	case "strings_is_equal":
-		sie := createStringsEqual(ef.Title, name, ef.OnTrue, ef.OnFalse)
+		sie := createStringsEqual(ef.Title, name, ef.Next)
 
 		for _, v := range ef.Input {
 			sie.FunctionInput[v.Name] = v.Global
@@ -519,7 +516,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 		return con
 	case "for":
-		f := createForBlock(ef.Title, name, ef.OnTrue, ef.OnFalse)
+		f := createForBlock(ef.Title, name, ef.Next)
 
 		for _, v := range ef.Input {
 			f.FunctionInput[v.Name] = v.Global
@@ -537,7 +534,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 
 //nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (Runner, error) {
-	switch ef.Title {
+	switch ef.TypeID {
 	case BlockGoTestID:
 		return createGoTestBlock(name, ef), nil
 	case BlockGoApproverID:
@@ -550,6 +547,8 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 		return createGoStartBlock(name, ef), nil
 	case BlockGoEndId:
 		return createGoEndBlock(name, ef), nil
+	case BlockWaitForAllInputsId:
+		return createGoWaitForAllInputsBlock(name, ef), nil
 	}
 
 	return nil, errors.New("unknown go-block type")

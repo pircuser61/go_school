@@ -45,7 +45,11 @@
           ],
           "block_type": "go",
           "title": "test",
-          "next": ["log-value_0"]
+          "next": {
+            "default": [
+              "log-value_0"
+            ]
+          }
         },
         "for_0": {
           "x": 1256,
@@ -71,8 +75,14 @@
           ],
           "block_type": "term",
           "title": "for",
-          "on_true": "if_0",
-          "on_false": "log-value_1"
+          "next": {
+            "true": [
+              "if_0"
+            ],
+            "false": [
+              "log-value_1"
+            ]
+          }
         },
         "if_0": {
           "x": 1568,
@@ -86,8 +96,14 @@
           ],
           "block_type": "term",
           "title": "if",
-          "on_true": "log-value_2",
-          "on_false": "log-value_3"
+          "next": {
+            "true": [
+              "log-value_2"
+            ],
+            "false": [
+              "log-value_3"
+            ]
+          }
         },
         "log-value_0": {
           "x": 883,
@@ -108,7 +124,11 @@
           ],
           "block_type": "python3",
           "title": "log-value",
-          "next": ["for_0"]
+          "next": {
+            "default": [
+              "for_0"
+            ]
+          }
         },
         "log-value_1": {
           "x": 1809,
@@ -129,7 +149,11 @@
           ],
           "block_type": "python3",
           "title": "log-value",
-          "next": ["for_0"]
+          "next": {
+            "default": [
+              "for_0"
+            ]
+          }
         },
         "log-value_2": {
           "x": 1907,
@@ -150,7 +174,11 @@
           ],
           "block_type": "python3",
           "title": "log-value",
-          "next": ["test-raise-exception_0"]
+          "next": {
+            "default": [
+              "test-raise-exception_0"
+            ]
+          }
         },
         "log-value_3": {
           "x": 1909,
@@ -171,7 +199,11 @@
           ],
           "block_type": "python3",
           "title": "log-value",
-          "next": ["test-raise-exception_0"]
+          "next": {
+            "default": [
+              "test-raise-exception_0"
+            ]
+          }
         },
         "log-value_4": {
           "x": 2533,
@@ -190,6 +222,7 @@
               "global": "log-value_4.value"
             }
           ],
+          "next": {},
           "block_type": "python3",
           "title": "log-value"
         },
@@ -217,7 +250,11 @@
           ],
           "block_type": "go",
           "title": "test",
-          "next": ["const-lock-3g_0"]
+          "next": {
+            "default": [
+              "const-lock-3g_0"
+            ]
+          }
         },
         "test-raise-exception_0": {
           "x": 2235,
@@ -225,7 +262,11 @@
           "input": [],
           "block_type": "python3",
           "title": "test-raise-exception",
-          "next": ["log-value_4"]
+          "next": {
+            "default": [
+              "log-value_4"
+            ]
+          }
         }
       },
       "entrypoint": "parse-bts-info_0"

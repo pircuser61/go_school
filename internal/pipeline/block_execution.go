@@ -72,21 +72,34 @@ func (a *ExecutionData) SetDecision(login string, decision ExecutionDecision, co
 }
 
 type GoExecutionBlock struct {
-	Name     string
-	Title    string
-	Input    map[string]string
-	Output   map[string]string
-	NextStep []string
-	State    *ExecutionData
+	Name   string
+	Title  string
+	Input  map[string]string
+	Output map[string]string
+	Nexts  map[string][]string
+	State  *ExecutionData
 
 	Storage db.Database
 }
 
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
+	if gb.State != nil && gb.State.Decision != nil {
+		if *gb.State.Decision == ExecutionDecisionExecuted {
+			return StatusExecuted
+		}
+		return StatusExecutionRejected
+	}
+
 	return StatusExecution
 }
 
 func (gb *GoExecutionBlock) GetStatus() Status {
+	if gb.State != nil && gb.State.Decision != nil {
+		if *gb.State.Decision == ExecutionDecisionExecuted {
+			return StatusFinished
+		}
+		return StatusNoSuccess
+	}
 	return StatusRunning
 }
 
@@ -183,11 +196,15 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 }
 
 func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	return gb.NextStep, true
-}
-
-func (gb *GoExecutionBlock) NextSteps() []string {
-	return gb.NextStep
+	key := notExecutedSocket
+	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ExecutionDecisionExecuted {
+		key = executedSocket
+	}
+	nexts, ok := gb.Nexts[key]
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
 }
 
 func (gb *GoExecutionBlock) GetState() interface{} {
@@ -259,7 +276,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockGoExecutionID,
 		BlockType: script.TypeGo,
-		Title:     BlockGoExecutionTitle,
+		Title:     gb.Title,
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
@@ -290,7 +307,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 				Type:      "",
 			},
 		},
-		NextFuncs: []string{script.Next},
+		Sockets: []string{executedSocket, notExecutedSocket},
 	}
 }
 
@@ -299,11 +316,11 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Databa
 	b := &GoExecutionBlock{
 		Storage: storage,
 
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		NextStep: ef.Next,
+		Name:   name,
+		Title:  ef.Title,
+		Input:  map[string]string{},
+		Output: map[string]string{},
+		Nexts:  ef.Next,
 	}
 
 	for _, v := range ef.Input {

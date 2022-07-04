@@ -454,11 +454,35 @@ components:
       required:
         - blueprint_id
 
+    executionParams:
+      type: object
+      description: Execution params
+      properties:
+        type:
+          $ref: '#/components/schemas/executionType'
+        execution:
+          type: string
+          description: Executor value (depends on type)
+      required:
+        - type
+        - execution
+
+    executionType:
+      type: string
+      enum:
+        - user
+        - group
+      description: >
+        Execution type:
+         * user - Single user
+         * group - Execution group ID
+
     params:
       type: object
       description: Block constant params
       oneOf:
         - $ref: '#/components/schemas/approverParams'
+        - $ref: '#/components/schemas/executionParams'
         - $ref: '#/components/schemas/sdApplicationParams'
 
     paramsType:
@@ -530,22 +554,23 @@ components:
         shape_type:
           type: integer
           description: Block shape type
-        next_funcs:
-          type: array
-          description: Next blocks
-          items:
-            type: string
         id:
           type: string
           description: Block unique ID
         params:
           $ref: '#/components/schemas/functionsParams'
+        sockets:
+          type: array
+          description: Output sockets
+          items:
+            type: string
       required:
         - block_type
         - title
         - shape_type
         - next_funcs
         - id
+        - sockets
 
     func:
       type: object
@@ -579,28 +604,19 @@ components:
           $ref: '#/components/schemas/paramsType'
         params:
           $ref: '#/components/schemas/params'
-        on_true:
-          type: string
-          description: Next block (if this block return true)
-        on_false:
-          type: string
-          description: Next block (if this block return false)
-        final:
-          type: string
-          description: Next block (final iter)
-        on_iter:
-          type: string
-          description: Next block (if this block repeats)
         next:
-          type: array
-          description: Next block
-          items:
-            type: string
+          type: object
+          description: Sockets outputs
+          additionalProperties:
+            type: array
+            description: Next blocks
+            items:
+              type: string
       required:
         - type_id
         - block_type
         - title
-        - on_iter
+        - next
 
     pipeline:
       type: object

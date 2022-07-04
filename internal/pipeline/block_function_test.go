@@ -55,7 +55,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 		FunctionName   string
 		FunctionInput  map[string]string
 		FunctionOutput map[string]string
-		NextStep       []string
+		NextStep       map[string][]string
 		runURL         string
 	}
 	type args struct {
@@ -82,7 +82,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				FunctionName:   "RunOnlyFunction",
 				FunctionInput:  nil,
 				FunctionOutput: nil,
-				NextStep:       []string{},
+				NextStep:       map[string][]string{},
 				runURL:         "",
 			},
 			args: args{
@@ -103,7 +103,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				FunctionOutput: map[string]string{
 					"sOutput": "global.sOutput",
 				},
-				NextStep: []string{},
+				NextStep: map[string][]string{},
 				runURL:   "",
 			},
 			args: args{
@@ -143,7 +143,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				FunctionName:   tt.fields.FunctionName,
 				FunctionInput:  tt.fields.FunctionInput,
 				FunctionOutput: tt.fields.FunctionOutput,
-				NextStep:       tt.fields.NextStep,
+				Nexts:          tt.fields.NextStep,
 				RunURL:         server.URL + "/%s",
 			}
 			if err := fb.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {

@@ -25,7 +25,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 		Title    string
 		Input    map[string]string
 		Output   map[string]string
-		NextStep []string
+		NextStep map[string][]string
 		State    *ExecutionData
 		Storage  db.Database
 	}
@@ -47,7 +47,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: []string{},
+				NextStep: map[string][]string{},
 				Storage:  nil,
 			},
 			args: args{
@@ -64,7 +64,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: []string{},
+				NextStep: map[string][]string{},
 				Storage:  nil,
 			},
 			args: args{
@@ -87,7 +87,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: []string{},
+				NextStep: map[string][]string{},
 				Storage: func() db.Database {
 					res := &mocks.MockedDatabase{}
 
@@ -117,12 +117,12 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoExecutionBlock{
-				Name:     tt.fields.Name,
-				Title:    tt.fields.Title,
-				Input:    tt.fields.Input,
-				Output:   tt.fields.Output,
-				NextStep: tt.fields.NextStep,
-				Storage:  tt.fields.Storage,
+				Name:    tt.fields.Name,
+				Title:   tt.fields.Title,
+				Input:   tt.fields.Input,
+				Output:  tt.fields.Output,
+				Nexts:   tt.fields.NextStep,
+				Storage: tt.fields.Storage,
 			}
 			if err := gb.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
 				t.Errorf("execution.DebugRun() error = %v, wantErr %v", err, tt.wantErr)
