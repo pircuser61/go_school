@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
