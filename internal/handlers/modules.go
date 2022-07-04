@@ -17,6 +17,14 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+const (
+	WaitForAllImputsBase = "wait_for_all_inputs"
+	IfBase               = "if"
+	ConnectorBase        = "connector"
+	ForBase              = "for"
+	StringsIsEqualBase   = "strings_is_equal"
+)
+
 // GetModules godoc
 // @Summary Get list of modules
 // @Description Список блоков
@@ -106,10 +114,30 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for i := range eriusFunctions {
-		v := eriusFunctions[i]
-		id := v.Title + v.BlockType
-		v.ID = id
-		eriusFunctions[i] = v
+		switch eriusFunctions[i].ID {
+		case IfBase:
+			eriusFunctions[i].Title = IfBase
+		case StringsIsEqualBase:
+			eriusFunctions[i].Title = StringsIsEqualBase
+		case ConnectorBase:
+			eriusFunctions[i].Title = ConnectorBase
+		case ForBase:
+			eriusFunctions[i].Title = ForBase
+		case "go_test_block":
+			eriusFunctions[i].Title = "input"
+		case "approver":
+			eriusFunctions[i].Title = "Согласование"
+		case "servicedesk_application":
+			eriusFunctions[i].Title = "Заявка Servicedesk"
+		case "execution":
+			eriusFunctions[i].Title = "Исполнение"
+		case "start":
+			eriusFunctions[i].Title = "Начало"
+		case "end":
+			eriusFunctions[i].Title = "Конец"
+		case WaitForAllImputsBase:
+			eriusFunctions[i].Title = WaitForAllImputsBase
+		}
 	}
 
 	eriusShapes, err := script.GetShapes()
