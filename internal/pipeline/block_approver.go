@@ -45,6 +45,9 @@ type ApproverData struct {
 	Decision       *ApproverDecision   `json:"decision,omitempty"`
 	Comment        *string             `json:"comment,omitempty"`
 	ActualApprover *string             `json:"actual_approver,omitempty"`
+
+	SLA        int                `json:"sla"`
+	AutoAction *script.AutoAction `json:"auto_action"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -149,6 +152,8 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 
 	// TODO: fix
 	// runCtx.AddStep(gb.Name)
+
+	// TODO: handle SLA and AutoAction
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
@@ -323,6 +328,7 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			Params: &script.ApproverParams{
 				Approver: "",
 				Type:     "",
+				SLA:      0,
 			},
 		},
 		Sockets: []string{approvedSocket, rejectedSocket},
@@ -368,6 +374,8 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Databas
 		Approvers: map[string]struct{}{
 			params.Approver: {},
 		},
+		SLA:        params.SLA,
+		AutoAction: params.AutoAction,
 	}
 
 	return b, nil

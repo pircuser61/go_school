@@ -427,6 +427,10 @@ components:
         approver:
           type: string
           description: Apprver value (depends on type)
+        sla:
+          type: integer
+          description: Action SLA (in hours)
+          minimum: 1
       required:
         - type
         - approver
