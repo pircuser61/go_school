@@ -17,6 +17,14 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+const (
+	WaitForAllImputsBase = "wait_for_all_inputs"
+	IfBase               = "if"
+	ConnectorBase        = "connector"
+	ForBase              = "for"
+	StringsIsEqualBase   = "strings_is_equal"
+)
+
 // GetModules godoc
 // @Summary Get list of modules
 // @Description Список блоков
@@ -104,14 +112,14 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	for i := range eriusFunctions {
 		switch eriusFunctions[i].ID {
-		case "if":
-			eriusFunctions[i].Title = "if"
-		case "strings_is_equal":
-			eriusFunctions[i].Title = "strings_is_equal"
-		case "connector":
-			eriusFunctions[i].Title = "connector"
-		case "for":
-			eriusFunctions[i].Title = "for"
+		case IfBase:
+			eriusFunctions[i].Title = IfBase
+		case StringsIsEqualBase:
+			eriusFunctions[i].Title = StringsIsEqualBase
+		case ConnectorBase:
+			eriusFunctions[i].Title = ConnectorBase
+		case ForBase:
+			eriusFunctions[i].Title = ForBase
 		case "go_test_block":
 			eriusFunctions[i].Title = "input"
 		case "approver":
@@ -124,8 +132,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			eriusFunctions[i].Title = "Начало"
 		case "end":
 			eriusFunctions[i].Title = "Конец"
-		case "wait_for_all_inputs":
-			eriusFunctions[i].Title = "wait_for_all_inputs"
+		case WaitForAllImputsBase:
+			eriusFunctions[i].Title = WaitForAllImputsBase
 		}
 	}
 
