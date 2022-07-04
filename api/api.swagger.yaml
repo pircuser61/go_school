@@ -427,9 +427,23 @@ components:
         approver:
           type: string
           description: Apprver value (depends on type)
+        sla:
+          type: integer
+          description: Approvement SLA (in working hours)
+          minimum: 1
+        auto_action:
+          $ref: '#/components/schemas/approveAutoAction'
       required:
         - type
         - approver
+        - sla
+
+    approveAutoAction:
+      type: string
+      description: Action to do automatically in case SLA is breached
+      enum:
+        - approve
+        - reject
 
     approverUpdateParams:
       type: object
@@ -463,9 +477,14 @@ components:
         execution:
           type: string
           description: Executor value (depends on type)
+        sla:
+          type: integer
+          description: Execution SLA (in working hours)
+          minimum: 1
       required:
         - type
         - execution
+        - sla
 
     notificationParams:
       type: object

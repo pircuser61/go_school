@@ -19,6 +19,8 @@ const (
 type ExecutionParams struct {
 	Type      ExecutionType `json:"type"`
 	Executors string        `json:"executors"`
+
+	SLA int `json:"sla"`
 }
 
 func (a *ExecutionParams) Validate() error {
@@ -28,6 +30,10 @@ func (a *ExecutionParams) Validate() error {
 
 	if a.Type != ExecutionTypeUser && a.Type != ExecutionTypeGroup {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
+	}
+
+	if a.SLA < 1 {
+		return fmt.Errorf("bad SLA value: %d", a.SLA)
 	}
 
 	return nil

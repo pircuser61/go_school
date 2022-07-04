@@ -44,6 +44,7 @@ type ExecutionData struct {
 	Decision       *ExecutionDecision   `json:"decision,omitempty"`
 	Comment        *string              `json:"comment,omitempty"`
 	ActualExecutor *string              `json:"actual_executor,omitempty"`
+	SLA            int                  `json:"sla"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
@@ -133,6 +134,8 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 
 	// TODO: fix
 	// runCtx.AddStep(gb.Name)
+
+	// TODO: handle SLA
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
@@ -305,6 +308,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 			Params: &script.ExecutionParams{
 				Executors: "",
 				Type:      "",
+				SLA:       0,
 			},
 		},
 		Sockets: []string{executedSocket, notExecutedSocket},
@@ -344,6 +348,7 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Databa
 	b.State = &ExecutionData{
 		ExecutionType: params.Type,
 		Executors:     map[string]struct{}{params.Executors: {}},
+		SLA:           params.SLA,
 	}
 
 	return b, nil
