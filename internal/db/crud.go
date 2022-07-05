@@ -1836,7 +1836,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
              WHERE vs.work_id = w.id
              ORDER BY vs.time DESC
              LIMIT 1
-        ) approvers ON approvers.work_id = w.id
+        ) workers ON workers.work_id = w.id
 		WHERE 1=1`
 
 	order := "ASC"
@@ -1844,14 +1844,26 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		order = *filters.Order
 	}
 
+	args = append(args, filters.CurrentUser)
 	if filters.SelectAs != nil {
-		if *filters.SelectAs == "approver" {
-			args = append(args, filters.CurrentUser)
-			q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'approvers'->$%d "+
-				"IS NOT NULL AND approvers.status != 'finished'", q, len(args))
+		switch *filters.SelectAs {
+		case "approver":
+			{
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
+					"IS NOT NULL AND workers.status != 'finished'", q, len(args))
+			}
+		case "executor":
+			{
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
+					"IS NOT NULL AND workers.status != 'finished'", q, len(args))
+			}
+		case "finished_executor":
+			{
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
+					"IS NOT NULL AND workers.status == 'finished'", q, len(args))
+			}
 		}
 	} else {
-		args = append(args, filters.CurrentUser)
 		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
 	}
 
