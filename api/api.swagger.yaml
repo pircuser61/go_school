@@ -632,6 +632,9 @@ components:
         title:
           type: string
           description: Block title
+        short_title:
+          type: string
+          description: Block short title
         input:
           type: array
           description: Input vars
