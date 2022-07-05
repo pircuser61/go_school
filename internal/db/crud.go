@@ -2462,15 +2462,15 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 			 FROM (
 					  SELECT id, blocks, nextNode
 					  FROM (
-							   SELECT id,
-									  pipeline.blocks AS blocks,
-									  split_part((SELECT jsonb_object_keys(pipeline.blocks -> pipeline.entrypoint -> 'next') LIMIT 1), '.', 1) AS nextNode
-							   FROM (
-										SELECT id,
-											   content -> 'pipeline' #> '{blocks}'    AS blocks,
-											   content -> 'pipeline' ->> 'entrypoint' AS entrypoint
-										FROM pipeliner.versions
-									) AS pipeline
+							SELECT id,
+									pipeline.blocks AS blocks,
+									jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint -> 'next' #> '{default}') AS nextNode
+							FROM (
+									SELECT id,
+										   content -> 'pipeline' #> '{blocks}'    AS blocks,
+										   content -> 'pipeline' ->> 'entrypoint' AS entrypoint
+									FROM pipeliner.versions
+								) AS pipeline
 						   ) AS next_from_start
 					  WHERE next_from_start.nextNode LIKE 'servicedesk_application%'
 				  ) AS servicedesk_node
