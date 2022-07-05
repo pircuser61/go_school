@@ -35,6 +35,7 @@ const (
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /modules [get]
+// nolint:gocyclo // future rewrite
 func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
@@ -62,6 +63,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	waitForAllInputs := &pipeline.GoWaitForAllInputsBlock{}
 
+	notificationBlock := &pipeline.GoNotificationBlock{}
+
 	eriusFunctions = append(eriusFunctions,
 		script.IfState.Model(),
 		script.Input.Model(),
@@ -74,6 +77,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		startBlock.Model(),
 		endBlock.Model(),
 		waitForAllInputs.Model(),
+		notificationBlock.Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)

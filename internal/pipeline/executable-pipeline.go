@@ -16,6 +16,8 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -47,6 +49,8 @@ type ExecutablePipeline struct {
 	PipelineModel *entity.EriusScenario
 	HTTPClient    *http.Client
 	Remedy        string
+	Sender        *mail.Service
+	People        *people.Service
 
 	FaaS string
 
@@ -549,6 +553,8 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 		return createGoEndBlock(name, ef), nil
 	case BlockWaitForAllInputsId:
 		return createGoWaitForAllInputsBlock(name, ef), nil
+	case BlockGoNotificationID:
+		return createGoNotificationBlock(name, ef, ep.Sender, ep.People)
 	}
 
 	return nil, errors.New("unknown go-block type")

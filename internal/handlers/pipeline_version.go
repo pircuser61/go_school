@@ -640,6 +640,8 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 	ep.Remedy = ae.Remedy
 	ep.ActiveBlocks = map[string]struct{}{}
 	ep.EntryPoint = pipeline.BlockGoFirstStart
+	ep.Sender = ae.Mail
+	ep.People = ae.People
 
 	err := ep.CreateBlocks(ctx, p.p.Pipeline.Blocks)
 	if err != nil {

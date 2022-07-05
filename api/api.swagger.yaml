@@ -427,9 +427,23 @@ components:
         approver:
           type: string
           description: Apprver value (depends on type)
+        sla:
+          type: integer
+          description: Approvement SLA (in working hours)
+          minimum: 1
+        auto_action:
+          $ref: '#/components/schemas/approveAutoAction'
       required:
         - type
         - approver
+        - sla
+
+    approveAutoAction:
+      type: string
+      description: Action to do automatically in case SLA is breached
+      enum:
+        - approve
+        - reject
 
     approverUpdateParams:
       type: object
@@ -463,9 +477,35 @@ components:
         execution:
           type: string
           description: Executor value (depends on type)
+        sla:
+          type: integer
+          description: Execution SLA (in working hours)
+          minimum: 1
       required:
         - type
         - execution
+        - sla
+
+    notificationParams:
+      type: object
+      description: Notification params
+      properties:
+        people:
+          type: array
+          description: People to get notifications
+          items:
+            type: string
+            description: Email or login
+        subject:
+          type: string
+          description: Notification subject
+        text:
+          type: string
+          description: Notification body
+      required:
+        - people
+        - subject
+        - text
 
     executionType:
       type: string
@@ -484,6 +524,7 @@ components:
         - $ref: '#/components/schemas/approverParams'
         - $ref: '#/components/schemas/executionParams'
         - $ref: '#/components/schemas/sdApplicationParams'
+        - $ref: '#/components/schemas/notificationParams'
 
     paramsType:
       type: string
@@ -492,6 +533,7 @@ components:
         - approver
         - servicedesk_application
         - execution
+        - notification
 
     functionsParams:
       type: object
@@ -590,6 +632,9 @@ components:
         title:
           type: string
           description: Block title
+        short_title:
+          type: string
+          description: Block short title
         input:
           type: array
           description: Input vars

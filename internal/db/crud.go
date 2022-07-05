@@ -2472,32 +2472,32 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 		pv.comment_rejected,
 		pv.comment,
 		pv.author,
-		(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = pv.pipeline_id) last_approve
+		(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
 	FROM (
-			 SELECT servicedesk_node.id                                                              as pipeline_version_id,
-					servicedesk_node.blocks -> servicedesk_node.nodes ->> 'type_id'                  AS type_id,
-					servicedesk_node.blocks -> servicedesk_node.nodes -> 'params' ->> 'blueprint_id' AS blueprint_id
+			 SELECT servicedesk_node.id                                                                 AS pipeline_version_id,
+					servicedesk_node.blocks -> servicedesk_node.nextNode ->> 'type_id'                  AS type_id,
+					servicedesk_node.blocks -> servicedesk_node.nextNode -> 'params' ->> 'blueprint_id' AS blueprint_id
 			 FROM (
-					  SELECT id, blocks, nodes
+					  SELECT id, blocks, nextNode
 					  FROM (
-							   SELECT id,
-									  pipeline.blocks                                                               as blocks,
-									  jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint #> '{next}') as nodes
-							   FROM (
-										SELECT id,
-											   content -> 'pipeline' #> '{blocks}'    as blocks,
-											   content -> 'pipeline' ->> 'entrypoint' as entrypoint
-										FROM pipeliner.versions
-									) as pipeline
-						   ) as next_from_start
-					  WHERE next_from_start.nodes LIKE 'servicedesk_application%'
-				  ) as servicedesk_node
-	) as servicedesk_node_params
-		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
+							SELECT id,
+									pipeline.blocks AS blocks,
+									jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint -> 'next' #> '{default}') AS nextNode
+							FROM (
+									SELECT id,
+										   content -> 'pipeline' #> '{blocks}'    AS blocks,
+										   content -> 'pipeline' ->> 'entrypoint' AS entrypoint
+									FROM pipeliner.versions
+								) AS pipeline
+						   ) AS next_from_start
+					  WHERE next_from_start.nextNode LIKE 'servicedesk_application%'
+				  ) AS servicedesk_node
+		 ) AS servicedesk_node_params
+			 LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
 	WHERE pv.status = 2 AND
-		pv.created_at = (SELECT MAX(v.created_at) FROM pipeliner.versions v WHERE v.pipeline_id = pv.pipeline_id AND v.status = 2) AND
-		servicedesk_node_params.blueprint_id = $1 AND
-		servicedesk_node_params.type_id = 'servicedesk_application';
+			pv.created_at = (SELECT MAX(v.created_at) FROM pipeliner.versions v WHERE v.pipeline_id = pv.pipeline_id AND v.status = 2) AND
+			servicedesk_node_params.blueprint_id = $1 AND
+			servicedesk_node_params.type_id = 'servicedesk_application';
 `
 
 	rows, err := conn.Query(c, query, bID)

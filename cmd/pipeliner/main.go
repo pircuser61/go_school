@@ -136,6 +136,7 @@ func main() {
 		HTTPClient:           httpClient,
 		Statistic:            stat,
 		Mail:                 mailService,
+		People:               peopleService,
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
