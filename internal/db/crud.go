@@ -1860,7 +1860,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		case "finished_executor":
 			{
 				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND workers.status == 'finished'", q, len(args))
+					"IS NOT NULL AND workers.status = 'finished'", q, len(args))
 			}
 		}
 	} else {
@@ -1935,7 +1935,7 @@ func (db *PGConnection) GetTasks(c context.Context, filters entity.TaskFilter) (
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(count)
 	return &entity.EriusTasksPage{
 		Tasks: tasks.Tasks,
 		Total: count,
