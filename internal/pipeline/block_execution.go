@@ -77,7 +77,7 @@ func (a *ExecutionData) SetDecision(login string, decision ExecutionDecision, co
 	return nil
 }
 
-func (a *ExecutionData) ChangeExecutor(login string, newExecutor string, comment string) error {
+func (a *ExecutionData) ChangeExecutor(login, newExecutor, comment string) error {
 	_, ok := a.Executors[login]
 	if !ok {
 		return fmt.Errorf("%s not found in executors", login)
@@ -274,7 +274,8 @@ func (gb *GoExecutionBlock) Update(ctx context.Context, data *script.BlockUpdate
 			return nil, err
 		}
 
-		content, err := json.Marshal(step)
+		var content []byte
+		content, err = json.Marshal(step)
 		if err != nil {
 			return nil, err
 		}
@@ -296,7 +297,6 @@ func (gb *GoExecutionBlock) Update(ctx context.Context, data *script.BlockUpdate
 		if err != nil {
 			return nil, errors.New("can't assert provided update data")
 		}
-
 
 		err = gb.State.ChangeExecutor(data.ByLogin, updateParams.NewExecutorLogin, updateParams.Comment)
 		if err != nil {
