@@ -319,6 +319,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 		return errChange
 	}
 
+	// set finishedAt = now()
+
 	errUpdate = ep.updateStatusByStep(ctx, ep.GetTaskHumanStatus())
 	if errUpdate != nil {
 		return errUpdate
