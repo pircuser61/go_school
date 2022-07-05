@@ -97,7 +97,9 @@ type TaskFilter struct {
 type TaskUpdateAction string
 
 const (
-	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
+	TaskUpdateActionApprovement    TaskUpdateAction = "approvement"
+	TaskUpdateActionExecution      TaskUpdateAction = "execution"
+	TaskUpdateActionChangeExecutor TaskUpdateAction = "change_executor"
 )
 
 type TaskUpdate struct {
@@ -106,7 +108,9 @@ type TaskUpdate struct {
 }
 
 func (t *TaskUpdate) Validate() error {
-	if t.Action != TaskUpdateActionApprovement {
+	if t.Action != TaskUpdateActionApprovement &&
+		t.Action != TaskUpdateActionExecution &&
+		t.Action != TaskUpdateActionChangeExecutor {
 		return errors.New("unknown action")
 	}
 

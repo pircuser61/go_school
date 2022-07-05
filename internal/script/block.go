@@ -132,5 +132,6 @@ func (m Block) Model() FunctionModel {
 type BlockUpdateData struct {
 	Id         uuid.UUID
 	ByLogin    string
+	Action     string
 	Parameters json.RawMessage
 }
