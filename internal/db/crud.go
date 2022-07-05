@@ -1863,13 +1863,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 					"IS NOT NULL AND workers.status == 'finished'", q, len(args))
 			}
 		}
-		//if *filters.SelectAs == "approver" {
-		//	args = append(args, filters.CurrentUser)
-		//	q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'approvers'->$%d "+
-		//		"IS NOT NULL AND approvers.status != 'finished'", q, len(args))
-		//}
 	} else {
-		//args = append(args, filters.CurrentUser)
 		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
 	}
 
