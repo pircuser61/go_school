@@ -387,7 +387,7 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 // @Router /tasks/{taskID} [post]
 //nolint:gocyclo //its ok here
 func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "get_task")
+	ctx, s := trace.StartSpan(req.Context(), "update_task")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -527,6 +527,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 		_, blockErr = block.Update(ctx, &script.BlockUpdateData{
 			Id:         item.ID,
 			ByLogin:    ui.Username,
+			Action:     string(updateData.Action),
 			Parameters: updateData.Parameters,
 		})
 		if blockErr == nil {
@@ -554,6 +555,14 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
 	if action == entity.TaskUpdateActionApprovement {
 		return pipeline.BlockGoApproverID
+	}
+
+	if action == entity.TaskUpdateActionExecution {
+		return pipeline.BlockGoExecutionID
+	}
+
+	if action == entity.TaskUpdateActionChangeExecutor {
+		return pipeline.BlockGoExecutionID
 	}
 
 	return ""
