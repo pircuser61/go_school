@@ -1935,7 +1935,6 @@ func (db *PGConnection) GetTasks(c context.Context, filters entity.TaskFilter) (
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(count)
 	return &entity.EriusTasksPage{
 		Tasks: tasks.Tasks,
 		Total: count,
