@@ -62,7 +62,7 @@ type FunctionModel struct {
 
 // TODO: find a better way to implement oneOf
 type FunctionParams struct {
-	Type   string      `json:"type" enums:"approver,servicedesk_application" example:"approver"`
+	Type   string      `json:"type" enums:"approver,servicedesk_application,conditions" example:"approver"`
 	Params interface{} `json:"params,omitempty"`
 }
 

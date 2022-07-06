@@ -54,6 +54,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	waitForAllInputs := &pipeline.GoWaitForAllInputsBlock{}
 
+	ifBlock := &pipeline.IF{}
+
 	eriusFunctions = append(eriusFunctions,
 		script.IfState.Model(),
 		script.Input.Model(),
@@ -66,6 +68,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		startBlock.Model(),
 		endBlock.Model(),
 		waitForAllInputs.Model(),
+		ifBlock.Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
