@@ -14,8 +14,7 @@ type StringsEqual struct {
 	FunctionName  string
 	FunctionInput map[string]string
 	Result        bool
-	OnTrue        string
-	OnFalse       string
+	Nexts         map[string][]string
 }
 
 func (se *StringsEqual) GetStatus() Status {
@@ -78,14 +77,18 @@ func (se *StringsEqual) DebugRun(ctx context.Context, runCtx *store.VariableStor
 
 func (se *StringsEqual) Next(runCtx *store.VariableStore) ([]string, bool) {
 	if se.Result {
-		return []string{se.OnTrue}, true
+		nexts, ok := se.Nexts[trueSocket]
+		if !ok {
+			return nil, false
+		}
+		return nexts, true
 	}
 
-	return []string{se.OnFalse}, true
-}
-
-func (se *StringsEqual) NextSteps() []string {
-	return []string{se.OnTrue, se.OnFalse}
+	nexts, ok := se.Nexts[falseSocket]
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
 }
 
 func (se *StringsEqual) GetState() interface{} {

@@ -173,7 +173,9 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: []string{"Block2"},
+					Next: map[string][]string{
+						"default": []string{"Block2"},
+					},
 				},
 				"Block2": {
 					BlockType: script.TypePython3,
@@ -192,7 +194,9 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Next: []string{"Block3"},
+					Next: map[string][]string{
+						"default": []string{"Block3"},
+					},
 				},
 				"Block3": {
 					BlockType: script.TypePython3,
@@ -211,7 +215,7 @@ var (
 							Global: "Block3.Output",
 						},
 					},
-					Next: []string{},
+					Next: map[string][]string{},
 				},
 			},
 		},
@@ -268,7 +272,9 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: []string{"BlockIf"},
+					Next: map[string][]string{
+						"default": []string{"BlockIf"},
+					},
 				},
 				"BlockIf": {
 					BlockType: script.TypeInternal,
@@ -280,8 +286,10 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					OnTrue:  "BlockTrue",
-					OnFalse: "BlockFalse",
+					Next: map[string][]string{
+						"true":  []string{"BlockTrue"},
+						"false": []string{"BlockFalse"},
+					},
 				},
 				"BlockTrue": {
 					BlockType: script.TypePython3,
@@ -293,7 +301,7 @@ var (
 							Global: "BlockTrue.Output",
 						},
 					},
-					Next: []string{},
+					Next: map[string][]string{},
 				},
 				"BlockFalse": {
 					BlockType: script.TypePython3,
@@ -305,7 +313,7 @@ var (
 							Global: "BlockTrue.Output",
 						},
 					},
-					Next: []string{},
+					Next: map[string][]string{},
 				},
 			},
 		},
@@ -363,7 +371,9 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: []string{"For"},
+					Next: map[string][]string{
+						"default": []string{"For"},
+					},
 				},
 				"For": {
 					BlockType: script.TypeInternal,
@@ -387,22 +397,26 @@ var (
 							Global: "For.now_on",
 						},
 					},
-					OnTrue:  "Block3", // done
-					OnFalse: "Block2", // iteration
+					Next: map[string][]string{
+						"true":  []string{"Block3"},
+						"false": []string{"Block2"},
+					},
 				},
 				"Block2": {
 					BlockType: script.TypePython3,
 					Title:     "Block2",
 					Input:     nil,
 					Output:    nil,
-					Next:      []string{"For"},
+					Next: map[string][]string{
+						"default": []string{"For"},
+					},
 				},
 				"Block3": {
 					BlockType: script.TypePython3,
 					Title:     "Block3",
 					Input:     []entity.EriusFunctionValue{},
 					Output:    []entity.EriusFunctionValue{},
-					Next:      []string{},
+					Next:      map[string][]string{},
 				},
 			},
 		},
@@ -467,7 +481,9 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: []string{"Scenario"},
+					Next: map[string][]string{
+						"default": []string{"Scenario"},
+					},
 				},
 				"Scenario": {
 					BlockType: script.TypeScenario,
@@ -486,7 +502,9 @@ var (
 							Global: "Scenario.Output",
 						},
 					},
-					Next: []string{"Block2"},
+					Next: map[string][]string{
+						"default": []string{"Block2"},
+					},
 				},
 				"Block2": {
 					BlockType: script.TypePython3,
@@ -546,7 +564,9 @@ var (
 							Global: "MasGen1.Output",
 						},
 					},
-					Next: []string{"For1"},
+					Next: map[string][]string{
+						"default": []string{"For1"},
+					},
 				},
 				"For1": {
 					BlockType: script.TypeInternal,
@@ -570,8 +590,10 @@ var (
 							Global: "For1.now_on",
 						},
 					},
-					OnTrue:  "",
-					OnFalse: "MasGen2",
+					Next: map[string][]string{
+						"true":  []string{""},
+						"false": []string{"MasGen2"},
+					},
 				},
 				"MasGen2": {
 					BlockType: script.TypePython3,
@@ -583,7 +605,9 @@ var (
 							Global: "MasGen2.Output",
 						},
 					},
-					Next: []string{"For2"},
+					Next: map[string][]string{
+						"default": []string{"For2"},
+					},
 				},
 				"For2": {
 					BlockType: script.TypeInternal,
@@ -607,13 +631,17 @@ var (
 							Global: "For2.now_on",
 						},
 					},
-					OnTrue:  "For1",
-					OnFalse: "Block1",
+					Next: map[string][]string{
+						"true":  []string{"For1"},
+						"false": []string{"Block1"},
+					},
 				},
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
-					Next:      []string{"For2"},
+					Next: map[string][]string{
+						"default": []string{"For2"},
+					},
 				},
 			},
 		},
@@ -657,7 +685,9 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: []string{"Block2"},
+					Next: map[string][]string{
+						"default": []string{"Block2"},
+					},
 				},
 				"Block2": {
 					BlockType: script.TypePython3,
@@ -670,7 +700,9 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Next: []string{"StringsEqual"},
+					Next: map[string][]string{
+						"default": []string{"StringsEqual"},
+					},
 				},
 				"StringsEqual": {
 					BlockType: script.TypeInternal,
@@ -687,8 +719,10 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					OnTrue:  "BlockTrue",
-					OnFalse: "BlockFalse",
+					Next: map[string][]string{
+						"true":  []string{"BlockTrue"},
+						"false": []string{"BlockFalse"},
+					},
 				},
 				"BlockTrue": {
 					BlockType: script.TypePython3,
@@ -701,7 +735,7 @@ var (
 							Global: "BlockTrue.Output",
 						},
 					},
-					Next: []string{},
+					Next: map[string][]string{},
 				},
 				"BlockFalse": {
 					BlockType: script.TypePython3,
@@ -714,7 +748,7 @@ var (
 							Global: "BlockTrue.Output",
 						},
 					},
-					Next: []string{},
+					Next: map[string][]string{},
 				},
 			},
 		},
@@ -773,7 +807,9 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Next: []string{"Block2"},
+					Next: map[string][]string{
+						"default": []string{"Block2"},
+					},
 				},
 				"Block2": {
 					BlockType: script.TypePython3,
@@ -786,7 +822,9 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Next: []string{"Connector"},
+					Next: map[string][]string{
+						"default": []string{"Connector"},
+					},
 				},
 				"Connector": {
 					BlockType: script.TypeInternal,
@@ -810,7 +848,9 @@ var (
 							Global: "Connector.Output",
 						},
 					},
-					Next: []string{"Block3"},
+					Next: map[string][]string{
+						"default": []string{"Block3"},
+					},
 				},
 				"Block3": {
 					BlockType: script.TypePython3,
@@ -823,7 +863,7 @@ var (
 						},
 					},
 					Output: nil,
-					Next:   []string{},
+					Next:   map[string][]string{},
 				},
 			},
 		},

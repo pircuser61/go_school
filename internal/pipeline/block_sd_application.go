@@ -37,12 +37,12 @@ type SdApplicationData struct {
 }
 
 type GoSdApplicationBlock struct {
-	Name     string
-	Title    string
-	Input    map[string]string
-	Output   map[string]string
-	NextStep []string
-	State    *ApplicationData
+	Name   string
+	Title  string
+	Input  map[string]string
+	Output map[string]string
+	Nexts  map[string][]string
+	State  *ApplicationData
 
 	Storage db.Database
 }
@@ -117,11 +117,11 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, runCtx *store.Vari
 }
 
 func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	return gb.NextStep, true
-}
-
-func (gb *GoSdApplicationBlock) NextSteps() []string {
-	return gb.NextStep
+	nexts, ok := gb.Nexts[DefaultSocket]
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
 }
 
 func (gb *GoSdApplicationBlock) GetState() interface{} {
@@ -161,7 +161,7 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 				BlueprintID: "",
 			},
 		},
-		NextFuncs: []string{script.Next},
+		Sockets: []string{DefaultSocket},
 	}
 }
 
@@ -172,11 +172,11 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, storage db.Da
 	b := &GoSdApplicationBlock{
 		Storage: storage,
 
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		NextStep: ef.Next,
+		Name:   name,
+		Title:  ef.Title,
+		Input:  map[string]string{},
+		Output: map[string]string{},
+		Nexts:  ef.Next,
 	}
 
 	for _, v := range ef.Input {

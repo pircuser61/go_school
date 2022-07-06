@@ -43,18 +43,18 @@ func NewService(c Config) (*Service, error) {
 	return &s, nil
 }
 
-func (s *Service) SendNotification(ctx context.Context, to string, tmpl Template) error {
+func (s *Service) SendNotification(ctx context.Context, to []string, tmpl Template) error {
 	_, span := trace.StartSpan(ctx, "SendNotification")
 	defer span.End()
 
 	msg := &email.Mail{
-		From: s.from,
-		To: []*mail.Address{
-			{
-				Address: to,
-			},
-		},
+		From:    s.from,
+		To:      make([]*mail.Address, 0, len(to)),
 		Subject: tmpl.Subject,
+	}
+
+	for _, person := range to {
+		msg.To = append(msg.To, &mail.Address{Address: person})
 	}
 
 	temp, err := template.New("").Parse(tmpl.Text)

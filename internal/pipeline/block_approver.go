@@ -45,6 +45,9 @@ type ApproverData struct {
 	Decision       *ApproverDecision   `json:"decision,omitempty"`
 	Comment        *string             `json:"comment,omitempty"`
 	ActualApprover *string             `json:"actual_approver,omitempty"`
+
+	SLA        int                `json:"sla"`
+	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -92,12 +95,12 @@ type ApproverResult struct {
 }
 
 type GoApproverBlock struct {
-	Name     string
-	Title    string
-	Input    map[string]string
-	Output   map[string]string
-	NextStep []string
-	State    *ApproverData
+	Name   string
+	Title  string
+	Input  map[string]string
+	Output map[string]string
+	Nexts  map[string][]string
+	State  *ApproverData
 
 	Storage db.Database
 }
@@ -149,6 +152,8 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 
 	// TODO: fix
 	// runCtx.AddStep(gb.Name)
+
+	// TODO: handle SLA and AutoAction
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
@@ -215,11 +220,15 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	return gb.NextStep, true
-}
-
-func (gb *GoApproverBlock) NextSteps() []string {
-	return gb.NextStep
+	key := rejectedSocket
+	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
+		key = approvedSocket
+	}
+	nexts, ok := gb.Nexts[key]
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
 }
 
 func (gb *GoApproverBlock) GetState() interface{} {
@@ -295,7 +304,7 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockGoApproverID,
 		BlockType: script.TypeGo,
-		Title:     BlockGoApproverTitle,
+		Title:     gb.Title,
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
@@ -319,9 +328,10 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			Params: &script.ApproverParams{
 				Approver: "",
 				Type:     "",
+				SLA:      0,
 			},
 		},
-		NextFuncs: []string{script.Next},
+		Sockets: []string{approvedSocket, rejectedSocket},
 	}
 }
 
@@ -330,11 +340,11 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Databas
 	b := &GoApproverBlock{
 		Storage: storage,
 
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		NextStep: ef.Next,
+		Name:   name,
+		Title:  ef.Title,
+		Input:  map[string]string{},
+		Output: map[string]string{},
+		Nexts:  ef.Next,
 	}
 
 	for _, v := range ef.Input {
@@ -364,6 +374,8 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Databas
 		Approvers: map[string]struct{}{
 			params.Approver: {},
 		},
+		SLA:        params.SLA,
+		AutoAction: params.AutoAction,
 	}
 
 	return b, nil

@@ -13,11 +13,11 @@ const (
 	shapeConnector
 	shapeVariable
 
-	OnTrue       string = "OnTrue"
-	OnFalse      string = "OnFalse"
-	Next         string = "Next"
-	Final        string = "OnTrue"
-	OnIter       string = "OnFalse"
+	// TODO: rm copy
+	defaultSocket = "default"
+	trueSocket    = "true"
+	falseSocket   = "false"
+
 	checkVarName string = "check"
 
 	TypeBool   string = "bool"
@@ -55,9 +55,9 @@ type FunctionModel struct {
 	Inputs    []FunctionValueModel `json:"inputs,omitempty"`
 	Outputs   []FunctionValueModel `json:"outputs,omitempty"`
 	ShapeType int                  `json:"shape_type"`
-	NextFuncs []string             `json:"next_funcs"`
 	ID        string               `json:"id"`
 	Params    *FunctionParams      `json:"params,omitempty"`
+	Sockets   []string             `json:"sockets"`
 }
 
 // TODO: find a better way to implement oneOf

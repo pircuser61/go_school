@@ -17,6 +17,14 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+const (
+	WaitForAllImputsBase = "wait_for_all_inputs"
+	IfBase               = "if"
+	ConnectorBase        = "connector"
+	ForBase              = "for"
+	StringsIsEqualBase   = "strings_is_equal"
+)
+
 // GetModules godoc
 // @Summary Get list of modules
 // @Description Список блоков
@@ -27,6 +35,7 @@ import (
 // @Failure 400 {object} httpError
 // @Failure 500 {object} httpError
 // @Router /modules [get]
+// nolint:gocyclo // future rewrite
 func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
@@ -54,6 +63,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	waitForAllInputs := &pipeline.GoWaitForAllInputsBlock{}
 
+	notificationBlock := &pipeline.GoNotificationBlock{}
+
 	ifBlock := &pipeline.IF{}
 
 	eriusFunctions = append(eriusFunctions,
@@ -68,6 +79,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		startBlock.Model(),
 		endBlock.Model(),
 		waitForAllInputs.Model(),
+		notificationBlock.Model(),
 		ifBlock.Model(),
 	)
 
@@ -88,7 +100,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			Inputs:    make([]script.FunctionValueModel, 0),
 			Outputs:   make([]script.FunctionValueModel, 0),
 			ShapeType: script.ShapeScenario,
-			NextFuncs: []string{script.Next},
+			Sockets:   []string{pipeline.DefaultSocket},
 		}
 
 		for _, v := range scenario.Input {
@@ -109,10 +121,30 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for i := range eriusFunctions {
-		v := eriusFunctions[i]
-		id := v.Title + v.BlockType
-		v.ID = id
-		eriusFunctions[i] = v
+		switch eriusFunctions[i].ID {
+		case IfBase:
+			eriusFunctions[i].Title = IfBase
+		case StringsIsEqualBase:
+			eriusFunctions[i].Title = StringsIsEqualBase
+		case ConnectorBase:
+			eriusFunctions[i].Title = ConnectorBase
+		case ForBase:
+			eriusFunctions[i].Title = ForBase
+		case "go_test_block":
+			eriusFunctions[i].Title = "input"
+		case "approver":
+			eriusFunctions[i].Title = "Согласование"
+		case "servicedesk_application":
+			eriusFunctions[i].Title = "Заявка Servicedesk"
+		case "execution":
+			eriusFunctions[i].Title = "Исполнение"
+		case "start":
+			eriusFunctions[i].Title = "Начало"
+		case "end":
+			eriusFunctions[i].Title = "Конец"
+		case WaitForAllImputsBase:
+			eriusFunctions[i].Title = WaitForAllImputsBase
+		}
 	}
 
 	eriusShapes, err := script.GetShapes()
@@ -304,7 +336,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 		FunctionName:   block.Title,
 		FunctionInput:  make(map[string]string),
 		FunctionOutput: make(map[string]string),
-		NextStep:       []string{},
+		Nexts:          map[string][]string{pipeline.DefaultSocket: []string{}},
 		RunURL:         ae.FaaS + "function/%s",
 	}
 
