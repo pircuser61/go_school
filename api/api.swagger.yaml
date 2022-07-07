@@ -486,6 +486,54 @@ components:
         - execution
         - sla
 
+    conditionParams:
+      type: object
+      description: Condition params
+      properties:
+        conditionGroups:
+          type: array
+          description: Groups with conditions
+          items:
+            - $ref: '#/components/schemas/conditionGroup'
+
+    conditionGroup:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/allOf'
+        - $ref: '#/components/schemas/anyOf'
+
+    allOf:
+      type: array
+      items:
+        - $ref: '#/components/schemas/condition'
+
+    anyOf:
+      type: array
+      items:
+        - $ref: '#/components/schemas/condition'
+
+    condition:
+      type: object
+      properties:
+        leftOperand:
+          $ref: '#/components/schemas/operand'
+        rightOperand:
+          $ref: '#/components/schemas/operand'
+        operator:
+          $ref: '#/components/schemas/operator'
+
+    operand:
+      type: object
+      properties:
+        value:
+          type: object
+        type:
+          type: string
+
+    operator:
+      type: string
+
+
     notificationParams:
       type: object
       description: Notification params
@@ -525,6 +573,7 @@ components:
         - $ref: '#/components/schemas/executionParams'
         - $ref: '#/components/schemas/sdApplicationParams'
         - $ref: '#/components/schemas/notificationParams'
+        - $ref: "#/components/schemas/conditionParams"
 
     paramsType:
       type: string

@@ -93,3 +93,20 @@ func (e *IF) GetState() interface{} {
 func (e *IF) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
+
+func (e *IF) Model() script.FunctionModel {
+	return script.FunctionModel{
+		ID:        BlockGoIfID,
+		BlockType: script.TypeIF,
+		Title:     BlockGoIfTitle,
+		Inputs:    nil,
+		Outputs:   nil,
+		Params: &script.FunctionParams{
+			Type: BlockGoIfID,
+			Params: &script.ConditionParams{
+				Type: "",
+			},
+		},
+		Sockets: []string{DefaultSocket},
+	}
+}
