@@ -546,9 +546,11 @@ components:
           type: string
         operandType:
           type: string
+          enum: ["variableOperand", "valueOperand"]
 
     variableOperand:
-      description: Operand which uses variable to compare in conditions
+      description: Operand which uses variable to compare in conditions. You can use .
+      for accessing object variable members (i.e. "applicationData", "applicationData.comment")
       allOf:
         - $ref: '#/components/schemas/basicOperand'
         - type: object
