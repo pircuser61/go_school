@@ -1,6 +1,8 @@
 package script
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+)
 
 const (
 	MoreThanCompareOperator        string = "moreThan"
