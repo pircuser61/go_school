@@ -498,41 +498,74 @@ components:
 
     conditionGroup:
       type: object
-      oneOf:
-        - $ref: '#/components/schemas/allOf'
-        - $ref: '#/components/schemas/anyOf'
-
-    allOf:
-      type: array
-      items:
-        - $ref: '#/components/schemas/condition'
-
-    anyOf:
-      type: array
-      items:
-        - $ref: '#/components/schemas/condition'
+      description: Group with conditions
+      properties:
+        id:
+          type: string
+        logicalOperator:
+          type: string
+          enum: [ "or", "and"]
+        conditions:
+            type: array
+            items:
+              - $ref: '#/components/schemas/condition'
+      required:
+        - id
+        - logicalOperator
+        - conditions
 
     condition:
       type: object
+      description: Compare operands using operator
       properties:
         leftOperand:
           $ref: '#/components/schemas/operand'
         rightOperand:
           $ref: '#/components/schemas/operand'
         operator:
-          $ref: '#/components/schemas/operator'
+          $ref: '#/components/schemas/compareOperator'
 
     operand:
+      oneOf:
+        - $ref: '#/components/schemas/variableOperand'
+        - $ref: '#/components/schemas/valueOperand'
+      discriminator:
+          propertyName: operandType
+          mapping:
+            varOperand: variableOperand
+            valOperand: valueOperand
+
+    basicOperand:
       type: object
+      description: Basic operand, used for polymorphism
       properties:
-        value:
-          type: object
-        type:
+        dataType:
+          type: string
+        operandType:
           type: string
 
-    operator:
-      type: string
+    variableOperand:
+      description: Operand which uses variable to compare in conditions
+      allOf:
+        - $ref: '#/components/schemas/basicOperand'
+        - type: object
+          properties:
+            variableRef:
+              type: string
+    valueOperand:
+      description: Operand which uses simple value to compare in conditions
+      allOf:
+        - $ref: '#/components/schemas/basicOperand'
+        - type: object
+          properties:
+            value:
+              type: string
 
+    compareOperator:
+      type: string
+      description: Used operator to compare operands
+      enum: [ "Равно", "Не равно", "Больше", "Меньше", "Больше или равно", "Меньше или равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual","More", "Less", "MoreOrEqual", "LessOrEqual" ]
 
     notificationParams:
       type: object
