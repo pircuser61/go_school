@@ -9,8 +9,7 @@ import (
 type Block int
 
 const (
-	IfState Block = iota
-	Input
+	Input Block = iota
 	Equal
 	Vars
 	Connector
