@@ -44,12 +44,6 @@ func (a ExecutionDecision) String() string {
 	return string(a)
 }
 
-type ChangedExecutor struct {
-	OldExecutorLogin string `json:"old_executor_login"`
-	NewExecutorLogin string `json:"new_executor_login"`
-	Comment          string `json:"comment"`
-}
-
 type ExecutionData struct {
 	ExecutionType          script.ExecutionType `json:"execution_type"`
 	Executors              map[string]struct{}  `json:"executors"`
