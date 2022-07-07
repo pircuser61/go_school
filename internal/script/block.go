@@ -21,19 +21,6 @@ func (m Block) Model() FunctionModel {
 	f := FunctionModel{}
 
 	switch m {
-	case IfState:
-		f = FunctionModel{
-			BlockType: TypeIF,
-			Title:     "if",
-			Inputs: []FunctionValueModel{
-				{
-					Name: checkVarName,
-					Type: TypeBool,
-				},
-			},
-			Sockets:   []string{trueSocket, falseSocket},
-			ShapeType: shapeRhombus,
-		}
 	case Input:
 		f = FunctionModel{
 			BlockType: TypeInternal,
