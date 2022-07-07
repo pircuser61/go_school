@@ -1440,31 +1440,32 @@ func (db *PGConnection) UpdateDraft(c context.Context,
 	return nil
 }
 
-func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, error) {
+func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
 	conn, err := db.Pool.Acquire(ctx)
 	if err != nil {
-		return NullUuid, err
+		return NullUuid, time.Time{}, err
 	}
 
 	defer conn.Release()
 
 	var id uuid.UUID
+	var t time.Time
 
 	q := `
-	SELECT id 
+	SELECT id, time
 	FROM pipeliner.variable_storage 
-	WHERE work_id = $1 AND step_name = $2
+	WHERE work_id = $1 AND step_name = $2 AND status IN ('idle', 'ready', 'running')
 `
 	if scanErr := conn.QueryRow(ctx, q,
 		dto.WorkID,
-		dto.StepName).Scan(&id); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
-		return NullUuid, nil
+		dto.StepName).Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
+		return NullUuid, time.Time{}, nil
 	}
 	if id != NullUuid {
-		return id, nil
+		return id, t, nil
 	}
 
 	id = uuid.New()
@@ -1510,10 +1511,10 @@ func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepReques
 		dto.Status,
 	)
 	if err != nil {
-		return NullUuid, err
+		return NullUuid, time.Time{}, err
 	}
 
-	return id, nil
+	return id, timestamp, nil
 }
 
 func (db *PGConnection) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) error {

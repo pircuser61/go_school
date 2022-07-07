@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -65,7 +66,7 @@ type Database interface {
 	GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
 	UpdateDraft(c context.Context,
 		p *entity.EriusScenario, pipelineData []byte) error
-	SaveStepContext(c context.Context, dto *SaveStepRequest) (uuid.UUID, error)
+	SaveStepContext(c context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
 	UpdateStepContext(c context.Context, dto *UpdateStepRequest) error
 
 	GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error)

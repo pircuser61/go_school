@@ -10,7 +10,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -43,8 +42,6 @@ type GoSdApplicationBlock struct {
 	Output map[string]string
 	Nexts  map[string][]string
 	State  *ApplicationData
-
-	Storage db.Database
 }
 
 func (gb *GoSdApplicationBlock) GetStatus() Status {
@@ -74,11 +71,7 @@ func (gb *GoSdApplicationBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoSdApplicationBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return gb.DebugRun(ctx, runCtx)
-}
-
-func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) (err error) {
+func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) (err error) {
 	_, s := trace.StartSpan(ctx, "run_go_sd_block")
 	defer s.End()
 
@@ -165,13 +158,11 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoSdApplicationBlock, error) {
+func createGoSdApplicationBlock(name string, ef *entity.EriusFunc) (*GoSdApplicationBlock, error) {
 	log := logger.CreateLogger(nil)
 	log.WithField("params", ef.Params).Info("sd_application parameters")
 
 	b := &GoSdApplicationBlock{
-		Storage: storage,
-
 		Name:   name,
 		Title:  ef.Title,
 		Input:  map[string]string{},

@@ -12,8 +12,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -129,13 +127,13 @@ func (ep *ExecutablePipeline) CreateTask(ctx context.Context, author string, isD
 }
 
 func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return ep.DebugRun(ctx, runCtx)
+	return ep.DebugRun(ctx, nil, runCtx)
 }
 
-func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasError bool, status Status) (uuid.UUID, error) {
+func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasError bool, status Status) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(ep.VarStore)
 	if errSerialize != nil {
-		return db.NullUuid, errSerialize
+		return db.NullUuid, time.Time{}, errSerialize
 	}
 
 	breakPoints := ep.VarStore.StopPoints.BreakPointsList()
@@ -187,12 +185,20 @@ func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskH
 	return nil
 }
 
+type stepCtx struct {
+	workNumber string
+	workTitle  string
+	stepStart  time.Time
+}
+
+func (ep *ExecutablePipeline) stepCtx(start time.Time) *stepCtx {
+	return &stepCtx{stepStart: start, workNumber: ep.WorkNumber, workTitle: ep.Name}
+}
+
 //nolint:gocognit,gocyclo //its really complex
-func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
-
-	log := logger.GetLogger(ctx)
 
 	ep.VarStore = runCtx
 
@@ -212,11 +218,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 	for !ep.IsOver() {
 		for step := range ep.ActiveBlocks {
-			log.Info("executing", ep.ActiveBlocks)
-
 			currentBlock, ok := ep.Blocks[step]
 			if !ok || currentBlock == nil {
-				_, err := ep.createStep(ctx, step, true, StatusFinished)
+				_, _, err := ep.createStep(ctx, step, true, StatusFinished)
 				if err != nil {
 					return err
 				}
@@ -233,14 +237,17 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 			var id uuid.UUID
 			var err error
+			var ts time.Time
 
 			if currentBlock.IsScenario() {
 				// TODO: handle
 			} else {
-				id, err = ep.createStep(ctx, step, false, StatusIdle)
+				id, ts, err = ep.createStep(ctx, step, false, StatusIdle)
 				if err != nil {
 					return err
 				}
+
+				sCtx := ep.stepCtx(ts)
 
 				// завершаем запущенный блок, если на другом блоке в этом цикле возникло неуспешное выполнениеч
 				if ep.stepNotSuccessful {
@@ -259,7 +266,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 				ep.VarStore.SetValue(getWorkIdKey(step), id)
 
-				err = currentBlock.DebugRun(ctx, ep.VarStore)
+				err = currentBlock.DebugRun(ctx, sCtx, ep.VarStore)
 				if err != nil {
 					key := step + KeyDelimiter + ErrorKey
 					ep.VarStore.SetValue(key, err.Error())
@@ -542,11 +549,11 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 	case BlockGoTestID:
 		return createGoTestBlock(name, ef), nil
 	case BlockGoApproverID:
-		return createGoApproverBlock(name, ef, ep.Storage)
+		return createGoApproverBlock(name, ef, ep)
 	case BlockGoSdApplicationID:
-		return createGoSdApplicationBlock(name, ef, ep.Storage)
+		return createGoSdApplicationBlock(name, ef)
 	case BlockGoExecutionID:
-		return createGoExecutionBlock(name, ef, ep.Storage)
+		return createGoExecutionBlock(name, ef, ep)
 	case BlockGoStartId:
 		return createGoStartBlock(name, ef), nil
 	case BlockGoEndId:
@@ -554,7 +561,7 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 	case BlockWaitForAllInputsId:
 		return createGoWaitForAllInputsBlock(name, ef), nil
 	case BlockGoNotificationID:
-		return createGoNotificationBlock(name, ef, ep.Sender, ep.People)
+		return createGoNotificationBlock(name, ef, ep)
 	}
 
 	return nil, errors.New("unknown go-block type")

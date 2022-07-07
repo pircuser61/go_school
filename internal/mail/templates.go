@@ -12,6 +12,11 @@ type Template struct {
 	Variables interface{}
 }
 
+type Notification struct {
+	Template Template
+	To       []string
+}
+
 func NewApprovementSLATemplate(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время согласования", id, name),

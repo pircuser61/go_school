@@ -80,7 +80,7 @@ type GoExecutionBlock struct {
 	Nexts  map[string][]string
 	State  *ExecutionData
 
-	Storage db.Database
+	Pipeline *ExecutablePipeline
 }
 
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
@@ -124,11 +124,7 @@ func (gb *GoExecutionBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoExecutionBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return gb.DebugRun(ctx, runCtx)
-}
-
-func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) (err error) {
+func (gb *GoExecutionBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) (err error) {
 	_, s := trace.StartSpan(ctx, "run_go_execution_block")
 	defer s.End()
 
@@ -148,7 +144,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 	}
 
 	var step *entity.Step
-	step, err = gb.Storage.GetTaskStepById(ctx, id)
+	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	} else if step == nil {
@@ -225,7 +221,7 @@ func (gb *GoExecutionBlock) Update(ctx context.Context, data *script.BlockUpdate
 		return nil, errors.New("can't assert provided update data")
 	}
 
-	step, err := gb.Storage.GetTaskStepById(ctx, data.Id)
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return nil, err
 	} else if step == nil {
@@ -262,7 +258,7 @@ func (gb *GoExecutionBlock) Update(ctx context.Context, data *script.BlockUpdate
 		return nil, err
 	}
 
-	err = gb.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -316,15 +312,15 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoExecutionBlock, error) {
+func createGoExecutionBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) (*GoExecutionBlock, error) {
 	b := &GoExecutionBlock{
-		Storage: storage,
-
 		Name:   name,
 		Title:  ef.Title,
 		Input:  map[string]string{},
 		Output: map[string]string{},
 		Nexts:  ef.Next,
+
+		Pipeline: pipeline,
 	}
 
 	for _, v := range ef.Input {

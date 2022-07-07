@@ -4,12 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/common/log"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -34,6 +39,13 @@ const (
 	ApproverDecisionRejected ApproverDecision = "rejected"
 )
 
+func decisionFromAutoAction(action script.AutoAction) ApproverDecision {
+	if action == script.AutoActionApprove {
+		return ApproverDecisionApproved
+	}
+	return ApproverDecisionRejected
+}
+
 type Approver struct {
 	Decision *ApproverDecision `json:"decision,omitempty"`
 	Comment  *string           `json:"comment,omitempty"`
@@ -48,6 +60,8 @@ type ApproverData struct {
 
 	SLA        int                `json:"sla"`
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
+
+	DidSLANotification bool `json:"did_sla_notification"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -102,7 +116,7 @@ type GoApproverBlock struct {
 	Nexts  map[string][]string
 	State  *ApproverData
 
-	Storage db.Database
+	Pipeline *ExecutablePipeline
 }
 
 func (gb *GoApproverBlock) GetStatus() Status {
@@ -142,12 +156,56 @@ func (gb *GoApproverBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoApproverBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return gb.DebugRun(ctx, runCtx)
+const (
+	AutoActionComment = "Выполнено автоматическое действие по истечению SLA"
+	AutoApprover = "auto_approve"
+)
+
+func (gb *GoApproverBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) error {
+	if gb.State.DidSLANotification {
+		return false, nil
+	}
+	if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
+		l := logger.GetLogger(ctx)
+
+		emails := make([]string, 0, len(gb.State.Approvers))
+		for approver := range gb.State.Approvers {
+			email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
+			if err != nil {
+				l.WithError(err).Error("couldn't get email")
+			}
+			emails = append(emails, email)
+		}
+		if len(emails) == 0 {
+			return nil
+		}
+		err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+			mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, ""))
+		if err != nil {
+			return err
+		}
+
+		gb.State.DidSLANotification = true
+
+		if gb.State.AutoAction != nil {
+			if err := gb.setApproverDecision(ctx,
+				id,
+				AutoApprover,
+				ApproverUpdateParams{
+					Decision: decisionFromAutoAction(*gb.State.AutoAction),
+					Comment:  AutoActionComment,
+				}); err != nil {
+				return nil
+			}
+		} else {
+
+		}
+	}
+	return nil
 }
 
-func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) (err error) {
-	_, s := trace.StartSpan(ctx, "run_go_approver_block")
+func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
+	ctx, s := trace.StartSpan(ctx, "run_go_approver_block")
 	defer s.End()
 
 	// TODO: fix
@@ -167,7 +225,7 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 
 	// check state from database
 	var step *entity.Step
-	step, err = gb.Storage.GetTaskStepById(ctx, id)
+	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	} else if step == nil {
@@ -188,6 +246,11 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, runCtx *store.VariableS
 	}
 
 	gb.State = &state
+
+	err := gb.handleSLA(ctx, id, stepCtx)
+	if err != nil{
+		log.Error("couldn't handle sla")
+	}
 
 	// check decision
 	decision := gb.State.GetDecision()
@@ -235,6 +298,62 @@ func (gb *GoApproverBlock) GetState() interface{} {
 	return gb.State
 }
 
+func (gb *GoApproverBlock) setApproverDecision(ctx context.Context, stepID uuid.UUID,
+	approver string, updateParams ApproverUpdateParams) error {
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, stepID)
+	if err != nil {
+		return err
+	} else if step == nil {
+		return errors.New("can't get step from database")
+	}
+
+	// get state from step.State
+	stepData, ok := step.State[gb.Name]
+	if !ok {
+		return errors.New("can't get step state")
+	}
+
+	var state ApproverData
+	err = json.Unmarshal(stepData, &state)
+	if err != nil {
+		return errors.Wrap(err, "invalid format of go-approver-block state")
+	}
+
+	gb.State = &state
+
+	err = gb.State.SetDecision(
+		approver,
+		updateParams.Decision,
+		updateParams.Comment,
+	)
+	if err != nil {
+		return err
+	}
+
+	step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	content, err := json.Marshal(step)
+	if err != nil {
+		return err
+	}
+
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          stepID,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		HasError:    false,
+		Status:      string(StatusFinished),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (gb *GoApproverBlock) Update(ctx context.Context, data *script.BlockUpdateData) (interface{}, error) {
 	if data == nil {
 		return nil, errors.New("empty data")
@@ -246,58 +365,7 @@ func (gb *GoApproverBlock) Update(ctx context.Context, data *script.BlockUpdateD
 		return nil, errors.New("can't assert provided data")
 	}
 
-	step, err := gb.Storage.GetTaskStepById(ctx, data.Id)
-	if err != nil {
-		return nil, err
-	} else if step == nil {
-		return nil, errors.New("can't get step from database")
-	}
-
-	// get state from step.State
-	stepData, ok := step.State[gb.Name]
-	if !ok {
-		return nil, errors.New("can't get step state")
-	}
-
-	var state ApproverData
-	err = json.Unmarshal(stepData, &state)
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid format of go-approver-block state")
-	}
-
-	gb.State = &state
-
-	err = gb.State.SetDecision(
-		data.ByLogin,
-		updateParams.Decision,
-		updateParams.Comment,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	step.State[gb.Name], err = json.Marshal(gb.State)
-	if err != nil {
-		return nil, err
-	}
-
-	content, err := json.Marshal(step)
-	if err != nil {
-		return nil, err
-	}
-
-	err = gb.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          data.Id,
-		Content:     content,
-		BreakPoints: step.BreakPoints,
-		HasError:    false,
-		Status:      string(StatusFinished),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, nil
+	return nil, gb.setApproverDecision(ctx, data.Id, data.ByLogin, updateParams)
 }
 
 func (gb *GoApproverBlock) Model() script.FunctionModel {
@@ -336,15 +404,15 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoApproverBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoApproverBlock, error) {
+func createGoApproverBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) (*GoApproverBlock, error) {
 	b := &GoApproverBlock{
-		Storage: storage,
-
 		Name:   name,
 		Title:  ef.Title,
 		Input:  map[string]string{},
 		Output: map[string]string{},
 		Nexts:  ef.Next,
+
+		Pipeline: pipeline,
 	}
 
 	for _, v := range ef.Input {

@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"go.opencensus.io/trace"
@@ -12,7 +11,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -31,8 +29,7 @@ type GoNotificationBlock struct {
 	Nexts  map[string][]string
 	State  *NotificationData
 
-	Sender *mail.Service
-	People *people.Service
+	Pipeline *ExecutablePipeline
 }
 
 func (gb *GoNotificationBlock) GetStatus() Status {
@@ -59,11 +56,7 @@ func (gb *GoNotificationBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoNotificationBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return gb.DebugRun(ctx, runCtx)
-}
-
-func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *store.VariableStore) (err error) {
+func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *store.VariableStore) (err error) {
 	ctx, s := trace.StartSpan(ctx, "run_go_notification_block")
 	defer s.End()
 
@@ -73,18 +66,14 @@ func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *store.VariableSt
 			emails = append(emails, person)
 			continue
 		}
-		user, err := gb.People.GetUser(ctx, person)
+		email, err := gb.Pipeline.People.GetUserEmail(ctx, person)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("couldn't find user with login %s", person))
+			return err
 		}
-		typed, err := user.ToSSOUserTyped()
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("couldn't convert user with login %s", person))
-		}
-		emails = append(emails, typed.Email)
+		emails = append(emails, email)
 	}
 
-	return gb.Sender.SendNotification(ctx, emails, mail.Template{
+	return gb.Pipeline.Sender.SendNotification(ctx, emails, mail.Template{
 		Subject:   gb.State.Subject,
 		Text:      gb.State.Text,
 		Variables: nil,
@@ -127,8 +116,7 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoNotificationBlock(name string, ef *entity.EriusFunc, sender *mail.Service,
-	ps *people.Service) (*GoNotificationBlock, error) {
+func createGoNotificationBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) (*GoNotificationBlock, error) {
 	b := &GoNotificationBlock{
 		Name:   name,
 		Title:  ef.Title,
@@ -136,8 +124,7 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, sender *mail.S
 		Output: map[string]string{},
 		Nexts:  ef.Next,
 
-		Sender: sender,
-		People: ps,
+		Pipeline: pipeline,
 	}
 
 	for _, v := range ef.Input {

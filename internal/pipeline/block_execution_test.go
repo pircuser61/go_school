@@ -27,7 +27,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 		Output   map[string]string
 		NextStep map[string][]string
 		State    *ExecutionData
-		Storage  db.Database
+		Pipeline *ExecutablePipeline
 	}
 	type args struct {
 		ctx    context.Context
@@ -48,7 +48,6 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Input:    nil,
 				Output:   nil,
 				NextStep: map[string][]string{},
-				Storage:  nil,
 			},
 			args: args{
 				ctx:    context.Background(),
@@ -65,7 +64,6 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Input:    nil,
 				Output:   nil,
 				NextStep: map[string][]string{},
-				Storage:  nil,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -88,18 +86,20 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Input:    nil,
 				Output:   nil,
 				NextStep: map[string][]string{},
-				Storage: func() db.Database {
-					res := &mocks.MockedDatabase{}
+				Pipeline: &ExecutablePipeline{
+					Storage: func() db.Database {
+						res := &mocks.MockedDatabase{}
 
-					res.On("GetTaskStepById",
-						mock.MatchedBy(func(ctx context.Context) bool { return true }),
-						stepId,
-					).Return(
-						nil, errors.New("unknown error"),
-					)
+						res.On("GetTaskStepById",
+							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							stepId,
+						).Return(
+							nil, errors.New("unknown error"),
+						)
 
-					return res
-				}(),
+						return res
+					}(),
+				},
 			},
 			args: args{
 				ctx: context.Background(),
@@ -122,9 +122,9 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Input:   tt.fields.Input,
 				Output:  tt.fields.Output,
 				Nexts:   tt.fields.NextStep,
-				Storage: tt.fields.Storage,
+				Pipeline: tt.fields.Pipeline,
 			}
-			if err := gb.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
+			if err := gb.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {
 				t.Errorf("execution.DebugRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
