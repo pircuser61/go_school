@@ -502,6 +502,8 @@ components:
       properties:
         id:
           type: string
+        name:
+          type: string
         logicalOperator:
           type: string
           enum: [ "or", "and"]
@@ -526,6 +528,7 @@ components:
           $ref: '#/components/schemas/compareOperator'
 
     operand:
+      description: Operand for comparison
       oneOf:
         - $ref: '#/components/schemas/variableOperand'
         - $ref: '#/components/schemas/valueOperand'
@@ -564,8 +567,8 @@ components:
     compareOperator:
       type: string
       description: Used operator to compare operands
-      enum: [ "Равно", "Не равно", "Больше", "Меньше", "Больше или равно", "Меньше или равно" ]
-      x-enum-varnames: [ "Equal", "NotEqual","More", "Less", "MoreOrEqual", "LessOrEqual" ]
+      enum: [ "Равно", "Не равно"]
+      x-enum-varnames: [ "Equal", "NotEqual" ]
 
     notificationParams:
       type: object
