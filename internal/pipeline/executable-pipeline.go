@@ -229,6 +229,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			if stateErr != nil {
 				return stateErr
 			}
+
 			ep.VarStore.ReplaceState(step, state)
 
 			var id uuid.UUID
@@ -242,9 +243,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 					return err
 				}
 
-				// завершаем запущенный блок, если на другом блоке в этом цикле возникло неуспешное выполнениеч
+				// завершаем запущенный блок, если на другом блоке в этом цикле возникло неуспешное выполнение
 				if ep.stepNotSuccessful {
-					updErr := ep.updateStep(ctx, id, err != nil, StatusCancel)
+					updErr := ep.updateStep(ctx, id, false, StatusCancel)
 					if updErr != nil {
 						return updErr
 					}
