@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opencensus.io/trace"
@@ -1855,12 +1856,13 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		case "executor":
 			{
 				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND workers.status != 'finished'", q, len(args))
+					"IS NOT NULL AND (workers.status != 'finished' AND workers.status != 'no_success')", q, len(args))
 			}
 		case "finished_executor":
 			{
+				q = strings.Replace(q, "LIMIT 1", "", -1)
 				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND workers.status = 'finished'", q, len(args))
+					"IS NOT NULL AND (workers.status = 'finished' OR workers.status = 'no_success')", q, len(args))
 			}
 		}
 	} else {
