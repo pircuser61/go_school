@@ -36,7 +36,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	//"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
@@ -106,13 +106,13 @@ func main() {
 
 		return
 	}
+	/*
+		mailService, err := mail.NewService(cfg.Mail)
+		if err != nil {
+			log.WithError(err).Error("can't create mail service")
 
-	mailService, err := mail.NewService(cfg.Mail)
-	if err != nil {
-		log.WithError(err).Error("can't create mail service")
-
-		return
-	}
+			return
+		}*/
 
 	stat, err := statistic.InitStatistic()
 	if err != nil {
@@ -135,8 +135,8 @@ func main() {
 		NetworkMonitorClient: networkMonitoringClient,
 		HTTPClient:           httpClient,
 		Statistic:            stat,
-		Mail:                 mailService,
-		People:               peopleService,
+		//Mail:                 mailService,
+		People: peopleService,
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
