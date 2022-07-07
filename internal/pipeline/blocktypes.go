@@ -4,6 +4,7 @@ const (
 	BlockScenario = "scenario"
 
 	BlockInternalIf           = "if"
+	BlockGoIf                 = "if"
 	BlockInternalStringsEqual = "strings_equal"
 	BlockInternalForState     = "for_state"
 	BlockInternalConnector    = "connector"

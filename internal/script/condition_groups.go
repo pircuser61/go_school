@@ -20,117 +20,78 @@ func (ct ConditionType) String() string {
 }
 
 type ConditionParams struct {
-	Type       ConditionType    `json:"type"`
-	Conditions []ConditionGroup `json:"conditions"`
+	Type            ConditionType    `json:"type"`
+	ConditionGroups []ConditionGroup `json:"conditionGroups"`
 }
 
-type CompareOperatorString string
-
-type CompareOperator struct {
-	Type            string                                       `json:"type"`
-	CompareFunction func(leftOperand, rightOperand Operand) bool `json:"-"`
-}
+type CompareOperator func(leftOperand, rightOperand Operand) bool
 
 type Condition struct {
-	LeftOperand  Operand         `json:"leftOperand"`
-	RightOperand Operand         `json:"rightOperand"`
-	Operator     CompareOperator `json:"operator"`
+	LeftOperand  Operand `json:"leftOperand"`
+	RightOperand Operand `json:"rightOperand"`
+	Operator     string  `json:"operator"`
 }
 
 type ConditionGroup struct {
+	Alias string
 	AllOf []Condition `json:"allOf"`
 	AnyOf []Condition `json:"anyOf"`
 }
 
 type Operand struct {
-	Value            interface{}       `json:"value"`
-	Type             string            `json:"type"`
-	AllowedOperators []CompareOperator `json:"-"`
+	Value            interface{}                `json:"value" example:"\"ref#testVariableName\", \"abc123\", 0, false"`
+	Type             string                     `json:"type"`
+	AllowedOperators map[string]CompareOperator `json:"-"`
 }
 
-type StringOperand struct{}
-type BooleanOperand struct{}
-type IntegerOperand struct{}
-
-func (strOperand *StringOperand) Create() Operand {
-	var newOperand = Operand{
-		Type:             stringOperandType,
-		AllowedOperators: genericOperators(),
-	}
-
-	return newOperand
+func (op *Operand) AsString() {
+	op.Type = stringOperandType
+	op.AllowedOperators = genericOperators()
 }
 
-func (boolOperand *BooleanOperand) Create() Operand {
-	var newOperand = Operand{
-		Type:             booleanOperandType,
-		AllowedOperators: genericOperators(),
-	}
-
-	return newOperand
+func (op *Operand) AsBoolean() {
+	op.Type = booleanOperandType
+	op.AllowedOperators = genericOperators()
 }
 
-func (intOperand *IntegerOperand) Create() Operand {
-	var newOperand = Operand{
-		Type: integerOperandType,
-		AllowedOperators: []CompareOperator{
-			{
-				Type: EqualCompareOperator,
-				CompareFunction: func(leftOperand, rightOperand Operand) bool {
-					return leftOperand.Value == rightOperand.Value
-				},
-			},
-			{
-				Type: NotEqualCompareOperator,
-				CompareFunction: func(leftOperand, rightOperand Operand) bool {
-					return leftOperand.Value != rightOperand.Value
-				},
-			},
-			{
-				Type: MoreThanCompareOperator,
-				CompareFunction: func(leftOperand, rightOperand Operand) bool {
-					return leftOperand.Value.(int) > rightOperand.Value.(int)
-				},
-			},
-			{
-				Type: MoreThanOrEqualCompareOperator,
-				CompareFunction: func(leftOperand, rightOperand Operand) bool {
-					return leftOperand.Value.(int) >= rightOperand.Value.(int)
-				},
-			},
-			{
-				Type: LessThanCompareOperator,
-				CompareFunction: func(leftOperand, rightOperand Operand) bool {
-					return leftOperand.Value.(int) < rightOperand.Value.(int)
-				},
-			},
-			{
-				Type: LessThanOrEqualCompareOperator,
-				CompareFunction: func(leftOperand, rightOperand Operand) bool {
-					return leftOperand.Value.(int) <= rightOperand.Value.(int)
-				},
-			},
+func (op *Operand) AsInteger() {
+	var operatorFunctionsMap = map[string]CompareOperator{
+		EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return leftOperand.Value == rightOperand.Value
+		},
+		NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return leftOperand.Value != rightOperand.Value
+		},
+		MoreThanCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return leftOperand.Value.(int) > rightOperand.Value.(int)
+		},
+		MoreThanOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return leftOperand.Value.(int) >= rightOperand.Value.(int)
+		},
+		LessThanCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return leftOperand.Value.(int) < rightOperand.Value.(int)
+		},
+		LessThanOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return leftOperand.Value.(int) <= rightOperand.Value.(int)
 		},
 	}
 
-	return newOperand
+	op.Type = integerOperandType
+	op.AllowedOperators = operatorFunctionsMap
 }
 
-func genericOperators() []CompareOperator {
-	return []CompareOperator{
-		{
-			Type: EqualCompareOperator,
-			CompareFunction: func(leftOperand, rightOperand Operand) bool {
-				return leftOperand.Value == rightOperand.Value
-			},
-		},
-		{
-			Type: NotEqualCompareOperator,
-			CompareFunction: func(leftOperand, rightOperand Operand) bool {
-				return leftOperand.Value != rightOperand.Value
-			},
-		},
+func genericOperators() map[string]CompareOperator {
+	var operatorFunctionsMap = make(map[string]CompareOperator)
+
+	operatorFunctionsMap[EqualCompareOperator] = func(leftOperand, rightOperand Operand) bool {
+		return leftOperand.Value == rightOperand.Value
 	}
+
+	operatorFunctionsMap[NotEqualCompareOperator] = func(leftOperand, rightOperand Operand) bool {
+		return leftOperand.Value != rightOperand.Value
+	}
+
+	return operatorFunctionsMap
 }
 
 func (c *ConditionParams) Validate() error {
@@ -139,13 +100,49 @@ func (c *ConditionParams) Validate() error {
 
 func (condition *Condition) IsTrue() bool {
 	if canCompare(condition) {
-		var compareFunction = condition.Operator.CompareFunction
+		var allowedOperatorFunctions = condition.LeftOperand.AllowedOperators
+		var compareFunction = allowedOperatorFunctions[condition.Operator]
 		var result = compareFunction(condition.LeftOperand, condition.RightOperand)
 
 		return result
 	}
 
 	return false
+}
+
+func (cg *ConditionGroup) PrepareOperands() {
+	for i, condition := range cg.AnyOf {
+		cg.AnyOf[i].LeftOperand, cg.AnyOf[i].RightOperand =
+			prepareOperands(condition.LeftOperand, condition.RightOperand)
+	}
+
+	for i, condition := range cg.AllOf {
+		cg.AnyOf[i].LeftOperand, cg.AnyOf[i].RightOperand =
+			prepareOperands(condition.LeftOperand, condition.RightOperand)
+	}
+}
+
+func prepareOperands(leftOperand, rightOperand Operand) (l, r Operand) {
+	return prepareOperand(leftOperand), prepareOperand(rightOperand)
+}
+
+func prepareOperand(operand Operand) (o Operand) {
+	switch operand.Type {
+	case stringOperandType:
+		{
+			operand.AsString()
+		}
+	case integerOperandType:
+		{
+			operand.AsInteger()
+		}
+	case booleanOperandType:
+		{
+			operand.AsBoolean()
+		}
+	}
+
+	return operand
 }
 
 func canCompare(condition *Condition) bool {
@@ -156,13 +153,13 @@ func canCompare(condition *Condition) bool {
 func haveAllowedOperator(condition *Condition) bool {
 	var operator = condition.Operator
 
-	return operandHaveAllowedOperator(&condition.LeftOperand, operator.Type) &&
-		operandHaveAllowedOperator(&condition.RightOperand, operator.Type)
+	return operandHaveAllowedOperator(&condition.LeftOperand, operator) &&
+		operandHaveAllowedOperator(&condition.RightOperand, operator)
 }
 
 func operandHaveAllowedOperator(operand *Operand, operatorType string) bool {
-	for i := range operand.AllowedOperators {
-		if operand.AllowedOperators[i].Type == operatorType {
+	for key, _ := range operand.AllowedOperators {
+		if key == operatorType {
 			return true
 		}
 	}

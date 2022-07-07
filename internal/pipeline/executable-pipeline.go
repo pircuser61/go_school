@@ -369,7 +369,7 @@ func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, bloc
 	defer s.End()
 
 	switch block.BlockType {
-	case script.TypeInternal, script.TypeIF:
+	case script.TypeInternal:
 		return ep.CreateInternal(block, name), nil
 	case script.TypeGo, BlockGoSdApplicationID, BlockGoApproverID:
 		return ep.CreateGoBlock(block, name)
@@ -445,15 +445,6 @@ func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, bloc
 	return nil, errors.Errorf("can't create block with type: %s", block.BlockType)
 }
 
-func createIF(title, name string, nexts map[string][]string) *IF {
-	return &IF{
-		Name:          name,
-		FunctionName:  title,
-		Nexts:         nexts,
-		FunctionInput: make(map[string]string),
-	}
-}
-
 func createStringsEqual(title, name string, nexts map[string][]string) *StringsEqual {
 	return &StringsEqual{
 		Name:          name,
@@ -486,14 +477,6 @@ func createForBlock(title, name string, nexts map[string][]string) *ForState {
 //nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
 	switch ef.TypeID {
-	case "if":
-		i := createIF(ef.Title, name, ef.Next)
-
-		for _, v := range ef.Input {
-			i.FunctionInput[v.Name] = v.Global
-		}
-
-		return i
 	case "strings_is_equal":
 		sie := createStringsEqual(ef.Title, name, ef.Next)
 
@@ -534,6 +517,8 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 //nolint:gocyclo //need bigger cyclomatic
 func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (Runner, error) {
 	switch ef.TypeID {
+	case BlockGoIf:
+		return createGoIfBlock(name, ef), nil
 	case BlockGoTestID:
 		return createGoTestBlock(name, ef), nil
 	case BlockGoApproverID:

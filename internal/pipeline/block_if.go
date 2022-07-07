@@ -2,7 +2,10 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"go.opencensus.io/trace"
 	"strings"
 
@@ -11,11 +14,15 @@ import (
 )
 
 const (
-	keyIf string = "check"
+	keyIf            string = "check"
+	groupDefaultName string = "group"
 )
 
 type IF struct {
 	Name          string
+	Title         string
+	Input         map[string]string
+	Output        map[string]string
 	FunctionName  string
 	FunctionInput map[string]string
 	Result        bool
@@ -26,11 +33,14 @@ type IF struct {
 }
 
 type ConditionsData struct {
-	Type            script.ConditionType     `json:"type"`
-	ConditionGroups *[]script.ConditionGroup `json:"conditionGroups"`
+	Type            script.ConditionType    `json:"type"`
+	ConditionGroups []script.ConditionGroup `json:"conditionGroups"`
 }
 
-func (cd *ConditionsData) GetConditionGroups() *[]script.ConditionGroup {
+func (cd *ConditionsData) GetConditionGroups() []script.ConditionGroup {
+	for i := range cd.ConditionGroups {
+		cd.ConditionGroups[i].Alias = fmt.Sprintf("%s-%v", groupDefaultName, i)
+	}
 	return cd.ConditionGroups
 }
 
@@ -47,29 +57,26 @@ func (e *IF) GetType() string {
 }
 
 func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
+	cg, ok := runCtx.GetValue("chosenGroup")
+	if ok {
+		var chosenGroup = cg.(string)
 
-	if chosenGroup, ok := runCtx.GetValue("chosenGroup"); ok {
-
-	}
-
-	r, err := runCtx.GetBoolWithInput(e.FunctionInput, keyIf)
-	if err != nil {
-		return []string{}, false
-	}
-
-	if r {
-		nexts, ok := e.Nexts[trueSocket]
-		if !ok {
-			return nil, false
+		if chosenGroup == "" {
+			nexts, ok := e.Nexts[DefaultSocket]
+			if !ok {
+				return nil, false
+			}
+			return nexts, true
+		} else {
+			nexts, ok := e.Nexts[chosenGroup]
+			if !ok {
+				return nil, false
+			}
+			return nexts, true
 		}
-		return nexts, true
 	}
 
-	nexts, ok := e.Nexts[falseSocket]
-	if !ok {
-		return nil, false
-	}
-	return nexts, true
+	return nil, false
 }
 
 func (e *IF) Inputs() map[string]string {
@@ -94,18 +101,15 @@ func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 
 	runCtx.AddStep(e.Name)
 
-	r, err := runCtx.GetBoolWithInput(e.FunctionInput, keyIf)
+	variables, err := runCtx.GrabStorage()
 	if err != nil {
-		return err
+		return nil
 	}
 
-	e.Result = r
-
-	variables, err := runCtx.GrabStorage()
-	conditionGroups := *e.State.GetConditionGroups()
+	conditionGroups := e.State.GetConditionGroups()
 
 	var chosenGroup = processConditions(conditionGroups, variables)
-	runCtx.SetValue("chosenGroup", chosenGroup)
+	runCtx.SetValue("chosenGroup", chosenGroup.Alias)
 
 	return nil
 }
@@ -131,8 +135,47 @@ func (e *IF) Model() script.FunctionModel {
 				Type: "",
 			},
 		},
-		NextFuncs: []string{script.Next},
+		Sockets: []string{DefaultSocket},
 	}
+}
+
+func createGoIfBlock(name string, ef *entity.EriusFunc) *IF {
+	b := &IF{
+		Name:   name,
+		Title:  ef.Title,
+		Input:  map[string]string{},
+		Output: map[string]string{},
+		Nexts:  ef.Next,
+	}
+
+	for _, v := range ef.Input {
+		b.Input[v.Name] = v.Global
+	}
+
+	for _, v := range ef.Output {
+		b.Output[v.Name] = v.Global
+	}
+
+	var params script.ConditionParams
+	err := json.Unmarshal(ef.Params, &params)
+	if err != nil {
+		return nil
+	}
+
+	if err = params.Validate(); err != nil {
+		return nil
+	}
+
+	b.State = &ConditionsData{
+		Type:            params.Type,
+		ConditionGroups: params.ConditionGroups,
+	}
+
+	for _, cg := range b.State.ConditionGroups {
+		cg.PrepareOperands()
+	}
+
+	return b
 }
 
 func processConditions(groups []script.ConditionGroup, variables map[string]interface{}) (
@@ -169,18 +212,19 @@ func processAllOf(allOfConditions []script.Condition, variables map[string]inter
 	return validConditionsCount == len(allOfConditions)
 }
 
-func checkForReferenceVariables(leftOperand, rightOperand script.Operand, variables map[string]interface{}) (leftOperandValue, rightOperandValue interface{}) {
-	var leftOperandVariableReference = tryGetVariableReference(leftOperand.Value)
+func checkForReferenceVariables(leftOperand, rightOperand script.Operand, variables map[string]interface{}) (
+	leftOperandValue, rightOperandValue interface{}) {
+	var leftVariableReference = tryGetVariableReference(leftOperand.Value)
 
-	if leftOperandVariableReference != "" {
-		var leftOperandVariable = variables[leftOperandVariableReference]
+	if leftVariableReference != "" {
+		var leftOperandVariable = variables[leftVariableReference]
 		leftOperand.Value = leftOperandVariable
 	}
 
-	var rightOperandVariableReference = tryGetVariableReference(rightOperand.Value)
+	var rightVariableReference = tryGetVariableReference(rightOperand.Value)
 
-	if rightOperandVariableReference != "" {
-		var rightOperandVariable = variables[rightOperandVariableReference]
+	if rightVariableReference != "" {
+		var rightOperandVariable = variables[rightVariableReference]
 		rightOperand.Value = rightOperandVariable
 	}
 
