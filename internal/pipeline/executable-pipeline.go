@@ -52,15 +52,13 @@ type ExecutablePipeline struct {
 
 	FaaS string
 
-	stepNotSuccessful bool
+	endExecution bool
 }
 
 func (ep *ExecutablePipeline) GetStatus() Status {
 	switch {
-	case len(ep.ActiveBlocks) == 0:
+	case ep.IsOver():
 		return StatusFinished
-	case ep.stepNotSuccessful:
-		return StatusNoSuccess
 	case ep.ReadyToStart():
 		return StatusReady
 	case len(ep.ActiveBlocks) != 0:
@@ -71,7 +69,7 @@ func (ep *ExecutablePipeline) GetStatus() Status {
 }
 
 func (ep *ExecutablePipeline) IsOver() bool {
-	return len(ep.ActiveBlocks) == 0 || ep.stepNotSuccessful
+	return len(ep.ActiveBlocks) == 0 || ep.endExecution
 }
 
 func (ep *ExecutablePipeline) MergeActiveBlocks(blocks []string) {
@@ -90,7 +88,7 @@ func (ep *ExecutablePipeline) ReadyToStart() bool {
 func (ep *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
 	// TODO: проверять, что нет ошибок (потому что только тогда мы Done)
 	if len(ep.ActiveBlocks) == 0 {
-		if ep.stepNotSuccessful {
+		if ep.endExecution {
 			return "" // не обновляем статус т.к. блок, завершившийся неуспешно, сам проставляет статус
 		}
 		return StatusDone
@@ -253,8 +251,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 
 				sCtx := ep.stepCtx(ts)
 
-				// завершаем запущенный блок, если на другом блоке в этом цикле возникло неуспешное выполнениеч
-				if ep.stepNotSuccessful {
+				// завершаем запущенный блок, если на другом блоке в этом цикле возникло неуспешное выполнение
+				if ep.endExecution {
 					updErr := ep.updateStep(ctx, id, err != nil, StatusCancel)
 					if updErr != nil {
 						return updErr
@@ -294,6 +292,11 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 			}
 
 			delete(ep.ActiveBlocks, step)
+
+			if currentBlock.GetType() == BlockGoEndId {
+				ep.endExecution = true
+				continue
+			}
 
 			activeBlocks, ok := ep.Blocks[step].Next(ep.VarStore)
 			if !ok {

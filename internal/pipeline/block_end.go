@@ -27,7 +27,7 @@ func (gb *GoEndBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *GoEndBlock) GetType() string {
-	return BlockGoStartId
+	return BlockGoEndId
 }
 
 func (gb *GoEndBlock) Inputs() map[string]string {
