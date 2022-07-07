@@ -1,5 +1,7 @@
 package script
 
+import "github.com/pkg/errors"
+
 const (
 	MoreThanCompareOperator        string = "moreThan"
 	LessThanCompareOperator        string = "lessThan"
@@ -11,6 +13,11 @@ const (
 	stringOperandType  string = "string"
 	booleanOperandType string = "boolean"
 	integerOperandType string = "integer"
+)
+
+var (
+	ErrNotComparableOperands = errors.New("Invalid condition. Check for operand types equality and used operator is allowed for type.")
+	ErrCombinedUsage         = errors.New("Unable to use 'allOf' and 'anyOf' together in single group.")
 )
 
 type ConditionType string
@@ -95,6 +102,24 @@ func genericOperators() map[string]CompareOperator {
 }
 
 func (c *ConditionParams) Validate() error {
+	for _, conditionGroup := range c.ConditionGroups {
+		if len(conditionGroup.AnyOf) > 0 && len(conditionGroup.AllOf) > 0 {
+			return ErrCombinedUsage
+		}
+
+		for _, condition := range conditionGroup.AnyOf {
+			if canCompare(&condition) == false {
+				return ErrNotComparableOperands
+			}
+		}
+
+		for _, condition := range conditionGroup.AllOf {
+			if canCompare(&condition) == false {
+				return ErrNotComparableOperands
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -163,11 +188,10 @@ func operandHaveAllowedOperator(operand *Operand, operatorType string) bool {
 			return true
 		}
 	}
-	// todo: handle err - forbidden operator for operand
+
 	return false
 }
 
 func haveIdenticalOperandTypes(leftOperand, rightOperand Operand) bool {
-	// todo: handle err - operand types not equal
 	return leftOperand.Type == rightOperand.Type
 }

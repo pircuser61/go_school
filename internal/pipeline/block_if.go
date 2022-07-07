@@ -53,7 +53,7 @@ func (e *IF) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (e *IF) GetType() string {
-	return BlockInternalIf
+	return BlockGoIf
 }
 
 func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
@@ -139,7 +139,7 @@ func (e *IF) Model() script.FunctionModel {
 	}
 }
 
-func createGoIfBlock(name string, ef *entity.EriusFunc) *IF {
+func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
 	b := &IF{
 		Name:   name,
 		Title:  ef.Title,
@@ -157,13 +157,13 @@ func createGoIfBlock(name string, ef *entity.EriusFunc) *IF {
 	}
 
 	var params script.ConditionParams
-	err := json.Unmarshal(ef.Params, &params)
+	err = json.Unmarshal(ef.Params, &params)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	if err = params.Validate(); err != nil {
-		return nil
+		return nil, err
 	}
 
 	b.State = &ConditionsData{
@@ -175,14 +175,17 @@ func createGoIfBlock(name string, ef *entity.EriusFunc) *IF {
 		cg.PrepareOperands()
 	}
 
-	return b
+	return b, nil
 }
 
 func processConditions(groups []script.ConditionGroup, variables map[string]interface{}) (
 	chosenGroup *script.ConditionGroup) {
 	for _, conditionGroup := range groups {
-		//todo: handle all of also
 		if processAnyOf(conditionGroup.AnyOf, variables) {
+			chosenGroup = &conditionGroup
+		}
+
+		if processAllOf(conditionGroup.AnyOf, variables) {
 			chosenGroup = &conditionGroup
 		}
 	}

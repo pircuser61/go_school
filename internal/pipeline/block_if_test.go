@@ -230,9 +230,6 @@ func TestIF_Next_2(t *testing.T) {
 		{
 			name: "group socket next",
 		},
-		{
-			name: "two groups - any of",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -250,13 +247,11 @@ func TestIF_Next_2(t *testing.T) {
 	}
 }
 
-func TestIF_DebugRun_2(t *testing.T) {
+func TestIF_DebugRun_3(t *testing.T) {
 	const (
 		example = "example"
 		title   = "title"
 	)
-
-	const checkKey = "foo"
 
 	type fields struct {
 		Name          string
@@ -279,33 +274,31 @@ func TestIF_DebugRun_2(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "acceptance test",
-			fields: fields{
-				FunctionInput: map[string]string{
-					keyIf: checkKey,
-				},
-			},
+			name:    "empty groups",
+			wantErr: false,
+		},
+		{
+			name:    "compare string variables",
+			wantErr: false,
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
 					BlockType: BlockGoIfID,
 					Title:     title,
-					Input:     nil,
-					Output:    nil,
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.ConditionParams{
-							Type: "conditions", // todo: move to const in script pkg
+							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
 									AnyOf: []script.Condition{
 										{
 											LeftOperand: script.Operand{
 												Type:  "string",
-												Value: "testAbc",
+												Value: "ref#testStringVariable1",
 											},
 											RightOperand: script.Operand{
 												Type:  "string",
-												Value: "testAbc2",
+												Value: "ref#testStringVariable2",
 											},
 											Operator: "equal",
 										},
@@ -320,18 +313,154 @@ func TestIF_DebugRun_2(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
-					res.SetValue(checkKey, true)
+					res.SetValue("testStringVariable1", "test")
+					res.SetValue("testStringVariable2", "test")
 
 					return res
 				}(),
 			},
+		},
+		{
+			name:    "compare int variables",
+			wantErr: false,
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									AnyOf: []script.Condition{
+										{
+											LeftOperand: script.Operand{
+												Type:  "string",
+												Value: "ref#testIntVariable1",
+											},
+											RightOperand: script.Operand{
+												Type:  "string",
+												Value: "ref#testIntVariable2",
+											},
+											Operator: "moreThan",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					res.SetValue("testIntVariable1", 10)
+					res.SetValue("testIntVariable2", 5)
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:    "compare string values",
+			wantErr: false,
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									AnyOf: []script.Condition{
+										{
+											LeftOperand: script.Operand{
+												Type:  "string",
+												Value: "test",
+											},
+											RightOperand: script.Operand{
+												Type:  "string",
+												Value: "test2",
+											},
+											Operator: "notEqual",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:    "compare int values",
+			wantErr: false,
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									AnyOf: []script.Condition{
+										{
+											LeftOperand: script.Operand{
+												Type:  "integer",
+												Value: 10,
+											},
+											RightOperand: script.Operand{
+												Type:  "integer",
+												Value: 15,
+											},
+											Operator: "lessThan",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:    "choose anyOf group (group-0)",
+			wantErr: false,
+		},
+		{
+			name:    "choose allOf group (group-1)",
+			wantErr: false,
+		},
+		{
+			name:    "acceptance test",
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := createGoIfBlock(tt.args.name, tt.args.ef)
+			got, err := createGoIfBlock(tt.args.name, tt.args.ef)
 			fmt.Println(got)
+			fmt.Println(err)
 
 			if err := got.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
 				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)

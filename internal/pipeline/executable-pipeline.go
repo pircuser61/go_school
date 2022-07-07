@@ -518,7 +518,7 @@ func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) 
 func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (Runner, error) {
 	switch ef.TypeID {
 	case BlockGoIf:
-		return createGoIfBlock(name, ef), nil
+		return createGoIfBlock(name, ef)
 	case BlockGoTestID:
 		return createGoTestBlock(name, ef), nil
 	case BlockGoApproverID:
