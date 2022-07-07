@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/common/log"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,6 +16,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -70,7 +69,7 @@ func (a *ApproverData) GetDecision() *ApproverDecision {
 
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
 	_, ok := a.Approvers[login]
-	if !ok {
+	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
 	}
 
@@ -158,31 +157,60 @@ func (gb *GoApproverBlock) IsScenario() bool {
 
 const (
 	AutoActionComment = "Выполнено автоматическое действие по истечению SLA"
-	AutoApprover = "auto_approve"
+	AutoApprover      = "auto_approve"
 )
 
-func (gb *GoApproverBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) error {
+// nolint:dupl // other block
+func (gb *GoApproverBlock) dumpCurrState(ctx context.Context, id uuid.UUID) error {
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	content, err := json.Marshal(step)
+	if err != nil {
+		return err
+	}
+
+	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		HasError:    false,
+		Status:      string(StatusFinished),
+	})
+}
+
+func (gb *GoApproverBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
 	if gb.State.DidSLANotification {
 		return false, nil
 	}
 	if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
 		l := logger.GetLogger(ctx)
 
-		emails := make([]string, 0, len(gb.State.Approvers))
-		for approver := range gb.State.Approvers {
-			email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
-			if err != nil {
-				l.WithError(err).Error("couldn't get email")
+		// nolint:dupl // handle approvers
+		if gb.State.SLA > 8 {
+			emails := make([]string, 0, len(gb.State.Approvers))
+			for approver := range gb.State.Approvers {
+				email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
+				if err != nil {
+					l.WithError(err).Error("couldn't get email")
+				}
+				emails = append(emails, email)
 			}
-			emails = append(emails, email)
-		}
-		if len(emails) == 0 {
-			return nil
-		}
-		err := gb.Pipeline.Sender.SendNotification(ctx, emails,
-			mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, ""))
-		if err != nil {
-			return err
+			if len(emails) == 0 {
+				return false, nil
+			}
+			err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+				mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
+			if err != nil {
+				return false, err
+			}
 		}
 
 		gb.State.DidSLANotification = true
@@ -195,13 +223,18 @@ func (gb *GoApproverBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx 
 					Decision: decisionFromAutoAction(*gb.State.AutoAction),
 					Comment:  AutoActionComment,
 				}); err != nil {
-				return nil
+				gb.State.DidSLANotification = false
+				return false, err
 			}
 		} else {
-
+			if err := gb.dumpCurrState(ctx, id); err != nil {
+				gb.State.DidSLANotification = false
+				return false, err
+			}
 		}
+		return true, nil
 	}
-	return nil
+	return false, nil
 }
 
 func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
@@ -211,7 +244,7 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 	// TODO: fix
 	// runCtx.AddStep(gb.Name)
 
-	// TODO: handle SLA and AutoAction
+	l := logger.GetLogger(ctx)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
@@ -247,9 +280,13 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 
 	gb.State = &state
 
-	err := gb.handleSLA(ctx, id, stepCtx)
-	if err != nil{
-		log.Error("couldn't handle sla")
+	handled, err := gb.handleSLA(ctx, id, stepCtx)
+	if err != nil {
+		l.WithError(err).Error("couldn't handle sla")
+	}
+	if handled {
+		// go dor another loop cause we may have updated the state at db
+		return gb.DebugRun(ctx, stepCtx, runCtx)
 	}
 
 	// check decision
@@ -319,6 +356,7 @@ func (gb *GoApproverBlock) setApproverDecision(ctx context.Context, stepID uuid.
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
+	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
 	err = gb.State.SetDecision(

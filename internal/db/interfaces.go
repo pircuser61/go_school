@@ -42,11 +42,12 @@ type SaveStepRequest struct {
 }
 
 type UpdateStepRequest struct {
-	Id          uuid.UUID
-	Content     []byte
-	BreakPoints []string
-	HasError    bool
-	Status      string
+	Id             uuid.UUID
+	Content        []byte
+	BreakPoints    []string
+	HasError       bool
+	Status         string
+	WithoutContent bool
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase

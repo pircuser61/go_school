@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opencensus.io/trace"
@@ -1533,22 +1534,23 @@ func (db *PGConnection) UpdateStepContext(ctx context.Context, dto *UpdateStepRe
 	q := `
 	UPDATE pipeliner.variable_storage
 	SET
-	    content = $2,
-	    break_points = $3,
-		has_error = $4,
-	    status = $5
+	    break_points = $2
+		, has_error = $3
+	    , status = $4
+	    --content--
 	WHERE
 		id = $1
 `
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status}
+	if !dto.WithoutContent {
+		q = strings.Replace(q, "--content--", ", content = $5", -1)
+		args = append(args, dto.Content)
+	}
 
 	_, err = conn.Exec(
 		c,
 		q,
-		dto.Id,
-		dto.Content,
-		dto.BreakPoints,
-		dto.HasError,
-		dto.Status,
+		args...,
 	)
 	if err != nil {
 		return err
@@ -2465,7 +2467,7 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 					  FROM (
 							   SELECT id,
 									  pipeline.blocks                                                               as blocks,
-									  jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint #> '{next}') as nodes
+									  jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint #> '{next,default}') as nodes
 							   FROM (
 										SELECT id,
 											   content -> 'pipeline' #> '{blocks}'    as blocks,

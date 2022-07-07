@@ -158,11 +158,12 @@ func (ep *ExecutablePipeline) updateStep(ctx context.Context, id uuid.UUID, hasE
 	breakPoints := ep.VarStore.StopPoints.BreakPointsList()
 
 	return ep.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          id,
-		Content:     storageData,
-		BreakPoints: breakPoints,
-		HasError:    hasError,
-		Status:      string(status),
+		Id:             id,
+		Content:        storageData,
+		BreakPoints:    breakPoints,
+		HasError:       hasError,
+		Status:         string(status),
+		WithoutContent: status != StatusFinished && status != StatusCancel && status != StatusNoSuccess,
 	})
 }
 
@@ -229,11 +230,14 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 			}
 			ep.StepType = currentBlock.GetType()
 
-			state, stateErr := json.Marshal(currentBlock.GetState())
-			if stateErr != nil {
-				return stateErr
+			// initialize step state
+			if _, ok = ep.VarStore.State[step]; !ok {
+				state, stateErr := json.Marshal(currentBlock.GetState())
+				if stateErr != nil {
+					return stateErr
+				}
+				ep.VarStore.ReplaceState(step, state)
 			}
-			ep.VarStore.ReplaceState(step, state)
 
 			var id uuid.UUID
 			var err error
@@ -284,11 +288,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 			}
 
 			switch currentBlock.GetStatus() {
-			case StatusFinished:
-			case StatusNoSuccess:
-				ep.stepNotSuccessful = true
-				delete(ep.ActiveBlocks, step)
-				continue
+			case StatusFinished, StatusNoSuccess:
 			default:
 				continue
 			}
