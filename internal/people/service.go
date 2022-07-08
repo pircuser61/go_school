@@ -3,7 +3,6 @@ package people
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,6 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
@@ -150,6 +151,31 @@ func (s *Service) pathBuilder(mainpath, subpath string) (string, error) {
 	}
 	mu.Path = path.Join(mu.Path, subpath)
 	return mu.String(), nil
+}
+
+func (s *Service) GetUserEmail(ctx context.Context, username string) (string, error) {
+	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
+	defer span.End()
+
+	users, err := s.getUser(ctxLocal, username)
+	if err != nil {
+		return "", err
+	}
+
+	for _, u := range users {
+		uname, ok := u["username"]
+		if !ok {
+			return "", errors.New("couldn't find user")
+		}
+		if uname == username {
+			typed, err := u.ToSSOUserTyped()
+			if err != nil {
+				return "", errors.Wrap(err, "couldn't convert user")
+			}
+			return typed.Email, nil
+		}
+	}
+	return "", errors.New("couldn't find user")
 }
 
 func (s *Service) GetUser(ctx context.Context, username string) (SSOUser, error) {

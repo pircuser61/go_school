@@ -10,4 +10,5 @@ type Config struct {
 		Name  string `yaml:"name"`
 		Email string `yaml:"email"`
 	} `yaml:"from"`
+	SdAddress string `yaml:"sd_address"`
 }

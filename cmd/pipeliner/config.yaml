@@ -40,6 +40,7 @@ mail:
   from:
     name: "Service Desk"
     email: "servicedesk_noreply@mts.ru"
+  sd_address: "https://dev.servicedesk.mts.ru"
 
 remedy: "http://remedy"
 

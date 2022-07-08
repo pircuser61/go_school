@@ -17,6 +17,8 @@ type Service struct {
 	cli *mailclient.Client
 
 	from *mail.Address
+
+	SdAddress string
 }
 
 // nolint:gocritic // it's more comfortable to work with config as a value
@@ -39,6 +41,7 @@ func NewService(c Config) (*Service, error) {
 			Name:    c.From.Name,
 			Address: c.From.Email,
 		},
+		SdAddress: c.SdAddress,
 	}
 	return &s, nil
 }
