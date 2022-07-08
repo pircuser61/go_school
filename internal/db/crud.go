@@ -1839,7 +1839,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
              WHERE vs.work_id = w.id
              ORDER BY vs.time DESC
              LIMIT 1
-        ) approvers ON approvers.work_id = w.id
+        ) workers ON workers.work_id = w.id
 		WHERE 1=1`
 
 	order := "ASC"
@@ -1847,14 +1847,27 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		order = *filters.Order
 	}
 
+	args = append(args, filters.CurrentUser)
 	if filters.SelectAs != nil {
-		if *filters.SelectAs == "approver" {
-			args = append(args, filters.CurrentUser)
-			q = fmt.Sprintf("%s AND approvers.content::json->'State'->approvers.step_name->'approvers'->$%d "+
-				"IS NOT NULL AND approvers.status != 'finished'", q, len(args))
+		switch *filters.SelectAs {
+		case "approver":
+			{
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
+					"IS NOT NULL AND workers.status != 'finished'", q, len(args))
+			}
+		case "executor":
+			{
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
+					"IS NOT NULL AND (workers.status != 'finished' AND workers.status != 'no_success')", q, len(args))
+			}
+		case "finished_executor":
+			{
+				q = strings.Replace(q, "LIMIT 1", "", -1)
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
+					"IS NOT NULL AND (workers.status = 'finished' OR workers.status = 'no_success')", q, len(args))
+			}
 		}
 	} else {
-		args = append(args, filters.CurrentUser)
 		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
 	}
 
@@ -2457,17 +2470,17 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 		pv.comment_rejected,
 		pv.comment,
 		pv.author,
-		(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = pv.pipeline_id) last_approve
+		(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
 	FROM (
-			 SELECT servicedesk_node.id                                                              as pipeline_version_id,
-					servicedesk_node.blocks -> servicedesk_node.nodes ->> 'type_id'                  AS type_id,
-					servicedesk_node.blocks -> servicedesk_node.nodes -> 'params' ->> 'blueprint_id' AS blueprint_id
+			 SELECT servicedesk_node.id                                                                 AS pipeline_version_id,
+					servicedesk_node.blocks -> servicedesk_node.nextNode ->> 'type_id'                  AS type_id,
+					servicedesk_node.blocks -> servicedesk_node.nextNode -> 'params' ->> 'blueprint_id' AS blueprint_id
 			 FROM (
-					  SELECT id, blocks, nodes
+					  SELECT id, blocks, nextNode
 					  FROM (
 							   SELECT id,
 									  pipeline.blocks                                                               as blocks,
-									  jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint #> '{next,default}') as nodes
+									  jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint #> '{next,default}') as nextNode
 							   FROM (
 										SELECT id,
 											   content -> 'pipeline' #> '{blocks}'    as blocks,
@@ -2475,14 +2488,14 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 										FROM pipeliner.versions
 									) as pipeline
 						   ) as next_from_start
-					  WHERE next_from_start.nodes LIKE 'servicedesk_application%'
+					  WHERE next_from_start.nextNode LIKE 'servicedesk_application%'
 				  ) as servicedesk_node
 	) as servicedesk_node_params
 		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
 	WHERE pv.status = 2 AND
-		pv.created_at = (SELECT MAX(v.created_at) FROM pipeliner.versions v WHERE v.pipeline_id = pv.pipeline_id AND v.status = 2) AND
-		servicedesk_node_params.blueprint_id = $1 AND
-		servicedesk_node_params.type_id = 'servicedesk_application';
+			pv.created_at = (SELECT MAX(v.created_at) FROM pipeliner.versions v WHERE v.pipeline_id = pv.pipeline_id AND v.status = 2) AND
+			servicedesk_node_params.blueprint_id = $1 AND
+			servicedesk_node_params.type_id = 'servicedesk_application';
 `
 
 	rows, err := conn.Query(c, query, bID)

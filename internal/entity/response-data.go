@@ -75,16 +75,17 @@ type EriusFunctionList struct {
 }
 
 type EriusFunc struct {
-	X         int                  `json:"x,omitempty"`
-	Y         int                  `json:"y,omitempty"`
-	TypeID    string               `json:"type_id" example:"approver"`
-	BlockType string               `json:"block_type" enums:"python3,go,internal,term,scenario" example:"python3"`
-	Title     string               `json:"title" example:"lock-bts"`
-	Input     []EriusFunctionValue `json:"input,omitempty"`
-	Output    []EriusFunctionValue `json:"output,omitempty"`
-	ParamType string               `json:"param_type,omitempty"`
-	Params    json.RawMessage      `json:"params,omitempty" swaggertype:"object"`
-	Next      map[string][]string  `json:"next,omitempty" example:"send-data_0"`
+	X          int                  `json:"x,omitempty"`
+	Y          int                  `json:"y,omitempty"`
+	TypeID     string               `json:"type_id" example:"approver"`
+	BlockType  string               `json:"block_type" enums:"python3,go,internal,term,scenario" example:"python3"`
+	Title      string               `json:"title" example:"lock-bts"`
+	ShortTitle string               `json:"short_title,omitempty" example:"lock-bts"`
+	Input      []EriusFunctionValue `json:"input,omitempty"`
+	Output     []EriusFunctionValue `json:"output,omitempty"`
+	ParamType  string               `json:"param_type,omitempty"`
+	Params     json.RawMessage      `json:"params,omitempty" swaggertype:"object"`
+	Next       map[string][]string  `json:"next,omitempty" example:"send-data_0"`
 }
 
 type EriusFunctionValue struct {

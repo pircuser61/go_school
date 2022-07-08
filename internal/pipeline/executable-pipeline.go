@@ -329,11 +329,6 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 		return errChange
 	}
 
-	errUpdate = ep.updateStatusByStep(ctx, ep.GetTaskHumanStatus())
-	if errUpdate != nil {
-		return errUpdate
-	}
-
 	for _, glob := range ep.PipelineModel.Output {
 		val, _ := runCtx.GetValue(glob.Global)
 		runCtx.SetValue(glob.Name, val)
