@@ -564,5 +564,9 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
 		return pipeline.BlockGoExecutionID
 	}
 
+	if action == entity.TaskUpdateActionRequestExecutionInfo {
+		return pipeline.BlockGoExecutionID
+	}
+
 	return ""
 }

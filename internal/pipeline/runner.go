@@ -21,8 +21,7 @@ var (
 type Runner interface {
 	GetType() string
 	GetState() interface{}
-	DebugRun(ctx context.Context, runCtx *store.VariableStore) error
-	Run(ctx context.Context, runCtx *store.VariableStore) error
+	DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error
 	Next(runCtx *store.VariableStore) ([]string, bool)
 	IsScenario() bool
 	Inputs() map[string]string

@@ -10,6 +10,8 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
+	time "time"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -830,7 +832,7 @@ func (_m *MockedDatabase) RollbackVersion(c context.Context, pipelineID uuid.UUI
 }
 
 // SaveStepContext provides a mock function with given fields: c, dto
-func (_m *MockedDatabase) SaveStepContext(c context.Context, dto *db.SaveStepRequest) (uuid.UUID, error) {
+func (_m *MockedDatabase) SaveStepContext(c context.Context, dto *db.SaveStepRequest) (uuid.UUID, time.Time, error) {
 	ret := _m.Called(c, dto)
 
 	var r0 uuid.UUID
@@ -842,14 +844,21 @@ func (_m *MockedDatabase) SaveStepContext(c context.Context, dto *db.SaveStepReq
 		}
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest) error); ok {
+	var r1 time.Time
+	if rf, ok := ret.Get(1).(func(context.Context, *db.SaveStepRequest) time.Time); ok {
 		r1 = rf(c, dto)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(time.Time)
 	}
 
-	return r0, r1
+	var r2 error
+	if rf, ok := ret.Get(2).(func(context.Context, *db.SaveStepRequest) error); ok {
+		r2 = rf(c, dto)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // SwitchApproved provides a mock function with given fields: c, pipelineID, versionID, author

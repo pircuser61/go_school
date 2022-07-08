@@ -85,7 +85,7 @@ func TestIF_DebugRun(t *testing.T) {
 				Nexts:         tt.fields.Nexts,
 			}
 
-			if err := e.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
+			if err := e.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {
 				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

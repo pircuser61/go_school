@@ -42,11 +42,7 @@ func (e *ForState) IsScenario() bool {
 	return false
 }
 
-func (e *ForState) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return e.DebugRun(ctx, runCtx)
-}
-
-func (e *ForState) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (e *ForState) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_cyclo_block")
 	defer s.End()
 
