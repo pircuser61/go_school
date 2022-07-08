@@ -111,6 +111,7 @@ type TaskUpdate struct {
 func (t *TaskUpdate) Validate() error {
 	if t.Action != TaskUpdateActionApprovement &&
 		t.Action != TaskUpdateActionExecution &&
+		t.Action != TaskUpdateActionRequestExecutionInfo &&
 		t.Action != TaskUpdateActionChangeExecutor {
 		return errors.New("unknown action")
 	}
