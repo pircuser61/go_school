@@ -526,6 +526,10 @@ components:
           $ref: '#/components/schemas/operand'
         operator:
           $ref: '#/components/schemas/compareOperator'
+      required:
+        - leftOperand
+        - rightOperand
+        - operator
 
     operand:
       description: Operand for comparison
@@ -546,7 +550,10 @@ components:
           type: string
         operandType:
           type: string
-          enum: [ "variableOperand", "valueOperand" ]
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
 
     variableOperand:
       description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment")
@@ -556,6 +563,9 @@ components:
           properties:
             variableRef:
               type: string
+          required:
+            - variableRef
+
     valueOperand:
       description: Operand which uses simple value to compare in conditions
       allOf:
@@ -564,6 +574,8 @@ components:
           properties:
             value:
               type: string
+          required:
+            - value
 
     compareOperator:
       type: string
