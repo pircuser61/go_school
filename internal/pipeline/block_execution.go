@@ -94,7 +94,7 @@ func (a *ExecutionData) SetDecision(login string, decision ExecutionDecision, co
 	return nil
 }
 
-func (a *ExecutionData) SetRequestExecutionInfo(login string, comment string) error {
+func (a *ExecutionData) SetRequestExecutionInfo(login, comment string) error {
 	_, ok := a.Executors[login]
 	if !ok {
 		return fmt.Errorf("%s not found in executors", login)
