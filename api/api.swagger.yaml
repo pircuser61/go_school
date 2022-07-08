@@ -494,7 +494,7 @@ components:
           type: array
           description: Groups with conditions
           items:
-            - $ref: '#/components/schemas/conditionGroup'
+            $ref: '#/components/schemas/conditionGroup'
 
     conditionGroup:
       type: object
@@ -506,11 +506,11 @@ components:
           type: string
         logicalOperator:
           type: string
-          enum: [ "or", "and"]
+          enum: [ "or", "and" ]
         conditions:
-            type: array
-            items:
-              - $ref: '#/components/schemas/condition'
+          type: array
+          items:
+            $ref: '#/components/schemas/condition'
       required:
         - id
         - logicalOperator
@@ -533,10 +533,10 @@ components:
         - $ref: '#/components/schemas/variableOperand'
         - $ref: '#/components/schemas/valueOperand'
       discriminator:
-          propertyName: operandType
-          mapping:
-            varOperand: variableOperand
-            valOperand: valueOperand
+        propertyName: operandType
+        mapping:
+          varOperand: variableOperand
+          valOperand: valueOperand
 
     basicOperand:
       type: object
@@ -546,11 +546,10 @@ components:
           type: string
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
 
     variableOperand:
-      description: Operand which uses variable to compare in conditions. You can use .
-      for accessing object variable members (i.e. "applicationData", "applicationData.comment")
+      description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment")
       allOf:
         - $ref: '#/components/schemas/basicOperand'
         - type: object
@@ -569,7 +568,7 @@ components:
     compareOperator:
       type: string
       description: Used operator to compare operands
-      enum: [ "Равно", "Не равно"]
+      enum: [ "Равно", "Не равно" ]
       x-enum-varnames: [ "Equal", "NotEqual" ]
 
     notificationParams:
@@ -2067,10 +2066,3 @@ paths:
           $ref: '#/components/responses/AccessTokenError'
         500:
           $ref: '#/components/responses/WentWrongError'
-
-
-
-
-
-
-

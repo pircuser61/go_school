@@ -301,6 +301,7 @@ func (gb *GoExecutionBlock) GetState() interface{} {
 	return gb.State
 }
 
+// nolint:gocyclo // will be fixed in next MR
 func (gb *GoExecutionBlock) Update(ctx context.Context, data *script.BlockUpdateData) (interface{}, error) {
 	if data == nil {
 		return nil, errors.New("update data is empty")

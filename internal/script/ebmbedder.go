@@ -18,8 +18,6 @@ const (
 	trueSocket    = "true"
 	falseSocket   = "false"
 
-	checkVarName string = "check"
-
 	TypeBool   string = "bool"
 	TypeString string = "string"
 	TypeArray  string = "array"
