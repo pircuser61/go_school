@@ -474,7 +474,7 @@ components:
       properties:
         type:
           $ref: '#/components/schemas/executionType'
-        execution:
+        executors:
           type: string
           description: Executor value (depends on type)
         sla:
@@ -483,7 +483,7 @@ components:
           minimum: 1
       required:
         - type
-        - execution
+        - executors
         - sla
 
     conditionParams:
