@@ -31,6 +31,10 @@ const (
 	ExecutionDecisionRejected ExecutionDecision = "rejected"
 )
 
+type RequestInfoUpdateParams struct {
+	Comment string `json:"comment"`
+}
+
 type ExecutionUpdateParams struct {
 	Decision ExecutionDecision `json:"decision"`
 	Comment  string            `json:"comment"`
@@ -48,16 +52,21 @@ func (a ExecutionDecision) String() string {
 }
 
 type ExecutionData struct {
-	ExecutionType          script.ExecutionType `json:"execution_type"`
-	Executors              map[string]struct{}  `json:"executors"`
-	Decision               *ExecutionDecision   `json:"decision,omitempty"`
-	Comment                *string              `json:"comment,omitempty"`
-	ActualExecutor         *string              `json:"actual_executor,omitempty"`
-	SLA                    int                  `json:"sla"`
-	DidSLANotification     bool                 `json:"did_sla_notification"`
-	ChangedExecutorComment *string              `json:"changed_executor_comment,omitempty"`
-	ChangedExecutorLogin   *string              `json:"changed_executor_login,omitempty"`
-	ChangedExecutorAt      *time.Time           `json:"changed_executor_at,omitempty"`
+	ExecutionType      script.ExecutionType `json:"execution_type"`
+	Executors          map[string]struct{}  `json:"executors"`
+	Decision           *ExecutionDecision   `json:"decision,omitempty"`
+	Comment            *string              `json:"comment,omitempty"`
+	ActualExecutor     *string              `json:"actual_executor,omitempty"`
+	SLA                int                  `json:"sla"`
+	DidSLANotification bool                 `json:"did_sla_notification"`
+
+	ChangedExecutorComment *string    `json:"changed_executor_comment,omitempty"`
+	ChangedExecutorLogin   *string    `json:"changed_executor_login,omitempty"`
+	ChangedExecutorAt      *time.Time `json:"changed_executor_at,omitempty"`
+
+	RequestInfoExecutor *string    `json:"request_info_executor,omitempty"`
+	RequestInfoComment  *string    `json:"request_info_comment,omitempty"`
+	RequestInfoAt       *time.Time `json:"request_info_at,omitempty"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
@@ -81,6 +90,21 @@ func (a *ExecutionData) SetDecision(login string, decision ExecutionDecision, co
 	a.Decision = &decision
 	a.Comment = &comment
 	a.ActualExecutor = &login
+
+	return nil
+}
+
+func (a *ExecutionData) SetRequestExecutionInfo(login string, comment string) error {
+	_, ok := a.Executors[login]
+	if !ok {
+		return fmt.Errorf("%s not found in executors", login)
+	}
+
+	now := time.Now()
+
+	a.RequestInfoExecutor = &login
+	a.RequestInfoComment = &comment
+	a.RequestInfoAt = &now
 
 	return nil
 }

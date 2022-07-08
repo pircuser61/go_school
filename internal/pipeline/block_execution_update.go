@@ -47,6 +47,12 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 		}
 	}
 
+	if data.Action == string(entity.TaskUpdateActionRequestExecutionInfo) {
+		if err = gb.updateRequestExecutionInfo(ctx, data, step); err != nil {
+			return nil, err
+		}
+	}
+
 	return nil, nil
 }
 
@@ -120,7 +126,42 @@ func (gb *GoExecutionBlock) updateExecution(ctx c.Context, data *script.BlockUpd
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
-		Status:      string(StatusFinished),
+		Status:      string(StatusIdle),
+	})
+
+	return err
+}
+
+func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, data *script.BlockUpdateData, step *entity.Step) (err error) {
+	var updateParams RequestInfoUpdateParams
+	err = json.Unmarshal(data.Parameters, &updateParams)
+	if err != nil {
+		return errors.New("can't assert provided update data")
+	}
+
+	if errSet := gb.State.SetRequestExecutionInfo(
+		data.ByLogin,
+		updateParams.Comment,
+	); errSet != nil {
+		return errSet
+	}
+
+	step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	var content []byte
+	content, err = json.Marshal(step)
+	if err != nil {
+		return err
+	}
+
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          data.Id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		Status:      string(StatusIdle),
 	})
 
 	return err

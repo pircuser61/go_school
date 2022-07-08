@@ -97,9 +97,10 @@ type TaskFilter struct {
 type TaskUpdateAction string
 
 const (
-	TaskUpdateActionApprovement    TaskUpdateAction = "approvement"
-	TaskUpdateActionExecution      TaskUpdateAction = "execution"
-	TaskUpdateActionChangeExecutor TaskUpdateAction = "change_executor"
+	TaskUpdateActionApprovement          TaskUpdateAction = "approvement"
+	TaskUpdateActionExecution            TaskUpdateAction = "execution"
+	TaskUpdateActionChangeExecutor       TaskUpdateAction = "change_executor"
+	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
 )
 
 type TaskUpdate struct {
