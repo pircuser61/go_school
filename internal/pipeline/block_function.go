@@ -56,12 +56,7 @@ func (fb *FunctionBlock) IsScenario() bool {
 	return false
 }
 
-// WBMARK - Implement
-func (fb *FunctionBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return fb.DebugRun(ctx, runCtx)
-}
-
-func (fb *FunctionBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (fb *FunctionBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -11,8 +12,11 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -44,12 +48,13 @@ func (a ExecutionDecision) String() string {
 }
 
 type ExecutionData struct {
-	ExecutionType  script.ExecutionType `json:"execution_type"`
-	Executors      map[string]struct{}  `json:"executors"`
-	Decision       *ExecutionDecision   `json:"decision,omitempty"`
-	Comment        *string              `json:"comment,omitempty"`
-	ActualExecutor *string              `json:"actual_executor,omitempty"`
-	SLA            int                  `json:"sla"`
+	ExecutionType      script.ExecutionType `json:"execution_type"`
+	Executors          map[string]struct{}  `json:"executors"`
+	Decision           *ExecutionDecision   `json:"decision,omitempty"`
+	Comment            *string              `json:"comment,omitempty"`
+	ActualExecutor     *string              `json:"actual_executor,omitempty"`
+	SLA                int                  `json:"sla"`
+	DidSLANotification bool                 `json:"did_sla_notification"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
@@ -96,7 +101,7 @@ type GoExecutionBlock struct {
 	Nexts  map[string][]string
 	State  *ExecutionData
 
-	Storage db.Database
+	Pipeline *ExecutablePipeline
 }
 
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
@@ -140,18 +145,79 @@ func (gb *GoExecutionBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoExecutionBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return gb.DebugRun(ctx, runCtx)
+// nolint:dupl // other block
+func (gb *GoExecutionBlock) dumpCurrState(ctx context.Context, id uuid.UUID) error {
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	content, err := json.Marshal(step)
+	if err != nil {
+		return err
+	}
+
+	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		HasError:    false,
+		Status:      string(StatusFinished),
+	})
 }
 
-func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) (err error) {
+func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) error {
+	if gb.State.DidSLANotification {
+		return nil
+	}
+	if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
+		l := logger.GetLogger(ctx)
+
+		// nolint:dupl // handle executors
+		if gb.State.SLA > 8 {
+			emails := make([]string, 0, len(gb.State.Executors))
+			for executor := range gb.State.Executors {
+				email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
+				if err != nil {
+					l.WithError(err).Error("couldn't get email")
+				}
+				emails = append(emails, email)
+			}
+			if len(emails) == 0 {
+				return nil
+			}
+			err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+				mail.NewExecutionSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
+			if err != nil {
+				return err
+			}
+		}
+
+		gb.State.DidSLANotification = true
+
+		if err := gb.dumpCurrState(ctx, id); err != nil {
+			gb.State.DidSLANotification = false
+			return err
+		}
+
+		return nil
+	}
+	return nil
+}
+
+func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
 	_, s := trace.StartSpan(ctx, "run_go_execution_block")
 	defer s.End()
 
 	// TODO: fix
 	// runCtx.AddStep(gb.Name)
 
-	// TODO: handle SLA
+	l := logger.GetLogger(ctx)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
@@ -164,7 +230,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 	}
 
 	var step *entity.Step
-	step, err = gb.Storage.GetTaskStepById(ctx, id)
+	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	} else if step == nil {
@@ -183,6 +249,11 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, runCtx *store.Variable
 	}
 
 	gb.State = &state
+
+	err = gb.handleSLA(ctx, id, stepCtx)
+	if err != nil {
+		l.WithError(err).Error("couldn't handle sla")
+	}
 
 	decision := gb.State.GetDecision()
 
@@ -230,12 +301,19 @@ func (gb *GoExecutionBlock) GetState() interface{} {
 	return gb.State
 }
 
+// nolint:gocyclo // will be fixed in next MR
 func (gb *GoExecutionBlock) Update(ctx context.Context, data *script.BlockUpdateData) (interface{}, error) {
 	if data == nil {
 		return nil, errors.New("update data is empty")
 	}
 
-	step, err := gb.Storage.GetTaskStepById(ctx, data.Id)
+	var updateParams ExecutionUpdateParams
+	err := json.Unmarshal(data.Parameters, &updateParams)
+	if err != nil {
+		return nil, errors.New("can't assert provided update data")
+	}
+
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return nil, err
 	} else if step == nil {
@@ -280,7 +358,7 @@ func (gb *GoExecutionBlock) Update(ctx context.Context, data *script.BlockUpdate
 			return nil, err
 		}
 
-		err = gb.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 			Id:          data.Id,
 			Content:     content,
 			BreakPoints: step.BreakPoints,
@@ -348,15 +426,15 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoExecutionBlock, error) {
+func createGoExecutionBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) (*GoExecutionBlock, error) {
 	b := &GoExecutionBlock{
-		Storage: storage,
-
 		Name:   name,
 		Title:  ef.Title,
 		Input:  map[string]string{},
 		Output: map[string]string{},
 		Nexts:  ef.Next,
+
+		Pipeline: pipeline,
 	}
 
 	for _, v := range ef.Input {

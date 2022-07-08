@@ -12,8 +12,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -54,15 +52,13 @@ type ExecutablePipeline struct {
 
 	FaaS string
 
-	stepNotSuccessful bool
+	endExecution bool
 }
 
 func (ep *ExecutablePipeline) GetStatus() Status {
 	switch {
-	case len(ep.ActiveBlocks) == 0:
+	case ep.IsOver():
 		return StatusFinished
-	case ep.stepNotSuccessful:
-		return StatusNoSuccess
 	case ep.ReadyToStart():
 		return StatusReady
 	case len(ep.ActiveBlocks) != 0:
@@ -73,7 +69,7 @@ func (ep *ExecutablePipeline) GetStatus() Status {
 }
 
 func (ep *ExecutablePipeline) IsOver() bool {
-	return len(ep.ActiveBlocks) == 0 || ep.stepNotSuccessful
+	return len(ep.ActiveBlocks) == 0 || ep.endExecution
 }
 
 func (ep *ExecutablePipeline) MergeActiveBlocks(blocks []string) {
@@ -92,7 +88,7 @@ func (ep *ExecutablePipeline) ReadyToStart() bool {
 func (ep *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
 	// TODO: проверять, что нет ошибок (потому что только тогда мы Done)
 	if len(ep.ActiveBlocks) == 0 {
-		if ep.stepNotSuccessful {
+		if ep.endExecution {
 			return "" // не обновляем статус т.к. блок, завершившийся неуспешно, сам проставляет статус
 		}
 		return StatusDone
@@ -129,13 +125,13 @@ func (ep *ExecutablePipeline) CreateTask(ctx context.Context, author string, isD
 }
 
 func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return ep.DebugRun(ctx, runCtx)
+	return ep.DebugRun(ctx, nil, runCtx)
 }
 
-func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasError bool, status Status) (uuid.UUID, error) {
+func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasError bool, status Status) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(ep.VarStore)
 	if errSerialize != nil {
-		return db.NullUuid, errSerialize
+		return db.NullUuid, time.Time{}, errSerialize
 	}
 
 	breakPoints := ep.VarStore.StopPoints.BreakPointsList()
@@ -160,11 +156,12 @@ func (ep *ExecutablePipeline) updateStep(ctx context.Context, id uuid.UUID, hasE
 	breakPoints := ep.VarStore.StopPoints.BreakPointsList()
 
 	return ep.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          id,
-		Content:     storageData,
-		BreakPoints: breakPoints,
-		HasError:    hasError,
-		Status:      string(status),
+		Id:             id,
+		Content:        storageData,
+		BreakPoints:    breakPoints,
+		HasError:       hasError,
+		Status:         string(status),
+		WithoutContent: status != StatusFinished && status != StatusCancel && status != StatusNoSuccess,
 	})
 }
 
@@ -187,12 +184,20 @@ func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskH
 	return nil
 }
 
+type stepCtx struct {
+	workNumber string
+	workTitle  string
+	stepStart  time.Time
+}
+
+func (ep *ExecutablePipeline) stepCtx(start time.Time) *stepCtx {
+	return &stepCtx{stepStart: start, workNumber: ep.WorkNumber, workTitle: ep.Name}
+}
+
 //nolint:gocognit,gocyclo //its really complex
-func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
-
-	log := logger.GetLogger(ctx)
 
 	ep.VarStore = runCtx
 
@@ -212,11 +217,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 	for !ep.IsOver() {
 		for step := range ep.ActiveBlocks {
-			log.Info("executing", ep.ActiveBlocks)
-
 			currentBlock, ok := ep.Blocks[step]
 			if !ok || currentBlock == nil {
-				_, err := ep.createStep(ctx, step, true, StatusFinished)
+				_, _, err := ep.createStep(ctx, step, true, StatusFinished)
 				if err != nil {
 					return err
 				}
@@ -225,25 +228,31 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			}
 			ep.StepType = currentBlock.GetType()
 
-			state, stateErr := json.Marshal(currentBlock.GetState())
-			if stateErr != nil {
-				return stateErr
+			// initialize step state
+			if _, ok = ep.VarStore.State[step]; !ok {
+				state, stateErr := json.Marshal(currentBlock.GetState())
+				if stateErr != nil {
+					return stateErr
+				}
+				ep.VarStore.ReplaceState(step, state)
 			}
-			ep.VarStore.ReplaceState(step, state)
 
 			var id uuid.UUID
 			var err error
+			var ts time.Time
 
 			if currentBlock.IsScenario() {
 				// TODO: handle
 			} else {
-				id, err = ep.createStep(ctx, step, false, StatusIdle)
+				id, ts, err = ep.createStep(ctx, step, false, StatusIdle)
 				if err != nil {
 					return err
 				}
 
-				// завершаем запущенный блок, если на другом блоке в этом цикле возникло неуспешное выполнениеч
-				if ep.stepNotSuccessful {
+				sCtx := ep.stepCtx(ts)
+
+				// завершаем запущенный блок, если на другом блоке в этом цикле возникло неуспешное выполнение
+				if ep.endExecution {
 					updErr := ep.updateStep(ctx, id, err != nil, StatusCancel)
 					if updErr != nil {
 						return updErr
@@ -259,7 +268,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 
 				ep.VarStore.SetValue(getWorkIdKey(step), id)
 
-				err = currentBlock.DebugRun(ctx, ep.VarStore)
+				err = currentBlock.DebugRun(ctx, sCtx, ep.VarStore)
 				if err != nil {
 					key := step + KeyDelimiter + ErrorKey
 					ep.VarStore.SetValue(key, err.Error())
@@ -277,16 +286,17 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, runCtx *store.Variab
 			}
 
 			switch currentBlock.GetStatus() {
-			case StatusFinished:
-			case StatusNoSuccess:
-				ep.stepNotSuccessful = true
-				delete(ep.ActiveBlocks, step)
-				continue
+			case StatusFinished, StatusNoSuccess:
 			default:
 				continue
 			}
 
 			delete(ep.ActiveBlocks, step)
+
+			if currentBlock.GetType() == BlockGoEndId {
+				ep.endExecution = true
+				continue
+			}
 
 			activeBlocks, ok := ep.Blocks[step].Next(ep.VarStore)
 			if !ok {
@@ -537,11 +547,11 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 	case BlockGoTestID:
 		return createGoTestBlock(name, ef), nil
 	case BlockGoApproverID:
-		return createGoApproverBlock(name, ef, ep.Storage)
+		return createGoApproverBlock(name, ef, ep)
 	case BlockGoSdApplicationID:
-		return createGoSdApplicationBlock(name, ef, ep.Storage)
+		return createGoSdApplicationBlock(name, ef)
 	case BlockGoExecutionID:
-		return createGoExecutionBlock(name, ef, ep.Storage)
+		return createGoExecutionBlock(name, ef, ep)
 	case BlockGoStartId:
 		return createGoStartBlock(name, ef), nil
 	case BlockGoEndId:
@@ -549,7 +559,7 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 	case BlockWaitForAllInputsId:
 		return createGoWaitForAllInputsBlock(name, ef), nil
 	case BlockGoNotificationID:
-		return createGoNotificationBlock(name, ef, ep.Sender, ep.People)
+		return createGoNotificationBlock(name, ef, ep)
 	}
 
 	return nil, errors.New("unknown go-block type")
