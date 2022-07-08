@@ -12,10 +12,15 @@ type Template struct {
 	Variables interface{}
 }
 
+type Notification struct {
+	Template Template
+	To       []string
+}
+
 func NewApprovementSLATemplate(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время согласования", id, name),
-		Text:    "Истекло время согласования заявки {{.Name}}\nДля ознакомления Вы можете перейти в заявку {{.Link}}",
+		Text:    "Истекло время согласования заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
 			Name string `json:"name"`
 			Link string `json:"link"`
@@ -29,7 +34,7 @@ func NewApprovementSLATemplate(id, name, sdUrl string) Template {
 func NewExecutionSLATemplate(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время исполнения", id, name),
-		Text:    "Истекло время исполнения заявки {{.Name}}\nДля ознакомления Вы можете перейти в заявку {{.Link}}",
+		Text:    "Истекло время исполнения заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
 			Name string `json:"name"`
 			Link string `json:"link"`

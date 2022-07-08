@@ -29,11 +29,7 @@ func (cb *ConnectorBlock) GetType() string {
 	return BlockInternalConnector
 }
 
-func (cb *ConnectorBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return cb.DebugRun(ctx, runCtx)
-}
-
-func (cb *ConnectorBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (cb *ConnectorBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	runCtx.AddStep(cb.Name)
 
 	_, s := trace.StartSpan(ctx, "run_connector_block")

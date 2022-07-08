@@ -66,11 +66,7 @@ func (e *IF) IsScenario() bool {
 	return false
 }
 
-func (e *IF) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return e.DebugRun(ctx, runCtx)
-}
-
-func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (e *IF) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_if_block")
 	defer s.End()
 
@@ -92,4 +88,21 @@ func (e *IF) GetState() interface{} {
 
 func (e *IF) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
+}
+
+func (e *IF) Model() script.FunctionModel {
+	return script.FunctionModel{
+		ID:        BlockGoIfID,
+		BlockType: script.TypeIF,
+		Title:     BlockGoIfTitle,
+		Inputs:    nil,
+		Outputs:   nil,
+		Params: &script.FunctionParams{
+			Type: BlockGoIfID,
+			Params: &script.ConditionParams{
+				Type: "",
+			},
+		},
+		Sockets: []string{DefaultSocket},
+	}
 }

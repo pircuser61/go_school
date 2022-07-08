@@ -16,7 +16,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 		return nil, errors.New("update data is empty")
 	}
 
-	step, err := gb.Storage.GetTaskStepById(ctx, data.Id)
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return nil, err
 	} else if step == nil {
@@ -80,7 +80,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 		return err
 	}
 
-	err = gb.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -116,7 +116,7 @@ func (gb *GoExecutionBlock) updateExecution(ctx c.Context, data *script.BlockUpd
 		return err
 	}
 
-	err = gb.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,

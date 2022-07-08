@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	c "context"
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -12,8 +12,11 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -48,9 +51,10 @@ type ExecutionData struct {
 	ExecutionType          script.ExecutionType `json:"execution_type"`
 	Executors              map[string]struct{}  `json:"executors"`
 	Decision               *ExecutionDecision   `json:"decision,omitempty"`
-	DecisionComment        *string              `json:"comment,omitempty"`
+	Comment                *string              `json:"comment,omitempty"`
 	ActualExecutor         *string              `json:"actual_executor,omitempty"`
 	SLA                    int                  `json:"sla"`
+	DidSLANotification     bool                 `json:"did_sla_notification"`
 	ChangedExecutorComment *string              `json:"changed_executor_comment,omitempty"`
 	ChangedExecutorLogin   *string              `json:"changed_executor_login,omitempty"`
 	ChangedExecutorAt      *time.Time           `json:"changed_executor_at,omitempty"`
@@ -75,7 +79,7 @@ func (a *ExecutionData) SetDecision(login string, decision ExecutionDecision, co
 	}
 
 	a.Decision = &decision
-	a.DecisionComment = &comment
+	a.Comment = &comment
 	a.ActualExecutor = &login
 
 	return nil
@@ -104,7 +108,7 @@ type GoExecutionBlock struct {
 	Nexts  map[string][]string
 	State  *ExecutionData
 
-	Storage db.Database
+	Pipeline *ExecutablePipeline
 }
 
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
@@ -148,18 +152,80 @@ func (gb *GoExecutionBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoExecutionBlock) Run(ctx c.Context, runCtx *store.VariableStore) error {
-	return gb.DebugRun(ctx, runCtx)
+// nolint:dupl // other block
+func (gb *GoExecutionBlock) dumpCurrState(ctx context.Context, id uuid.UUID) error {
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	content, err := json.Marshal(step)
+	if err != nil {
+		return err
+	}
+
+	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		HasError:    false,
+		Status:      string(StatusFinished),
+	})
 }
 
-func (gb *GoExecutionBlock) DebugRun(ctx c.Context, runCtx *store.VariableStore) (err error) {
+func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) error {
+	if gb.State.DidSLANotification {
+		return nil
+	}
+	if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
+		l := logger.GetLogger(ctx)
+
+		// nolint:dupl // handle executors
+		if gb.State.SLA > 8 {
+			emails := make([]string, 0, len(gb.State.Executors))
+			for executor := range gb.State.Executors {
+				email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
+				if err != nil {
+					l.WithError(err).Error("couldn't get email")
+				}
+				emails = append(emails, email)
+			}
+			if len(emails) == 0 {
+				return nil
+			}
+			err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+				mail.NewExecutionSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
+			if err != nil {
+				return err
+			}
+		}
+
+		gb.State.DidSLANotification = true
+
+		if err := gb.dumpCurrState(ctx, id); err != nil {
+			gb.State.DidSLANotification = false
+			return err
+		}
+
+		return nil
+	}
+
+	return nil
+}
+
+func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
 	_, s := trace.StartSpan(ctx, "run_go_execution_block")
 	defer s.End()
 
 	// TODO: fix
 	// runCtx.AddStep(gb.Name)
 
-	// TODO: handle SLA
+	l := logger.GetLogger(ctx)
 
 	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
 	if !isOk {
@@ -172,7 +238,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx c.Context, runCtx *store.VariableStore)
 	}
 
 	var step *entity.Step
-	step, err = gb.Storage.GetTaskStepById(ctx, id)
+	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	} else if step == nil {
@@ -192,6 +258,11 @@ func (gb *GoExecutionBlock) DebugRun(ctx c.Context, runCtx *store.VariableStore)
 
 	gb.State = &state
 
+	err = gb.handleSLA(ctx, id, stepCtx)
+	if err != nil {
+		l.WithError(err).Error("couldn't handle sla")
+	}
+
 	decision := gb.State.GetDecision()
 
 	// nolint:dupl // not dupl?
@@ -202,8 +273,8 @@ func (gb *GoExecutionBlock) DebugRun(ctx c.Context, runCtx *store.VariableStore)
 			executor = *state.ActualExecutor
 		}
 
-		if state.DecisionComment != nil {
-			comment = *state.DecisionComment
+		if state.Comment != nil {
+			comment = *state.Comment
 		}
 
 		runCtx.SetValue(gb.Output[keyOutputExecutionLogin], executor)
@@ -279,15 +350,15 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoExecutionBlock(name string, ef *entity.EriusFunc, storage db.Database) (*GoExecutionBlock, error) {
+func createGoExecutionBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) (*GoExecutionBlock, error) {
 	b := &GoExecutionBlock{
-		Storage: storage,
-
 		Name:   name,
 		Title:  ef.Title,
 		Input:  map[string]string{},
 		Output: map[string]string{},
 		Nexts:  ef.Next,
+
+		Pipeline: pipeline,
 	}
 
 	for _, v := range ef.Input {
