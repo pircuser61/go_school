@@ -1647,6 +1647,7 @@ func (db *PGConnection) ChangeTaskStatus(c context.Context,
 	}
 
 	defer conn.Release()
+
 	var q string
 	// nolint:gocritic
 	// language=PostgreSQL
