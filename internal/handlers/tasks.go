@@ -193,8 +193,7 @@ func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err e
 		}
 		filters.Archived = &a
 	} else {
-		a := false
-		filters.Archived = &a
+		filters.Archived = nil
 	}
 
 	selectAs := req.URL.Query().Get("selectAs")

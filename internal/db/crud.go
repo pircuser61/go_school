@@ -1648,11 +1648,18 @@ func (db *PGConnection) ChangeTaskStatus(c context.Context,
 
 	defer conn.Release()
 
+	var q string
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `UPDATE pipeliner.works 
-		SET status = $1 
+	if status == RunStatusFinished {
+		q = `UPDATE pipeliner.works 
+		SET status = $1, finished_at = now()
 		WHERE id = $2`
+	} else {
+		q = `UPDATE pipeliner.works 
+		SET status = $1
+		WHERE id = $2`
+	}
 
 	_, err = conn.Exec(c, q, status, taskID)
 	if err != nil {
@@ -1883,7 +1890,14 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		args = append(args, time.Unix(int64(filters.Created.Start), 0).UTC(), time.Unix(int64(filters.Created.End), 0).UTC())
 		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
 	}
-	// TODO: archived
+	if filters.Archived != nil {
+		switch *filters.Archived {
+		case true:
+			q = fmt.Sprintf("%s AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days'", q)
+		case false:
+			q = fmt.Sprintf("%s AND ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)", q)
+		}
+	}
 	if order != "" {
 		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
 	}
