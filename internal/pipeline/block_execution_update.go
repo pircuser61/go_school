@@ -128,7 +128,7 @@ func (gb *GoExecutionBlock) updateExecution(ctx c.Context, data *script.BlockUpd
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
-		Status:      string(StatusFinished),
+		Status:      step.Status,
 	})
 
 	return err

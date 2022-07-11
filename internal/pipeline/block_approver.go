@@ -383,7 +383,7 @@ func (gb *GoApproverBlock) setApproverDecision(ctx context.Context, stepID uuid.
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
-		Status:      string(StatusFinished),
+		Status:      step.Status,
 	})
 	if err != nil {
 		return err
