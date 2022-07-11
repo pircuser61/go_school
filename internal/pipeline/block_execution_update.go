@@ -76,6 +76,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 
 	delete(gb.State.Executors, data.ByLogin)
 	gb.State.Executors[updateParams.NewExecutorLogin] = struct{}{}
+	gb.State.LeftToNotify[updateParams.NewExecutorLogin] = struct{}{}
 
 	step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {

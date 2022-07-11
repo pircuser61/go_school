@@ -61,6 +61,8 @@ type ApproverData struct {
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
 
 	DidSLANotification bool `json:"did_sla_notification"`
+
+	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -186,6 +188,45 @@ func (gb *GoApproverBlock) dumpCurrState(ctx context.Context, id uuid.UUID) erro
 	})
 }
 
+func (gb *GoApproverBlock) handleNotifications(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
+	if len(gb.State.LeftToNotify) == 0 {
+		return false, nil
+	}
+	l := logger.GetLogger(ctx)
+
+	emails := make([]string, 0, len(gb.State.Approvers))
+	for approver := range gb.State.Approvers {
+		email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
+		if err != nil {
+			l.WithError(err).Error("couldn't get email")
+		}
+		emails = append(emails, email)
+	}
+	if len(emails) == 0 {
+		return false, nil
+	}
+	err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+		mail.NewApplicationPersonStatusNotification(
+			stepCtx.workNumber,
+			stepCtx.workTitle,
+			statusToTaskAction[StatusApprovement],
+			ComputeDeadline(stepCtx.stepStart, gb.State.SLA),
+			gb.Pipeline.currDescription,
+			gb.Pipeline.Sender.SdAddress))
+	if err != nil {
+		return false, err
+	}
+
+	left := gb.State.LeftToNotify
+	gb.State.LeftToNotify = map[string]struct{}{}
+
+	if err := gb.dumpCurrState(ctx, id); err != nil {
+		gb.State.LeftToNotify = left
+		return false, err
+	}
+	return true, nil
+}
+
 func (gb *GoApproverBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
 	if gb.State.DidSLANotification {
 		return false, nil
@@ -283,6 +324,15 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 	handled, err := gb.handleSLA(ctx, id, stepCtx)
 	if err != nil {
 		l.WithError(err).Error("couldn't handle sla")
+	}
+	if handled {
+		// go dor another loop cause we may have updated the state at db
+		return gb.DebugRun(ctx, stepCtx, runCtx)
+	}
+
+	handled, err = gb.handleNotifications(ctx, id, stepCtx)
+	if err != nil {
+		l.WithError(err).Error("couldn't handle notifications")
 	}
 	if handled {
 		// go dor another loop cause we may have updated the state at db
@@ -482,6 +532,9 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, pipeline *Executab
 		},
 		SLA:        params.SLA,
 		AutoAction: params.AutoAction,
+		LeftToNotify: map[string]struct{}{
+			params.Approver: {},
+		},
 	}
 
 	return b, nil

@@ -82,6 +82,8 @@ type ExecutionData struct {
 
 	ChangedExecutorsLogs     []ChangeExecutorLog       `json:"change_executors_logs,omitempty"`
 	RequestExecutionInfoLogs []RequestExecutionInfoLog `json:"request_execution_info_logs,omitempty"`
+
+	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
@@ -234,6 +236,45 @@ func (gb *GoExecutionBlock) dumpCurrState(ctx context.Context, id uuid.UUID) err
 	})
 }
 
+func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
+	if len(gb.State.LeftToNotify) == 0 {
+		return false, nil
+	}
+	l := logger.GetLogger(ctx)
+
+	emails := make([]string, 0, len(gb.State.Executors))
+	for approver := range gb.State.Executors {
+		email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
+		if err != nil {
+			l.WithError(err).Error("couldn't get email")
+		}
+		emails = append(emails, email)
+	}
+	if len(emails) == 0 {
+		return false, nil
+	}
+	err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+		mail.NewApplicationPersonStatusNotification(
+			stepCtx.workNumber,
+			stepCtx.workTitle,
+			statusToTaskAction[StatusExecution],
+			ComputeDeadline(stepCtx.stepStart, gb.State.SLA),
+			gb.Pipeline.currDescription,
+			gb.Pipeline.Sender.SdAddress))
+	if err != nil {
+		return false, err
+	}
+
+	left := gb.State.LeftToNotify
+	gb.State.LeftToNotify = map[string]struct{}{}
+
+	if err := gb.dumpCurrState(ctx, id); err != nil {
+		gb.State.LeftToNotify = left
+		return false, err
+	}
+	return true, nil
+}
+
 func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) error {
 	if gb.State.DidSLANotification {
 		return nil
@@ -317,6 +358,15 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 	err = gb.handleSLA(ctx, id, stepCtx)
 	if err != nil {
 		l.WithError(err).Error("couldn't handle sla")
+	}
+
+	handled, err := gb.handleNotifications(ctx, id, stepCtx)
+	if err != nil {
+		l.WithError(err).Error("couldn't handle notifications")
+	}
+	if handled {
+		// go dor another loop cause we may have updated the state at db
+		return gb.DebugRun(ctx, stepCtx, runCtx)
 	}
 
 	decision := gb.State.GetDecision()
@@ -439,6 +489,7 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, pipeline *Executa
 		ExecutionType: params.Type,
 		Executors:     map[string]struct{}{params.Executors: {}},
 		SLA:           params.SLA,
+		LeftToNotify:  map[string]struct{}{params.Executors: {}},
 	}
 
 	return b, nil

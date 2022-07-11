@@ -12,3 +12,16 @@ const (
 	StatusDone                TaskHumanStatus = "done"
 	StatusWait                TaskHumanStatus = "wait"
 )
+
+var statusToTaskState = map[TaskHumanStatus]string{
+	StatusApproved:            "согласована",
+	StatusApprovementRejected: "отклонена",
+	StatusExecution:           "взята в работу",
+	StatusExecutionRejected:   "отклонена исполнителем",
+	StatusDone:                "выполнена исполнителем",
+}
+
+var statusToTaskAction = map[TaskHumanStatus]string{
+	StatusApprovement: "согласования",
+	StatusExecution:   "исполнения",
+}

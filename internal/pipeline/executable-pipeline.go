@@ -12,6 +12,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -53,6 +55,11 @@ type ExecutablePipeline struct {
 	FaaS string
 
 	endExecution bool
+
+	Initiator       string
+	initiatorEmail  string
+	currDescription string
+	notifiedBlocks  map[string]void
 }
 
 func (ep *ExecutablePipeline) GetStatus() Status {
@@ -184,14 +191,49 @@ func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskH
 	return nil
 }
 
+func (ep *ExecutablePipeline) handleInitiatorNotification(c context.Context, step string) error {
+	if ep.notifiedBlocks == nil {
+		ep.notifiedBlocks = make(map[string]void)
+	}
+	if _, ok := ep.notifiedBlocks[step]; ok {
+		return nil
+	}
+	currBlock := ep.Blocks[step]
+	currStatus := currBlock.GetTaskHumanStatus()
+	switch currStatus {
+	case StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
+		tmpl := mail.NewApplicationInitiatorStatusNotification(
+			ep.WorkNumber,
+			ep.Name,
+			statusToTaskState[currStatus],
+			ep.currDescription,
+			ep.Sender.SdAddress)
+		if ep.initiatorEmail == "" {
+			email, err := ep.People.GetUserEmail(c, ep.Initiator)
+			if err != nil {
+				return err
+			}
+			ep.initiatorEmail = email
+		}
+		if err := ep.Sender.SendNotification(c, []string{ep.initiatorEmail}, tmpl); err != nil {
+			return err
+		}
+		ep.notifiedBlocks[step] = void{} // TODO: dump somewhere?
+	default:
+		return nil
+	}
+	return nil
+}
+
 type stepCtx struct {
-	workNumber string
-	workTitle  string
-	stepStart  time.Time
+	workNumber  string
+	workTitle   string
+	description string
+	stepStart   time.Time
 }
 
 func (ep *ExecutablePipeline) stepCtx(start time.Time) *stepCtx {
-	return &stepCtx{stepStart: start, workNumber: ep.WorkNumber, workTitle: ep.Name}
+	return &stepCtx{stepStart: start, workNumber: ep.WorkNumber, workTitle: ep.Name, description: ep.currDescription}
 }
 
 //nolint:gocognit,gocyclo //its really complex
@@ -200,6 +242,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 	defer s.End()
 
 	ep.VarStore = runCtx
+
+	log := logger.GetLogger(ctx)
 
 	if ep.ReadyToStart() {
 		ep.ActiveBlocks[ep.EntryPoint] = void{}
@@ -285,6 +329,10 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 				return errUpdate
 			}
 
+			if errNotif := ep.handleInitiatorNotification(ctx, step); errNotif != nil {
+				log.WithError(errNotif).Error("couldn't notify initiator")
+			}
+
 			switch currentBlock.GetStatus() {
 			case StatusFinished, StatusNoSuccess:
 			default:
@@ -293,12 +341,23 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 
 			delete(ep.ActiveBlocks, step)
 
-			if currentBlock.GetType() == BlockGoEndId {
+			switch currentBlock.GetType() {
+			case BlockGoEndId:
 				ep.endExecution = true
 				continue
+			case BlockGoSdApplicationID:
+				state, exists := ep.VarStore.GetState(step)
+				if exists {
+					var stateData ApplicationData
+					if err := json.Unmarshal(state.(json.RawMessage), &stateData); err != nil {
+						log.WithError(err).Error("couldn't get application state")
+					} else {
+						ep.currDescription = stateData.Description
+					}
+				}
 			}
 
-			activeBlocks, ok := ep.Blocks[step].Next(ep.VarStore)
+			activeBlocks, ok := currentBlock.Next(ep.VarStore)
 			if !ok {
 				updStepErr := ep.updateStep(ctx, id, true, StatusFinished)
 				if updStepErr != nil {

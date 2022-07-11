@@ -7,7 +7,7 @@ import (
 
 func Test_CheckBreachSLA(t *testing.T) {
 	type fields struct {
-		Limit   time.Time
+		Start   time.Time
 		Current time.Time
 		SLA     int
 	}
@@ -19,7 +19,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 		{
 			name: "bad sla",
 			fields: fields{
-				Limit:   time.Date(2022, 01, 03, 6, 0, 0, 0, time.UTC),
+				Start:   time.Date(2022, 01, 03, 6, 0, 0, 0, time.UTC),
 				Current: time.Date(2022, 01, 03, 7, 01, 0, 0, time.UTC),
 				SLA:     1,
 			},
@@ -28,7 +28,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 		{
 			name: "ok sla",
 			fields: fields{
-				Limit:   time.Date(2022, 01, 03, 6, 0, 0, 0, time.UTC),
+				Start:   time.Date(2022, 01, 03, 6, 0, 0, 0, time.UTC),
 				Current: time.Date(2022, 01, 03, 6, 30, 0, 0, time.UTC),
 				SLA:     1,
 			},
@@ -37,25 +37,25 @@ func Test_CheckBreachSLA(t *testing.T) {
 		{
 			name: "ok sla next day",
 			fields: fields{
-				Limit:   time.Date(2022, 01, 03, 14, 0, 0, 0, time.UTC),
+				Start:   time.Date(2022, 01, 03, 14, 0, 0, 0, time.UTC),
 				Current: time.Date(2022, 01, 04, 6, 30, 0, 0, time.UTC),
 				SLA:     2,
 			},
 			wantedCheck: false,
 		},
 		{
-			name: "ok sla (now before worktime)",
+			name: "ok sla (now before working hours)",
 			fields: fields{
-				Limit:   time.Date(2022, 01, 03, 5, 0, 0, 0, time.UTC),
+				Start:   time.Date(2022, 01, 03, 5, 0, 0, 0, time.UTC),
 				Current: time.Date(2022, 01, 03, 6, 30, 0, 0, time.UTC),
 				SLA:     1,
 			},
 			wantedCheck: false,
 		},
 		{
-			name: "ok sla next day (now after worktime)",
+			name: "ok sla next day (now after working hours)",
 			fields: fields{
-				Limit:   time.Date(2022, 01, 03, 18, 0, 0, 0, time.UTC),
+				Start:   time.Date(2022, 01, 03, 18, 0, 0, 0, time.UTC),
 				Current: time.Date(2022, 01, 04, 6, 30, 0, 0, time.UTC),
 				SLA:     1,
 			},
@@ -64,7 +64,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 		{
 			name: "ok sla after weekend",
 			fields: fields{
-				Limit:   time.Date(2022, 01, 07, 18, 0, 0, 0, time.UTC),
+				Start:   time.Date(2022, 01, 07, 18, 0, 0, 0, time.UTC),
 				Current: time.Date(2022, 01, 10, 6, 30, 0, 0, time.UTC),
 				SLA:     2,
 			},
@@ -73,7 +73,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 		{
 			name: "ok sla next month",
 			fields: fields{
-				Limit:   time.Date(2022, 01, 31, 18, 0, 0, 0, time.UTC),
+				Start:   time.Date(2022, 01, 31, 18, 0, 0, 0, time.UTC),
 				Current: time.Date(2022, 02, 01, 6, 30, 0, 0, time.UTC),
 				SLA:     1,
 			},
@@ -82,7 +82,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 		{
 			name: "ok sla next year",
 			fields: fields{
-				Limit:   time.Date(2022, 12, 31, 18, 0, 0, 0, time.UTC),
+				Start:   time.Date(2022, 12, 31, 18, 0, 0, 0, time.UTC),
 				Current: time.Date(2023, 01, 02, 6, 30, 0, 0, time.UTC),
 				SLA:     1,
 			},
@@ -91,8 +91,76 @@ func Test_CheckBreachSLA(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if check := CheckBreachSLA(tt.fields.Limit, tt.fields.Current, tt.fields.SLA); check != tt.wantedCheck {
+			if check := CheckBreachSLA(tt.fields.Start, tt.fields.Current, tt.fields.SLA); check != tt.wantedCheck {
 				t.Errorf("check SLA returned unexpected result")
+			}
+		})
+	}
+}
+
+func Test_ComputeDeadline(t *testing.T) {
+	type fields struct {
+		Start time.Time
+		SLA   int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		wanted string
+	}{
+		{
+			name: "this day",
+			fields: fields{
+				Start: time.Date(2022, 01, 03, 6, 0, 0, 0, time.UTC),
+				SLA:   1,
+			},
+			wanted: "03.01.2022",
+		},
+		{
+			name: "this day (now before working hours)",
+			fields: fields{
+				Start: time.Date(2022, 01, 03, 0, 0, 0, 0, time.UTC),
+				SLA:   1,
+			},
+			wanted: "03.01.2022",
+		},
+		{
+			name: "next day",
+			fields: fields{
+				Start: time.Date(2022, 01, 03, 6, 0, 0, 0, time.UTC),
+				SLA:   10,
+			},
+			wanted: "04.01.2022",
+		},
+		{
+			name: "after weekend",
+			fields: fields{
+				Start: time.Date(2022, 01, 07, 18, 0, 0, 0, time.UTC),
+				SLA:   2,
+			},
+			wanted: "10.01.2022",
+		},
+		{
+			name: "ok sla next month",
+			fields: fields{
+				Start: time.Date(2022, 01, 31, 18, 0, 0, 0, time.UTC),
+				SLA:   1,
+			},
+			wanted: "01.02.2022",
+		},
+		{
+			name: "ok sla next year",
+			fields: fields{
+				Start: time.Date(2022, 12, 31, 18, 0, 0, 0, time.UTC),
+				SLA:   1,
+			},
+			wanted: "02.01.2023",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if deadline := ComputeDeadline(tt.fields.Start, tt.fields.SLA); deadline != tt.wanted {
+				t.Errorf("compute deadline returned unexpected result")
 			}
 		})
 	}
