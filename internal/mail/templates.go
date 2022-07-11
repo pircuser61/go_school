@@ -48,7 +48,7 @@ func NewExecutionSLATemplate(id, name, sdUrl string) Template {
 func NewRequestExecutionInfoTemplate(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),
-		Text: `Уважаемый коллега, по заявке {{.id}} требуется дополнительная информация<br>
+		Text: `Уважаемый коллега, по заявке {{.Id}} требуется дополнительная информация<br>
 				Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>`,
 		Variables: struct {
 			Id   string `json:"id"`

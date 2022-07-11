@@ -58,17 +58,17 @@ func (a ExecutionDecision) String() string {
 }
 
 type RequestExecutionInfoLog struct {
-	Login     *string          `json:"login,omitempty"`
-	Comment   *string          `json:"comment,omitempty"`
-	CreatedAt *time.Time       `json:"created_at,omitempty"`
-	ReqType   *RequestInfoType `json:"req_type,omitempty"`
+	Login     string          `json:"login"`
+	Comment   string          `json:"comment"`
+	CreatedAt time.Time       `json:"created_at"`
+	ReqType   RequestInfoType `json:"req_type"`
 }
 
 type ChangeExecutorLog struct {
-	OldLogin  *string    `json:"old_login,omitempty"`
-	NewLogin  *string    `json:"new_login,omitempty"`
-	Comment   *string    `json:"comment,omitempty"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	OldLogin  string    `json:"old_login"`
+	NewLogin  string    `json:"new_login"`
+	Comment   string    `json:"comment"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type ExecutionData struct {
