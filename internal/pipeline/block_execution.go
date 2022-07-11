@@ -119,13 +119,11 @@ func (a *ExecutionData) SetRequestExecutionInfo(login, comment string, reqType R
 		return fmt.Errorf("request info type is not valid")
 	}
 
-	now := time.Now()
-
 	a.RequestExecutionInfoLogs = append(a.RequestExecutionInfoLogs, RequestExecutionInfoLog{
-		Login:     &login,
-		Comment:   &comment,
-		CreatedAt: &now,
-		ReqType:   &reqType,
+		Login:     login,
+		Comment:   comment,
+		CreatedAt: time.Now(),
+		ReqType:   reqType,
 	})
 
 	return nil
@@ -137,13 +135,11 @@ func (a *ExecutionData) SetChangeExecutor(oldLogin, newLogin, comment string) er
 		return fmt.Errorf("%s not found in executors", oldLogin)
 	}
 
-	now := time.Now()
-
 	a.ChangedExecutorsLogs = append(a.ChangedExecutorsLogs, ChangeExecutorLog{
-		OldLogin:  &oldLogin,
-		NewLogin:  &newLogin,
-		Comment:   &comment,
-		CreatedAt: &now,
+		OldLogin:  oldLogin,
+		NewLogin:  newLogin,
+		Comment:   comment,
+		CreatedAt: time.Now(),
 	})
 
 	return nil
@@ -169,7 +165,7 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 	}
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
-		*gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
+		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
 		return StatusWait
 	}
 
@@ -185,7 +181,7 @@ func (gb *GoExecutionBlock) GetStatus() Status {
 	}
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
-		*gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
+		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
 		return StatusIdle
 	}
 
