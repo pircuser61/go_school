@@ -29,10 +29,14 @@ const (
 
 	ExecutionDecisionExecuted ExecutionDecision = "executed"
 	ExecutionDecisionRejected ExecutionDecision = "rejected"
+
+	RequestInfoQuestion RequestInfoType = "question"
+	RequestInfoAnswer   RequestInfoType = "answer"
 )
 
 type RequestInfoUpdateParams struct {
-	Comment string `json:"comment"`
+	Comment string          `json:"comment"`
+	ReqType RequestInfoType `json:"req_type"`
 }
 
 type ExecutionUpdateParams struct {
@@ -45,10 +49,26 @@ type ExecutorChangeParams struct {
 	Comment          string `json:"comment"`
 }
 
+type RequestInfoType string
+
 type ExecutionDecision string
 
 func (a ExecutionDecision) String() string {
 	return string(a)
+}
+
+type RequestExecutionInfoLog struct {
+	Login     *string          `json:"login,omitempty"`
+	Comment   *string          `json:"comment,omitempty"`
+	CreatedAt *time.Time       `json:"created_at,omitempty"`
+	ReqType   *RequestInfoType `json:"req_type,omitempty"`
+}
+
+type ChangeExecutorLog struct {
+	OldLogin  *string    `json:"old_login,omitempty"`
+	NewLogin  *string    `json:"new_login,omitempty"`
+	Comment   *string    `json:"comment,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
 }
 
 type ExecutionData struct {
@@ -60,13 +80,8 @@ type ExecutionData struct {
 	SLA                int                  `json:"sla"`
 	DidSLANotification bool                 `json:"did_sla_notification"`
 
-	ChangedExecutorComment *string    `json:"changed_executor_comment,omitempty"`
-	ChangedExecutorLogin   *string    `json:"changed_executor_login,omitempty"`
-	ChangedExecutorAt      *time.Time `json:"changed_executor_at,omitempty"`
-
-	RequestInfoExecutor *string    `json:"request_info_executor,omitempty"`
-	RequestInfoComment  *string    `json:"request_info_comment,omitempty"`
-	RequestInfoAt       *time.Time `json:"request_info_at,omitempty"`
+	ChangedExecutorsLogs     []ChangeExecutorLog       `json:"change_executors_logs,omitempty"`
+	RequestExecutionInfoLogs []RequestExecutionInfoLog `json:"request_execution_info_logs,omitempty"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
@@ -94,32 +109,42 @@ func (a *ExecutionData) SetDecision(login string, decision ExecutionDecision, co
 	return nil
 }
 
-func (a *ExecutionData) SetRequestExecutionInfo(login, comment string) error {
+func (a *ExecutionData) SetRequestExecutionInfo(login, comment string, reqType RequestInfoType) error {
 	_, ok := a.Executors[login]
-	if !ok {
+	if !ok && reqType == RequestInfoQuestion {
 		return fmt.Errorf("%s not found in executors", login)
+	}
+
+	if reqType != RequestInfoAnswer && reqType != RequestInfoQuestion {
+		return fmt.Errorf("request info type is not valid")
 	}
 
 	now := time.Now()
 
-	a.RequestInfoExecutor = &login
-	a.RequestInfoComment = &comment
-	a.RequestInfoAt = &now
+	a.RequestExecutionInfoLogs = append(a.RequestExecutionInfoLogs, RequestExecutionInfoLog{
+		Login:     &login,
+		Comment:   &comment,
+		CreatedAt: &now,
+		ReqType:   &reqType,
+	})
 
 	return nil
 }
 
-func (a *ExecutionData) SetChangeExecutor(currentExecutorLogin, comment string) error {
-	_, ok := a.Executors[currentExecutorLogin]
+func (a *ExecutionData) SetChangeExecutor(oldLogin, newLogin, comment string) error {
+	_, ok := a.Executors[oldLogin]
 	if !ok {
-		return fmt.Errorf("%s not found in executors", currentExecutorLogin)
+		return fmt.Errorf("%s not found in executors", oldLogin)
 	}
 
 	now := time.Now()
 
-	a.ChangedExecutorLogin = &currentExecutorLogin
-	a.ChangedExecutorAt = &now
-	a.ChangedExecutorComment = &comment
+	a.ChangedExecutorsLogs = append(a.ChangedExecutorsLogs, ChangeExecutorLog{
+		OldLogin:  &oldLogin,
+		NewLogin:  &newLogin,
+		Comment:   &comment,
+		CreatedAt: &now,
+	})
 
 	return nil
 }
@@ -143,6 +168,11 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 		return StatusExecutionRejected
 	}
 
+	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
+		*gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
+		return StatusWait
+	}
+
 	return StatusExecution
 }
 
@@ -153,6 +183,12 @@ func (gb *GoExecutionBlock) GetStatus() Status {
 		}
 		return StatusNoSuccess
 	}
+
+	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
+		*gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
+		return StatusIdle
+	}
+
 	return StatusRunning
 }
 

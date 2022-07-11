@@ -120,4 +120,7 @@ type BlockUpdateData struct {
 	ByLogin    string
 	Action     string
 	Parameters json.RawMessage
+	WorkNumber string
+	WorkTitle  string
+	Author     string
 }

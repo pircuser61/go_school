@@ -123,7 +123,7 @@ func (pc *PipelinerClient) RunPipeline(ctx context.Context, pid fmt.Stringer, da
 	}
 
 	// fixme extract "X-Request-Id" to variable
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-ReqType", "application/json")
 	req.Header.Add("X-ERIUS-USER", pc.user)
 
 	result := RunResponseHTTP{}
@@ -150,7 +150,7 @@ func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*
 	}
 
 	// fixme extract "X-Request-Id" to variable
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-ReqType", "application/json")
 	req.Header.Add("X-ERIUS-USER", pc.user)
 
 	result := EriusTaskHTTP{}

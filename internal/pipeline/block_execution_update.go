@@ -9,6 +9,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -37,19 +38,19 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 	gb.State = &state
 
 	if data.Action == string(entity.TaskUpdateActionExecution) {
-		if err = gb.updateExecution(ctx, data, step); err != nil {
+		if err := gb.updateExecution(ctx, data, step); err != nil {
 			return nil, err
 		}
 	}
 
 	if data.Action == string(entity.TaskUpdateActionChangeExecutor) {
-		if err = gb.changeExecutor(ctx, data, step); err != nil {
+		if err := gb.changeExecutor(ctx, data, step); err != nil {
 			return nil, err
 		}
 	}
 
 	if data.Action == string(entity.TaskUpdateActionRequestExecutionInfo) {
-		if err = gb.updateRequestExecutionInfo(ctx, data, step); err != nil {
+		if err := gb.updateRequestExecutionInfo(ctx, updateRequestExecutionInfoDto{data, step}); err != nil {
 			return nil, err
 		}
 	}
@@ -68,7 +69,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 		return errors.New("can't assert provided update data")
 	}
 
-	err = gb.State.SetChangeExecutor(data.ByLogin, updateParams.Comment)
+	err = gb.State.SetChangeExecutor(data.ByLogin, updateParams.NewExecutorLogin, updateParams.Comment)
 	if err != nil {
 		return errors.New("can't assert provided change executor data")
 	}
@@ -91,7 +92,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
-		Status:      string(StatusExecution),
+		Status:      string(StatusRunning),
 	})
 
 	return err
@@ -127,43 +128,63 @@ func (gb *GoExecutionBlock) updateExecution(ctx c.Context, data *script.BlockUpd
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
-		Status:      string(StatusIdle),
+		Status:      string(StatusFinished),
 	})
 
 	return err
 }
 
-func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, data *script.BlockUpdateData, step *entity.Step) (err error) {
+type updateRequestExecutionInfoDto struct {
+	data *script.BlockUpdateData
+	step *entity.Step
+}
+
+func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto updateRequestExecutionInfoDto) (err error) {
 	var updateParams RequestInfoUpdateParams
-	err = json.Unmarshal(data.Parameters, &updateParams)
+	err = json.Unmarshal(dto.data.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update data")
 	}
 
 	if errSet := gb.State.SetRequestExecutionInfo(
-		data.ByLogin,
+		dto.data.ByLogin,
 		updateParams.Comment,
+		updateParams.ReqType,
 	); errSet != nil {
 		return errSet
 	}
 
-	step.State[gb.Name], err = json.Marshal(gb.State)
+	dto.step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
 		return err
 	}
 
 	var content []byte
-	content, err = json.Marshal(step)
+	content, err = json.Marshal(dto.step)
 	if err != nil {
 		return err
 	}
 
+	status := string(StatusIdle)
+	if updateParams.ReqType == RequestInfoAnswer {
+		status = string(StatusRunning)
+	}
+
 	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          data.Id,
+		Id:          dto.data.Id,
 		Content:     content,
-		BreakPoints: step.BreakPoints,
-		Status:      string(StatusIdle),
+		BreakPoints: dto.step.BreakPoints,
+		Status:      status,
 	})
+	if err != nil {
+		return err
+	}
+
+	tpl := mail.NewRequestExecutionInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+	err = gb.Pipeline.Sender.SendNotification(ctx, []string{dto.data.Author}, tpl)
+	if err != nil {
+		return err
+	}
 
 	return err
 }

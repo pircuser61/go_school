@@ -89,7 +89,7 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store
 		req.Header.Set("X-Request-Id", xReqID)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-ReqType", "application/json")
 
 	const timeoutMinutes = 15
 
@@ -166,7 +166,7 @@ func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStor
 	}
 
 	// fixme extract "X-Request-Id" to variable
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-ReqType", "application/json")
 
 	const timeoutMinutes = 15
 

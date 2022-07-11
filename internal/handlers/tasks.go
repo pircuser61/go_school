@@ -146,6 +146,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 
 func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err error) {
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
+
 	if err != nil {
 		return filters, err
 	}
@@ -529,6 +530,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 			ByLogin:    ui.Username,
 			Action:     string(updateData.Action),
 			Parameters: updateData.Parameters,
+			WorkNumber: dbTask.WorkNumber,
+			WorkTitle:  dbTask.Name,
+			Author:     dbTask.Author,
 		})
 		if blockErr == nil {
 			couldUpdateOne = true
