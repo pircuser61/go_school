@@ -27,8 +27,8 @@ func (tc *Transport) transport() http.RoundTripper {
 
 // RoundTrip - проставляет хэдеры, если не были установлены
 func (tc *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.Header.Get("Content-ReqType") == "" {
-		req.Header.Add("Content-ReqType", "application/json")
+	if req.Header.Get("Content-Type") == "" {
+		req.Header.Add("Content-Type", "application/json")
 	}
 
 	if req.Header.Get("Accept") == "" {

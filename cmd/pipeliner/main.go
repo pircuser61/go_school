@@ -229,7 +229,7 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 	mux.Handle(baseURL+"/metrics", pipeliner.ServePrometheus())
 	mux.Mount(baseURL+"/swagger", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
 
-	mux.With(middleware.SetHeader("Content-ReqType", "text/json")).
+	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
 			r.Use(handlers.WithUserInfo(ssoService, logger.GetLogger(ctx)))
 			r.Use(handlers.WithAsOtherUserInfo(peopleService, logger.GetLogger(ctx)))
