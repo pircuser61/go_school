@@ -10,4 +10,5 @@ const (
 	StatusApproved            TaskHumanStatus = "approved"
 	StatusApprovementRejected TaskHumanStatus = "approvement-reject"
 	StatusDone                TaskHumanStatus = "done"
+	StatusWait                TaskHumanStatus = "wait"
 )

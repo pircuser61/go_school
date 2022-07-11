@@ -528,6 +528,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 			ByLogin:    ui.Username,
 			Action:     string(updateData.Action),
 			Parameters: updateData.Parameters,
+			WorkNumber: dbTask.WorkNumber,
+			WorkTitle:  dbTask.Name,
+			Author:     dbTask.Author,
 		})
 		if blockErr == nil {
 			couldUpdateOne = true
