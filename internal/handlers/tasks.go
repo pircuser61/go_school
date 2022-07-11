@@ -146,7 +146,6 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 
 func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err error) {
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
-
 	if err != nil {
 		return filters, err
 	}
