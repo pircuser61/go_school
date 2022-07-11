@@ -180,10 +180,12 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 		return err
 	}
 
-	tpl := mail.NewRequestExecutionInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
-	err = gb.Pipeline.Sender.SendNotification(ctx, []string{dto.data.Author}, tpl)
-	if err != nil {
-		return err
+	if updateParams.ReqType == RequestInfoQuestion {
+		tpl := mail.NewRequestExecutionInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+		err = gb.Pipeline.Sender.SendNotification(ctx, []string{dto.data.Author}, tpl)
+		if err != nil {
+			return err
+		}
 	}
 
 	return err
