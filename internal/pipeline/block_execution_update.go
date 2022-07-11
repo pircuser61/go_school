@@ -143,7 +143,7 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 	var updateParams RequestInfoUpdateParams
 	err = json.Unmarshal(dto.data.Parameters, &updateParams)
 	if err != nil {
-		return errors.New("can't assert provided update data")
+		return errors.New("can't assert provided update requestExecutionInfo data")
 	}
 
 	if errSet := gb.State.SetRequestExecutionInfo(
