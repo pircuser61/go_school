@@ -455,7 +455,7 @@ components:
         - approve
         - reject
 
-    requestInfoType:
+    requestExecutionInfoType:
       type: string
       description: Type of execution info
       enum:
@@ -507,7 +507,7 @@ components:
       description: Executor request info params
       properties:
         reqType:
-          $ref: '#/components/schemas/requestInfoType'
+          $ref: '#/components/schemas/requestExecutionInfoType'
         comment:
           type: string
           description: Comment from executor
