@@ -146,7 +146,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				Nexts:          tt.fields.NextStep,
 				RunURL:         server.URL + "/%s",
 			}
-			if err := fb.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
+			if err := fb.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {
 				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !wasRan {

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opencensus.io/trace"
@@ -1440,31 +1441,32 @@ func (db *PGConnection) UpdateDraft(c context.Context,
 	return nil
 }
 
-func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, error) {
+func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
 	conn, err := db.Pool.Acquire(ctx)
 	if err != nil {
-		return NullUuid, err
+		return NullUuid, time.Time{}, err
 	}
 
 	defer conn.Release()
 
 	var id uuid.UUID
+	var t time.Time
 
 	q := `
-	SELECT id 
+	SELECT id, time
 	FROM pipeliner.variable_storage 
-	WHERE work_id = $1 AND step_name = $2
+	WHERE work_id = $1 AND step_name = $2 AND status IN ('idle', 'ready', 'running')
 `
 	if scanErr := conn.QueryRow(ctx, q,
 		dto.WorkID,
-		dto.StepName).Scan(&id); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
-		return NullUuid, nil
+		dto.StepName).Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
+		return NullUuid, time.Time{}, nil
 	}
 	if id != NullUuid {
-		return id, nil
+		return id, t, nil
 	}
 
 	id = uuid.New()
@@ -1510,10 +1512,10 @@ func (db *PGConnection) SaveStepContext(ctx context.Context, dto *SaveStepReques
 		dto.Status,
 	)
 	if err != nil {
-		return NullUuid, err
+		return NullUuid, time.Time{}, err
 	}
 
-	return id, nil
+	return id, timestamp, nil
 }
 
 func (db *PGConnection) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) error {
@@ -1532,22 +1534,23 @@ func (db *PGConnection) UpdateStepContext(ctx context.Context, dto *UpdateStepRe
 	q := `
 	UPDATE pipeliner.variable_storage
 	SET
-	    content = $2,
-	    break_points = $3,
-		has_error = $4,
-	    status = $5
+	    break_points = $2
+		, has_error = $3
+	    , status = $4
+	    --content--
 	WHERE
 		id = $1
 `
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status}
+	if !dto.WithoutContent {
+		q = strings.Replace(q, "--content--", ", content = $5", -1)
+		args = append(args, dto.Content)
+	}
 
 	_, err = conn.Exec(
 		c,
 		q,
-		dto.Id,
-		dto.Content,
-		dto.BreakPoints,
-		dto.HasError,
-		dto.Status,
+		args...,
 	)
 	if err != nil {
 		return err
@@ -1645,11 +1648,18 @@ func (db *PGConnection) ChangeTaskStatus(c context.Context,
 
 	defer conn.Release()
 
+	var q string
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `UPDATE pipeliner.works 
-		SET status = $1 
+	if status == RunStatusFinished {
+		q = `UPDATE pipeliner.works 
+		SET status = $1, finished_at = now()
 		WHERE id = $2`
+	} else {
+		q = `UPDATE pipeliner.works 
+		SET status = $1
+		WHERE id = $2`
+	}
 
 	_, err = conn.Exec(c, q, status, taskID)
 	if err != nil {
@@ -1855,12 +1865,13 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		case "executor":
 			{
 				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND workers.status != 'finished'", q, len(args))
+					"IS NOT NULL AND (workers.status != 'finished' AND workers.status != 'no_success')", q, len(args))
 			}
 		case "finished_executor":
 			{
+				q = strings.Replace(q, "LIMIT 1", "", -1)
 				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND workers.status = 'finished'", q, len(args))
+					"IS NOT NULL AND (workers.status = 'finished' OR workers.status = 'no_success')", q, len(args))
 			}
 		}
 	} else {
@@ -1879,7 +1890,14 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		args = append(args, time.Unix(int64(filters.Created.Start), 0).UTC(), time.Unix(int64(filters.Created.End), 0).UTC())
 		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
 	}
-	// TODO: archived
+	if filters.Archived != nil {
+		switch *filters.Archived {
+		case true:
+			q = fmt.Sprintf("%s AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days'", q)
+		case false:
+			q = fmt.Sprintf("%s AND ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)", q)
+		}
+	}
 	if order != "" {
 		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
 	}
@@ -2474,20 +2492,20 @@ func (db *PGConnection) GetVersionsByBlueprintID(c context.Context, bID string) 
 			 FROM (
 					  SELECT id, blocks, nextNode
 					  FROM (
-							SELECT id,
-									pipeline.blocks AS blocks,
-									jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint -> 'next' #> '{default}') AS nextNode
-							FROM (
-									SELECT id,
-										   content -> 'pipeline' #> '{blocks}'    AS blocks,
-										   content -> 'pipeline' ->> 'entrypoint' AS entrypoint
-									FROM pipeliner.versions
-								) AS pipeline
-						   ) AS next_from_start
+							   SELECT id,
+									  pipeline.blocks                                                               as blocks,
+									  jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint #> '{next,default}') as nextNode
+							   FROM (
+										SELECT id,
+											   content -> 'pipeline' #> '{blocks}'    as blocks,
+											   content -> 'pipeline' ->> 'entrypoint' as entrypoint
+										FROM pipeliner.versions
+									) as pipeline
+						   ) as next_from_start
 					  WHERE next_from_start.nextNode LIKE 'servicedesk_application%'
-				  ) AS servicedesk_node
-		 ) AS servicedesk_node_params
-			 LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
+				  ) as servicedesk_node
+	) as servicedesk_node_params
+		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
 	WHERE pv.status = 2 AND
 			pv.created_at = (SELECT MAX(v.created_at) FROM pipeliner.versions v WHERE v.pipeline_id = pv.pipeline_id AND v.status = 2) AND
 			servicedesk_node_params.blueprint_id = $1 AND

@@ -193,8 +193,7 @@ func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err e
 		}
 		filters.Archived = &a
 	} else {
-		a := false
-		filters.Archived = &a
+		filters.Archived = nil
 	}
 
 	selectAs := req.URL.Query().Get("selectAs")
@@ -529,6 +528,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
 			ByLogin:    ui.Username,
 			Action:     string(updateData.Action),
 			Parameters: updateData.Parameters,
+			WorkNumber: dbTask.WorkNumber,
+			WorkTitle:  dbTask.Name,
+			Author:     dbTask.Author,
 		})
 		if blockErr == nil {
 			couldUpdateOne = true
@@ -562,6 +564,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
 	}
 
 	if action == entity.TaskUpdateActionChangeExecutor {
+		return pipeline.BlockGoExecutionID
+	}
+
+	if action == entity.TaskUpdateActionRequestExecutionInfo {
 		return pipeline.BlockGoExecutionID
 	}
 

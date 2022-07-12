@@ -27,7 +27,7 @@ func (gb *GoEndBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *GoEndBlock) GetType() string {
-	return BlockGoStartId
+	return BlockGoEndId
 }
 
 func (gb *GoEndBlock) Inputs() map[string]string {
@@ -42,12 +42,8 @@ func (gb *GoEndBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoEndBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return gb.DebugRun(ctx, runCtx)
-}
-
 // nolint:dupl // not dupl?
-func (gb *GoEndBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (gb *GoEndBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_go_block")
 	defer s.End()
 
