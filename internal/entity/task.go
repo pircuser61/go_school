@@ -44,6 +44,7 @@ type EriusTask struct {
 	StartedAt     time.Time              `json:"started_at"`
 	LastChangedAt time.Time              `json:"last_changed_at"`
 	Name          string                 `json:"name"`
+	Description   string                 `json:"description"`
 	Status        string                 `json:"status"`
 	HumanStatus   string                 `json:"human_status"`
 	Author        string                 `json:"author"`
