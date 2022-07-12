@@ -8,7 +8,7 @@ const (
 )
 
 func getWorkWorkHoursBetweenDates(from, to time.Time) (workHours int) {
-	if from.After(to) || from.Equal(to){
+	if from.After(to) || from.Equal(to) {
 		return 0
 	}
 
