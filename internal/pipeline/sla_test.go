@@ -97,3 +97,47 @@ func Test_CheckBreachSLA(t *testing.T) {
 		})
 	}
 }
+
+func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
+	type fields struct {
+		from time.Time
+		to   time.Time
+	}
+	tests := []struct {
+		name          string
+		fields        fields
+		wantWorkHours int
+	}{
+		{
+			name: "work days eq 2",
+			fields: fields{
+				from: time.Date(2022, 01, 03, 14, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 01, 04, 6, 30, 0, 0, time.UTC),
+			},
+			wantWorkHours: 2,
+		},
+		{
+			name: "work days eq 0",
+			fields: fields{
+				from: time.Date(2022, 07, 16, 14, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 17, 6, 30, 0, 0, time.UTC),
+			},
+			wantWorkHours: 0,
+		},
+		{
+			name: "work days eq 9",
+			fields: fields{
+				from: time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 18, 15, 30, 0, 0, time.UTC),
+			},
+			wantWorkHours: 9,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotWorkHours := getWorkWorkHoursBetweenDates(tt.fields.from, tt.fields.to); gotWorkHours != tt.wantWorkHours {
+				t.Errorf("getWorkWorkHoursBetweenDates() = %v, want %v", gotWorkHours, tt.wantWorkHours)
+			}
+		})
+	}
+}
