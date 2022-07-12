@@ -2382,8 +2382,34 @@ func (db *PGConnection) GetUnfinishedTaskStepsByWorkIdAndStepType(
 	return el, nil
 }
 
+func (db *PGConnection) CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_check_task_steps_executed")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	SELECT count(*)
+	FROM pipeliner.variable_storage vs 
+	JOIN pipeliner.works w on w.id = vs.work_id
+	WHERE w.work_number = $1 AND vs.step_name IN $2 AND vs.status IN ('finished', 'no_success', 'skipped')`
+
+	var c int
+	if scanErr := conn.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
+		return false, err
+	}
+	return c == len(blocks), nil
+}
+
 func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_task_step")
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_id")
 	defer span.End()
 
 	conn, err := db.Pool.Acquire(ctx)
