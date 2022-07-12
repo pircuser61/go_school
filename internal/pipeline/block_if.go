@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+
 	"encoding/json"
 	"go.opencensus.io/trace"
 

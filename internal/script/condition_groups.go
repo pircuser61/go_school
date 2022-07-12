@@ -2,6 +2,7 @@ package script
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 )
 

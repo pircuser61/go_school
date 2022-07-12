@@ -2,13 +2,14 @@ package pipeline
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"testing"
+
+	"encoding/json"
+
 	"github.com/stretchr/testify/assert"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"testing"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
