@@ -1,25 +1,21 @@
 package script
 
 import (
+	"encoding/json"
 	"github.com/pkg/errors"
 )
 
 const (
-	MoreThanCompareOperator        string = "moreThan"
-	LessThanCompareOperator        string = "lessThan"
-	MoreThanOrEqualCompareOperator string = "moreThanOrEqual"
-	LessThanOrEqualCompareOperator string = "lessThanOrEqual"
-	EqualCompareOperator           string = "equal"
-	NotEqualCompareOperator        string = "notEqual"
+	EqualCompareOperator    string = "equal"
+	NotEqualCompareOperator string = "notEqual"
 
 	stringOperandType  string = "string"
 	booleanOperandType string = "boolean"
-	integerOperandType string = "integer"
 )
 
 var (
 	ErrNotComparableOperands = errors.New("Invalid condition. Check for operand types equality and used operator is allowed for type.")
-	ErrCombinedUsage         = errors.New("Unable to use 'allOf' and 'anyOf' together in single group.")
+	ErrNoAllowedOperators    = errors.New("Unable to find allowed operators for this type.")
 )
 
 type ConditionType string
@@ -33,89 +29,222 @@ type ConditionParams struct {
 	ConditionGroups []ConditionGroup `json:"conditionGroups"`
 }
 
+func (c *ConditionParams) UnmarshalJSON(b []byte) error {
+	const (
+		conditionGroupsKey string = "conditionGroups"
+		conditionsKey      string = "conditions"
+		logicalOperatorKey string = "logicalOperator"
+		idKey              string = "id"
+		nameKey            string = "name"
+		typeKey            string = "type"
+	)
+
+	var err error
+
+	var conditionParams map[string]json.RawMessage
+	if err := json.Unmarshal(b, &conditionParams); err != nil {
+		return err
+	}
+
+	var conditionGroupMaps []map[string]json.RawMessage
+	if err := json.Unmarshal(conditionParams[conditionGroupsKey], &conditionGroupMaps); err != nil {
+		return err
+	}
+
+	var conditionGroups = make([]ConditionGroup, 0)
+	for _, group := range conditionGroupMaps {
+
+		var conditionsMap []map[string]interface{}
+
+		if err := json.Unmarshal(group[conditionsKey], &conditionsMap); err != nil {
+			return err
+		}
+
+		var conditions = make([]Condition, 0)
+		for _, condition := range conditionsMap {
+			var newCondition Condition
+			newCondition = unmarshalCondition(condition)
+			conditions = append(conditions, newCondition)
+		}
+
+		var logicalOperator string
+		err = json.Unmarshal(group[logicalOperatorKey], &logicalOperator)
+
+		var id string
+		err = json.Unmarshal(group[idKey], &id)
+
+		var name string
+		err = json.Unmarshal(group[nameKey], &name)
+
+		if err != nil {
+			return err
+		}
+
+		var newConditionGroup = ConditionGroup{
+			Id:              id,
+			Name:            name,
+			LogicalOperator: logicalOperator,
+			Conditions:      conditions,
+		}
+		conditionGroups = append(conditionGroups, newConditionGroup)
+	}
+
+	var paramType ConditionType
+	err = json.Unmarshal(conditionParams[typeKey], &paramType)
+
+	c.ConditionGroups = conditionGroups
+	c.Type = paramType
+
+	return nil
+}
+
+func unmarshalCondition(conditionRaw map[string]interface{}) Condition {
+	const (
+		operatorKey     string = "operator"
+		leftOperandKey  string = "leftOperand"
+		rightOperandKey string = "rightOperand"
+	)
+	var newCondition = Condition{
+		Operator:     conditionRaw[operatorKey].(string),
+		LeftOperand:  unmarshalOperand(conditionRaw[leftOperandKey]),
+		RightOperand: unmarshalOperand(conditionRaw[rightOperandKey]),
+	}
+
+	return newCondition
+}
+
+func unmarshalOperand(operandRaw interface{}) Operand {
+	const (
+		typeKey                    string = "type"
+		valueFieldName             string = "value"
+		variableReferenceFieldName string = "variableRef"
+	)
+
+	var operandMap = operandRaw.(map[string]interface{})
+	var operandType = operandMap[typeKey].(string)
+
+	var operand Operand
+	allowedOperators, err := getAllowedOperators(operandType)
+	if err != nil {
+		return nil
+	}
+
+	for k, v := range operandMap {
+		switch k {
+		case valueFieldName:
+			operand = &ValueOperand{
+				OperandBase: OperandBase{
+					Type:             operandType,
+					ValueToCompare:   v,
+					AllowedOperators: allowedOperators,
+				},
+				Value: v,
+			}
+		case variableReferenceFieldName:
+			operand = &VariableOperand{
+				OperandBase: OperandBase{
+					Type:             operandType,
+					AllowedOperators: allowedOperators,
+				},
+				VariableRef: v.(string),
+			}
+		}
+	}
+
+	return operand
+}
+
 type CompareOperator func(leftOperand, rightOperand Operand) bool
 
 type Condition struct {
 	LeftOperand  Operand `json:"leftOperand"`
 	RightOperand Operand `json:"rightOperand"`
-	Operator     string  `json:"operator"`
+	Operator     string  `json:"operator" example:"equal,notEqual"`
 }
 
 type ConditionGroup struct {
-	Alias string
-	AllOf []Condition `json:"allOf"`
-	AnyOf []Condition `json:"anyOf"`
+	Id              string      `json:"id"`
+	Name            string      `json:"name"`
+	LogicalOperator string      `json:"logicalOperator" example:"or,and"`
+	Conditions      []Condition `json:"conditions"`
 }
 
-type Operand struct {
-	Value            interface{}                `json:"value" example:"\"ref#testVariableName\", \"abc123\", 0, false"`
+type Operand interface {
+	GetValue() interface{}
+	GetType() string
+	GetAllowedOperators() (map[string]CompareOperator, error)
+}
+
+type OperandBase struct {
 	Type             string                     `json:"type"`
 	AllowedOperators map[string]CompareOperator `json:"-"`
+	ValueToCompare   interface{}                `json:"-"`
 }
 
-func (op *Operand) AsString() {
-	op.Type = stringOperandType
-	op.AllowedOperators = genericOperators()
+func (valOp *OperandBase) GetType() string {
+	return valOp.Type
 }
 
-func (op *Operand) AsBoolean() {
-	op.Type = booleanOperandType
-	op.AllowedOperators = genericOperators()
+func (valOp *OperandBase) GetValue() interface{} {
+	return valOp.ValueToCompare
 }
 
-func (op *Operand) AsInteger() {
-	var operatorFunctionsMap = map[string]CompareOperator{
-		EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-			return leftOperand.Value == rightOperand.Value
-		},
-		NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-			return leftOperand.Value != rightOperand.Value
-		},
-		MoreThanCompareOperator: func(leftOperand, rightOperand Operand) bool {
-			return leftOperand.Value.(int) > rightOperand.Value.(int)
-		},
-		MoreThanOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-			return leftOperand.Value.(int) >= rightOperand.Value.(int)
-		},
-		LessThanCompareOperator: func(leftOperand, rightOperand Operand) bool {
-			return leftOperand.Value.(int) < rightOperand.Value.(int)
-		},
-		LessThanOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-			return leftOperand.Value.(int) <= rightOperand.Value.(int)
-		},
+func (valOp *OperandBase) GetAllowedOperators() (map[string]CompareOperator, error) {
+	return getAllowedOperators(valOp.Type)
+}
+
+type ValueOperand struct {
+	Value interface{} `json:"value"`
+	OperandBase
+}
+
+type VariableOperand struct {
+	VariableRef string `json:"variableRef"`
+	OperandBase
+}
+
+func (condition *Condition) IsTrue() (bool, error) {
+	if canCompare(condition) {
+		allowedOperatorFunctions, err := condition.LeftOperand.GetAllowedOperators()
+		if err != nil {
+			return false, err
+		}
+		var compareFunction = allowedOperatorFunctions[condition.Operator]
+		var result = compareFunction(condition.LeftOperand, condition.RightOperand)
+
+		return result, nil
 	}
 
-	op.Type = integerOperandType
-	op.AllowedOperators = operatorFunctionsMap
+	return false, nil
+}
+
+func getAllowedOperators(operatorType string) (map[string]CompareOperator, error) {
+	switch operatorType {
+	case stringOperandType, booleanOperandType:
+		return genericOperators(), nil
+	}
+
+	return nil, ErrNoAllowedOperators
 }
 
 func genericOperators() map[string]CompareOperator {
 	var operatorFunctionsMap = make(map[string]CompareOperator)
 
 	operatorFunctionsMap[EqualCompareOperator] = func(leftOperand, rightOperand Operand) bool {
-		return leftOperand.Value == rightOperand.Value
+		return leftOperand.GetValue() == rightOperand.GetValue()
 	}
 
 	operatorFunctionsMap[NotEqualCompareOperator] = func(leftOperand, rightOperand Operand) bool {
-		return leftOperand.Value != rightOperand.Value
+		return leftOperand.GetValue() != rightOperand.GetValue()
 	}
 
 	return operatorFunctionsMap
 }
 
 func (c *ConditionParams) Validate() error {
+
 	for _, conditionGroup := range c.ConditionGroups {
-		if len(conditionGroup.AnyOf) > 0 && len(conditionGroup.AllOf) > 0 {
-			return ErrCombinedUsage
-		}
-
-		for _, condition := range conditionGroup.AnyOf {
-			if canCompare(&condition) == false {
-				return ErrNotComparableOperands
-			}
-		}
-
-		for _, condition := range conditionGroup.AllOf {
+		for _, condition := range conditionGroup.Conditions {
 			if canCompare(&condition) == false {
 				return ErrNotComparableOperands
 			}
@@ -123,53 +252,6 @@ func (c *ConditionParams) Validate() error {
 	}
 
 	return nil
-}
-
-func (condition *Condition) IsTrue() bool {
-	if canCompare(condition) {
-		var allowedOperatorFunctions = condition.LeftOperand.AllowedOperators
-		var compareFunction = allowedOperatorFunctions[condition.Operator]
-		var result = compareFunction(condition.LeftOperand, condition.RightOperand)
-
-		return result
-	}
-
-	return false
-}
-
-func (cg *ConditionGroup) PrepareOperands() {
-	for i, condition := range cg.AnyOf {
-		cg.AnyOf[i].LeftOperand, cg.AnyOf[i].RightOperand =
-			prepareOperands(condition.LeftOperand, condition.RightOperand)
-	}
-
-	for i, condition := range cg.AllOf {
-		cg.AnyOf[i].LeftOperand, cg.AnyOf[i].RightOperand =
-			prepareOperands(condition.LeftOperand, condition.RightOperand)
-	}
-}
-
-func prepareOperands(leftOperand, rightOperand Operand) (l, r Operand) {
-	return prepareOperand(leftOperand), prepareOperand(rightOperand)
-}
-
-func prepareOperand(operand Operand) (o Operand) {
-	switch operand.Type {
-	case stringOperandType:
-		{
-			operand.AsString()
-		}
-	case integerOperandType:
-		{
-			operand.AsInteger()
-		}
-	case booleanOperandType:
-		{
-			operand.AsBoolean()
-		}
-	}
-
-	return operand
 }
 
 func canCompare(condition *Condition) bool {
@@ -180,12 +262,17 @@ func canCompare(condition *Condition) bool {
 func haveAllowedOperator(condition *Condition) bool {
 	var operator = condition.Operator
 
-	return operandHaveAllowedOperator(&condition.LeftOperand, operator) &&
-		operandHaveAllowedOperator(&condition.RightOperand, operator)
+	return operandHaveAllowedOperator(condition.LeftOperand, operator) &&
+		operandHaveAllowedOperator(condition.RightOperand, operator)
 }
 
-func operandHaveAllowedOperator(operand *Operand, operatorType string) bool {
-	for key, _ := range operand.AllowedOperators {
+func operandHaveAllowedOperator(operand Operand, operatorType string) bool {
+	allowedOperators, err := operand.GetAllowedOperators()
+	if err != nil {
+		return false
+	}
+
+	for key, _ := range allowedOperators {
 		if key == operatorType {
 			return true
 		}
@@ -195,5 +282,5 @@ func operandHaveAllowedOperator(operand *Operand, operatorType string) bool {
 }
 
 func haveIdenticalOperandTypes(leftOperand, rightOperand Operand) bool {
-	return leftOperand.Type == rightOperand.Type
+	return leftOperand.GetType() == rightOperand.GetType()
 }

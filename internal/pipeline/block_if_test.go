@@ -4,208 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-/*
-func TestIF_DebugRun(t *testing.T) {
-	const checkKey = "foo"
-
-	type fields struct {
-		Name          string
-		FunctionName  string
-		FunctionInput map[string]string
-		Result        bool
-		Nexts         map[string][]string
-		State   	  *ConditionsData
-	}
-	type args struct {
-		ctx    context.Context
-		runCtx *store.VariableStore
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name:   "error - no such key",
-			fields: fields{},
-			args: args{
-				ctx:    context.Background(),
-				runCtx: store.NewStore(),
-			},
-			wantErr: true,
-		},
-		{
-			name: "error - value not a bool",
-			fields: fields{
-				FunctionInput: map[string]string{
-					keyIf: checkKey,
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-					res.SetValue(checkKey, "bar")
-
-					return res
-				}(),
-			},
-			wantErr: true,
-		},
-		{
-			name: "acceptance test",
-			fields: fields{
-				FunctionInput: map[string]string{
-					keyIf: checkKey,
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-					res.SetValue(checkKey, true)
-
-					return res
-				}(),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := &IF{
-				Name:          tt.fields.Name,
-				FunctionName:  tt.fields.FunctionName,
-				FunctionInput: tt.fields.FunctionInput,
-				Result:        tt.fields.Result,
-				Nexts:         tt.fields.Nexts,
-				State:		   tt.fields.State,
-			}
-
-
-			if err := e.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
-				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}*/
-
-/*func TestIF_Next(t *testing.T) {
-	const checkKey = "foo"
-
-	type fields struct {
-		Name          string
-		FunctionName  string
-		FunctionInput map[string]string
-		Result        bool
-		Nexts         map[string][]string
-		State   	  *ConditionsData
-	}
-	type args struct {
-		runCtx *store.VariableStore
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   []string
-		ok     bool
-	}{
-		{
-			name:   "error - no such key",
-			fields: fields{},
-			args: args{
-				runCtx: store.NewStore(),
-			},
-			ok:   false,
-			want: []string{},
-		},
-		{
-			want: []string{},
-			name: "error - value not a bool",
-			fields: fields{
-				FunctionInput: map[string]string{
-					keyIf: checkKey,
-				},
-			},
-			args: args{
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-					res.SetValue(checkKey, "bar")
-
-					return res
-				}(),
-			},
-			ok: false,
-		},
-		{
-			name: "onTrue",
-			fields: fields{
-				FunctionInput: map[string]string{
-					keyIf: checkKey,
-				},
-				Nexts: map[string][]string{trueSocket: []string{"onTrue"}},
-			},
-			args: args{
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-					res.SetValue(checkKey, true)
-
-					return res
-				}(),
-			},
-			want: []string{"onTrue"},
-			ok:   true,
-		},
-		{
-			name: "onFalse",
-			fields: fields{
-				FunctionInput: map[string]string{
-					keyIf: checkKey,
-				},
-				Nexts: map[string][]string{falseSocket: []string{"onFalse"}},
-			},
-			args: args{
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-					res.SetValue(checkKey, false)
-
-					return res
-				}(),
-			},
-			want: []string{"onFalse"},
-			ok:   true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := &IF{
-				Name:          tt.fields.Name,
-				FunctionName:  tt.fields.FunctionName,
-				FunctionInput: tt.fields.FunctionInput,
-				Result:        tt.fields.Result,
-				Nexts:         tt.fields.Nexts,
-				State:		   tt.fields.State,
-			}
-			got, _ := e.Next(tt.args.runCtx)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}*/
-
 func TestIF_Next_2(t *testing.T) {
-	const checkKey = "foo"
-
 	type fields struct {
 		Name          string
 		FunctionName  string
@@ -226,9 +33,33 @@ func TestIF_Next_2(t *testing.T) {
 	}{
 		{
 			name: "default socket",
+			fields: fields{
+				Nexts: map[string][]string{DefaultSocket: []string{""}},
+			},
+			args: args{
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					res.SetValue("chosenGroup", "")
+					return res
+				}(),
+			},
+			ok:   true,
+			want: []string{""},
 		},
 		{
-			name: "group socket next",
+			name: "test chosen group",
+			fields: fields{
+				Nexts: map[string][]string{"test-group-1": []string{""}},
+			},
+			args: args{
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					res.SetValue("chosenGroup", "test-group-1")
+					return res
+				}(),
+			},
+			ok:   true,
+			want: []string{""},
 		},
 	}
 	for _, tt := range tests {
@@ -247,7 +78,7 @@ func TestIF_Next_2(t *testing.T) {
 	}
 }
 
-func TestIF_DebugRun_3(t *testing.T) {
+func TestIF_DebugRun(t *testing.T) {
 	const (
 		example = "example"
 		title   = "title"
@@ -276,6 +107,18 @@ func TestIF_DebugRun_3(t *testing.T) {
 		{
 			name:    "empty groups",
 			wantErr: false,
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
 		},
 		{
 			name:    "compare string variables",
@@ -290,15 +133,19 @@ func TestIF_DebugRun_3(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									AnyOf: []script.Condition{
+									Conditions: []script.Condition{
 										{
-											LeftOperand: script.Operand{
-												Type:  "string",
-												Value: "ref#testStringVariable1",
+											LeftOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												VariableRef: "testStringVariable1",
 											},
-											RightOperand: script.Operand{
-												Type:  "string",
-												Value: "ref#testStringVariable2",
+											RightOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												VariableRef: "testStringVariable2",
 											},
 											Operator: "equal",
 										},
@@ -321,49 +168,6 @@ func TestIF_DebugRun_3(t *testing.T) {
 			},
 		},
 		{
-			name:    "compare int variables",
-			wantErr: false,
-			args: args{
-				name: example,
-				ef: &entity.EriusFunc{
-					BlockType: BlockGoIfID,
-					Title:     title,
-					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
-							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
-								{
-									AnyOf: []script.Condition{
-										{
-											LeftOperand: script.Operand{
-												Type:  "string",
-												Value: "ref#testIntVariable1",
-											},
-											RightOperand: script.Operand{
-												Type:  "string",
-												Value: "ref#testIntVariable2",
-											},
-											Operator: "moreThan",
-										},
-									},
-								},
-							},
-						})
-
-						return r
-					}(),
-				},
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-					res.SetValue("testIntVariable1", 10)
-					res.SetValue("testIntVariable2", 5)
-
-					return res
-				}(),
-			},
-		},
-		{
 			name:    "compare string values",
 			wantErr: false,
 			args: args{
@@ -376,14 +180,20 @@ func TestIF_DebugRun_3(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									AnyOf: []script.Condition{
+									Name:            "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
 										{
-											LeftOperand: script.Operand{
-												Type:  "string",
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
 												Value: "test",
 											},
-											RightOperand: script.Operand{
-												Type:  "string",
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
 												Value: "test2",
 											},
 											Operator: "notEqual",
@@ -404,7 +214,7 @@ func TestIF_DebugRun_3(t *testing.T) {
 			},
 		},
 		{
-			name:    "compare int values",
+			name:    "compare string value with variable",
 			wantErr: false,
 			args: args{
 				name: example,
@@ -416,17 +226,86 @@ func TestIF_DebugRun_3(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									AnyOf: []script.Condition{
+									Name:            "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
 										{
-											LeftOperand: script.Operand{
-												Type:  "integer",
-												Value: 10,
+											LeftOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												VariableRef: "testStringVariable",
 											},
-											RightOperand: script.Operand{
-												Type:  "integer",
-												Value: 15,
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test",
 											},
-											Operator: "lessThan",
+											Operator: "equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					res.SetValue("testStringVariable", "test")
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:    "valid OR condition",
+			wantErr: false,
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Name:            "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test2",
+											},
+											Operator: "equal",
+										},
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test2",
+											},
+											Operator: "notEqual",
 										},
 									},
 								},
@@ -444,16 +323,147 @@ func TestIF_DebugRun_3(t *testing.T) {
 			},
 		},
 		{
-			name:    "choose anyOf group (group-0)",
+			name:    "valid AND condition",
 			wantErr: false,
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Name:            "test-group-1",
+									LogicalOperator: "and",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test",
+											},
+											Operator: "equal",
+										},
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test2",
+											},
+											Operator: "notEqual",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
 		},
 		{
-			name:    "choose allOf group (group-1)",
+			name:    "second group conditions is valid",
 			wantErr: false,
-		},
-		{
-			name:    "acceptance test",
-			wantErr: false,
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Name:            "test-group-1",
+									LogicalOperator: "and",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test2",
+											},
+											Operator: "equal",
+										},
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "test2",
+											},
+											Operator: "notEqual",
+										},
+									},
+								},
+								{
+									Name:            "test-group-2",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "testAbc",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												Value: "testAbc",
+											},
+											Operator: "equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
 		},
 	}
 	for _, tt := range tests {

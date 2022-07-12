@@ -3,19 +3,17 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"go.opencensus.io/trace"
-	"strings"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 const (
-	keyIf            string = "check"
-	groupDefaultName string = "group"
+	OrLogicalOperator  string = "or"
+	AndLogicalOperator string = "and"
 )
 
 type IF struct {
@@ -38,9 +36,6 @@ type ConditionsData struct {
 }
 
 func (cd *ConditionsData) GetConditionGroups() []script.ConditionGroup {
-	for i := range cd.ConditionGroups {
-		cd.ConditionGroups[i].Alias = fmt.Sprintf("%s-%v", groupDefaultName, i)
-	}
 	return cd.ConditionGroups
 }
 
@@ -100,16 +95,28 @@ func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
 	defer s.End()
 
 	runCtx.AddStep(e.Name)
+	var chosenGroup *script.ConditionGroup
 
-	variables, err := runCtx.GrabStorage()
-	if err != nil {
-		return nil
+	if e.State != nil {
+		conditionGroups := e.State.GetConditionGroups()
+
+		variables, err := getVariables(runCtx)
+		if err != nil {
+			return err
+		}
+
+		chosenGroup = processConditionGroups(conditionGroups, variables)
 	}
 
-	conditionGroups := e.State.GetConditionGroups()
+	var chosenGroupName string
 
-	var chosenGroup = processConditions(conditionGroups, variables)
-	runCtx.SetValue("chosenGroup", chosenGroup.Alias)
+	if chosenGroup != nil {
+		chosenGroupName = chosenGroup.Name
+	} else {
+		chosenGroupName = ""
+	}
+
+	runCtx.SetValue("chosenGroup", chosenGroupName)
 
 	return nil
 }
@@ -156,96 +163,89 @@ func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
 		b.Output[v.Name] = v.Global
 	}
 
-	var params script.ConditionParams
-	err = json.Unmarshal(ef.Params, &params)
-	if err != nil {
-		return nil, err
-	}
+	if ef.Params != nil {
+		var params script.ConditionParams
+		err = json.Unmarshal(ef.Params, &params)
+		if err != nil {
+			return nil, err
+		}
 
-	if err = params.Validate(); err != nil {
-		return nil, err
-	}
+		if err = params.Validate(); err != nil {
+			return nil, err
+		}
 
-	b.State = &ConditionsData{
-		Type:            params.Type,
-		ConditionGroups: params.ConditionGroups,
-	}
-
-	for _, cg := range b.State.ConditionGroups {
-		cg.PrepareOperands()
+		b.State = &ConditionsData{
+			Type:            params.Type,
+			ConditionGroups: params.ConditionGroups,
+		}
 	}
 
 	return b, nil
 }
 
-func processConditions(groups []script.ConditionGroup, variables map[string]interface{}) (
+func processConditionGroups(groups []script.ConditionGroup, variables map[string]interface{}) (
 	chosenGroup *script.ConditionGroup) {
 	for _, conditionGroup := range groups {
-		if processAnyOf(conditionGroup.AnyOf, variables) {
-			chosenGroup = &conditionGroup
-		}
-
-		if processAllOf(conditionGroup.AnyOf, variables) {
-			chosenGroup = &conditionGroup
+		switch conditionGroup.LogicalOperator {
+		case OrLogicalOperator:
+			if processOrConditions(conditionGroup.Conditions, variables) {
+				chosenGroup = &conditionGroup
+			}
+		case AndLogicalOperator:
+			if processAndConditions(conditionGroup.Conditions, variables) {
+				chosenGroup = &conditionGroup
+			}
 		}
 	}
 
 	return chosenGroup
 }
 
-func processAnyOf(conditions []script.Condition, variables map[string]interface{}) bool {
+func processAndConditions(conditions []script.Condition, variables map[string]interface{}) bool {
+	var successCount = 0
 	for _, condition := range conditions {
-		checkForReferenceVariables(condition.LeftOperand, condition.RightOperand, variables)
-		if condition.IsTrue() {
+		setValuesToCompare(condition.LeftOperand, condition.RightOperand, variables)
+		if result, _ := condition.IsTrue(); result {
+			successCount++
+		}
+	}
+
+	return successCount == len(conditions)
+}
+
+func processOrConditions(conditions []script.Condition, variables map[string]interface{}) bool {
+	for _, condition := range conditions {
+		setValuesToCompare(condition.LeftOperand, condition.RightOperand, variables)
+		if result, _ := condition.IsTrue(); result {
 			return true
 		}
 	}
 	return false
 }
 
-func processAllOf(allOfConditions []script.Condition, variables map[string]interface{}) bool {
-	var validConditionsCount = 0
-	for _, condition := range allOfConditions {
-		checkForReferenceVariables(condition.LeftOperand, condition.RightOperand, variables)
-		if condition.IsTrue() {
-			validConditionsCount++
-		}
-	}
-
-	return validConditionsCount == len(allOfConditions)
+func setValuesToCompare(leftOperand, rightOperand script.Operand, variables map[string]interface{}) {
+	setOperandValueToCompare(leftOperand, variables)
+	setOperandValueToCompare(rightOperand, variables)
 }
 
-func checkForReferenceVariables(leftOperand, rightOperand script.Operand, variables map[string]interface{}) (
-	leftOperandValue, rightOperandValue interface{}) {
-	var leftVariableReference = tryGetVariableReference(leftOperand.Value)
-
-	if leftVariableReference != "" {
-		var leftOperandVariable = variables[leftVariableReference]
-		leftOperand.Value = leftOperandVariable
+func setOperandValueToCompare(operand script.Operand, variables map[string]interface{}) (result script.Operand) {
+	switch op := operand.(type) {
+	case *script.ValueOperand:
+		op.ValueToCompare = op.Value
+		return op
+	case *script.VariableOperand:
+		op.ValueToCompare = variables[op.VariableRef]
+		return op
 	}
 
-	var rightVariableReference = tryGetVariableReference(rightOperand.Value)
-
-	if rightVariableReference != "" {
-		var rightOperandVariable = variables[rightVariableReference]
-		rightOperand.Value = rightOperandVariable
-	}
-
-	return leftOperand.Value, rightOperand.Value
+	return nil
 }
 
-func tryGetVariableReference(value interface{}) string {
-	const (
-		referencePrefix = "ref#"
-		empty           = ""
-	)
-
-	if val, ok := value.(string); ok {
-		if strings.HasPrefix(val, referencePrefix) {
-			var variableName = strings.Replace(val, referencePrefix, empty, 1)
-			return variableName
-		}
+func getVariables(runCtx *store.VariableStore) (result map[string]interface{}, err error) {
+	variables, err := runCtx.GrabStorage()
+	if err != nil {
+		return nil, err
 	}
 
-	return empty
+	return variables, nil
 }
