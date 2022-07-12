@@ -1859,18 +1859,18 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'approvers'->$%d "+
 					"IS NOT NULL AND workers.status != 'finished'", q, len(args))
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'executors'->$%d "+
 					"IS NOT NULL AND (workers.status != 'finished' AND workers.status != 'no_success')", q, len(args))
 			}
 		case "finished_executor":
 			{
 				q = strings.Replace(q, "LIMIT 1", "", -1)
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'executors'->$%d "+
 					"IS NOT NULL AND (workers.status = 'finished' OR workers.status = 'no_success')", q, len(args))
 			}
 		}

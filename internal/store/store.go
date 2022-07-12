@@ -20,11 +20,11 @@ var (
 type VariableStore struct {
 	// TODO: RWMutex?
 	sync.Mutex
-	State      map[string]json.RawMessage
-	Values     map[string]interface{}
-	Steps      []string
-	Errors     []string
-	StopPoints StopPoints `json:"-"`
+	State      map[string]json.RawMessage `json:"stage"`
+	Values     map[string]interface{}     `json:"values"`
+	Steps      []string                   `json:"steps"`
+	Errors     []string                   `json:"errors"`
+	StopPoints StopPoints                 `json:"-"`
 }
 
 func NewStore() *VariableStore {
