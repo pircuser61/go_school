@@ -1844,13 +1844,13 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		JOIN pipeliner.work_status ws ON w.status = ws.id
 		LEFT JOIN LATERAL (
              SELECT * FROM pipeliner.variable_storage vs
-             WHERE vs.work_id = w.id
+             WHERE vs.work_id = w.id AND vs.status != 'skipped'
              ORDER BY vs.time DESC
              --limit--
         ) workers ON workers.work_id = w.id
 		LEFT JOIN LATERAL (
 		    SELECT work_id, content::json->'State'->step_name->>'description' description FROM pipeliner.variable_storage vs
-		    WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application'
+		    WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 		    ORDER BY vs.time DESC
 		    LIMIT 1
 		) descr ON descr.work_id = w.id
@@ -1867,7 +1867,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		case "approver":
 			{
 				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'approvers'->$%d "+
-					"IS NOT NULL AND workers.status NOT IN ('finished', 'no_success', 'cancel')", q, len(args))
+					"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready')", q, len(args))
 			}
 		case "finished_approver":
 			{
@@ -1877,7 +1877,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		case "executor":
 			{
 				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND (workers.status NOT IN ('finished', 'no_success', 'cancel'))", q, len(args))
+					"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
 			}
 		case "finished_executor":
 			{
@@ -2099,7 +2099,7 @@ func (db *PGConnection) GetTask(c context.Context, workNumber string) (*entity.E
 		JOIN pipeliner.work_status ws ON w.status = ws.id
 		LEFT JOIN LATERAL (
 		    SELECT work_id, content::json->'State'->step_name->>'description' description FROM pipeliner.variable_storage vs
-		    WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application'
+		    WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 		    ORDER BY vs.time DESC
 		    LIMIT 1
 		) descr ON descr.work_id = w.id
@@ -2256,7 +2256,7 @@ func (db *PGConnection) GetTaskSteps(c context.Context, id uuid.UUID) (entity.Ta
 		vs.has_error,
 		vs.status
 	FROM pipeliner.variable_storage vs 
-	WHERE work_id = $1
+	WHERE work_id = $1 AND vs.status != 'skipped'
 	ORDER BY vs.time DESC`
 
 	rows, err := conn.Query(c, q, id)
@@ -2334,7 +2334,7 @@ func (db *PGConnection) GetUnfinishedTaskStepsByWorkIdAndStepType(
 	WHERE 
 	    work_id = $1 AND 
 	    step_type = $2 AND
-	    status != 'finished'
+	    status NOT IN ('finished', 'skipped')
 	ORDER BY vs.time ASC`
 
 	rows, err := conn.Query(ctx, q, id, stepType)
