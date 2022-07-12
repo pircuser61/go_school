@@ -32,7 +32,6 @@ func (a *ExecutionParams) Validate() error {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
 	}
 
-	a.SLA = 1
 	if a.SLA < 1 {
 		return fmt.Errorf("bad SLA value: %d", a.SLA)
 	}

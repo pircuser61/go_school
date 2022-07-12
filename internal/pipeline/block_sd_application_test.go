@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"testing"
 )
@@ -17,7 +16,6 @@ func TestGoSdBlock_DebugRun(t *testing.T) {
 		Output  map[string]string
 		Nexts   map[string][]string
 		State   *ApplicationData
-		Storage db.Database
 	}
 	type args struct {
 		ctx    context.Context
@@ -38,7 +36,6 @@ func TestGoSdBlock_DebugRun(t *testing.T) {
 				Input:   nil,
 				Output:  nil,
 				Nexts:   map[string][]string{},
-				Storage: nil,
 			},
 			args: args{
 				ctx:    context.Background(),
@@ -57,10 +54,9 @@ func TestGoSdBlock_DebugRun(t *testing.T) {
 				Output:  tt.fields.Output,
 				Nexts:   tt.fields.Nexts,
 				State:   tt.fields.State,
-				Storage: tt.fields.Storage,
 			}
 
-			if err := gb.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
+			if err := gb.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {
 				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

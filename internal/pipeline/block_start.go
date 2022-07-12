@@ -42,12 +42,8 @@ func (gb *GoStartBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoStartBlock) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return gb.DebugRun(ctx, runCtx)
-}
-
 // nolint:dupl // not dupl?
-func (gb *GoStartBlock) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (gb *GoStartBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_go_block")
 	defer s.End()
 

@@ -50,5 +50,5 @@ func (p *Pipeline) Run(ctx context.Context, runCtx *store.VariableStore) error {
 		startContext.SetValue(glob, inputVal)
 	}
 
-	return p.Pipeline.DebugRun(ctx, startContext)
+	return p.Pipeline.DebugRun(ctx, nil, startContext)
 }

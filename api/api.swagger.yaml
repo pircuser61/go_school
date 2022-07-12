@@ -418,6 +418,16 @@ components:
          * approved - approver approved block 
          * rejected - approver rejected block
 
+    executionDecision:
+      type: string
+      enum:
+        - executed
+        - rejected
+      description: >
+        Executor decision:
+         * executed - executor executed block
+         * rejected - executor rejected block
+
     approverParams:
       type: object
       description: Approver params
@@ -445,6 +455,13 @@ components:
         - approve
         - reject
 
+    requestExecutionInfoType:
+      type: string
+      description: Type of execution info
+      enum:
+        - question
+        - answer
+
     approverUpdateParams:
       type: object
       description: Approver update params
@@ -456,6 +473,46 @@ components:
           description: Comment from approver
       required:
         - decision
+        - comment
+
+    executionUpdateParams:
+      type: object
+      description: Executor update params
+      properties:
+        decision:
+          $ref: '#/components/schemas/executionDecision'
+        comment:
+          type: string
+          description: Comment from executor
+      required:
+        - decision
+        - comment
+
+    executorChangeParams:
+      type: object
+      description: Executor change params
+      properties:
+        newExecutorLogin:
+          type: string
+          description: New executor login
+        comment:
+          type: string
+          description: Comment from executor
+      required:
+        - newExecutorLogin
+        - comment
+
+    requestInfoUpdateParams:
+      type: object
+      description: Executor request info params
+      properties:
+        reqType:
+          $ref: '#/components/schemas/requestExecutionInfoType'
+        comment:
+          type: string
+          description: Comment from executor
+      required:
+        - reqType
         - comment
 
     sdApplicationParams:
@@ -474,7 +531,7 @@ components:
       properties:
         type:
           $ref: '#/components/schemas/executionType'
-        execution:
+        executors:
           type: string
           description: Executor value (depends on type)
         sla:
@@ -483,8 +540,105 @@ components:
           minimum: 1
       required:
         - type
-        - execution
+        - executors
         - sla
+
+    conditionParams:
+      type: object
+      description: Condition params
+      properties:
+        conditionGroups:
+          type: array
+          description: Groups with conditions
+          items:
+            $ref: '#/components/schemas/conditionGroup'
+
+    conditionGroup:
+      type: object
+      description: Group with conditions
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        logicalOperator:
+          type: string
+          enum: [ "or", "and" ]
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/condition'
+      required:
+        - id
+        - logicalOperator
+        - conditions
+
+    condition:
+      type: object
+      description: Compare operands using operator
+      properties:
+        leftOperand:
+          $ref: '#/components/schemas/operand'
+        rightOperand:
+          $ref: '#/components/schemas/operand'
+        operator:
+          $ref: '#/components/schemas/compareOperator'
+      required:
+        - leftOperand
+        - rightOperand
+        - operator
+
+    operand:
+      description: Operand for comparison
+      oneOf:
+        - $ref: '#/components/schemas/variableOperand'
+        - $ref: '#/components/schemas/valueOperand'
+      discriminator:
+        propertyName: operandType
+        mapping:
+          varOperand: variableOperand
+          valOperand: valueOperand
+
+    basicOperand:
+      type: object
+      description: Basic operand, used for polymorphism
+      properties:
+        dataType:
+          type: string
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    variableOperand:
+      description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment")
+      allOf:
+        - $ref: '#/components/schemas/basicOperand'
+        - type: object
+          properties:
+            variableRef:
+              type: string
+          required:
+            - variableRef
+
+    valueOperand:
+      description: Operand which uses simple value to compare in conditions
+      allOf:
+        - $ref: '#/components/schemas/basicOperand'
+        - type: object
+          properties:
+            value:
+              type: string
+          required:
+            - value
+
+    compareOperator:
+      type: string
+      description: Used operator to compare operands
+      enum: [ "Равно", "Не равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual" ]
 
     notificationParams:
       type: object
@@ -525,6 +679,7 @@ components:
         - $ref: '#/components/schemas/executionParams'
         - $ref: '#/components/schemas/sdApplicationParams'
         - $ref: '#/components/schemas/notificationParams'
+        - $ref: "#/components/schemas/conditionParams"
 
     paramsType:
       type: string
@@ -1054,11 +1209,17 @@ components:
           type: string
           enum:
             - approvement
+            - execution
+            - change_executor
+            - request_execution_info
         parameters:
           type: object
           description: Task update params
           oneOf:
             - $ref: '#/components/schemas/approverUpdateParams'
+            - $ref: '#/components/schemas/executionUpdateParams'
+            - $ref: '#/components/schemas/executorChangeParams'
+            - $ref: '#/components/schemas/requestInfoUpdateParams'
       required:
         - action
         - parameters
@@ -1980,10 +2141,3 @@ paths:
           $ref: '#/components/responses/AccessTokenError'
         500:
           $ref: '#/components/responses/WentWrongError'
-
-
-
-
-
-
-

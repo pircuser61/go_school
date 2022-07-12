@@ -87,11 +87,7 @@ func (e *IF) IsScenario() bool {
 	return false
 }
 
-func (e *IF) Run(ctx context.Context, runCtx *store.VariableStore) error {
-	return e.DebugRun(ctx, runCtx)
-}
-
-func (e *IF) DebugRun(ctx context.Context, runCtx *store.VariableStore) error {
+func (e *IF) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_if_block")
 	defer s.End()
 
