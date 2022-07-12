@@ -104,13 +104,13 @@ func TestIF_DebugRun(t *testing.T) {
 		name            string
 		fields          fields
 		args            args
-		wantErr         bool
-		wantedGroupName string
+		wantErr       bool
+		wantedGroupID string
 	}{
 		{
-			name:            "empty groups",
-			wantErr:         false,
-			wantedGroupName: "",
+			name:          "empty groups",
+			wantErr:       false,
+			wantedGroupID: "",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -125,9 +125,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string values - not equal",
-			wantErr:         false,
-			wantedGroupName: "",
+			name:          "compare string values - not equal",
+			wantErr:       false,
+			wantedGroupID: "",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -138,7 +138,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name:            "test-group-1",
+									Id:            "test-group-1",
 									LogicalOperator: "or",
 									Conditions: []script.Condition{
 										{
@@ -172,9 +172,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string variables - equal",
-			wantErr:         false,
-			wantedGroupName: "test-group-1",
+			name:          "compare string variables - equal",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -185,7 +185,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name:            "test-group-1",
+									Id:            "test-group-1",
 									LogicalOperator: "or",
 									Conditions: []script.Condition{
 										{
@@ -222,9 +222,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string variables - not equal",
-			wantErr:         false,
-			wantedGroupName: "",
+			name:          "compare string variables - not equal",
+			wantErr:       false,
+			wantedGroupID: "",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -235,7 +235,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name: "test-group-1",
+									Id: "test-group-1",
 									Conditions: []script.Condition{
 										{
 											LeftOperand: &script.VariableOperand{
@@ -271,9 +271,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string and bool variables - equal",
-			wantErr:         false,
-			wantedGroupName: "test-group-1",
+			name:          "compare string and bool variables - equal",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -284,7 +284,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name: "test-group-1",
+									Id: "test-group-1",
 									Conditions: []script.Condition{
 										{
 											LeftOperand: &script.VariableOperand{
@@ -320,9 +320,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string nested in 2nd level - equal",
-			wantErr:         false,
-			wantedGroupName: "test-group-1",
+			name:          "compare string nested in 2nd level - equal",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -333,7 +333,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name:            "test-group-1",
+									Id:            "test-group-1",
 									LogicalOperator: "or",
 									Conditions: []script.Condition{
 										{
@@ -371,9 +371,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string nested in 2nd level - not equal",
-			wantErr:         false,
-			wantedGroupName: "",
+			name:          "compare string nested in 2nd level - not equal",
+			wantErr:       false,
+			wantedGroupID: "",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -384,7 +384,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name:            "test-group-1",
+									Id:            "test-group-1",
 									LogicalOperator: "or",
 									Conditions: []script.Condition{
 										{
@@ -421,9 +421,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string nested in 3rd level - equal",
-			wantErr:         false,
-			wantedGroupName: "test-group-1",
+			name:          "compare string nested in 3rd level - equal",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -434,7 +434,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name:            "test-group-1",
+									Id:            "test-group-1",
 									LogicalOperator: "or",
 									Conditions: []script.Condition{
 										{
@@ -476,9 +476,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string nested in 4th level - equal",
-			wantErr:         false,
-			wantedGroupName: "test-group-1",
+			name:          "compare string nested in 4th level - equal",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -489,7 +489,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name:            "test-group-1",
+									Id:            "test-group-1",
 									LogicalOperator: "or",
 									Conditions: []script.Condition{
 										{
@@ -533,9 +533,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string nested in 3rd level - not equal",
-			wantErr:         false,
-			wantedGroupName: "",
+			name:          "compare string nested in 3rd level - not equal",
+			wantErr:       false,
+			wantedGroupID: "",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -546,7 +546,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name:            "test-group-1",
+									Id:            "test-group-1",
 									LogicalOperator: "or",
 									Conditions: []script.Condition{
 										{
@@ -588,9 +588,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string value with variable",
-			wantErr:         false,
-			wantedGroupName: "test-group-1",
+			name:          "compare string value with variable",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -601,7 +601,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name:            "test-group-1",
+									Id:            "test-group-1",
 									LogicalOperator: "or",
 									Conditions: []script.Condition{
 										{
@@ -637,9 +637,9 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "second group conditions is valid",
-			wantErr:         false,
-			wantedGroupName: "test-group-2",
+			name:          "second group conditions is valid",
+			wantErr:       false,
+			wantedGroupID: "test-group-2",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -650,7 +650,7 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
-									Name:            "test-group-1",
+									Id:            "test-group-1",
 									LogicalOperator: "and",
 									Conditions: []script.Condition{
 										{
@@ -686,7 +686,7 @@ func TestIF_DebugRun(t *testing.T) {
 									},
 								},
 								{
-									Name:            "test-group-2",
+									Id:            "test-group-2",
 									LogicalOperator: "or",
 									Conditions: []script.Condition{
 										{
@@ -729,8 +729,8 @@ func TestIF_DebugRun(t *testing.T) {
 					t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
 				}
 
-				if goBlock.State.ChosenGroupID != tt.wantedGroupName {
-					t.Errorf("Unwanted group name. wantedGroupName = %v", tt.wantedGroupName)
+				if goBlock.State.ChosenGroupID != tt.wantedGroupID {
+					t.Errorf("Unwanted group name. wantedGroupID = %v", tt.wantedGroupID)
 				}
 			} else {
 				t.Errorf("GoIfBlock is nil, error = %v, wantErr %v", err, tt.wantErr)
