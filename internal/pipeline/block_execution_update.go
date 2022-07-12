@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
@@ -85,7 +86,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 	}
 
 	var content []byte
-	content, err = json.Marshal(step)
+	content, err = json.Marshal(store.NewFromStep(step))
 	if err != nil {
 		return err
 	}
@@ -121,7 +122,7 @@ func (gb *GoExecutionBlock) updateExecutionDecision(ctx c.Context, in *script.Bl
 	}
 
 	var content []byte
-	content, err = json.Marshal(step)
+	content, err = json.Marshal(store.NewFromStep(step))
 	if err != nil {
 		return err
 	}
@@ -174,7 +175,7 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 	}
 
 	var content []byte
-	content, err = json.Marshal(dto.step)
+	content, err = json.Marshal(store.NewFromStep(dto.step))
 	if err != nil {
 		return err
 	}

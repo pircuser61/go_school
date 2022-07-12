@@ -226,7 +226,7 @@ func (gb *GoExecutionBlock) dumpCurrState(ctx context.Context, id uuid.UUID) err
 		return err
 	}
 
-	content, err := json.Marshal(step)
+	content, err := json.Marshal(store.NewFromStep(step))
 	if err != nil {
 		return err
 	}
