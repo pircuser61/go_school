@@ -3,7 +3,6 @@ package pipeline
 const (
 	BlockScenario = "scenario"
 
-	BlockInternalIf           = "if"
 	BlockInternalStringsEqual = "strings_equal"
 	BlockInternalForState     = "for_state"
 	BlockInternalConnector    = "connector"
@@ -15,6 +14,8 @@ const (
 
 	// BlockGoApproverID represents id/type of approver block (using in script.FunctionModel)
 	BlockGoApproverID = "approver"
+
+	BlockGoIf = "if"
 
 	BlockGoStartId    = "start"
 	BlockGoFirstStart = "start_0"
