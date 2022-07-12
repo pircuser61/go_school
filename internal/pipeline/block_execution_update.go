@@ -156,11 +156,6 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 		return errSet
 	}
 
-	dto.step.State[gb.Name], err = json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
 	status := string(StatusIdle)
 	if updateParams.ReqType == RequestInfoAnswer {
 		status = string(StatusRunning)
@@ -171,6 +166,11 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 			)
 			gb.State.IncreaseSLA(workHours)
 		}
+	}
+
+	dto.step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
 	}
 
 	var content []byte
