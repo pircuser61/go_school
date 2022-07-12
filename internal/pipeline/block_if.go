@@ -35,7 +35,7 @@ type IF struct {
 type ConditionsData struct {
 	Type            script.ConditionType    `json:"type"`
 	ConditionGroups []script.ConditionGroup `json:"conditionGroups"`
-	ChosenGroupName string                  `json:"-"`
+	ChosenGroupID   string                  `json:"-"`
 }
 
 func (cd *ConditionsData) GetConditionGroups() []script.ConditionGroup {
@@ -55,7 +55,7 @@ func (e *IF) GetType() string {
 }
 
 func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
-	var chosenGroup = e.State.ChosenGroupName
+	var chosenGroup = e.State.ChosenGroupID
 
 	if chosenGroup == "" {
 		nexts, ok := e.Nexts[DefaultSocket]
@@ -102,15 +102,15 @@ func (e *IF) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableSto
 		chosenGroup = processConditionGroups(conditionGroups, variables)
 	}
 
-	var chosenGroupName string
+	var chosenGroupID string
 
 	if chosenGroup != nil {
-		chosenGroupName = chosenGroup.Name
+		chosenGroupID = chosenGroup.Id
 	} else {
-		chosenGroupName = ""
+		chosenGroupID = ""
 	}
 
-	e.State.ChosenGroupName = chosenGroupName
+	e.State.ChosenGroupID = chosenGroupID
 	return nil
 }
 
@@ -157,7 +157,7 @@ func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
 	}
 
 	b.State = &ConditionsData{
-		ChosenGroupName: "",
+		ChosenGroupID: "",
 	}
 
 	if ef.Params != nil {
@@ -188,6 +188,10 @@ func processConditionGroups(groups []script.ConditionGroup, variables map[string
 				chosenGroup = &co
 			}
 		case AndLogicalOperator:
+			if processAndConditions(conditionGroup.Conditions, variables) {
+				chosenGroup = &co
+			}
+		default:
 			if processAndConditions(conditionGroup.Conditions, variables) {
 				chosenGroup = &co
 			}
@@ -233,24 +237,26 @@ func setOperandValueToCompare(operand script.Operand, variables map[string]inter
 	}
 }
 
+const dotSeparator = "."
+
 func getVariable(variables map[string]interface{}, key string) interface{} {
-	return getVariableRecursive(variables, key)
-}
-
-func getVariableRecursive(variables map[string]interface{}, currentKey string) interface{} {
-	const dotSeparator = "."
-	var variableMemberNames = strings.Split(currentKey, dotSeparator)
-	var variableKey = variableMemberNames[0]
-
-	var variable = variables[variableKey]
-
-	if obj, ok := variable.(map[string]interface{}); ok {
-		var firstDotIndex = strings.Index(currentKey, dotSeparator) + 1
-		var newKey = currentKey[firstDotIndex:]
-		return getVariableRecursive(obj, newKey)
+	variableMemberNames := strings.Split(key, dotSeparator)
+	if len(variableMemberNames) <= 2 {
+		return variables[key]
 	}
-
-	return variable
+	newVariables, ok := variables[strings.Join(variableMemberNames[:2], dotSeparator)].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	currK := variableMemberNames[2]
+	for i := 2; i < len(variableMemberNames)-1; i++ {
+		newVariables, ok = newVariables[currK].(map[string]interface{})
+		if !ok {
+			return nil
+		}
+		currK = variableMemberNames[i+1]
+	}
+	return newVariables[currK]
 }
 
 func getVariables(runCtx *store.VariableStore) (result map[string]interface{}, err error) {
