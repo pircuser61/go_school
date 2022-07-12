@@ -35,6 +35,7 @@ func TestIF_Next(t *testing.T) {
 			name: "default socket",
 			fields: fields{
 				Nexts: map[string][]string{DefaultSocket: []string{""}},
+				State: &ConditionsData{},
 			},
 			args: args{
 				runCtx: func() *store.VariableStore {
@@ -50,6 +51,7 @@ func TestIF_Next(t *testing.T) {
 			name: "test chosen group",
 			fields: fields{
 				Nexts: map[string][]string{"test-group-1": []string{""}},
+				State: &ConditionsData{ChosenGroupID: "test-group-1"},
 			},
 			args: args{
 				runCtx: func() *store.VariableStore {
@@ -125,7 +127,7 @@ func TestIF_DebugRun(t *testing.T) {
 		{
 			name:            "compare string values - not equal",
 			wantErr:         false,
-			wantedGroupName: "test-group-1",
+			wantedGroupName: "",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -142,17 +144,17 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												Value: "test",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												Value: "test2",
 											},
-											Operator: "notEqual",
+											Operator: "NotEqual",
 										},
 									},
 								},
@@ -189,17 +191,17 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
-												VariableRef: "testStringVariable1",
+												VariableRef: "data.testStringVariable1",
 											},
 											RightOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
-												VariableRef: "testStringVariable2",
+												VariableRef: "data.testStringVariable2",
 											},
-											Operator: "equal",
+											Operator: "Equal",
 										},
 									},
 								},
@@ -212,8 +214,8 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
-					res.SetValue("testStringVariable1", "test")
-					res.SetValue("testStringVariable2", "test")
+					res.SetValue("data.testStringVariable1", "test")
+					res.SetValue("data.testStringVariable2", "test")
 
 					return res
 				}(),
@@ -233,21 +235,22 @@ func TestIF_DebugRun(t *testing.T) {
 							Type: "conditions",
 							ConditionGroups: []script.ConditionGroup{
 								{
+									Name: "test-group-1",
 									Conditions: []script.Condition{
 										{
 											LeftOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
-												VariableRef: "testStringVariable1",
+												VariableRef: "data.testStringVariable1",
 											},
 											RightOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
-												VariableRef: "testStringVariable2",
+												VariableRef: "data.testStringVariable2",
 											},
-											Operator: "equal",
+											Operator: "NotEqual",
 										},
 									},
 								},
@@ -260,8 +263,57 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
-					res.SetValue("testStringVariable1", "test")
-					res.SetValue("testStringVariable2", "test1")
+					res.SetValue("data.testStringVariable1", "test")
+					res.SetValue("data.testStringVariable2", "test1")
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:            "compare string and bool variables - equal",
+			wantErr:         false,
+			wantedGroupName: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Name: "test-group-1",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													DataType: "string",
+												},
+												VariableRef: "data.testStringVariable",
+											},
+											RightOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													DataType: "boolean",
+												},
+												VariableRef: "data.testBoolVariable",
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					res.SetValue("data.testStringVariable", "true")
+					res.SetValue("data.testBoolVariable", true)
 
 					return res
 				}(),
@@ -287,17 +339,17 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												VariableRef: "level1.level2",
 											},
 											RightOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
-												VariableRef: "test",
+												VariableRef: "data.test",
 											},
-											Operator: "equal",
+											Operator: "Equal",
 										},
 									},
 								},
@@ -311,12 +363,8 @@ func TestIF_DebugRun(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 
-					level1 := map[string]interface{}{
-						"level2": "test",
-					}
-
-					res.SetValue("level1", level1)
-					res.SetValue("test", "test")
+					res.SetValue("level1.level2", "test")
+					res.SetValue("data.test", "test")
 
 					return res
 				}(),
@@ -342,17 +390,17 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												VariableRef: "level1.level2",
 											},
 											RightOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												VariableRef: "test1",
 											},
-											Operator: "equal",
+											Operator: "Equal",
 										},
 									},
 								},
@@ -366,11 +414,7 @@ func TestIF_DebugRun(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 
-					level1 := map[string]interface{}{
-						"level2": "test",
-					}
-
-					res.SetValue("level1", level1)
+					res.SetValue("level1.level2", "test")
 
 					return res
 				}(),
@@ -396,17 +440,17 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												VariableRef: "level1.level2.level3",
 											},
 											RightOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												VariableRef: "test",
 											},
-											Operator: "equal",
+											Operator: "Equal",
 										},
 									},
 								},
@@ -420,13 +464,68 @@ func TestIF_DebugRun(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 
-					level1 := map[string]interface{}{
-						"level2": map[string]interface{}{
-							"level3": "test",
+					level2 := map[string]interface{}{
+						"level3": "test",
+					}
+
+					res.SetValue("level1.level2", level2)
+					res.SetValue("test", "test")
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:            "compare string nested in 4th level - equal",
+			wantErr:         false,
+			wantedGroupName: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Name:            "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													DataType: "string",
+												},
+												VariableRef: "level1.level2.level3.level4",
+											},
+											RightOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													DataType: "string",
+												},
+												VariableRef: "test",
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+
+					level2 := map[string]interface{}{
+						"level3": map[string]interface{}{
+							"level4": "test",
 						},
 					}
 
-					res.SetValue("level1", level1)
+					res.SetValue("level1.level2", level2)
 					res.SetValue("test", "test")
 
 					return res
@@ -453,17 +552,17 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												VariableRef: "level1.level2.level3",
 											},
 											RightOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
-												VariableRef: "test1",
+												VariableRef: "level1.level2.level3,1",
 											},
-											Operator: "equal",
+											Operator: "Equal",
 										},
 									},
 								},
@@ -477,13 +576,12 @@ func TestIF_DebugRun(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 
-					level1 := map[string]interface{}{
-						"level2": map[string]interface{}{
-							"level3": "test",
-						},
+					level2 := map[string]interface{}{
+						"level3": "test",
+						"level3,1": "test1",
 					}
 
-					res.SetValue("level1", level1)
+					res.SetValue("level1.level2", level2)
 
 					return res
 				}(),
@@ -509,17 +607,17 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
-												VariableRef: "testStringVariable",
+												VariableRef: "data.testStringVariable",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												Value: "test",
 											},
-											Operator: "equal",
+											Operator: "Equal",
 										},
 									},
 								},
@@ -532,7 +630,7 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
-					res.SetValue("testStringVariable", "test")
+					res.SetValue("data.testStringVariable", "test")
 
 					return res
 				}(),
@@ -558,32 +656,32 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												Value: "test",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												Value: "test2",
 											},
-											Operator: "equal",
+											Operator: "Equal",
 										},
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												Value: "test",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												Value: "test2",
 											},
-											Operator: "notEqual",
+											Operator: "NotEqual",
 										},
 									},
 								},
@@ -594,17 +692,17 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												Value: "testAbc",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													Type: "string",
+													DataType: "string",
 												},
 												Value: "testAbc",
 											},
-											Operator: "equal",
+											Operator: "Equal",
 										},
 									},
 								},
@@ -631,7 +729,7 @@ func TestIF_DebugRun(t *testing.T) {
 					t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
 				}
 
-				if goBlock.State.ChosenGroupName != tt.wantedGroupName {
+				if goBlock.State.ChosenGroupID != tt.wantedGroupName {
 					t.Errorf("Unwanted group name. wantedGroupName = %v", tt.wantedGroupName)
 				}
 			} else {

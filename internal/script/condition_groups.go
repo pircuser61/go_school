@@ -2,16 +2,18 @@ package script
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
 
 const (
-	EqualCompareOperator    string = "equal"
-	NotEqualCompareOperator string = "notEqual"
+	EqualCompareOperator    string = "Equal"
+	NotEqualCompareOperator string = "NotEqual"
 
 	stringOperandType  string = "string"
 	booleanOperandType string = "boolean"
+	// TODO: handle integer (what about float?)
 )
 
 var (
@@ -26,7 +28,7 @@ func (ct ConditionType) String() string {
 }
 
 type ConditionParams struct {
-	Type            ConditionType    `json:"type"`
+	Type            ConditionType    `json:"type,omitempty"`
 	ConditionGroups []ConditionGroup `json:"conditionGroups"`
 }
 
@@ -91,14 +93,16 @@ func (c *ConditionParams) UnmarshalJSON(b []byte) error {
 		conditionGroups = append(conditionGroups, newConditionGroup)
 	}
 
-	var paramType ConditionType
-	err := json.Unmarshal(conditionParams[typeKey], &paramType)
-	if err != nil {
-		return err
-	}
-
 	c.ConditionGroups = conditionGroups
-	c.Type = paramType
+
+	if _, ok := conditionParams[typeKey]; ok {
+		var paramType ConditionType
+		err := json.Unmarshal(conditionParams[typeKey], &paramType)
+		if err != nil {
+			return err
+		}
+		c.Type = paramType
+	}
 
 	return nil
 }
@@ -120,7 +124,7 @@ func unmarshalCondition(conditionRaw map[string]interface{}) Condition {
 
 func unmarshalOperand(operandRaw interface{}) Operand {
 	const (
-		typeKey                    string = "type"
+		typeKey                    string = "dataType"
 		valueFieldName             string = "value"
 		variableReferenceFieldName string = "variableRef"
 	)
@@ -139,7 +143,7 @@ func unmarshalOperand(operandRaw interface{}) Operand {
 		case valueFieldName:
 			operand = &ValueOperand{
 				OperandBase: OperandBase{
-					Type:             operandType,
+					DataType:         operandType,
 					ValueToCompare:   v,
 					AllowedOperators: allowedOperators,
 				},
@@ -148,7 +152,7 @@ func unmarshalOperand(operandRaw interface{}) Operand {
 		case variableReferenceFieldName:
 			operand = &VariableOperand{
 				OperandBase: OperandBase{
-					Type:             operandType,
+					DataType:         operandType,
 					AllowedOperators: allowedOperators,
 				},
 				VariableRef: v.(string),
@@ -181,13 +185,13 @@ type Operand interface {
 }
 
 type OperandBase struct {
-	Type             string                     `json:"type"`
+	DataType         string                     `json:"dataType"`
 	AllowedOperators map[string]CompareOperator `json:"-"`
 	ValueToCompare   interface{}                `json:"-"`
 }
 
 func (valOp *OperandBase) GetType() string {
-	return valOp.Type
+	return valOp.DataType
 }
 
 func (valOp *OperandBase) GetValue() interface{} {
@@ -195,7 +199,7 @@ func (valOp *OperandBase) GetValue() interface{} {
 }
 
 func (valOp *OperandBase) GetAllowedOperators() (map[string]CompareOperator, error) {
-	return getAllowedOperators(valOp.Type)
+	return getAllowedOperators(valOp.DataType)
 }
 
 type ValueOperand struct {
@@ -236,11 +240,33 @@ func genericOperators() map[string]CompareOperator {
 	var operatorFunctionsMap = make(map[string]CompareOperator)
 
 	operatorFunctionsMap[EqualCompareOperator] = func(leftOperand, rightOperand Operand) bool {
-		return leftOperand.GetValue() == rightOperand.GetValue()
+		var leftVal, rightVal interface{}
+		if leftOperand.GetType() == rightOperand.GetType() {
+			leftVal, rightVal = leftOperand.GetValue(), rightOperand.GetValue()
+		} else {
+			var ok bool
+			ok, leftVal = convertValue(leftOperand, rightOperand)
+			if !ok {
+				return false
+			}
+			rightVal = rightOperand.GetValue()
+		}
+		return leftVal == rightVal
 	}
 
 	operatorFunctionsMap[NotEqualCompareOperator] = func(leftOperand, rightOperand Operand) bool {
-		return leftOperand.GetValue() != rightOperand.GetValue()
+		var leftVal, rightVal interface{}
+		if leftOperand.GetType() == rightOperand.GetType() {
+			leftVal, rightVal = leftOperand.GetValue(), rightOperand.GetValue()
+		} else {
+			var ok bool
+			ok, leftVal = convertValue(leftOperand, rightOperand)
+			if !ok {
+				return false
+			}
+			rightVal = rightOperand.GetValue()
+		}
+		return leftVal == rightVal
 	}
 
 	return operatorFunctionsMap
@@ -287,5 +313,35 @@ func operandHaveAllowedOperator(operand Operand, operatorType string) bool {
 }
 
 func haveIdenticalOperandTypes(leftOperand, rightOperand Operand) bool {
-	return leftOperand.GetType() == rightOperand.GetType()
+	eqTypes := leftOperand.GetType() == rightOperand.GetType()
+	canBeConverted, _ := convertValue(leftOperand, rightOperand)
+	return eqTypes || canBeConverted
+}
+
+func convertValue(original, convertTo Operand) (canBeConverted bool, res interface{}) {
+	switch original.GetType() {
+	case stringOperandType:
+		switch convertTo.GetType() {
+		case stringOperandType:
+			return true, original.GetValue()
+		case booleanOperandType:
+			return true, original.GetValue() == "true"
+		default:
+			return false, nil
+		}
+	case booleanOperandType:
+		switch convertTo.GetType() {
+		case booleanOperandType:
+			return true, original.GetValue()
+		case stringOperandType:
+			val := original.GetValue()
+			if val != nil {
+				val = strconv.FormatBool(val.(bool))
+			}
+			return true, val
+		default:
+			return false, nil
+		}
+	}
+	return false, nil
 }
