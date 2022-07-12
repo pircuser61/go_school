@@ -17,11 +17,6 @@ const (
 
 	BlockGoIf = "if"
 
-	// BlockGoIfTitle represents title of approver block (using in script.FunctionModel)
-	BlockGoIfTitle = "if"
-	// BlockGoIfID represents id/type of approver block (using in script.FunctionModel)
-	BlockGoIfID = "if"
-
 	BlockGoStartId    = "start"
 	BlockGoFirstStart = "start_0"
 	BlockGoStartTitle = "start"

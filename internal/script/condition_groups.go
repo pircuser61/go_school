@@ -40,8 +40,6 @@ func (c *ConditionParams) UnmarshalJSON(b []byte) error {
 		typeKey            string = "type"
 	)
 
-	var err error
-
 	var conditionParams map[string]json.RawMessage
 	if err := json.Unmarshal(b, &conditionParams); err != nil {
 		return err
@@ -54,7 +52,6 @@ func (c *ConditionParams) UnmarshalJSON(b []byte) error {
 
 	var conditionGroups = make([]ConditionGroup, 0)
 	for _, group := range conditionGroupMaps {
-
 		var conditionsMap []map[string]interface{}
 
 		if err := json.Unmarshal(group[conditionsKey], &conditionsMap); err != nil {
@@ -63,20 +60,24 @@ func (c *ConditionParams) UnmarshalJSON(b []byte) error {
 
 		var conditions = make([]Condition, 0)
 		for _, condition := range conditionsMap {
-			var newCondition Condition
-			newCondition = unmarshalCondition(condition)
+			var newCondition = unmarshalCondition(condition)
 			conditions = append(conditions, newCondition)
 		}
 
 		var logicalOperator string
-		err = json.Unmarshal(group[logicalOperatorKey], &logicalOperator)
+		err := json.Unmarshal(group[logicalOperatorKey], &logicalOperator)
+		if err != nil {
+			return err
+		}
 
 		var id string
 		err = json.Unmarshal(group[idKey], &id)
+		if err != nil {
+			return err
+		}
 
 		var name string
 		err = json.Unmarshal(group[nameKey], &name)
-
 		if err != nil {
 			return err
 		}
@@ -91,7 +92,10 @@ func (c *ConditionParams) UnmarshalJSON(b []byte) error {
 	}
 
 	var paramType ConditionType
-	err = json.Unmarshal(conditionParams[typeKey], &paramType)
+	err := json.Unmarshal(conditionParams[typeKey], &paramType)
+	if err != nil {
+		return err
+	}
 
 	c.ConditionGroups = conditionGroups
 	c.Type = paramType
@@ -243,10 +247,10 @@ func genericOperators() map[string]CompareOperator {
 }
 
 func (c *ConditionParams) Validate() error {
-
 	for _, conditionGroup := range c.ConditionGroups {
-		for _, condition := range conditionGroup.Conditions {
-			if canCompare(&condition) == false {
+		for j := range conditionGroup.Conditions {
+			var co = conditionGroup.Conditions[j]
+			if !canCompare(&co) {
 				return ErrNotComparableOperands
 			}
 		}
@@ -273,7 +277,7 @@ func operandHaveAllowedOperator(operand Operand, operatorType string) bool {
 		return false
 	}
 
-	for key, _ := range allowedOperators {
+	for key := range allowedOperators {
 		if key == operatorType {
 			return true
 		}

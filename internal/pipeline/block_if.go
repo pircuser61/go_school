@@ -2,8 +2,8 @@ package pipeline
 
 import (
 	"context"
-
 	"encoding/json"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -167,7 +167,7 @@ func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
 			return nil, err
 		}
 
-		if err = params.Validate(); err != nil {
+		if err := params.Validate(); err != nil {
 			return nil, err
 		}
 
@@ -182,15 +182,16 @@ func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
 
 func processConditionGroups(groups []script.ConditionGroup, variables map[string]interface{}) (
 	chosenGroup *script.ConditionGroup) {
-	for _, conditionGroup := range groups {
+	for i, conditionGroup := range groups {
+		var co = groups[i]
 		switch conditionGroup.LogicalOperator {
 		case OrLogicalOperator:
 			if processOrConditions(conditionGroup.Conditions, variables) {
-				chosenGroup = &conditionGroup
+				chosenGroup = &co
 			}
 		case AndLogicalOperator:
 			if processAndConditions(conditionGroup.Conditions, variables) {
-				chosenGroup = &conditionGroup
+				chosenGroup = &co
 			}
 		}
 	}
@@ -225,17 +226,13 @@ func setValuesToCompare(leftOperand, rightOperand script.Operand, variables map[
 	setOperandValueToCompare(rightOperand, variables)
 }
 
-func setOperandValueToCompare(operand script.Operand, variables map[string]interface{}) (result script.Operand) {
+func setOperandValueToCompare(operand script.Operand, variables map[string]interface{}) {
 	switch op := operand.(type) {
 	case *script.ValueOperand:
 		op.ValueToCompare = op.Value
-		return op
 	case *script.VariableOperand:
 		op.ValueToCompare = variables[op.VariableRef]
-		return op
 	}
-
-	return nil
 }
 
 func getVariables(runCtx *store.VariableStore) (result map[string]interface{}, err error) {
