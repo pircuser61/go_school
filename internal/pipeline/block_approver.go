@@ -174,7 +174,7 @@ func (gb *GoApproverBlock) dumpCurrState(ctx context.Context, id uuid.UUID) erro
 		return err
 	}
 
-	content, err := json.Marshal(step)
+	content, err := json.Marshal(store.NewFromStep(step))
 	if err != nil {
 		return err
 	}
@@ -424,7 +424,7 @@ func (gb *GoApproverBlock) setApproverDecision(ctx context.Context, stepID uuid.
 		return err
 	}
 
-	content, err := json.Marshal(step)
+	content, err := json.Marshal(store.NewFromStep(step))
 	if err != nil {
 		return err
 	}
