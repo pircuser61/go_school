@@ -1866,22 +1866,22 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'approvers'->$%d "+
 					"IS NOT NULL AND workers.status NOT IN ('finished', 'no_success', 'cancel')", q, len(args))
 			}
 		case "finished_approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'approvers'->$%d "+
 					"IS NOT NULL AND workers.status IN ('finished', 'no_success')", q, len(args))
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'executors'->$%d "+
 					"IS NOT NULL AND (workers.status NOT IN ('finished', 'no_success', 'cancel'))", q, len(args))
 			}
 		case "finished_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'executors'->$%d "+
 					"IS NOT NULL AND (workers.status IN ('finished', 'no_success')", q, len(args))
 			}
 		}
