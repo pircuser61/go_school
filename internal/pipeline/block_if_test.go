@@ -528,8 +528,9 @@ func TestIF_DebugRun(t *testing.T) {
 				if err = goBlock.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {
 					t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
 				}
+			} else {
+				t.Errorf("GoIfBlock is nil, error = %v, wantErr %v", err, tt.wantErr)
 			}
-			t.Errorf("GoIfBlock is nil, error = %v, wantErr %v", err, tt.wantErr)
 		})
 	}
 }

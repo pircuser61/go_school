@@ -156,6 +156,10 @@ func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
 		b.Output[v.Name] = v.Global
 	}
 
+	b.State = &ConditionsData{
+		ChosenGroupName: "",
+	}
+
 	if ef.Params != nil {
 		var params script.ConditionParams
 		err = json.Unmarshal(ef.Params, &params)
@@ -167,10 +171,8 @@ func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
 			return nil, err
 		}
 
-		b.State = &ConditionsData{
-			Type:            params.Type,
-			ConditionGroups: params.ConditionGroups,
-		}
+		b.State.Type = params.Type
+		b.State.ConditionGroups = params.ConditionGroups
 	}
 
 	return b, nil
