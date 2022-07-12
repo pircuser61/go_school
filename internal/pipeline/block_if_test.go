@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"encoding/json"
@@ -13,7 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-func TestIF_Next_2(t *testing.T) {
+func TestIF_Next(t *testing.T) {
 	type fields struct {
 		Name          string
 		FunctionName  string
@@ -163,6 +162,60 @@ func TestIF_DebugRun(t *testing.T) {
 					res := store.NewStore()
 					res.SetValue("testStringVariable1", "test")
 					res.SetValue("testStringVariable2", "test")
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:    "compare string inside object variable",
+			wantErr: false,
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Name:            "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												VariableRef: "superMap.sub.sub",
+											},
+											RightOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													Type: "string",
+												},
+												VariableRef: "nestedTest",
+											},
+											Operator: "equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+
+					var sub = make(map[string]interface{})
+					var subSub = sub["sub"]
+
+					subSub = "nestedTest"
+
+					res.SetValue("superMap", subSub)
 
 					return res
 				}(),
@@ -469,13 +522,14 @@ func TestIF_DebugRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := createGoIfBlock(tt.args.name, tt.args.ef)
-			fmt.Println(got)
-			fmt.Println(err)
+			goBlock, err := createGoIfBlock(tt.args.name, tt.args.ef)
 
-			if err := got.DebugRun(tt.args.ctx, tt.args.runCtx); (err != nil) != tt.wantErr {
-				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
+			if goBlock != nil {
+				if err = goBlock.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {
+					t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
+				}
 			}
+			t.Errorf("GoIfBlock is nil, error = %v, wantErr %v", err, tt.wantErr)
 		})
 	}
 }

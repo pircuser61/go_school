@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"go.opencensus.io/trace"
 
@@ -34,6 +35,7 @@ type IF struct {
 type ConditionsData struct {
 	Type            script.ConditionType    `json:"type"`
 	ConditionGroups []script.ConditionGroup `json:"conditionGroups"`
+	ChosenGroupName string                  `json:"-"`
 }
 
 func (cd *ConditionsData) GetConditionGroups() []script.ConditionGroup {
@@ -53,26 +55,21 @@ func (e *IF) GetType() string {
 }
 
 func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
-	cg, ok := runCtx.GetValue("chosenGroup")
-	if ok {
-		var chosenGroup = cg.(string)
+	var chosenGroup = e.State.ChosenGroupName
 
-		if chosenGroup == "" {
-			nexts, ok := e.Nexts[DefaultSocket]
-			if !ok {
-				return nil, false
-			}
-			return nexts, true
-		} else {
-			nexts, ok := e.Nexts[chosenGroup]
-			if !ok {
-				return nil, false
-			}
-			return nexts, true
+	if chosenGroup == "" {
+		nexts, ok := e.Nexts[DefaultSocket]
+		if !ok {
+			return nil, false
 		}
+		return nexts, true
+	} else {
+		nexts, ok := e.Nexts[chosenGroup]
+		if !ok {
+			return nil, false
+		}
+		return nexts, true
 	}
-
-	return nil, false
 }
 
 func (e *IF) Inputs() map[string]string {
@@ -113,8 +110,7 @@ func (e *IF) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableSto
 		chosenGroupName = ""
 	}
 
-	runCtx.SetValue("chosenGroup", chosenGroupName)
-
+	e.State.ChosenGroupName = chosenGroupName
 	return nil
 }
 
@@ -231,8 +227,28 @@ func setOperandValueToCompare(operand script.Operand, variables map[string]inter
 	case *script.ValueOperand:
 		op.ValueToCompare = op.Value
 	case *script.VariableOperand:
-		op.ValueToCompare = variables[op.VariableRef]
+		op.ValueToCompare = getVariable(variables, op.VariableRef)
 	}
+}
+
+func getVariable(variables map[string]interface{}, key string) interface{} {
+	return getVariableRecursive(variables, key, key)
+}
+
+func getVariableRecursive(variables map[string]interface{}, key string, currentKey string) interface{} {
+	const dotSeparator = "."
+	var variableMemberNames = strings.Split(currentKey, dotSeparator)
+
+	var variableKey = variableMemberNames[0]
+	var variable = variables[variableKey]
+
+	if obj, ok := variable.(map[string]interface{}); ok {
+		var firstDotIndex = strings.Index(key, dotSeparator) + 1
+		var newKey = key[firstDotIndex:]
+		return getVariableRecursive(obj, key, newKey)
+	}
+
+	return variable
 }
 
 func getVariables(runCtx *store.VariableStore) (result map[string]interface{}, err error) {
