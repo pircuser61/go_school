@@ -1094,6 +1094,9 @@ components:
         name:
           type: string
           description: Task name
+        description:
+          type: string
+          description: Task description
         status:
           type: string
           description: Task status
@@ -1123,6 +1126,7 @@ components:
         - started_at
         - last_changed_at
         - name
+        - description
         - status
         - human_status
         - author

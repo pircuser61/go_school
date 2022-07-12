@@ -1829,14 +1829,15 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			w.id,
 			w.started_at,
        		w.started_at,
-			ws.name, 
+			ws.name,
 			w.human_status, 
 			w.debug, 
 			w.parameters, 
 			w.author, 
 			w.version_id,
        		w.work_number,
-       		p.name
+       		p.name,
+		    COALESCE(descr.description, '')
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
@@ -1847,6 +1848,12 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
              ORDER BY vs.time DESC
              --limit--
         ) workers ON workers.work_id = w.id
+		LEFT JOIN LATERAL (
+		    SELECT work_id, content::json->'State'->step_name->>'description' description FROM pipeliner.variable_storage vs
+		    WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application'
+		    ORDER BY vs.time DESC
+		    LIMIT 1
+		) descr ON descr.work_id = w.id
 		WHERE 1=1`
 
 	order := "ASC"
@@ -2084,11 +2091,18 @@ func (db *PGConnection) GetTask(c context.Context, workNumber string) (*entity.E
 			w.author,
 			w.version_id,
 			w.work_number,
-			p.name
+			p.name,
+       		COALESCE(descr.description, '')
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
 		JOIN pipeliner.work_status ws ON w.status = ws.id
+		LEFT JOIN LATERAL (
+		    SELECT work_id, content::json->'State'->step_name->>'description' description FROM pipeliner.variable_storage vs
+		    WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application'
+		    ORDER BY vs.time DESC
+		    LIMIT 1
+		) descr ON descr.work_id = w.id
 		WHERE w.work_number = $1`
 
 	return db.getTask(c, q, workNumber)
@@ -2123,6 +2137,7 @@ func (db *PGConnection) getTask(c context.Context, q, workNumber string) (*entit
 		&et.VersionID,
 		&et.WorkNumber,
 		&et.Name,
+		&et.Description,
 	)
 	if err != nil {
 		return nil, err
@@ -2195,7 +2210,8 @@ func (db *PGConnection) getTasks(c context.Context, q string, args []interface{}
 			&et.Author,
 			&et.VersionID,
 			&et.WorkNumber,
-			&et.Name)
+			&et.Name,
+			&et.Description)
 
 		if err != nil {
 			return nil, err
