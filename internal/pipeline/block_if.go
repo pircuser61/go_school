@@ -234,20 +234,20 @@ func setOperandValueToCompare(operand script.Operand, variables map[string]inter
 }
 
 func getVariable(variables map[string]interface{}, key string) interface{} {
-	return getVariableRecursive(variables, key, key)
+	return getVariableRecursive(variables, key)
 }
 
-func getVariableRecursive(variables map[string]interface{}, key string, currentKey string) interface{} {
+func getVariableRecursive(variables map[string]interface{}, currentKey string) interface{} {
 	const dotSeparator = "."
 	var variableMemberNames = strings.Split(currentKey, dotSeparator)
-
 	var variableKey = variableMemberNames[0]
+
 	var variable = variables[variableKey]
 
 	if obj, ok := variable.(map[string]interface{}); ok {
-		var firstDotIndex = strings.Index(key, dotSeparator) + 1
-		var newKey = key[firstDotIndex:]
-		return getVariableRecursive(obj, key, newKey)
+		var firstDotIndex = strings.Index(currentKey, dotSeparator) + 1
+		var newKey = currentKey[firstDotIndex:]
+		return getVariableRecursive(obj, newKey)
 	}
 
 	return variable
