@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -38,7 +39,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 	gb.State = &state
 
 	if data.Action == string(entity.TaskUpdateActionExecution) {
-		if err := gb.updateExecution(ctx, data, step); err != nil {
+		if err := gb.updateExecutionDecision(ctx, data, step); err != nil {
 			return nil, err
 		}
 	}
@@ -98,15 +99,15 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 	return err
 }
 
-func (gb *GoExecutionBlock) updateExecution(ctx c.Context, data *script.BlockUpdateData, step *entity.Step) (err error) {
+func (gb *GoExecutionBlock) updateExecutionDecision(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) error {
 	var updateParams ExecutionUpdateParams
-	err = json.Unmarshal(data.Parameters, &updateParams)
+	err := json.Unmarshal(in.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update data")
 	}
 
 	if errSet := gb.State.SetDecision(
-		data.ByLogin,
+		in.ByLogin,
 		updateParams.Decision,
 		updateParams.Comment,
 	); errSet != nil {
@@ -125,7 +126,7 @@ func (gb *GoExecutionBlock) updateExecution(ctx c.Context, data *script.BlockUpd
 	}
 
 	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          data.Id,
+		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      step.Status,
@@ -159,15 +160,22 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 		return err
 	}
 
+	status := string(StatusIdle)
+	if updateParams.ReqType == RequestInfoAnswer {
+		status = string(StatusRunning)
+		if len(gb.State.RequestExecutionInfoLogs) > 0 {
+			workHours := getWorkWorkHoursBetweenDates(
+				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
+				time.Now(),
+			)
+			gb.State.IncreaseSLA(workHours)
+		}
+	}
+
 	var content []byte
 	content, err = json.Marshal(dto.step)
 	if err != nil {
 		return err
-	}
-
-	status := string(StatusIdle)
-	if updateParams.ReqType == RequestInfoAnswer {
-		status = string(StatusRunning)
 	}
 
 	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
