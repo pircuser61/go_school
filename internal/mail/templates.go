@@ -61,3 +61,52 @@ func NewRequestExecutionInfoTemplate(id, name, sdUrl string) Template {
 		},
 	}
 }
+
+func NewApplicationInitiatorStatusNotification(id, name, action, description, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка %s %s", id, action),
+		Text: `Уважаемый коллега, заявка {{.Id}} <b>{{.Action}}</b><br>
+				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
+				Текст заявки:<br>
+				{{.Description}}`,
+		Variables: struct {
+			Id          string `json:"id"`
+			Name        string `json:"name"`
+			Link        string `json:"link"`
+			Action      string `json:"action"`
+			Description string `json:"description"`
+		}{
+			Id:          id,
+			Name:        name,
+			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Action:      action,
+			Description: description,
+		},
+	}
+}
+
+func NewApplicationPersonStatusNotification(id, name, action, deadline, description, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, action),
+		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br>
+				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
+				Срок {{.Action}} до {{.Deadline}}<br>
+				Текст заявки:<br>
+				{{.Description}}`,
+		Variables: struct {
+			Id          string `json:"id"`
+			Name        string `json:"name"`
+			Link        string `json:"link"`
+			Action      string `json:"action"`
+			Deadline    string `json:"deadline"`
+			Description string `json:"description"`
+		}{
+			Id:          id,
+			Name:        name,
+			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Action:      action,
+			Deadline:    deadline,
+			Description: description,
+		},
+	}
+}
