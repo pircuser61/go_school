@@ -51,7 +51,7 @@ func (e *IF) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (e *IF) GetType() string {
-	return BlockGoIf
+	return BlockGoIfID
 }
 
 func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
@@ -125,7 +125,7 @@ func (e *IF) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, 
 func (e *IF) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockGoIfID,
-		BlockType: script.TypeIF,
+		BlockType: script.TypeGo,
 		Title:     BlockGoIfTitle,
 		Inputs:    nil,
 		Outputs:   nil,
