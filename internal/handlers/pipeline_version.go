@@ -643,6 +643,7 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 	ep.Sender = ae.Mail
 	ep.People = ae.People
 	ep.Name = p.p.Name
+	ep.Initiator = p.userName
 
 	err := ep.CreateBlocks(ctx, p.p.Pipeline.Blocks)
 	if err != nil {

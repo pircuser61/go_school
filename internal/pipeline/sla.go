@@ -5,6 +5,8 @@ import "time"
 const (
 	workingHoursStart = 6
 	workingHoursEnd   = 15
+
+	ddmmyyFormat = "02.01.2006"
 )
 
 func getWorkWorkHoursBetweenDates(from, to time.Time) (workHours int) {
@@ -43,32 +45,41 @@ func notWorkingHours(t time.Time) bool {
 	return false
 }
 
-func CheckBreachSLA(limit, current time.Time, sla int) bool {
-	limit = limit.UTC()
-	current = current.UTC()
+func computeMaxDate(start time.Time, sla int) time.Time {
+	deadline := start.UTC()
 
 	slaDur := time.Hour * time.Duration(sla)
 
 	for slaDur > 0 {
-		if notWorkingHours(limit) {
-			datesDay := limit.AddDate(0, 0, 1) // default = next day
-			if beforeWorkingHours(limit) {     // but in case it's now early in the morning...
-				datesDay = limit
+		if notWorkingHours(deadline) {
+			datesDay := deadline.AddDate(0, 0, 1) // default = next day
+			if beforeWorkingHours(deadline) {     // but in case it's now early in the morning...
+				datesDay = deadline
 			}
-			limit = time.Date(datesDay.Year(), datesDay.Month(), datesDay.Day(), 6, 0, 0, 0, time.UTC)
+			deadline = time.Date(datesDay.Year(), datesDay.Month(), datesDay.Day(), 6, 0, 0, 0, time.UTC)
 			continue
 		}
 
-		maxPossibleTime := time.Date(limit.Year(), limit.Month(), limit.Day(), 15, 0, 0, 0, time.UTC)
-		diff := maxPossibleTime.Sub(limit)
+		maxPossibleTime := time.Date(deadline.Year(), deadline.Month(), deadline.Day(), 15, 0, 0, 0, time.UTC)
+		diff := maxPossibleTime.Sub(deadline)
 		if diff < slaDur {
-			limit = limit.Add(diff)
+			deadline = deadline.Add(diff)
 			slaDur -= diff
 		} else {
-			limit = limit.Add(slaDur)
+			deadline = deadline.Add(slaDur)
 			slaDur = 0
 		}
 	}
 
-	return current.After(limit)
+	return deadline
+}
+
+func CheckBreachSLA(start, current time.Time, sla int) bool {
+	deadline := computeMaxDate(start, sla)
+
+	return current.UTC().After(deadline)
+}
+
+func ComputeDeadline(start time.Time, sla int) string {
+	return computeMaxDate(start, sla).Format(ddmmyyFormat)
 }

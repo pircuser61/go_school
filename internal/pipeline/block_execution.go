@@ -82,6 +82,8 @@ type ExecutionData struct {
 
 	ChangedExecutorsLogs     []ChangeExecutorLog       `json:"change_executors_logs,omitempty"`
 	RequestExecutionInfoLogs []RequestExecutionInfoLog `json:"request_execution_info_logs,omitempty"`
+
+	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
@@ -238,9 +240,49 @@ func (gb *GoExecutionBlock) dumpCurrState(ctx context.Context, id uuid.UUID) err
 	})
 }
 
-func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) error {
+//nolint:dupl // maybe later
+func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
+	if len(gb.State.LeftToNotify) == 0 {
+		return false, nil
+	}
+	l := logger.GetLogger(ctx)
+
+	emails := make([]string, 0, len(gb.State.Executors))
+	for executor := range gb.State.Executors {
+		email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
+		if err != nil {
+			l.WithError(err).Error("couldn't get email")
+		}
+		emails = append(emails, email)
+	}
+	if len(emails) == 0 {
+		return false, nil
+	}
+	err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+		mail.NewApplicationPersonStatusNotification(
+			stepCtx.workNumber,
+			stepCtx.workTitle,
+			statusToTaskAction[StatusExecution],
+			ComputeDeadline(stepCtx.stepStart, gb.State.SLA),
+			gb.Pipeline.currDescription,
+			gb.Pipeline.Sender.SdAddress))
+	if err != nil {
+		return false, err
+	}
+
+	left := gb.State.LeftToNotify
+	gb.State.LeftToNotify = map[string]struct{}{}
+
+	if err := gb.dumpCurrState(ctx, id); err != nil {
+		gb.State.LeftToNotify = left
+		return false, err
+	}
+	return true, nil
+}
+
+func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
 	if gb.State.DidSLANotification {
-		return nil
+		return false, nil
 	}
 	if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
 		l := logger.GetLogger(ctx)
@@ -256,12 +298,12 @@ func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx
 				emails = append(emails, email)
 			}
 			if len(emails) == 0 {
-				return nil
+				return false, nil
 			}
 			err := gb.Pipeline.Sender.SendNotification(ctx, emails,
 				mail.NewExecutionSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
 			if err != nil {
-				return err
+				return false, err
 			}
 		}
 
@@ -269,15 +311,16 @@ func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx
 
 		if err := gb.dumpCurrState(ctx, id); err != nil {
 			gb.State.DidSLANotification = false
-			return err
+			return false, err
 		}
 
-		return nil
+		return true, nil
 	}
 
-	return nil
+	return false, nil
 }
 
+//nolint:gocyclo // later
 func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
 	_, s := trace.StartSpan(ctx, "run_go_execution_block")
 	defer s.End()
@@ -319,10 +362,23 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 	gb.State = &state
 
 	if step.Status != string(StatusIdle) {
-		err = gb.handleSLA(ctx, id, stepCtx)
-		if err != nil {
-			l.WithError(err).Error("couldn't handle sla")
+		handled, handleErr := gb.handleSLA(ctx, id, stepCtx)
+		if handleErr != nil {
+			l.WithError(handleErr).Error("couldn't handle sla")
 		}
+		if handled {
+			// go for another loop cause we may have updated the state at db
+			return gb.DebugRun(ctx, stepCtx, runCtx)
+		}
+	}
+
+	handled, err := gb.handleNotifications(ctx, id, stepCtx)
+	if err != nil {
+		l.WithError(err).Error("couldn't handle notifications")
+	}
+	if handled {
+		// go for another loop cause we may have updated the state at db
+		return gb.DebugRun(ctx, stepCtx, runCtx)
 	}
 
 	decision := gb.State.GetDecision()
@@ -445,6 +501,7 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, pipeline *Executa
 		ExecutionType: params.Type,
 		Executors:     map[string]struct{}{params.Executors: {}},
 		SLA:           params.SLA,
+		LeftToNotify:  map[string]struct{}{params.Executors: {}},
 	}
 
 	return b, nil
