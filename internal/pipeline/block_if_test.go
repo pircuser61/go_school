@@ -123,7 +123,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "compare string values",
+			name:            "compare string values - not equal",
 			wantErr:         false,
 			wantedGroupName: "test-group-1",
 			args: args{
