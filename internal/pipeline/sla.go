@@ -9,6 +9,22 @@ const (
 	ddmmyyFormat = "02.01.2006"
 )
 
+func getWorkWorkHoursBetweenDates(from, to time.Time) (workHours int) {
+	if from.After(to) || from.Equal(to) {
+		return 0
+	}
+
+	for from.Before(to) {
+		if !notWorkingHours(from) {
+			workHours++
+		}
+
+		from = from.Add(time.Hour * 1)
+	}
+
+	return workHours
+}
+
 func beforeWorkingHours(t time.Time) bool {
 	return t.Hour() < workingHoursStart
 }

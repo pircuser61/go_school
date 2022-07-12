@@ -131,6 +131,10 @@ func (a *ExecutionData) SetRequestExecutionInfo(login, comment string, reqType R
 	return nil
 }
 
+func (a *ExecutionData) IncreaseSLA(addSla int) {
+	a.SLA += addSla
+}
+
 func (a *ExecutionData) SetChangeExecutor(oldLogin, newLogin, comment string) error {
 	_, ok := a.Executors[oldLogin]
 	if !ok {
@@ -355,9 +359,11 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 
 	gb.State = &state
 
-	err = gb.handleSLA(ctx, id, stepCtx)
-	if err != nil {
-		l.WithError(err).Error("couldn't handle sla")
+	if step.Status != string(StatusIdle) {
+		err = gb.handleSLA(ctx, id, stepCtx)
+		if err != nil {
+			l.WithError(err).Error("couldn't handle sla")
+		}
 	}
 
 	handled, err := gb.handleNotifications(ctx, id, stepCtx)
