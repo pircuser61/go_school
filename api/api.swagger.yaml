@@ -122,7 +122,9 @@ components:
         type: string
         enum:
           - approver
+          - finished_approver
           - executor
+          - finished_executor
 
     archived:
       name: archived

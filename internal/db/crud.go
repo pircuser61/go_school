@@ -1820,7 +1820,7 @@ func (db *PGConnection) GetExecutableByName(c context.Context, name string) (*en
 }
 
 //TODO:last_updated_at
-//nolint:gocritic //filters
+//nolint:gocritic,gocyclo //filters
 func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface{}) {
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1845,7 +1845,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
              SELECT * FROM pipeliner.variable_storage vs
              WHERE vs.work_id = w.id
              ORDER BY vs.time DESC
-             LIMIT 1
+             --limit--
         ) workers ON workers.work_id = w.id
 		WHERE 1=1`
 
@@ -1860,22 +1860,27 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		case "approver":
 			{
 				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
-					"IS NOT NULL AND workers.status != 'finished'", q, len(args))
+					"IS NOT NULL AND workers.status NOT IN ('finished', 'no_success')", q, len(args))
+			}
+		case "finished_approver":
+			{
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
+					"IS NOT NULL AND workers.status IN ('finished', 'no_success')", q, len(args))
 			}
 		case "executor":
 			{
 				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND (workers.status != 'finished' AND workers.status != 'no_success')", q, len(args))
+					"IS NOT NULL AND (workers.status NOT IN ('finished', 'no_success'))", q, len(args))
 			}
 		case "finished_executor":
 			{
-				q = strings.Replace(q, "LIMIT 1", "", -1)
 				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND (workers.status = 'finished' OR workers.status = 'no_success')", q, len(args))
+					"IS NOT NULL AND (workers.status IN ('finished', 'no_success')", q, len(args))
 			}
 		}
 	} else {
 		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
+		q = strings.Replace(q, "--limit--", "LIMIT 1", -1)
 	}
 
 	if filters.TaskIDs != nil {
