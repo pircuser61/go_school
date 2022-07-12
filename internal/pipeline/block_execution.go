@@ -240,6 +240,7 @@ func (gb *GoExecutionBlock) dumpCurrState(ctx context.Context, id uuid.UUID) err
 	})
 }
 
+//nolint:dupl // maybe later
 func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
 	if len(gb.State.LeftToNotify) == 0 {
 		return false, nil
@@ -247,8 +248,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUI
 	l := logger.GetLogger(ctx)
 
 	emails := make([]string, 0, len(gb.State.Executors))
-	for approver := range gb.State.Executors {
-		email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
+	for executor := range gb.State.Executors {
+		email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
 		if err != nil {
 			l.WithError(err).Error("couldn't get email")
 		}
@@ -279,9 +280,9 @@ func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUI
 	return true, nil
 }
 
-func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) error {
+func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
 	if gb.State.DidSLANotification {
-		return nil
+		return false, nil
 	}
 	if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
 		l := logger.GetLogger(ctx)
@@ -297,12 +298,12 @@ func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx
 				emails = append(emails, email)
 			}
 			if len(emails) == 0 {
-				return nil
+				return false, nil
 			}
 			err := gb.Pipeline.Sender.SendNotification(ctx, emails,
 				mail.NewExecutionSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
 			if err != nil {
-				return err
+				return false, err
 			}
 		}
 
@@ -310,15 +311,16 @@ func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx
 
 		if err := gb.dumpCurrState(ctx, id); err != nil {
 			gb.State.DidSLANotification = false
-			return err
+			return false, err
 		}
 
-		return nil
+		return true, nil
 	}
 
-	return nil
+	return false, nil
 }
 
+//nolint:gocyclo // later
 func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
 	_, s := trace.StartSpan(ctx, "run_go_execution_block")
 	defer s.End()
@@ -360,9 +362,13 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 	gb.State = &state
 
 	if step.Status != string(StatusIdle) {
-		err = gb.handleSLA(ctx, id, stepCtx)
-		if err != nil {
-			l.WithError(err).Error("couldn't handle sla")
+		handled, handleErr := gb.handleSLA(ctx, id, stepCtx)
+		if handleErr != nil {
+			l.WithError(handleErr).Error("couldn't handle sla")
+		}
+		if handled {
+			// go for another loop cause we may have updated the state at db
+			return gb.DebugRun(ctx, stepCtx, runCtx)
 		}
 	}
 
@@ -371,7 +377,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 		l.WithError(err).Error("couldn't handle notifications")
 	}
 	if handled {
-		// go dor another loop cause we may have updated the state at db
+		// go for another loop cause we may have updated the state at db
 		return gb.DebugRun(ctx, stepCtx, runCtx)
 	}
 

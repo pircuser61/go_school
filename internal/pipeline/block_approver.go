@@ -188,6 +188,7 @@ func (gb *GoApproverBlock) dumpCurrState(ctx context.Context, id uuid.UUID) erro
 	})
 }
 
+//nolint:dupl // maybe later
 func (gb *GoApproverBlock) handleNotifications(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
 	if len(gb.State.LeftToNotify) == 0 {
 		return false, nil
@@ -326,7 +327,7 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 		l.WithError(err).Error("couldn't handle sla")
 	}
 	if handled {
-		// go dor another loop cause we may have updated the state at db
+		// go for another loop cause we may have updated the state at db
 		return gb.DebugRun(ctx, stepCtx, runCtx)
 	}
 
@@ -335,7 +336,7 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 		l.WithError(err).Error("couldn't handle notifications")
 	}
 	if handled {
-		// go dor another loop cause we may have updated the state at db
+		// go for another loop cause we may have updated the state at db
 		return gb.DebugRun(ctx, stepCtx, runCtx)
 	}
 
