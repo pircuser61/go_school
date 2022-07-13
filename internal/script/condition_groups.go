@@ -2,7 +2,6 @@ package script
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -447,7 +446,7 @@ func convertValue(original Operand, newOperandType string) (canBeConverted bool,
 				// float64 type goes from map[string]interface{} unmarshaller
 				// so first thing first we'll cast to float64, then to integer
 				if floatVal, ok := val.(float64); ok {
-					val = fmt.Sprintf("%d", int(floatVal))
+					val = strconv.FormatFloat(floatVal, 'f', -1, 64)
 					return true, val
 				} else {
 
