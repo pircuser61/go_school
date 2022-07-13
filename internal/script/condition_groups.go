@@ -421,13 +421,13 @@ func convertValue(original Operand, newOperandType string) (canBeConverted bool,
 				return false, nil
 			}
 		case integerOperandType:
-			val, err := strconv.ParseFloat(originalValue.(string), 32)
+			val, err := strconv.ParseFloat(originalValue.(string), 64)
 			if err != nil {
 				return false, nil
 			}
 			return true, val
 		case floatOperandType:
-			val, err := strconv.ParseFloat(originalValue.(string), 32)
+			val, err := strconv.ParseFloat(originalValue.(string), 64)
 			if err != nil {
 				return false, nil
 			}
