@@ -399,6 +399,7 @@ func haveEqualOperandTypes(leftOperand, rightOperand Operand) bool {
 	return leftOperand.GetType() == rightOperand.GetType()
 }
 
+//nolint:gocyclo ok
 func convertValue(original Operand, newOperandType string) (canBeConverted bool, res interface{}) {
 	var originalValue = original.GetValue()
 	switch original.GetType() {
@@ -448,8 +449,6 @@ func convertValue(original Operand, newOperandType string) (canBeConverted bool,
 				if floatVal, ok := val.(float64); ok {
 					val = strconv.FormatFloat(floatVal, 'f', -1, 64)
 					return true, val
-				} else {
-
 				}
 			}
 			return false, nil
