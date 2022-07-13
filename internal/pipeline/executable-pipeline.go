@@ -60,7 +60,7 @@ type ExecutablePipeline struct {
 	Initiator       string
 	initiatorEmail  string
 	currDescription string
-	notifiedBlocks  map[string]void
+	notifiedBlocks  map[string][]TaskHumanStatus
 }
 
 func (ep *ExecutablePipeline) GetStatus() Status {
@@ -203,13 +203,20 @@ func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskH
 
 func (ep *ExecutablePipeline) handleInitiatorNotification(c context.Context, step string) error {
 	if ep.notifiedBlocks == nil {
-		ep.notifiedBlocks = make(map[string]void)
-	}
-	if _, ok := ep.notifiedBlocks[step]; ok {
-		return nil
+		ep.notifiedBlocks = make(map[string][]TaskHumanStatus)
 	}
 	currBlock := ep.Blocks[step]
 	currStatus := currBlock.GetTaskHumanStatus()
+	ss := ep.notifiedBlocks[step]
+	if ss == nil {
+		ss = make([]TaskHumanStatus, 0)
+	}
+	for _, s := range ss {
+		if s == currStatus {
+			return nil
+		}
+	}
+
 	switch currStatus {
 	case StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
 		tmpl := mail.NewApplicationInitiatorStatusNotification(
@@ -228,7 +235,8 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(c context.Context, ste
 		if err := ep.Sender.SendNotification(c, []string{ep.initiatorEmail}, tmpl); err != nil {
 			return err
 		}
-		ep.notifiedBlocks[step] = void{} // TODO: dump somewhere?
+		ss = append(ss, currStatus)
+		ep.notifiedBlocks[step] = ss // TODO: dump somewhere?
 	default:
 		return nil
 	}
