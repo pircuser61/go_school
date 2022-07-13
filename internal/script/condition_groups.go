@@ -1,9 +1,10 @@
 package script
 
 import (
-	"encoding/json"
 	"math"
 	"strconv"
+
+	"encoding/json"
 
 	"github.com/pkg/errors"
 )
@@ -19,9 +20,10 @@ const (
 )
 
 var (
-	ErrNotComparableOperands = errors.New("Invalid condition. Check for operand types equality and used operator is allowed for type.")
-	ErrNoAllowedOperators    = errors.New("Unable to find allowed operators for this type.")
-	ErrUnableToConvert       = errors.New("Unable to convert operand.")
+	ErrCantFindAllowedCastTypeFuncs = errors.New("Can't find allowed cast type functions.")
+	ErrNotComparableOperands        = errors.New("Invalid condition. Check for operand types equality and used operator is allowed for type.")
+	ErrNoAllowedOperators           = errors.New("Unable to find allowed operators for this type.")
+	ErrUnableToConvert              = errors.New("Unable to convert operand.")
 )
 
 type ConditionType string
@@ -214,9 +216,96 @@ func (valOp *OperandBase) GetAllowedOperators() (map[string]CompareOperator, err
 }
 
 func (valOp *OperandBase) GetAllowedTypeCasts() (map[TypeCast]CastFunction, error) {
-	var operandDataType = valOp.DataType
+	return getAllowedTypesCast(valOp.DataType)
+}
 
-	var test = map[TypeCast]CastFunction{
+func (valOp *OperandBase) ConvertType(operandType string) bool {
+	allowedTypeCasts, err := valOp.GetAllowedTypeCasts()
+	if err != nil {
+		return false
+	}
+
+	var castFunction = getCastFunctionByOperandType(allowedTypeCasts, operandType)
+	if castFunction != nil {
+		valOp.DataType = operandType
+		valOp.ValueToCompare = castFunction(valOp)
+
+		allowedOperators, err := getAllowedOperators(operandType)
+		if err != nil {
+			return false
+		}
+
+		valOp.AllowedOperators = allowedOperators
+		return true
+	}
+
+	return false
+}
+
+type ValueOperand struct {
+	Value interface{} `json:"value"`
+	OperandBase
+}
+
+type VariableOperand struct {
+	VariableRef string `json:"variableRef"`
+	OperandBase
+}
+
+func (condition *Condition) IsTrue() (bool, error) {
+	if canCompare(condition) {
+		var leftOperand = condition.LeftOperand
+		var rightOperand = condition.RightOperand
+
+		if !haveEqualOperandTypes(leftOperand, rightOperand) {
+			ok := leftOperand.ConvertType(rightOperand.GetType())
+			if !ok {
+				return false, ErrUnableToConvert
+			}
+		}
+
+		allowedOperatorFunctions, err := condition.LeftOperand.GetAllowedOperators()
+		if err != nil {
+			return false, err
+		}
+		var compareFunction = allowedOperatorFunctions[condition.Operator]
+
+		var result = compareFunction(leftOperand, rightOperand)
+
+		return result, nil
+	}
+
+	return false, nil
+}
+
+func getAllowedOperators(operandDataType string) (map[string]CompareOperator, error) {
+	switch operandDataType {
+	case stringOperandType, booleanOperandType:
+		return genericOperators(), nil
+	case integerOperandType:
+		return genericOperators(), nil
+	case floatOperandType:
+		return map[string]CompareOperator{
+			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var equalityThreshold = 1e-9
+				var leftValue = leftOperand.GetValue().(float64)
+				var rightValue = leftOperand.GetValue().(float64)
+				return math.Abs(leftValue-rightValue) <= equalityThreshold
+			},
+			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var equalityThreshold = 1e-9
+				var leftValue = leftOperand.GetValue().(float64)
+				var rightValue = leftOperand.GetValue().(float64)
+				return math.Abs(leftValue-rightValue) >= equalityThreshold
+			},
+		}, nil
+	}
+	return nil, ErrNoAllowedOperators
+}
+
+//nolint:goconst,gocyclo //it's ok
+func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, error) {
+	var castFunctions = map[TypeCast]CastFunction{
 		{From: stringOperandType, To: stringOperandType}: func(source Operand) interface{} {
 			return source.GetValue()
 		},
@@ -315,113 +404,19 @@ func (valOp *OperandBase) GetAllowedTypeCasts() (map[TypeCast]CastFunction, erro
 		},
 	}
 
-	var result = make(map[TypeCast]CastFunction, 0)
+	result := make(map[TypeCast]CastFunction, 0)
 
-	for k, v := range test {
+	for k, v := range castFunctions {
 		if k.From == operandDataType {
 			result[k] = v
 		}
 	}
 
+	if len(result) == 0 {
+		return nil, ErrCantFindAllowedCastTypeFuncs
+	}
+
 	return result, nil
-}
-
-func (valOp *OperandBase) ConvertType(operandType string) bool {
-	allowedTypeCasts, err := valOp.GetAllowedTypeCasts()
-	if err != nil {
-		return false
-	}
-
-	var castFunction CastFunction
-
-	for k, v := range allowedTypeCasts {
-		if k.To == operandType {
-			castFunction = v
-		}
-	}
-
-	if castFunction != nil {
-		valOp.DataType = operandType
-		valOp.ValueToCompare = castFunction(valOp)
-
-		allowedOperators, err := getAllowedOperators(operandType)
-		if err != nil {
-			return false
-		}
-
-		valOp.AllowedOperators = allowedOperators
-		return true
-	}
-
-	return false
-}
-
-type ValueOperand struct {
-	Value interface{} `json:"value"`
-	OperandBase
-}
-
-type VariableOperand struct {
-	VariableRef string `json:"variableRef"`
-	OperandBase
-}
-
-func (condition *Condition) IsTrue() (bool, error) {
-	if canCompare(condition) {
-		var leftOperand = condition.LeftOperand
-		var rightOperand = condition.RightOperand
-
-		if !haveEqualOperandTypes(leftOperand, rightOperand) {
-			ok := leftOperand.ConvertType(rightOperand.GetType())
-			if !ok {
-				return false, ErrUnableToConvert
-			}
-		}
-
-		allowedOperatorFunctions, err := condition.LeftOperand.GetAllowedOperators()
-		if err != nil {
-			return false, err
-		}
-		var compareFunction = allowedOperatorFunctions[condition.Operator]
-
-		var result = compareFunction(leftOperand, rightOperand)
-
-		return result, nil
-	}
-
-	return false, nil
-}
-
-func getAllowedOperators(operandType string) (map[string]CompareOperator, error) {
-	switch operandType {
-	case stringOperandType, booleanOperandType:
-		return genericOperators(), nil
-	case integerOperandType:
-		return map[string]CompareOperator{
-			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				return leftOperand.GetValue() == rightOperand.GetValue()
-			},
-			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				return leftOperand.GetValue() != rightOperand.GetValue()
-			},
-		}, nil
-	case floatOperandType:
-		return map[string]CompareOperator{
-			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var equalityThreshold = 1e-9
-				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
-				return math.Abs(leftValue-rightValue) <= equalityThreshold
-			},
-			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var equalityThreshold = 1e-9
-				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
-				return math.Abs(leftValue-rightValue) >= equalityThreshold
-			},
-		}, nil
-	}
-	return nil, ErrNoAllowedOperators
 }
 
 func genericOperators() map[string]CompareOperator {
@@ -477,18 +472,28 @@ func operandHaveAllowedOperator(operand Operand, operatorType string) bool {
 }
 
 func canBeConverted(leftOperand, rightOperand Operand) bool {
+	var neededTypeCast = rightOperand.GetType()
+
 	allowedTypeCasts, err := leftOperand.GetAllowedTypeCasts()
 	if err != nil {
 		return false
 	}
 
-	var neededTypeCast = rightOperand.GetType()
 	for k := range allowedTypeCasts {
 		if k.To == neededTypeCast {
 			return true
 		}
 	}
 	return false
+}
+
+func getCastFunctionByOperandType(m map[TypeCast]CastFunction, neededOperandCastType string) CastFunction {
+	for k, v := range m {
+		if k.To == neededOperandCastType {
+			return v
+		}
+	}
+	return nil
 }
 
 func haveEqualOperandTypes(leftOperand, rightOperand Operand) bool {
