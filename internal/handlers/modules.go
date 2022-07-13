@@ -68,10 +68,6 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ifBlock := &pipeline.IF{}
 
 	eriusFunctions = append(eriusFunctions,
-		script.Input.Model(),
-		script.Equal.Model(),
-		script.Connector.Model(),
-		script.ForState.Model(),
 		approverBlock.Model(),
 		sdApplicationBlock.Model(),
 		executionBlock.Model(),
