@@ -204,7 +204,7 @@ func processConditionGroups(groups []script.ConditionGroup, variables map[string
 func processAndConditions(conditions []script.Condition, variables map[string]interface{}) bool {
 	var successCount = 0
 	for _, condition := range conditions {
-		setValuesToCompare(condition.LeftOperand, condition.RightOperand, variables)
+		setValuesToCompare(condition.LeftOperand, condition.RightOperand, variables) //todo: выпил
 		if result, _ := condition.IsTrue(); result {
 			successCount++
 		}
@@ -215,7 +215,7 @@ func processAndConditions(conditions []script.Condition, variables map[string]in
 
 func processOrConditions(conditions []script.Condition, variables map[string]interface{}) bool {
 	for _, condition := range conditions {
-		setValuesToCompare(condition.LeftOperand, condition.RightOperand, variables)
+		setValuesToCompare(condition.LeftOperand, condition.RightOperand, variables) //todo: выпил
 		if result, _ := condition.IsTrue(); result {
 			return true
 		}

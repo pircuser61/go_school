@@ -385,7 +385,7 @@ func convertValue(original Operand, newOperandType string) (canBeConverted bool,
 			return true, originalValue
 		case booleanOperandType:
 			switch originalValue {
-			case "0", "false":
+			case "0", "false", nil:
 				return true, false
 			case "1", "true":
 				return true, true

@@ -291,13 +291,13 @@ func TestIF_DebugRun(t *testing.T) {
 												OperandBase: script.OperandBase{
 													DataType: "string",
 												},
-												VariableRef: "data.testStringVariable",
+												VariableRef: "testStringVariable",
 											},
 											RightOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
 													DataType: "boolean",
 												},
-												VariableRef: "data.testBoolVariable",
+												VariableRef: "testBoolVariable",
 											},
 											Operator: "Equal",
 										},
@@ -312,8 +312,8 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
-					res.SetValue("data.testStringVariable", "true")
-					res.SetValue("data.testBoolVariable", true)
+					res.SetValue("testStringVariable", "true")
+					res.SetValue("testBoolVariable", true)
 
 					return res
 				}(),
