@@ -1122,6 +1122,7 @@ components:
             $ref: '#/components/schemas/taskStep'
         work_number:
           type: string
+          description: Work unique number
         blueprint_id:
           type: string
           description: service_desk template id
