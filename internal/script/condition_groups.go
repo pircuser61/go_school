@@ -399,7 +399,7 @@ func haveEqualOperandTypes(leftOperand, rightOperand Operand) bool {
 	return leftOperand.GetType() == rightOperand.GetType()
 }
 
-//nolint:gocyclo ok
+//nolint:gocyclo //ok
 func convertValue(original Operand, newOperandType string) (canBeConverted bool, res interface{}) {
 	var originalValue = original.GetValue()
 	switch original.GetType() {
