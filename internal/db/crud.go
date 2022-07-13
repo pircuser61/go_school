@@ -1866,23 +1866,23 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'approvers'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
 					"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready')", q, len(args))
 			}
 		case "finished_approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'approvers'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
 					"IS NOT NULL AND workers.status IN ('finished', 'no_success')", q, len(args))
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'executors'->$%d "+
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
 					"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
 			}
 		case "finished_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'state'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND (workers.status IN ('finished', 'no_success')", q, len(args))
+				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
+					"IS NOT NULL AND (workers.status IN ('finished', 'no_success'))", q, len(args))
 			}
 		}
 	} else {
@@ -2399,7 +2399,7 @@ func (db *PGConnection) CheckTaskStepsExecuted(ctx context.Context, workNumber s
 	SELECT count(*)
 	FROM pipeliner.variable_storage vs 
 	JOIN pipeliner.works w on w.id = vs.work_id
-	WHERE w.work_number = $1 AND vs.step_name IN $2 AND vs.status IN ('finished', 'no_success', 'skipped')`
+	WHERE w.work_number = $1 AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success', 'skipped')`
 
 	var c int
 	if scanErr := conn.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {

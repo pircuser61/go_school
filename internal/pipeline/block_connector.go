@@ -57,12 +57,16 @@ func (cb *ConnectorBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *stor
 	return nil
 }
 
-func (cb *ConnectorBlock) Next(runCtx *store.VariableStore) ([]string, bool) {
+func (cb *ConnectorBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := cb.Nexts[DefaultSocket]
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
+}
+
+func (cb *ConnectorBlock) Skipped(_ *store.VariableStore) []string {
+	return nil
 }
 
 func (cb ConnectorBlock) IsScenario() bool {

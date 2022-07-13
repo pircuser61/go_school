@@ -72,6 +72,10 @@ func (gb *GoEndBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nil, true
 }
 
+func (gb *GoEndBlock) Skipped(_ *store.VariableStore) []string {
+	return nil
+}
+
 func (gb *GoEndBlock) GetState() interface{} {
 	return nil
 }

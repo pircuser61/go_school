@@ -132,12 +132,16 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store
 	return nil
 }
 
-func (fb *FunctionBlock) Next(runCtx *store.VariableStore) ([]string, bool) {
+func (fb *FunctionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := fb.Nexts[DefaultSocket]
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
+}
+
+func (fb *FunctionBlock) Skipped(_ *store.VariableStore) []string {
+	return nil
 }
 
 func (fb *FunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStore) (interface{}, error) {

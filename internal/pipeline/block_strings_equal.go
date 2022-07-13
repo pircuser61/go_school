@@ -87,6 +87,13 @@ func (se *StringsEqual) Next(runCtx *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
+func (se *StringsEqual) Skipped(_ *store.VariableStore) []string {
+	if se.Result {
+		return se.Nexts[falseSocket]
+	}
+	return se.Nexts[trueSocket]
+}
+
 func (se *StringsEqual) GetState() interface{} {
 	return nil
 }

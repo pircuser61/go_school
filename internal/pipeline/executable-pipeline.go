@@ -40,6 +40,7 @@ type ExecutablePipeline struct {
 	EntryPoint    string
 	StepType      string
 	ActiveBlocks  map[string]void
+	SkippedBlocks map[string]void
 	VarStore      *store.VariableStore
 	Blocks        map[string]Runner
 	Nexts         map[string][]string
@@ -84,6 +85,15 @@ func (ep *ExecutablePipeline) MergeActiveBlocks(blocks []string) {
 		_, exist := ep.ActiveBlocks[block]
 		if !exist {
 			ep.ActiveBlocks[block] = void{}
+		}
+	}
+}
+
+func (ep *ExecutablePipeline) MergeSkippedBlocks(blocks []string) {
+	for _, block := range blocks {
+		_, exist := ep.SkippedBlocks[block]
+		if !exist {
+			ep.SkippedBlocks[block] = void{}
 		}
 	}
 }
@@ -236,6 +246,34 @@ func (ep *ExecutablePipeline) stepCtx(start time.Time) *stepCtx {
 	return &stepCtx{stepStart: start, workNumber: ep.WorkNumber, workTitle: ep.Name, description: ep.currDescription}
 }
 
+func (ep *ExecutablePipeline) handleSkippedBlocks(ctx context.Context, runCtx *store.VariableStore) error {
+	for step := range ep.SkippedBlocks {
+		currentBlock, ok := ep.Blocks[step]
+		if !ok || currentBlock == nil {
+			continue
+		}
+		ep.StepType = currentBlock.GetType()
+
+		var err error
+
+		if currentBlock.IsScenario() {
+			// TODO
+		} else {
+			_, _, err = ep.createStep(ctx, step, false, StatusSkipped)
+			if err != nil {
+				return err
+			}
+
+			nexts, _ := currentBlock.Next(ep.VarStore)
+			skipped := currentBlock.Skipped(runCtx)
+			delete(ep.SkippedBlocks, step)
+			ep.MergeSkippedBlocks(nexts)
+			ep.MergeSkippedBlocks(skipped)
+		}
+	}
+	return nil
+}
+
 //nolint:gocognit,gocyclo //its really complex
 func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "pipeline_flow")
@@ -261,6 +299,10 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 
 	for !ep.IsOver() {
 		for step := range ep.ActiveBlocks {
+			if err := ep.handleSkippedBlocks(ctx, runCtx); err != nil {
+				return err
+			}
+
 			currentBlock, ok := ep.Blocks[step]
 			if !ok || currentBlock == nil {
 				_, _, err := ep.createStep(ctx, step, true, StatusFinished)
@@ -366,8 +408,10 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 
 				return ErrCantGetNextStep
 			}
-
 			ep.MergeActiveBlocks(activeBlocks)
+
+			skipped := currentBlock.Skipped(ep.VarStore)
+			ep.MergeSkippedBlocks(skipped)
 
 			if runCtx.StopPoints.IsStopPoint(step) {
 				errChangeStopped := ep.changeTaskStatus(ctx, db.RunStatusStopped)
@@ -396,12 +440,16 @@ func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *
 	return nil
 }
 
-func (ep *ExecutablePipeline) Next(*store.VariableStore) ([]string, bool) {
+func (ep *ExecutablePipeline) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := ep.Nexts[DefaultSocket]
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
+}
+
+func (ep *ExecutablePipeline) Skipped(_ *store.VariableStore) []string {
+	return nil
 }
 
 func (ep *ExecutablePipeline) GetState() interface{} {
@@ -438,8 +486,6 @@ func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, bloc
 	defer s.End()
 
 	switch block.BlockType {
-	case script.TypeInternal:
-		return ep.CreateInternal(block, name), nil
 	case script.TypeGo, BlockGoSdApplicationID, BlockGoApproverID:
 		return ep.CreateGoBlock(block, name)
 	case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
@@ -512,75 +558,6 @@ func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, bloc
 	}
 
 	return nil, errors.Errorf("can't create block with type: %s", block.BlockType)
-}
-
-func createStringsEqual(title, name string, nexts map[string][]string) *StringsEqual {
-	return &StringsEqual{
-		Name:          name,
-		FunctionName:  title,
-		Nexts:         nexts,
-		FunctionInput: make(map[string]string),
-	}
-}
-
-func createConnectorBlock(title, name string, nexts map[string][]string) *ConnectorBlock {
-	return &ConnectorBlock{
-		Name:           name,
-		FunctionName:   title,
-		FunctionInput:  make(map[string]string),
-		FunctionOutput: make(map[string]string),
-		Nexts:          nexts,
-	}
-}
-
-func createForBlock(title, name string, nexts map[string][]string) *ForState {
-	return &ForState{
-		Name:           name,
-		FunctionName:   title,
-		Nexts:          nexts,
-		FunctionInput:  make(map[string]string),
-		FunctionOutput: make(map[string]string),
-	}
-}
-
-//nolint:gocyclo //need bigger cyclomatic
-func (ep *ExecutablePipeline) CreateInternal(ef *entity.EriusFunc, name string) Runner {
-	switch ef.TypeID {
-	case "strings_is_equal":
-		sie := createStringsEqual(ef.Title, name, ef.Next)
-
-		for _, v := range ef.Input {
-			sie.FunctionInput[v.Name] = v.Global
-		}
-
-		return sie
-	case "connector":
-		con := createConnectorBlock(ef.Title, name, ef.Next)
-
-		for _, v := range ef.Input {
-			con.FunctionInput[v.Name] = v.Global
-		}
-
-		for _, v := range ef.Output {
-			con.FunctionOutput[v.Name] = v.Global
-		}
-
-		return con
-	case "for":
-		f := createForBlock(ef.Title, name, ef.Next)
-
-		for _, v := range ef.Input {
-			f.FunctionInput[v.Name] = v.Global
-		}
-
-		for _, v := range ef.Output {
-			f.FunctionOutput[v.Name] = v.Global
-		}
-
-		return f
-	}
-
-	return nil
 }
 
 //nolint:gocyclo //need bigger cyclomatic

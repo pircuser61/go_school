@@ -382,6 +382,14 @@ func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
+func (gb *GoApproverBlock) Skipped(_ *store.VariableStore) []string {
+	key := approvedSocket
+	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
+		key = rejectedSocket
+	}
+	return gb.Nexts[key]
+}
+
 func (gb *GoApproverBlock) GetState() interface{} {
 	return gb.State
 }
