@@ -1123,6 +1123,9 @@ components:
         work_number:
           type: string
           description: Work unique number
+        blueprint_id:
+          type: string
+          description: service_desk template id
       required:
         - id
         - version_id
@@ -1137,6 +1140,7 @@ components:
         - parameters
         - steps
         - work_number
+        - blueprint_id
 
     debugTask:
       type: object
