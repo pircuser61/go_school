@@ -410,6 +410,14 @@ func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
+func (gb *GoExecutionBlock) Skipped(_ *store.VariableStore) []string {
+	key := executedSocket
+	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ExecutionDecisionExecuted {
+		key = notExecutedSocket
+	}
+	return gb.Nexts[key]
+}
+
 func (gb *GoExecutionBlock) GetState() interface{} {
 	return gb.State
 }

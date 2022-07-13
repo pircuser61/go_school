@@ -117,6 +117,10 @@ func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
+func (gb *GoSdApplicationBlock) Skipped(_ *store.VariableStore) []string {
+	return nil
+}
+
 func (gb *GoSdApplicationBlock) GetState() interface{} {
 	return gb.State
 }

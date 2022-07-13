@@ -16,6 +16,7 @@ var (
 	StatusFinished  Status = "finished"
 	StatusNoSuccess Status = "no_success"
 	StatusCancel    Status = "cancel"
+	StatusSkipped   Status = "skipped"
 )
 
 type Runner interface {
@@ -23,6 +24,7 @@ type Runner interface {
 	GetState() interface{}
 	DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error
 	Next(runCtx *store.VariableStore) ([]string, bool)
+	Skipped(runCtx *store.VariableStore) []string
 	IsScenario() bool
 	Inputs() map[string]string
 	Outputs() map[string]string

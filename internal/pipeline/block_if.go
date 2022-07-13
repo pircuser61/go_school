@@ -54,8 +54,8 @@ func (e *IF) GetType() string {
 	return BlockGoIfID
 }
 
-func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
-	var chosenGroup = e.State.ChosenGroupID
+func (e *IF) Next(_ *store.VariableStore) ([]string, bool) {
+	chosenGroup := e.State.ChosenGroupID
 
 	if chosenGroup == "" {
 		nexts, ok := e.Nexts[DefaultSocket]
@@ -70,6 +70,21 @@ func (e *IF) Next(runCtx *store.VariableStore) ([]string, bool) {
 		}
 		return nexts, true
 	}
+}
+
+func (e *IF) Skipped(_ *store.VariableStore) []string {
+	chosenGroup := e.State.ChosenGroupID
+	if chosenGroup == "" {
+		chosenGroup = DefaultSocket
+	}
+
+	skipped := make([]string, 0)
+	for k := range e.Nexts {
+		if k != chosenGroup {
+			skipped = append(skipped, e.Nexts[k]...)
+		}
+	}
+	return skipped
 }
 
 func (e *IF) Inputs() map[string]string {

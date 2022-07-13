@@ -88,6 +88,10 @@ func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
+func (gb *GoNotificationBlock) Skipped(_ *store.VariableStore) []string {
+	return nil
+}
+
 func (gb *GoNotificationBlock) GetState() interface{} {
 	return gb.State
 }

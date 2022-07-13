@@ -639,6 +639,7 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 	ep.HTTPClient = ae.HTTPClient
 	ep.Remedy = ae.Remedy
 	ep.ActiveBlocks = map[string]struct{}{}
+	ep.SkippedBlocks = map[string]struct{}{}
 	ep.EntryPoint = pipeline.BlockGoFirstStart
 	ep.Sender = ae.Mail
 	ep.People = ae.People

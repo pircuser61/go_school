@@ -108,6 +108,10 @@ func (e *ForState) Next(runCtx *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
+func (e *ForState) Skipped(_ *store.VariableStore) []string {
+	return nil
+}
+
 func (e *ForState) GetState() interface{} {
 	return nil
 }
