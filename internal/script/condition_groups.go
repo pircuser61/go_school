@@ -408,7 +408,18 @@ func convertValue(original Operand, newOperandType string) (canBeConverted bool,
 		case stringOperandType:
 			return true, originalValue
 		case booleanOperandType:
-			return true, originalValue == "true"
+			switch originalValue {
+			case "0":
+				return true, true
+			case "1":
+				return true, false
+			case "true":
+				return true, true
+			case "false":
+				return true, false
+			default:
+				return false, nil
+			}
 		case integerOperandType:
 			val, err := strconv.ParseFloat(originalValue.(string), 32)
 			if err != nil {
@@ -429,11 +440,18 @@ func convertValue(original Operand, newOperandType string) (canBeConverted bool,
 		case booleanOperandType:
 			return true, originalValue
 		case stringOperandType:
-			val := original.GetValue()
+			val := originalValue
 			if val != nil {
 				val = strconv.FormatBool(val.(bool))
 			}
 			return true, val
+		case integerOperandType:
+			switch originalValue.(bool) {
+			case false:
+				return true, float64(0)
+			case true:
+				return true, float64(1)
+			}
 		default:
 			return false, nil
 		}
@@ -452,6 +470,20 @@ func convertValue(original Operand, newOperandType string) (canBeConverted bool,
 				}
 			}
 			return false, nil
+		case booleanOperandType:
+			switch originalValue.(float64) {
+			case 0:
+				return true, false
+			case 1:
+				return true, true
+			default:
+				return false, nil
+			}
+		case floatOperandType:
+			if floatVal, ok := originalValue.(float64); ok {
+				return true, floatVal
+			}
+			return false, nil
 		default:
 			return false, nil
 		}
@@ -468,6 +500,13 @@ func convertValue(original Operand, newOperandType string) (canBeConverted bool,
 				}
 			}
 			return false, nil
+		case integerOperandType:
+			val := originalValue
+			if val != nil {
+				if floatVal, ok := val.(float64); ok {
+					return true, math.Trunc(floatVal)
+				}
+			}
 		default:
 			return false, nil
 		}

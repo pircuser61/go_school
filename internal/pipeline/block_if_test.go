@@ -907,6 +907,288 @@ func TestIF_DebugRun(t *testing.T) {
 				}(),
 			},
 		},
+		{
+			name:          "compare with int and float (int-float pair)",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "integer",
+												},
+												Value: 10,
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "float",
+												},
+												Value: 10,
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare with int and float (float-int pair)",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "float",
+												},
+												Value: 10.05,
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "integer",
+												},
+												Value: 10,
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare with string and bool (string-bool pair)",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "string",
+												},
+												Value: "false",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "boolean",
+												},
+												Value: false,
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare with string and bool (bool-string pair)",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "boolean",
+												},
+												Value: false,
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "string",
+												},
+												Value: "false",
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare with int and bool (int-bool pair)",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "integer",
+												},
+												Value: 1,
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "boolean",
+												},
+												Value: true,
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare with int and bool (bool-int pair)",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "boolean",
+												},
+												Value: true,
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "integer",
+												},
+												Value: 1,
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
