@@ -18,263 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
-
-func TestGoApproverBlock_DebugRun(t *testing.T) {
-	const (
-		approverKey = "approverKey"
-		decisionKey = "decisionKey"
-		commentKey  = "commentKey"
-	)
-
-	var (
-		login    = "example"
-		decision = ApproverDecisionApproved
-		comment  = "blah blah blah"
-	)
-
-	stepId := uuid.New()
-
-	type fields struct {
-		Name     string
-		Title    string
-		Input    map[string]string
-		Output   map[string]string
-		NextStep map[string][]string
-		Pipeline *ExecutablePipeline
-	}
-	type args struct {
-		ctx    context.Context
-		runCtx *store.VariableStore
-	}
-	tests := []struct {
-		name        string
-		fields      fields
-		args        args
-		wantStorage *store.VariableStore
-		wantErr     bool
-	}{
-		{
-			name: "can't get work id from variable store",
-			fields: fields{
-				Name:     stepName,
-				Title:    "",
-				Input:    nil,
-				Output:   nil,
-				NextStep: map[string][]string{},
-			},
-			args: args{
-				ctx:    context.Background(),
-				runCtx: store.NewStore(),
-			},
-			wantStorage: nil,
-			wantErr:     true,
-		},
-		{
-			name: "can't assert type of work id",
-			fields: fields{
-				Name:     stepName,
-				Title:    "",
-				Input:    nil,
-				Output:   nil,
-				NextStep: map[string][]string{},
-			},
-			args: args{
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-
-					return res
-				}(),
-			},
-			wantStorage: nil,
-			wantErr:     true,
-		},
-		{
-			name: "unknown error from database",
-			fields: fields{
-				Name:     stepName,
-				Title:    "",
-				Input:    nil,
-				Output:   nil,
-				NextStep: map[string][]string{},
-				Pipeline: &ExecutablePipeline{
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
-
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							nil, errors.New("unknown error"),
-						)
-
-						return res
-					}(),
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-
-					return res
-				}(),
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid format of go-approver-block state",
-			fields: fields{
-				Name:     stepName,
-				Title:    "",
-				Input:    nil,
-				Output:   nil,
-				NextStep: map[string][]string{},
-				Pipeline: &ExecutablePipeline{
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
-
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							&entity.Step{
-								Time: time.Time{},
-								Type: BlockGoApproverID,
-								Name: stepName,
-								State: map[string]json.RawMessage{
-									stepName: []byte(`"invalid"`),
-								},
-								Errors:      nil,
-								Steps:       nil,
-								BreakPoints: nil,
-								HasError:    false,
-								Status:      "",
-							}, nil,
-						)
-
-						return res
-					}(),
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-
-					return res
-				}(),
-			},
-			wantErr: true,
-		},
-		{
-			name: "approved case",
-			fields: fields{
-				Name:  stepName,
-				Title: "",
-				Input: nil,
-				Output: map[string]string{
-					keyOutputApprover: approverKey,
-					keyOutputDecision: decisionKey,
-					keyOutputComment:  commentKey,
-				},
-				NextStep: map[string][]string{},
-				Pipeline: &ExecutablePipeline{
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
-
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							&entity.Step{
-								Time: time.Time{},
-								Type: BlockGoApproverID,
-								Name: stepName,
-								State: map[string]json.RawMessage{
-									stepName: func() []byte {
-										r, _ := json.Marshal(&ApproverData{
-											Type: script.ApproverTypeUser,
-											Approvers: map[string]struct{}{
-												login: {},
-											},
-											Decision:       &decision,
-											Comment:        &comment,
-											ActualApprover: &login,
-										})
-
-										return r
-									}(),
-								},
-								Errors:      nil,
-								Steps:       nil,
-								BreakPoints: nil,
-								HasError:    false,
-								Status:      "",
-							}, nil,
-						)
-
-						return res
-					}(),
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-
-					res.SetValue(getWorkIdKey(stepName), stepId)
-
-					return res
-				}(),
-			},
-			wantStorage: func() *store.VariableStore {
-				res := store.NewStore()
-
-				res.SetValue(getWorkIdKey(stepName), stepId)
-				res.SetValue(approverKey, login)
-				res.SetValue(decisionKey, decision.String())
-				res.SetValue(commentKey, comment)
-
-				state, _ := json.Marshal(&ApproverData{
-					Type: script.ApproverTypeUser,
-					Approvers: map[string]struct{}{
-						login: {},
-					},
-					Decision:       &decision,
-					Comment:        &comment,
-					ActualApprover: &login,
-				})
-
-				res.ReplaceState(stepName, state)
-
-				return res
-			}(),
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gb := &GoApproverBlock{
-				Name:     tt.fields.Name,
-				Title:    tt.fields.Title,
-				Input:    tt.fields.Input,
-				Output:   tt.fields.Output,
-				Nexts:    tt.fields.NextStep,
-				Pipeline: tt.fields.Pipeline,
-			}
-			if err := gb.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {
-				t.Errorf("DebugRun() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if tt.wantStorage != nil {
-				assert.Equal(t, tt.wantStorage, tt.args.runCtx, "DebugRun() storage = %v, want %v", tt.args.runCtx, tt.wantStorage)
-			}
-		})
-	}
-}
 
 func TestApproverData_SetDecision(t *testing.T) {
 	const (
@@ -509,6 +253,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 					ActualApprover: nil,
 					AutoAction:     nil,
 					SLA:            1,
+					LeftToNotify: map[string]struct{}{
+						login: {},
+					},
 				},
 				Nexts: next,
 			},
@@ -534,7 +281,6 @@ func TestGoApproverBlock_Update(t *testing.T) {
 		Input    map[string]string
 		Output   map[string]string
 		NextStep map[string][]string
-		State    *ApproverData
 		Pipeline *ExecutablePipeline
 	}
 	type args struct {
@@ -892,7 +638,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				Input:    tt.fields.Input,
 				Output:   tt.fields.Output,
 				Nexts:    tt.fields.NextStep,
-				State:    tt.fields.State,
+				State:    &ApproverData{},
 				Pipeline: tt.fields.Pipeline,
 			}
 			got, err := gb.Update(tt.args.ctx, tt.args.data)
