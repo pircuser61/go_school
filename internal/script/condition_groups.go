@@ -21,6 +21,7 @@ const (
 var (
 	ErrNotComparableOperands = errors.New("Invalid condition. Check for operand types equality and used operator is allowed for type.")
 	ErrNoAllowedOperators    = errors.New("Unable to find allowed operators for this type.")
+	ErrUnableToConvert       = errors.New("Unable to convert operand.")
 )
 
 type ConditionType string
@@ -237,7 +238,10 @@ func (condition *Condition) IsTrue() (bool, error) {
 		var rightOperand = condition.RightOperand
 
 		if !haveEqualOperandTypes(leftOperand, rightOperand) {
-			_ = leftOperand.ConvertType(rightOperand.GetType())
+			ok := leftOperand.ConvertType(rightOperand.GetType())
+			if !ok {
+				return false, ErrUnableToConvert
+			}
 		}
 
 		allowedOperatorFunctions, err := condition.LeftOperand.GetAllowedOperators()
@@ -381,14 +385,10 @@ func convertValue(original Operand, newOperandType string) (canBeConverted bool,
 			return true, originalValue
 		case booleanOperandType:
 			switch originalValue {
-			case "0":
-				return true, true
-			case "1":
+			case "0", "false":
 				return true, false
-			case "true":
+			case "1", "true":
 				return true, true
-			case "false":
-				return true, false
 			default:
 				return false, nil
 			}
