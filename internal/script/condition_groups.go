@@ -269,7 +269,7 @@ func getAllowedOperators(operandType string) (map[string]CompareOperator, error)
 				return leftOperand.GetValue() == rightOperand.GetValue()
 			},
 			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				return leftOperand.GetValue().(int) != rightOperand.GetValue().(int)
+				return leftOperand.GetValue() != rightOperand.GetValue()
 			},
 			MoreThanCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				return leftOperand.GetValue().(int) > rightOperand.GetValue().(int)
