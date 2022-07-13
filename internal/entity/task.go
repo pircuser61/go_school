@@ -52,6 +52,7 @@ type EriusTask struct {
 	Parameters    map[string]interface{} `json:"parameters"`
 	Steps         TaskSteps              `json:"steps"`
 	WorkNumber    string                 `json:"work_number"`
+	BlueprintID   string                 `json:"blueprint_id"`
 }
 
 func (et *EriusTask) IsRun() bool {

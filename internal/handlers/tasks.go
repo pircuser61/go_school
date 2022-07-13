@@ -38,6 +38,7 @@ type eriusTaskResponse struct {
 	Parameters    map[string]interface{} `json:"parameters"`
 	Steps         taskSteps              `json:"steps"`
 	WorkNumber    string                 `json:"work_number"`
+	BlueprintID   string                 `json:"blueprint_id"`
 }
 
 type step struct {
@@ -84,6 +85,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 		Parameters:    in.Parameters,
 		Steps:         steps,
 		WorkNumber:    in.WorkNumber,
+		BlueprintID:   in.BlueprintID,
 	}
 
 	return out
@@ -267,7 +269,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
