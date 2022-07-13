@@ -2,18 +2,25 @@ package script
 
 import (
 	"encoding/json"
+	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/pkg/errors"
 )
 
 const (
-	EqualCompareOperator    string = "Equal"
-	NotEqualCompareOperator string = "NotEqual"
+	EqualCompareOperator           string = "Equal"
+	NotEqualCompareOperator        string = "NotEqual"
+	MoreThanCompareOperator        string = "MoreThan"
+	MoreThanOrEqualCompareOperator string = "MoreThanOrEqual"
+	LessThanCompareOperator        string = "LessThan"
+	LessThanOrEqualCompareOperator string = "LessThanOrEqual"
 
 	stringOperandType  string = "string"
 	booleanOperandType string = "boolean"
-	// TODO: handle integer (what about float?)
+	integerOperandType string = "integer"
+	floatOperandType   string = "float"
 )
 
 var (
@@ -182,6 +189,7 @@ type Operand interface {
 	GetValue() interface{}
 	GetType() string
 	GetAllowedOperators() (map[string]CompareOperator, error)
+	ConvertType(operandType string) (ok bool)
 }
 
 type OperandBase struct {
@@ -202,6 +210,22 @@ func (valOp *OperandBase) GetAllowedOperators() (map[string]CompareOperator, err
 	return getAllowedOperators(valOp.DataType)
 }
 
+func (valOp *OperandBase) ConvertType(operandType string) bool {
+	if ok, val := convertValue(valOp, operandType); ok {
+		valOp.DataType = operandType
+		valOp.ValueToCompare = val
+
+		allowedOperators, err := getAllowedOperators(operandType)
+		if err != nil {
+			return false
+		}
+
+		valOp.AllowedOperators = allowedOperators
+		return true
+	}
+	return false
+}
+
 type ValueOperand struct {
 	Value interface{} `json:"value"`
 	OperandBase
@@ -214,12 +238,20 @@ type VariableOperand struct {
 
 func (condition *Condition) IsTrue() (bool, error) {
 	if canCompare(condition) {
+		var leftOperand = condition.LeftOperand
+		var rightOperand = condition.RightOperand
+
+		if !haveEqualOperandTypes(leftOperand, rightOperand) {
+			_ = leftOperand.ConvertType(rightOperand.GetType())
+		}
+
 		allowedOperatorFunctions, err := condition.LeftOperand.GetAllowedOperators()
 		if err != nil {
 			return false, err
 		}
 		var compareFunction = allowedOperatorFunctions[condition.Operator]
-		var result = compareFunction(condition.LeftOperand, condition.RightOperand)
+
+		var result = compareFunction(leftOperand, rightOperand)
 
 		return result, nil
 	}
@@ -227,12 +259,59 @@ func (condition *Condition) IsTrue() (bool, error) {
 	return false, nil
 }
 
-func getAllowedOperators(operatorType string) (map[string]CompareOperator, error) {
-	switch operatorType {
+func getAllowedOperators(operandType string) (map[string]CompareOperator, error) {
+	switch operandType {
 	case stringOperandType, booleanOperandType:
 		return genericOperators(), nil
+	case integerOperandType:
+		return map[string]CompareOperator{
+			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue() == rightOperand.GetValue()
+			},
+			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue().(int) != rightOperand.GetValue().(int)
+			},
+			MoreThanCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue().(int) > rightOperand.GetValue().(int)
+			},
+			MoreThanOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue().(int) >= rightOperand.GetValue().(int)
+			},
+			LessThanCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue().(int) < rightOperand.GetValue().(int)
+			},
+			LessThanOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue().(int) <= rightOperand.GetValue().(int)
+			},
+		}, nil
+	case floatOperandType:
+		return map[string]CompareOperator{
+			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var equalityThreshold = 1e-9
+				var leftValue = leftOperand.GetValue().(float64)
+				var rightValue = leftOperand.GetValue().(float64)
+				return math.Abs(leftValue-rightValue) <= equalityThreshold
+			},
+			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var equalityThreshold = 1e-9
+				var leftValue = leftOperand.GetValue().(float64)
+				var rightValue = leftOperand.GetValue().(float64)
+				return math.Abs(leftValue-rightValue) >= equalityThreshold
+			},
+			MoreThanCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue().(float64) > rightOperand.GetValue().(float64)
+			},
+			MoreThanOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue().(float64) >= rightOperand.GetValue().(float64)
+			},
+			LessThanCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue().(float64) < rightOperand.GetValue().(float64)
+			},
+			LessThanOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue().(float64) <= rightOperand.GetValue().(float64)
+			},
+		}, nil
 	}
-
 	return nil, ErrNoAllowedOperators
 }
 
@@ -245,7 +324,7 @@ func genericOperators() map[string]CompareOperator {
 			leftVal, rightVal = leftOperand.GetValue(), rightOperand.GetValue()
 		} else {
 			var ok bool
-			ok, leftVal = convertValue(leftOperand, rightOperand)
+			ok, leftVal = convertValue(leftOperand, rightOperand.GetType())
 			if !ok {
 				return false
 			}
@@ -260,7 +339,7 @@ func genericOperators() map[string]CompareOperator {
 			leftVal, rightVal = leftOperand.GetValue(), rightOperand.GetValue()
 		} else {
 			var ok bool
-			ok, leftVal = convertValue(leftOperand, rightOperand)
+			ok, leftVal = convertValue(leftOperand, rightOperand.GetType())
 			if !ok {
 				return false
 			}
@@ -287,7 +366,7 @@ func (c *ConditionParams) Validate() error {
 
 func canCompare(condition *Condition) bool {
 	return haveAllowedOperator(condition) &&
-		haveIdenticalOperandTypes(condition.LeftOperand, condition.RightOperand)
+		haveIdenticalOperandTypesOrCanBeConverted(condition.LeftOperand, condition.RightOperand)
 }
 
 func haveAllowedOperator(condition *Condition) bool {
@@ -312,27 +391,43 @@ func operandHaveAllowedOperator(operand Operand, operatorType string) bool {
 	return false
 }
 
-func haveIdenticalOperandTypes(leftOperand, rightOperand Operand) bool {
-	eqTypes := leftOperand.GetType() == rightOperand.GetType()
-	canBeConverted, _ := convertValue(leftOperand, rightOperand)
-	return eqTypes || canBeConverted
+func haveIdenticalOperandTypesOrCanBeConverted(leftOperand, rightOperand Operand) bool {
+	canBeConverted, _ := convertValue(leftOperand, rightOperand.GetType())
+	return haveEqualOperandTypes(leftOperand, rightOperand) || canBeConverted
 }
 
-func convertValue(original, convertTo Operand) (canBeConverted bool, res interface{}) {
+func haveEqualOperandTypes(leftOperand, rightOperand Operand) bool {
+	return leftOperand.GetType() == rightOperand.GetType()
+}
+
+func convertValue(original Operand, newOperandType string) (canBeConverted bool, res interface{}) {
+	var originalValue = original.GetValue()
 	switch original.GetType() {
 	case stringOperandType:
-		switch convertTo.GetType() {
+		switch newOperandType {
 		case stringOperandType:
-			return true, original.GetValue()
+			return true, originalValue
 		case booleanOperandType:
-			return true, original.GetValue() == "true"
+			return true, originalValue == "true"
+		case integerOperandType:
+			val, err := strconv.ParseFloat(originalValue.(string), 32)
+			if err != nil {
+				return false, nil
+			}
+			return true, val
+		case floatOperandType:
+			val, err := strconv.ParseFloat(originalValue.(string), 32)
+			if err != nil {
+				return false, nil
+			}
+			return true, val
 		default:
 			return false, nil
 		}
 	case booleanOperandType:
-		switch convertTo.GetType() {
+		switch newOperandType {
 		case booleanOperandType:
-			return true, original.GetValue()
+			return true, originalValue
 		case stringOperandType:
 			val := original.GetValue()
 			if val != nil {
@@ -342,6 +437,43 @@ func convertValue(original, convertTo Operand) (canBeConverted bool, res interfa
 		default:
 			return false, nil
 		}
+	case integerOperandType:
+		switch newOperandType {
+		case integerOperandType:
+			return true, originalValue
+		case stringOperandType:
+			val := originalValue
+			if val != nil {
+				// float64 type goes from map[string]interface{} unmarshaller
+				// so first thing first we'll cast to float64, then to integer
+				if floatVal, ok := val.(float64); ok {
+					val = fmt.Sprintf("%d", int(floatVal))
+					return true, val
+				} else {
+
+				}
+			}
+			return false, nil
+		default:
+			return false, nil
+		}
+	case floatOperandType:
+		switch newOperandType {
+		case floatOperandType:
+			return true, originalValue
+		case stringOperandType:
+			val := originalValue
+			if val != nil {
+				if floatVal, ok := val.(float64); ok {
+					val = strconv.FormatFloat(floatVal, 'f', -1, 64)
+					return true, val
+				}
+			}
+			return false, nil
+		default:
+			return false, nil
+		}
 	}
+
 	return false, nil
 }
