@@ -34,21 +34,6 @@ const (
 	RequestInfoAnswer   RequestInfoType = "answer"
 )
 
-type RequestInfoUpdateParams struct {
-	Comment string          `json:"comment"`
-	ReqType RequestInfoType `json:"req_type"`
-}
-
-type ExecutionUpdateParams struct {
-	Decision ExecutionDecision `json:"decision"`
-	Comment  string            `json:"comment"`
-}
-
-type ExecutorChangeParams struct {
-	NewExecutorLogin string `json:"new_executor_login"`
-	Comment          string `json:"comment"`
-}
-
 type RequestInfoType string
 
 type ExecutionDecision string
@@ -58,10 +43,11 @@ func (a ExecutionDecision) String() string {
 }
 
 type RequestExecutionInfoLog struct {
-	Login     string          `json:"login"`
-	Comment   string          `json:"comment"`
-	CreatedAt time.Time       `json:"created_at"`
-	ReqType   RequestInfoType `json:"req_type"`
+	Login       string          `json:"login"`
+	Comment     string          `json:"comment"`
+	CreatedAt   time.Time       `json:"created_at"`
+	ReqType     RequestInfoType `json:"req_type"`
+	Attachments []string        `json:"attachments"`
 }
 
 type ChangeExecutorLog struct {
@@ -111,7 +97,7 @@ func (a *ExecutionData) SetDecision(login string, decision ExecutionDecision, co
 	return nil
 }
 
-func (a *ExecutionData) SetRequestExecutionInfo(login, comment string, reqType RequestInfoType) error {
+func (a *ExecutionData) SetRequestExecutionInfo(login, comment string, reqType RequestInfoType, attach []string) error {
 	_, ok := a.Executors[login]
 	if !ok && reqType == RequestInfoQuestion {
 		return fmt.Errorf("%s not found in executors", login)
@@ -122,10 +108,11 @@ func (a *ExecutionData) SetRequestExecutionInfo(login, comment string, reqType R
 	}
 
 	a.RequestExecutionInfoLogs = append(a.RequestExecutionInfoLogs, RequestExecutionInfoLog{
-		Login:     login,
-		Comment:   comment,
-		CreatedAt: time.Now(),
-		ReqType:   reqType,
+		Login:       login,
+		Comment:     comment,
+		CreatedAt:   time.Now(),
+		ReqType:     reqType,
+		Attachments: attach,
 	})
 
 	return nil

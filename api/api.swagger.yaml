@@ -513,9 +513,14 @@ components:
         comment:
           type: string
           description: Comment from executor
+        attachments:
+          type: array
+          items:
+            type: string
       required:
         - reqType
         - comment
+        - attachments
 
     sdApplicationParams:
       type: object

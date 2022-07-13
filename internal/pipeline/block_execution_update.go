@@ -60,6 +60,11 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 	return nil, nil
 }
 
+type ExecutorChangeParams struct {
+	NewExecutorLogin string `json:"new_executor_login"`
+	Comment          string `json:"comment"`
+}
+
 func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpdateData, step *entity.Step) (err error) {
 	if _, isExecutor := gb.State.Executors[data.ByLogin]; !isExecutor {
 		return fmt.Errorf("can't change executor, user %s in not executor", data.ByLogin)
@@ -99,6 +104,11 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 	})
 
 	return err
+}
+
+type ExecutionUpdateParams struct {
+	Decision ExecutionDecision `json:"decision"`
+	Comment  string            `json:"comment"`
 }
 
 func (gb *GoExecutionBlock) updateExecutionDecision(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) error {
@@ -142,6 +152,12 @@ type updateRequestExecutionInfoDto struct {
 	step *entity.Step
 }
 
+type RequestInfoUpdateParams struct {
+	Comment     string          `json:"comment"`
+	ReqType     RequestInfoType `json:"req_type"`
+	Attachments []string        `json:"attachments"`
+}
+
 func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto updateRequestExecutionInfoDto) (err error) {
 	var updateParams RequestInfoUpdateParams
 	err = json.Unmarshal(dto.data.Parameters, &updateParams)
@@ -153,6 +169,7 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 		dto.data.ByLogin,
 		updateParams.Comment,
 		updateParams.ReqType,
+		updateParams.Attachments,
 	); errSet != nil {
 		return errSet
 	}
