@@ -21,7 +21,7 @@
   "output": [],
   "pipeline": {
     "blocks": {
-      "start": {
+      "start_0": {
         "x": 587,
         "y": 288,
         "input": [],
@@ -44,10 +44,10 @@
         ],
         "block_type": "go",
         "title": "start",
+        "type_id": "start",
         "next": {
           "default": [
-            "action-1",
-            "action-2"
+            "action-1"
           ]
         }
       },
@@ -74,51 +74,12 @@
         ],
         "block_type": "go",
         "title": "go_test_block",
+        "type_id": "go_test_block",
         "next": {
           "default": [
-            "wait_for_all_inputs-1"
+            "end-1"
           ]
         }
-      },
-      "action-2": {
-        "x": 587,
-        "y": 288,
-        "input": [],
-        "output": [
-          {
-            "name": "action",
-            "type": "string",
-            "global": "const-lock-3g_0.action"
-          },
-          {
-            "name": "pause_1",
-            "type": "number",
-            "global": "const-lock-3g_0.pause_1"
-          },
-          {
-            "name": "pause_2",
-            "type": "number",
-            "global": "const-lock-3g_0.pause_2"
-          }
-        ],
-        "block_type": "go",
-        "title": "go_test_block",
-        "next": {
-          "default": [
-            "wait_for_all_inputs-1"
-          ]
-        }
-      },
-      "wait_for_all_inputs-1": {
-        "x": 587,
-        "y": 288,
-        "input": [],
-        "output": [],
-        "block_type": "go",
-        "title": "wait_for_all_inputs",
-        "next": [
-          "end-1"
-        ]
       },
       "end-1": {
         "x": 587,
@@ -143,9 +104,10 @@
         ],
         "block_type": "go",
         "title": "end",
+        "type_id": "end",
         "next": {}
       }
     },
-    "entrypoint": "start"
+    "entrypoint": "start_0"
   }
 }
