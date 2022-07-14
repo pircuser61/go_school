@@ -154,7 +154,7 @@ func (s *Service) pathBuilder(mainpath, subpath string) (string, error) {
 }
 
 func (s *Service) GetUserEmail(ctx context.Context, username string) (string, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "GetUser")
+	ctxLocal, span := trace.StartSpan(ctx, "GetUserEmail")
 	defer span.End()
 
 	users, err := s.getUser(ctxLocal, username)

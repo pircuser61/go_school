@@ -208,8 +208,13 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 	}
 
 	if updateParams.ReqType == RequestInfoQuestion {
+		authorEmail, err := gb.Pipeline.People.GetUserEmail(ctx, dto.data.Author)
+		if err != nil {
+			return err
+		}
+
 		tpl := mail.NewRequestExecutionInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
-		err = gb.Pipeline.Sender.SendNotification(ctx, []string{dto.data.Author}, tpl)
+		err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, tpl)
 		if err != nil {
 			return err
 		}
