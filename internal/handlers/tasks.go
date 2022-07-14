@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"io"
 	"net/http"
 	"strconv"
@@ -150,9 +149,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 }
 
 func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err error) {
-	//ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
-
-	ui := sso.UserInfo{Username: "rapetrin1"}
+	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
 	if err != nil {
 		return filters, err
 	}
