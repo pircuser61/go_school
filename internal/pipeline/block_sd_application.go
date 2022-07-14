@@ -148,7 +148,7 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 			},
 			{
 				Name:    keyOutputSdApplication,
-				Type:    "string",
+				Type:    "object",
 				Comment: "application body",
 			},
 		},
