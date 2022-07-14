@@ -101,18 +101,26 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 }
 
 // TODO: rewrite
-func getInputBlocks(pipeline *ExecutablePipeline, name string) (inputBlocks []string) {
-	for bName := range pipeline.PipelineModel.Pipeline.Blocks {
-		b := pipeline.PipelineModel.Pipeline.Blocks[bName]
-		for _, nn := range b.Next {
-			for _, n := range nn {
-				if n == name {
-					inputBlocks = append(inputBlocks, bName)
+func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string) {
+	var handleKey func(key string)
+	handleKey = func(key string) {
+		for _, bb := range pipeline.PipelineModel.Pipeline.Blocks[key].Next {
+			addKey := false
+			for _, b := range bb {
+				if b == name {
+					addKey = true
+					continue
 				}
+				handleKey(b)
+			}
+			if addKey {
+				entries = append(entries, key)
 			}
 		}
 	}
-	return
+	handleKey(pipeline.EntryPoint)
+
+	return entries
 }
 
 func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) *GoWaitForAllInputsBlock {

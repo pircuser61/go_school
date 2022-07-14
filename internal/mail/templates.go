@@ -1,6 +1,8 @@
 package mail
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	TaskUrlTemplate = "%s/applications/details/%s"
@@ -84,8 +86,8 @@ func NewApplicationInitiatorStatusNotification(id, name, action, description, sd
 		Subject: fmt.Sprintf("Заявка %s %s", id, action),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>{{.Action}}</b><br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
-				Текст заявки:<br>
-				{{.Description}}`,
+				Текст заявки:<br><br>
+				<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
 		Variables: struct {
 			Id          string `json:"id"`
 			Name        string `json:"name"`
@@ -108,8 +110,8 @@ func NewApplicationPersonStatusNotification(id, name, action, deadline, descript
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
 				Срок {{.Action}} до {{.Deadline}}<br>
-				Текст заявки:<br>
-				{{.Description}}`,
+				Текст заявки:<br><br>
+				<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
 		Variables: struct {
 			Id          string `json:"id"`
 			Name        string `json:"name"`
