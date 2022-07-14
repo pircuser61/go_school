@@ -2411,12 +2411,13 @@ func (db *PGConnection) CheckTaskStepsExecuted(ctx context.Context, workNumber s
 	FROM pipeliner.variable_storage vs 
 	JOIN pipeliner.works w on w.id = vs.work_id
 	WHERE w.work_number = $1 AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success', 'skipped')`
+	// TODO: rewrite to handle edits ?
 
 	var c int
 	if scanErr := conn.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
 		return false, err
 	}
-	return c == len(blocks), nil
+	return c > len(blocks), nil
 }
 
 func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {

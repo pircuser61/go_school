@@ -404,7 +404,7 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 		},
 	}
 
-	result := make(map[TypeCast]CastFunction, 0)
+	result := make(map[TypeCast]CastFunction)
 
 	for k, v := range castFunctions {
 		if k.From == operandDataType {
