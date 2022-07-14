@@ -220,5 +220,23 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 		}
 	}
 
+	if updateParams.ReqType == RequestInfoAnswer {
+		emails := make([]string, 0, len(gb.State.Executors))
+		for executor := range gb.State.Executors {
+			email, emailErr := gb.Pipeline.People.GetUserEmail(ctx, executor)
+			if emailErr != nil {
+				continue
+			}
+
+			emails = append(emails, email)
+		}
+
+		tpl := mail.NewAnswerExecutionInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+		err = gb.Pipeline.Sender.SendNotification(ctx, emails, tpl)
+		if err != nil {
+			return err
+		}
+	}
+
 	return err
 }
