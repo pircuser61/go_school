@@ -2417,7 +2417,7 @@ func (db *PGConnection) CheckTaskStepsExecuted(ctx context.Context, workNumber s
 	if scanErr := conn.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
 		return false, err
 	}
-	return c > len(blocks), nil
+	return c == len(blocks), nil
 }
 
 func (db *PGConnection) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
