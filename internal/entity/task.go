@@ -38,6 +38,12 @@ type EriusTasksPage struct {
 	Total int         `json:"total"`
 }
 
+type CountTasks struct {
+	TotalActive   int `json:"active"`
+	TotalApprover int `json:"approve"`
+	TotalExecutor int `json:"execute"`
+}
+
 type EriusTask struct {
 	ID            uuid.UUID              `json:"id"`
 	VersionID     uuid.UUID              `json:"version_id"`
