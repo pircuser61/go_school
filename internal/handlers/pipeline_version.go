@@ -295,7 +295,6 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-
 type RunNewVersionByPrevVersionRequest struct {
 	BlueprintID     string                 `json:"blueprint_id"`
 	Description     string                 `json:"description"`
@@ -337,7 +336,6 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 
 		return
 	}
-
 }
 
 // @Summary Delete Version
