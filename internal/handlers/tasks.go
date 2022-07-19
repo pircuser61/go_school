@@ -278,6 +278,50 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// GetTasksCount
+// @Summary Get amount of tasks
+// @Description Получить количество задач по каждой категории
+// @Tags pipeline, tasks
+// @ID      get-tasks-count
+// @Produce json
+// @success 200 {object} httpResponse{data=entity.CountTasks}
+// @Failure 400 {object} httpError
+// @Failure 401 {object} httpError
+// @Failure 500 {object} httpError
+// @Router /tasks/count [get]
+//nolint:dupl //diff logic
+func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
+	if err != nil {
+		e := GetUserinfoErr
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	resp, err := ae.DB.GetTasksCount(ctx, ui.Username)
+	if err != nil {
+		e := GetTasksCountError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 // GetPipelineTasks
 // @Summary Get Pipeline Tasks
 // @Description Получить задачи по сценарию

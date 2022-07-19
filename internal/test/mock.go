@@ -939,6 +939,10 @@ func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter) (*entity
 	return nil, errNotImplemented
 }
 
+func (m *MockDB) GetTasksCount(c context.Context, userName string) (*entity.CountTasks, error) {
+	return nil, errNotImplemented
+}
+
 func (m *MockDB) CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error) {
 	return false, nil
 }

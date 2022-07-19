@@ -274,6 +274,7 @@ func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *hand
 				r.Get("/last-by-version/{versionID}", pipeliner.LastVersionDebugTask)
 				r.Get("/pipeline/{pipelineID}", pipeliner.GetPipelineTasks)
 				r.Get("/version/{versionID}", pipeliner.GetVersionTasks)
+				r.Get("/count", pipeliner.GetTasksCount)
 			})
 			r.Route("/debug/", func(r chi.Router) {
 				r.Post("/run", pipeliner.StartDebugTask)
