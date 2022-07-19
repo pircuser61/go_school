@@ -399,16 +399,15 @@ components:
         - global
 
     approverType:
-      type: string
-      enum:
-        - user
-        - group
-        - head
-      description: >
-        Approver type:
-         * user - Single user
-         * group - Approver group ID
-         * head - Receiver's head
+        type: string
+        description: >
+          Approver type:
+           * User - Single user
+           * Group - Approver group ID
+           * Head - Receiver's head
+           * FromSchema - Selected by initiator
+        enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
+        x-enum-varnames: [ "User", "Group", "Head", "FromSchema" ]
 
     approverDecision:
       type: string
