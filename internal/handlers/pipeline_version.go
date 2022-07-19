@@ -296,6 +296,7 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 }
 
 type RunNewVersionByPrevVersionRequest struct {
+	WorkNumber      string                 `json:"work_number"`
 	BlueprintID     string                 `json:"blueprint_id"`
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
