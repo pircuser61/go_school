@@ -8,4 +8,5 @@ const (
 	DefaultSocket     = "default"
 	trueSocket        = "true"
 	falseSocket       = "false"
+	editAppSocket     = "edit_app"
 )

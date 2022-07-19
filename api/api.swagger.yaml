@@ -445,6 +445,9 @@ components:
           minimum: 1
         auto_action:
           $ref: '#/components/schemas/approveAutoAction'
+        repeat_prev_decision:
+          type: boolean
+          description: Repeat prev decision after editing application
       required:
         - type
         - approver

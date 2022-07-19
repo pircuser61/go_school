@@ -295,6 +295,51 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+
+type RunNewVersionByPrevVersionRequest struct {
+	BlueprintID     string                 `json:"blueprint_id"`
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+}
+
+func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "run_new_version_by_prev_version")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	req := &RunNewVersionByPrevVersionRequest{}
+
+	err = json.Unmarshal(body, req)
+	if err != nil {
+		e := BodyParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if req.BlueprintID == "" {
+		e := ValidationError
+		log.Error(e.errorMessage(errors.New("blueprintID is empty")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+}
+
 // @Summary Delete Version
 // @Description Удалить версию
 // @Tags version

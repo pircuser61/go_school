@@ -50,6 +50,12 @@ type Approver struct {
 	Comment  *string           `json:"comment,omitempty"`
 }
 
+type EditingApp struct {
+	Author    string    `json:"author"`
+	Comment   string    `json:"comment"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type ApproverData struct {
 	Type           script.ApproverType `json:"type"`
 	Approvers      map[string]struct{} `json:"approvers"`
@@ -63,6 +69,9 @@ type ApproverData struct {
 	DidSLANotification bool `json:"did_sla_notification"`
 
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
+
+	RepeatPrevDecision bool        `json:"repeat_prev_decision"`
+	EditingApp         *EditingApp `json:"editing_app,omitempty"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -375,10 +384,16 @@ func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
 		key = approvedSocket
 	}
+
+	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {
+		key = editAppSocket
+	}
+
 	nexts, ok := gb.Nexts[key]
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -496,7 +511,7 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 				SLA:      0,
 			},
 		},
-		Sockets: []string{approvedSocket, rejectedSocket},
+		Sockets: []string{approvedSocket, rejectedSocket, editAppSocket},
 	}
 }
 
