@@ -1180,6 +1180,24 @@ components:
         - tasks
         - total
 
+    tasksCount:
+      type: object
+      description: Tasks ammount
+      properties:
+        active:
+          type: integer
+          description: Amount of active tasks
+        approve:
+          type: integer
+          description: Amount of tasks to approve
+        execute:
+          type: integer
+          description: Amount of tasks to execute
+      required:
+        - active
+        - approve
+        - execute
+
     debugRunData:
       type: object
       description: Data to start debugging
@@ -1466,7 +1484,20 @@ components:
                 $ref: '#/components/schemas/debugTask'
             required:
               - status_code
-
+    TasksCountResp:
+      description: Page with tasks
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: integer
+                description: Internal status code
+              data:
+                $ref: '#/components/schemas/tasksCount'
+            required:
+              - status_code
     BadRequestError:
       description: Got bad request data
       content:
@@ -2056,6 +2087,23 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/TasksResp'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/AccessTokenError'
+        500:
+          $ref: '#/components/responses/WentWrongError'
+
+  /tasks/count:
+    get:
+      operationId: GetTasksCount
+      summary: Get tasks amount
+      description: Get tasks amount
+      tags:
+        - tasks
+      responses:
+        200:
+          $ref: '#/components/responses/TasksCountResp'
         400:
           $ref: '#/components/responses/BadRequestError'
         401:
