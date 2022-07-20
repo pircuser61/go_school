@@ -51,7 +51,7 @@ type Approver struct {
 }
 
 type EditingApp struct {
-	Author    string    `json:"author"`
+	Approver  string    `json:"approver"`
 	Comment   string    `json:"comment"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -70,6 +70,7 @@ type ApproverData struct {
 
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 
+	ShowActionEditApp  bool        `json:"show_action_edit_app"`
 	RepeatPrevDecision bool        `json:"repeat_prev_decision"`
 	EditingApp         *EditingApp `json:"editing_app,omitempty"`
 }

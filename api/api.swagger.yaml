@@ -447,11 +447,15 @@ components:
           $ref: '#/components/schemas/approveAutoAction'
         repeat_prev_decision:
           type: boolean
-          description: Repeat prev decision after editing application
+        show_action_edit_app:
+          type: boolean
+          description: Show action edit application in SD
       required:
         - type
         - approver
         - sla
+        - repeat_prev_decision
+        - show_action_edit_app
 
     approveAutoAction:
       type: string
