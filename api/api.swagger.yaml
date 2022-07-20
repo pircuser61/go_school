@@ -447,7 +447,7 @@ components:
           $ref: '#/components/schemas/approveAutoAction'
         repeat_prev_decision:
           type: boolean
-        show_action_edit_app:
+        is_editable:
           type: boolean
           description: Show action edit application in SD
       required:
@@ -455,7 +455,7 @@ components:
         - approver
         - sla
         - repeat_prev_decision
-        - show_action_edit_app
+        - is_editable
 
     approveAutoAction:
       type: string
