@@ -150,6 +150,7 @@ components:
       description: Res offset
       schema:
         type: integer
+        default: 0
 
   schemas:
     timePeriod:
@@ -198,6 +199,7 @@ components:
     runVersionsByBlueprintIdRequest:
       type: object
       description: Data for run versions by blueprint_id
+      required: [blueprint_id, description, application_body]
       properties:
         blueprint_id:
           type: string
@@ -209,7 +211,6 @@ components:
         application_body:
           type: object
           description: template fields with values. map key - value
-          additionalProperties: true
 
     tagInfo:
       type: object
@@ -1735,9 +1736,6 @@ paths:
           $ref: '#/components/responses/WentWrongError'
 
   /pipelines/version:
-    parameters:
-      - $ref: '#/components/parameters/pipelineID'
-
     put:
       operationId: EditVersion
       summary: Edit pipeline version
@@ -2139,9 +2137,6 @@ paths:
           $ref: '#/components/responses/WentWrongError'
 
   /debug/run:
-    parameters:
-      - $ref: '#/components/parameters/versionID'
-
     post:
       operationId: StartDebugTask
       summary: Start debug task
