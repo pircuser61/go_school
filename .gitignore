@@ -358,5 +358,3 @@ main
 
 *-local.yaml
 .build/
-
-api/api.go
