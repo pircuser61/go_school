@@ -279,6 +279,7 @@ func (gb *GoApproverBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx 
 	return false, nil
 }
 
+//nolint:gocyclo //ok
 func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
 	ctx, s := trace.StartSpan(ctx, "run_go_approver_block")
 	defer s.End()
@@ -322,7 +323,8 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 
 	if state.Type == script.ApproverTypeFromSchema {
 		// get approver from application body
-		allVariables, err := runCtx.GrabStorage()
+		var allVariables map[string]interface{}
+		allVariables, err = runCtx.GrabStorage()
 		if err != nil {
 			return errors.Wrap(err, "Unable to grab variables storage")
 		}

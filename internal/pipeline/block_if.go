@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
