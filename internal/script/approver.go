@@ -29,6 +29,9 @@ type ApproverParams struct {
 
 	SLA        int         `json:"sla"`
 	AutoAction *AutoAction `json:"auto_action,omitempty"`
+
+	IsEditable         bool `json:"is_editable"`
+	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 }
 
 func (a *ApproverParams) Validate() error {

@@ -526,6 +526,8 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, pipeline *Executab
 		LeftToNotify: map[string]struct{}{
 			params.Approver: {},
 		},
+		IsEditable:         params.IsEditable,
+		RepeatPrevDecision: params.RepeatPrevDecision,
 	}
 
 	return b, nil
