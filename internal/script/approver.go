@@ -3,6 +3,7 @@ package script
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type ApproverType string
@@ -14,10 +15,10 @@ func (a ApproverType) String() string {
 type AutoAction string
 
 const (
-	ApproverTypeUser       ApproverType = "User"
-	ApproverTypeGroup      ApproverType = "Group"
-	ApproverTypeHead       ApproverType = "Head"
-	ApproverTypeFromSchema ApproverType = "FromSchema"
+	ApproverTypeUser       ApproverType = "user"
+	ApproverTypeGroup      ApproverType = "group"
+	ApproverTypeHead       ApproverType = "head"
+	ApproverTypeFromSchema ApproverType = "fromSchema"
 
 	AutoActionApprove AutoAction = "approve"
 	AutoActionReject  AutoAction = "reject"
@@ -39,10 +40,12 @@ func (a *ApproverParams) Validate() error {
 		return errors.New("approver is empty")
 	}
 
-	if a.Type != ApproverTypeUser &&
-		a.Type != ApproverTypeGroup &&
-		a.Type != ApproverTypeHead &&
-		a.Type != ApproverTypeFromSchema {
+	typeApprove := ApproverType(strings.ToLower(a.Type.String()))
+
+	if typeApprove != ApproverTypeUser &&
+		typeApprove != ApproverTypeGroup &&
+		typeApprove != ApproverTypeHead &&
+		typeApprove != ApproverTypeFromSchema {
 		return fmt.Errorf("unknown approver type: %s", a.Type)
 	}
 
