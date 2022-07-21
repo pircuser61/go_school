@@ -320,6 +320,27 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
+	if state.Type == script.ApproverTypeFromSchema {
+		// get approver from application body
+		allVariables, err := runCtx.GrabStorage()
+		if err != nil {
+			return errors.Wrap(err, "Unable to grab variables storage")
+		}
+
+		for approverVariableRef := range state.Approvers {
+			approverVar := getVariable(allVariables, approverVariableRef)
+
+			if approverVar == nil {
+				return errors.Wrap(err, "Unable to find approver by variable reference")
+			}
+
+			if actualApproverUsername, ok := approverVar.(string); ok {
+				state.Approvers[actualApproverUsername] = state.Approvers[approverVariableRef]
+				delete(state.Approvers, approverVariableRef)
+			}
+		}
+	}
+
 	gb.State = &state
 
 	handled, err := gb.handleSLA(ctx, id, stepCtx)
@@ -530,10 +551,6 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, pipeline *Executab
 
 	if err = params.Validate(); err != nil {
 		return nil, errors.Wrap(err, "invalid approver parameters")
-	}
-
-	if params.Type == script.ApproverTypeFromSchema {
-
 	}
 
 	// TODO add support for group
