@@ -109,10 +109,12 @@ const (
 	TaskUpdateActionExecution            TaskUpdateAction = "execution"
 	TaskUpdateActionChangeExecutor       TaskUpdateAction = "change_executor"
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
+	TaskUpdateActionSendEditApp          TaskUpdateAction = "send_edit_app"
+	TaskUpdateActionCreateNewWork        TaskUpdateAction = "create_new_work"
 )
 
 type TaskUpdate struct {
-	Action     TaskUpdateAction `json:"action" enums:"approvement" example:"approvement"`
+	Action     TaskUpdateAction `json:"action" enums:"approvement,execution,change_executor,request_execution_info"`
 	Parameters json.RawMessage  `json:"parameters" swaggertype:"object"`
 }
 
@@ -120,6 +122,8 @@ func (t *TaskUpdate) Validate() error {
 	if t.Action != TaskUpdateActionApprovement &&
 		t.Action != TaskUpdateActionExecution &&
 		t.Action != TaskUpdateActionRequestExecutionInfo &&
+		t.Action != TaskUpdateActionSendEditApp &&
+		t.Action != TaskUpdateActionCreateNewWork &&
 		t.Action != TaskUpdateActionChangeExecutor {
 		return errors.New("unknown action")
 	}

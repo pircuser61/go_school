@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -64,7 +64,7 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
@@ -125,7 +125,7 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
