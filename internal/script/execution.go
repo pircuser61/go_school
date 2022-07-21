@@ -3,6 +3,7 @@ package script
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type ExecutionType string
@@ -28,7 +29,11 @@ func (a *ExecutionParams) Validate() error {
 		return errors.New("executor is empty")
 	}
 
-	if a.Type != ExecutionTypeUser && a.Type != ExecutionTypeGroup {
+
+	typeExecution := ExecutionType(strings.ToLower(a.Type.String()))
+
+
+	if typeExecution != ExecutionTypeUser && typeExecution != ExecutionTypeGroup {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
 	}
 
