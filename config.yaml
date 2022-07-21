@@ -18,6 +18,17 @@ database:
   max_connections: 10
   timeout: 10
 
+mail:
+  broker: "redis"
+  host: "redis-mail"
+  port: 6379
+  queue: "mail"
+  database: "0"
+  from:
+    name: "Service Desk"
+    email: "servicedesk_noreply@mts.ru"
+  sd_address: "https://dev.servicedesk.mts.ru"
+
 swagger:
   base_path: '/api/pipeliner/v1'
   version: '0.1'
