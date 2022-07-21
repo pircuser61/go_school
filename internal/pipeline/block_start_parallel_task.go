@@ -10,7 +10,7 @@ import (
 )
 
 type SyncDataStart struct {
-	OutcomeBlockIds []string `json:"incoming_block_ids"`
+	OutcomeBlockIds []string `json:"outcoming_block_ids"`
 	done            bool
 }
 
