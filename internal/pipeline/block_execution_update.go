@@ -40,19 +40,19 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 	gb.State = &state
 
 	if data.Action == string(entity.TaskUpdateActionExecution) {
-		if err = gb.updateExecutionDecision(ctx, data, step); err != nil {
+		if err := gb.updateExecutionDecision(ctx, data, step); err != nil {
 			return nil, err
 		}
 	}
 
 	if data.Action == string(entity.TaskUpdateActionChangeExecutor) {
-		if err = gb.changeExecutor(ctx, data, step); err != nil {
+		if err := gb.changeExecutor(ctx, data, step); err != nil {
 			return nil, err
 		}
 	}
 
 	if data.Action == string(entity.TaskUpdateActionRequestExecutionInfo) {
-		if err = gb.updateRequestExecutionInfo(ctx, updateRequestExecutionInfoDto{data, step}); err != nil {
+		if err := gb.updateRequestExecutionInfo(ctx, updateRequestExecutionInfoDto{data, step}); err != nil {
 			return nil, err
 		}
 	}

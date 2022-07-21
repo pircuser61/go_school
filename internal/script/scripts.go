@@ -3,7 +3,7 @@ package script
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -71,7 +71,7 @@ func GetReadyFuncs(ctx context.Context, scriptManager string, httpClient *http.C
 		return nil, err
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
 	if err != nil {

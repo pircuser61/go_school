@@ -3,14 +3,14 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -103,8 +103,9 @@ func (gb *GoApproverBlock) setEditingApp(ctx c.Context, dto *setEditingAppDTO) e
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	if err = gb.State.SetEditingApp(dto.approver, dto.updateParams.Comment, dto.updateParams.Attachments); err != nil {
-		return err
+	errSet := gb.State.SetEditingApp(dto.approver, dto.updateParams.Comment, dto.updateParams.Attachments)
+	if errSet != nil {
+		return errSet
 	}
 
 	step.State[gb.Name], err = json.Marshal(gb.State)

@@ -101,7 +101,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	return nil
 }
 
-func (a *ApproverData) SetEditingApp(login string, comment string, attachments []string) error {
+func (a *ApproverData) SetEditingApp(login, comment string, attachments []string) error {
 	_, ok := a.Approvers[login]
 	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
