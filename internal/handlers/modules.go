@@ -80,7 +80,6 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		notificationBlock.Model(),
 		ifBlock.Model(),
 		startParallelTaskBlock.Model(),
-		// ljf,dbnm
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
