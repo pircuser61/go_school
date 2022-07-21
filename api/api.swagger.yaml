@@ -529,6 +529,25 @@ components:
         - comment
         - attachments
 
+    sendEditAppUpdateParams:
+      type: object
+      description: Send application to edit from approver
+      properties:
+        comment:
+          type: string
+          description: Comment from approver
+        attachments:
+          type: array
+          items:
+            type: string
+      required:
+        - comment
+        - attachments
+
+    createNewWorkUpdateParams:
+      type: object
+      description: Send edited application to new process
+
     sdApplicationParams:
       type: object
       description: SD Application params
@@ -1232,6 +1251,8 @@ components:
             - execution
             - change_executor
             - request_execution_info
+            - send_edit_app
+            - create_new_work
         parameters:
           type: object
           description: Task update params
@@ -1240,6 +1261,8 @@ components:
             - $ref: '#/components/schemas/executionUpdateParams'
             - $ref: '#/components/schemas/executorChangeParams'
             - $ref: '#/components/schemas/requestInfoUpdateParams'
+            - $ref: '#/components/schemas/sendEditAppUpdateParams'
+            - $ref: '#/components/schemas/createNewWorkUpdateParams'
       required:
         - action
         - parameters
