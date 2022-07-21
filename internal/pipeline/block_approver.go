@@ -532,6 +532,10 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, pipeline *Executab
 		return nil, errors.Wrap(err, "invalid approver parameters")
 	}
 
+	if params.Type == script.ApproverTypeFromSchema {
+
+	}
+
 	// TODO add support for group
 
 	b.State = &ApproverData{
