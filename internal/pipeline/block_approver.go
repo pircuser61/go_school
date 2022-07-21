@@ -473,9 +473,11 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockGoApproverID,
 			Params: &script.ApproverParams{
-				Approver: "",
-				Type:     "",
-				SLA:      0,
+				Approver:           "",
+				Type:               "",
+				SLA:                0,
+				IsEditable:         false,
+				RepeatPrevDecision: false,
 			},
 		},
 		Sockets: []string{approvedSocket, rejectedSocket, editAppSocket},
