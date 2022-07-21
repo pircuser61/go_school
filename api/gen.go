@@ -1,3 +1,3 @@
 //nolint
-//go:generate oapi-codegen -package api -generate types,chi-server,client -o api.gen.go api.swagger.yaml
+//go:generate oapi-codegen -package api -generate types,chi-server -o api.go api.swagger.yaml
 package api

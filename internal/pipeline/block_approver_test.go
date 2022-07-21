@@ -624,6 +624,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				data: &script.BlockUpdateData{
 					Id:         stepId,
 					ByLogin:    exampleApprover,
+					Action:     string(entity.TaskUpdateActionApprovement),
 					Parameters: []byte(`{"decision":"` + ApproverDecisionApproved.String() + `"}`),
 				},
 			},

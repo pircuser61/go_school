@@ -1,16 +1,12 @@
-package handlers
+package api
 
 import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/go-chi/chi/v5"
 
 	"github.com/google/uuid"
 
@@ -91,25 +87,12 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	return out
 }
 
-// GetTask
-// @Summary Get Task
-// @Description Получить экземпляр задачи
-// @Tags tasks
-// @ID      get-task
-// @Produce json
-// @Param workNumber path string true "work number"
-// @success 200 {object} httpResponse{data=eriusTaskResponse}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks/{workNumber} [get]
-func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	workNumber := chi.URLParam(req, "workNumber")
 	if workNumber == "" {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(errors.New("workNumber is empty")))
@@ -148,110 +131,13 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func compileGetTasksFilters(req *http.Request) (filters entity.TaskFilter, err error) {
-	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
-	if err != nil {
-		return filters, err
-	}
-	filters.CurrentUser = ui.Username
-
-	taskIDs := req.URL.Query().Get("taskIDs")
-	if taskIDs != "" {
-		ids := strings.Split(taskIDs, ",")
-		filters.TaskIDs = &ids
-	}
-
-	name := req.URL.Query().Get("name")
-	if name != "" {
-		filters.Name = &name
-	}
-
-	type created struct {
-		Start int `json:"start"`
-		End   int `json:"end"`
-	}
-
-	createdTime := req.URL.Query().Get("created")
-	if createdTime != "" {
-		var cr created
-		if unmErr := json.Unmarshal([]byte(createdTime), &cr); unmErr != nil {
-			return filters, unmErr
-		}
-
-		filters.Created = &entity.TimePeriod{
-			Start: cr.Start,
-			End:   cr.End,
-		}
-	}
-
-	order := req.URL.Query().Get("order")
-	if order != "" {
-		filters.Order = &order
-	}
-
-	archived := req.URL.Query().Get("archived")
-	if archived != "" {
-		a, convErr := strconv.ParseBool(archived)
-		if convErr != nil {
-			return filters, convErr
-		}
-		filters.Archived = &a
-	} else {
-		filters.Archived = nil
-	}
-
-	selectAs := req.URL.Query().Get("selectAs")
-	if selectAs != "" {
-		filters.SelectAs = &selectAs
-	}
-
-	lim := 10
-	limit := req.URL.Query().Get("limit")
-	if limit != "" {
-		lim, err = strconv.Atoi(limit)
-		if err != nil {
-			return
-		}
-	}
-	filters.Limit = &lim
-
-	off := 0
-	offset := req.URL.Query().Get("offset")
-	if offset != "" {
-		off, err = strconv.Atoi(offset)
-		if err != nil {
-			return
-		}
-	}
-	filters.Offset = &off
-
-	return
-}
-
-// GetTasks
-// @Summary Get Tasks
-// @Description Получить задачи
-// @Tags pipeline, tasks
-// @ID      get-tasks
-// @Produce json
-// @Param name query string false "Pipeline name"
-// @Param taskIDs query []string false "Task IDs"
-// @Param order query string false "Order"
-// @Param limit query string false "Limit"
-// @Param offset query string false "Offset"
-// @success 200 {object} httpResponse{data=entity.EriusTasksPage}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks [get]
-//nolint:dupl //diff logic
-func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	filters, err := compileGetTasksFilters(req)
+	filters, err := params.toEntity(req)
 	if err != nil {
 		e := BadFiltersError
 		log.Error(e.errorMessage(err))
@@ -278,18 +164,42 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// GetTasksCount
-// @Summary Get amount of tasks
-// @Description Получить количество задач по каждой категории
-// @Tags pipeline, tasks
-// @ID      get-tasks-count
-// @Produce json
-// @success 200 {object} httpResponse{data=entity.CountTasks}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks/count [get]
-//nolint:dupl //diff logic
+func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
+	var filters entity.TaskFilter
+
+	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
+	if err != nil {
+		return filters, err
+	}
+	filters.CurrentUser = ui.Username
+
+	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
+
+	filters.GetTaskParams = entity.GetTaskParams{
+		Name:     p.Name,
+		Created:  p.Created.toEntity(),
+		Order:    p.Order,
+		Limit:    &limit,
+		Offset:   &offset,
+		TaskIDs:  p.TaskIDs,
+		SelectAs: p.SelectAs,
+		Archived: p.Archived,
+	}
+
+	return filters, nil
+}
+
+func (c *Created) toEntity() *entity.TimePeriod {
+	var timePeriod *entity.TimePeriod
+	if c != nil {
+		timePeriod = &entity.TimePeriod{
+			Start: ptrToInt(c.Start),
+			End:   ptrToInt(c.End),
+		}
+	}
+	return timePeriod
+}
+
 func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
 	defer s.End()
@@ -322,28 +232,13 @@ func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// GetPipelineTasks
-// @Summary Get Pipeline Tasks
-// @Description Получить задачи по сценарию
-// @Tags pipeline, tasks
-// @ID      get-pipeline-tasks
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @success 200 {object} httpResponse{data=entity.EriusTasks}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks/pipeline/{pipelineID} [get]
-//nolint:dupl //diff logic
-func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tasks")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "pipelineID")
-
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(pipelineID)
 	if err != nil {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(err))
@@ -370,28 +265,13 @@ func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// GetVersionTasks
-// @Summary Get Version Tasks
-// @Description Получить задачи по версии сценарию
-// @Tags version, tasks
-// @ID      get-version-tasks
-// @Produce json
-// @Param versionID path string true "Version ID"
-// @success 200 {object} httpResponse{data=entity.EriusTasks}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks/version/{versionID} [get]
-//nolint:dupl //diff logic
-func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "versionID")
-
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(versionID)
 	if err != nil {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(err))
@@ -418,28 +298,13 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// UpdateTask
-// @Summary Update Task
-// @Description Update task
-// @Tags tasks
-// @ID update-task
-// @Accept json
-// @Produce json
-// @Param workNumber path string true "work number"
-// @Param data body entity.TaskUpdate true "Task update data"
-// @success 200 {object} httpResponse
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks/{workNumber} [post]
 //nolint:gocyclo //its ok here
-func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "update_task")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	workNumber := chi.URLParam(req, "workNumber")
 	if workNumber == "" {
 		e := WorkNumberParsingError
 		log.Error(e.errorMessage(errors.New("workNumber is empty")))

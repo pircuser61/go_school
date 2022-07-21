@@ -1,11 +1,10 @@
-package handlers
+package api
 
 import (
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"go.opencensus.io/trace"
@@ -23,26 +22,13 @@ type RunContext struct {
 	Parameters map[string]string `json:"parameters"`
 }
 
-// @Summary Active scheduler tasks
-// @Description Наличие у сценария активных заданий в шедулере
-// @Tags pipeline
-// @ID list-scheduler-tasks
-// @Accept json
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @Success 200 {object} httpResponse{data=entity.SchedulerTasksResponse}
-// @Failure 400 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/{pipelineID}/scheduler-tasks [post]
-func (ae *APIEnv) ListSchedulerTasks(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) ListSchedulerTasks(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "scheduler tasks list")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "pipelineID")
-
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(pipelineID)
 	if err != nil {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(err))
@@ -75,14 +61,6 @@ func (ae *APIEnv) ListSchedulerTasks(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// Metrics godoc
-// @Summary metrics
-// @Tags metrics
-// @Description Метрики
-// @ID serve-prometheus
-// @Produce plain
-// @Success 200 "metrics content"
-// @Router /api/pipeliner/v1/metrics [get]
 func (ae *APIEnv) ServePrometheus() http.Handler {
 	return promhttp.Handler()
 }

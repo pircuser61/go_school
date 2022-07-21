@@ -18,7 +18,7 @@
                     "metrics"
                 ],
                 "summary": "metrics",
-                "operationId": "metrics",
+                "operationId": "serve-prometheus",
                 "responses": {
                     "200": {
                         "description": "metrics content"
@@ -104,7 +104,7 @@
                     "debug"
                 ],
                 "summary": "Start debug task",
-                "operationId": "debug-task-run",
+                "operationId": "start-debug-task",
                 "parameters": [
                     {
                         "description": "debug request",
@@ -155,7 +155,7 @@
                 }
             }
         },
-        "/debug/{taskID}": {
+        "/debug/{workNumber}": {
             "get": {
                 "description": "Получить debug-задачу",
                 "produces": [
@@ -270,7 +270,7 @@
                     "modules"
                 ],
                 "summary": "Get list of modules usage",
-                "operationId": "modules-usage",
+                "operationId": "all-modules-usage",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -315,7 +315,7 @@
                     "modules"
                 ],
                 "summary": "Run Module By Name",
-                "operationId": "module-usage-by-name",
+                "operationId": "module-run",
                 "parameters": [
                     {
                         "type": "string",
@@ -534,7 +534,7 @@
                     "pipeline"
                 ],
                 "summary": "Edit Draft",
-                "operationId": "edit-draft",
+                "operationId": "edit-version",
                 "parameters": [
                     {
                         "description": "New draft",
@@ -586,34 +586,22 @@
                 }
             }
         },
-        "/pipelines/version/{pipelineID}": {
-            "post": {
-                "description": "Создать новую версию сценария",
-                "consumes": [
-                    "application/json"
-                ],
+        "/pipelines/version/{ID}": {
+            "get": {
+                "description": "Получить версию сценария по ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "version"
                 ],
-                "summary": "Create pipeline version",
-                "operationId": "create-version",
+                "summary": "Get pipeline version",
+                "operationId": "get-pipeline-version",
                 "parameters": [
                     {
-                        "description": "New version",
-                        "name": "pipeline",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/entity.EriusScenario"
-                        }
-                    },
-                    {
                         "type": "string",
-                        "description": "Pipeline ID",
-                        "name": "pipelineID",
+                        "description": "Version ID",
+                        "name": "ID",
                         "in": "path",
                         "required": true
                     }
@@ -656,24 +644,34 @@
                         }
                     }
                 }
-            }
-        },
-        "/pipelines/version/{versionID}": {
-            "get": {
-                "description": "Получить версию сценария по ID",
+            },
+            "post": {
+                "description": "Создать новую версию сценария",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "version"
                 ],
-                "summary": "Get pipeline version",
-                "operationId": "get-version",
+                "summary": "Create pipeline version",
+                "operationId": "create-pipeline-version",
                 "parameters": [
                     {
+                        "description": "New version",
+                        "name": "pipeline",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entity.EriusScenario"
+                        }
+                    },
+                    {
                         "type": "string",
-                        "description": "Version ID",
-                        "name": "versionID",
+                        "description": "Pipeline ID",
+                        "name": "ID",
                         "in": "path",
                         "required": true
                     }
@@ -731,7 +729,7 @@
                     {
                         "type": "string",
                         "description": "Version ID",
-                        "name": "versionID",
+                        "name": "ID",
                         "in": "path",
                         "required": true
                     }
@@ -883,7 +881,7 @@
                     "pipeline"
                 ],
                 "summary": "Active scheduler tasks",
-                "operationId": "pipeline-scheduler-tasks",
+                "operationId": "list-scheduler-tasks",
                 "parameters": [
                     {
                         "type": "string",
@@ -1214,7 +1212,22 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.RunVersionsByBlueprintIdResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.RunResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1568,18 +1581,6 @@
                     },
                     {
                         "type": "string",
-                        "description": "Created after",
-                        "name": "created[start]",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Created before",
-                        "name": "created[end]",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Order",
                         "name": "order",
                         "in": "query"
@@ -1637,6 +1638,58 @@
                 }
             }
         },
+        "/tasks/count": {
+            "get": {
+                "description": "Получить количество задач по каждой категории",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline",
+                    "tasks"
+                ],
+                "summary": "Get amount of tasks",
+                "operationId": "get-tasks-count",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/handlers.httpResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/entity.CountTasks"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.httpError"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/last-by-version/{versionID}": {
             "get": {
                 "description": "Получить последнюю debug-задачу версии сценария",
@@ -1647,7 +1700,7 @@
                     "tasks"
                 ],
                 "summary": "Get last debug task for version",
-                "operationId": "get-version-last-debug-task",
+                "operationId": "last-version-debug-task",
                 "parameters": [
                     {
                         "type": "string",
@@ -1819,7 +1872,7 @@
                 }
             }
         },
-        "/tasks/{taskID}": {
+        "/tasks/{workNumber}": {
             "get": {
                 "description": "Получить экземпляр задачи",
                 "produces": [
@@ -1829,7 +1882,7 @@
                     "tasks"
                 ],
                 "summary": "Get Task",
-                "operationId": "get-task-entity",
+                "operationId": "get-task",
                 "parameters": [
                     {
                         "type": "string",
@@ -1890,7 +1943,7 @@
                     "tasks"
                 ],
                 "summary": "Update Task",
-                "operationId": "update-task-entity",
+                "operationId": "update-task",
                 "parameters": [
                     {
                         "type": "string",
@@ -1953,6 +2006,20 @@
                 }
             }
         },
+        "entity.CountTasks": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "integer"
+                },
+                "approve": {
+                    "type": "integer"
+                },
+                "execute": {
+                    "type": "integer"
+                }
+            }
+        },
         "entity.DebugResult": {
             "type": "object",
             "properties": {
@@ -1989,9 +2056,6 @@
                     ],
                     "example": "python3"
                 },
-                "final": {
-                    "type": "string"
-                },
                 "input": {
                     "type": "array",
                     "items": {
@@ -1999,17 +2063,13 @@
                     }
                 },
                 "next": {
-                    "type": "string",
-                    "example": "send-data_0"
-                },
-                "on_false": {
-                    "type": "string"
-                },
-                "on_iter": {
-                    "type": "string"
-                },
-                "on_true": {
-                    "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 },
                 "output": {
                     "type": "array",
@@ -2022,6 +2082,10 @@
                 },
                 "params": {
                     "type": "object"
+                },
+                "short_title": {
+                    "type": "string",
+                    "example": "lock-bts"
                 },
                 "title": {
                     "type": "string",
@@ -2293,8 +2357,17 @@
                 "author": {
                     "type": "string"
                 },
+                "blueprint_id": {
+                    "type": "string"
+                },
                 "debug": {
                     "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "human_status": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "string"
@@ -2389,7 +2462,9 @@
                         "type": "string"
                     }
                 },
-                "output": {},
+                "output": {
+                    "type": "object"
+                },
                 "pipeline_id": {
                     "type": "string",
                     "format": "uuid",
@@ -2424,14 +2499,14 @@
                 "has_error": {
                     "type": "boolean"
                 },
-                "is_finished": {
-                    "type": "boolean"
-                },
                 "name": {
                     "type": "string"
                 },
                 "state": {
                     "type": "object"
+                },
+                "status": {
+                    "type": "string"
                 },
                 "steps": {
                     "type": "array",
@@ -2550,25 +2625,23 @@
                 }
             }
         },
-        "handlers.RunVersionsByBlueprintIdResponse": {
-            "type": "object",
-            "properties": {
-                "versions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entity.RunResponse"
-                    }
-                }
-            }
-        },
         "handlers.eriusTaskResponse": {
             "type": "object",
             "properties": {
                 "author": {
                     "type": "string"
                 },
+                "blueprint_id": {
+                    "type": "string"
+                },
                 "debug": {
                     "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "human_status": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "string"
@@ -2620,7 +2693,9 @@
         "handlers.httpResponse": {
             "type": "object",
             "properties": {
-                "data": {},
+                "data": {
+                    "type": "object"
+                },
                 "status_code": {
                     "type": "integer"
                 }
@@ -2638,14 +2713,14 @@
                 "has_error": {
                     "type": "boolean"
                 },
-                "is_finished": {
-                    "type": "boolean"
-                },
                 "name": {
                     "type": "string"
                 },
                 "state": {
                     "type": "object"
+                },
+                "status": {
+                    "type": "string"
                 },
                 "steps": {
                     "type": "array",
@@ -2680,12 +2755,6 @@
                         "$ref": "#/definitions/script.FunctionValueModel"
                     }
                 },
-                "next_funcs": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "outputs": {
                     "type": "array",
                     "items": {
@@ -2698,6 +2767,12 @@
                 "shape_type": {
                     "type": "integer"
                 },
+                "sockets": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "title": {
                     "type": "string"
                 }
@@ -2706,12 +2781,15 @@
         "script.FunctionParams": {
             "type": "object",
             "properties": {
-                "params": {},
+                "params": {
+                    "type": "object"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
                         "approver",
-                        "servicedesk_application"
+                        "servicedesk_application",
+                        "conditions"
                     ],
                     "example": "approver"
                 }
