@@ -3,8 +3,6 @@ package pipeline
 import (
 	"context"
 
-	"go.opencensus.io/trace"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -51,8 +49,8 @@ func (gb *GoStartParallelTaskBlock) IsScenario() bool {
 }
 
 func (gb *GoStartParallelTaskBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error {
-	ctx, s := trace.StartSpan(ctx, "run_go_block")
-	defer s.End()
+	//ctx, s := trace.StartSpan(ctx, "run_go_block")
+	//defer s.End()
 
 	runCtx.AddStep(gb.Name)
 	return nil
