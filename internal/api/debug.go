@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -19,33 +18,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-type DebugRunRequest struct {
-	WorkNumber  string   `json:"work_number"`
-	BreakPoints []string `json:"break_points"`
-	Action      string   `json:"action" example:"step_over,resume"`
-}
-
 func (d DebugRunRequest) Bind(_ *http.Request) error {
 	return nil
 }
 
-type CreateTaskRequest struct {
-	VersionID  uuid.UUID              `json:"version_id"`
-	Parameters map[string]interface{} `json:"parameters"`
-}
-
-// @Summary Start debug task
-// @Description Начать отладку
-// @Tags debug
-// @ID start-debug-task
-// @Accept json
-// @Produce json
-// @Param variables body DebugRunRequest false "debug request"
-// @Success 200 {object} httpResponse{data=entity.EriusTask}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /debug/run [post]
 func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "start debug task")
 	defer span.End()
@@ -123,18 +99,6 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Create debug task
-// @Description Создать сессию отладки
-// @Tags debug
-// @ID create-debug-task
-// @Accept json
-// @Produce json
-// @Param debug body CreateTaskRequest true "New debug task"
-// @Success 200 {object} httpResponse{data=entity.EriusTask}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /debug/ [post]
 func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "create debug task")
 	defer span.End()
@@ -163,8 +127,16 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+	vId, err := uuid.Parse(d.VersionId)
+	if err != nil {
+		e := CreateDebugParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-	version, err := ae.DB.GetPipelineVersion(ctx, d.VersionID)
+		return
+	}
+
+	version, err := ae.DB.GetPipelineVersion(ctx, vId)
 	if err != nil {
 		e := GetVersionError
 		log.Error(e.errorMessage(err))
@@ -305,25 +277,12 @@ func (ae *APIEnv) runDebugTask(
 	return &entity.DebugResult{}, nil
 }
 
-// DebugTask
-// @Summary Debug task
-// @Description Получить debug-задачу
-// @Tags tasks
-// @ID      debug-task
-// @Produce json
-// @Param workNumber path string true "work number"
-// @success 200 {object} httpResponse{data=entity.DebugResult}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /debug/{workNumber} [get]
-func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_debug_task")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	workNumber := chi.URLParam(req, "workNumber")
 	if workNumber == "" {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(errors.New("workNumber is empty")))
@@ -400,27 +359,13 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// LastVersionDebugTask
-// @Summary Get last debug task for version
-// @Description Получить последнюю debug-задачу версии сценария
-// @Tags tasks
-// @ID      last-version-debug-task
-// @Produce json
-// @Param versionID path string true "Version ID"
-// @success 200 {object} httpResponse{data=entity.EriusTask}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tasks/last-by-version/{versionID} [get]
-func (ae *APIEnv) LastVersionDebugTask(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) LastVersionDebugTask(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_last_version_tasks")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "versionID")
-
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(versionID)
 	if err != nil {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(err))

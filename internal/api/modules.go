@@ -1,11 +1,9 @@
-package handlers
+package api
 
 import (
 	"encoding/json"
 	"io"
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
 
 	"go.opencensus.io/trace"
 
@@ -26,17 +24,7 @@ const (
 	StartParallelTask    = "start_parallel_task"
 )
 
-// GetModules godoc
-// @Summary Get list of modules
-// @Description Список блоков
-// @Tags modules
-// @ID      get-modules
-// @Produce json
-// @Success 200 {object} httpResponse{data=entity.EriusFunctionList}
-// @Failure 400 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /modules [get]
-// nolint:gocyclo // future rewrite
+//nolint:gocyclo //its ok here
 func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_modules")
 	defer s.End()
@@ -52,34 +40,16 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	approverBlock := &pipeline.GoApproverBlock{}
-
-	sdApplicationBlock := &pipeline.GoSdApplicationBlock{}
-
-	executionBlock := &pipeline.GoExecutionBlock{}
-
-	startBlock := &pipeline.GoStartBlock{}
-
-	endBlock := &pipeline.GoEndBlock{}
-
-	waitForAllInputs := &pipeline.GoWaitForAllInputsBlock{}
-
-	notificationBlock := &pipeline.GoNotificationBlock{}
-
-	ifBlock := &pipeline.IF{}
-
-	startParallelTaskBlock := &pipeline.GoStartParallelTaskBlock{}
-
 	eriusFunctions = append(eriusFunctions,
-		approverBlock.Model(),
-		sdApplicationBlock.Model(),
-		executionBlock.Model(),
-		startBlock.Model(),
-		endBlock.Model(),
-		waitForAllInputs.Model(),
-		notificationBlock.Model(),
-		ifBlock.Model(),
-		startParallelTaskBlock.Model(),
+		(&pipeline.GoApproverBlock{}).Model(),
+		(&pipeline.GoSdApplicationBlock{}).Model(),
+		(&pipeline.GoExecutionBlock{}).Model(),
+		(&pipeline.GoStartBlock{}).Model(),
+		(&pipeline.GoEndBlock{}).Model(),
+		(&pipeline.GoWaitForAllInputsBlock{}).Model(),
+		(&pipeline.GoNotificationBlock{}).Model(),
+		(&pipeline.IF{}).Model(),
+		(&pipeline.GoStartParallelTaskBlock{}).Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
@@ -167,16 +137,6 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// AllModulesUsage godoc
-// @Summary Get list of modules usage
-// @Description Блоки и сценарии, в которых они используются
-// @Tags modules
-// @ID      all-modules-usage
-// @Produce json
-// @success 200 {object} httpResponse{data=entity.AllUsageResponse}
-// @Failure 400 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /modules/usage [get]
 func (ae *APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "all_modules_usage")
 	defer s.End()
@@ -232,24 +192,11 @@ func (ae *APIEnv) AllModulesUsage(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// ModuleUsage godoc
-// @Summary Usage of module in pipelines
-// @Description Сценарии, в которых используется блок
-// @Tags modules
-// @ID      module-usage
-// @Produce json
-// @Param moduleName path string true "module name"
-// @Success 200 {object} httpResponse{data=entity.UsageResponse}
-// @Failure 400 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /modules/{moduleName}/usage [get]
-func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request, moduleName string) {
 	ctx, s := trace.StartSpan(req.Context(), "module_usage")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-
-	name := chi.URLParam(req, "moduleName")
 
 	allWorked, err := ae.DB.GetWorkedVersions(ctx)
 	if err != nil {
@@ -267,7 +214,7 @@ func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 		pipe := &allWorked[i]
 		for j := range pipe.Pipeline.Blocks {
 			f := pipe.Pipeline.Blocks[j]
-			if f.Title == name {
+			if f.Title == moduleName {
 				usedBy = append(usedBy, entity.UsedBy{Name: pipe.Name, ID: pipe.ID})
 				used = true
 
@@ -276,7 +223,7 @@ func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: name, Pipelines: usedBy, Used: used})
+	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: moduleName, Pipelines: usedBy, Used: used})
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
@@ -286,24 +233,11 @@ func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// ModuleRun godoc
-// @Summary Run Module By Name
-// @Description Запустить блок
-// @Tags modules
-// @ID      module-run
-// @Produce json
-// @Param moduleName path string true "module name"
-// @Success 200 {object} httpResponse{data=entity.UsageResponse}
-// @Failure 400 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /modules/{moduleName} [post]
-func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request, moduleName string) {
 	ctx, s := trace.StartSpan(req.Context(), "module_run")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-
-	name := chi.URLParam(req, "moduleName")
 
 	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager, ae.HTTPClient)
 	if err != nil {
@@ -317,7 +251,7 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request) {
 	block := script.FunctionModel{}
 
 	for i := range eriusFunctions {
-		if eriusFunctions[i].Title == name {
+		if eriusFunctions[i].Title == moduleName {
 			block = eriusFunctions[i]
 
 			break

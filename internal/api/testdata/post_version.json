@@ -1,0 +1,275 @@
+{
+  "scenario": {
+    "id": "1305535d-6d0e-4cf2-a9c1-81d5789a7c3d",
+    "version_id": "1c041c7c-09c8-4e55-b3ea-66da9ff3e6cb",
+    "status": 1,
+    "hasDraft": true,
+    "name": "debugger-steps",
+    "comment": "",
+    "comment_rejected": "",
+    "input": [
+      {
+        "name": "str_bts",
+        "type": "string",
+        "global": "debugger-steps.str_bts"
+      },
+      {
+        "name": "flag",
+        "type": "bool",
+        "global": "debugger-steps.flag"
+      }
+    ],
+    "output": [],
+    "pipeline": {
+      "blocks": {
+        "const-lock-3g_0": {
+          "x": 587,
+          "y": 288,
+          "input": [],
+          "output": [
+            {
+              "name": "action",
+              "type": "string",
+              "global": "const-lock-3g_0.action"
+            },
+            {
+              "name": "pause_1",
+              "type": "number",
+              "global": "const-lock-3g_0.pause_1"
+            },
+            {
+              "name": "pause_2",
+              "type": "number",
+              "global": "const-lock-3g_0.pause_2"
+            }
+          ],
+          "block_type": "go",
+          "title": "test",
+          "next": {
+            "default": [
+              "log-value_0"
+            ]
+          }
+        },
+        "for_0": {
+          "x": 1256,
+          "y": 280,
+          "input": [
+            {
+              "name": "iter",
+              "type": "array",
+              "global": "parse-bts-info_0.frequencies"
+            }
+          ],
+          "output": [
+            {
+              "name": "now_on",
+              "type": "string",
+              "global": "for_0.now_on"
+            },
+            {
+              "name": "index",
+              "type": "number",
+              "global": "for_0.index"
+            }
+          ],
+          "block_type": "term",
+          "title": "for",
+          "next": {
+            "true": [
+              "if_0"
+            ],
+            "false": [
+              "log-value_1"
+            ]
+          }
+        },
+        "if_0": {
+          "x": 1568,
+          "y": 249,
+          "input": [
+            {
+              "name": "check",
+              "type": "bool",
+              "global": "debugger-steps.flag"
+            }
+          ],
+          "block_type": "term",
+          "title": "if",
+          "next": {
+            "true": [
+              "log-value_2"
+            ],
+            "false": [
+              "log-value_3"
+            ]
+          }
+        },
+        "log-value_0": {
+          "x": 883,
+          "y": 284,
+          "input": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": "const-lock-3g_0.action"
+            }
+          ],
+          "output": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": "log-value_0.value"
+            }
+          ],
+          "block_type": "python3",
+          "title": "log-value",
+          "next": {
+            "default": [
+              "for_0"
+            ]
+          }
+        },
+        "log-value_1": {
+          "x": 1809,
+          "y": 490,
+          "input": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": "for_0.now_on"
+            }
+          ],
+          "output": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": "log-value_1.value"
+            }
+          ],
+          "block_type": "python3",
+          "title": "log-value",
+          "next": {
+            "default": [
+              "for_0"
+            ]
+          }
+        },
+        "log-value_2": {
+          "x": 1907,
+          "y": 123,
+          "input": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": "parse-bts-info_0.bts_name"
+            }
+          ],
+          "output": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": "log-value_2.value"
+            }
+          ],
+          "block_type": "python3",
+          "title": "log-value",
+          "next": {
+            "default": [
+              "test-raise-exception_0"
+            ]
+          }
+        },
+        "log-value_3": {
+          "x": 1909,
+          "y": 284,
+          "input": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": ""
+            }
+          ],
+          "output": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": "log-value_3.value"
+            }
+          ],
+          "block_type": "python3",
+          "title": "log-value",
+          "next": {
+            "default": [
+              "test-raise-exception_0"
+            ]
+          }
+        },
+        "log-value_4": {
+          "x": 2533,
+          "y": 126,
+          "input": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": ""
+            }
+          ],
+          "output": [
+            {
+              "name": "value",
+              "type": "string",
+              "global": "log-value_4.value"
+            }
+          ],
+          "next": {},
+          "block_type": "python3",
+          "title": "log-value"
+        },
+        "parse-bts-info_0": {
+          "x": 298,
+          "y": 245,
+          "input": [
+            {
+              "name": "str_bts",
+              "type": "string",
+              "global": null
+            }
+          ],
+          "output": [
+            {
+              "name": "bts_name",
+              "type": "string",
+              "global": "parse-bts-info_0.bts_name"
+            },
+            {
+              "name": "frequencies",
+              "type": "array",
+              "global": "parse-bts-info_0.frequencies"
+            }
+          ],
+          "block_type": "go",
+          "title": "test",
+          "next": {
+            "default": [
+              "const-lock-3g_0"
+            ]
+          }
+        },
+        "test-raise-exception_0": {
+          "x": 2235,
+          "y": 129,
+          "input": [],
+          "block_type": "python3",
+          "title": "test-raise-exception",
+          "next": {
+            "default": [
+              "log-value_4"
+            ]
+          }
+        }
+      },
+      "entrypoint": "parse-bts-info_0"
+    }
+  }
+}

@@ -85,7 +85,7 @@ type EriusFunc struct {
 	Output     []EriusFunctionValue `json:"output,omitempty"`
 	ParamType  string               `json:"param_type,omitempty"`
 	Params     json.RawMessage      `json:"params,omitempty" swaggertype:"object"`
-	Next       map[string][]string  `json:"next,omitempty" example:"send-data_0"`
+	Next       map[string][]string  `json:"next,omitempty"`
 }
 
 type EriusFunctionValue struct {

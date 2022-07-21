@@ -16,25 +16,19 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-
 	"github.com/prometheus/client_golang/prometheus/push"
 
-	httpSwagger "github.com/swaggo/http-swagger"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/abp/myosotis/observability"
 
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/cmd/pipeliner/docs"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/handlers"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
@@ -126,17 +120,26 @@ func main() {
 	var _ db.Database = (*mocks.MockedDatabase)(nil)
 	var _ db.Database = (*test.MockDB)(nil)
 
-	pipeliner := handlers.APIEnv{
-		DB:                   &dbConn,
-		ScriptManager:        cfg.ScriptManager,
-		Remedy:               cfg.Remedy,
-		FaaS:                 cfg.FaaS,
-		SchedulerClient:      schedulerClient,
-		NetworkMonitorClient: networkMonitoringClient,
-		HTTPClient:           httpClient,
-		Statistic:            stat,
-		Mail:                 mailService,
-		People:               peopleService,
+	httpServer, err := api.NewServer(ctx, api.ServerParam{
+		APIEnv: &api.APIEnv{
+			DB:                   &dbConn,
+			ScriptManager:        cfg.ScriptManager,
+			Remedy:               cfg.Remedy,
+			FaaS:                 cfg.FaaS,
+			SchedulerClient:      schedulerClient,
+			NetworkMonitorClient: networkMonitoringClient,
+			HTTPClient:           httpClient,
+			Statistic:            stat,
+			Mail:                 mailService,
+			People:               peopleService,
+		},
+		SSOService:        ssoService,
+		PeopleService:     peopleService,
+		TimeoutMiddleware: cfg.Timeout.Duration,
+		ServerAddr:        cfg.ServeAddr,
+	})
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
@@ -158,11 +161,6 @@ func main() {
 	metrics.Pusher = push.New(cfg.Push.URL, cfg.Push.Job).Gatherer(metrics.Registry)
 
 	initSwagger(cfg)
-
-	httpServer := http.Server{
-		Handler: registerRouter(ctx, cfg, &pipeliner, ssoService, peopleService),
-		Addr:    cfg.ServeAddr,
-	}
 
 	go func() {
 		log.Info("script manager service started on port", httpServer.Addr)
@@ -212,78 +210,6 @@ func main() {
 	}
 
 	log.WithField("signal", stop).Info("stopping")
-}
-
-func registerRouter(ctx context.Context, cfg *configs.Pipeliner, pipeliner *handlers.APIEnv, ssoService *sso.Service,
-	peopleService *people.Service) *chi.Mux {
-	mux := chi.NewRouter()
-	mux.Use(middleware.NoCache)
-	mux.Use(handlers.LoggerMiddleware(logger.GetLogger(ctx)))
-	mux.Use(observability.MiddlewareChi())
-	mux.Use(handlers.RequestIDMiddleware)
-	mux.Use(middleware.Timeout(cfg.Timeout.Duration))
-
-	const baseURL = "/api/pipeliner/v1"
-
-	mux.Mount(baseURL+"/pprof", middleware.Profiler())
-	mux.Handle(baseURL+"/metrics", pipeliner.ServePrometheus())
-	mux.Mount(baseURL+"/swagger", httpSwagger.Handler(httpSwagger.URL("../swagger/doc.json")))
-
-	mux.With(middleware.SetHeader("Content-Type", "text/json")).
-		Route(baseURL, func(r chi.Router) {
-			r.Use(handlers.WithUserInfo(ssoService, logger.GetLogger(ctx)))
-			r.Use(handlers.WithAsOtherUserInfo(peopleService, logger.GetLogger(ctx)))
-			r.Use(handlers.StatisticMiddleware(pipeliner.Statistic))
-
-			r.Get("/pipelines", pipeliner.ListPipelines)
-			r.Post("/pipelines", pipeliner.CreatePipeline)
-			r.Get("/pipelines/{pipelineID}", pipeliner.GetPipeline)
-			r.Delete("/pipelines/{pipelineID}", pipeliner.DeletePipeline)
-
-			r.Get("/pipelines/{pipelineID}/scheduler-tasks", pipeliner.ListSchedulerTasks)
-
-			r.Put("/pipelines/{pipelineID}/tags/{ID}", pipeliner.AttachTag)
-			r.Get("/pipelines/{pipelineID}/tags", pipeliner.GetPipelineTag)
-			r.Delete("/pipelines/{pipelineID}/tags/{ID}", pipeliner.DetachTag)
-
-			r.Get("/pipelines/version/{versionID}", pipeliner.GetPipelineVersion)
-			r.Post("/pipelines/version/{pipelineID}", pipeliner.CreatePipelineVersion)
-			r.Put("/pipelines/version", pipeliner.EditVersion)
-			r.Delete("/pipelines/version/{versionID}", pipeliner.DeleteVersion)
-
-			r.Get("/modules", pipeliner.GetModules)
-			r.Get("/modules/usage", pipeliner.AllModulesUsage)
-			r.Get("/modules/{moduleName}/usage", pipeliner.ModuleUsage)
-			r.Post("/modules/{moduleName}", pipeliner.ModuleRun)
-
-			r.Get("/tags", pipeliner.GetTags)
-			r.Post("/tags", pipeliner.CreateTag)
-			r.Put("/tags", pipeliner.EditTag)
-			r.Delete("/tags/{ID}", pipeliner.RemoveTag)
-
-			r.Post("/run/{pipelineID}", pipeliner.RunPipeline)
-			r.Post("/run/version/{versionID}", pipeliner.RunVersion)
-			r.Post("/run/versions/blueprint_id", pipeliner.RunVersionsByBlueprintID)
-			r.Post("/run/version/new_version", pipeliner.RunNewVersionByPrevVersion)
-
-			r.Get("/tasks", pipeliner.GetTasks)
-
-			r.Route("/tasks/", func(r chi.Router) {
-				r.Get("/{workNumber}", pipeliner.GetTask)
-				r.Post("/{workNumber}", pipeliner.UpdateTask)
-				r.Get("/last-by-version/{versionID}", pipeliner.LastVersionDebugTask)
-				r.Get("/pipeline/{pipelineID}", pipeliner.GetPipelineTasks)
-				r.Get("/version/{versionID}", pipeliner.GetVersionTasks)
-				r.Get("/count", pipeliner.GetTasksCount)
-			})
-			r.Route("/debug/", func(r chi.Router) {
-				r.Post("/run", pipeliner.StartDebugTask)
-				r.Post("/", pipeliner.CreateDebugTask)
-				r.Get("/{workNumber}", pipeliner.DebugTask)
-			})
-		})
-
-	return mux
 }
 
 func initSwagger(cfg *configs.Pipeliner) {
