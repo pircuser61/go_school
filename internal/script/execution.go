@@ -29,9 +29,7 @@ func (a *ExecutionParams) Validate() error {
 		return errors.New("executor is empty")
 	}
 
-
 	typeExecution := ExecutionType(strings.ToLower(a.Type.String()))
-
 
 	if typeExecution != ExecutionTypeUser && typeExecution != ExecutionTypeGroup {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
