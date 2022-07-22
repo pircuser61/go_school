@@ -1506,6 +1506,9 @@ components:
             type: array
             items:
               type: string
+      required:
+        - pipelines
+
     CountTasks:
       type: object
       properties:
@@ -1515,6 +1518,11 @@ components:
           type: integer
         execute:
           type: integer
+      required:
+        - active
+        - approve
+        - execute
+
     DebugResult:
       type: object
       properties:
@@ -1530,18 +1538,17 @@ components:
           example: run,error,finished,created
         task:
           $ref: '#/components/schemas/EriusTask'
+      required:
+        - block_name
+        - status
+        - break_points
+        - task
+
     EriusFunc:
       type: object
       properties:
         block_type:
-          type: string
-          example: python3
-          enum:
-          - python3
-          - go
-          - internal
-          - term
-          - scenario
+          $ref: '#/components/schemas/blockType'
         input:
           type: array
           items:
@@ -1574,17 +1581,29 @@ components:
           type: integer
         y:
           type: integer
+      required:
+        - type_id
+        - block_type
+        - title
+        - next
+
     EriusFunctionList:
       type: object
       properties:
         funcs:
           type: array
+          description: Block modules
           items:
             $ref: '#/components/schemas/FunctionModel'
         shapes:
           type: array
+          description: Block shapes
           items:
             $ref: '#/components/schemas/ShapeEntity'
+      required:
+        - funcs
+        - shapes
+
     EriusFunctionValue:
       type: object
       properties:
@@ -1597,8 +1616,27 @@ components:
         type:
           type: string
           example: string
+      required:
+        - name
+        - type
+        - global
+
+    pipeline:
+          type: object
+          properties:
+            blocks:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/EriusFunc'
+            entrypoint:
+              type: string
+          required:
+            - entrypoint
+            - blocks
+            
     EriusScenario:
       type: object
+      description: A single scenario with all content
       properties:
         approved_at:
           type: string
@@ -1631,14 +1669,7 @@ components:
           items:
             $ref: '#/components/schemas/EriusFunctionValue'
         pipeline:
-          type: object
-          properties:
-            blocks:
-              type: object
-              additionalProperties:
-                $ref: '#/components/schemas/EriusFunc'
-            entrypoint:
-              type: string
+          $ref: '#/components/schemas/pipeline'
         status:
           type: integer
           description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On
@@ -1651,6 +1682,16 @@ components:
           type: string
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      required:
+        - id
+        - version_id
+        - status
+        - name
+        - pipeline
+        - author
+        - tags
+        - comment
+        - comment_rejected
     EriusScenarioInfo:
       type: object
       properties:
@@ -1683,9 +1724,7 @@ components:
           type: string
           example: ScenarioName
         status:
-          type: integer
-          description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On
-            Approve
+          $ref: '#/components/schemas/scenarioStatus'
         tags:
           type: array
           items:
@@ -1698,6 +1737,18 @@ components:
           type: string
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      required:
+        - id
+        - version_id
+        - created_at
+        - author
+        - approver
+        - name
+        - tags
+        - status
+        - comment
+        - comment_rejected
+        - version_history
     EriusScenarioList:
       type: object
       properties:
@@ -1721,8 +1772,15 @@ components:
           description: Теги
           items:
             $ref: '#/components/schemas/EriusTagInfo'
+      required:
+        - pipelines
+        - drafts
+        - on_approve
+        - tags
+
     EriusTagInfo:
       type: object
+      required: [id,name,status,color,isMarker]
       properties:
         color:
           type: string
@@ -1737,6 +1795,16 @@ components:
         status:
           type: integer
           description: 1 - Created, 3 - Deleted
+      
+    taskHumanStatus:
+      type: string
+      description: Task human readable status
+      enum:
+        - new
+        - approvement
+        - approved
+        - done
+
     EriusTask:
       type: object
       properties:
@@ -1749,7 +1817,7 @@ components:
         description:
           type: string
         human_status:
-          type: string
+          $ref: '#/components/schemas/taskHumanStatus'
         id:
           type: string
         last_changed_at:
@@ -1771,6 +1839,22 @@ components:
           type: string
         work_number:
           type: string
+      required:
+        - id
+        - version_id
+        - started_at
+        - last_changed_at
+        - name
+        - description
+        - status
+        - human_status
+        - author
+        - debug
+        - parameters
+        - steps
+        - work_number
+        - blueprint_id
+
     EriusTasks:
       type: object
       properties:
@@ -1787,8 +1871,13 @@ components:
             $ref: '#/components/schemas/EriusTask'
         total:
           type: integer
+      required:
+        - tasks
+        - total
+
     EriusVersionInfo:
       type: object
+      required: [version_id,created_at,author,approver]
       properties:
         approved_at:
           type: string
@@ -1806,6 +1895,21 @@ components:
           type: string
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+    scenarioStatus:
+      type: integer
+      enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+      description: >
+        Tag status:
+         * 1 - Draft
+         * 2 - Approved
+         * 3 - Deleted
+         * 4 - Rejected
+         * 5 - On approve
     sendEditAppUpdateParams:
       type: object
       description: Send application to edit from approver
@@ -1842,11 +1946,22 @@ components:
           example: runned
         work_number:
           type: string
+      required:
+        - pipeline_id
+        - work_number
+        - status
+        - output
+        - errors
+
     SchedulerTasksResponse:
       type: object
       properties:
         result:
           type: boolean
+          description: If active tasks exist
+      required:
+        - result
+
     Step:
       type: object
       properties:
@@ -1863,6 +1978,12 @@ components:
           properties: {}
         status:
           type: string
+          description: Task step execution status
+          enum:
+            - idle
+            - ready
+            - running
+            - finished
         steps:
           type: array
           items:
@@ -1874,6 +1995,17 @@ components:
           type: string
         type:
           type: string
+      required:
+        - time
+        - type
+        - name
+        - state
+        - storage
+        - errors
+        - steps
+        - has_error
+        - status
+
     TaskUpdate:
       type: object
       properties:
@@ -1882,9 +2014,106 @@ components:
           example: approvement
           enum:
           - approvement
+          - execution
+          - change_executor
+          - request_execution_info
         parameters:
           type: object
-          properties: {}
+          description: Task update params
+          oneOf:
+            - $ref: '#/components/schemas/ApproverUpdateParams'
+            - $ref: '#/components/schemas/ExecutionUpdateParams'
+            - $ref: '#/components/schemas/ExecutorChangeParams'
+            - $ref: '#/components/schemas/RequestInfoUpdateParams'
+      required:
+        - action
+        - parameters
+
+    ApproverUpdateParams:
+      type: object
+      description: Approver update params
+      properties:
+        decision:
+          $ref: '#/components/schemas/approverDecision'
+        comment:
+          type: string
+          description: Comment from approver
+      required:
+        - decision
+        - comment
+
+    ExecutionUpdateParams:
+      type: object
+      description: Executor update params
+      properties:
+        decision:
+          $ref: '#/components/schemas/executionDecision'
+        comment:
+          type: string
+          description: Comment from executor
+      required:
+        - decision
+        - comment
+    
+    approverDecision:
+      type: string
+      enum:
+        - approved
+        - rejected
+      description: >
+        Approver decision:
+         * approved - approver approved block 
+         * rejected - approver rejected block
+
+    executionDecision:
+      type: string
+      enum:
+        - executed
+        - rejected
+      description: >
+        Executor decision:
+         * executed - executor executed block
+         * rejected - executor rejected block
+
+    ExecutorChangeParams:
+      type: object
+      description: Executor change params
+      properties:
+        newExecutorLogin:
+          type: string
+          description: New executor login
+        comment:
+          type: string
+          description: Comment from executor
+      required:
+        - newExecutorLogin
+        - comment
+
+    RequestInfoUpdateParams:
+      type: object
+      description: Executor request info params
+      properties:
+        reqType:
+          $ref: '#/components/schemas/RequestExecutionInfoType'
+        comment:
+          type: string
+          description: Comment from executor
+        attachments:
+          type: array
+          items:
+            type: string
+      required:
+        - reqType
+        - comment
+        - attachments
+
+    RequestExecutionInfoType:
+      type: string
+      description: Type of execution info
+      enum:
+        - question
+        - answer
+
     UsageResponse:
       type: object
       properties:
@@ -1897,6 +2126,11 @@ components:
             $ref: '#/components/schemas/UsedBy'
         used:
           type: boolean
+      required:
+        - name
+        - used
+        - pipelines
+
     UsedBy:
       type: object
       properties:
@@ -1906,6 +2140,10 @@ components:
         name:
           type: string
           description: Имя сценария
+      required:
+        - name
+        - id
+
     CreateTaskRequest:
       type: object
       required: [parameters,version_id]
@@ -1969,7 +2207,7 @@ components:
         description:
           type: string
         human_status:
-          type: string
+          $ref: '#/components/schemas/taskHumanStatus'
         id:
           type: string
         last_changed_at:
@@ -1991,6 +2229,22 @@ components:
           type: string
         work_number:
           type: string
+      required:
+        - id
+        - version_id
+        - started_at
+        - last_changed_at
+        - name
+        - description
+        - status
+        - human_status
+        - author
+        - debug
+        - parameters
+        - steps
+        - work_number
+        - blueprint_id
+
     httpError:
       type: object
       properties:
@@ -2008,6 +2262,8 @@ components:
           properties: {}
         status_code:
           type: integer
+      required:
+        - status_code
     step:
       type: object
       properties:
@@ -2035,11 +2291,20 @@ components:
           type: string
         type:
           type: string
+
+    blockType:
+      type: string
+      description: Block type (language)
+      enum:
+        - python3
+        - go
+        - scenario
+
     FunctionModel:
       type: object
       properties:
         block_type:
-          type: string
+          $ref: '#/components/schemas/blockType'
         id:
           type: string
         inputs:
@@ -2060,19 +2325,237 @@ components:
             type: string
         title:
           type: string
+      required:
+        - block_type
+        - title
+        - shape_type
+        - next_funcs
+        - id
+        - sockets
+
+    Params:
+      type: object
+      description: Block constant params
+      oneOf:
+        - $ref: '#/components/schemas/ApproverParams'
+        - $ref: '#/components/schemas/ExecutionParams'
+        - $ref: '#/components/schemas/SdApplicationParams'
+        - $ref: '#/components/schemas/NotificationParams'
+        - $ref: "#/components/schemas/ConditionParams"
+
+    ConditionGroup:
+      type: object
+      description: Group with conditions
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        logicalOperator:
+          type: string
+          enum: [ "or", "and" ]
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+      required:
+        - id
+        - logicalOperator
+        - conditions
+
+    Condition:
+      type: object
+      description: Compare operands using operator
+      properties:
+        leftOperand:
+          $ref: '#/components/schemas/operand'
+        rightOperand:
+          $ref: '#/components/schemas/operand'
+        operator:
+          $ref: '#/components/schemas/compareOperator'
+      required:
+        - leftOperand
+        - rightOperand
+        - operator
+
+    operand:
+      description: Operand for comparison
+      oneOf:
+        - $ref: '#/components/schemas/variableOperand'
+        - $ref: '#/components/schemas/valueOperand'
+      discriminator:
+        propertyName: operandType
+        mapping:
+          varOperand: variableOperand
+          valOperand: valueOperand
+
+    basicOperand:
+      type: object
+      description: Basic operand, used for polymorphism
+      properties:
+        dataType:
+          type: string
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    variableOperand:
+      description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment")
+      allOf:
+        - $ref: '#/components/schemas/basicOperand'
+        - type: object
+          properties:
+            variableRef:
+              type: string
+          required:
+            - variableRef
+
+    valueOperand:
+      description: Operand which uses simple value to compare in conditions
+      allOf:
+        - $ref: '#/components/schemas/basicOperand'
+        - type: object
+          properties:
+            value:
+              type: string
+          required:
+            - value
+
+    compareOperator:
+      type: string
+      description: Used operator to compare operands
+      enum: [ "Равно", "Не равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual" ]
+
+    ConditionParams:
+      type: object
+      description: Condition params
+      properties:
+        conditionGroups:
+          type: array
+          description: Groups with conditions
+          items:
+            $ref: '#/components/schemas/ConditionGroup'
+
+    NotificationParams:
+      type: object
+      description: Notification params
+      properties:
+        people:
+          type: array
+          description: People to get notifications
+          items:
+            type: string
+            description: Email or login
+        subject:
+          type: string
+          description: Notification subject
+        text:
+          type: string
+          description: Notification body
+      required:
+        - people
+        - subject
+        - text
+
+    SdApplicationParams:
+      type: object
+      description: SD Application params
+      properties:
+        blueprint_id:
+          type: string
+          description: Template application ID
+      required:
+        - blueprint_id
+
+    ExecutionParams:
+      type: object
+      description: Execution params
+      properties:
+        type:
+          type: string
+          enum:
+            - user
+            - group
+          description: >
+            Execution type:
+             * user - Single user
+             * group - Execution group ID
+        executors:
+          type: string
+          description: Executor value (depends on type)
+        sla:
+          type: integer
+          description: Execution SLA (in working hours)
+          minimum: 1
+      required:
+        - type
+        - executors
+        - sla
+
+    ApproverType:
+        type: string
+        description: >
+          Approver type:
+           * User - Single user
+           * Group - Approver group ID
+           * Head - Receiver's head
+           * FromSchema - Selected by initiator
+        enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
+        x-enum-varnames: [ "User", "Group", "Head", "FromSchema" ]
+
+    ApproverParams:
+      type: object
+      description: Approver params
+      properties:
+        type:
+          $ref: '#/components/schemas/ApproverType'
+        approver:
+          type: string
+          description: Apprver value (depends on type)
+        sla:
+          type: integer
+          description: Approvement SLA (in working hours)
+          minimum: 1
+        auto_action:
+          $ref: '#/components/schemas/ApproveAutoAction'
+        repeat_prev_decision:
+          type: boolean
+        is_editable:
+          type: boolean
+          description: Show action edit application in SD
+      required:
+        - type
+        - approver
+        - sla
+        - repeat_prev_decision
+        - is_editable
+
+    ApproveAutoAction:
+      type: string
+      description: Action to do automatically in case SLA is breached
+      enum:
+        - approve
+        - reject
+
     FunctionParams:
       type: object
       properties:
-        params:
-          type: object
-          properties: {}
         type:
           type: string
-          example: approver
+          description: Params type
           enum:
-          - approver
-          - servicedesk_application
-          - conditions
+            - approver
+            - servicedesk_application
+            - execution
+            - notification
+        params:
+          $ref: '#/components/schemas/Params'
+      required:
+        - type
     FunctionValueModel:
       type: object
       properties:
@@ -2091,6 +2574,10 @@ components:
           type: integer
         title:
           type: string
+      required:
+        - id
+        - title
+        - icon
     Created:  
       type: object
       properties:

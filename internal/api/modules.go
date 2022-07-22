@@ -21,7 +21,7 @@ const (
 	ConnectorBase        = "connector"
 	ForBase              = "for"
 	StringsIsEqualBase   = "strings_is_equal"
-	StartParallelTask    = "start_parallel_task"
+	BeginParallelTask    = "begin_parallel_task"
 )
 
 //nolint:gocyclo //its ok here
@@ -49,7 +49,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		(&pipeline.GoWaitForAllInputsBlock{}).Model(),
 		(&pipeline.GoNotificationBlock{}).Model(),
 		(&pipeline.IF{}).Model(),
-		(&pipeline.GoStartParallelTaskBlock{}).Model(),
+		(&pipeline.GoBeginParallelTaskBlock{}).Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
@@ -113,8 +113,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			eriusFunctions[i].Title = "Конец"
 		case WaitForAllImputsBase:
 			eriusFunctions[i].Title = WaitForAllImputsBase
-		case StartParallelTask:
-			eriusFunctions[i].Title = StartParallelTask
+		case BeginParallelTask:
+			eriusFunctions[i].Title = BeginParallelTask
 		}
 	}
 

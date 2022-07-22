@@ -12,36 +12,142 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// Defines values for EriusFuncBlockType.
+// Defines values for ApproveAutoAction.
 const (
-	EriusFuncBlockTypeGo EriusFuncBlockType = "go"
+	ApproveAutoActionApprove ApproveAutoAction = "approve"
 
-	EriusFuncBlockTypeInternal EriusFuncBlockType = "internal"
+	ApproveAutoActionReject ApproveAutoAction = "reject"
+)
 
-	EriusFuncBlockTypePython3 EriusFuncBlockType = "python3"
+// Defines values for ApproverType.
+const (
+	ApproverTypeВыборИзСхемы ApproverType = "Выбор из схемы"
 
-	EriusFuncBlockTypeScenario EriusFuncBlockType = "scenario"
+	ApproverTypeГруппаСогласующих ApproverType = "Группа согласующих"
 
-	EriusFuncBlockTypeTerm EriusFuncBlockType = "term"
+	ApproverTypeОдинСогласующий ApproverType = "Один согласующий"
+
+	ApproverTypeРуководительПолучателя ApproverType = "Руководитель получателя"
+)
+
+// Defines values for ConditionGroupLogicalOperator.
+const (
+	ConditionGroupLogicalOperatorAnd ConditionGroupLogicalOperator = "and"
+
+	ConditionGroupLogicalOperatorOr ConditionGroupLogicalOperator = "or"
+)
+
+// Defines values for ExecutionParamsType.
+const (
+	ExecutionParamsTypeGroup ExecutionParamsType = "group"
+
+	ExecutionParamsTypeUser ExecutionParamsType = "user"
 )
 
 // Defines values for FunctionParamsType.
 const (
 	FunctionParamsTypeApprover FunctionParamsType = "approver"
 
-	FunctionParamsTypeConditions FunctionParamsType = "conditions"
+	FunctionParamsTypeExecution FunctionParamsType = "execution"
+
+	FunctionParamsTypeNotification FunctionParamsType = "notification"
 
 	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
+)
+
+// Defines values for RequestExecutionInfoType.
+const (
+	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
+
+	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
+)
+
+// Defines values for StepStatus.
+const (
+	StepStatusFinished StepStatus = "finished"
+
+	StepStatusIdle StepStatus = "idle"
+
+	StepStatusReady StepStatus = "ready"
+
+	StepStatusRunning StepStatus = "running"
 )
 
 // Defines values for TaskUpdateAction.
 const (
 	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
+
+	TaskUpdateActionChangeExecutor TaskUpdateAction = "change_executor"
+
+	TaskUpdateActionExecution TaskUpdateAction = "execution"
+
+	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
+)
+
+// Defines values for ApproverDecision.
+const (
+	ApproverDecisionApproved ApproverDecision = "approved"
+
+	ApproverDecisionRejected ApproverDecision = "rejected"
+)
+
+// Defines values for BasicOperandOperandType.
+const (
+	BasicOperandOperandTypeValueOperand BasicOperandOperandType = "valueOperand"
+
+	BasicOperandOperandTypeVariableOperand BasicOperandOperandType = "variableOperand"
+)
+
+// Defines values for BlockType.
+const (
+	BlockTypeGo BlockType = "go"
+
+	BlockTypePython3 BlockType = "python3"
+
+	BlockTypeScenario BlockType = "scenario"
+)
+
+// Defines values for CompareOperator.
+const (
+	CompareOperatorНеРавно CompareOperator = "Не равно"
+
+	CompareOperatorРавно CompareOperator = "Равно"
+)
+
+// Defines values for ExecutionDecision.
+const (
+	ExecutionDecisionExecuted ExecutionDecision = "executed"
+
+	ExecutionDecisionRejected ExecutionDecision = "rejected"
+)
+
+// Defines values for ScenarioStatus.
+const (
+	ScenarioStatusN1 ScenarioStatus = 1
+
+	ScenarioStatusN2 ScenarioStatus = 2
+
+	ScenarioStatusN3 ScenarioStatus = 3
+
+	ScenarioStatusN4 ScenarioStatus = 4
+
+	ScenarioStatusN5 ScenarioStatus = 5
+)
+
+// Defines values for TaskHumanStatus.
+const (
+	TaskHumanStatusApproved TaskHumanStatus = "approved"
+
+	TaskHumanStatusApprovement TaskHumanStatus = "approvement"
+
+	TaskHumanStatusDone TaskHumanStatus = "done"
+
+	TaskHumanStatusNew TaskHumanStatus = "new"
 )
 
 // AllUsageResponse defines model for AllUsageResponse.
 type AllUsageResponse struct {
-	Pipelines *AllUsageResponse_Pipelines `json:"pipelines,omitempty"`
+	Pipelines AllUsageResponse_Pipelines `json:"pipelines"`
 }
 
 // AllUsageResponse_Pipelines defines model for AllUsageResponse.Pipelines.
@@ -49,11 +155,84 @@ type AllUsageResponse_Pipelines struct {
 	AdditionalProperties map[string][]string `json:"-"`
 }
 
+// Action to do automatically in case SLA is breached
+type ApproveAutoAction string
+
+// Approver params
+type ApproverParams struct {
+	// Apprver value (depends on type)
+	Approver string `json:"approver"`
+
+	// Action to do automatically in case SLA is breached
+	AutoAction *ApproveAutoAction `json:"auto_action,omitempty"`
+
+	// Show action edit application in SD
+	IsEditable         bool `json:"is_editable"`
+	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+
+	// Approvement SLA (in working hours)
+	Sla int `json:"sla"`
+
+	// Approver type:
+	//  * User - Single user
+	//  * Group - Approver group ID
+	//  * Head - Receiver's head
+	//  * FromSchema - Selected by initiator
+	Type ApproverType `json:"type"`
+}
+
+// Approver type:
+//  * User - Single user
+//  * Group - Approver group ID
+//  * Head - Receiver's head
+//  * FromSchema - Selected by initiator
+type ApproverType string
+
+// Approver update params
+type ApproverUpdateParams struct {
+	// Comment from approver
+	Comment string `json:"comment"`
+
+	// Approver decision:
+	//  * approved - approver approved block
+	//  * rejected - approver rejected block
+	Decision ApproverDecision `json:"decision"`
+}
+
+// Compare operands using operator
+type Condition struct {
+	// Operand for comparison
+	LeftOperand Operand `json:"leftOperand"`
+
+	// Used operator to compare operands
+	Operator CompareOperator `json:"operator"`
+
+	// Operand for comparison
+	RightOperand Operand `json:"rightOperand"`
+}
+
+// Group with conditions
+type ConditionGroup struct {
+	Conditions      []Condition                   `json:"conditions"`
+	Id              string                        `json:"id"`
+	LogicalOperator ConditionGroupLogicalOperator `json:"logicalOperator"`
+	Name            *string                       `json:"name,omitempty"`
+}
+
+// ConditionGroupLogicalOperator defines model for ConditionGroup.LogicalOperator.
+type ConditionGroupLogicalOperator string
+
+// Condition params
+type ConditionParams struct {
+	// Groups with conditions
+	ConditionGroups *[]ConditionGroup `json:"conditionGroups,omitempty"`
+}
+
 // CountTasks defines model for CountTasks.
 type CountTasks struct {
-	Active  *int `json:"active,omitempty"`
-	Approve *int `json:"approve,omitempty"`
-	Execute *int `json:"execute,omitempty"`
+	Active  int `json:"active"`
+	Approve int `json:"approve"`
+	Execute int `json:"execute"`
 }
 
 // CreateTaskRequest defines model for CreateTaskRequest.
@@ -70,12 +249,12 @@ type Created struct {
 
 // DebugResult defines model for DebugResult.
 type DebugResult struct {
-	BlockName   *string   `json:"block_name,omitempty"`
-	BreakPoints *[]string `json:"break_points,omitempty"`
+	BlockName   string   `json:"block_name"`
+	BreakPoints []string `json:"break_points"`
 
 	// todo define values
-	Status *string    `json:"status,omitempty"`
-	Task   *EriusTask `json:"task,omitempty"`
+	Status string    `json:"status"`
+	Task   EriusTask `json:"task"`
 }
 
 // DebugRunRequest defines model for DebugRunRequest.
@@ -87,21 +266,19 @@ type DebugRunRequest struct {
 
 // EriusFunc defines model for EriusFunc.
 type EriusFunc struct {
-	BlockType  *EriusFuncBlockType     `json:"block_type,omitempty"`
+	// Block type (language)
+	BlockType  BlockType               `json:"block_type"`
 	Input      *[]EriusFunctionValue   `json:"input,omitempty"`
-	Next       *EriusFunc_Next         `json:"next,omitempty"`
+	Next       EriusFunc_Next          `json:"next"`
 	Output     *[]EriusFunctionValue   `json:"output,omitempty"`
 	ParamType  *string                 `json:"param_type,omitempty"`
 	Params     *map[string]interface{} `json:"params,omitempty"`
 	ShortTitle *string                 `json:"short_title,omitempty"`
-	Title      *string                 `json:"title,omitempty"`
+	Title      string                  `json:"title"`
 	True       *int                    `json:"true,omitempty"`
-	TypeId     *string                 `json:"type_id,omitempty"`
+	TypeId     string                  `json:"type_id"`
 	X          *int                    `json:"x,omitempty"`
 }
-
-// EriusFuncBlockType defines model for EriusFunc.BlockType.
-type EriusFuncBlockType string
 
 // EriusFunc_Next defines model for EriusFunc.Next.
 type EriusFunc_Next struct {
@@ -110,107 +287,109 @@ type EriusFunc_Next struct {
 
 // EriusFunctionList defines model for EriusFunctionList.
 type EriusFunctionList struct {
-	Funcs  *[]FunctionModel `json:"funcs,omitempty"`
-	Shapes *[]ShapeEntity   `json:"shapes,omitempty"`
+	// Block modules
+	Funcs []FunctionModel `json:"funcs"`
+
+	// Block shapes
+	Shapes []ShapeEntity `json:"shapes"`
 }
 
 // EriusFunctionValue defines model for EriusFunctionValue.
 type EriusFunctionValue struct {
-	Global *string `json:"global,omitempty"`
-	Name   *string `json:"name,omitempty"`
-	Type   *string `json:"type,omitempty"`
+	Global string `json:"global"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
 }
 
-// EriusScenario defines model for EriusScenario.
+// A single scenario with all content
 type EriusScenario struct {
 	ApprovedAt      *string               `json:"approved_at,omitempty"`
-	Author          *string               `json:"author,omitempty"`
-	Comment         *string               `json:"comment,omitempty"`
-	CommentRejected *string               `json:"comment_rejected,omitempty"`
+	Author          string                `json:"author"`
+	Comment         string                `json:"comment"`
+	CommentRejected string                `json:"comment_rejected"`
 	CreatedAt       *string               `json:"created_at,omitempty"`
 	HasDraft        *bool                 `json:"hasDraft,omitempty"`
-	Id              *string               `json:"id,omitempty"`
+	Id              string                `json:"id"`
 	Input           *[]EriusFunctionValue `json:"input,omitempty"`
-	Name            *string               `json:"name,omitempty"`
+	Name            string                `json:"name"`
 	Output          *[]EriusFunctionValue `json:"output,omitempty"`
-	Pipeline        *struct {
-		Blocks     *EriusScenario_Pipeline_Blocks `json:"blocks,omitempty"`
-		Entrypoint *string                        `json:"entrypoint,omitempty"`
-	} `json:"pipeline,omitempty"`
+	Pipeline        Pipeline              `json:"pipeline"`
 
 	// 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
-	Status    *int            `json:"status,omitempty"`
-	Tags      *[]EriusTagInfo `json:"tags,omitempty"`
-	VersionId *string         `json:"version_id,omitempty"`
-}
-
-// EriusScenario_Pipeline_Blocks defines model for EriusScenario.Pipeline.Blocks.
-type EriusScenario_Pipeline_Blocks struct {
-	AdditionalProperties map[string]EriusFunc `json:"-"`
+	Status    int            `json:"status"`
+	Tags      []EriusTagInfo `json:"tags"`
+	VersionId string         `json:"version_id"`
 }
 
 // EriusScenarioInfo defines model for EriusScenarioInfo.
 type EriusScenarioInfo struct {
 	ApprovedAt      *string `json:"approved_at,omitempty"`
-	Approver        *string `json:"approver,omitempty"`
-	Author          *string `json:"author,omitempty"`
-	Comment         *string `json:"comment,omitempty"`
-	CommentRejected *string `json:"comment_rejected,omitempty"`
-	CreatedAt       *string `json:"created_at,omitempty"`
-	Id              *string `json:"id,omitempty"`
+	Approver        string  `json:"approver"`
+	Author          string  `json:"author"`
+	Comment         string  `json:"comment"`
+	CommentRejected string  `json:"comment_rejected"`
+	CreatedAt       string  `json:"created_at"`
+	Id              string  `json:"id"`
 	LastRun         *string `json:"last_run,omitempty"`
 	LastRunStatus   *string `json:"last_run_status,omitempty"`
-	Name            *string `json:"name,omitempty"`
+	Name            string  `json:"name"`
 
-	// 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
-	Status         *int                `json:"status,omitempty"`
-	Tags           *[]EriusTagInfo     `json:"tags,omitempty"`
-	VersionHistory *[]EriusVersionInfo `json:"version_history,omitempty"`
-	VersionId      *string             `json:"version_id,omitempty"`
+	// Tag status:
+	//  * 1 - Draft
+	//  * 2 - Approved
+	//  * 3 - Deleted
+	//  * 4 - Rejected
+	//  * 5 - On approve
+	Status         ScenarioStatus     `json:"status"`
+	Tags           []EriusTagInfo     `json:"tags"`
+	VersionHistory []EriusVersionInfo `json:"version_history"`
+	VersionId      string             `json:"version_id"`
 }
 
 // EriusScenarioList defines model for EriusScenarioList.
 type EriusScenarioList struct {
 	// Черновики
-	Drafts *[]EriusScenarioInfo `json:"drafts,omitempty"`
+	Drafts []EriusScenarioInfo `json:"drafts"`
 
 	// Сценарии на одобрении
-	OnApprove *[]EriusScenarioInfo `json:"on_approve,omitempty"`
+	OnApprove []EriusScenarioInfo `json:"on_approve"`
 
 	// Согласованные сценарии
-	Pipelines *[]EriusScenarioInfo `json:"pipelines,omitempty"`
+	Pipelines []EriusScenarioInfo `json:"pipelines"`
 
 	// Теги
-	Tags *[]EriusTagInfo `json:"tags,omitempty"`
+	Tags []EriusTagInfo `json:"tags"`
 }
 
 // EriusTagInfo defines model for EriusTagInfo.
 type EriusTagInfo struct {
-	Color    *string `json:"color,omitempty"`
-	Id       *string `json:"id,omitempty"`
-	IsMarker *bool   `json:"isMarker,omitempty"`
-	Name     *string `json:"name,omitempty"`
+	Color    string `json:"color"`
+	Id       string `json:"id"`
+	IsMarker bool   `json:"isMarker"`
+	Name     string `json:"name"`
 
 	// 1 - Created, 3 - Deleted
-	Status *int `json:"status,omitempty"`
+	Status int `json:"status"`
 }
 
 // EriusTask defines model for EriusTask.
 type EriusTask struct {
-	Author        *string                 `json:"author,omitempty"`
-	BlueprintId   *string                 `json:"blueprint_id,omitempty"`
-	Debug         *bool                   `json:"debug,omitempty"`
-	Description   *string                 `json:"description,omitempty"`
-	HumanStatus   *string                 `json:"human_status,omitempty"`
-	Id            *string                 `json:"id,omitempty"`
-	LastChangedAt *string                 `json:"last_changed_at,omitempty"`
-	Name          *string                 `json:"name,omitempty"`
-	Parameters    *map[string]interface{} `json:"parameters,omitempty"`
-	StartedAt     *string                 `json:"started_at,omitempty"`
-	Status        *string                 `json:"status,omitempty"`
-	Steps         *[]Step                 `json:"steps,omitempty"`
-	VersionId     *string                 `json:"version_id,omitempty"`
-	WorkNumber    *string                 `json:"work_number,omitempty"`
+	Author      string `json:"author"`
+	BlueprintId string `json:"blueprint_id"`
+	Debug       bool   `json:"debug"`
+	Description string `json:"description"`
+
+	// Task human readable status
+	HumanStatus   TaskHumanStatus        `json:"human_status"`
+	Id            string                 `json:"id"`
+	LastChangedAt string                 `json:"last_changed_at"`
+	Name          string                 `json:"name"`
+	Parameters    map[string]interface{} `json:"parameters"`
+	StartedAt     string                 `json:"started_at"`
+	Status        string                 `json:"status"`
+	Steps         []Step                 `json:"steps"`
+	VersionId     string                 `json:"version_id"`
+	WorkNumber    string                 `json:"work_number"`
 }
 
 // EriusTasks defines model for EriusTasks.
@@ -220,38 +399,81 @@ type EriusTasks struct {
 
 // EriusTasksPage defines model for EriusTasksPage.
 type EriusTasksPage struct {
-	Tasks *[]EriusTask `json:"tasks,omitempty"`
-	Total *int         `json:"total,omitempty"`
+	Tasks []EriusTask `json:"tasks"`
+	Total int         `json:"total"`
 }
 
 // EriusVersionInfo defines model for EriusVersionInfo.
 type EriusVersionInfo struct {
 	ApprovedAt *string `json:"approved_at,omitempty"`
-	Approver   *string `json:"approver,omitempty"`
-	Author     *string `json:"author,omitempty"`
-	CreatedAt  *string `json:"created_at,omitempty"`
-	VersionId  *string `json:"version_id,omitempty"`
+	Approver   string  `json:"approver"`
+	Author     string  `json:"author"`
+	CreatedAt  string  `json:"created_at"`
+	VersionId  string  `json:"version_id"`
+}
+
+// Execution params
+type ExecutionParams struct {
+	// Executor value (depends on type)
+	Executors string `json:"executors"`
+
+	// Execution SLA (in working hours)
+	Sla int `json:"sla"`
+
+	// Execution type:
+	//  * user - Single user
+	//  * group - Execution group ID
+	Type ExecutionParamsType `json:"type"`
+}
+
+// Execution type:
+//  * user - Single user
+//  * group - Execution group ID
+type ExecutionParamsType string
+
+// Executor update params
+type ExecutionUpdateParams struct {
+	// Comment from executor
+	Comment string `json:"comment"`
+
+	// Executor decision:
+	//  * executed - executor executed block
+	//  * rejected - executor rejected block
+	Decision ExecutionDecision `json:"decision"`
+}
+
+// Executor change params
+type ExecutorChangeParams struct {
+	// Comment from executor
+	Comment string `json:"comment"`
+
+	// New executor login
+	NewExecutorLogin string `json:"newExecutorLogin"`
 }
 
 // FunctionModel defines model for FunctionModel.
 type FunctionModel struct {
-	BlockType *string               `json:"block_type,omitempty"`
-	Id        *string               `json:"id,omitempty"`
+	// Block type (language)
+	BlockType BlockType             `json:"block_type"`
+	Id        string                `json:"id"`
 	Inputs    *[]FunctionValueModel `json:"inputs,omitempty"`
 	Outputs   *[]FunctionValueModel `json:"outputs,omitempty"`
 	Params    *FunctionParams       `json:"params,omitempty"`
-	ShapeType *int                  `json:"shape_type,omitempty"`
-	Sockets   *[]string             `json:"sockets,omitempty"`
-	Title     *string               `json:"title,omitempty"`
+	ShapeType int                   `json:"shape_type"`
+	Sockets   []string              `json:"sockets"`
+	Title     string                `json:"title"`
 }
 
 // FunctionParams defines model for FunctionParams.
 type FunctionParams struct {
-	Params *map[string]interface{} `json:"params,omitempty"`
-	Type   *FunctionParamsType     `json:"type,omitempty"`
+	// Block constant params
+	Params *Params `json:"params,omitempty"`
+
+	// Params type
+	Type FunctionParamsType `json:"type"`
 }
 
-// FunctionParamsType defines model for FunctionParams.Type.
+// Params type
 type FunctionParamsType string
 
 // FunctionValueModel defines model for FunctionValueModel.
@@ -259,6 +481,35 @@ type FunctionValueModel struct {
 	Comment *string `json:"comment,omitempty"`
 	Name    *string `json:"name,omitempty"`
 	Type    *string `json:"type,omitempty"`
+}
+
+// Notification params
+type NotificationParams struct {
+	// People to get notifications
+	People []string `json:"people"`
+
+	// Notification subject
+	Subject string `json:"subject"`
+
+	// Notification body
+	Text string `json:"text"`
+}
+
+// Block constant params
+type Params interface{}
+
+// Type of execution info
+type RequestExecutionInfoType string
+
+// Executor request info params
+type RequestInfoUpdateParams struct {
+	Attachments []string `json:"attachments"`
+
+	// Comment from executor
+	Comment string `json:"comment"`
+
+	// Type of execution info
+	ReqType RequestExecutionInfoType `json:"reqType"`
 }
 
 // RunNewVersionByPrevVersionRequest defines model for RunNewVersionByPrevVersionRequest.
@@ -274,11 +525,11 @@ type RunPipelineBody map[string]interface{}
 
 // RunResponse defines model for RunResponse.
 type RunResponse struct {
-	Errors     *[]string               `json:"errors,omitempty"`
-	Output     *map[string]interface{} `json:"output,omitempty"`
-	PipelineId *string                 `json:"pipeline_id,omitempty"`
-	Status     *string                 `json:"status,omitempty"`
-	WorkNumber *string                 `json:"work_number,omitempty"`
+	Errors     []string               `json:"errors"`
+	Output     map[string]interface{} `json:"output"`
+	PipelineId string                 `json:"pipeline_id"`
+	Status     string                 `json:"status"`
+	WorkNumber string                 `json:"work_number"`
 }
 
 // RunVersionBody defines model for RunVersionBody.
@@ -293,33 +544,47 @@ type RunVersionsByBlueprintIdRequest struct {
 
 // SchedulerTasksResponse defines model for SchedulerTasksResponse.
 type SchedulerTasksResponse struct {
-	Result *bool `json:"result,omitempty"`
+	// If active tasks exist
+	Result bool `json:"result"`
+}
+
+// SD Application params
+type SdApplicationParams struct {
+	// Template application ID
+	BlueprintId string `json:"blueprint_id"`
 }
 
 // ShapeEntity defines model for ShapeEntity.
 type ShapeEntity struct {
-	Icon  *string `json:"icon,omitempty"`
-	Id    *int    `json:"id,omitempty"`
-	Title *string `json:"title,omitempty"`
+	Icon  string `json:"icon"`
+	Id    int    `json:"id"`
+	Title string `json:"title"`
 }
 
 // Step defines model for Step.
 type Step struct {
-	Errors   *[]string               `json:"errors,omitempty"`
-	HasError *bool                   `json:"has_error,omitempty"`
-	Name     *string                 `json:"name,omitempty"`
-	State    *map[string]interface{} `json:"state,omitempty"`
-	Status   *string                 `json:"status,omitempty"`
-	Steps    *[]string               `json:"steps,omitempty"`
-	Storage  *map[string]interface{} `json:"storage,omitempty"`
-	Time     *string                 `json:"time,omitempty"`
-	Type     *string                 `json:"type,omitempty"`
+	Errors   []string               `json:"errors"`
+	HasError bool                   `json:"has_error"`
+	Name     string                 `json:"name"`
+	State    map[string]interface{} `json:"state"`
+
+	// Task step execution status
+	Status  StepStatus             `json:"status"`
+	Steps   []string               `json:"steps"`
+	Storage map[string]interface{} `json:"storage"`
+	Time    string                 `json:"time"`
+	Type    string                 `json:"type"`
 }
+
+// Task step execution status
+type StepStatus string
 
 // TaskUpdate defines model for TaskUpdate.
 type TaskUpdate struct {
-	Action     *TaskUpdateAction       `json:"action,omitempty"`
-	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Action TaskUpdateAction `json:"action"`
+
+	// Task update params
+	Parameters interface{} `json:"parameters"`
 }
 
 // TaskUpdateAction defines model for TaskUpdate.Action.
@@ -328,37 +593,64 @@ type TaskUpdateAction string
 // UsageResponse defines model for UsageResponse.
 type UsageResponse struct {
 	// Имя блока
-	Name      *string   `json:"name,omitempty"`
-	Pipelines *[]UsedBy `json:"pipelines,omitempty"`
-	Used      *bool     `json:"used,omitempty"`
+	Name      string   `json:"name"`
+	Pipelines []UsedBy `json:"pipelines"`
+	Used      bool     `json:"used"`
 }
 
 // UsedBy defines model for UsedBy.
 type UsedBy struct {
 	// ID сценария
-	Id *string `json:"id,omitempty"`
+	Id string `json:"id"`
 
 	// Имя сценария
-	Name *string `json:"name,omitempty"`
+	Name string `json:"name"`
 }
+
+// Approver decision:
+//  * approved - approver approved block
+//  * rejected - approver rejected block
+type ApproverDecision string
+
+// Basic operand, used for polymorphism
+type BasicOperand struct {
+	DataType    string                  `json:"dataType"`
+	OperandType BasicOperandOperandType `json:"operandType"`
+}
+
+// BasicOperandOperandType defines model for BasicOperand.OperandType.
+type BasicOperandOperandType string
+
+// Block type (language)
+type BlockType string
+
+// Used operator to compare operands
+type CompareOperator string
 
 // EriusTaskResponse defines model for eriusTaskResponse.
 type EriusTaskResponse struct {
-	Author        *string                 `json:"author,omitempty"`
-	BlueprintId   *string                 `json:"blueprint_id,omitempty"`
-	Debug         *bool                   `json:"debug,omitempty"`
-	Description   *string                 `json:"description,omitempty"`
-	HumanStatus   *string                 `json:"human_status,omitempty"`
-	Id            *string                 `json:"id,omitempty"`
-	LastChangedAt *string                 `json:"last_changed_at,omitempty"`
-	Name          *string                 `json:"name,omitempty"`
-	Parameters    *map[string]interface{} `json:"parameters,omitempty"`
-	StartedAt     *string                 `json:"started_at,omitempty"`
-	Status        *string                 `json:"status,omitempty"`
-	Steps         *[]Step                 `json:"steps,omitempty"`
-	VersionId     *string                 `json:"version_id,omitempty"`
-	WorkNumber    *string                 `json:"work_number,omitempty"`
+	Author      string `json:"author"`
+	BlueprintId string `json:"blueprint_id"`
+	Debug       bool   `json:"debug"`
+	Description string `json:"description"`
+
+	// Task human readable status
+	HumanStatus   TaskHumanStatus        `json:"human_status"`
+	Id            string                 `json:"id"`
+	LastChangedAt string                 `json:"last_changed_at"`
+	Name          string                 `json:"name"`
+	Parameters    map[string]interface{} `json:"parameters"`
+	StartedAt     string                 `json:"started_at"`
+	Status        string                 `json:"status"`
+	Steps         []Step                 `json:"steps"`
+	VersionId     string                 `json:"version_id"`
+	WorkNumber    string                 `json:"work_number"`
 }
+
+// Executor decision:
+//  * executed - executor executed block
+//  * rejected - executor rejected block
+type ExecutionDecision string
 
 // HttpError defines model for httpError.
 type HttpError struct {
@@ -370,7 +662,48 @@ type HttpError struct {
 // HttpResponse defines model for httpResponse.
 type HttpResponse struct {
 	Data       *map[string]interface{} `json:"data,omitempty"`
-	StatusCode *int                    `json:"status_code,omitempty"`
+	StatusCode int                     `json:"status_code"`
+}
+
+// Operand for comparison
+type Operand interface{}
+
+// Pipeline defines model for pipeline.
+type Pipeline struct {
+	Blocks     Pipeline_Blocks `json:"blocks"`
+	Entrypoint string          `json:"entrypoint"`
+}
+
+// Pipeline_Blocks defines model for Pipeline.Blocks.
+type Pipeline_Blocks struct {
+	AdditionalProperties map[string]EriusFunc `json:"-"`
+}
+
+// Tag status:
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
+type ScenarioStatus int
+
+// Task human readable status
+type TaskHumanStatus string
+
+// ValueOperand defines model for valueOperand.
+type ValueOperand struct {
+	// Embedded struct due to allOf(#/components/schemas/basicOperand)
+	BasicOperand `yaml:",inline"`
+	// Embedded fields due to inline allOf schema
+	Value string `json:"value"`
+}
+
+// VariableOperand defines model for variableOperand.
+type VariableOperand struct {
+	// Embedded struct due to allOf(#/components/schemas/basicOperand)
+	BasicOperand `yaml:",inline"`
+	// Embedded fields due to inline allOf schema
+	VariableRef string `json:"variableRef"`
 }
 
 // CreateDebugTaskJSONBody defines parameters for CreateDebugTask.
@@ -572,25 +905,25 @@ func (a EriusFunc_Next) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for EriusScenario_Pipeline_Blocks. Returns the specified
+// Getter for additional properties for Pipeline_Blocks. Returns the specified
 // element and whether it was found
-func (a EriusScenario_Pipeline_Blocks) Get(fieldName string) (value EriusFunc, found bool) {
+func (a Pipeline_Blocks) Get(fieldName string) (value EriusFunc, found bool) {
 	if a.AdditionalProperties != nil {
 		value, found = a.AdditionalProperties[fieldName]
 	}
 	return
 }
 
-// Setter for additional properties for EriusScenario_Pipeline_Blocks
-func (a *EriusScenario_Pipeline_Blocks) Set(fieldName string, value EriusFunc) {
+// Setter for additional properties for Pipeline_Blocks
+func (a *Pipeline_Blocks) Set(fieldName string, value EriusFunc) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]EriusFunc)
 	}
 	a.AdditionalProperties[fieldName] = value
 }
 
-// Override default JSON handling for EriusScenario_Pipeline_Blocks to handle AdditionalProperties
-func (a *EriusScenario_Pipeline_Blocks) UnmarshalJSON(b []byte) error {
+// Override default JSON handling for Pipeline_Blocks to handle AdditionalProperties
+func (a *Pipeline_Blocks) UnmarshalJSON(b []byte) error {
 	object := make(map[string]json.RawMessage)
 	err := json.Unmarshal(b, &object)
 	if err != nil {
@@ -611,8 +944,8 @@ func (a *EriusScenario_Pipeline_Blocks) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Override default JSON handling for EriusScenario_Pipeline_Blocks to handle AdditionalProperties
-func (a EriusScenario_Pipeline_Blocks) MarshalJSON() ([]byte, error) {
+// Override default JSON handling for Pipeline_Blocks to handle AdditionalProperties
+func (a Pipeline_Blocks) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
