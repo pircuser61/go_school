@@ -12,7 +12,7 @@ type SyncDataStart struct {
 	done            bool
 }
 
-type GoStartParallelTaskBlock struct {
+type GoBeginParallelTaskBlock struct {
 	Name   string
 	Title  string
 	Input  map[string]string
@@ -24,39 +24,36 @@ type GoStartParallelTaskBlock struct {
 	Pipeline *ExecutablePipeline
 }
 
-func (gb *GoStartParallelTaskBlock) GetStatus() Status {
+func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoStartParallelTaskBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *GoStartParallelTaskBlock) GetType() string {
+func (gb *GoBeginParallelTaskBlock) GetType() string {
 	return BlockWaitForAllInputsId
 }
 
-func (gb *GoStartParallelTaskBlock) Inputs() map[string]string {
+func (gb *GoBeginParallelTaskBlock) Inputs() map[string]string {
 	return gb.Input
 }
 
-func (gb *GoStartParallelTaskBlock) Outputs() map[string]string {
+func (gb *GoBeginParallelTaskBlock) Outputs() map[string]string {
 	return gb.Output
 }
 
-func (gb *GoStartParallelTaskBlock) IsScenario() bool {
+func (gb *GoBeginParallelTaskBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoStartParallelTaskBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error {
-	//ctx, s := trace.StartSpan(ctx, "run_go_block")
-	//defer s.End()
-
+func (gb *GoBeginParallelTaskBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error {
 	runCtx.AddStep(gb.Name)
 	return nil
 }
 
-func (gb *GoStartParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool) {
+func (gb *GoBeginParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := gb.Nexts[DefaultSocket]
 	if !ok {
 		return nil, false
@@ -64,23 +61,23 @@ func (gb *GoStartParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool
 	return nexts, true
 }
 
-func (gb *GoStartParallelTaskBlock) Skipped(_ *store.VariableStore) []string {
+func (gb *GoBeginParallelTaskBlock) Skipped(_ *store.VariableStore) []string {
 	return nil
 }
 
-func (gb *GoStartParallelTaskBlock) GetState() interface{} {
+func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *GoStartParallelTaskBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoBeginParallelTaskBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *GoStartParallelTaskBlock) Model() script.FunctionModel {
+func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
-		ID:        BlockGoStartParallelTaskId,
+		ID:        BlockGoBeginParallelTaskId,
 		BlockType: script.TypeGo,
-		Title:     BlockGoStartParallelTaskTitle,
+		Title:     BlockGoBeginParallelTaskTitle,
 		Inputs:    nil,
 		Outputs:   nil,
 		Sockets:   []string{DefaultSocket},

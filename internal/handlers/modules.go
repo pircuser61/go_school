@@ -23,7 +23,7 @@ const (
 	ConnectorBase        = "connector"
 	ForBase              = "for"
 	StringsIsEqualBase   = "strings_is_equal"
-	StartParallelTask    = "start_parallel_task"
+	BeginParallelTask    = "begin_parallel_task"
 )
 
 // GetModules godoc
@@ -68,7 +68,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	ifBlock := &pipeline.IF{}
 
-	startParallelTaskBlock := &pipeline.GoStartParallelTaskBlock{}
+	beginParallelTaskBlock := &pipeline.GoBeginParallelTaskBlock{}
 
 	eriusFunctions = append(eriusFunctions,
 		approverBlock.Model(),
@@ -79,7 +79,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		waitForAllInputs.Model(),
 		notificationBlock.Model(),
 		ifBlock.Model(),
-		startParallelTaskBlock.Model(),
+		beginParallelTaskBlock.Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
@@ -143,8 +143,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			eriusFunctions[i].Title = "Конец"
 		case WaitForAllImputsBase:
 			eriusFunctions[i].Title = WaitForAllImputsBase
-		case StartParallelTask:
-			eriusFunctions[i].Title = StartParallelTask
+		case BeginParallelTask:
+			eriusFunctions[i].Title = BeginParallelTask
 		}
 	}
 
