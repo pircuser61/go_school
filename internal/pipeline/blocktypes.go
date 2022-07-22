@@ -24,8 +24,8 @@ const (
 	BlockWaitForAllInputsId      = "wait_for_all_inputs"
 	BlockGoWaitForAllInputsTitle = "wait_for_all_inputs"
 
-	BlockGoStartParallelTaskId    = "start_parallel_task"
-	BlockGoStartParallelTaskTitle = "start_parallel_task"
+	BlockGoBeginParallelTaskId    = "begin_parallel_task"
+	BlockGoBeginParallelTaskTitle = "begin_parallel_task"
 
 	// BlockGoSdApplicationTitle represents id/type of sd block (using in script.FunctionModel)
 	BlockGoSdApplicationTitle = "servicedesk_application"
