@@ -50,8 +50,8 @@ func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
 	mux.Use(middleware.Timeout(param.TimeoutMiddleware))
 
 	const (
-		baseURL1 = "/api/pipeliner/v1"
-		baseURL2 = "/api/pipeliner/v2"
+		baseURL1 = "/api/pipeliner/v2"
+		baseURL2 = "/api/pipeliner/v1"
 	)
 
 	mux.Mount(baseURL2+"/pprof", middleware.Profiler())
