@@ -1193,15 +1193,15 @@ paths:
           default: 0
       - name: created
         in: query
-        schema: 
+        schema:
           $ref: '#/components/schemas/Created'
       - name: archived
         in: query
-        schema: 
+        schema:
           type: boolean
       - name: selectAs
         in: query
-        schema: 
+        schema:
           type: string
       responses:
         200:
@@ -1633,7 +1633,7 @@ components:
           required:
             - entrypoint
             - blocks
-            
+
     EriusScenario:
       type: object
       description: A single scenario with all content
@@ -1795,7 +1795,7 @@ components:
         status:
           type: integer
           description: 1 - Created, 3 - Deleted
-      
+
     taskHumanStatus:
       type: string
       description: Task human readable status
@@ -1854,6 +1854,17 @@ components:
         - steps
         - work_number
         - blueprint_id
+
+    approverType:
+        type: string
+        description: >
+          Approver type:
+           * User - Single user
+           * Group - Approver group ID
+           * Head - Receiver's head
+           * FromSchema - Selected by initiator
+        enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
+        x-enum-varnames: [ "user", "group", "head", "fromSchema" ]
 
     EriusTasks:
       type: object
@@ -2054,7 +2065,7 @@ components:
       required:
         - decision
         - comment
-    
+
     approverDecision:
       type: string
       enum:
@@ -2062,7 +2073,7 @@ components:
         - rejected
       description: >
         Approver decision:
-         * approved - approver approved block 
+         * approved - approver approved block
          * rejected - approver rejected block
 
     executionDecision:
@@ -2578,10 +2589,10 @@ components:
         - id
         - title
         - icon
-    Created:  
+    Created:
       type: object
       properties:
-        start: 
+        start:
           type: integer
-        end: 
+        end:
           type: integer
