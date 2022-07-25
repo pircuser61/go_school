@@ -12,8 +12,8 @@ func ptrToInt(v *int) int {
 	return 0
 }
 
-func parseLimitOffsetWithDefault(limit, offset *int) (int, int) {
-	var lim, off = defaultLimit, defaultOffset
+func parseLimitOffsetWithDefault(limit, offset *int) (lim, off int) {
+	lim, off = defaultLimit, defaultOffset
 	if limit != nil {
 		lim = *limit
 	}

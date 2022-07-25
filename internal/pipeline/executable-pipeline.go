@@ -208,14 +208,14 @@ func (ep *ExecutablePipeline) changeTaskStatus(ctx c.Context, taskStatus int) er
 }
 
 // TODO: что-то сделать
-func (ep *ExecutablePipeline) updateStatusByStep(c c.Context, status TaskHumanStatus) error {
+func (ep *ExecutablePipeline) updateStatusByStep(ctx c.Context, status TaskHumanStatus) error {
 	if status != "" {
-		return ep.Storage.UpdateTaskHumanStatus(c, ep.TaskID, string(status))
+		return ep.Storage.UpdateTaskHumanStatus(ctx, ep.TaskID, string(status))
 	}
 	return nil
 }
 
-func (ep *ExecutablePipeline) handleInitiatorNotification(c c.Context, step string) error {
+func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step string) error {
 	if ep.notifiedBlocks == nil {
 		ep.notifiedBlocks = make(map[string][]TaskHumanStatus)
 	}
@@ -240,13 +240,13 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(c c.Context, step stri
 			ep.currDescription,
 			ep.Sender.SdAddress)
 		if ep.initiatorEmail == "" {
-			email, err := ep.People.GetUserEmail(c, ep.Initiator)
+			email, err := ep.People.GetUserEmail(ctx, ep.Initiator)
 			if err != nil {
 				return err
 			}
 			ep.initiatorEmail = email
 		}
-		if err := ep.Sender.SendNotification(c, []string{ep.initiatorEmail}, tmpl); err != nil {
+		if err := ep.Sender.SendNotification(ctx, []string{ep.initiatorEmail}, tmpl); err != nil {
 			return err
 		}
 		ss = append(ss, currStatus)

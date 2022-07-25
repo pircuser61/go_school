@@ -46,7 +46,8 @@ func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.Eriu
 			return nil, err
 		}
 	} else {
-		if err = db.setTaskChild(c, tx, dto.WorkNumber, dto.TaskID); err != nil {
+		err = db.setTaskChild(c, tx, dto.WorkNumber, dto.TaskID)
+		if err != nil {
 			return nil, err
 		}
 
