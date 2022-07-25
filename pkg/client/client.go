@@ -164,7 +164,7 @@ func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*
 }
 
 // doRequest - рутинная функа, делает запрос и анмаршаллит данные
-func doRequest[V any](ctx context.Context, client *http.Client, req *http.Request) (*V, int, error) {
+func doRequest[V any](ctx context.Context, client *http.Client, req *http.Request) (v *V, i int, err error) {
 	req = req.WithContext(ctx)
 
 	resp, err := client.Do(req)

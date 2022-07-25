@@ -43,7 +43,7 @@ func (ae *APIEnv) GetPipelineTags(w http.ResponseWriter, req *http.Request, pipe
 }
 
 //nolint:dupl //its different function
-func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request, pipelineID string, tagID string) {
+func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request, pipelineID, tagID string) {
 	ctx, s := trace.StartSpan(req.Context(), "attach_tag")
 	defer s.End()
 
@@ -100,8 +100,8 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request, pipelineID
 }
 
 //nolint:dupl //its different function
-func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request, pipelineID string, tagID string) {
-	ctx, s := trace.StartSpan(req.Context(), "remove_pipeline_tag")
+func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request, pipelineID, tagID string) {
+	ctx, s := trace.StartSpan(req.Context(), "detach_tag")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)

@@ -20,6 +20,20 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
+func (_m *MockedDatabase) GetVersionByWorkNumber(c context.Context, workNumber string) (*entity.EriusScenario, error) {
+	ret := _m.Called(c, workNumber)
+
+	var r0 error
+	var r1 *entity.EriusScenario
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(c, workNumber)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r1, r0
+}
+
 // ActiveAlertNGSA provides a mock function with given fields: c, sever, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc
 func (_m *MockedDatabase) ActiveAlertNGSA(c context.Context, sever int, state string, source string, eventType string, cause string, addInf string, addTxt string, moID string, specProb string, notID string, usertext string, moi string, moc string) error {
 	ret := _m.Called(c, sever, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc)
@@ -135,12 +149,12 @@ func (_m *MockedDatabase) CreateTag(c context.Context, e *entity.EriusTagInfo, a
 }
 
 // CreateTask provides a mock function with given fields: c, taskID, versionID, author, isDebugMode, parameters
-func (_m *MockedDatabase) CreateTask(c context.Context, taskID uuid.UUID, versionID uuid.UUID, author string, isDebugMode bool, parameters []byte) (*entity.EriusTask, error) {
-	ret := _m.Called(c, taskID, versionID, author, isDebugMode, parameters)
+func (_m *MockedDatabase) CreateTask(c context.Context, dto *db.CreateTaskDTO) (*entity.EriusTask, error) {
+	ret := _m.Called(c, dto.TaskID, dto.VersionID, dto.Author, dto.IsDebug, dto.Params)
 
 	var r0 *entity.EriusTask
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, string, bool, []byte) *entity.EriusTask); ok {
-		r0 = rf(c, taskID, versionID, author, isDebugMode, parameters)
+		r0 = rf(c,  dto.TaskID, dto.VersionID, dto.Author, dto.IsDebug, dto.Params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusTask)
@@ -149,7 +163,7 @@ func (_m *MockedDatabase) CreateTask(c context.Context, taskID uuid.UUID, versio
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, string, bool, []byte) error); ok {
-		r1 = rf(c, taskID, versionID, author, isDebugMode, parameters)
+		r1 = rf(c, dto.TaskID, dto.VersionID, dto.Author, dto.IsDebug, dto.Params)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -13,6 +13,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -154,7 +155,13 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := ae.DB.CreateTask(ctx, uuid.New(), version.VersionID, "", true, parameters)
+	task, err := ae.DB.CreateTask(ctx, &db.CreateTaskDTO{
+		TaskID:    uuid.New(),
+		VersionID: version.VersionID,
+		Author:    "",
+		IsDebug:   true,
+		Params:    parameters,
+	})
 	if err != nil {
 		e := CreateWorkError
 		log.Error(e.errorMessage(err))

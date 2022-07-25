@@ -1,7 +1,7 @@
 package api
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -135,7 +135,12 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID
 		return
 	}
 
-	runResponse, err := ae.execVersion(ctx, w, req, p, false)
+	runResponse, err := ae.execVersion(ctx, &execVersionDTO{
+		version:  p,
+		withStop: false,
+		w:        w,
+		req:      req,
+	})
 	if err != nil {
 		e := PipelineExecutionError
 		log.Error(e.errorMessage(err))
@@ -200,7 +205,7 @@ func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Reques
 	wg.Add(len(versions))
 	respChan := make(chan *entity.RunResponse, len(versions))
 
-	ctx = context.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
+	ctx = c.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
 		BlueprintID:     req.BlueprintId,
 		Description:     req.Description,
 		ApplicationBody: req.ApplicationBody,
@@ -211,7 +216,12 @@ func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Reques
 		go func(wg *sync.WaitGroup, version entity.EriusScenario, ch chan *entity.RunResponse) {
 			defer wg.Done()
 
-			v, execErr := ae.execVersion(ctx, w, r, &version, false)
+			v, execErr := ae.execVersion(ctx, &execVersionDTO{
+				version:  &version,
+				withStop: false,
+				w:        w,
+				req:      r,
+			})
 			if execErr != nil {
 				log.Error(execErr)
 				return
@@ -279,6 +289,47 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 
 		return
 	}
+
+	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.BlueprintId)
+	if err != nil {
+		e := GetVersionsByBlueprintIdError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	ctx = c.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
+		BlueprintID:     req.BlueprintId,
+		Description:     req.Description,
+		ApplicationBody: req.ApplicationBody,
+	})
+
+	started, execErr := ae.execVersion(ctx, &execVersionDTO{
+		version:     version,
+		withStop:    false,
+		w:           w,
+		req:         r,
+		makeNewWork: true,
+		workNumber:  req.WorkNumber,
+	})
+	if execErr != nil {
+		log.Error(execErr)
+		return
+	}
+
+	if started == nil {
+		log.Error("can`t start version")
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, started)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
 }
 
 func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versionID string) {
@@ -336,7 +387,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versio
 }
 
 func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request, versionID string) {
-	ctx, s := trace.StartSpan(req.Context(), "get_version")
+	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -492,29 +543,38 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-//nolint //need big cyclo,need equal string for all usages
-func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *http.Request,
-	p *entity.EriusScenario, withStop bool) (*entity.RunResponse, error) {
+type execVersionDTO struct {
+	version  *entity.EriusScenario
+	withStop bool
 
+	w   http.ResponseWriter
+	req *http.Request
+
+	makeNewWork bool
+	workNumber  string
+}
+
+//nolint //need big cyclo,need equal string for all usages
+func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunResponse, error) {
 	_, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	reqID := req.Header.Get(XRequestIDHeader)
+	reqID := dto.req.Header.Get(XRequestIDHeader)
 
-	b, err := io.ReadAll(req.Body)
+	b, err := io.ReadAll(dto.req.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	defer req.Body.Close()
+	defer dto.req.Body.Close()
 
 	mon := monitoring.New()
 	mon.Set(reqID, monitor.PipelinerData{
-		PipelineUUID: p.ID.String(),
-		VersionUUID:  p.VersionID.String(),
-		Name:         p.Name,
+		PipelineUUID: dto.version.ID.String(),
+		VersionUUID:  dto.version.VersionID.String(),
+		Name:         dto.version.Name,
 	})
 
 	var pipelineVars map[string]interface{}
@@ -526,53 +586,57 @@ func (ae *APIEnv) execVersion(ctx context.Context, w http.ResponseWriter, req *h
 				log.WithError(monErr).Error("can't send data to monitoring")
 			}
 			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+			_ = e.sendError(dto.w)
 		}
 	}
 
-	log.Info("--- running pipeline:", p.Name)
+	log.Info("--- running pipeline:", dto.version.Name)
 
-	user, err := user.GetUserInfoFromCtx(ctx)
+	usr, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
 		return nil, errors.Wrap(err, e.error())
 	}
 
-	arg := &execVersionInternalParams{
+	arg := &execVersionInternalDTO{
 		reqID:         reqID,
-		p:             p,
+		p:             dto.version,
 		vars:          pipelineVars,
-		syncExecution: withStop,
-		userName:      user.Username,
+		syncExecution: dto.withStop,
+		userName:      usr.Username,
+		makeNewWork:   dto.makeNewWork,
+		workNumber:    dto.workNumber,
 	}
 
-	ep, e, err := ae.execVersionInternal(ctx, arg)
+	executablePipeline, e, err := ae.execVersionInternal(ctx, arg)
 	if err != nil {
 		log.Error(e.errorMessage(err))
 		return nil, errors.Wrap(err, e.error())
 	}
 
 	return &entity.RunResponse{
-		PipelineID: ep.PipelineID,
-		WorkNumber: ep.WorkNumber,
+		PipelineID: executablePipeline.PipelineID,
+		WorkNumber: executablePipeline.WorkNumber,
 		Status:     statusRunned,
 	}, nil
 }
 
-type execVersionInternalParams struct {
+type execVersionInternalDTO struct {
 	reqID         string
 	p             *entity.EriusScenario
 	vars          map[string]interface{}
 	syncExecution bool
 	userName      string
+	makeNewWork   bool
+	workNumber    string
 }
 
-func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInternalParams) (*pipeline.ExecutablePipeline, Err, error) {
+func (ae *APIEnv) execVersionInternal(ctx c.Context, p *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
 	log := logger.GetLogger(ctx)
 
 	//nolint:staticcheck // поправить потом
-	ctx = context.WithValue(ctx, XRequestIDHeader, p.reqID)
+	ctx = c.WithValue(ctx, XRequestIDHeader, p.reqID)
 
 	ep := pipeline.ExecutablePipeline{}
 	ep.PipelineID = p.p.ID
@@ -591,13 +655,17 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 	ep.Name = p.p.Name
 	ep.Initiator = p.userName
 
+	if p.makeNewWork {
+		ep.WorkNumber = p.workNumber
+	}
+
 	err := ep.CreateBlocks(ctx, p.p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
 		return &ep, e, err
 	}
 
-	vs := store.NewStore()
+	variableStorage := store.NewStore()
 
 	pipelineVars := p.vars
 
@@ -607,8 +675,12 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 		return &ep, e, err
 	}
 
-	err = ep.CreateTask(ctx, p.userName, false, parameters)
-	if err != nil {
+	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
+		Author:     p.userName,
+		IsDebug:    false,
+		Params:     parameters,
+		WorkNumber: p.workNumber,
+	}); err != nil {
 		e := PipelineRunError
 		return &ep, e, err
 	}
@@ -621,20 +693,20 @@ func (ae *APIEnv) execVersionInternal(ctx context.Context, p *execVersionInterna
 			ep.Output[item.Global] = ""
 		}
 
-		err = ep.Run(ctx, vs)
+		err = ep.Run(ctx, variableStorage)
 		if err != nil {
-			vs.AddError(err)
+			variableStorage.AddError(err)
 			return nil, PipelineExecutionError, err
 		}
 	} else {
 		go func() {
 			//nolint:staticcheck // поправить потом TODO
-			routineCtx := context.WithValue(context.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-			routineCtx = context.WithValue(routineCtx, pipeline.SdApplicationDataCtx{}, ctx.Value(pipeline.SdApplicationDataCtx{}))
+			routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+			routineCtx = c.WithValue(routineCtx, pipeline.SdApplicationDataCtx{}, ctx.Value(pipeline.SdApplicationDataCtx{}))
 			routineCtx = logger.WithLogger(routineCtx, log)
-			err = ep.Run(routineCtx, vs)
+			err = ep.Run(routineCtx, variableStorage)
 			if err != nil {
-				vs.AddError(err)
+				variableStorage.AddError(err)
 			}
 		}()
 	}
