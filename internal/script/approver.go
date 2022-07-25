@@ -14,10 +14,10 @@ func (a ApproverType) String() string {
 type AutoAction string
 
 const (
-	ApproverTypeUser       ApproverType = "User"
-	ApproverTypeGroup      ApproverType = "Group"
-	ApproverTypeHead       ApproverType = "Head"
-	ApproverTypeFromSchema ApproverType = "FromSchema"
+	ApproverTypeUser       ApproverType = "user"
+	ApproverTypeGroup      ApproverType = "group"
+	ApproverTypeHead       ApproverType = "head"
+	ApproverTypeFromSchema ApproverType = "fromSchema"
 
 	AutoActionApprove AutoAction = "approve"
 	AutoActionReject  AutoAction = "reject"

@@ -407,7 +407,7 @@ components:
            * Head - Receiver's head
            * FromSchema - Selected by initiator
         enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
-        x-enum-varnames: [ "User", "Group", "Head", "FromSchema" ]
+        x-enum-varnames: [ "user", "group", "head", "fromSchema" ]
 
     approverDecision:
       type: string
