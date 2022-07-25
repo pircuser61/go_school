@@ -1855,17 +1855,6 @@ components:
         - work_number
         - blueprint_id
 
-    approverType:
-        type: string
-        description: >
-          Approver type:
-           * User - Single user
-           * Group - Approver group ID
-           * Head - Receiver's head
-           * FromSchema - Selected by initiator
-        enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
-        x-enum-varnames: [ "user", "group", "head", "fromSchema" ]
-
     EriusTasks:
       type: object
       properties:
@@ -2516,7 +2505,7 @@ components:
            * Head - Receiver's head
            * FromSchema - Selected by initiator
         enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
-        x-enum-varnames: [ "User", "Group", "Head", "FromSchema" ]
+        x-enum-varnames: [ "user", "group", "head", "fromSchema" ]
 
     ApproverParams:
       type: object
