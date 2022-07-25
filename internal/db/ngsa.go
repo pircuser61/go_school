@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func (db *PGConnection) ActiveAlertNGSA(c context.Context, sever int,
+func (db *PGCon) ActiveAlertNGSA(c context.Context, sever int,
 	state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error {
 	t := time.Now()
 	// nolint:gocritic
@@ -49,7 +49,7 @@ func (db *PGConnection) ActiveAlertNGSA(c context.Context, sever int,
 	return err
 }
 
-func (db *PGConnection) ClearAlertNGSA(c context.Context, name string) error {
+func (db *PGCon) ClearAlertNGSA(c context.Context, name string) error {
 	t := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL

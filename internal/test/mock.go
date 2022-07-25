@@ -926,6 +926,10 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (m *MockDB) GetVersionByWorkNumber(c context.Context, workNumber string) (*entity.EriusScenario, error) {
+	return &entity.EriusScenario{}, nil
+}
+
 func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error) {
 	return nil, errNotImplemented
 }
@@ -1063,8 +1067,7 @@ func (m *MockDB) UpdateStepContext(_ context.Context, _ *db.UpdateStepRequest) e
 	return nil
 }
 
-func (m *MockDB) CreateTask(c context.Context, workID, versionID uuid.UUID, author string, isDebugMode bool,
-	parameters []byte) (*entity.EriusTask, error) {
+func (m *MockDB) CreateTask(c context.Context, dto *db.CreateTaskDTO) (*entity.EriusTask, error) {
 	return &entity.EriusTask{}, nil
 }
 

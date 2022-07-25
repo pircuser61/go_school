@@ -42,7 +42,7 @@ func Test_execVersion(t *testing.T) {
 
 		userName := "242"
 
-		if _, _, err := pipeliner.execVersionInternal(ctx, &execVersionInternalParams{
+		if _, _, err := pipeliner.execVersionInternal(ctx, &execVersionInternalDTO{
 			reqID:         reqId,
 			p:             &p,
 			vars:          vars,

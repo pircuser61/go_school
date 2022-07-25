@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -129,10 +129,24 @@ func (ep *ExecutablePipeline) IsScenario() bool {
 	return true
 }
 
-func (ep *ExecutablePipeline) CreateTask(ctx context.Context, author string, isDebugMode bool, parameters []byte) error {
+type CreateTaskDTO struct {
+	Author     string
+	IsDebug    bool
+	Params     []byte
+	WorkNumber string
+}
+
+func (ep *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
 	ep.TaskID = uuid.New()
 
-	task, err := ep.Storage.CreateTask(ctx, ep.TaskID, ep.VersionID, author, isDebugMode, parameters)
+	task, err := ep.Storage.CreateTask(ctx, &db.CreateTaskDTO{
+		TaskID:     ep.TaskID,
+		VersionID:  ep.VersionID,
+		Author:     dto.Author,
+		WorkNumber: dto.WorkNumber,
+		IsDebug:    dto.IsDebug,
+		Params:     dto.Params,
+	})
 	if err != nil {
 		return err
 	}
@@ -141,11 +155,11 @@ func (ep *ExecutablePipeline) CreateTask(ctx context.Context, author string, isD
 	return nil
 }
 
-func (ep *ExecutablePipeline) Run(ctx context.Context, runCtx *store.VariableStore) error {
+func (ep *ExecutablePipeline) Run(ctx c.Context, runCtx *store.VariableStore) error {
 	return ep.DebugRun(ctx, nil, runCtx)
 }
 
-func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasError bool, status Status) (uuid.UUID, time.Time, error) {
+func (ep *ExecutablePipeline) createStep(ctx c.Context, name string, hasError bool, status Status) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(ep.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
@@ -164,7 +178,7 @@ func (ep *ExecutablePipeline) createStep(ctx context.Context, name string, hasEr
 	})
 }
 
-func (ep *ExecutablePipeline) updateStep(ctx context.Context, id uuid.UUID, hasError bool, status Status) error {
+func (ep *ExecutablePipeline) updateStep(ctx c.Context, id uuid.UUID, hasError bool, status Status) error {
 	storageData, err := json.Marshal(ep.VarStore)
 	if err != nil {
 		return err
@@ -182,7 +196,7 @@ func (ep *ExecutablePipeline) updateStep(ctx context.Context, id uuid.UUID, hasE
 	})
 }
 
-func (ep *ExecutablePipeline) changeTaskStatus(ctx context.Context, taskStatus int) error {
+func (ep *ExecutablePipeline) changeTaskStatus(ctx c.Context, taskStatus int) error {
 	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, taskStatus)
 	if errChange != nil {
 		ep.VarStore.AddError(errChange)
@@ -194,14 +208,14 @@ func (ep *ExecutablePipeline) changeTaskStatus(ctx context.Context, taskStatus i
 }
 
 // TODO: что-то сделать
-func (ep *ExecutablePipeline) updateStatusByStep(c context.Context, status TaskHumanStatus) error {
+func (ep *ExecutablePipeline) updateStatusByStep(c c.Context, status TaskHumanStatus) error {
 	if status != "" {
 		return ep.Storage.UpdateTaskHumanStatus(c, ep.TaskID, string(status))
 	}
 	return nil
 }
 
-func (ep *ExecutablePipeline) handleInitiatorNotification(c context.Context, step string) error {
+func (ep *ExecutablePipeline) handleInitiatorNotification(c c.Context, step string) error {
 	if ep.notifiedBlocks == nil {
 		ep.notifiedBlocks = make(map[string][]TaskHumanStatus)
 	}
@@ -254,7 +268,7 @@ func (ep *ExecutablePipeline) stepCtx(start time.Time) *stepCtx {
 	return &stepCtx{stepStart: start, workNumber: ep.WorkNumber, workTitle: ep.Name, description: ep.currDescription}
 }
 
-func (ep *ExecutablePipeline) handleSkippedBlocks(ctx context.Context, runCtx *store.VariableStore) error {
+func (ep *ExecutablePipeline) handleSkippedBlocks(ctx c.Context, runCtx *store.VariableStore) error {
 	for step := range ep.SkippedBlocks {
 		currentBlock, ok := ep.Blocks[step]
 		if !ok || currentBlock == nil {
@@ -283,7 +297,7 @@ func (ep *ExecutablePipeline) handleSkippedBlocks(ctx context.Context, runCtx *s
 }
 
 //nolint:gocognit,gocyclo //its really complex
-func (ep *ExecutablePipeline) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
+func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "pipeline_flow")
 	defer s.End()
 
@@ -464,11 +478,11 @@ func (ep *ExecutablePipeline) GetState() interface{} {
 	return nil
 }
 
-func (ep *ExecutablePipeline) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (ep *ExecutablePipeline) Update(_ c.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
 
-func (ep *ExecutablePipeline) CreateBlocks(ctx context.Context, source map[string]entity.EriusFunc) error {
+func (ep *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]entity.EriusFunc) error {
 	ep.Blocks = make(map[string]Runner)
 
 	ctx, s := trace.StartSpan(ctx, "create_blocks")
@@ -489,7 +503,7 @@ func (ep *ExecutablePipeline) CreateBlocks(ctx context.Context, source map[strin
 }
 
 //nolint:gocyclo //ok
-func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, block *entity.EriusFunc) (Runner, error) {
+func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *entity.EriusFunc) (Runner, error) {
 	ctx, s := trace.StartSpan(ctx, "create_block")
 	defer s.End()
 
@@ -544,7 +558,11 @@ func (ep *ExecutablePipeline) CreateBlock(ctx context.Context, name string, bloc
 			return nil, err
 		}
 
-		err = epi.CreateTask(ctx, "Erius", false, parameters)
+		err = epi.CreateTask(ctx, &CreateTaskDTO{
+			Author:  "Erius",
+			IsDebug: false,
+			Params:  parameters,
+		})
 		if err != nil {
 			return nil, err
 		}

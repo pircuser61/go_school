@@ -304,7 +304,12 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request, pipeline
 		return
 	}
 
-	runResponse, err := ae.execVersion(ctx, w, req, p, withStop)
+	runResponse, err := ae.execVersion(ctx, &execVersionDTO{
+		version:  p,
+		withStop: withStop,
+		w:        w,
+		req:      req,
+	})
 	if err != nil {
 		e := PipelineExecutionError
 		log.Error(e.errorMessage(err))

@@ -14,7 +14,7 @@ import (
 
 type GRPCConfig struct {
 	Port string
-	Conn db.PGConnection
+	Conn db.PGCon
 }
 
 type GRPC struct {

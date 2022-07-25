@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"io"
 	"net/http"
 
@@ -154,7 +155,13 @@ func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := ae.DB.CreateTask(ctx, uuid.New(), version.VersionID, "", true, parameters)
+	task, err := ae.DB.CreateTask(ctx, &db.CreateTaskDTO{
+		TaskID:    uuid.New(),
+		VersionID: version.VersionID,
+		Author:    "",
+		IsDebug:   true,
+		Params:    parameters,
+	})
 	if err != nil {
 		e := CreateWorkError
 		log.Error(e.errorMessage(err))
