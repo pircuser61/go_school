@@ -129,3 +129,20 @@ func NewApplicationPersonStatusNotification(id, name, action, deadline, descript
 		},
 	}
 }
+
+func NewAnswerSendToEditTemplate(id, name, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка %s  требует доработки", id),
+		Text: `Уважаемый коллега, заявка {{.Id}} <b>требует доработки.</b><br>
+				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
+		Variables: struct {
+			Id   string `json:"id"`
+			Name string `json:"name"`
+			Link string `json:"link"`
+		}{
+			Id:   id,
+			Name: name,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}

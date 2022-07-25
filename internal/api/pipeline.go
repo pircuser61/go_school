@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"context"
@@ -7,8 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-
-	"github.com/go-chi/chi/v5"
 
 	"github.com/google/uuid"
 
@@ -23,19 +21,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
-// @Summary Create pipeline
-// @Description Создать новый сценарий
-// @Tags pipeline
-// @ID      create-pipeline
-// @Accept json
-// @Produce json
-// @Param pipeline body entity.EriusScenario true "New scenario"
-// @Success 200 {object} httpResponse{data=entity.EriusScenario}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines [post]
-//nolint:dupl //diff logic
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
@@ -119,28 +104,13 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// GetPipeline
-// @Summary Get pipeline
-// @Description Получить сценарий по ID
-// @Tags pipeline
-// @ID      get-pipeline
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @success 200 {object} httpResponse{data=entity.EriusScenario}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/{pipelineID} [get]
-//nolint:dupl //its different
-func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "pipelineID")
-
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(pipelineID)
 	if err != nil {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(err))
@@ -177,16 +147,6 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// ListPipelines godoc
-// @Summary Get list of pipelines
-// @Description Список сценариев
-// @Tags pipeline
-// @ID      list-pipelines
-// @Produce json
-// @success 200 {object} httpResponse{data=entity.EriusScenarioList}
-// @success 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines [get]
 func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "list_pipelines")
 	defer s.End()
@@ -237,26 +197,13 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// @Summary Delete Pipeline
-// @Description Удалить сценарий
-// @Tags pipeline
-// @ID      delete-pipeline
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @Success 200 {object} httpResponse
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/{pipelineID} [delete]
-func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "delete_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "pipelineID")
-
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(pipelineID)
 	if err != nil {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(err))
@@ -320,22 +267,7 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-type RunPipelineBody map[string]interface{}
-
-// @Summary Run Pipeline
-// @Description Запустить сценарий
-// @Tags pipeline, run
-// @ID run-pipeline
-// @Accept json
-// @Produce json
-// @Param variables body RunPipelineBody false "pipeline input"
-// @Param pipelineID path string true "Pipeline ID"
-// @Success 200 {object} httpResponse{data=entity.RunResponse}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /run/{pipelineID} [post]
-func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "run_pipeline")
 	defer s.End()
 
@@ -354,9 +286,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	idParam := chi.URLParam(req, "pipelineID")
-
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(pipelineID)
 	if err != nil {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(err))

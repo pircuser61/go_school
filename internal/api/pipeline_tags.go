@@ -1,9 +1,7 @@
-package handlers
+package api
 
 import (
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
 
 	"github.com/google/uuid"
 
@@ -13,25 +11,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
-// GetPipelineTags
-// @Summary Get Pipeline Tags
-// @Description Список тегов сценария
-// @Tags pipeline, tags
-// @ID      get-pipeline-tags
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @success 200 {object} httpResponse{data=[]entity.EriusTagInfo}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/{pipelineID}/tags [get]
-func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetPipelineTags(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tag")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-
-	pipelineID := chi.URLParam(req, "pipelineID")
 
 	pID, err := uuid.Parse(pipelineID)
 	if err != nil {
@@ -58,26 +42,12 @@ func (ae *APIEnv) GetPipelineTag(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// @Summary Attach Tag
-// @Description Прикрепить тег к сценарию
-// @Tags pipeline, tags
-// @ID      attach-tag
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @Param ID path string true "Tag ID"
-// @Success 200 {object} httpResponse{data=entity.EriusTagInfo}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/{pipelineID}/tags/{ID} [put]
 //nolint:dupl //its different function
-func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request, pipelineID string, tagID string) {
 	ctx, s := trace.StartSpan(req.Context(), "attach_tag")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-
-	pipelineID := chi.URLParam(req, "pipelineID")
 
 	pID, err := uuid.Parse(pipelineID)
 	if err != nil {
@@ -87,8 +57,6 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-
-	tagID := chi.URLParam(req, "ID")
 
 	tID, err := uuid.Parse(tagID)
 	if err != nil {
@@ -131,26 +99,12 @@ func (ae *APIEnv) AttachTag(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// @Summary Detach Tag
-// @Description Открепить тег от сценария
-// @Tags pipeline, tags
-// @ID      detach-tag
-// @Produce json
-// @Param pipelineID path string true "Pipeline ID"
-// @Param ID path string true "Tag ID"
-// @Success 200 {object} httpResponse
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/{pipelineID}/tags/{ID} [delete]
 //nolint:dupl //its different function
-func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request, pipelineID string, tagID string) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_pipeline_tag")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-
-	pipelineID := chi.URLParam(req, "pipelineID")
 
 	pID, err := uuid.Parse(pipelineID)
 	if err != nil {
@@ -160,8 +114,6 @@ func (ae *APIEnv) DetachTag(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-
-	tagID := chi.URLParam(req, "ID")
 
 	tID, err := uuid.Parse(tagID)
 	if err != nil {

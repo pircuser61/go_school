@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"encoding/json"
@@ -42,6 +42,7 @@ const (
 	AuthServiceError
 	GetTasksError
 	GetTaskError
+	GetTasksCountError
 	GetAllTagsError
 	GetPipelineTagsError
 	GetTagError
@@ -107,6 +108,7 @@ var errorText = map[Err]string{
 	UnauthError:                   "not allowed",
 	AuthServiceError:              "auth service failed",
 	GetTasksError:                 "can't find tasks",
+	GetTasksCountError:            "can't get amount of tasks",
 	GetTaskError:                  "can't get task",
 	GetAllTagsError:               "can't get all tags",
 	GetPipelineTagsError:          "can't get pipeline tags",
@@ -173,6 +175,7 @@ var errorDescription = map[Err]string{
 	UnauthError:                   "Нет разрешений для выполнения операции",
 	AuthServiceError:              "Ошибка сервиса авторизации",
 	GetTasksError:                 "Не удалось найти запуски сценария",
+	GetTasksCountError:            "Не удалось получить количество задач",
 	GetTaskError:                  "Не удалось получить экземпляр задачи",
 	GetAllTagsError:               "Невозможно получить список тегов",
 	GetPipelineTagsError:          "Невозможно получить список тегов сценария",

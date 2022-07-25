@@ -653,6 +653,28 @@ func (_m *MockedDatabase) GetTasks(c context.Context, filters entity.TaskFilter)
 	return r0, r1
 }
 
+func (_m *MockedDatabase) GetTasksCount(c context.Context, userName string) (*entity.CountTasks, error) {
+	ret := _m.Called(c, userName)
+
+	var r0 *entity.CountTasks
+	if rf, ok := ret.Get(0).(func(context.Context, string) *entity.CountTasks); ok {
+		r0 = rf(c, userName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.CountTasks)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(c, userName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetUnfinishedTaskStepsByWorkIdAndStepType provides a mock function with given fields: c, id, stepType
 func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(c context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error) {
 	ret := _m.Called(c, id, stepType)

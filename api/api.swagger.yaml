@@ -1,270 +1,1913 @@
-openapi: '3.0.0'
+openapi: 3.0.1
 info:
-  title: Pipeliner
-  version: 1.0.0
-
+  title: Pipeliner API
+  contact: {}
+  version: "0.1"
 servers:
-  - url: https://dev.jocasta.mts-corp.ru/{basePath}
-    description: Dev
-    variables:
-      basePath:
-        default: api/pipeliner/v1
-  - url: http://localhost:8000/{basePath}
-    description: Local
-    variables:
-      basePath:
-        default: api/pipeliner/v1
-
-security:
-  - OAuth2:
-      - openid
-
+- url: //localhost:8181/api/pipeliner/v1
+paths:
+  /debug/:
+    post:
+      tags:
+      - debug
+      summary: Create debug task
+      description: Создать сессию отладки
+      operationId: create-debug-task
+      requestBody:
+        description: New debug task
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusTask'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: debug
+  /debug/{workNumber}:
+    get:
+      tags:
+      - tasks
+      summary: Debug task
+      description: Получить debug-задачу
+      operationId: debug-task
+      parameters:
+      - name: workNumber
+        in: path
+        description: work number
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DebugResult'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /debug/run:
+    post:
+      tags:
+      - debug
+      summary: Start debug task
+      description: Начать отладку
+      operationId: start-debug-task
+      requestBody:
+        description: debug request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DebugRunRequest'
+        required: false
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusTask'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+  /modules:
+    get:
+      tags:
+      - modules
+      summary: Get list of modules
+      description: Список блоков
+      operationId: get-modules
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusFunctionList'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /modules/{moduleName}:
+    post:
+      tags:
+      - modules
+      summary: Run Module By Name
+      description: Запустить блок
+      operationId: module-run
+      parameters:
+      - name: moduleName
+        in: path
+        description: module name
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UsageResponse'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /modules/{moduleName}/usage:
+    get:
+      tags:
+      - modules
+      summary: Usage of module in pipelines
+      description: Сценарии, в которых используется блок
+      operationId: module-usage
+      parameters:
+      - name: moduleName
+        in: path
+        description: module name
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UsageResponse'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /modules/usage:
+    get:
+      tags:
+      - modules
+      summary: Get list of modules usage
+      description: Блоки и сценарии, в которых они используются
+      operationId: all-modules-usage
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AllUsageResponse'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines:
+    get:
+      tags:
+      - pipeline
+      summary: Get list of pipelines
+      description: Список сценариев
+      operationId: list-pipelines
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusScenarioList'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    post:
+      tags:
+      - pipeline
+      summary: Create pipeline
+      description: Создать новый сценарий
+      operationId: create-pipeline
+      requestBody:
+        description: New scenario
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EriusScenario'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusScenario'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: pipeline
+  /pipelines/{pipelineID}:
+    get:
+      tags:
+      - pipeline
+      summary: Get pipeline
+      description: Получить сценарий по ID
+      operationId: get-pipeline
+      parameters:
+      - name: pipelineID
+        in: path
+        description: Pipeline ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusScenario'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    delete:
+      tags:
+      - pipeline
+      summary: Delete Pipeline
+      description: Удалить сценарий
+      operationId: delete-pipeline
+      parameters:
+      - name: pipelineID
+        in: path
+        description: Pipeline ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/{pipelineID}/scheduler-tasks:
+    post:
+      tags:
+      - pipeline
+      summary: Active scheduler tasks
+      description: Наличие у сценария активных заданий в шедулере
+      operationId: list-scheduler-tasks
+      parameters:
+      - name: pipelineID
+        in: path
+        description: Pipeline ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SchedulerTasksResponse'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/{pipelineID}/tags:
+    get:
+      tags:
+      - pipeline
+      - tags
+      summary: Get Pipeline Tags
+      description: Список тегов сценария
+      operationId: get-pipeline-tags
+      parameters:
+      - name: pipelineID
+        in: path
+        description: Pipeline ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EriusTagInfo'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/{pipelineID}/tags/{ID}:
+    put:
+      tags:
+      - pipeline
+      - tags
+      summary: Attach Tag
+      description: Прикрепить тег к сценарию
+      operationId: attach-tag
+      parameters:
+      - name: pipelineID
+        in: path
+        description: Pipeline ID
+        required: true
+        schema:
+          type: string
+      - name: ID
+        in: path
+        description: Tag ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusTagInfo'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    delete:
+      tags:
+      - pipeline
+      - tags
+      summary: Detach Tag
+      description: Открепить тег от сценария
+      operationId: detach-tag
+      parameters:
+      - name: pipelineID
+        in: path
+        description: Pipeline ID
+        required: true
+        schema:
+          type: string
+      - name: ID
+        in: path
+        description: Tag ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/version:
+    put:
+      tags:
+      - pipeline
+      summary: Edit Draft
+      description: Изменить черновик
+      operationId: edit-version
+      requestBody:
+        description: New draft
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EriusScenario'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusScenario'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: draft
+  /pipelines/version/{ID}:
+    get:
+      tags:
+      - version
+      summary: Get pipeline version
+      description: Получить версию сценария по ID
+      operationId: get-pipeline-version
+      parameters:
+      - name: ID
+        in: path
+        description: Version ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusScenario'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    post:
+      tags:
+      - version
+      summary: Create pipeline version
+      description: Создать новую версию сценария
+      operationId: create-pipeline-version
+      parameters:
+      - name: ID
+        in: path
+        description: Pipeline ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: New version
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EriusScenario'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusScenario'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: pipeline
+    delete:
+      tags:
+      - version
+      summary: Delete Version
+      description: Удалить версию
+      operationId: delete-version
+      parameters:
+      - name: ID
+        in: path
+        description: Version ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /run/{pipelineID}:
+    post:
+      tags:
+      - pipeline
+      - run
+      summary: Run Pipeline
+      description: Запустить сценарий
+      operationId: run-pipeline
+      parameters:
+      - name: pipelineID
+        in: path
+        description: Pipeline ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: pipeline input
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunPipelineBody'
+        required: false
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RunResponse'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+  /run/version/{versionID}:
+    post:
+      tags:
+      - version
+      - run
+      summary: Run Version
+      description: Запустить версию
+      operationId: run-version
+      parameters:
+      - name: versionID
+        in: path
+        description: Version ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: pipeline input
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunVersionBody'
+        required: false
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RunResponse'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+  /run/versions/blueprint_id:
+    post:
+      tags:
+      - version
+      - run
+      summary: Run Version By blueprintID
+      description: Запустить все версии c blueprintID и первым блоком sd_application
+      operationId: run-versions-by-blueprint-id
+      requestBody:
+        description: pipeline input
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunVersionsByBlueprintIdRequest'
+        required: false
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RunResponse'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+  /run/version/new_version:
+    post:
+      tags:
+      - version
+      - run
+      summary: Run Version
+      description: Запустить версию
+      operationId: run-new-version-by-prev-version
+      requestBody:
+        description: pipeline input
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunNewVersionByPrevVersionRequest'
+        required: false
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+  /tags:
+    get:
+      tags:
+      - tags
+      summary: Get Tags
+      description: Cписок тегов
+      operationId: get-tags
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EriusTagInfo'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    put:
+      tags:
+      - tags
+      summary: Edit Tag
+      description: Изменить тег
+      operationId: edit-tag
+      requestBody:
+        description: Modified tag
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EriusTagInfo'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusTagInfo'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: tag
+    post:
+      tags:
+      - tags
+      summary: Create Tag
+      description: Создать новый тег
+      operationId: create-tag
+      requestBody:
+        description: New tag
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EriusTagInfo'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusTagInfo'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: tag
+  /tags/{ID}:
+    delete:
+      tags:
+      - tags
+      summary: Remove Tag
+      description: Удалить тег
+      operationId: remove-tag
+      parameters:
+      - name: ID
+        in: path
+        description: Tag ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /tasks:
+    get:
+      tags:
+      - pipeline
+      - tasks
+      summary: Get Tasks
+      description: Получить задачи
+      operationId: get-tasks
+      parameters:
+      - name: name
+        in: query
+        description: Pipeline name
+        schema:
+          type: string
+      - name: taskIDs
+        in: query
+        description: Task IDs
+        style: form
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+      - name: order
+        in: query
+        description: Order
+        schema:
+          type: string
+      - name: limit
+        in: query
+        description: Limit
+        schema:
+          type: integer
+          default: 10
+      - name: offset
+        in: query
+        description: Offset
+        schema:
+          type: integer
+          default: 0
+      - name: created
+        in: query
+        schema:
+          $ref: '#/components/schemas/Created'
+      - name: archived
+        in: query
+        schema:
+          type: boolean
+      - name: selectAs
+        in: query
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusTasksPage'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /tasks/{workNumber}:
+    get:
+      tags:
+      - tasks
+      summary: Get Task
+      description: Получить экземпляр задачи
+      operationId: get-task
+      parameters:
+      - name: workNumber
+        in: path
+        description: work number
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/eriusTaskResponse'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    post:
+      tags:
+      - tasks
+      summary: Update Task
+      description: Update task
+      operationId: update-task
+      parameters:
+      - name: workNumber
+        in: path
+        description: work number
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Task update data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: data
+  /tasks/count:
+    get:
+      tags:
+      - pipeline
+      - tasks
+      summary: Get amount of tasks
+      description: Получить количество задач по каждой категории
+      operationId: get-tasks-count
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CountTasks'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /tasks/last-by-version/{versionID}:
+    get:
+      tags:
+      - tasks
+      summary: Get last debug task for version
+      description: Получить последнюю debug-задачу версии сценария
+      operationId: last-version-debug-task
+      parameters:
+      - name: versionID
+        in: path
+        description: Version ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusTask'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /tasks/pipeline/{pipelineID}:
+    get:
+      tags:
+      - pipeline
+      - tasks
+      summary: Get Pipeline Tasks
+      description: Получить задачи по сценарию
+      operationId: get-pipeline-tasks
+      parameters:
+      - name: pipelineID
+        in: path
+        description: Pipeline ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusTasks'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /tasks/version/{versionID}:
+    get:
+      tags:
+      - version
+      - tasks
+      summary: Get Version Tasks
+      description: Получить задачи по версии сценарию
+      operationId: get-version-tasks
+      parameters:
+      - name: versionID
+        in: path
+        description: Version ID
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusTasks'
+                  httpResponse:
+                    $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
 components:
-  securitySchemes:
-    OAuth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: https://isso-dev.mts.ru/auth/realms/mts/protocol/openid-connect/auth
-          tokenUrl: https://isso-dev.mts.ru/auth/realms/mts/protocol/openid-connect/token
-          scopes:
-            openid: Main scope
-
-  parameters:
-    pipelineID:
-      name: pipelineID
-      in: path
-      required: true
-      description: Pipeline UUID
-      schema:
-        type: string
-        format: uuid
-
-    versionID:
-      name: versionID
-      in: path
-      required: true
-      description: Version UUID
-      schema:
-        type: string
-        format: uuid
-
-    tagID:
-      name: tagID
-      in: path
-      required: true
-      description: Tag UUID
-      schema:
-        type: string
-        format: uuid
-
-    moduleName:
-      name: moduleName
-      in: path
-      required: true
-      description: Module name
-      schema:
-        type: string
-
-    workNumber:
-      name: workNumber
-      in: path
-      required: true
-      description: Unique work number
-      schema:
-        type: string
-
-    name:
-      name: name
-      in: query
-      required: false
-      description: Task name
-      schema:
-        type: string
-
-    taskIDs:
-      name: taskIDs
-      in: query
-      required: false
-      description: Task IDs
-      schema:
-        type: array
-        items:
-          type: string
-
-    created:
-      name: created
-      in: query
-      required: false
-      description: Task creation date
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/timePeriod'
-
-    order:
-      name: order
-      in: query
-      required: false
-      description: Sort order
-      schema:
-        type: string
-        enum:
-          - asc
-          - desc
-
-    selectAs:
-      name: selectAs
-      in: query
-      required: false
-      description: Select as
-      schema:
-        type: string
-        enum:
-          - approver
-          - finished_approver
-          - executor
-          - finished_executor
-
-    archived:
-      name: archived
-      in: query
-      required: false
-      description: Archived tasks
-      schema:
-        type: boolean
-
-    limit:
-      name: limit
-      in: query
-      required: false
-      description: Res limit
-      schema:
-        type: integer
-        default: 10
-
-    offset:
-      name: offset
-      in: query
-      required: false
-      description: Res offset
-      schema:
-        type: integer
-
   schemas:
-    timePeriod:
+    AllUsageResponse:
       type: object
-      description: A certain time period
       properties:
-        start:
-          type: integer
-          description: Timestamp (in seconds)
-        end:
-          type: integer
-          description: Timestamp (in seconds)
-      required:
-        - start
-        - end
-
-
-    error:
-      type: object
-      description: Error object
-      properties:
-        status_code:
-          type: integer
-          description: Error internal status code
-        error:
-          type: string
-          description: Error
-        description:
-          type: string
-          description: Ru error
-      required:
-        - status_code
-        - error
-        - description
-
-    tagStatus:
-      type: integer
-      enum:
-        - 1
-        - 3
-      description: >
-        Tag status:
-         * 1 - Created
-         * 3 - Deleted
-
-    runVersionsByBlueprintIdRequest:
-      type: object
-      description: Data for run versions by blueprint_id
-      properties:
-        blueprint_id:
-          type: string
-          description: servicedesk template id
-          format: uuid
-        description:
-          type: string
-          description: template description
-        application_body:
+        pipelines:
           type: object
-          description: template fields with values. map key - value
-          additionalProperties: true
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required:
+        - pipelines
 
-    tagInfo:
+    CountTasks:
       type: object
-      description: Scenario tag
       properties:
-        id:
+        active:
+          type: integer
+        approve:
+          type: integer
+        execute:
+          type: integer
+      required:
+        - active
+        - approve
+        - execute
+
+    DebugResult:
+      type: object
+      properties:
+        block_name:
           type: string
-          description: Tag UUID
-          format: uuid
+        break_points:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          description: todo define values
+          example: run,error,finished,created
+        task:
+          $ref: '#/components/schemas/EriusTask'
+      required:
+        - block_name
+        - status
+        - break_points
+        - task
+
+    EriusFunc:
+      type: object
+      properties:
+        block_type:
+          $ref: '#/components/schemas/blockType'
+        input:
+          type: array
+          items:
+            $ref: '#/components/schemas/EriusFunctionValue'
+        next:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        output:
+          type: array
+          items:
+            $ref: '#/components/schemas/EriusFunctionValue'
+        param_type:
+          type: string
+        params:
+          type: object
+          properties: {}
+        short_title:
+          type: string
+          example: lock-bts
+        title:
+          type: string
+          example: lock-bts
+        type_id:
+          type: string
+          example: approver
+        x:
+          type: integer
+        y:
+          type: integer
+      required:
+        - type_id
+        - block_type
+        - title
+        - next
+
+    EriusFunctionList:
+      type: object
+      properties:
+        funcs:
+          type: array
+          description: Block modules
+          items:
+            $ref: '#/components/schemas/FunctionModel'
+        shapes:
+          type: array
+          description: Block shapes
+          items:
+            $ref: '#/components/schemas/ShapeEntity'
+      required:
+        - funcs
+        - shapes
+
+    EriusFunctionValue:
+      type: object
+      properties:
+        global:
+          type: string
+          example: block.some_data
         name:
           type: string
-          description: Tag name
-        status:
-          $ref: '#/components/schemas/tagStatus'
-        color:
+          example: some_data
+        type:
           type: string
-          description: Tag color
-        isMarker:
-          type: boolean
-          description: If tag is a marker
+          example: string
       required:
-        - id
         - name
-        - status
-        - color
-        - isMarker
+        - type
+        - global
 
-    versionInfo:
+    pipeline:
+          type: object
+          properties:
+            blocks:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/EriusFunc'
+            entrypoint:
+              type: string
+          required:
+            - entrypoint
+            - blocks
+
+    EriusScenario:
       type: object
-      description: Version info
+      description: A single scenario with all content
       properties:
-        version_id:
-          type: string
-          description: Version UUID
-          format: uuid
-        created_at:
-          type: string
-          description: Version creation time
-          format: date-time
         approved_at:
           type: string
-          description: Version approvement time
-          format: date-time
+          example: 2020-07-16T17:10:25.112704+03:00
         author:
           type: string
-          description: Author login
+          example: testAuthor
+        comment:
+          type: string
+        comment_rejected:
+          type: string
+        created_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        hasDraft:
+          type: boolean
+        id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        input:
+          type: array
+          items:
+            $ref: '#/components/schemas/EriusFunctionValue'
+        name:
+          type: string
+          example: ScenarioName
+        output:
+          type: array
+          items:
+            $ref: '#/components/schemas/EriusFunctionValue'
+        pipeline:
+          $ref: '#/components/schemas/pipeline'
+        status:
+          type: integer
+          description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On
+            Approve
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/EriusTagInfo'
+        version_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      required:
+        - id
+        - version_id
+        - status
+        - name
+        - pipeline
+        - author
+        - tags
+        - comment
+        - comment_rejected
+    EriusScenarioInfo:
+      type: object
+      properties:
+        approved_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
         approver:
           type: string
-          description: Approver login
+          example: testApprover
+        author:
+          type: string
+          example: testAuthor
+        comment:
+          type: string
+        comment_rejected:
+          type: string
+        created_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        last_run:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        last_run_status:
+          type: string
+        name:
+          type: string
+          example: ScenarioName
+        status:
+          $ref: '#/components/schemas/scenarioStatus'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/EriusTagInfo'
+        version_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/EriusVersionInfo'
+        version_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
       required:
+        - id
         - version_id
         - created_at
         - author
         - approver
+        - name
+        - tags
+        - status
+        - comment
+        - comment_rejected
+        - version_history
+    EriusScenarioList:
+      type: object
+      properties:
+        drafts:
+          type: array
+          description: Черновики
+          items:
+            $ref: '#/components/schemas/EriusScenarioInfo'
+        on_approve:
+          type: array
+          description: Сценарии на одобрении
+          items:
+            $ref: '#/components/schemas/EriusScenarioInfo'
+        pipelines:
+          type: array
+          description: Согласованные сценарии
+          items:
+            $ref: '#/components/schemas/EriusScenarioInfo'
+        tags:
+          type: array
+          description: Теги
+          items:
+            $ref: '#/components/schemas/EriusTagInfo'
+      required:
+        - pipelines
+        - drafts
+        - on_approve
+        - tags
 
+    EriusTagInfo:
+      type: object
+      required: [id,name,status,color,isMarker]
+      properties:
+        color:
+          type: string
+        id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        isMarker:
+          type: boolean
+        name:
+          type: string
+        status:
+          type: integer
+          description: 1 - Created, 3 - Deleted
+
+    taskHumanStatus:
+      type: string
+      description: Task human readable status
+      enum:
+        - new
+        - approvement
+        - approved
+        - done
+
+    EriusTask:
+      type: object
+      properties:
+        author:
+          type: string
+        blueprint_id:
+          type: string
+        debug:
+          type: boolean
+        description:
+          type: string
+        human_status:
+          $ref: '#/components/schemas/taskHumanStatus'
+        id:
+          type: string
+        last_changed_at:
+          type: string
+        name:
+          type: string
+        parameters:
+          type: object
+          properties: {}
+        started_at:
+          type: string
+        status:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/Step'
+        version_id:
+          type: string
+        work_number:
+          type: string
+      required:
+        - id
+        - version_id
+        - started_at
+        - last_changed_at
+        - name
+        - description
+        - status
+        - human_status
+        - author
+        - debug
+        - parameters
+        - steps
+        - work_number
+        - blueprint_id
+
+    approverType:
+        type: string
+        description: >
+          Approver type:
+           * User - Single user
+           * Group - Approver group ID
+           * Head - Receiver's head
+           * FromSchema - Selected by initiator
+        enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
+        x-enum-varnames: [ "user", "group", "head", "fromSchema" ]
+
+    approverDecision:
+      type: string
+    EriusTasks:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/EriusTask'
+    EriusTasksPage:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/EriusTask'
+        total:
+          type: integer
+      required:
+        - tasks
+        - total
+
+    EriusVersionInfo:
+      type: object
+      required: [version_id,created_at,author,approver]
+      properties:
+        approved_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        approver:
+          type: string
+          example: testApprover
+        author:
+          type: string
+          example: testAuthor
+        created_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        version_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
     scenarioStatus:
       type: integer
       enum:
@@ -280,190 +1923,126 @@ components:
          * 3 - Deleted
          * 4 - Rejected
          * 5 - On approve
-
-    scenarioInfo:
+    sendEditAppUpdateParams:
       type: object
-      description: Scenario info
+      description: Send application to edit from approver
       properties:
-        id:
-          type: string
-          description: Scenario UUID
-          format: uuid
-        version_id:
-          type: string
-          description: Version UUID
-          format: uuid
-        created_at:
-          type: string
-          description: Version creation time
-          format: date-time
-        approved_at:
-          type: string
-          description: Version approvement time
-          format: date-time
-        author:
-          type: string
-          description: Author login
-        approver:
-          type: string
-          description: Approver login
-        name:
-          type: string
-          description: Name
-        tags:
-          type: array
-          description: Scenario tags
-          items:
-            $ref: '#/components/schemas/tagInfo'
-        last_run:
-          type: string
-          description: Version last run time
-          format: date-time
-        last_run_status:
-          type: string
-          description: Version last run status
-        status:
-          $ref: '#/components/schemas/scenarioStatus'
         comment:
           type: string
-          description: Scenario comment
-        comment_rejected:
-          type: string
-          description: Scenario comment (if it was rejected)
-        history:
+          description: Comment from approver
+        attachments:
           type: array
-          description: Scenario versions history
           items:
-            $ref: '#/components/schemas/versionInfo'
+            type: string
       required:
-        - id
-        - version_id
-        - created_at
-        - author
-        - approver
-        - name
-        - tags
-        - status
         - comment
-        - comment_rejected
-        - version_history
-
-    scenarios:
+        - attachments
+    createNewWorkUpdateParams:
       type: object
-      description: List of scenarios
+      description: Send edited application to new process
+    RunResponse:
+      type: object
       properties:
-        pipelines:
+        errors:
           type: array
-          description: Approved scenarios
           items:
-            $ref: '#/components/schemas/scenarioInfo'
-        drafts:
-          type: array
-          description: Scenario drafts
-          items:
-            $ref: '#/components/schemas/scenarioInfo'
-        on_approve:
-          type: array
-          description: Scenarios on approve
-          items:
-            $ref: '#/components/schemas/scenarioInfo'
-        tags:
-          type: array
-          description: Scenario tags
-          items:
-            $ref: '#/components/schemas/tagInfo'
+            type: string
+        output:
+          type: object
+          properties: {}
+        pipeline_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        status:
+          type: string
+          example: runned
+        work_number:
+          type: string
       required:
-        - pipelines
-        - drafts
-        - on_approve
-        - tags
+        - pipeline_id
+        - work_number
+        - status
+        - output
+        - errors
 
-    functionValue:
+    SchedulerTasksResponse:
       type: object
-      description: Variable
       properties:
+        result:
+          type: boolean
+          description: If active tasks exist
+      required:
+        - result
+
+    Step:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
+        has_error:
+          type: boolean
         name:
           type: string
-          description: Variable name
-          example: some_data
+        state:
+          type: object
+          properties: {}
+        status:
+          type: string
+          description: Task step execution status
+          enum:
+            - idle
+            - ready
+            - running
+            - finished
+        steps:
+          type: array
+          items:
+            type: string
+        storage:
+          type: object
+          properties: {}
+        time:
+          type: string
         type:
           type: string
-          description: Variable type
-        global:
-          type: string
-          description: Variable global identifier
-          example: block.some_data
       required:
+        - time
+        - type
         - name
-        - type
-        - global
+        - state
+        - storage
+        - errors
+        - steps
+        - has_error
+        - status
 
-    approverType:
-        type: string
-        description: >
-          Approver type:
-           * User - Single user
-           * Group - Approver group ID
-           * Head - Receiver's head
-           * FromSchema - Selected by initiator
-        enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
-        x-enum-varnames: [ "user", "group", "head", "fromSchema" ]
-
-    approverDecision:
-      type: string
-      enum:
-        - approved
-        - rejected
-      description: >
-        Approver decision:
-         * approved - approver approved block 
-         * rejected - approver rejected block
-
-    executionDecision:
-      type: string
-      enum:
-        - executed
-        - rejected
-      description: >
-        Executor decision:
-         * executed - executor executed block
-         * rejected - executor rejected block
-
-    approverParams:
+    TaskUpdate:
       type: object
-      description: Approver params
       properties:
-        type:
-          $ref: '#/components/schemas/approverType'
-        approver:
+        action:
           type: string
-          description: Apprver value (depends on type)
-        sla:
-          type: integer
-          description: Approvement SLA (in working hours)
-          minimum: 1
-        auto_action:
-          $ref: '#/components/schemas/approveAutoAction'
+          example: approvement
+          enum:
+          - approvement
+          - execution
+          - change_executor
+          - request_execution_info
+        parameters:
+          type: object
+          description: Task update params
+          oneOf:
+            - $ref: '#/components/schemas/ApproverUpdateParams'
+            - $ref: '#/components/schemas/ExecutionUpdateParams'
+            - $ref: '#/components/schemas/ExecutorChangeParams'
+            - $ref: '#/components/schemas/RequestInfoUpdateParams'
       required:
-        - type
-        - approver
-        - sla
+        - action
+        - parameters
 
-    approveAutoAction:
-      type: string
-      description: Action to do automatically in case SLA is breached
-      enum:
-        - approve
-        - reject
-
-    requestExecutionInfoType:
-      type: string
-      description: Type of execution info
-      enum:
-        - question
-        - answer
-
-    approverUpdateParams:
+    ApproverUpdateParams:
       type: object
       description: Approver update params
       properties:
@@ -476,7 +2055,7 @@ components:
         - decision
         - comment
 
-    executionUpdateParams:
+    ExecutionUpdateParams:
       type: object
       description: Executor update params
       properties:
@@ -489,7 +2068,27 @@ components:
         - decision
         - comment
 
-    executorChangeParams:
+    approverDecision:
+      type: string
+      enum:
+        - approved
+        - rejected
+      description: >
+        Approver decision:
+         * approved - approver approved block
+         * rejected - approver rejected block
+
+    executionDecision:
+      type: string
+      enum:
+        - executed
+        - rejected
+      description: >
+        Executor decision:
+         * executed - executor executed block
+         * rejected - executor rejected block
+
+    ExecutorChangeParams:
       type: object
       description: Executor change params
       properties:
@@ -503,12 +2102,12 @@ components:
         - newExecutorLogin
         - comment
 
-    requestInfoUpdateParams:
+    RequestInfoUpdateParams:
       type: object
       description: Executor request info params
       properties:
         reqType:
-          $ref: '#/components/schemas/requestExecutionInfoType'
+          $ref: '#/components/schemas/RequestExecutionInfoType'
         comment:
           type: string
           description: Comment from executor
@@ -521,45 +2120,243 @@ components:
         - comment
         - attachments
 
-    sdApplicationParams:
+    RequestExecutionInfoType:
+      type: string
+      description: Type of execution info
+      enum:
+        - question
+        - answer
+
+    UsageResponse:
       type: object
-      description: SD Application params
       properties:
+        name:
+          type: string
+          description: Имя блока
+        pipelines:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsedBy'
+        used:
+          type: boolean
+      required:
+        - name
+        - used
+        - pipelines
+
+    UsedBy:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID сценария
+        name:
+          type: string
+          description: Имя сценария
+      required:
+        - name
+        - id
+
+    CreateTaskRequest:
+      type: object
+      required: [parameters,version_id]
+      properties:
+        parameters:
+          type: object
+          properties: {}
+        version_id:
+          type: string
+          format: uuid
+    DebugRunRequest:
+      type: object
+      required: [action,break_points,work_number]
+      properties:
+        action:
+          type: string
+          example: step_over,resume
+        break_points:
+          type: array
+          items:
+            type: string
+        work_number:
+          type: string
+    RunPipelineBody:
+      type: object
+    RunVersionBody:
+      type: object
+    RunVersionsByBlueprintIdRequest:
+      required: [application_body,blueprint_id,description]
+      type: object
+      properties:
+        application_body:
+          type: object
+          properties: {}
         blueprint_id:
           type: string
-          description: Template application ID
+        description:
+          type: string
+    RunNewVersionByPrevVersionRequest:
+      required: [work_number,blueprint_id,description,application_body]
+      type: object
+      properties:
+        work_number:
+          type: string
+        blueprint_id:
+          type: string
+        description:
+          type: string
+        application_body:
+          type: object
+          properties: {}
+    eriusTaskResponse:
+      type: object
+      properties:
+        author:
+          type: string
+        blueprint_id:
+          type: string
+        debug:
+          type: boolean
+        description:
+          type: string
+        human_status:
+          $ref: '#/components/schemas/taskHumanStatus'
+        id:
+          type: string
+        last_changed_at:
+          type: string
+        name:
+          type: string
+        parameters:
+          type: object
+          properties: {}
+        started_at:
+          type: string
+        status:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/step'
+        version_id:
+          type: string
+        work_number:
+          type: string
       required:
+        - id
+        - version_id
+        - started_at
+        - last_changed_at
+        - name
+        - description
+        - status
+        - human_status
+        - author
+        - debug
+        - parameters
+        - steps
+        - work_number
         - blueprint_id
 
-    executionParams:
+    httpError:
       type: object
-      description: Execution params
       properties:
-        type:
-          $ref: '#/components/schemas/executionType'
-        executors:
+        description:
           type: string
-          description: Executor value (depends on type)
-        sla:
+        error:
+          type: string
+        status_code:
           type: integer
-          description: Execution SLA (in working hours)
-          minimum: 1
-      required:
-        - type
-        - executors
-        - sla
-
-    conditionParams:
+    httpResponse:
       type: object
-      description: Condition params
       properties:
-        conditionGroups:
+        data:
+          type: object
+          properties: {}
+        status_code:
+          type: integer
+      required:
+        - status_code
+    step:
+      type: object
+      properties:
+        errors:
           type: array
-          description: Groups with conditions
           items:
-            $ref: '#/components/schemas/conditionGroup'
+            type: string
+        has_error:
+          type: boolean
+        name:
+          type: string
+        state:
+          type: object
+          properties: {}
+        status:
+          type: string
+        steps:
+          type: array
+          items:
+            type: string
+        storage:
+          type: object
+          properties: {}
+        time:
+          type: string
+        type:
+          type: string
 
-    conditionGroup:
+    blockType:
+      type: string
+      description: Block type (language)
+      enum:
+        - python3
+        - go
+        - scenario
+
+    FunctionModel:
+      type: object
+      properties:
+        block_type:
+          $ref: '#/components/schemas/blockType'
+        id:
+          type: string
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/FunctionValueModel'
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/FunctionValueModel'
+        params:
+          $ref: '#/components/schemas/FunctionParams'
+        shape_type:
+          type: integer
+        sockets:
+          type: array
+          items:
+            type: string
+        title:
+          type: string
+      required:
+        - block_type
+        - title
+        - shape_type
+        - next_funcs
+        - id
+        - sockets
+
+    Params:
+      type: object
+      description: Block constant params
+      oneOf:
+        - $ref: '#/components/schemas/ApproverParams'
+        - $ref: '#/components/schemas/ExecutionParams'
+        - $ref: '#/components/schemas/SdApplicationParams'
+        - $ref: '#/components/schemas/NotificationParams'
+        - $ref: "#/components/schemas/ConditionParams"
+
+    ConditionGroup:
       type: object
       description: Group with conditions
       properties:
@@ -573,13 +2370,13 @@ components:
         conditions:
           type: array
           items:
-            $ref: '#/components/schemas/condition'
+            $ref: '#/components/schemas/Condition'
       required:
         - id
         - logicalOperator
         - conditions
 
-    condition:
+    Condition:
       type: object
       description: Compare operands using operator
       properties:
@@ -646,7 +2443,17 @@ components:
       enum: [ "Равно", "Не равно" ]
       x-enum-varnames: [ "Equal", "NotEqual" ]
 
-    notificationParams:
+    ConditionParams:
+      type: object
+      description: Condition params
+      properties:
+        conditionGroups:
+          type: array
+          description: Groups with conditions
+          items:
+            $ref: '#/components/schemas/ConditionGroup'
+
+    NotificationParams:
       type: object
       description: Notification params
       properties:
@@ -667,1489 +2474,127 @@ components:
         - subject
         - text
 
-    executionType:
-      type: string
-      enum:
-        - user
-        - group
-      description: >
-        Execution type:
-         * user - Single user
-         * group - Execution group ID
-
-    params:
+    SdApplicationParams:
       type: object
-      description: Block constant params
-      oneOf:
-        - $ref: '#/components/schemas/approverParams'
-        - $ref: '#/components/schemas/executionParams'
-        - $ref: '#/components/schemas/sdApplicationParams'
-        - $ref: '#/components/schemas/notificationParams'
-        - $ref: "#/components/schemas/conditionParams"
+      description: SD Application params
+      properties:
+        blueprint_id:
+          type: string
+          description: Template application ID
+      required:
+        - blueprint_id
 
-    paramsType:
-      type: string
-      description: Params type
-      enum:
-        - approver
-        - servicedesk_application
-        - execution
-        - notification
-
-    functionsParams:
+    ExecutionParams:
       type: object
-      description: Block params description
+      description: Execution params
       properties:
         type:
-          $ref: '#/components/schemas/paramsType'
-        params:
-          $ref: '#/components/schemas/params'
+          type: string
+          enum:
+            - user
+            - group
+          description: >
+            Execution type:
+             * user - Single user
+             * group - Execution group ID
+        executors:
+          type: string
+          description: Executor value (depends on type)
+        sla:
+          type: integer
+          description: Execution SLA (in working hours)
+          minimum: 1
       required:
         - type
+        - executors
+        - sla
 
-    block_type:
-      type: string
-      description: Block type (language)
-      enum:
-        - python3
-        - go
-        - scenario
+    ApproverType:
+        type: string
+        description: >
+          Approver type:
+           * User - Single user
+           * Group - Approver group ID
+           * Head - Receiver's head
+           * FromSchema - Selected by initiator
+        enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
+        x-enum-varnames: [ "User", "Group", "Head", "FromSchema" ]
 
-    shapeEntity:
+    ApproverParams:
       type: object
-      description: Entity shape
+      description: Approver params
       properties:
-        id:
-          type: integer
-          description: Shape unique ID
-        title:
+        type:
+          $ref: '#/components/schemas/ApproverType'
+        approver:
           type: string
-          description: Block name
+          description: Apprver value (depends on type)
+        sla:
+          type: integer
+          description: Approvement SLA (in working hours)
+          minimum: 1
+        auto_action:
+          $ref: '#/components/schemas/ApproveAutoAction'
+        repeat_prev_decision:
+          type: boolean
+        is_editable:
+          type: boolean
+          description: Show action edit application in SD
+      required:
+        - type
+        - approver
+        - sla
+        - repeat_prev_decision
+        - is_editable
+
+    ApproveAutoAction:
+      type: string
+      description: Action to do automatically in case SLA is breached
+      enum:
+        - approve
+        - reject
+
+    FunctionParams:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Params type
+          enum:
+            - approver
+            - servicedesk_application
+            - execution
+            - notification
+        params:
+          $ref: '#/components/schemas/Params'
+      required:
+        - type
+    FunctionValueModel:
+      type: object
+      properties:
+        comment:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+    ShapeEntity:
+      type: object
+      properties:
         icon:
           type: string
-          description: Shape icon
+        id:
+          type: integer
+        title:
+          type: string
       required:
         - id
         - title
         - icon
-
-    functionModel:
+    Created:
       type: object
-      description: Function block model
       properties:
-        block_type:
-          $ref: '#/components/schemas/block_type'
-        title:
-          type: string
-          description: Block title
-        inputs:
-          type: array
-          description: Input vars
-          items:
-            $ref: '#/components/schemas/functionValue'
-        outputs:
-          type: array
-          description: Ourput vars
-          items:
-            $ref: '#/components/schemas/functionValue'
-        shape_type:
+        start:
           type: integer
-          description: Block shape type
-        id:
-          type: string
-          description: Block unique ID
-        params:
-          $ref: '#/components/schemas/functionsParams'
-        sockets:
-          type: array
-          description: Output sockets
-          items:
-            type: string
-      required:
-        - block_type
-        - title
-        - shape_type
-        - next_funcs
-        - id
-        - sockets
-
-    func:
-      type: object
-      description: Function block
-      properties:
-        x:
+        end:
           type: integer
-          description: X coord
-        y:
-          type: integer
-          description: Y coord
-        type_id:
-          type: string
-          description: Function type id
-        block_type:
-          $ref: '#/components/schemas/block_type'
-        title:
-          type: string
-          description: Block title
-        short_title:
-          type: string
-          description: Block short title
-        input:
-          type: array
-          description: Input vars
-          items:
-            $ref: '#/components/schemas/functionValue'
-        output:
-          type: array
-          description: Ourput vars
-          items:
-            $ref: '#/components/schemas/functionValue'
-        param_type:
-          $ref: '#/components/schemas/paramsType'
-        params:
-          $ref: '#/components/schemas/params'
-        next:
-          type: object
-          description: Sockets outputs
-          additionalProperties:
-            type: array
-            description: Next blocks
-            items:
-              type: string
-      required:
-        - type_id
-        - block_type
-        - title
-        - next
-
-    pipeline:
-      type: object
-      description: Chain of blocks
-      properties:
-        entrypoint:
-          type: string
-          description: Entrypoint block name
-        blocks:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/func'
-      required:
-        - entrypoint
-        - blocks
-
-    scenario:
-      type: object
-      description: A single scenario with all content
-      properties:
-        id:
-          type: string
-          description: Scenario UUID
-          format: uuid
-        version_id:
-          type: string
-          description: Version UUID
-          format: uuid
-        status:
-          $ref: '#/components/schemas/scenarioStatus'
-        has_draft:
-          type: boolean
-          description: If scenario has draft
-        name:
-          type: string
-          description: Name
-        input:
-          type: array
-          description: Input vars
-          items:
-            $ref: '#/components/schemas/functionValue'
-        output:
-          type: array
-          description: Ourput vars
-          items:
-            $ref: '#/components/schemas/functionValue'
-        pipeline:
-          $ref: '#/components/schemas/pipeline'
-        created_at:
-          type: string
-          description: Version creation time
-          format: date-time
-        approved_at:
-          type: string
-          description: Version approvement time
-          format: date-time
-        author:
-          type: string
-          description: Author login
-        tags:
-          type: array
-          description: Scenario tags
-          items:
-            $ref: '#/components/schemas/tagInfo'
-        comment:
-          type: string
-          description: Scenario comment
-        comment_rejected:
-          type: string
-          description: Scenario comment (if it was rejected)
-      required:
-        - id
-        - version_id
-        - status
-        - name
-        - pipeline
-        - author
-        - tags
-        - comment
-        - comment_rejected
-
-    schedulerTasks:
-      type: object
-      properties:
-        result:
-          type: boolean
-          description: If active tasks exist
-      required:
-        - result
-
-    functionList:
-      type: object
-      description: Existing modules
-      properties:
-        funcs:
-          type: array
-          description: Block modules
-          items:
-            $ref: '#/components/schemas/functionModel'
-        shapes:
-          type: array
-          description: Block shapes
-          items:
-            $ref: '#/components/schemas/shapeEntity'
-      required:
-        - funcs
-        - shapes
-
-    modulesUsage:
-      type: object
-      description: Modules usage
-      properties:
-        pipelines:
-          type: object
-          description: Pipelines lists
-          additionalProperties:
-            type: array
-            items:
-              type: string
-      required:
-        - pipelines
-
-    usedBy:
-      type: object
-      description: Module usage
-      properties:
-        name:
-          type: string
-          description: Scenario name
-        id:
-          type: string
-          description: Scenario UUID
-          format: uuid
-      required:
-        - name
-        - id
-
-    moduleUsage:
-      type: object
-      description: Module usage
-      properties:
-        name:
-          type: string
-          description: Module name
-        used:
-          type: boolean
-          description: If module is used
-        pipelines:
-          type: array
-          description: Which pipelines use module
-          items:
-            $ref: '#/components/schemas/usedBy'
-      required:
-        - name
-        - used
-        - pipelines
-
-    runInfo:
-      type: object
-      description: Pipeleine run info
-      properties:
-        pipeline_id:
-          type: string
-          description: Pipeline UUID
-          format: uuid
-        work_number:
-          type: string
-          description: Spawned work number
-        status:
-          type: string
-          description: Task status
-        output:
-          type: object
-          description: Run output
-        errors:
-          type: array
-          description: Run errors
-          items:
-            type: string
-      required:
-        - pipeline_id
-        - work_number
-        - status
-        - output
-        - errors
-
-    taskStepStatus:
-      type: string
-      description: Task step execution status
-      enum:
-        - idle
-        - ready
-        - running
-        - finished
-
-    taskStep:
-      type: object
-      description: Task step
-      properties:
-        time:
-          type: string
-          description: Task step time
-          format: date-time
-        type:
-          type: string
-          description: Step type
-        name:
-          type: string
-          description: Step name
-        state:
-          type: object
-          description: Step state
-          additionalProperties: true
-        storage:
-          type: object
-          description: Step variable storage
-          additionalProperties: true
-        errors:
-          type: array
-          description: Current errors
-          items:
-            type: string
-        steps:
-          type: array
-          description: Current steps
-          items:
-            type: string
-        has_error:
-          type: boolean
-          description: If step has error
-        status:
-          $ref: '#/components/schemas/taskStepStatus'
-      required:
-        - time
-        - type
-        - name
-        - state
-        - storage
-        - errors
-        - steps
-        - has_error
-        - status
-
-    taskHumanStatus:
-      type: string
-      description: Task human readable status
-      enum:
-        - new
-        - approvement
-        - approved
-        - done
-
-    task:
-      type: object
-      description: Runned task
-      properties:
-        id:
-          type: string
-          description: Task UUID
-          format: uuid
-        version_id:
-          type: string
-          description: Version UUID
-          format: uuid
-        started_at:
-          type: string
-          description: Task start time
-          format: date-time
-        last_changed_at:
-          type: string
-          description: Task last update time
-          format: date-time
-        name:
-          type: string
-          description: Task name
-        description:
-          type: string
-          description: Task description
-        status:
-          type: string
-          description: Task status
-        human_status:
-          $ref: '#/components/schemas/taskHumanStatus'
-        author:
-          type: string
-          description: Author login
-        debug:
-          type: boolean
-          description: If task is run in debug mode
-        parameters:
-          type: object
-          description: Task start params
-          additionalProperties: true
-        steps:
-          type: array
-          description: Task current steps
-          items:
-            $ref: '#/components/schemas/taskStep'
-        work_number:
-          type: string
-          description: Work unique number
-        blueprint_id:
-          type: string
-          description: service_desk template id
-      required:
-        - id
-        - version_id
-        - started_at
-        - last_changed_at
-        - name
-        - description
-        - status
-        - human_status
-        - author
-        - debug
-        - parameters
-        - steps
-        - work_number
-        - blueprint_id
-
-    debugTask:
-      type: object
-      properties:
-        block_name:
-          type: string
-          description: Current exec block name
-        status:
-          type: string
-          description: Current exec block status
-        break_points:
-          type: array
-          description: Run breakpoints
-          items:
-            type: string
-        task:
-          $ref: '#/components/schemas/task'
-      required:
-        - block_name
-        - status
-        - break_points
-        - task
-
-    tasksPage:
-      type: object
-      description: Tasks page
-      properties:
-        tasks:
-          type: array
-          description: Tasks on page
-          items:
-            $ref: '#/components/schemas/task'
-        total:
-          type: integer
-          description: Total number of tasks
-      required:
-        - tasks
-        - total
-
-    debugRunData:
-      type: object
-      description: Data to start debugging
-      properties:
-        work_number:
-          type: string
-          description: Work unique number
-        break_points:
-          type: array
-          description: Run breakpoints
-          items:
-            type: string
-        action:
-          type: string
-          description: Task action
-      required:
-        - work_number
-        - break_points
-        - action
-
-    createTaskData:
-      type: object
-      properties:
-        version_id:
-          type: string
-          description: Version UUID
-          format: uuid
-        parameters:
-          type: object
-          description: Task start params
-          additionalProperties: true
-      required:
-        - version_id
-        - parameters
-
-    updateTaskData:
-      type: object
-      properties:
-        action:
-          type: string
-          enum:
-            - approvement
-            - execution
-            - change_executor
-            - request_execution_info
-        parameters:
-          type: object
-          description: Task update params
-          oneOf:
-            - $ref: '#/components/schemas/approverUpdateParams'
-            - $ref: '#/components/schemas/executionUpdateParams'
-            - $ref: '#/components/schemas/executorChangeParams'
-            - $ref: '#/components/schemas/requestInfoUpdateParams'
-      required:
-        - action
-        - parameters
-
-  responses:
-    ListPipelinesResp:
-      description: Pipelines list
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/scenarios'
-            required:
-              - status_code
-
-    ScenarioResp:
-      description: A scenario
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/scenario'
-            required:
-              - status_code
-
-    ModulesResp:
-      description: Existing modules
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/functionList'
-            required:
-              - status_code
-
-    ModulesUsageResp:
-      description: Existing modules usage
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/modulesUsage'
-            required:
-              - status_code
-
-    ModuleUsageResp:
-      description: Certain module usage
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/moduleUsage'
-            required:
-              - status_code
-
-    OKResp:
-      description: OK resp
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-            required:
-              - status_code
-
-    SchedulerTasksResp:
-      description: If there are any existing tasks
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/schedulerTasks'
-            required:
-              - status_code
-
-    PipelineTagResp:
-      description: Pipeline tag info
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/tagInfo'
-            required:
-              - status_code
-
-    PipelineTagsResp:
-      description: Pipeline tags info
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                type: array
-                description: Pipeline tags
-                items:
-                  $ref: '#/components/schemas/tagInfo'
-            required:
-              - status_code
-
-    RunResp:
-      description: Pipeline run response
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/runInfo'
-            required:
-              - status_code
-
-    TasksPageResp:
-      description: Page with tasks
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/tasksPage'
-            required:
-              - status_code
-
-    TaskResp:
-      description: Task
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/task'
-            required:
-              - status_code
-
-    TasksResp:
-      description: Tasks
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                type: array
-                description: Tasks
-                items:
-                  $ref: '#/components/schemas/task'
-            required:
-              - status_code
-
-    RunVersionsByBlueprintIdResponse:
-      description: info about started versions
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              data:
-                type: array
-                description: started versions
-                items:
-                  $ref: '#/components/schemas/runInfo'
-            required:
-              - status_code
-
-    DebugTaskResp:
-      description: Debug task
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              status_code:
-                type: integer
-                description: Internal status code
-              data:
-                $ref: '#/components/schemas/debugTask'
-            required:
-              - status_code
-
-    BadRequestError:
-      description: Got bad request data
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/error'
-
-    AccessTokenError:
-      description: Got no or an invalid access token
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/error'
-
-    WentWrongError:
-      description: Smth went wrong on backend
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/error'
-
-
-
-paths:
-  /pipelines:
-    get:
-      operationId: ListPipelines
-      summary: List existing pipelines
-      description: List all the existing pipelines
-      tags:
-        - pipeline
-      responses:
-        200:
-          $ref: '#/components/responses/ListPipelinesResp'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-    post:
-      operationId: CreatePipeline
-      summary: Create new pipeline
-      description: Create new pipeline
-      tags:
-        - pipeline
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/scenario'
-      responses:
-        200:
-          $ref: '#/components/responses/ScenarioResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /pipelines/{pipelineID}:
-    parameters:
-      - $ref: '#/components/parameters/pipelineID'
-
-    get:
-      operationId: GetPipeline
-      summary: Get a pipeline
-      description: Get a pipeline by its UUID
-      tags:
-        - pipeline
-      responses:
-        200:
-          $ref: '#/components/responses/ScenarioResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-    delete:
-      operationId: DeletePipeline
-      summary: Delete a pipeline
-      description: Delete a pipeline by its UUID
-      tags:
-        - pipeline
-      responses:
-        200:
-          $ref: '#/components/responses/OKResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /pipelines/{pipelineID}/scheduler-tasks:
-    parameters:
-      - $ref: '#/components/parameters/pipelineID'
-
-    get:
-      operationId: ListSchedulerTasks
-      summary: Checks active tasks existance
-      description: Checks if there are any active tasks
-      tags:
-        - pipeline
-      responses:
-        200:
-          $ref: '#/components/responses/SchedulerTasksResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /pipelines/{pipelineID}/tags/{tagID}:
-    parameters:
-      - $ref: '#/components/parameters/pipelineID'
-      - $ref: '#/components/parameters/tagID'
-
-    put:
-      operationId: AttachTag
-      summary: Add a tag
-      description: Add an existing tag to a pipeline
-      tags:
-        - tags
-      responses:
-        200:
-          $ref: '#/components/responses/PipelineTagResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-    get:
-      operationId: GetPipelineTag
-      summary: Get pipeline tags
-      description: Get existing tags, attached to a pipeline
-      tags:
-        - tags
-      responses:
-        200:
-          $ref: '#/components/responses/PipelineTagsResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-    delete:
-      operationId: DetachTag
-      summary: Delete pipeline tag
-      description: Detach a tag from pipeline
-      tags:
-        - tags
-      responses:
-        200:
-          $ref: '#/components/responses/OKResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /pipelines/version/{pipelineID}:
-    parameters:
-      - $ref: '#/components/parameters/pipelineID'
-
-    post:
-      operationId: CreatePipelineVersion
-      summary: Create pipeline version
-      description: Create a new pipeline version
-      tags:
-        - version
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/scenario'
-      responses:
-        200:
-          $ref: '#/components/responses/ScenarioResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /pipelines/version/{versionID}:
-    parameters:
-      - $ref: '#/components/parameters/versionID'
-
-    get:
-      operationId: GetPipelineVersion
-      summary: Get pipeline version
-      description: Get an existing pipeline version
-      tags:
-        - version
-      responses:
-        200:
-          $ref: '#/components/responses/ScenarioResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-    delete:
-      operationId: DeleteVersion
-      summary: Delete pipeline version
-      description: Delete an existing pipeline version
-      tags:
-        - version
-      responses:
-        200:
-          $ref: '#/components/responses/OKResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /pipelines/version:
-    parameters:
-      - $ref: '#/components/parameters/pipelineID'
-
-    put:
-      operationId: EditVersion
-      summary: Edit pipeline version
-      description: Edit a pipeline version
-      tags:
-        - version
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/scenario'
-      responses:
-        200:
-          $ref: '#/components/responses/ScenarioResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /modules:
-    get:
-      operationId: GetModules
-      summary: Get modules
-      description: Get all existing movdules
-      tags:
-        - modules
-      responses:
-        200:
-          $ref: '#/components/responses/ModulesResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /modules/usage:
-    get:
-      operationId: AllModulesUsage
-      summary: Get all modules usage
-      description: Get all modules usage
-      tags:
-        - modules
-      responses:
-        200:
-          $ref: '#/components/responses/ModulesUsageResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /modules/{moduleName}/usage:
-    parameters:
-      - $ref: '#/components/parameters/moduleName'
-
-    get:
-      operationId: ModuleUsage
-      summary: Get module usage
-      description: Get module usage
-      tags:
-        - modules
-      responses:
-        200:
-          $ref: '#/components/responses/ModuleUsageResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /modules/{moduleName}:
-    parameters:
-      - $ref: '#/components/parameters/moduleName'
-
-    post:
-      operationId: ModuleRun
-      summary: Run a module
-      description: Run a module
-      tags:
-        - modules
-      responses:
-        200:
-          $ref: '#/components/responses/ModuleUsageResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /tags:
-    get:
-      operationId: GetTags
-      summary: Get tags
-      description: Get tags
-      tags:
-        - tags
-      responses:
-        200:
-          $ref: '#/components/responses/PipelineTagsResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-    post:
-      operationId: CreateTag
-      summary: Create a tag
-      description: Create a new tag
-      tags:
-        - tags
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tagInfo'
-      responses:
-        200:
-          $ref: '#/components/responses/PipelineTagResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-    put:
-      operationId: EditTag
-      summary: Edit a tag
-      description: Edit an existing tag
-      tags:
-        - tags
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/tagInfo'
-      responses:
-        200:
-          $ref: '#/components/responses/PipelineTagResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /tags/{tagID}:
-    parameters:
-      - $ref: '#/components/parameters/tagID'
-
-    get:
-      operationId: RemoveTag
-      summary: Delete a tag
-      description: Delete an existing tag
-      tags:
-        - tags
-      responses:
-        200:
-          $ref: '#/components/responses/OKResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /run/{pipelineID}:
-    parameters:
-      - $ref: '#/components/parameters/pipelineID'
-
-    post:
-      operationId: RunPipeline
-      summary: Run pipeline
-      description: Run pipeline latest version
-      tags:
-        - pipeline
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
-      responses:
-        200:
-          $ref: '#/components/responses/RunResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /run/version/{versionID}:
-    parameters:
-      - $ref: '#/components/parameters/versionID'
-
-    post:
-      operationId: RunVersion
-      summary: Run pipeline version
-      description: Run pipeline version
-      tags:
-        - pipeline
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
-      responses:
-        200:
-          $ref: '#/components/responses/RunResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /tasks:
-    parameters:
-      - $ref: '#/components/parameters/name'
-      - $ref: '#/components/parameters/taskIDs'
-      - $ref: '#/components/parameters/created'
-      - $ref: '#/components/parameters/order'
-      - $ref: '#/components/parameters/selectAs'
-      - $ref: '#/components/parameters/archived'
-      - $ref: '#/components/parameters/limit'
-      - $ref: '#/components/parameters/offset'
-
-    get:
-      operationId: GetTasks
-      summary: Get tasks
-      description: Get existing tasks
-      tags:
-        - tasks
-      responses:
-        200:
-          $ref: '#/components/responses/TasksPageResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /tasks/{workNumber}:
-    parameters:
-      - $ref: '#/components/parameters/workNumber'
-
-    get:
-      operationId: GetTask
-      summary: Get task
-      description: Get existing task by work number
-      tags:
-        - tasks
-      responses:
-        200:
-          $ref: '#/components/responses/TaskResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-    post:
-      operationId: UpdateTask
-      summary: Update task
-      description: Update existing task by work number and provided data
-      tags:
-        - tasks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/updateTaskData'
-      responses:
-        200:
-          $ref: '#/components/responses/OKResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /tasks/last-by-version/{versionID}:
-    parameters:
-      - $ref: '#/components/parameters/versionID'
-
-    get:
-      operationId: LastVersionDebugTask
-      summary: Get last debug task by version
-      description: Get last debug task by version
-      tags:
-        - tasks
-      responses:
-        200:
-          $ref: '#/components/responses/TaskResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /tasks/pipeline/{pipelineID}:
-    parameters:
-      - $ref: '#/components/parameters/pipelineID'
-
-    get:
-      operationId: GetPipelineTasks
-      summary: Get tasks by pipeline ID
-      description: Get tasks by pipeline ID
-      tags:
-        - tasks
-      responses:
-        200:
-          $ref: '#/components/responses/TasksResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /tasks/version/{versionID}:
-    parameters:
-      - $ref: '#/components/parameters/versionID'
-
-    get:
-      operationId: GetVersionTasks
-      summary: Get tasks by version ID
-      description: Get tasks by version ID
-      tags:
-        - tasks
-      responses:
-        200:
-          $ref: '#/components/responses/TasksResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /debug/:
-    post:
-      operationId: CreateDebugTask
-      summary: Create debug task
-      description: Create debug task
-      tags:
-        - tasks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/debugRunData'
-      responses:
-        200:
-          $ref: '#/components/responses/TaskResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /debug/run:
-    parameters:
-      - $ref: '#/components/parameters/versionID'
-
-    post:
-      operationId: StartDebugTask
-      summary: Start debug task
-      description: Start debug task
-      tags:
-        - tasks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/debugRunData'
-      responses:
-        200:
-          $ref: '#/components/responses/TaskResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /debug/{workNumber}:
-    parameters:
-      - $ref: '#/components/parameters/workNumber'
-
-    post:
-      operationId: DebugTask
-      summary: Get debug task
-      description: Get debug task
-      tags:
-        - tasks
-      responses:
-        200:
-          $ref: '#/components/responses/DebugTaskResp'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'
-
-  /run/versions/blueprint_id:
-    post:
-      operationId: RunVersionsByBlueprintID
-      summary: Run Versions by blueprint_id
-      description: Запустить все версии c blueprintID и первым блоком sd_application
-      tags:
-        - versions, run, blueprint_id
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/runVersionsByBlueprintIdRequest'
-      responses:
-        200:
-          $ref: '#/components/responses/RunVersionsByBlueprintIdResponse'
-        400:
-          $ref: '#/components/responses/BadRequestError'
-        401:
-          $ref: '#/components/responses/AccessTokenError'
-        500:
-          $ref: '#/components/responses/WentWrongError'

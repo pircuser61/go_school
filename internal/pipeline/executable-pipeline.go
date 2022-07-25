@@ -265,7 +265,7 @@ func (ep *ExecutablePipeline) handleSkippedBlocks(ctx context.Context, runCtx *s
 		var err error
 
 		if currentBlock.IsScenario() {
-			// TODO
+			// TODO good
 		} else {
 			_, _, err = ep.createStep(ctx, step, false, StatusSkipped)
 			if err != nil {

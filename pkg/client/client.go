@@ -126,9 +126,7 @@ func (pc *PipelinerClient) RunPipeline(ctx context.Context, pid fmt.Stringer, da
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-ERIUS-USER", pc.user)
 
-	result := RunResponseHTTP{}
-
-	statusCode, err := doRequest(ctx, pc.client, req, &result)
+	result, statusCode, err := doRequest[RunResponseHTTP](ctx, pc.client, req)
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +151,7 @@ func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-ERIUS-USER", pc.user)
 
-	result := EriusTaskHTTP{}
-
-	statusCode, err := doRequest(ctx, pc.client, req, &result)
+	result, statusCode, err := doRequest[EriusTaskHTTP](ctx, pc.client, req)
 	if err != nil {
 		return nil, err
 	}
@@ -168,40 +164,39 @@ func (pc *PipelinerClient) GetTasks(ctx context.Context, taskID fmt.Stringer) (*
 }
 
 // doRequest - рутинная функа, делает запрос и анмаршаллит данные
-func doRequest(ctx context.Context, client *http.Client, req *http.Request, responseStruct interface{}) (int, error) {
+func doRequest[V any](ctx context.Context, client *http.Client, req *http.Request) (*V, int, error) {
 	req = req.WithContext(ctx)
 
-	res, err := client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
-		return 0, errors.Wrap(err, HTTPClientError)
+		return nil, 0, errors.Wrap(err, HTTPClientError)
 	}
 
-	if responseStruct != nil {
-		err := unmarshalBody(res, responseStruct)
-		if err != nil {
-			return 0, err
-		}
+	res, err := unmarshalBody[V](resp)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	return res.StatusCode, nil
+	return res, resp.StatusCode, nil
 }
 
-func unmarshalBody(res *http.Response, structToFill interface{}) error {
+func unmarshalBody[V any](res *http.Response) (*V, error) {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return errors.Wrap(err, UnmarshalReadError)
+		return nil, errors.Wrap(err, UnmarshalReadError)
 	}
 
 	defer res.Body.Close()
 
 	if len(body) == 0 {
-		return errors.New(EmptyResponse)
+		return nil, errors.New(EmptyResponse)
 	}
 
-	err = json.Unmarshal(body, structToFill)
+	var structToFill V
+	err = json.Unmarshal(body, &structToFill)
 	if err != nil {
-		return errors.Wrap(err, UnmarshalJSONError)
+		return nil, errors.Wrap(err, UnmarshalJSONError)
 	}
 
-	return nil
+	return &structToFill, nil
 }

@@ -1,11 +1,10 @@
-package handlers
+package api
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 
@@ -13,17 +12,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
-// GetTags
-// @Summary Get Tags
-// @Description Cписок тегов
-// @Tags tags
-// @ID      get-tags
-// @Produce json
-// @success 200 {object} httpResponse{data=[]entity.EriusTagInfo}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tags [get]
 func (ae *APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tags")
 	defer s.End()
@@ -46,25 +34,13 @@ func (ae *APIEnv) GetTags(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// @Summary Create Tag
-// @Description Создать новый тег
-// @Tags tags
-// @ID      create-tag
-// @Accept json
-// @Produce json
-// @Param tag body entity.EriusTagInfo true "New tag"
-// @Success 200 {object} httpResponse{data=entity.EriusTagInfo}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tags [post]
 func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_tag")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
@@ -107,25 +83,13 @@ func (ae *APIEnv) CreateTag(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// @Summary Edit Tag
-// @Description Изменить тег
-// @Tags tags
-// @ID      edit-tag
-// @Accept json
-// @Produce json
-// @Param tag body entity.EriusTagInfo true "Modified tag"
-// @Success 200 {object} httpResponse{data=entity.EriusTagInfo}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tags [put]
 func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_tag")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
@@ -175,24 +139,11 @@ func (ae *APIEnv) EditTag(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// @Summary Remove Tag
-// @Description Удалить тег
-// @Tags tags
-// @ID      remove-tag
-// @Produce json
-// @Param ID path string true "Tag ID"
-// @Success 200 {object} httpResponse
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /tags/{ID} [delete]
-func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) RemoveTag(w http.ResponseWriter, req *http.Request, tagID string) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_tag")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-
-	tagID := chi.URLParam(req, "ID")
 
 	tID, err := uuid.Parse(tagID)
 	if err != nil {

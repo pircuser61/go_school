@@ -1976,6 +1976,53 @@ func (db *PGConnection) GetTasks(c context.Context, filters entity.TaskFilter) (
 	}, nil
 }
 
+func (db *PGConnection) GetTasksCount(c context.Context, userName string) (*entity.CountTasks, error) {
+	c, span := trace.StartSpan(c, "pg_get_tasks_count")
+	defer span.End()
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+		SELECT 
+			w.id
+		FROM pipeliner.works w 
+		JOIN pipeliner.work_status ws ON w.status = ws.id
+		LEFT JOIN LATERAL (
+             SELECT * FROM pipeliner.variable_storage vs
+             WHERE vs.work_id = w.id AND vs.status != 'skipped'
+             ORDER BY vs.time DESC
+             --limit--
+        ) workers ON workers.work_id = w.id
+		WHERE 1=1`
+
+	var args []interface{}
+	qActive := fmt.Sprintf("%s AND w.author = '%s'", q, userName)
+	qActive = strings.Replace(qActive, "--limit--", "LIMIT 1", -1)
+	active, err := db.getTasksCount(c, qActive, args)
+	if err != nil {
+		return nil, err
+	}
+
+	qApprover := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->'%s' "+
+		"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready')", q, userName)
+	approver, err := db.getTasksCount(c, qApprover, args)
+	if err != nil {
+		return nil, err
+	}
+
+	qExecutor := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->'%s' "+
+		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
+	executor, err := db.getTasksCount(c, qExecutor, args)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.CountTasks{
+		TotalActive:   active,
+		TotalExecutor: executor,
+		TotalApprover: approver,
+	}, nil
+}
+
 func (db *PGConnection) GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
 	defer span.End()

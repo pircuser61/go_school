@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -23,20 +22,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
-// @Summary Create pipeline version
-// @Description Создать новую версию сценария
-// @Tags version
-// @ID      create-version
-// @Accept json
-// @Produce json
-// @Param pipeline   body entity.EriusScenario  true "New version"
-// @Param pipelineID path string 				true "Pipeline ID"
-// @success 200 {object} httpResponse{data=entity.EriusScenario}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/version/{pipelineID} [post]
-func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "create_draft")
 	defer s.End()
 
@@ -63,8 +49,6 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 		return
 	}
-
-	pipelineID := chi.URLParam(req, "pipelineID")
 
 	p.ID, err = uuid.Parse(pipelineID)
 	if err != nil {
@@ -127,30 +111,13 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 }
 
-type RunVersionBody map[string]interface{}
-
-// @Summary Run Version
-// @Description Запустить версию
-// @Tags version, run
-// @ID run-version
-// @Accept json
-// @Produce json
-// @Param variables body RunVersionBody false "pipeline input"
-// @Param versionID path string true "Version ID"
-// @Success 200 {object} httpResponse{data=entity.RunResponse}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /run/version/{versionID} [post]
-func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "run_pipeline")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "versionID")
-
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(versionID)
 	if err != nil {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(err))
@@ -184,25 +151,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
-type RunVersionsByBlueprintIdRequest struct {
-	BlueprintID     string                 `json:"blueprint_id"`
-	Description     string                 `json:"description"`
-	ApplicationBody map[string]interface{} `json:"application_body"`
-}
-
-// @Summary Run Version By blueprintID
-// @Description Запустить все версии c blueprintID и первым блоком sd_application
-// @Tags version, run
-// @ID run-versions-by-blueprint-id
-// @Accept json
-// @Produce json
-// @Param variables body RunVersionsByBlueprintIdRequest false "pipeline input"
-// @Success 200 {object} RunVersionsByBlueprintIdResponse
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /run/versions/blueprint_id [post]
-func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Request) {
+func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "run_versions_by_blueprint_id")
 	defer s.End()
 
@@ -230,7 +179,7 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if req.BlueprintID == "" {
+	if req.BlueprintId == "" {
 		e := ValidationError
 		log.Error(e.errorMessage(errors.New("blueprintID is empty")))
 		_ = e.sendError(w)
@@ -238,7 +187,7 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	versions, err := ae.DB.GetVersionsByBlueprintID(ctx, req.BlueprintID)
+	versions, err := ae.DB.GetVersionsByBlueprintID(ctx, req.BlueprintId)
 	if err != nil {
 		e := GetVersionsByBlueprintIdError
 		log.Error(e.errorMessage(err))
@@ -252,7 +201,7 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	respChan := make(chan *entity.RunResponse, len(versions))
 
 	ctx = context.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
-		BlueprintID:     req.BlueprintID,
+		BlueprintID:     req.BlueprintId,
 		Description:     req.Description,
 		ApplicationBody: req.ApplicationBody,
 	})
@@ -295,26 +244,50 @@ func (ae *APIEnv) RunVersionsByBlueprintID(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// @Summary Delete Version
-// @Description Удалить версию
-// @Tags version
-// @ID      delete-version
-// @Produce json
-// @Param versionID path string true "Version ID"
-// @Success 200 {object} httpResponse
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/version/{versionID} [delete]
-func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "run_new_version_by_prev_version")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	req := &RunNewVersionByPrevVersionRequest{}
+
+	err = json.Unmarshal(body, req)
+	if err != nil {
+		e := BodyParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if req.BlueprintId == "" {
+		e := ValidationError
+		log.Error(e.errorMessage(errors.New("blueprintID is empty")))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "delete_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	idParam := chi.URLParam(req, "versionID")
-
-	versionID, err := uuid.Parse(idParam)
+	vID, err := uuid.Parse(versionID)
 	if err != nil {
 		e := UUIDParsingError
 		log.Error(e.errorMessage(err))
@@ -323,7 +296,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	p, err := ae.DB.GetPipelineVersion(ctx, versionID)
+	p, err := ae.DB.GetPipelineVersion(ctx, vID)
 	if err != nil {
 		e := PipelineDeleteError
 		log.Error(e.errorMessage(err))
@@ -343,7 +316,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	err = ae.DB.DeleteVersion(ctx, versionID)
+	err = ae.DB.DeleteVersion(ctx, vID)
 	if err != nil {
 		e := PipelineDeleteError
 		log.Error(e.errorMessage(err))
@@ -362,26 +335,11 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// GetPipelineVersion
-// @Summary Get pipeline version
-// @Description Получить версию сценария по ID
-// @Tags version
-// @ID      get-version
-// @Produce json
-// @Param versionID path string true "Version ID"
-// @success 200 {object} httpResponse{data=entity.EriusScenario}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/version/{versionID} [get]
-//nolint:dupl //its different
-func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-
-	versionID := chi.URLParam(req, "versionID")
 
 	versionUUID, err := uuid.Parse(versionID)
 	if err != nil {
@@ -420,19 +378,6 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// @Summary Edit Draft
-// @Description Изменить черновик
-// @Tags pipeline
-// @ID      edit-draft
-// @Accept json
-// @Produce json
-// @Param draft body entity.EriusScenario true "New draft"
-// @Success 200 {object} httpResponse{data=entity.EriusScenario}
-// @Failure 400 {object} httpError
-// @Failure 401 {object} httpError
-// @Failure 500 {object} httpError
-// @Router /pipelines/version [put]
-//nolint:gocyclo //its  necessary
 func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "edit_draft")
 	defer s.End()

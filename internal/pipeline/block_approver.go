@@ -50,6 +50,13 @@ type Approver struct {
 	Comment  *string           `json:"comment,omitempty"`
 }
 
+type EditingApp struct {
+	Approver    string    `json:"approver"`
+	Comment     string    `json:"comment"`
+	Attachments []string  `json:"attachments"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type ApproverData struct {
 	Type           script.ApproverType `json:"type"`
 	Approvers      map[string]struct{} `json:"approvers"`
@@ -63,6 +70,10 @@ type ApproverData struct {
 	DidSLANotification bool `json:"did_sla_notification"`
 
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
+
+	IsEditable         bool        `json:"is_editable"`
+	RepeatPrevDecision bool        `json:"repeat_prev_decision"`
+	EditingApp         *EditingApp `json:"editing_app,omitempty"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -88,6 +99,33 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	a.ActualApprover = &login
 
 	return nil
+}
+
+func (a *ApproverData) SetEditingApp(login, comment string, attachments []string) error {
+	_, ok := a.Approvers[login]
+	if !ok && login != AutoApprover {
+		return fmt.Errorf("%s not found in approvers", login)
+	}
+
+	if a.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	editing := &EditingApp{
+		Approver:    login,
+		Comment:     comment,
+		Attachments: attachments,
+		CreatedAt:   time.Now(),
+	}
+
+	a.EditingApp = editing
+
+	return nil
+}
+
+type updateEditingParams struct {
+	Comment     string   `json:"comment"`
+	Attachments []string `json:"attachments"`
 }
 
 type ApproverUpdateParams struct {
@@ -127,6 +165,11 @@ func (gb *GoApproverBlock) GetStatus() Status {
 		}
 		return StatusNoSuccess
 	}
+
+	if gb.State.EditingApp != nil {
+		return StatusIdle
+	}
+
 	return StatusRunning
 }
 
@@ -136,6 +179,10 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 			return StatusApproved
 		}
 		return StatusApprovementRejected
+	}
+
+	if gb.State.EditingApp != nil {
+		return StatusWait
 	}
 
 	return StatusApprovement
@@ -398,10 +445,16 @@ func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
 		key = approvedSocket
 	}
+
+	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {
+		key = editAppSocket
+	}
+
 	nexts, ok := gb.Nexts[key]
 	if !ok {
 		return nil, false
 	}
+
 	return nexts, true
 }
 
@@ -415,77 +468,6 @@ func (gb *GoApproverBlock) Skipped(_ *store.VariableStore) []string {
 
 func (gb *GoApproverBlock) GetState() interface{} {
 	return gb.State
-}
-
-func (gb *GoApproverBlock) setApproverDecision(ctx context.Context, stepID uuid.UUID,
-	approver string, updateParams ApproverUpdateParams) error {
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, stepID)
-	if err != nil {
-		return err
-	} else if step == nil {
-		return errors.New("can't get step from database")
-	}
-
-	// get state from step.State
-	stepData, ok := step.State[gb.Name]
-	if !ok {
-		return errors.New("can't get step state")
-	}
-
-	var state ApproverData
-	err = json.Unmarshal(stepData, &state)
-	if err != nil {
-		return errors.Wrap(err, "invalid format of go-approver-block state")
-	}
-
-	state.DidSLANotification = gb.State.DidSLANotification
-	gb.State = &state
-
-	err = gb.State.SetDecision(
-		approver,
-		updateParams.Decision,
-		updateParams.Comment,
-	)
-	if err != nil {
-		return err
-	}
-
-	step.State[gb.Name], err = json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	content, err := json.Marshal(store.NewFromStep(step))
-	if err != nil {
-		return err
-	}
-
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          stepID,
-		Content:     content,
-		BreakPoints: step.BreakPoints,
-		HasError:    false,
-		Status:      step.Status,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (gb *GoApproverBlock) Update(ctx context.Context, data *script.BlockUpdateData) (interface{}, error) {
-	if data == nil {
-		return nil, errors.New("empty data")
-	}
-
-	var updateParams ApproverUpdateParams
-	err := json.Unmarshal(data.Parameters, &updateParams)
-	if err != nil {
-		return nil, errors.New("can't assert provided data")
-	}
-
-	return nil, gb.setApproverDecision(ctx, data.Id, data.ByLogin, updateParams)
 }
 
 func (gb *GoApproverBlock) Model() script.FunctionModel {
@@ -514,12 +496,14 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockGoApproverID,
 			Params: &script.ApproverParams{
-				Approver: "",
-				Type:     "",
-				SLA:      0,
+				Approver:           "",
+				Type:               "",
+				SLA:                0,
+				IsEditable:         false,
+				RepeatPrevDecision: false,
 			},
 		},
-		Sockets: []string{approvedSocket, rejectedSocket},
+		Sockets: []string{approvedSocket, rejectedSocket, editAppSocket},
 	}
 }
 
@@ -567,6 +551,8 @@ func createGoApproverBlock(name string, ef *entity.EriusFunc, pipeline *Executab
 		LeftToNotify: map[string]struct{}{
 			params.Approver: {},
 		},
+		IsEditable:         params.IsEditable,
+		RepeatPrevDecision: params.RepeatPrevDecision,
 	}
 
 	return b, nil

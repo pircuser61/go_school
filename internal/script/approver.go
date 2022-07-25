@@ -3,6 +3,7 @@ package script
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type ApproverType string
@@ -29,6 +30,9 @@ type ApproverParams struct {
 
 	SLA        int         `json:"sla"`
 	AutoAction *AutoAction `json:"auto_action,omitempty"`
+
+	IsEditable         bool `json:"is_editable"`
+	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 }
 
 func (a *ApproverParams) Validate() error {
@@ -36,10 +40,12 @@ func (a *ApproverParams) Validate() error {
 		return errors.New("approver is empty")
 	}
 
-	if a.Type != ApproverTypeUser &&
-		a.Type != ApproverTypeGroup &&
-		a.Type != ApproverTypeHead &&
-		a.Type != ApproverTypeFromSchema {
+	typeApprove := ApproverType(strings.ToLower(a.Type.String()))
+
+	if typeApprove != ApproverTypeUser &&
+		typeApprove != ApproverTypeGroup &&
+		typeApprove != ApproverTypeHead &&
+		typeApprove != ApproverTypeFromSchema {
 		return fmt.Errorf("unknown approver type: %s", a.Type)
 	}
 
