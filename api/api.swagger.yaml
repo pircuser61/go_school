@@ -1866,8 +1866,6 @@ components:
         enum: [ "Один согласующий", "Группа согласующих", "Руководитель получателя", "Выбор из схемы" ]
         x-enum-varnames: [ "user", "group", "head", "fromSchema" ]
 
-    approverDecision:
-      type: string
     EriusTasks:
       type: object
       properties:
