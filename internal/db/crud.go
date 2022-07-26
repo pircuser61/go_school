@@ -1940,29 +1940,47 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 			version.comment_rejected,
 			version.comment,
 			version.author,
-			(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = version.pipeline_id) AS last_approve
+			(SELECT MAX(date) FROM pipeliner.pipeline_history 
+				WHERE pipeline_id = version.pipeline_id
+			) AS last_approve
 		FROM pipeliner.works work
-		LEFT JOIN pipeliner.versions version ON version.id = work.version_id
-		WHERE work.work_number = $1;
+			LEFT JOIN pipeliner.versions version ON version.id = work.version_id
+		WHERE work.work_number = $1 AND work.child_id IS NULL;
 `
 
 	row := conn.QueryRow(c, query, workNumber)
 
-	res := &entity.EriusScenario{}
-
-	err = row.Scan(
-		&res.VersionID,
-		&res.Status,
-		&res.ID,
-		&res.CreatedAt,
-		&res.CommentRejected,
-		&res.Comment,
-		&res.Author,
-		&res.ApprovedAt,
+	var (
+		vID, pID uuid.UUID
+		s        int
+		content  string
+		cr       string
+		cm       string
+		d        *time.Time
+		ca       *time.Time
+		a        string
 	)
+
+	err = row.Scan(&vID, &s, &pID, &ca, &content, &cr, &cm, &a, &d)
 	if err != nil {
 		return nil, err
 	}
+
+	res := &entity.EriusScenario{}
+
+	err = json.Unmarshal([]byte(content), &res)
+	if err != nil {
+		return nil, err
+	}
+
+	res.VersionID = vID
+	res.ID = pID
+	res.Status = s
+	res.CommentRejected = cr
+	res.Comment = cm
+	res.ApprovedAt = d
+	res.CreatedAt = ca
+	res.Author = a
 
 	return res, nil
 }

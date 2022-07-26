@@ -290,9 +290,9 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.BlueprintId)
+	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
-		e := GetVersionsByBlueprintIdError
+		e := GetVersionsByWorkNumberError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
