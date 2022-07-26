@@ -127,7 +127,7 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, tx pgx.Tx, dto *Cre
 		return "", err
 	}
 
-	return dto.WorkNumber, nil
+	return worksNumber, nil
 }
 
 func (db *PGCon) insertTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (workNumber string, err error) {
@@ -175,5 +175,5 @@ func (db *PGCon) insertTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (w
 		return "", err
 	}
 
-	return dto.WorkNumber, nil
+	return worksNumber, nil
 }
