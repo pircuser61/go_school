@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"io"
 	"net/http"
 	"sync"
@@ -593,14 +592,12 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 
 	log.Info("--- running pipeline:", dto.version.Name)
 
-	/*usr, err := user.GetUserInfoFromCtx(ctx)
+	usr, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
 		return nil, errors.Wrap(err, e.error())
-	}*/
-
-	usr := sso.UserInfo{Username: "rapetrin1"}
+	}
 
 	arg := &execVersionInternalDTO{
 		reqID:         reqID,
