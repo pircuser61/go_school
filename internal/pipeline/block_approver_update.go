@@ -175,10 +175,5 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		})
 	}
 
-	if data.Action == string(entity.TaskUpdateActionCreateNewWork) {
-		// TODO: make new process with edited application
-		return nil, nil
-	}
-
 	return nil, errors.New("cant`t update execution block, unknown action: " + data.Action)
 }

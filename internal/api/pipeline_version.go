@@ -228,7 +228,7 @@ func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Reques
 			}
 
 			if v == nil {
-				log.Error(execErr)
+				log.Error("run_versions_by_blueprint_id execution error")
 				return
 			}
 			ch <- v
@@ -596,6 +596,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
+		log.Error("GetUserInfoFromCtx: ", err)
 		return nil, errors.Wrap(err, e.error())
 	}
 
