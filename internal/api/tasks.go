@@ -447,6 +447,8 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		})
 		if blockErr == nil {
 			couldUpdateOne = true
+		} else {
+			log.Error("block.Update: ", blockErr)
 		}
 	}
 
