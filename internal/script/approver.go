@@ -3,7 +3,6 @@ package script
 import (
 	"errors"
 	"fmt"
-	"strings"
 )
 
 type ApproverType string
@@ -40,7 +39,7 @@ func (a *ApproverParams) Validate() error {
 		return errors.New("approver is empty")
 	}
 
-	typeApprove := ApproverType(strings.ToLower(a.Type.String()))
+	typeApprove := ApproverType(a.Type.String())
 
 	if typeApprove != ApproverTypeUser &&
 		typeApprove != ApproverTypeGroup &&
