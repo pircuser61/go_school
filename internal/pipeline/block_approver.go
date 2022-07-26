@@ -422,10 +422,9 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 
 	if decision == nil && gb.State.GetRepeatPrevDecision() {
 		if gb.trySetPreviousDecision(ctx, &GetPreviousDecisionDTO{
-			RunCtx: runCtx,
-			WorkID: gb.Pipeline.TaskID,
+			RunCtx:   runCtx,
+			WorkID:   gb.Pipeline.TaskID,
 			StepName: step.Name,
-
 		}) {
 			return nil
 		}
