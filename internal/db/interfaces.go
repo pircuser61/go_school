@@ -24,6 +24,7 @@ type TaskStorager interface {
 	GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error)
 	GetUnfinishedTaskStepsByWorkIdAndStepType(c context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error)
 	GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error)
+	GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error)
 	CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.EriusTask, error)
 	ChangeTaskStatus(c context.Context, taskID uuid.UUID, status int) error
 	GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error)
