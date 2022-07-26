@@ -80,6 +80,10 @@ func (a *ApproverData) GetDecision() *ApproverDecision {
 	return a.Decision
 }
 
+func (a *ApproverData) GetRepeatPrevDecision() bool {
+	return a.RepeatPrevDecision
+}
+
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
 	_, ok := a.Approvers[login]
 	if !ok && login != AutoApprover {
@@ -101,7 +105,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	return nil
 }
 
-func (a *ApproverData) SetEditingApp(login, comment string, attachments []string) error {
+func (a *ApproverData) SetEditApp(login, comment string, attachments []string) error {
 	_, ok := a.Approvers[login]
 	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
@@ -392,22 +396,25 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 
 	gb.State = &state
 
-	handled, err := gb.handleSLA(ctx, id, stepCtx)
-	if err != nil {
-		l.WithError(err).Error("couldn't handle sla")
-	}
-	if handled {
-		// go for another loop cause we may have updated the state at db
-		return gb.DebugRun(ctx, stepCtx, runCtx)
-	}
+	if step.Status != string(StatusIdle) {
+		handled, err := gb.handleSLA(ctx, id, stepCtx)
+		if err != nil {
+			l.WithError(err).Error("couldn't handle sla")
+		}
 
-	handled, err = gb.handleNotifications(ctx, id, stepCtx)
-	if err != nil {
-		l.WithError(err).Error("couldn't handle notifications")
-	}
-	if handled {
-		// go for another loop cause we may have updated the state at db
-		return gb.DebugRun(ctx, stepCtx, runCtx)
+		if handled {
+			// go for another loop cause we may have updated the state at db
+			return gb.DebugRun(ctx, stepCtx, runCtx)
+		}
+
+		handled, err = gb.handleNotifications(ctx, id, stepCtx)
+		if err != nil {
+			l.WithError(err).Error("couldn't handle notifications")
+		}
+		if handled {
+			// go for another loop cause we may have updated the state at db
+			return gb.DebugRun(ctx, stepCtx, runCtx)
+		}
 	}
 
 	// check decision
@@ -437,7 +444,16 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 
 		runCtx.ReplaceState(gb.Name, stateBytes)
 	}
+
+	if decision == nil && gb.State.GetRepeatPrevDecision() {
+		checkPreviousDecision()
+	}
+
 	return nil
+}
+
+func checkPreviousDecision() {
+
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {

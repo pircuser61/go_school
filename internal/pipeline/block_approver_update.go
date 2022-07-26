@@ -103,7 +103,7 @@ func (gb *GoApproverBlock) setEditingApp(ctx c.Context, dto *setEditingAppDTO) e
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	errSet := gb.State.SetEditingApp(dto.approver, dto.updateParams.Comment, dto.updateParams.Attachments)
+	errSet := gb.State.SetEditApp(dto.approver, dto.updateParams.Comment, dto.updateParams.Attachments)
 	if errSet != nil {
 		return errSet
 	}

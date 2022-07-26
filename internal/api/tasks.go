@@ -289,7 +289,7 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request, vers
 		return
 	}
 
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
