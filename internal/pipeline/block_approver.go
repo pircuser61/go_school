@@ -475,21 +475,21 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *GetPreviou
 		l.Error(err)
 		return false
 	} else if step == nil {
-		l.Error("getPreviousDecision: step is nil")
+		l.Error("trySetPreviousDecision: step is nil")
 		return false
 	}
 
 	// get state from step.State
 	data, ok := step.State[dto.StepName]
 	if !ok {
-		l.Error("getPreviousDecision: step state is not found: " + dto.StepName)
+		l.Error("trySetPreviousDecision: step state is not found: " + dto.StepName)
 		return false
 	}
 
 	var state ApproverData
 	err = json.Unmarshal(data, &state)
 	if err != nil {
-		l.Error("getPreviousDecision: invalid format of go-approver-block state")
+		l.Error("trySetPreviousDecision: invalid format of go-approver-block state")
 		return false
 	}
 
@@ -511,7 +511,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *GetPreviou
 		var stateBytes []byte
 		stateBytes, err = json.Marshal(gb.State)
 		if err != nil {
-			l.Error("getPreviousDecision: ", err)
+			l.Error("trySetPreviousDecision: ", err)
 			return false
 		}
 

@@ -113,5 +113,9 @@ func (s *Service) getUserinfo(ctx context.Context, r *http.Request) (*UserInfo, 
 
 	s.userinfoToCache(username, user)
 
+	fmt.Println("getUserinfo start: ")
+	fmt.Printf("%+v \n", user.ResourceAccess)
+	fmt.Println("getUserinfo start: ")
+
 	return user, nil
 }
