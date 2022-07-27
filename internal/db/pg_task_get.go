@@ -53,8 +53,8 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		    WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 		    ORDER BY vs.time DESC
 		    LIMIT 1
-		) descr ON descr.work_id = w.id AND w.child_id IS NULL
-		WHERE 1=1`
+		) descr ON descr.work_id = w.id
+		WHERE w.child_id IS NULL`
 
 	order := "ASC"
 	if filters.Order != nil {
