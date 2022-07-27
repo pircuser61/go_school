@@ -369,6 +369,11 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
+	if blockType == "pipeline" {
+		// TODO: make func for canceling task
+		return
+	}
+
 	// can update only running tasks
 	if !dbTask.IsRun() {
 		e := UpdateNotRunningTaskError
@@ -488,6 +493,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
 
 	if action == entity.TaskUpdateActionRequestExecutionInfo {
 		return pipeline.BlockGoExecutionID
+	}
+
+	if action == entity.TaskUpdateActionCancelApp {
+		return "pipeline"
 	}
 
 	return ""
