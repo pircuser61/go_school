@@ -285,6 +285,13 @@ paths:
       summary: Get list of pipelines
       description: Список сценариев
       operationId: list-pipelines
+      parameters:
+        - name: my
+          in: query
+          description: Show my pipelines only
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: OK

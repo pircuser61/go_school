@@ -167,7 +167,7 @@ func (db *PGCon) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioI
 
 	vMap := make(map[uuid.UUID]entity.EriusScenarioInfo)
 
-	versions, err := db.GetVersionsByStatus(c, StatusApproved)
+	versions, err := db.GetVersionsByStatus(c, StatusApproved, "")
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ func (db *PGCon) findApproveDate(c context.Context, id uuid.UUID) (time.Time, er
 	return time.Time{}, nil
 }
 
-func (db *PGCon) GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error) {
+func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_versions_by_status")
 	defer span.End()
 
@@ -258,26 +258,33 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-	SELECT 
-		pv.id, 
-		pv.status, 
-		pv.pipeline_id, 
-		pv.created_at, 
-		pv.author, 
-		pv.approver, 
-		pp.name, 
-		pw.started_at, 
-		pws.name, 
-		pv.comment_rejected, 
-		pv.comment
-	FROM pipeliner.versions pv
-	JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
-	LEFT OUTER JOIN  pipeliner.works pw ON pw.id = pv.last_run_id
-	LEFT OUTER JOIN  pipeliner.work_status pws ON pws.id = pw.status
-	WHERE 
-		pv.status = $1
-		AND pp.deleted_at IS NULL
-	ORDER BY created_at`
+		SELECT 
+			pv.id, 
+			pv.status, 
+			pv.pipeline_id, 
+			pv.created_at, 
+			pv.author, 
+			pv.approver, 
+			pp.name, 
+			pw.started_at, 
+			pws.name, 
+			pv.comment_rejected, 
+			pv.comment
+		FROM pipeliner.versions pv
+		JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
+		LEFT OUTER JOIN  pipeliner.works pw ON pw.id = pv.last_run_id
+		LEFT OUTER JOIN  pipeliner.work_status pws ON pws.id = pw.status
+		WHERE 
+			pv.status = $1
+			AND pp.deleted_at IS NULL
+			---author---
+		ORDER BY created_at`
+
+	fmt.Println("author: ", author)
+
+	if author != "" {
+		q = strings.ReplaceAll(q, "---author---", "AND pv.author='" + author + "'")
+	}
 
 	rows, err := db.Pool.Query(c, q, status)
 	if err != nil {
@@ -301,25 +308,25 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 	return res, nil
 }
 
-func (db *PGCon) GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+func (db *PGCon) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_draft_versions")
 	defer span.End()
 
-	return db.GetVersionsByStatus(c, StatusDraft)
+	return db.GetVersionsByStatus(c, StatusDraft, author)
 }
 
 func (db *PGCon) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_on_approve_versions")
 	defer span.End()
 
-	return db.GetVersionsByStatus(c, StatusOnApprove)
+	return db.GetVersionsByStatus(c, StatusOnApprove, "")
 }
 
 func (db *PGCon) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_rejected_versions")
 	defer span.End()
 
-	return db.GetVersionsByStatus(c, StatusRejected)
+	return db.GetVersionsByStatus(c, StatusRejected, "")
 }
 
 func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario, error) {

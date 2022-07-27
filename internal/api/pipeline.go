@@ -147,13 +147,15 @@ func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request, pipeline
 	}
 }
 
-func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request, params ListPipelinesParams) {
 	ctx, s := trace.StartSpan(req.Context(), "list_pipelines")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	drafts, err := ae.draftVersions(ctx)
+	myPipelines := params.My != nil && *params.My
+
+	drafts, err := ae.draftVersions(ctx, myPipelines)
 	if err != nil {
 		_ = err.sendError(w)
 
@@ -404,11 +406,22 @@ func (ae *APIEnv) approvedVersions(ctx context.Context) ([]entity.EriusScenarioI
 // draftVersions выбирает версии сценария с признаком Draft,
 // разрешенные для данного пользователя
 //nolint:dupl //diff logic
-func (ae *APIEnv) draftVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
+func (ae *APIEnv) draftVersions(ctx context.Context, myPipelines bool) ([]entity.EriusScenarioInfo, *PipelinerError) {
 	ctx, s := trace.StartSpan(ctx, "list_drafts")
 	defer s.End()
 
-	drafts, err := ae.DB.GetDraftVersions(ctx)
+	authorLogin := ""
+
+	if myPipelines {
+		userFromContext, err := user.GetUserInfoFromCtx(ctx)
+		if err != nil {
+			return []entity.EriusScenarioInfo{}, &PipelinerError{NoUserInContextError}
+		}
+
+		authorLogin = userFromContext.Username
+	}
+
+	drafts, err := ae.DB.GetDraftVersions(ctx, authorLogin)
 	if err != nil {
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllDraftsError}
 	}
