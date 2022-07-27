@@ -1900,7 +1900,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, 
 			vs.status
 		FROM pipeliner.variable_storage vs 
 			LEFT JOIN pipeliner.works w ON w.child_id = $1 
-		WHERE vs.pipeline_id = w.id AND vs.step_name = $2
+		WHERE vs.work_id = w.id AND vs.step_name = $2
 		LIMIT 1
 `
 
