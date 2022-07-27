@@ -397,9 +397,9 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 	gb.State = &state
 
 	if step.Status != string(StatusIdle) {
-		handled, err := gb.handleSLA(ctx, id, stepCtx)
-		if err != nil {
-			l.WithError(err).Error("couldn't handle sla")
+		handled, errSLA := gb.handleSLA(ctx, id, stepCtx)
+		if errSLA != nil {
+			l.WithError(errSLA).Error("couldn't handle sla")
 		}
 
 		if handled {
