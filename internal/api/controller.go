@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"

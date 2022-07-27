@@ -58,8 +58,8 @@ type Database interface {
 	TaskStorager
 
 	GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
-	GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error)
-	GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
+	GetVersionsByStatus(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error)
+	GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error)
 	GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error
 	VersionEditable(c context.Context, versionID uuid.UUID) (bool, error)

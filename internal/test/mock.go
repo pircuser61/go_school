@@ -926,6 +926,14 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+	return []entity.EriusScenarioInfo{}, nil
+}
+
+func (_m *MockDB) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+	return []entity.EriusScenarioInfo{}, nil
+}
+
 func (_m *MockDB) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
 	return &entity.Step{}, nil
 }
@@ -983,11 +991,7 @@ func NewMockDB() *MockDB {
 	return &MockDB{pipelines: pipelines}
 }
 
-func (m *MockDB) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
-	return m.GetVersionsByStatus(c, db.StatusApproved)
-}
-
-func (m *MockDB) GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error) {
+func (m *MockDB) GetVersionsByStatus(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error) {
 	versionInfoList := make([]entity.EriusScenarioInfo, 0)
 
 	e := entity.EriusScenarioInfo{
@@ -1009,11 +1013,7 @@ func (m *MockDB) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 	return versionInfoList, nil
 }
 
-func (m *MockDB) GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
-	return nil, errNotImplemented
-}
-
-func (m *MockDB) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+func (m *MockDB) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
 	return nil, errNotImplemented
 }
 
