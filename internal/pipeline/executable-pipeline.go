@@ -508,7 +508,7 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *ent
 	defer s.End()
 
 	switch block.BlockType {
-	case script.TypeGo, BlockGoSdApplicationID, BlockGoApproverID:
+	case script.TypeGo:
 		return ep.CreateGoBlock(block, name)
 	case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 		fb := FunctionBlock{
@@ -605,11 +605,13 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 		return createGoEndBlock(name, ef), nil
 	case BlockWaitForAllInputsId:
 		return createGoWaitForAllInputsBlock(name, ef, ep), nil
+	case BlockGoBeginParallelTaskId:
+		return createGoStartParallelBlock(name, ef, ep), nil
 	case BlockGoNotificationID:
 		return createGoNotificationBlock(name, ef, ep)
 	}
 
-	return nil, errors.New("unknown go-block type")
+	return nil, errors.New("unknown go-block type: " + ef.TypeID )
 }
 
 func getWorkIdKey(stepName string) string {
