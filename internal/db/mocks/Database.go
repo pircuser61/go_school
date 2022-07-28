@@ -20,6 +20,20 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
+func (_m *MockedDatabase) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
+	ret := _m.Called(ctx, workID, stepName)
+
+	var r0 error
+	var r1 *entity.Step
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = rf(ctx, workID, stepName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r1, r0
+}
+
 func (_m *MockedDatabase) GetVersionByWorkNumber(c context.Context, workNumber string) (*entity.EriusScenario, error) {
 	ret := _m.Called(c, workNumber)
 
@@ -323,7 +337,7 @@ func (_m *MockedDatabase) GetApprovedVersions(c context.Context) ([]entity.Erius
 }
 
 // GetDraftVersions provides a mock function with given fields: c
-func (_m *MockedDatabase) GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+func (_m *MockedDatabase) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(c)
 
 	var r0 []entity.EriusScenarioInfo
@@ -759,7 +773,7 @@ func (_m *MockedDatabase) GetVersionsByBlueprintID(c context.Context, blueprintI
 }
 
 // GetVersionsByStatus provides a mock function with given fields: c, status
-func (_m *MockedDatabase) GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error) {
+func (_m *MockedDatabase) GetVersionsByStatus(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(c, status)
 
 	var r0 []entity.EriusScenarioInfo

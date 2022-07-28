@@ -21,13 +21,13 @@ const (
 
 // Defines values for ApproverType.
 const (
-	ApproverTypeВыборИзСхемы ApproverType = "Выбор из схемы"
+	ApproverTypeFromSchema ApproverType = "fromSchema"
 
-	ApproverTypeГруппаСогласующих ApproverType = "Группа согласующих"
+	ApproverTypeGroup ApproverType = "group"
 
-	ApproverTypeОдинСогласующий ApproverType = "Один согласующий"
+	ApproverTypeHead ApproverType = "head"
 
-	ApproverTypeРуководительПолучателя ApproverType = "Руководитель получателя"
+	ApproverTypeUser ApproverType = "user"
 )
 
 // Defines values for ConditionGroupLogicalOperator.
@@ -174,18 +174,18 @@ type ApproverParams struct {
 	Sla int `json:"sla"`
 
 	// Approver type:
-	//  * User - Single user
-	//  * Group - Approver group ID
-	//  * Head - Receiver's head
-	//  * FromSchema - Selected by initiator
+	//   * user - Single user
+	//   * group - Approver group ID
+	//   * head - Receiver's head
+	//   * FromSchema - Selected by initiator
 	Type ApproverType `json:"type"`
 }
 
 // Approver type:
-//  * User - Single user
-//  * Group - Approver group ID
-//  * Head - Receiver's head
-//  * FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -712,6 +712,12 @@ type CreateDebugTaskJSONBody CreateTaskRequest
 // StartDebugTaskJSONBody defines parameters for StartDebugTask.
 type StartDebugTaskJSONBody DebugRunRequest
 
+// ListPipelinesParams defines parameters for ListPipelines.
+type ListPipelinesParams struct {
+	// Show only my pipelines
+	My *bool `json:"my,omitempty"`
+}
+
 // CreatePipelineJSONBody defines parameters for CreatePipeline.
 type CreatePipelineJSONBody EriusScenario
 
@@ -983,7 +989,7 @@ type ServerInterface interface {
 	ModuleUsage(w http.ResponseWriter, r *http.Request, moduleName string)
 	// Get list of pipelines
 	// (GET /pipelines)
-	ListPipelines(w http.ResponseWriter, r *http.Request)
+	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
 	// Create pipeline
 	// (POST /pipelines)
 	CreatePipeline(w http.ResponseWriter, r *http.Request)
@@ -1215,8 +1221,24 @@ func (siw *ServerInterfaceWrapper) ModuleUsage(w http.ResponseWriter, r *http.Re
 func (siw *ServerInterfaceWrapper) ListPipelines(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPipelinesParams
+
+	// ------------- Optional query parameter "my" -------------
+	if paramValue := r.URL.Query().Get("my"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "my", r.URL.Query(), &params.My)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "my", Err: err})
+		return
+	}
+
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListPipelines(w, r)
+		siw.Handler.ListPipelines(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {

@@ -201,7 +201,7 @@ func (c *Created) toEntity() *entity.TimePeriod {
 }
 
 func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
+	ctx, s := trace.StartSpan(req.Context(), "get_tasks_count")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -289,7 +289,7 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request, vers
 		return
 	}
 
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -366,6 +366,11 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
+		return
+	}
+
+	if blockType == "pipeline" {
+		// TODO: make func for canceling task
 		return
 	}
 
@@ -447,6 +452,8 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		})
 		if blockErr == nil {
 			couldUpdateOne = true
+		} else {
+			log.Error("block.Update: ", blockErr)
 		}
 	}
 
@@ -476,10 +483,6 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
 		return pipeline.BlockGoApproverID
 	}
 
-	if action == entity.TaskUpdateActionCreateNewWork {
-		return pipeline.BlockGoApproverID
-	}
-
 	if action == entity.TaskUpdateActionExecution {
 		return pipeline.BlockGoExecutionID
 	}
@@ -490,6 +493,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
 
 	if action == entity.TaskUpdateActionRequestExecutionInfo {
 		return pipeline.BlockGoExecutionID
+	}
+
+	if action == entity.TaskUpdateActionCancelApp {
+		return "pipeline"
 	}
 
 	return ""

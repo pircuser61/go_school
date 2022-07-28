@@ -12,26 +12,34 @@ import (
 	"go.opencensus.io/trace"
 )
 
+type UserInfoResourceAccess struct {
+	JocastaDEV   UserInfoResourceAccessItem `json:"jocasta-dev"`
+	JocastaStage UserInfoResourceAccessItem `json:"jocasta-stage"`
+	JocastaProd  UserInfoResourceAccessItem `json:"jocasta-prod"`
+}
+
+type UserInfoResourceAccessItem struct {
+	Roles []string `json:"roles"`
+}
+
 type UserInfo struct {
-	ResourceAccess map[string]struct {
-		Roles []string `json:"roles"`
-	} `json:"resource_access"`
-	Aud               []string `json:"aud"`
-	AZP               string   `json:"azp"`
-	Email             string   `json:"email"`
-	EmployeeID        string   `json:"employeeID"`
-	FamilyName        string   `json:"family_name"`
-	FullName          string   `json:"fullname"`
-	GivenName         string   `json:"given_name"`
-	Name              string   `json:"name"`
-	PhoneNumber       string   `json:"phone_number"`
-	PreferredUsername string   `json:"preferred_username"`
-	Title             string   `json:"title"`
-	Username          string   `json:"username"`
-	ThumbnailPhoto    string   `json:"thumbnailPhoto"`
-	Company           string   `json:"company"`
-	MemberOf          []string `json:"memberOf"`
-	OrgUnit           string   `json:"OrgUnit"`
+	ResourceAccess    UserInfoResourceAccess `json:"resource_access"`
+	Aud               []string               `json:"aud"`
+	AZP               string                 `json:"azp"`
+	Email             string                 `json:"email"`
+	EmployeeID        string                 `json:"employeeID"`
+	FamilyName        string                 `json:"family_name"`
+	FullName          string                 `json:"fullname"`
+	GivenName         string                 `json:"given_name"`
+	Name              string                 `json:"name"`
+	PhoneNumber       string                 `json:"phone_number"`
+	PreferredUsername string                 `json:"preferred_username"`
+	Title             string                 `json:"title"`
+	Username          string                 `json:"username"`
+	ThumbnailPhoto    string                 `json:"thumbnailPhoto"`
+	Company           string                 `json:"company"`
+	MemberOf          []string               `json:"memberOf"`
+	OrgUnit           string                 `json:"OrgUnit"`
 }
 
 type custClaims struct {
@@ -112,6 +120,10 @@ func (s *Service) getUserinfo(ctx context.Context, r *http.Request) (*UserInfo, 
 	}
 
 	s.userinfoToCache(username, user)
+
+	fmt.Println("getUserinfo start: ")
+	fmt.Printf("%+v \n", user.ResourceAccess)
+	fmt.Println("getUserinfo start: ")
 
 	return user, nil
 }

@@ -24,6 +24,7 @@ type TaskStorager interface {
 	GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error)
 	GetUnfinishedTaskStepsByWorkIdAndStepType(c context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error)
 	GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error)
+	GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error)
 	CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.EriusTask, error)
 	ChangeTaskStatus(c context.Context, taskID uuid.UUID, status int) error
 	GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error)
@@ -57,8 +58,8 @@ type Database interface {
 	TaskStorager
 
 	GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
-	GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error)
-	GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
+	GetVersionsByStatus(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error)
+	GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error)
 	GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error
 	VersionEditable(c context.Context, versionID uuid.UUID) (bool, error)

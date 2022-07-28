@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -71,13 +71,22 @@ type ApproverData struct {
 
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 
-	IsEditable         bool        `json:"is_editable"`
-	RepeatPrevDecision bool        `json:"repeat_prev_decision"`
-	EditingApp         *EditingApp `json:"editing_app,omitempty"`
+	IsEditable         bool         `json:"is_editable"`
+	RepeatPrevDecision bool         `json:"repeat_prev_decision"`
+	EditingApp         *EditingApp  `json:"editing_app,omitempty"`
+	EditingAppLog      []EditingApp `json:"editing_app_log,omitempty"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
 	return a.Decision
+}
+
+func (a *ApproverData) GetRepeatPrevDecision() bool {
+	return a.RepeatPrevDecision
+}
+
+func (a *ApproverData) GetIsEditable() bool {
+	return a.IsEditable
 }
 
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
@@ -101,7 +110,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	return nil
 }
 
-func (a *ApproverData) SetEditingApp(login, comment string, attachments []string) error {
+func (a *ApproverData) SetEditApp(login, comment string, attachments []string) error {
 	_, ok := a.Approvers[login]
 	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
@@ -117,6 +126,8 @@ func (a *ApproverData) SetEditingApp(login, comment string, attachments []string
 		Attachments: attachments,
 		CreatedAt:   time.Now(),
 	}
+
+	a.EditingAppLog = append(a.EditingAppLog, *editing)
 
 	a.EditingApp = editing
 
@@ -174,15 +185,15 @@ func (gb *GoApproverBlock) GetStatus() Status {
 }
 
 func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
+	if gb.State != nil && gb.State.EditingApp != nil {
+		return StatusWait
+	}
+
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ApproverDecisionApproved {
 			return StatusApproved
 		}
 		return StatusApprovementRejected
-	}
-
-	if gb.State.EditingApp != nil {
-		return StatusWait
 	}
 
 	return StatusApprovement
@@ -210,7 +221,7 @@ const (
 )
 
 // nolint:dupl // other block
-func (gb *GoApproverBlock) dumpCurrState(ctx context.Context, id uuid.UUID) error {
+func (gb *GoApproverBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
@@ -236,7 +247,7 @@ func (gb *GoApproverBlock) dumpCurrState(ctx context.Context, id uuid.UUID) erro
 }
 
 //nolint:dupl // maybe later
-func (gb *GoApproverBlock) handleNotifications(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
+func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
 	if len(gb.State.LeftToNotify) == 0 {
 		return false, nil
 	}
@@ -275,7 +286,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx context.Context, id uuid.UUID
 	return true, nil
 }
 
-func (gb *GoApproverBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
+func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
 	if gb.State.DidSLANotification {
 		return false, nil
 	}
@@ -327,7 +338,7 @@ func (gb *GoApproverBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx 
 }
 
 //nolint:gocyclo //ok
-func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
+func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
 	ctx, s := trace.StartSpan(ctx, "run_go_approver_block")
 	defer s.End()
 
@@ -352,8 +363,8 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 	if err != nil {
 		return err
 	} else if step == nil {
-		// still waiting
-		return nil //TODO: log error?
+		l.Error(err)
+		return nil
 	}
 
 	// get state from step.State
@@ -392,26 +403,49 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 
 	gb.State = &state
 
-	handled, err := gb.handleSLA(ctx, id, stepCtx)
-	if err != nil {
-		l.WithError(err).Error("couldn't handle sla")
-	}
-	if handled {
-		// go for another loop cause we may have updated the state at db
-		return gb.DebugRun(ctx, stepCtx, runCtx)
-	}
+	if step.Status != string(StatusIdle) {
+		handled, errSLA := gb.handleSLA(ctx, id, stepCtx)
+		if errSLA != nil {
+			l.WithError(errSLA).Error("couldn't handle sla")
+		}
 
-	handled, err = gb.handleNotifications(ctx, id, stepCtx)
-	if err != nil {
-		l.WithError(err).Error("couldn't handle notifications")
-	}
-	if handled {
-		// go for another loop cause we may have updated the state at db
-		return gb.DebugRun(ctx, stepCtx, runCtx)
+		if handled {
+			// go for another loop cause we may have updated the state at db
+			return gb.DebugRun(ctx, stepCtx, runCtx)
+		}
+
+		handled, err = gb.handleNotifications(ctx, id, stepCtx)
+		if err != nil {
+			l.WithError(err).Error("couldn't handle notifications")
+		}
+		if handled {
+			// go for another loop cause we may have updated the state at db
+			return gb.DebugRun(ctx, stepCtx, runCtx)
+		}
 	}
 
 	// check decision
 	decision := gb.State.GetDecision()
+
+	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
+		gb.setEditingAppLogFromPreviousBlock(ctx, &setEditingAppLogDTO{
+			id:       id,
+			runCtx:   runCtx,
+			workID:   gb.Pipeline.TaskID,
+			stepName: step.Name,
+		})
+	}
+
+	if decision == nil && gb.State.GetRepeatPrevDecision() {
+		if gb.trySetPreviousDecision(ctx, &getPreviousDecisionDTO{
+			id:       id,
+			runCtx:   runCtx,
+			workID:   gb.Pipeline.TaskID,
+			stepName: step.Name,
+		}) {
+			return nil
+		}
+	}
 
 	// nolint:dupl // not dupl?
 	if decision != nil {
@@ -437,7 +471,100 @@ func (gb *GoApproverBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCt
 
 		runCtx.ReplaceState(gb.Name, stateBytes)
 	}
+
 	return nil
+}
+
+type getPreviousDecisionDTO struct {
+	id       uuid.UUID
+	runCtx   *store.VariableStore
+	workID   uuid.UUID
+	stepName string
+}
+
+func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviousDecisionDTO) (isPrevDecisionAssigned bool) {
+	l := logger.GetLogger(ctx)
+
+	var step *entity.Step
+	var parentStep *entity.Step
+	var err error
+
+	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, dto.id)
+	if err != nil {
+		l.Error(err)
+		return
+	}
+
+	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
+	if err != nil {
+		l.Error(err)
+		return false
+	} else if parentStep == nil {
+		l.Error("trySetPreviousDecision: step is nil")
+		return false
+	}
+
+	// get state from step.State
+	data, ok := parentStep.State[dto.stepName]
+	if !ok {
+		l.Error("trySetPreviousDecision: step state is not found: " + dto.stepName)
+		return false
+	}
+
+	var parentState ApproverData
+	err = json.Unmarshal(data, &parentState)
+	if err != nil {
+		l.Error("trySetPreviousDecision: invalid format of go-approver-block state")
+		return false
+	}
+
+	if parentState.Decision != nil {
+		var actualApprover, comment string
+
+		if parentState.ActualApprover != nil {
+			actualApprover = *parentState.ActualApprover
+		}
+
+		if parentState.Comment != nil {
+			comment = *parentState.Comment
+		}
+
+		dto.runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
+		dto.runCtx.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
+		dto.runCtx.SetValue(gb.Output[keyOutputComment], comment)
+
+		gb.State.ActualApprover = &actualApprover
+		gb.State.Comment = &comment
+		gb.State.Decision = parentState.Decision
+
+		var stateBytes []byte
+		stateBytes, err = json.Marshal(gb.State)
+		if err != nil {
+			l.Error("trySetPreviousDecision: ", err)
+			return false
+		}
+
+		step.State[gb.Name], err = json.Marshal(store.NewFromStep(step))
+		if err != nil {
+			l.Error("trySetPreviousDecision: ", err)
+			return
+		}
+
+		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+			Id:          dto.id,
+			Content:     stateBytes,
+			BreakPoints: parentStep.BreakPoints,
+			Status:      string(StatusRunning),
+		})
+		if err != nil {
+			l.Error("trySetPreviousDecision.UpdateStepContext: ", err)
+			return
+		}
+
+		dto.runCtx.ReplaceState(gb.Name, stateBytes)
+	}
+
+	return true
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {

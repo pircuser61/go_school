@@ -80,6 +80,7 @@ const (
 	GetVersionsByBlueprintIdError
 	BodyParseError
 	ValidationError
+	GetVersionsByWorkNumberError
 )
 
 //nolint:dupl //its not duplicate
@@ -146,6 +147,7 @@ var errorText = map[Err]string{
 	GetVersionsByBlueprintIdError: "can't get get versions by blueprintId",
 	BodyParseError:                "can't parse body to struct",
 	ValidationError:               "run version by blueprint id request is invalid",
+	GetVersionsByWorkNumberError:  "can`t find version by work id",
 }
 
 // JOKE.
@@ -213,6 +215,7 @@ var errorDescription = map[Err]string{
 	GetVersionsByBlueprintIdError: "Ошибка при получении версий по id шаблона",
 	BodyParseError:                "Ошибка при разборе тела запроса",
 	ValidationError:               "Ошибка при валидации запроса",
+	GetVersionsByWorkNumberError:  "Ошибка при получении сценария по id процесса",
 }
 
 var errorStatus = map[Err]int{

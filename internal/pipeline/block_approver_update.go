@@ -4,6 +4,8 @@ import (
 	c "context"
 	"encoding/json"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
@@ -103,7 +105,7 @@ func (gb *GoApproverBlock) setEditingApp(ctx c.Context, dto *setEditingAppDTO) e
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	errSet := gb.State.SetEditingApp(dto.approver, dto.updateParams.Comment, dto.updateParams.Attachments)
+	errSet := gb.State.SetEditApp(dto.approver, dto.updateParams.Comment, dto.updateParams.Attachments)
 	if errSet != nil {
 		return errSet
 	}
@@ -123,7 +125,7 @@ func (gb *GoApproverBlock) setEditingApp(ctx c.Context, dto *setEditingAppDTO) e
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
-		Status:      string(StatusWait),
+		Status:      string(StatusIdle),
 	})
 	if err != nil {
 		return err
@@ -175,10 +177,79 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		})
 	}
 
-	if data.Action == string(entity.TaskUpdateActionCreateNewWork) {
-		// TODO: make new process with edited application
-		return nil, nil
+	return nil, errors.New("cant`t update execution block, unknown action: " + data.Action)
+}
+
+type  setEditingAppLogDTO struct {
+	id       uuid.UUID
+	runCtx   *store.VariableStore
+	workID   uuid.UUID
+	stepName string
+}
+
+func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto *setEditingAppLogDTO) {
+	l := logger.GetLogger(ctx)
+
+	var step *entity.Step
+	var parentStep *entity.Step
+	var err error
+
+	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, dto.id)
+	if err != nil {
+		l.Error(err)
+		return
 	}
 
-	return nil, errors.New("cant`t update execution block, unknown action: " + data.Action)
+	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
+	if err != nil {
+		l.Error(err)
+		return
+	} else if parentStep == nil {
+		l.Error("setEditingAppLogFromPreviousBlock: step is nil")
+		return
+	}
+
+	// get state from step.State
+	data, ok := parentStep.State[dto.stepName]
+	if !ok {
+		l.Error("setEditingAppLogFromPreviousBlock: step state is not found: " + dto.stepName)
+		return
+	}
+
+	var parentState ApproverData
+	err = json.Unmarshal(data, &parentState)
+	if err != nil {
+		l.Error("setEditingAppLogFromPreviousBlock: invalid format of go-approver-block state")
+		return
+	}
+
+	if len(parentState.EditingAppLog) > 0 {
+		gb.State.EditingAppLog = parentState.EditingAppLog
+
+		step.State[gb.Name], err = json.Marshal(gb.State)
+		if err != nil {
+			l.Error(err)
+			return
+		}
+
+		var stateBytes []byte
+		stateBytes, err = json.Marshal(store.NewFromStep(step))
+		if err != nil {
+			l.Error("setEditingAppLogFromPreviousBlock: ", err)
+			return
+		}
+
+		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+			Id:          dto.id,
+			Content:     stateBytes,
+			BreakPoints: step.BreakPoints,
+			Status:      step.Status,
+		})
+		if err != nil {
+			l.Error("setEditingAppLogFromPreviousBlock.UpdateStepContext: ", err)
+			return
+		}
+
+		dto.runCtx.ReplaceState(gb.Name, stateBytes)
+	}
 }

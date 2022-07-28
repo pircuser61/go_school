@@ -228,7 +228,7 @@ func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Reques
 			}
 
 			if v == nil {
-				log.Error(execErr)
+				log.Error("run_versions_by_blueprint_id execution error")
 				return
 			}
 			ch <- v
@@ -290,9 +290,17 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.BlueprintId)
+	if req.WorkNumber == "" {
+		e := ValidationError
+		log.Error(e.errorMessage(errors.New("workNumber is empty")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
-		e := GetVersionsByBlueprintIdError
+		e := GetVersionsByWorkNumberError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -314,12 +322,16 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		workNumber:  req.WorkNumber,
 	})
 	if execErr != nil {
-		log.Error(execErr)
+		e := UnknownError
+		log.Error(e.errorMessage(execErr))
+		_ = e.sendError(w)
 		return
 	}
 
 	if started == nil {
-		log.Error("can`t start version")
+		e := UnknownError
+		log.Error(e.errorMessage(errors.New("no one version was started")))
+		_ = e.sendError(w)
 		return
 	}
 
@@ -596,6 +608,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
+		log.Error("GetUserInfoFromCtx: ", err)
 		return nil, errors.Wrap(err, e.error())
 	}
 

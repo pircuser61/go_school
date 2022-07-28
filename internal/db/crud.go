@@ -167,7 +167,7 @@ func (db *PGCon) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioI
 
 	vMap := make(map[uuid.UUID]entity.EriusScenarioInfo)
 
-	versions, err := db.GetVersionsByStatus(c, StatusApproved)
+	versions, err := db.GetVersionsByStatus(c, StatusApproved, "")
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ func (db *PGCon) findApproveDate(c context.Context, id uuid.UUID) (time.Time, er
 	return time.Time{}, nil
 }
 
-func (db *PGCon) GetVersionsByStatus(c context.Context, status int) ([]entity.EriusScenarioInfo, error) {
+func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_versions_by_status")
 	defer span.End()
 
@@ -258,26 +258,33 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-	SELECT 
-		pv.id, 
-		pv.status, 
-		pv.pipeline_id, 
-		pv.created_at, 
-		pv.author, 
-		pv.approver, 
-		pp.name, 
-		pw.started_at, 
-		pws.name, 
-		pv.comment_rejected, 
-		pv.comment
-	FROM pipeliner.versions pv
-	JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
-	LEFT OUTER JOIN  pipeliner.works pw ON pw.id = pv.last_run_id
-	LEFT OUTER JOIN  pipeliner.work_status pws ON pws.id = pw.status
-	WHERE 
-		pv.status = $1
-		AND pp.deleted_at IS NULL
-	ORDER BY created_at`
+		SELECT 
+			pv.id, 
+			pv.status, 
+			pv.pipeline_id, 
+			pv.created_at, 
+			pv.author, 
+			pv.approver, 
+			pp.name, 
+			pw.started_at, 
+			pws.name, 
+			pv.comment_rejected, 
+			pv.comment
+		FROM pipeliner.versions pv
+		JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
+		LEFT OUTER JOIN  pipeliner.works pw ON pw.id = pv.last_run_id
+		LEFT OUTER JOIN  pipeliner.work_status pws ON pws.id = pw.status
+		WHERE 
+			pv.status = $1
+			AND pp.deleted_at IS NULL
+			---author---
+		ORDER BY created_at`
+
+	fmt.Println("author: ", author)
+
+	if author != "" {
+		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
+	}
 
 	rows, err := db.Pool.Query(c, q, status)
 	if err != nil {
@@ -301,25 +308,25 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int) ([]entity.Er
 	return res, nil
 }
 
-func (db *PGCon) GetDraftVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
+func (db *PGCon) GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_draft_versions")
 	defer span.End()
 
-	return db.GetVersionsByStatus(c, StatusDraft)
+	return db.GetVersionsByStatus(c, StatusDraft, author)
 }
 
 func (db *PGCon) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_on_approve_versions")
 	defer span.End()
 
-	return db.GetVersionsByStatus(c, StatusOnApprove)
+	return db.GetVersionsByStatus(c, StatusOnApprove, "")
 }
 
 func (db *PGCon) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_rejected_versions")
 	defer span.End()
 
-	return db.GetVersionsByStatus(c, StatusRejected)
+	return db.GetVersionsByStatus(c, StatusRejected, "")
 }
 
 func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario, error) {
@@ -1875,6 +1882,66 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 	return &s, nil
 }
 
+func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_parent_task_step_by_name")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT 
+			vs.id,
+			vs.step_type,
+			vs.step_name, 
+			vs.time, 
+			vs.content, 
+			COALESCE(vs.break_points, '{}') AS break_points, 
+			vs.has_error,
+			vs.status
+		FROM pipeliner.variable_storage vs 
+			LEFT JOIN pipeliner.works w ON w.child_id = $1 
+		WHERE vs.work_id = w.id AND vs.step_name = $2
+		LIMIT 1
+`
+
+	var s entity.Step
+	var content string
+	err = conn.QueryRow(ctx, query, workID, stepName).Scan(
+		&s.ID,
+		&s.Type,
+		&s.Name,
+		&s.Time,
+		&content,
+		&s.BreakPoints,
+		&s.HasError,
+		&s.Status,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	storage := store.NewStore()
+
+	err = json.Unmarshal([]byte(content), storage)
+	if err != nil {
+		return nil, err
+	}
+
+	s.State = storage.State
+	s.Steps = storage.Steps
+	s.Errors = storage.Errors
+	s.Storage = storage.Values
+
+	return &s, nil
+}
+
 func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_version_history")
 	defer span.End()
@@ -1940,29 +2007,47 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 			version.comment_rejected,
 			version.comment,
 			version.author,
-			(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = version.pipeline_id) AS last_approve
+			(SELECT MAX(date) FROM pipeliner.pipeline_history 
+				WHERE pipeline_id = version.pipeline_id
+			) AS last_approve
 		FROM pipeliner.works work
-		LEFT JOIN pipeliner.versions version ON version.id = work.version_id
-		WHERE work.work_number = $1;
+			LEFT JOIN pipeliner.versions version ON version.id = work.version_id
+		WHERE work.work_number = $1 AND work.child_id IS NULL;
 `
 
 	row := conn.QueryRow(c, query, workNumber)
 
-	res := &entity.EriusScenario{}
-
-	err = row.Scan(
-		&res.VersionID,
-		&res.Status,
-		&res.ID,
-		&res.CreatedAt,
-		&res.CommentRejected,
-		&res.Comment,
-		&res.Author,
-		&res.ApprovedAt,
+	var (
+		vID, pID uuid.UUID
+		s        int
+		content  string
+		cr       string
+		cm       string
+		d        *time.Time
+		ca       *time.Time
+		a        string
 	)
+
+	err = row.Scan(&vID, &s, &pID, &ca, &content, &cr, &cm, &a, &d)
 	if err != nil {
 		return nil, err
 	}
+
+	res := &entity.EriusScenario{}
+
+	err = json.Unmarshal([]byte(content), &res)
+	if err != nil {
+		return nil, err
+	}
+
+	res.VersionID = vID
+	res.ID = pID
+	res.Status = s
+	res.CommentRejected = cr
+	res.Comment = cm
+	res.ApprovedAt = d
+	res.CreatedAt = ca
+	res.Author = a
 
 	return res, nil
 }
