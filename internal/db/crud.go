@@ -283,7 +283,7 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author strin
 	fmt.Println("author: ", author)
 
 	if author != "" {
-		q = strings.ReplaceAll(q, "---author---", "AND pv.author='" + author + "'")
+		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
 	}
 
 	rows, err := db.Pool.Query(c, q, status)
