@@ -201,7 +201,7 @@ func (c *Created) toEntity() *entity.TimePeriod {
 }
 
 func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
+	ctx, s := trace.StartSpan(req.Context(), "get_tasks_count")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)

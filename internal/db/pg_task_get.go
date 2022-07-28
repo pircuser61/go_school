@@ -168,7 +168,7 @@ func (db *PGCon) GetTasksCount(c context.Context, userName string) (*entity.Coun
              ORDER BY vs.time DESC
              --limit--
         ) workers ON workers.work_id = w.id
-		WHERE 1=1`
+		WHERE w.child_id IS NULL`
 
 	var args []interface{}
 	qActive := fmt.Sprintf("%s AND w.author = '%s'", q, userName)

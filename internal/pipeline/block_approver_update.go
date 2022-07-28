@@ -232,7 +232,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 		}
 
 		var stateBytes []byte
-		stateBytes, err = json.Marshal(step)
+		stateBytes, err = json.Marshal(store.NewFromStep(step))
 		if err != nil {
 			l.Error("setEditingAppLogFromPreviousBlock: ", err)
 			return
@@ -242,7 +242,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 			Id:          dto.id,
 			Content:     stateBytes,
 			BreakPoints: step.BreakPoints,
-			Status:      string(StatusRunning),
+			Status:      step.Status,
 		})
 		if err != nil {
 			l.Error("setEditingAppLogFromPreviousBlock.UpdateStepContext: ", err)

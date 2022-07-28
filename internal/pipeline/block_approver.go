@@ -248,7 +248,6 @@ func (gb *GoApproverBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 
 //nolint:dupl // maybe later
 func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
-	return true, nil
 	if len(gb.State.LeftToNotify) == 0 {
 		return false, nil
 	}
@@ -545,7 +544,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviou
 			return false
 		}
 
-		step.State[gb.Name], err = json.Marshal(step)
+		step.State[gb.Name], err = json.Marshal(store.NewFromStep(step))
 		if err != nil {
 			l.Error("trySetPreviousDecision: ", err)
 			return

@@ -290,6 +290,14 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	if req.WorkNumber == "" {
+		e := ValidationError
+		log.Error(e.errorMessage(errors.New("workNumber is empty")))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
 	if err != nil {
 		e := GetVersionsByWorkNumberError
