@@ -103,22 +103,36 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 
 func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string) {
 	var keyStacks = utils.NewStack()
+	var visitedBlocks = make([]string, 0)
+	var alreadyVisitedFlag bool
+
 	keyStacks.PushElement(pipeline.EntryPoint)
 
 	for keyStacks.GetLength() > 0 {
 		var currentKey, err = keyStacks.Pop()
+
 		if err != nil {
 			return nil
 		}
 		if stringKey, ok := currentKey.(string); ok {
-			var nextBlocks = pipeline.PipelineModel.Pipeline.Blocks[stringKey].Next
+			visitedBlocks = append(visitedBlocks, stringKey)
 
-			for _, nextBlock := range nextBlocks {
-				keyStacks.PushElement(nextBlock)
+			for i := range visitedBlocks {
+				if visitedBlocks[i] == stringKey {
+					alreadyVisitedFlag = true
+				}
 			}
 
-			if name == stringKey {
-				entries = append(entries, stringKey)
+			if alreadyVisitedFlag == false {
+				var nextBlocks = pipeline.PipelineModel.Pipeline.Blocks[stringKey].Next
+
+				for _, nextBlock := range nextBlocks {
+					keyStacks.PushElement(nextBlock)
+				}
+
+				if name == stringKey {
+					entries = append(entries, stringKey)
+				}
 			}
 		}
 	}
