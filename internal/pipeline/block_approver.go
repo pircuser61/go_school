@@ -71,9 +71,10 @@ type ApproverData struct {
 
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 
-	IsEditable         bool        `json:"is_editable"`
-	RepeatPrevDecision bool        `json:"repeat_prev_decision"`
-	EditingApp         *EditingApp `json:"editing_app,omitempty"`
+	IsEditable         bool         `json:"is_editable"`
+	RepeatPrevDecision bool         `json:"repeat_prev_decision"`
+	EditingApp         *EditingApp  `json:"editing_app,omitempty"`
+	EditingAppLog      []EditingApp `json:"editing_app_log,omitempty"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -82,6 +83,10 @@ func (a *ApproverData) GetDecision() *ApproverDecision {
 
 func (a *ApproverData) GetRepeatPrevDecision() bool {
 	return a.RepeatPrevDecision
+}
+
+func (a *ApproverData) GetIsEditable() bool {
+	return a.IsEditable
 }
 
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
@@ -121,6 +126,8 @@ func (a *ApproverData) SetEditApp(login, comment string, attachments []string) e
 		Attachments: attachments,
 		CreatedAt:   time.Now(),
 	}
+
+	a.EditingAppLog = append(a.EditingAppLog, *editing)
 
 	a.EditingApp = editing
 
@@ -178,15 +185,15 @@ func (gb *GoApproverBlock) GetStatus() Status {
 }
 
 func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
+	if gb.State != nil && gb.State.EditingApp != nil {
+		return StatusWait
+	}
+
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ApproverDecisionApproved {
 			return StatusApproved
 		}
 		return StatusApprovementRejected
-	}
-
-	if gb.State.EditingApp != nil {
-		return StatusWait
 	}
 
 	return StatusApprovement
@@ -241,6 +248,7 @@ func (gb *GoApproverBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 
 //nolint:dupl // maybe later
 func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
+	return true, nil
 	if len(gb.State.LeftToNotify) == 0 {
 		return false, nil
 	}
@@ -420,11 +428,21 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 	// check decision
 	decision := gb.State.GetDecision()
 
+	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
+		gb.setEditingAppLogFromPreviousBlock(ctx, &setEditingAppLogDTO{
+			id:       id,
+			runCtx:   runCtx,
+			workID:   gb.Pipeline.TaskID,
+			stepName: step.Name,
+		})
+	}
+
 	if decision == nil && gb.State.GetRepeatPrevDecision() {
-		if gb.trySetPreviousDecision(ctx, &GetPreviousDecisionDTO{
-			RunCtx:   runCtx,
-			WorkID:   gb.Pipeline.TaskID,
-			StepName: step.Name,
+		if gb.trySetPreviousDecision(ctx, &getPreviousDecisionDTO{
+			id:       id,
+			runCtx:   runCtx,
+			workID:   gb.Pipeline.TaskID,
+			stepName: step.Name,
 		}) {
 			return nil
 		}
@@ -458,55 +476,67 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 	return nil
 }
 
-type GetPreviousDecisionDTO struct {
-	RunCtx   *store.VariableStore
-	WorkID   uuid.UUID
-	StepName string
+type getPreviousDecisionDTO struct {
+	id       uuid.UUID
+	runCtx   *store.VariableStore
+	workID   uuid.UUID
+	stepName string
 }
 
-func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *GetPreviousDecisionDTO) (isPrevDecisionAssigned bool) {
+func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviousDecisionDTO) (isPrevDecisionAssigned bool) {
 	l := logger.GetLogger(ctx)
 
 	var step *entity.Step
+	var parentStep *entity.Step
 	var err error
 
-	step, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.WorkID, dto.StepName)
+	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, dto.id)
+	if err != nil {
+		l.Error(err)
+		return
+	}
+
+	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
 	if err != nil {
 		l.Error(err)
 		return false
-	} else if step == nil {
+	} else if parentStep == nil {
 		l.Error("trySetPreviousDecision: step is nil")
 		return false
 	}
 
 	// get state from step.State
-	data, ok := step.State[dto.StepName]
+	data, ok := parentStep.State[dto.stepName]
 	if !ok {
-		l.Error("trySetPreviousDecision: step state is not found: " + dto.StepName)
+		l.Error("trySetPreviousDecision: step state is not found: " + dto.stepName)
 		return false
 	}
 
-	var state ApproverData
-	err = json.Unmarshal(data, &state)
+	var parentState ApproverData
+	err = json.Unmarshal(data, &parentState)
 	if err != nil {
 		l.Error("trySetPreviousDecision: invalid format of go-approver-block state")
 		return false
 	}
 
-	if state.Decision != nil {
+	if parentState.Decision != nil {
 		var actualApprover, comment string
 
-		if state.ActualApprover != nil {
-			actualApprover = *state.ActualApprover
+		if parentState.ActualApprover != nil {
+			actualApprover = *parentState.ActualApprover
 		}
 
-		if state.Comment != nil {
-			comment = *state.Comment
+		if parentState.Comment != nil {
+			comment = *parentState.Comment
 		}
 
-		dto.RunCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
-		dto.RunCtx.SetValue(gb.Output[keyOutputDecision], state.Decision.String())
-		dto.RunCtx.SetValue(gb.Output[keyOutputComment], comment)
+		dto.runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
+		dto.runCtx.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
+		dto.runCtx.SetValue(gb.Output[keyOutputComment], comment)
+
+		gb.State.ActualApprover = &actualApprover
+		gb.State.Comment = &comment
+		gb.State.Decision = parentState.Decision
 
 		var stateBytes []byte
 		stateBytes, err = json.Marshal(gb.State)
@@ -515,7 +545,24 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *GetPreviou
 			return false
 		}
 
-		dto.RunCtx.ReplaceState(gb.Name, stateBytes)
+		step.State[gb.Name], err = json.Marshal(step)
+		if err != nil {
+			l.Error("trySetPreviousDecision: ", err)
+			return
+		}
+
+		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+			Id:          dto.id,
+			Content:     stateBytes,
+			BreakPoints: parentStep.BreakPoints,
+			Status:      string(StatusRunning),
+		})
+		if err != nil {
+			l.Error("trySetPreviousDecision.UpdateStepContext: ", err)
+			return
+		}
+
+		dto.runCtx.ReplaceState(gb.Name, stateBytes)
 	}
 
 	return true

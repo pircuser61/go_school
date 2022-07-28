@@ -314,12 +314,16 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		workNumber:  req.WorkNumber,
 	})
 	if execErr != nil {
-		log.Error(execErr)
+		e := UnknownError
+		log.Error(e.errorMessage(execErr))
+		_ = e.sendError(w)
 		return
 	}
 
 	if started == nil {
-		log.Error("can`t start version")
+		e := UnknownError
+		log.Error(e.errorMessage(errors.New("no one version was started")))
+		_ = e.sendError(w)
 		return
 	}
 

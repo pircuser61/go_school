@@ -481,21 +481,21 @@ func (db *PGCon) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
-	SELECT 
-	    vs.id,
-	    vs.step_type,
-		vs.step_name, 
-		vs.time, 
-		vs.content, 
-		COALESCE(vs.break_points, '{}') AS break_points, 
-		vs.has_error,
-		vs.status
-	FROM pipeliner.variable_storage vs 
-	WHERE work_id = $1 AND vs.status != 'skipped'
-	ORDER BY vs.time DESC`
+	const query = `
+		SELECT 
+			vs.id,
+			vs.step_type,
+			vs.step_name,
+			vs.time, 
+			vs.content, 
+			COALESCE(vs.break_points, '{}') AS break_points, 
+			vs.has_error,
+			vs.status
+		FROM pipeliner.variable_storage vs 
+			WHERE work_id = $1 AND vs.status != 'skipped'
+		ORDER BY vs.time DESC`
 
-	rows, err := conn.Query(c, q, id)
+	rows, err := conn.Query(c, query, id)
 	if err != nil {
 		return nil, err
 	}
