@@ -3,13 +3,13 @@ package pipeline
 import (
 	"context"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type SyncDataStart struct {
 	OutcomeBlockIds []string `json:"outcoming_block_ids"`
-	done            bool
 }
 
 type GoBeginParallelTaskBlock struct {
@@ -33,7 +33,7 @@ func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *GoBeginParallelTaskBlock) GetType() string {
-	return BlockWaitForAllInputsId
+	return BlockGoBeginParallelTaskId
 }
 
 func (gb *GoBeginParallelTaskBlock) Inputs() map[string]string {
@@ -82,4 +82,26 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 		Outputs:   nil,
 		Sockets:   []string{DefaultSocket},
 	}
+}
+
+func createGoStartParallelBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) *GoBeginParallelTaskBlock {
+	b := &GoBeginParallelTaskBlock{
+		Name:     name,
+		Title:    ef.Title,
+		Input:    map[string]string{},
+		Output:   map[string]string{},
+		Nexts:    ef.Next,
+		State:    &SyncDataStart{},
+		Pipeline: pipeline,
+	}
+
+	for _, v := range ef.Input {
+		b.Input[v.Name] = v.Global
+	}
+
+	for _, v := range ef.Output {
+		b.Output[v.Name] = v.Global
+	}
+
+	return b
 }
