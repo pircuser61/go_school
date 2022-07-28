@@ -8,9 +8,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-type SyncDataStart struct {
-	OutcomeBlockIds []string `json:"outcoming_block_ids"`
-}
+type BeginParallelData struct{}
 
 type GoBeginParallelTaskBlock struct {
 	Name   string
@@ -18,8 +16,7 @@ type GoBeginParallelTaskBlock struct {
 	Input  map[string]string
 	Output map[string]string
 	Nexts  map[string][]string
-
-	State *SyncDataStart
+	State  *BeginParallelData
 
 	Pipeline *ExecutablePipeline
 }
@@ -91,8 +88,8 @@ func createGoStartParallelBlock(name string, ef *entity.EriusFunc, pipeline *Exe
 		Input:    map[string]string{},
 		Output:   map[string]string{},
 		Nexts:    ef.Next,
-		State:    &SyncDataStart{},
 		Pipeline: pipeline,
+		State:    &BeginParallelData{},
 	}
 
 	for _, v := range ef.Input {
