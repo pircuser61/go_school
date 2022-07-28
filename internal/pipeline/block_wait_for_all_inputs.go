@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 
 	"go.opencensus.io/trace"
 
@@ -100,25 +101,27 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 	}
 }
 
-// TODO: rewrite
 func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string) {
-	var handleKey func(key string)
-	handleKey = func(key string) {
-		for _, bb := range pipeline.PipelineModel.Pipeline.Blocks[key].Next {
-			addKey := false
-			for _, b := range bb {
-				if b == name {
-					addKey = true
-					continue
-				}
-				handleKey(b)
+	var keyStacks = utils.NewStack()
+	keyStacks.PushElement(pipeline.EntryPoint)
+
+	for keyStacks.GetLength() > 0 {
+		var currentKey, err = keyStacks.Pop()
+		if err != nil {
+			return nil
+		}
+		if stringKey, ok := currentKey.(string); ok {
+			var nextBlocks = pipeline.PipelineModel.Pipeline.Blocks[stringKey].Next
+
+			for _, nextBlock := range nextBlocks {
+				keyStacks.PushElement(nextBlock)
 			}
-			if addKey {
-				entries = append(entries, key)
+
+			if name == stringKey {
+				entries = append(entries, stringKey)
 			}
 		}
 	}
-	handleKey(pipeline.EntryPoint)
 
 	return entries
 }
