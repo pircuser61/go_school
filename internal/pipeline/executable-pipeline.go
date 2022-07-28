@@ -611,7 +611,7 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 		return createGoNotificationBlock(name, ef, ep)
 	}
 
-	return nil, errors.New("unknown go-block type: " + ef.TypeID )
+	return nil, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
 func getWorkIdKey(stepName string) string {
