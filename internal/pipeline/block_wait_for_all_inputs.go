@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"fmt"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 
 	"go.opencensus.io/trace"
@@ -109,20 +108,14 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 	keyStacks.PushElement(pipeline.EntryPoint)
 
 	for !keyStacks.IsEmpty() {
-		var l = keyStacks.GetLength()
-		fmt.Println(l)
 		var currentKey, err = keyStacks.Pop()
-		var nl = keyStacks.GetLength()
-		fmt.Println(nl)
 		if err != nil {
 			return nil
 		}
 
 		if stringKey, ok := currentKey.(string); ok {
 			var nextBlocks = pipeline.PipelineModel.Pipeline.Blocks[stringKey].Next
-
 			for _, v := range nextBlocks {
-
 				if !contains(visitedBlocks, stringKey) {
 					for _, blockName := range v {
 						if blockName != name {
@@ -132,10 +125,8 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 							break
 						}
 					}
-
 					visitedBlocks = append(visitedBlocks, stringKey)
 				}
-
 			}
 		}
 	}
