@@ -113,19 +113,19 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 			return nil
 		}
 
-		if stringKey, ok := currentKey.(string); ok {
-			var nextBlocks = pipeline.PipelineModel.Pipeline.Blocks[stringKey].Next
-			for _, v := range nextBlocks {
-				if !contains(visitedBlocks, stringKey) {
-					for _, blockName := range v {
+		if blockKey, ok := currentKey.(string); ok {
+			var sockets = pipeline.PipelineModel.Pipeline.Blocks[blockKey].Next
+			for _, nextBlock := range sockets {
+				if !alreadyVisitedBlock(visitedBlocks, blockKey) {
+					for _, blockName := range nextBlock {
 						if blockName != name {
 							keyStacks.PushElement(blockName)
 						} else {
-							entries = append(entries, stringKey)
+							entries = append(entries, blockKey)
 							break
 						}
 					}
-					visitedBlocks = append(visitedBlocks, stringKey)
+					visitedBlocks = append(visitedBlocks, blockKey)
 				}
 			}
 		}
@@ -134,7 +134,7 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 	return entries
 }
 
-func contains(source []string, key string) bool {
+func alreadyVisitedBlock(source []string, key string) bool {
 	for _, val := range source {
 		if val == key {
 			return true
