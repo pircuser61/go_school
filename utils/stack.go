@@ -20,20 +20,22 @@ func NewStack() *stack {
 }
 
 func (stack *stack) GetLength() int {
-	return stack.length
+	return len(stack.stackArray)
+}
+
+func (stack *stack) IsEmpty() bool {
+	return stack.GetLength() == 0
 }
 
 func (stack *stack) PushElement(value interface{}) {
 	stack.lock.Lock()
 	defer stack.lock.Unlock()
-	stack.length++
 	stack.stackArray = append(stack.stackArray, value)
 }
 
 func (stack *stack) PushElementsArray(array []interface{}) {
 	stack.lock.Lock()
 	defer stack.lock.Unlock()
-	stack.length += len(array)
 	stack.stackArray = append(stack.stackArray, array)
 }
 
@@ -41,7 +43,7 @@ func (stack *stack) Pop() (interface{}, error) {
 	stack.lock.Lock()
 	defer stack.lock.Unlock()
 
-	length := len(stack.stackArray)
+	length := stack.GetLength()
 	if length == 0 {
 		return 0, errors.New("Stack is empty.")
 	}
