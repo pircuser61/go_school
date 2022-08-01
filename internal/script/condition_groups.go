@@ -318,13 +318,13 @@ func getAllowedOperators(operandDataType string) (map[string]CompareOperator, er
 				var equalityThreshold = 1e-9
 				var leftValue = leftOperand.GetValue().(float64)
 				var rightValue = leftOperand.GetValue().(float64)
-				return (leftValue - rightValue) >= equalityThreshold
+				return (rightValue - leftValue) >= equalityThreshold
 			},
 			LessThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				var equalityThreshold = 1e-9
 				var leftValue = leftOperand.GetValue().(float64)
 				var rightValue = leftOperand.GetValue().(float64)
-				return (leftValue - rightValue) > equalityThreshold
+				return (rightValue - leftValue) > equalityThreshold
 			},
 		}, nil
 	}
