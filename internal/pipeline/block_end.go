@@ -86,7 +86,14 @@ func (gb *GoEndBlock) updateTaskStatus(ctx context.Context, pipeline *Executable
 		return
 	}
 
-	if step != nil && step.Status == string(StatusNoSuccess) && step.Type == BlockGoApproverID {
+	if step == nil {
+		fmt.Println(entries[0], gb.Pipeline.TaskID, ", step is nil")
+		return
+	}
+
+	fmt.Println("step.Status: ", step.Status)
+
+	if step.Status == string(StatusNoSuccess) && step.Type == BlockGoApproverID {
 		err = gb.Pipeline.updateStatusByStep(ctx, StatusApprovementRejected)
 		if err != nil {
 			fmt.Println(err, "end updateTaskStatus")
@@ -94,7 +101,7 @@ func (gb *GoEndBlock) updateTaskStatus(ctx context.Context, pipeline *Executable
 		}
 	}
 
-	if step != nil && step.Status == string(StatusNoSuccess) && step.Type == BlockGoExecutionID {
+	if step.Status == string(StatusNoSuccess) && step.Type == BlockGoExecutionID {
 		err = gb.Pipeline.updateStatusByStep(ctx, StatusExecutionRejected)
 		if err != nil {
 			fmt.Println(err, "end updateTaskStatus")
