@@ -3,6 +3,7 @@ package script
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	"encoding/json"
 
@@ -16,6 +17,7 @@ const (
 	MoreOrEqualCompareOperator string = "MoreOrEqual"
 	LessThenCompareOperator    string = "Less"
 	LessOrEqualCompareOperator string = "LessOrEqual"
+	ContainCompareOperator     string = "Contain"
 
 	stringOperandType  string = "string"
 	booleanOperandType string = "boolean"
@@ -284,10 +286,53 @@ func (condition *Condition) IsTrue() (bool, error) {
 
 func getAllowedOperators(operandDataType string) (map[string]CompareOperator, error) {
 	switch operandDataType {
-	case stringOperandType, booleanOperandType:
+	case booleanOperandType:
 		return genericOperators(), nil
+	case stringOperandType:
+		return map[string]CompareOperator{
+			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue() == rightOperand.GetValue()
+			},
+			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return leftOperand.GetValue() == rightOperand.GetValue()
+			},
+			ContainCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return strings.Contains(leftOperand.GetValue().(string), rightOperand.GetValue().(string))
+			},
+		}, nil
 	case integerOperandType:
-		return genericOperators(), nil
+		return map[string]CompareOperator{
+			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue = leftOperand.GetValue().(int32)
+				var rightValue = leftOperand.GetValue().(int32)
+				return leftValue == rightValue
+			},
+			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue = leftOperand.GetValue().(int32)
+				var rightValue = leftOperand.GetValue().(int32)
+				return leftValue == rightValue
+			},
+			MoreOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue = leftOperand.GetValue().(int32)
+				var rightValue = leftOperand.GetValue().(int32)
+				return leftValue >= rightValue
+			},
+			MoreThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue = leftOperand.GetValue().(int32)
+				var rightValue = leftOperand.GetValue().(int32)
+				return leftValue > rightValue
+			},
+			LessOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue = leftOperand.GetValue().(int32)
+				var rightValue = leftOperand.GetValue().(int32)
+				return leftValue <= rightValue
+			},
+			LessThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue = leftOperand.GetValue().(int32)
+				var rightValue = leftOperand.GetValue().(int32)
+				return leftValue < rightValue
+			},
+		}, nil
 	case floatOperandType:
 		return map[string]CompareOperator{
 			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
