@@ -108,7 +108,7 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 
 	fmt.Println("name: ", name)
 
-	keyStacks.PushElement(pipeline.EntryPoint)
+	keyStacks.PushElement(name)
 
 	for !keyStacks.IsEmpty() {
 		var currentKey, err = keyStacks.Pop()
@@ -133,6 +133,8 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 			}
 		}
 	}
+
+	fmt.Printf("%+v \n", entries)
 
 	return entries
 }
