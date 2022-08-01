@@ -113,7 +113,7 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 
 			addKey := false
 			for _, nextBlockName := range bb {
-				if nextBlockName == name && !inSlice(nextBlockName, entries) {
+				if nextBlockName == name {
 					addKey = true
 					continue
 				}
@@ -126,20 +126,24 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 	}
 	handleKey(pipeline.EntryPoint)
 
+	entries = removeDuplicateStr(entries)
+
 	fmt.Println("entries")
 	fmt.Printf("%+v \n", entries)
 
 	return entries
 }
 
-func inSlice(key string, blocks []string) bool {
-	for i := range blocks {
-		if blocks[i] == key {
-			return true
+func removeDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	list := make([]string, 0)
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
 		}
 	}
-
-	return false
+	return list
 }
 
 func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) *GoWaitForAllInputsBlock {
