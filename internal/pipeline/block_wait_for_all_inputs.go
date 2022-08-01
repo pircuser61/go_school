@@ -105,12 +105,15 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 	var handleKey func(key string)
 	handleKey = func(key string) {
 		for socketName, bb := range pipeline.PipelineModel.Pipeline.Blocks[key].Next {
+			fmt.Println("socketName: ", socketName)
+
 			if socketName == editAppSocket {
 				continue
 			}
+
 			addKey := false
 			for _, nextBlockName := range bb {
-				if nextBlockName == name {
+				if nextBlockName == name && !inSlice(nextBlockName, entries) {
 					addKey = true
 					continue
 				}
@@ -123,9 +126,20 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 	}
 	handleKey(pipeline.EntryPoint)
 
+	fmt.Println("entries")
 	fmt.Printf("%+v \n", entries)
 
 	return entries
+}
+
+func inSlice(key string, blocks []string) bool {
+	for i := range blocks {
+		if blocks[i] == key {
+			return true
+		}
+	}
+
+	return false
 }
 
 func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) *GoWaitForAllInputsBlock {
