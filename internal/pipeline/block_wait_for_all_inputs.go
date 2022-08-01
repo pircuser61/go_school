@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 
 	"go.opencensus.io/trace"
@@ -104,6 +105,8 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string) {
 	var keyStacks = utils.NewStack()
 	var visitedBlocks = make([]string, 0)
+
+	fmt.Println("name: ", name)
 
 	keyStacks.PushElement(pipeline.EntryPoint)
 
