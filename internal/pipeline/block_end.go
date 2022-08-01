@@ -26,7 +26,8 @@ func (gb *GoEndBlock) GetStatus() Status {
 }
 
 func (gb *GoEndBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return "" // should not change status returned by worker nodes like approvement, execution, etc.
+	// should not change status returned by worker nodes like approvement, execution, etc.
+	return gb.getTaskHumanStatus(context.Background(), gb.Pipeline)
 }
 
 func (gb *GoEndBlock) GetType() string {
@@ -68,46 +69,38 @@ func (gb *GoEndBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.Va
 		}
 	}
 
-	gb.updateTaskStatus(ctx, gb.Pipeline)
-
 	return nil
 }
 
-func (gb *GoEndBlock) updateTaskStatus(ctx context.Context, pipeline *ExecutablePipeline) {
+func (gb *GoEndBlock) getTaskHumanStatus(ctx context.Context, pipeline *ExecutablePipeline) TaskHumanStatus {
 	entries := getInputBlocks(pipeline, gb.Name)
 	if len(entries) == 0 {
 		fmt.Println("end len(entries) == 0 updateTaskStatus")
-		return
+		return ""
 	}
 
 	step, err := pipeline.Storage.GetTaskStepByName(ctx, gb.Pipeline.TaskID, entries[0])
 	if err != nil {
 		fmt.Println(err, "end updateTaskStatus")
-		return
+		return ""
 	}
 
 	if step == nil {
 		fmt.Println(entries[0], gb.Pipeline.TaskID, ", step is nil")
-		return
+		return ""
 	}
 
 	fmt.Println("step.Status: ", step.Status)
 
 	if step.Status == string(StatusNoSuccess) && step.Type == BlockGoApproverID {
-		err = gb.Pipeline.updateStatusByStep(ctx, StatusApprovementRejected)
-		if err != nil {
-			fmt.Println(err, "end updateTaskStatus")
-			return
-		}
+		return StatusApprovementRejected
 	}
 
 	if step.Status == string(StatusNoSuccess) && step.Type == BlockGoExecutionID {
-		err = gb.Pipeline.updateStatusByStep(ctx, StatusExecutionRejected)
-		if err != nil {
-			fmt.Println(err, "end updateTaskStatus")
-			return
-		}
+		return StatusExecutionRejected
 	}
+
+	return ""
 }
 
 func (gb *GoEndBlock) Next(_ *store.VariableStore) ([]string, bool) {
