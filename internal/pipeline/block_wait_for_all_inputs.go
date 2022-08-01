@@ -2,8 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"fmt"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -105,8 +103,6 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 	var handleKey func(key string)
 	handleKey = func(key string) {
 		for socketName, bb := range pipeline.PipelineModel.Pipeline.Blocks[key].Next {
-			fmt.Println("socketName: ", socketName)
-
 			if socketName == editAppSocket {
 				continue
 			}
@@ -127,9 +123,6 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 	handleKey(pipeline.EntryPoint)
 
 	entries = removeDuplicateStr(entries)
-
-	fmt.Println("entries")
-	fmt.Printf("%+v \n", entries)
 
 	return entries
 }

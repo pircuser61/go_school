@@ -602,7 +602,7 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 	case BlockGoStartId:
 		return createGoStartBlock(name, ef), nil
 	case BlockGoEndId:
-		return createGoEndBlock(name, ef), nil
+		return createGoEndBlock(name, ef, ep), nil
 	case BlockWaitForAllInputsId:
 		return createGoWaitForAllInputsBlock(name, ef, ep), nil
 	case BlockGoBeginParallelTaskId:
