@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
 
 	"go.opencensus.io/trace"
 
@@ -16,6 +17,8 @@ type GoEndBlock struct {
 	Input  map[string]string
 	Output map[string]string
 	Nexts  map[string][]string
+
+	Pipeline *ExecutablePipeline
 }
 
 func (gb *GoEndBlock) GetStatus() Status {
@@ -65,7 +68,46 @@ func (gb *GoEndBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.Va
 		}
 	}
 
+	gb.updateTaskStatus(ctx, gb.Pipeline)
+
 	return nil
+}
+
+func (gb *GoEndBlock) updateTaskStatus(ctx context.Context, pipeline *ExecutablePipeline) {
+	entries := getInputBlocks(pipeline, gb.Name)
+	if len(entries) == 0 {
+		fmt.Println("end len(entries) == 0 updateTaskStatus")
+		return
+	}
+
+	step, err := pipeline.Storage.GetTaskStepByName(ctx, gb.Pipeline.TaskID, entries[0])
+	if err != nil {
+		fmt.Println(err, "end updateTaskStatus")
+		return
+	}
+
+	if step == nil {
+		fmt.Println(entries[0], gb.Pipeline.TaskID, ", step is nil")
+		return
+	}
+
+	fmt.Println("step.Status: ", step.Status)
+
+	if step.Status == string(StatusNoSuccess) && step.Type == BlockGoApproverID {
+		err = gb.Pipeline.updateStatusByStep(ctx, StatusApprovementRejected)
+		if err != nil {
+			fmt.Println(err, "end updateTaskStatus")
+			return
+		}
+	}
+
+	if step.Status == string(StatusNoSuccess) && step.Type == BlockGoExecutionID {
+		err = gb.Pipeline.updateStatusByStep(ctx, StatusExecutionRejected)
+		if err != nil {
+			fmt.Println(err, "end updateTaskStatus")
+			return
+		}
+	}
 }
 
 func (gb *GoEndBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -95,13 +137,15 @@ func (gb *GoEndBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoEndBlock(name string, ef *entity.EriusFunc) *GoEndBlock {
+func createGoEndBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) *GoEndBlock {
 	b := &GoEndBlock{
 		Name:   name,
 		Title:  ef.Title,
 		Input:  map[string]string{},
 		Output: map[string]string{},
 		Nexts:  ef.Next,
+
+		Pipeline: pipeline,
 	}
 
 	for _, v := range ef.Input {

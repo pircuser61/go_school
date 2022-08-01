@@ -394,7 +394,7 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 				return errors.Wrap(err, "Unable to find approver by variable reference")
 			}
 
-			if actualApproverUsername, ok := approverVar.(string); ok {
+			if actualApproverUsername, castOK := approverVar.(string); castOK {
 				state.Approvers[actualApproverUsername] = state.Approvers[approverVariableRef]
 				delete(state.Approvers, approverVariableRef)
 			}

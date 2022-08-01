@@ -938,6 +938,10 @@ func (_m *MockDB) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID,
 	return &entity.Step{}, nil
 }
 
+func (_m *MockDB) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
+	return &entity.Step{}, nil
+}
+
 func (m *MockDB) GetVersionByWorkNumber(c context.Context, workNumber string) (*entity.EriusScenario, error) {
 	return &entity.EriusScenario{}, nil
 }

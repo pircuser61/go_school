@@ -34,6 +34,20 @@ func (_m *MockedDatabase) GetParentTaskStepByName(ctx context.Context, workID uu
 	return r1, r0
 }
 
+func (_m *MockedDatabase) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
+	ret := _m.Called(ctx, workID, stepName)
+
+	var r0 error
+	var r1 *entity.Step
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = rf(ctx, workID, stepName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r1, r0
+}
+
 func (_m *MockedDatabase) GetVersionByWorkNumber(c context.Context, workNumber string) (*entity.EriusScenario, error) {
 	ret := _m.Called(c, workNumber)
 
