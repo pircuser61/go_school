@@ -109,9 +109,19 @@ const (
 
 // Defines values for CompareOperator.
 const (
+	CompareOperatorБольше CompareOperator = "Больше"
+
+	CompareOperatorБольшеИлиРавно CompareOperator = "Больше или равно"
+
+	CompareOperatorМеньше CompareOperator = "Меньше"
+
+	CompareOperatorМеньшеИлиРавно CompareOperator = "Меньше или равно"
+
 	CompareOperatorНеРавно CompareOperator = "Не равно"
 
 	CompareOperatorРавно CompareOperator = "Равно"
+
+	CompareOperatorСодержит CompareOperator = "Содержит"
 )
 
 // Defines values for ExecutionDecision.
@@ -714,7 +724,7 @@ type StartDebugTaskJSONBody DebugRunRequest
 
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
-	// Show only my pipelines
+	// Show my pipelines only
 	My *bool `json:"my,omitempty"`
 }
 
