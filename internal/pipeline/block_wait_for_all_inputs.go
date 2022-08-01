@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 
 	"go.opencensus.io/trace"
 
@@ -103,49 +102,30 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 }
 
 func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string) {
-	var keyStacks = utils.NewStack()
-	var visitedBlocks = make([]string, 0)
-
-	fmt.Println("name: ", name)
-
-	keyStacks.PushElement(name)
-
-	for !keyStacks.IsEmpty() {
-		var currentKey, err = keyStacks.Pop()
-		if err != nil {
-			return nil
-		}
-
-		if blockKey, ok := currentKey.(string); ok {
-			var sockets = pipeline.PipelineModel.Pipeline.Blocks[blockKey].Next
-			for _, nextBlock := range sockets {
-				if !alreadyVisitedBlock(visitedBlocks, blockKey) {
-					for _, blockName := range nextBlock {
-						if blockName != name {
-							keyStacks.PushElement(blockName)
-						} else {
-							entries = append(entries, blockKey)
-							break
-						}
-					}
-					visitedBlocks = append(visitedBlocks, blockKey)
+	var handleKey func(key string)
+	handleKey = func(key string) {
+		for socketName, bb := range pipeline.PipelineModel.Pipeline.Blocks[key].Next {
+			if socketName == editAppSocket {
+				continue
+			}
+			addKey := false
+			for _, nextBlockName := range bb {
+				if nextBlockName == name {
+					addKey = true
+					continue
 				}
+				handleKey(nextBlockName)
+			}
+			if addKey {
+				entries = append(entries, key)
 			}
 		}
 	}
+	handleKey(pipeline.EntryPoint)
 
 	fmt.Printf("%+v \n", entries)
 
 	return entries
-}
-
-func alreadyVisitedBlock(source []string, key string) bool {
-	for _, val := range source {
-		if val == key {
-			return true
-		}
-	}
-	return false
 }
 
 func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) *GoWaitForAllInputsBlock {
