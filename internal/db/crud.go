@@ -1129,6 +1129,43 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
 }
 
+func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
+	c, span := trace.StartSpan(c, "pg_rename_pipeline")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+	WITH id_values (name) as (
+      values ($1)
+    ), src AS (
+      UPDATE pipeliner.pipelines
+          SET name = (select name from id_values)
+      WHERE id = $2
+    )
+    UPDATE pipeliner.versions
+       SET content = jsonb_set(content, '{name}', to_jsonb((select name from id_values)) , false)
+    WHERE pipeliner.versions.id = 
+          (SELECT ID 
+           FROM pipeliner.versions ver 
+           WHERE ver.pipeline_id = $2 ORDER BY created_at DESC LIMIT 1) 
+    ;`
+
+	_, err = conn.Exec(c, query, name, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PGCon) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_tag")
 	defer span.End()

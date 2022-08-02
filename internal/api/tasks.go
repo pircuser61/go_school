@@ -51,6 +51,8 @@ type step struct {
 
 type taskSteps []step
 
+const blockTypePipeline = "pipeline"
+
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	for i := range in.Steps {
@@ -369,7 +371,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	if blockType == "pipeline" {
+	if blockType == blockTypePipeline {
 		// TODO: make func for canceling task
 		return
 	}

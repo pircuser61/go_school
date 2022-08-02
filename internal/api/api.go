@@ -679,6 +679,15 @@ type Pipeline_Blocks struct {
 	AdditionalProperties map[string]EriusFunc `json:"-"`
 }
 
+// PipelineRename defines model for pipelineRename.
+type PipelineRename struct {
+	// ID сценария для переименования
+	Id string `json:"id"`
+
+	// Новое имя сценария
+	Name string `json:"name"`
+}
+
 // Tag status:
 //  * 1 - Draft
 //  * 2 - Approved
@@ -714,12 +723,15 @@ type StartDebugTaskJSONBody DebugRunRequest
 
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
-	// Show only my pipelines
+	// Show my pipelines only
 	My *bool `json:"my,omitempty"`
 }
 
 // CreatePipelineJSONBody defines parameters for CreatePipeline.
 type CreatePipelineJSONBody EriusScenario
+
+// RenamePipelineJSONBody defines parameters for RenamePipeline.
+type RenamePipelineJSONBody PipelineRename
 
 // EditVersionJSONBody defines parameters for EditVersion.
 type EditVersionJSONBody EriusScenario
@@ -777,6 +789,9 @@ type StartDebugTaskJSONRequestBody StartDebugTaskJSONBody
 
 // CreatePipelineJSONRequestBody defines body for CreatePipeline for application/json ContentType.
 type CreatePipelineJSONRequestBody CreatePipelineJSONBody
+
+// RenamePipelineJSONRequestBody defines body for RenamePipeline for application/json ContentType.
+type RenamePipelineJSONRequestBody RenamePipelineJSONBody
 
 // EditVersionJSONRequestBody defines body for EditVersion for application/json ContentType.
 type EditVersionJSONRequestBody EditVersionJSONBody
@@ -993,6 +1008,9 @@ type ServerInterface interface {
 	// Create pipeline
 	// (POST /pipelines)
 	CreatePipeline(w http.ResponseWriter, r *http.Request)
+	// Rename Pipeline
+	// (PUT /pipelines/name)
+	RenamePipeline(w http.ResponseWriter, r *http.Request)
 	// Edit Draft
 	// (PUT /pipelines/version)
 	EditVersion(w http.ResponseWriter, r *http.Request)
@@ -1254,6 +1272,21 @@ func (siw *ServerInterfaceWrapper) CreatePipeline(w http.ResponseWriter, r *http
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreatePipeline(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// RenamePipeline operation middleware
+func (siw *ServerInterfaceWrapper) RenamePipeline(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RenamePipeline(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2075,6 +2108,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines", wrapper.CreatePipeline)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/pipelines/name", wrapper.RenamePipeline)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/pipelines/version", wrapper.EditVersion)

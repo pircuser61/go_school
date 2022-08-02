@@ -81,6 +81,8 @@ const (
 	BodyParseError
 	ValidationError
 	GetVersionsByWorkNumberError
+	PipelineRenameParseError
+	PipelineRenameError
 )
 
 //nolint:dupl //its not duplicate
@@ -148,6 +150,8 @@ var errorText = map[Err]string{
 	BodyParseError:                "can't parse body to struct",
 	ValidationError:               "run version by blueprint id request is invalid",
 	GetVersionsByWorkNumberError:  "can`t find version by work id",
+	PipelineRenameParseError:      "can't parse rename pipeline data",
+	PipelineRenameError:           "can't rename pipeline",
 }
 
 // JOKE.
@@ -216,6 +220,8 @@ var errorDescription = map[Err]string{
 	BodyParseError:                "Ошибка при разборе тела запроса",
 	ValidationError:               "Ошибка при валидации запроса",
 	GetVersionsByWorkNumberError:  "Ошибка при получении сценария по id процесса",
+	PipelineRenameParseError:      "Не удалось получить информацию о переимоновании сценария",
+	PipelineRenameError:           "Не удалось переименовать сценарий",
 }
 
 var errorStatus = map[Err]int{
