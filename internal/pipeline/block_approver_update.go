@@ -180,7 +180,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 	return nil, errors.New("cant`t update execution block, unknown action: " + data.Action)
 }
 
-type  setEditingAppLogDTO struct {
+type setEditingAppLogDTO struct {
 	id       uuid.UUID
 	runCtx   *store.VariableStore
 	workID   uuid.UUID

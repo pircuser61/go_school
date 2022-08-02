@@ -102,11 +102,11 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 
 func createGoStartParallelBlock(name string, ef *entity.EriusFunc) *GoBeginParallelTaskBlock {
 	b := &GoBeginParallelTaskBlock{
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		Nexts:    ef.Next,
+		Name:   name,
+		Title:  ef.Title,
+		Input:  map[string]string{},
+		Output: map[string]string{},
+		Nexts:  ef.Next,
 	}
 
 	for _, v := range ef.Input {
