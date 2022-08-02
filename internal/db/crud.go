@@ -1142,7 +1142,7 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) er
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const qRenamePipeline = `
+	const query = `
 	WITH id_values (name) as (
       values ($1)
     ), src AS (
@@ -1158,7 +1158,7 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) er
            WHERE ver.pipeline_id = $2 ORDER BY created_at DESC LIMIT 1) 
     ;`
 
-	_, err = conn.Exec(c, qRenamePipeline, name, id)
+	_, err = conn.Exec(c, query, name, id)
 	if err != nil {
 		return err
 	}

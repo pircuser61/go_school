@@ -681,7 +681,10 @@ type Pipeline_Blocks struct {
 
 // PipelineRename defines model for pipelineRename.
 type PipelineRename struct {
-	Id   string `json:"id"`
+	// ID сценария для переименования
+	Id string `json:"id"`
+
+	// Новое имя сценария
 	Name string `json:"name"`
 }
 

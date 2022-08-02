@@ -1685,8 +1685,10 @@ components:
       properties:
         name:
           type: string
+          description: Новое имя сценария
         id:
           type: string
+          description: ID сценария для переименования
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
       required:
