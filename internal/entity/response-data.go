@@ -131,3 +131,8 @@ type DebugResult struct {
 	BreakPoints []string   `json:"break_points"`
 	Task        *EriusTask `json:"task"`
 }
+
+type RenamePipeline struct {
+	NewName string    `json:"new_name"` // Новое имя сценария
+	ID      uuid.UUID `json:"id"`       // ID сценария
+}

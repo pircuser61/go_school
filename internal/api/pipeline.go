@@ -365,6 +365,70 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 	return nil
 }
 
+func (ae *APIEnv) EditName(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "rename_pipeline")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(req.Body)
+	defer func() {
+		_ = req.Body.Close()
+	}()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	p := entity.RenamePipeline{}
+
+	err = json.Unmarshal(b, &p)
+	if err != nil {
+		e := PipelineRenameParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.NewName)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	if !canCreate {
+		e := PipelineNameUsed
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	err = ae.DB.RenamePipeline(ctx, p.ID, p.NewName)
+	if err != nil {
+		e := PipelineRenameError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, nil)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 // onApprovedVersions выбирает версии сценариев с признаком OnApprove,
 // разрешенные для данного пользователя
 //nolint:dupl //different logic

@@ -182,7 +182,7 @@ func (_m *MockedDatabase) CreateTask(c context.Context, dto *db.CreateTaskDTO) (
 
 	var r0 *entity.EriusTask
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, string, bool, []byte) *entity.EriusTask); ok {
-		r0 = rf(c,  dto.TaskID, dto.VersionID, dto.Author, dto.IsDebug, dto.Params)
+		r0 = rf(c, dto.TaskID, dto.VersionID, dto.Author, dto.IsDebug, dto.Params)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusTask)
@@ -1035,4 +1035,18 @@ func (_m *MockedDatabase) VersionEditable(c context.Context, versionID uuid.UUID
 	}
 
 	return r0, r1
+}
+
+// RenamePipeline provides a mock function with given fields: c, id, newName
+func (_m *MockedDatabase) RenamePipeline(c context.Context, id uuid.UUID, newName string) error {
+	ret := _m.Called(c, id, newName)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = rf(c, id, newName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
