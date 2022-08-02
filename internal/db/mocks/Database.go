@@ -1037,13 +1037,13 @@ func (_m *MockedDatabase) VersionEditable(c context.Context, versionID uuid.UUID
 	return r0, r1
 }
 
-// RenamePipeline provides a mock function with given fields: c, id, newName
-func (_m *MockedDatabase) RenamePipeline(c context.Context, id uuid.UUID, newName string) error {
-	ret := _m.Called(c, id, newName)
+// RenamePipeline provides a mock function with given fields: c, id, name
+func (_m *MockedDatabase) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
+	ret := _m.Called(c, id, name)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
-		r0 = rf(c, id, newName)
+		r0 = rf(c, id, name)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -801,13 +801,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/rename:
+  /pipelines/name:
     put:
       tags:
         - pipeline
       summary: Rename Pipeline
       description: Изменить имя черновика
-      operationId: edit-name
+      operationId: rename-pipeline
       requestBody:
         description: New name
         content:
@@ -1683,14 +1683,14 @@ components:
     pipelineRename:
       type: object
       properties:
-        new_name:
+        name:
           type: string
         id:
           type: string
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
       required:
-        - new_name
+        - name
         - id
     EriusScenario:
       type: object

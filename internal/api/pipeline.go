@@ -365,7 +365,7 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 	return nil
 }
 
-func (ae *APIEnv) EditName(w http.ResponseWriter, req *http.Request) {
+func (ae *APIEnv) RenamePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "rename_pipeline")
 	defer s.End()
 
@@ -384,7 +384,7 @@ func (ae *APIEnv) EditName(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	p := entity.RenamePipeline{}
+	p := PipelineRename{}
 
 	err = json.Unmarshal(b, &p)
 	if err != nil {
@@ -394,8 +394,15 @@ func (ae *APIEnv) EditName(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+	id, err := uuid.Parse(p.Id)
+	if err != nil {
+		e := UUIDParsingError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.NewName)
+		return
+	}
+	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
@@ -410,7 +417,7 @@ func (ae *APIEnv) EditName(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-	err = ae.DB.RenamePipeline(ctx, p.ID, p.NewName)
+	err = ae.DB.RenamePipeline(ctx, id, p.Name)
 	if err != nil {
 		e := PipelineRenameError
 		log.Error(e.errorMessage(err))

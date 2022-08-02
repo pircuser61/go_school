@@ -1129,7 +1129,7 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
 }
 
-func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, newName string) error {
+func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
 	c, span := trace.StartSpan(c, "pg_rename_pipeline")
 	defer span.End()
 
@@ -1140,38 +1140,26 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, newName string)
 
 	defer conn.Release()
 
-	tx, err := conn.Begin(c)
-	if err != nil {
-		return err
-	}
-
 	// nolint:gocritic
 	// language=PostgreSQL
-	qRenamePipeline := `
-	WITH id_values (new_name) as (
+	const qRenamePipeline = `
+	WITH id_values (name) as (
       values ($1)
     ), src AS (
       UPDATE pipeliner.pipelines
-          SET name = (select new_name from id_values)
+          SET name = (select name from id_values)
       WHERE id = $2
     )
     UPDATE pipeliner.versions
-       SET content = jsonb_set(content, '{name}', to_jsonb((select new_name from id_values)) , false)
+       SET content = jsonb_set(content, '{name}', to_jsonb((select name from id_values)) , false)
     WHERE pipeliner.versions.id = 
           (SELECT ID 
            FROM pipeliner.versions ver 
            WHERE ver.pipeline_id = $2 ORDER BY created_at DESC LIMIT 1) 
     ;`
 
-	_, err = tx.Exec(c, qRenamePipeline, newName, id)
+	_, err = conn.Exec(c, qRenamePipeline, name, id)
 	if err != nil {
-		return err
-	}
-
-	err = tx.Commit(c)
-	if err != nil {
-		_ = tx.Rollback(c)
-
 		return err
 	}
 

@@ -76,6 +76,6 @@ func (m MockPipelinerStorer) PipelineRemovable(c context.Context, id uuid.UUID) 
 	return false, errMocked
 }
 
-func (m *MockPipelinerStorer) RenamePipeline(c context.Context, id uuid.UUID, newName string) error {
+func (m *MockPipelinerStorer) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
 	return errMocked
 }

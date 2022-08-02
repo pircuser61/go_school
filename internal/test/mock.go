@@ -1063,7 +1063,7 @@ func (m *MockDB) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 	return nil, errNotFound
 }
 
-func (m *MockDB) RenamePipeline(c context.Context, id uuid.UUID, newName string) error {
+func (m *MockDB) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
 	return errNotImplemented
 }
 
