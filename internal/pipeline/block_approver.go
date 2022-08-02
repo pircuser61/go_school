@@ -90,11 +90,6 @@ func (a *ApproverData) GetIsEditable() bool {
 }
 
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
-	_, ok := a.Approvers[login]
-	if !ok && login != AutoApprover {
-		return fmt.Errorf("%s not found in approvers", login)
-	}
-
 	if a.Decision != nil {
 		return errors.New("decision already set")
 	}
@@ -111,11 +106,6 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 }
 
 func (a *ApproverData) SetEditApp(login, comment string, attachments []string) error {
-	_, ok := a.Approvers[login]
-	if !ok && login != AutoApprover {
-		return fmt.Errorf("%s not found in approvers", login)
-	}
-
 	if a.Decision != nil {
 		return errors.New("decision already set")
 	}
