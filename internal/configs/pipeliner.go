@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -41,6 +42,7 @@ type Pipeliner struct {
 	GRPCPort              string             `yaml:"grpc_gw_port"`
 	GRPCGWPort            string             `yaml:"grpc_port"`
 	Mail                  mail.Config        `yaml:"mail"`
+	Servicedesc           servicedesc.Config `yaml:"servicedesc"`
 }
 
 type RunEnv struct {

@@ -666,6 +666,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, p *execVersionInternalDTO) 
 	ep.People = ae.People
 	ep.Name = p.p.Name
 	ep.Initiator = p.userName
+	ep.ServiceDesc = ae.ServiceDesc
 
 	if p.makeNewWork {
 		ep.WorkNumber = p.workNumber

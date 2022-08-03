@@ -19,6 +19,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -52,6 +53,7 @@ type ExecutablePipeline struct {
 	Remedy        string
 	Sender        *mail.Service
 	People        *people.Service
+	ServiceDesc   *servicedesc.Service
 
 	FaaS string
 
@@ -509,7 +511,7 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *ent
 
 	switch block.BlockType {
 	case script.TypeGo:
-		return ep.CreateGoBlock(block, name)
+		return ep.CreateGoBlock(ctx, block, name)
 	case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 		fb := FunctionBlock{
 			Name:           name,
@@ -587,14 +589,14 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *ent
 }
 
 //nolint:gocyclo //need bigger cyclomatic
-func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (Runner, error) {
+func (ep *ExecutablePipeline) CreateGoBlock(ctx c.Context, ef *entity.EriusFunc, name string) (Runner, error) {
 	switch ef.TypeID {
 	case BlockGoIfID:
 		return createGoIfBlock(name, ef)
 	case BlockGoTestID:
 		return createGoTestBlock(name, ef), nil
 	case BlockGoApproverID:
-		return createGoApproverBlock(name, ef, ep)
+		return createGoApproverBlock(ctx, name, ef, ep)
 	case BlockGoSdApplicationID:
 		return createGoSdApplicationBlock(name, ef)
 	case BlockGoExecutionID:
@@ -602,7 +604,7 @@ func (ep *ExecutablePipeline) CreateGoBlock(ef *entity.EriusFunc, name string) (
 	case BlockGoStartId:
 		return createGoStartBlock(name, ef), nil
 	case BlockGoEndId:
-		return createGoEndBlock(name, ef, ep), nil
+		return createGoEndBlock(name, ef), nil
 	case BlockWaitForAllInputsId:
 		return createGoWaitForAllInputsBlock(name, ef, ep), nil
 	case BlockGoBeginParallelTaskId:

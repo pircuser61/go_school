@@ -163,6 +163,12 @@ type ApproverParams struct {
 	// Apprver value (depends on type)
 	Approver string `json:"approver"`
 
+	// Approvers group id in SD
+	ApproversGroupId string `json:"approvers_group_id"`
+
+	// Approvers group name in SD
+	ApproversGroupName string `json:"approvers_group_name"`
+
 	// Action to do automatically in case SLA is breached
 	AutoAction *ApproveAutoAction `json:"auto_action,omitempty"`
 
