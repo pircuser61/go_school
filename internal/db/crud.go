@@ -1029,7 +1029,7 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		var (
 			vID, pID uuid.UUID
 			s        int
-			content        string
+			content  string
 			cm       string
 			author   string
 		)
