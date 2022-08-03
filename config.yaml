@@ -75,3 +75,6 @@ log:
   hooks:
     filename:
       sourceField: 'sourcelog'
+
+servicedesc:
+  chainsmith_url: 'https://admin.dev.servicedesk.mts.ru/api/chainsmith'

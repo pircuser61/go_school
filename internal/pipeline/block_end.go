@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"fmt"
 
 	"go.opencensus.io/trace"
 
@@ -17,8 +16,6 @@ type GoEndBlock struct {
 	Input  map[string]string
 	Output map[string]string
 	Nexts  map[string][]string
-
-	Pipeline *ExecutablePipeline
 }
 
 func (gb *GoEndBlock) GetStatus() Status {
@@ -27,7 +24,7 @@ func (gb *GoEndBlock) GetStatus() Status {
 
 func (gb *GoEndBlock) GetTaskHumanStatus() TaskHumanStatus {
 	// should not change status returned by worker nodes like approvement, execution, etc.
-	return gb.getTaskHumanStatus(context.Background(), gb.Pipeline)
+	return ""
 }
 
 func (gb *GoEndBlock) GetType() string {
@@ -72,37 +69,6 @@ func (gb *GoEndBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.Va
 	return nil
 }
 
-func (gb *GoEndBlock) getTaskHumanStatus(ctx context.Context, pipeline *ExecutablePipeline) TaskHumanStatus {
-	entries := getInputBlocks(pipeline, gb.Name)
-	if len(entries) == 0 {
-		fmt.Println("end len(entries) == 0 updateTaskStatus")
-		return ""
-	}
-
-	step, err := pipeline.Storage.GetTaskStepByName(ctx, gb.Pipeline.TaskID, entries[0])
-	if err != nil {
-		fmt.Println(err, "end updateTaskStatus")
-		return ""
-	}
-
-	if step == nil {
-		fmt.Println(entries[0], gb.Pipeline.TaskID, ", step is nil")
-		return ""
-	}
-
-	fmt.Println("step.Status: ", step.Status)
-
-	if step.Status == string(StatusNoSuccess) && step.Type == BlockGoApproverID {
-		return StatusApprovementRejected
-	}
-
-	if step.Status == string(StatusNoSuccess) && step.Type == BlockGoExecutionID {
-		return StatusExecutionRejected
-	}
-
-	return ""
-}
-
 func (gb *GoEndBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nil, true
 }
@@ -130,15 +96,13 @@ func (gb *GoEndBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoEndBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) *GoEndBlock {
+func createGoEndBlock(name string, ef *entity.EriusFunc) *GoEndBlock {
 	b := &GoEndBlock{
 		Name:   name,
 		Title:  ef.Title,
 		Input:  map[string]string{},
 		Output: map[string]string{},
 		Nexts:  ef.Next,
-
-		Pipeline: pipeline,
 	}
 
 	for _, v := range ef.Input {

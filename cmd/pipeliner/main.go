@@ -34,6 +34,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
@@ -101,6 +102,13 @@ func main() {
 		return
 	}
 
+	servicedescService, err := servicedesc.NewService(cfg.Servicedesc)
+	if err != nil {
+		log.WithError(err).Error("can't create servicedesc service")
+
+		return
+	}
+
 	mailService, err := mail.NewService(cfg.Mail)
 	if err != nil {
 		log.WithError(err).Error("can't create mail service")
@@ -132,6 +140,7 @@ func main() {
 			Statistic:            stat,
 			Mail:                 mailService,
 			People:               peopleService,
+			ServiceDesc:          servicedescService,
 		},
 		SSOService:        ssoService,
 		PeopleService:     peopleService,

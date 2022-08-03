@@ -32,6 +32,8 @@ type ApproverParams struct {
 
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+
+	ApproversGroupID string `json:"approvers_group_id"`
 }
 
 func (a *ApproverParams) Validate() error {
@@ -54,6 +56,10 @@ func (a *ApproverParams) Validate() error {
 
 	if a.AutoAction != nil && *a.AutoAction != AutoActionApprove && *a.AutoAction != AutoActionReject {
 		return fmt.Errorf("unknown auto action type: %s", *a.AutoAction)
+	}
+
+	if a.Type == ApproverTypeGroup && a.ApproversGroupID == "" {
+		return fmt.Errorf("empty ApproversGroupID")
 	}
 
 	return nil
