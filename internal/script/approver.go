@@ -33,7 +33,8 @@ type ApproverParams struct {
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 
-	ApproversGroupID string `json:"approvers_group_id"`
+	ApproversGroupID   string `json:"approvers_group_id"`
+	ApproversGroupName string `json:"approvers_group_name"`
 }
 
 func (a *ApproverParams) Validate() error {
