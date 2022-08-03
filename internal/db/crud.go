@@ -1009,7 +1009,8 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		pv.status, 
 		pv.pipeline_id, 
 		pv.content, 
-		pv.comment
+		pv.comment,
+		pv.author
 	FROM pipeliner.versions pv
 	JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
 	WHERE pv.pipeline_id = $1
@@ -1028,16 +1029,17 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		var (
 			vID, pID uuid.UUID
 			s        int
-			c        string
+			content        string
 			cm       string
+			author   string
 		)
 
-		err = rows.Scan(&vID, &s, &pID, &c, &cm)
+		err = rows.Scan(&vID, &s, &pID, &content, &cm, &author)
 		if err != nil {
 			return nil, err
 		}
 
-		err = json.Unmarshal([]byte(c), &p)
+		err = json.Unmarshal([]byte(content), &p)
 		if err != nil {
 			return nil, err
 		}
@@ -1046,6 +1048,10 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		p.ID = pID
 		p.Status = s
 		p.Comment = cm
+
+		if p.Author == "" {
+			p.Author = author
+		}
 
 		return &p, nil
 	}
