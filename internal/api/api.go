@@ -119,6 +119,8 @@ const (
 
 	CompareOperatorНеРавно CompareOperator = "Не равно"
 
+	CompareOperatorНеСодержит CompareOperator = "Не Содержит"
+
 	CompareOperatorРавно CompareOperator = "Равно"
 
 	CompareOperatorСодержит CompareOperator = "Содержит"
