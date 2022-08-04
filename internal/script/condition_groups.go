@@ -18,6 +18,7 @@ const (
 	LessThenCompareOperator    string = "Less"
 	LessOrEqualCompareOperator string = "LessOrEqual"
 	ContainCompareOperator     string = "Contain"
+	NotContainCompareOperator  string = "NotContain"
 
 	stringOperandType  string = "string"
 	booleanOperandType string = "boolean"
@@ -298,6 +299,9 @@ func getAllowedOperators(operandDataType string) (map[string]CompareOperator, er
 			},
 			ContainCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				return strings.Contains(leftOperand.GetValue().(string), rightOperand.GetValue().(string))
+			},
+			NotContainCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				return !strings.Contains(leftOperand.GetValue().(string), rightOperand.GetValue().(string))
 			},
 		}, nil
 	case integerOperandType:
