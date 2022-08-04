@@ -25,7 +25,7 @@ func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
 }
 
 func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return StatusDone
+	return ""
 }
 
 func (gb *GoBeginParallelTaskBlock) GetType() string {
