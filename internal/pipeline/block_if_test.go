@@ -1773,6 +1773,295 @@ func TestIF_DebugRun(t *testing.T) {
 				}(),
 			},
 		},
+		{
+			name:          "compare time values - not equal",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2020-01-02",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2020-01-01",
+											},
+											Operator: "NotEqual",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare time variables - equal",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												VariableRef: "data.testStringVariable1",
+											},
+											RightOperand: &script.VariableOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												VariableRef: "data.testStringVariable2",
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					res.SetValue("data.testStringVariable1", "2020-01-02")
+					res.SetValue("data.testStringVariable2", "2020-01-02")
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare time variables - less",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2010-01-02",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2020-01-02",
+											},
+											Operator: "Less",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare time variables - lessOrEqual",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2010-01-02",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2020-01-02",
+											},
+											Operator: "LessOrEqual",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare time variables - more",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2030-01-02",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2020-01-02",
+											},
+											Operator: "More",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare time variables - moreOrEqal",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2030-01-02",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2020-01-02",
+											},
+											Operator: "MoreOrEqual",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+
+					return res
+				}(),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

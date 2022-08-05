@@ -1,9 +1,11 @@
 package script
 
 import (
+	"log"
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"encoding/json"
 
@@ -24,6 +26,7 @@ const (
 	booleanOperandType string = "boolean"
 	integerOperandType string = "integer"
 	floatOperandType   string = "float"
+	timeOperandType    string = "time"
 )
 
 var (
@@ -31,6 +34,7 @@ var (
 	ErrNotComparableOperands        = errors.New("Invalid condition. Check for operand types equality and used operator is allowed for type.")
 	ErrNoAllowedOperators           = errors.New("Unable to find allowed operators for this type.")
 	ErrUnableToConvert              = errors.New("Unable to convert operand.")
+	ErrUnableToParseDate            = errors.New("Unable to parse date.")
 )
 
 type ConditionType string
@@ -374,6 +378,87 @@ func getAllowedOperators(operandDataType string) (map[string]CompareOperator, er
 				var leftValue = leftOperand.GetValue().(float64)
 				var rightValue = rightOperand.GetValue().(float64)
 				return (rightValue - leftValue) > equalityThreshold
+			},
+		}, nil
+	case timeOperandType:
+		return map[string]CompareOperator{
+			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue, er = time.Parse("2006-01-02", leftOperand.GetValue().(string))
+				if er != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				var rightValue, err = time.Parse("2006-01-02", rightOperand.GetValue().(string))
+				if err != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				return leftValue == rightValue
+			},
+			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue, er = time.Parse("2006-01-02", leftOperand.GetValue().(string))
+				if er != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				var rightValue, err = time.Parse("2006-01-02", rightOperand.GetValue().(string))
+				if err != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				return leftValue != rightValue
+			},
+			MoreOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue, er = time.Parse("2006-01-02", leftOperand.GetValue().(string))
+				if er != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				var rightValue, err = time.Parse("2006-01-02", rightOperand.GetValue().(string))
+				if err != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				return leftValue.After(rightValue) || leftValue == rightValue
+			},
+			MoreThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue, er = time.Parse("2006-01-02", leftOperand.GetValue().(string))
+				if er != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				var rightValue, err = time.Parse("2006-01-02", rightOperand.GetValue().(string))
+				if err != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				return leftValue.After(rightValue)
+			},
+			LessOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue, er = time.Parse("2006-01-02", leftOperand.GetValue().(string))
+				if er != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				var rightValue, err = time.Parse("2006-01-02", rightOperand.GetValue().(string))
+				if err != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				return leftValue.Before(rightValue) || leftValue == rightValue
+			},
+			LessThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+				var leftValue, er = time.Parse("2006-01-02", leftOperand.GetValue().(string))
+				if er != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				var rightValue, err = time.Parse("2006-01-02", rightOperand.GetValue().(string))
+				if err != nil {
+					log.Println(ErrUnableToParseDate)
+					return false
+				}
+				return leftValue.Before(rightValue)
 			},
 		}, nil
 	}
