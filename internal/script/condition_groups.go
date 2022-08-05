@@ -295,7 +295,7 @@ func getAllowedOperators(operandDataType string) (map[string]CompareOperator, er
 				return leftOperand.GetValue() == rightOperand.GetValue()
 			},
 			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				return leftOperand.GetValue() == rightOperand.GetValue()
+				return !(leftOperand.GetValue() == rightOperand.GetValue())
 			},
 			ContainCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				return strings.Contains(leftOperand.GetValue().(string), rightOperand.GetValue().(string))
@@ -307,33 +307,33 @@ func getAllowedOperators(operandDataType string) (map[string]CompareOperator, er
 	case integerOperandType:
 		return map[string]CompareOperator{
 			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var leftValue = leftOperand.GetValue().(int32)
-				var rightValue = leftOperand.GetValue().(int32)
+				var leftValue = int(leftOperand.GetValue().(float64))
+				var rightValue = int(rightOperand.GetValue().(float64))
 				return leftValue == rightValue
 			},
 			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var leftValue = leftOperand.GetValue().(int32)
-				var rightValue = leftOperand.GetValue().(int32)
-				return leftValue == rightValue
+				var leftValue = int(leftOperand.GetValue().(float64))
+				var rightValue = int(rightOperand.GetValue().(float64))
+				return !(leftValue == rightValue)
 			},
 			MoreOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var leftValue = leftOperand.GetValue().(int32)
-				var rightValue = leftOperand.GetValue().(int32)
+				var leftValue = int(leftOperand.GetValue().(float64))
+				var rightValue = int(rightOperand.GetValue().(float64))
 				return leftValue >= rightValue
 			},
 			MoreThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var leftValue = leftOperand.GetValue().(int32)
-				var rightValue = leftOperand.GetValue().(int32)
+				var leftValue = int(leftOperand.GetValue().(float64))
+				var rightValue = int(rightOperand.GetValue().(float64))
 				return leftValue > rightValue
 			},
 			LessOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var leftValue = leftOperand.GetValue().(int32)
-				var rightValue = leftOperand.GetValue().(int32)
+				var leftValue = int(leftOperand.GetValue().(float64))
+				var rightValue = int(rightOperand.GetValue().(float64))
 				return leftValue <= rightValue
 			},
 			LessThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var leftValue = leftOperand.GetValue().(int32)
-				var rightValue = leftOperand.GetValue().(int32)
+				var leftValue = int(leftOperand.GetValue().(float64))
+				var rightValue = int(rightOperand.GetValue().(float64))
 				return leftValue < rightValue
 			},
 		}, nil
@@ -342,37 +342,37 @@ func getAllowedOperators(operandDataType string) (map[string]CompareOperator, er
 			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				var equalityThreshold = 1e-9
 				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
+				var rightValue = rightOperand.GetValue().(float64)
 				return math.Abs(leftValue-rightValue) <= equalityThreshold
 			},
 			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				var equalityThreshold = 1e-9
 				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
+				var rightValue = rightOperand.GetValue().(float64)
 				return math.Abs(leftValue-rightValue) >= equalityThreshold
 			},
 			MoreOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				var equalityThreshold = 1e-9
 				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
+				var rightValue = rightOperand.GetValue().(float64)
 				return (leftValue - rightValue) >= equalityThreshold
 			},
 			MoreThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				var equalityThreshold = 1e-9
 				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
+				var rightValue = rightOperand.GetValue().(float64)
 				return (leftValue - rightValue) > equalityThreshold
 			},
 			LessOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				var equalityThreshold = 1e-9
 				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
+				var rightValue = rightOperand.GetValue().(float64)
 				return (rightValue - leftValue) >= equalityThreshold
 			},
 			LessThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
 				var equalityThreshold = 1e-9
 				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
+				var rightValue = rightOperand.GetValue().(float64)
 				return (rightValue - leftValue) > equalityThreshold
 			},
 		}, nil
