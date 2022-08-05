@@ -2062,6 +2062,100 @@ func TestIF_DebugRun(t *testing.T) {
 				}(),
 			},
 		},
+		{
+			name:          "compare with string and time (string-time pair)",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "string",
+												},
+												Value: "2020-01-02",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2020-01-02",
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare with string and time (time-string pair)",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []script.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []script.Condition{
+										{
+											LeftOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "time",
+												},
+												Value: "2020-01-02",
+											},
+											RightOperand: &script.ValueOperand{
+												OperandBase: script.OperandBase{
+													DataType: "string",
+												},
+												Value: "2020-01-02",
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

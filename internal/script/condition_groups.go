@@ -498,6 +498,9 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 				return nil
 			}
 		},
+		{From: stringOperandType, To: timeOperandType}: func(source Operand) interface{} {
+			return source.GetValue()
+		},
 		{From: booleanOperandType, To: booleanOperandType}: func(source Operand) interface{} {
 			return source.GetValue()
 		},
@@ -561,6 +564,15 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 		{From: floatOperandType, To: integerOperandType}: func(source Operand) interface{} {
 			if floatVal, ok := source.GetValue().(float64); ok {
 				return math.Trunc(floatVal)
+			}
+			return nil
+		},
+		{From: timeOperandType, To: timeOperandType}: func(source Operand) interface{} {
+			return source.GetValue()
+		},
+		{From: timeOperandType, To: stringOperandType}: func(source Operand) interface{} {
+			if stringValue, ok := source.GetValue().(string); ok {
+				return stringValue
 			}
 			return nil
 		},
