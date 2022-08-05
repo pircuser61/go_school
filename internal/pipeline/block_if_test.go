@@ -1290,106 +1290,6 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare string variables - contain err",
-			wantErr:       true,
-			wantedGroupID: "test-group-1",
-			args: args{
-				name: example,
-				ef: &entity.EriusFunc{
-					BlockType: BlockGoIfID,
-					Title:     title,
-					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
-							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
-								{
-									Id:              "test-group-1",
-									LogicalOperator: "or",
-									Conditions: []script.Condition{
-										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
-													DataType: "string",
-												},
-												VariableRef: "data.testStringVariable1",
-											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
-													DataType: "string",
-												},
-												VariableRef: "data.testStringVariable2",
-											},
-											Operator: "Contain",
-										},
-									},
-								},
-							},
-						})
-
-						return r
-					}(),
-				},
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-					res.SetValue("data.testStringVariable1", "herehere")
-					res.SetValue("data.testStringVariable2", "test")
-
-					return res
-				}(),
-			},
-		},
-		{
-			name:          "compare string variables - not contain err",
-			wantErr:       false,
-			wantedGroupID: "",
-			args: args{
-				name: example,
-				ef: &entity.EriusFunc{
-					BlockType: BlockGoIfID,
-					Title:     title,
-					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
-							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
-								{
-									Id:              "test-group-1",
-									LogicalOperator: "or",
-									Conditions: []script.Condition{
-										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
-													DataType: "string",
-												},
-												VariableRef: "data.testStringVariable1",
-											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
-													DataType: "string",
-												},
-												VariableRef: "data.testStringVariable2",
-											},
-											Operator: "NotContain",
-										},
-									},
-								},
-							},
-						})
-
-						return r
-					}(),
-				},
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-					res.SetValue("data.testStringVariable1", "Heretest")
-					res.SetValue("data.testStringVariable2", "test")
-
-					return res
-				}(),
-			},
-		},
-		{
 			name:          "compare int variables - less",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
@@ -1776,7 +1676,7 @@ func TestIF_DebugRun(t *testing.T) {
 		{
 			name:          "compare time values - not equal",
 			wantErr:       false,
-			wantedGroupID: "test-group-1",
+			wantedGroupID: "",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
