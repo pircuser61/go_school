@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,141 +21,13 @@ import (
 )
 
 const (
+	AutoActionComment = "Выполнено автоматическое действие по истечению SLA"
+	AutoApprover      = "auto_approve"
+
 	keyOutputApprover = "approver"
 	keyOutputDecision = "decision"
 	keyOutputComment  = "comment"
 )
-
-type ApproverDecision string
-
-func (a ApproverDecision) String() string {
-	return string(a)
-}
-
-const (
-	ApproverDecisionApproved ApproverDecision = "approved"
-	ApproverDecisionRejected ApproverDecision = "rejected"
-)
-
-func decisionFromAutoAction(action script.AutoAction) ApproverDecision {
-	if action == script.AutoActionApprove {
-		return ApproverDecisionApproved
-	}
-	return ApproverDecisionRejected
-}
-
-type Approver struct {
-	Decision *ApproverDecision `json:"decision,omitempty"`
-	Comment  *string           `json:"comment,omitempty"`
-}
-
-type EditingApp struct {
-	Approver    string    `json:"approver"`
-	Comment     string    `json:"comment"`
-	Attachments []string  `json:"attachments"`
-	CreatedAt   time.Time `json:"created_at"`
-}
-
-type ApproverData struct {
-	Type           script.ApproverType `json:"type"`
-	Approvers      map[string]struct{} `json:"approvers"`
-	Decision       *ApproverDecision   `json:"decision,omitempty"`
-	Comment        *string             `json:"comment,omitempty"`
-	ActualApprover *string             `json:"actual_approver,omitempty"`
-
-	SLA        int                `json:"sla"`
-	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
-
-	DidSLANotification bool `json:"did_sla_notification"`
-
-	LeftToNotify map[string]struct{} `json:"left_to_notify"`
-
-	IsEditable         bool         `json:"is_editable"`
-	RepeatPrevDecision bool         `json:"repeat_prev_decision"`
-	EditingApp         *EditingApp  `json:"editing_app,omitempty"`
-	EditingAppLog      []EditingApp `json:"editing_app_log,omitempty"`
-}
-
-func (a *ApproverData) GetDecision() *ApproverDecision {
-	return a.Decision
-}
-
-func (a *ApproverData) GetRepeatPrevDecision() bool {
-	return a.RepeatPrevDecision
-}
-
-func (a *ApproverData) GetIsEditable() bool {
-	return a.IsEditable
-}
-
-func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
-	_, ok := a.Approvers[login]
-	if !ok && login != AutoApprover {
-		return fmt.Errorf("%s not found in approvers", login)
-	}
-
-	if a.Decision != nil {
-		return errors.New("decision already set")
-	}
-
-	if decision != ApproverDecisionApproved && decision != ApproverDecisionRejected {
-		return fmt.Errorf("unknown decision %s", decision.String())
-	}
-
-	a.Decision = &decision
-	a.Comment = &comment
-	a.ActualApprover = &login
-
-	return nil
-}
-
-func (a *ApproverData) SetEditApp(login, comment string, attachments []string) error {
-	_, ok := a.Approvers[login]
-	if !ok && login != AutoApprover {
-		return fmt.Errorf("%s not found in approvers", login)
-	}
-
-	if a.Decision != nil {
-		return errors.New("decision already set")
-	}
-
-	editing := &EditingApp{
-		Approver:    login,
-		Comment:     comment,
-		Attachments: attachments,
-		CreatedAt:   time.Now(),
-	}
-
-	a.EditingAppLog = append(a.EditingAppLog, *editing)
-
-	a.EditingApp = editing
-
-	return nil
-}
-
-type updateEditingParams struct {
-	Comment     string   `json:"comment"`
-	Attachments []string `json:"attachments"`
-}
-
-type ApproverUpdateParams struct {
-	Decision ApproverDecision `json:"decision"`
-	Comment  string           `json:"comment"`
-}
-
-func (a *ApproverUpdateParams) Validate() error {
-	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
-		return errors.New("unknown decision")
-	}
-
-	return nil
-}
-
-type ApproverResult struct {
-	Login    string           `json:"login"`
-	Decision ApproverDecision `json:"decision"`
-	Comment  string           `json:"comment,omitempty"`
-}
 
 type GoApproverBlock struct {
 	Name   string
@@ -215,11 +86,6 @@ func (gb *GoApproverBlock) IsScenario() bool {
 	return false
 }
 
-const (
-	AutoActionComment = "Выполнено автоматическое действие по истечению SLA"
-	AutoApprover      = "auto_approve"
-)
-
 // nolint:dupl // other block
 func (gb *GoApproverBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
@@ -264,6 +130,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, step
 	if len(emails) == 0 {
 		return false, nil
 	}
+
 	err := gb.Pipeline.Sender.SendNotification(ctx, emails,
 		mail.NewApplicationPersonStatusNotification(
 			stepCtx.workNumber,
@@ -319,7 +186,7 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 			if err := gb.setApproverDecision(ctx,
 				id,
 				AutoApprover,
-				ApproverUpdateParams{
+				approverUpdateParams{
 					Decision: decisionFromAutoAction(*gb.State.AutoAction),
 					Comment:  AutoActionComment,
 				}); err != nil {
@@ -632,55 +499,4 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 		},
 		Sockets: []string{approvedSocket, rejectedSocket, editAppSocket},
 	}
-}
-
-// nolint:dupl // another block
-func createGoApproverBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) (*GoApproverBlock, error) {
-	b := &GoApproverBlock{
-		Name:   name,
-		Title:  ef.Title,
-		Input:  map[string]string{},
-		Output: map[string]string{},
-		Nexts:  ef.Next,
-
-		Pipeline: pipeline,
-	}
-
-	for _, v := range ef.Input {
-		b.Input[v.Name] = v.Global
-	}
-
-	// TODO: check existence of keyApproverDecision in Output
-
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
-	}
-
-	var params script.ApproverParams
-	err := json.Unmarshal(ef.Params, &params)
-	if err != nil {
-		return nil, errors.Wrap(err, "can not get approver parameters")
-	}
-
-	if err = params.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid approver parameters")
-	}
-
-	// TODO add support for group
-
-	b.State = &ApproverData{
-		Type: params.Type,
-		Approvers: map[string]struct{}{
-			params.Approver: {},
-		},
-		SLA:        params.SLA,
-		AutoAction: params.AutoAction,
-		LeftToNotify: map[string]struct{}{
-			params.Approver: {},
-		},
-		IsEditable:         params.IsEditable,
-		RepeatPrevDecision: params.RepeatPrevDecision,
-	}
-
-	return b, nil
 }

@@ -17,7 +17,25 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, a string, u ApproverUpdateParams) error {
+type updateEditingParams struct {
+	Comment     string   `json:"comment"`
+	Attachments []string `json:"attachments"`
+}
+
+type approverUpdateParams struct {
+	Decision ApproverDecision `json:"decision"`
+	Comment  string           `json:"comment"`
+}
+
+func (a *approverUpdateParams) Validate() error {
+	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
+		return errors.New("unknown decision")
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, a string, u approverUpdateParams) error {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, sID)
 	if err != nil {
 		return err
@@ -151,7 +169,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 	}
 
 	if data.Action == string(entity.TaskUpdateActionApprovement) {
-		var updateParams ApproverUpdateParams
+		var updateParams approverUpdateParams
 		err := json.Unmarshal(data.Parameters, &updateParams)
 		if err != nil {
 			return nil, errors.New("can't assert provided data")
@@ -180,7 +198,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 	return nil, errors.New("cant`t update execution block, unknown action: " + data.Action)
 }
 
-type  setEditingAppLogDTO struct {
+type setEditingAppLogDTO struct {
 	id       uuid.UUID
 	runCtx   *store.VariableStore
 	workID   uuid.UUID

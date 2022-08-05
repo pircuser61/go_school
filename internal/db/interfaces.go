@@ -14,6 +14,7 @@ type PipelineStorager interface {
 	GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
 	PipelineRemovable(c context.Context, id uuid.UUID) (bool, error)
 	DeletePipeline(c context.Context, id uuid.UUID) error
+	RenamePipeline(c context.Context, id uuid.UUID, name string) error
 }
 
 type TaskStorager interface {

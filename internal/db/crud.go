@@ -1009,7 +1009,8 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		pv.status, 
 		pv.pipeline_id, 
 		pv.content, 
-		pv.comment
+		pv.comment,
+		pv.author
 	FROM pipeliner.versions pv
 	JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
 	WHERE pv.pipeline_id = $1
@@ -1028,16 +1029,17 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		var (
 			vID, pID uuid.UUID
 			s        int
-			c        string
+			content  string
 			cm       string
+			author   string
 		)
 
-		err = rows.Scan(&vID, &s, &pID, &c, &cm)
+		err = rows.Scan(&vID, &s, &pID, &content, &cm, &author)
 		if err != nil {
 			return nil, err
 		}
 
-		err = json.Unmarshal([]byte(c), &p)
+		err = json.Unmarshal([]byte(content), &p)
 		if err != nil {
 			return nil, err
 		}
@@ -1046,6 +1048,10 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		p.ID = pID
 		p.Status = s
 		p.Comment = cm
+
+		if p.Author == "" {
+			p.Author = author
+		}
 
 		return &p, nil
 	}
@@ -1127,6 +1133,43 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 	}
 
 	return nil, fmt.Errorf("%w: with id: %v", errCantFindPipelineVersion, id)
+}
+
+func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
+	c, span := trace.StartSpan(c, "pg_rename_pipeline")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+	WITH id_values (name) as (
+      values ($1)
+    ), src AS (
+      UPDATE pipeliner.pipelines
+          SET name = (select name from id_values)
+      WHERE id = $2
+    )
+    UPDATE pipeliner.versions
+       SET content = jsonb_set(content, '{name}', to_jsonb((select name from id_values)) , false)
+    WHERE pipeliner.versions.id = 
+          (SELECT ID 
+           FROM pipeliner.versions ver 
+           WHERE ver.pipeline_id = $2 ORDER BY created_at DESC LIMIT 1) 
+    ;`
+
+	_, err = conn.Exec(c, query, name, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *PGCon) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error) {

@@ -801,6 +801,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipelines/name:
+    put:
+      tags:
+        - pipeline
+      summary: Rename Pipeline
+      description: Изменить имя черновика
+      operationId: rename-pipeline
+      requestBody:
+        description: New name
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/pipelineRename'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: draft
   /run/{pipelineID}:
     post:
       tags:
@@ -1640,7 +1680,20 @@ components:
           required:
             - entrypoint
             - blocks
-
+    pipelineRename:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Новое имя сценария
+        id:
+          type: string
+          description: ID сценария для переименования
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      required:
+        - name
+        - id
     EriusScenario:
       type: object
       description: A single scenario with all content
@@ -2517,7 +2570,6 @@ components:
           * head - Receiver's head
           * FromSchema - Selected by initiator
 
-
     ApproverParams:
       type: object
       description: Approver params
@@ -2538,12 +2590,20 @@ components:
         is_editable:
           type: boolean
           description: Show action edit application in SD
+        approvers_group_id:
+          type: string
+          description: Approvers group id in SD
+        approvers_group_name:
+          type: string
+          description: Approvers group name in SD
       required:
         - type
         - approver
         - sla
         - repeat_prev_decision
         - is_editable
+        - approvers_group_id
+        - approvers_group_name
 
     ApproveAutoAction:
       type: string

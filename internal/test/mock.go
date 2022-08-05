@@ -1063,6 +1063,10 @@ func (m *MockDB) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 	return nil, errNotFound
 }
 
+func (m *MockDB) RenamePipeline(c context.Context, id uuid.UUID, name string) error {
+	return errNotImplemented
+}
+
 func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelineData []byte) error {
 	return errNotImplemented
 }

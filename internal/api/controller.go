@@ -15,6 +15,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
@@ -30,6 +31,7 @@ type APIEnv struct {
 	Statistic            *statistic.Statistic
 	Mail                 *mail.Service
 	People               *people.Service
+	ServiceDesc          *servicedesc.Service
 }
 
 type ServerParam struct {
