@@ -20,6 +20,10 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
+func (_m *MockedDatabase) GetUnfinishedTasks(ctx context.Context) (*entity.EriusTasks, error) {
+	return nil, nil
+}
+
 func (_m *MockedDatabase) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ret := _m.Called(ctx, workID, stepName)
 

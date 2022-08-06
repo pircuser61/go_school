@@ -218,6 +218,8 @@ func (ep *ExecutablePipeline) updateStatusByStep(ctx c.Context, status TaskHuman
 }
 
 func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step string) error {
+	log := logger.GetLogger(ctx)
+
 	if ep.notifiedBlocks == nil {
 		ep.notifiedBlocks = make(map[string][]TaskHumanStatus)
 	}
@@ -248,6 +250,8 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 			}
 			ep.initiatorEmail = email
 		}
+
+		log.Info("initiatorEmail: ", ep.initiatorEmail)
 		if err := ep.Sender.SendNotification(ctx, []string{ep.initiatorEmail}, tmpl); err != nil {
 			return err
 		}

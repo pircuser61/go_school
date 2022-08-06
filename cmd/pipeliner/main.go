@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"net/http"
 	"os"
 	"os/signal"
@@ -102,7 +103,7 @@ func main() {
 		return
 	}
 
-	servicedescService, err := servicedesc.NewService(cfg.Servicedesc)
+	serviceDescService, err := servicedesc.NewService(cfg.Servicedesc)
 	if err != nil {
 		log.WithError(err).Error("can't create servicedesc service")
 
@@ -140,7 +141,7 @@ func main() {
 			Statistic:            stat,
 			Mail:                 mailService,
 			People:               peopleService,
-			ServiceDesc:          servicedescService,
+			ServiceDesc:          serviceDescService,
 		},
 		SSOService:        ssoService,
 		PeopleService:     peopleService,
@@ -200,6 +201,24 @@ func main() {
 			GRPCGWPort: cfg.GRPCGWPort,
 		}); err != nil {
 			os.Exit(-3)
+		}
+	}()
+
+	go func() {
+		init := pipeline.NewInitiation(
+			&dbConn,
+			cfg.FaaS,
+			httpClient,
+			cfg.Remedy,
+			mailService,
+			serviceDescService,
+			peopleService,
+		)
+
+		err = init.InitPipelines(ctx)
+		if err != nil {
+			log.Error(err)
+			return
 		}
 	}()
 

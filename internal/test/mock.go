@@ -926,6 +926,10 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetUnfinishedTasks(ctx context.Context) (*entity.EriusTasks, error) {
+	return nil, nil
+}
+
 func (_m *MockDB) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	return []entity.EriusScenarioInfo{}, nil
 }

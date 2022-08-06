@@ -1,7 +1,7 @@
 package db
 
 import (
-	"context"
+	c "context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -24,35 +24,35 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		SELECT 
 			w.id,
 			w.started_at,
-       		w.started_at,
+			w.started_at,
 			ws.name,
 			w.human_status, 
 			w.debug, 
 			w.parameters, 
 			w.author, 
 			w.version_id,
-       		w.work_number,
-       		p.name,
-		    COALESCE(descr.description, ''),
-		    COALESCE(descr.blueprint_id, '')
+			w.work_number,
+			p.name,
+			COALESCE(descr.description, ''),
+			COALESCE(descr.blueprint_id, '')
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
 		JOIN pipeliner.work_status ws ON w.status = ws.id
 		LEFT JOIN LATERAL (
-             SELECT * FROM pipeliner.variable_storage vs
-             WHERE vs.work_id = w.id AND vs.status != 'skipped'
-             ORDER BY vs.time DESC
-             --limit--
-        ) workers ON workers.work_id = w.id
+			SELECT * FROM pipeliner.variable_storage vs
+			WHERE vs.work_id = w.id AND vs.status != 'skipped'
+			ORDER BY vs.time DESC
+			--limit--
+		) workers ON workers.work_id = w.id
 		LEFT JOIN LATERAL (
-		    SELECT work_id, 
-		           content::json->'State'->step_name->>'description' description,
-		           content::json->'State'->step_name->>'blueprint_id' blueprint_id
-		    FROM pipeliner.variable_storage vs
-		    WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
-		    ORDER BY vs.time DESC
-		    LIMIT 1
+			SELECT work_id, 
+				content::json->'State'->step_name->>'description' description,
+				content::json->'State'->step_name->>'blueprint_id' blueprint_id
+			FROM pipeliner.variable_storage vs
+			WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
+			ORDER BY vs.time DESC
+			LIMIT 1
 		) descr ON descr.work_id = w.id
 		WHERE w.child_id IS NULL`
 
@@ -126,13 +126,13 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 }
 
 //nolint:gocritic //filters
-func (db *PGCon) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
-	c, span := trace.StartSpan(c, "pg_get_tasks")
+func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
 	defer span.End()
 
 	q, args := compileGetTasksQuery(filters)
 
-	tasks, err := db.getTasks(c, q, args)
+	tasks, err := db.getTasks(ctx, q, args)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (db *PGCon) GetTasks(c context.Context, filters entity.TaskFilter) (*entity
 	filters.Offset = nil
 	q, args = compileGetTasksQuery(filters)
 
-	count, err := db.getTasksCount(c, q, args)
+	count, err := db.getTasksCount(ctx, q, args)
 	if err != nil {
 		return nil, err
 	}
@@ -152,8 +152,47 @@ func (db *PGCon) GetTasks(c context.Context, filters entity.TaskFilter) (*entity
 	}, nil
 }
 
-func (db *PGCon) GetTasksCount(c context.Context, userName string) (*entity.CountTasks, error) {
-	c, span := trace.StartSpan(c, "pg_get_tasks_count")
+//nolint:gocritic //filters
+func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_tasks")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `SELECT 
+			w.id, 
+			w.started_at, 
+			w.started_at, 
+			ws.name,
+			w.human_status,
+			w.debug, 
+			COALESCE(w.parameters, '{}') AS parameters,
+			w.author,
+			w.version_id,
+			w.work_number,
+			p.name,
+			COALESCE(descr.description, ''),
+			COALESCE(descr.blueprint_id, '')
+		FROM pipeliner.works w 
+			JOIN pipeliner.versions v ON v.id = w.version_id
+			JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
+			JOIN pipeliner.work_status ws ON w.status = ws.id
+			LEFT JOIN LATERAL (
+				SELECT work_id, 
+					content::json->'State'->step_name->>'description' description,
+					content::json->'State'->step_name->>'blueprint_id' blueprint_id
+				FROM pipeliner.variable_storage vs
+				WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
+				ORDER BY vs.time DESC
+				LIMIT 1
+			) descr ON descr.work_id = w.id
+		WHERE w.status = 1`
+
+	return db.getTasks(ctx, query, []interface{}{})
+}
+
+func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTasks, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -163,31 +202,31 @@ func (db *PGCon) GetTasksCount(c context.Context, userName string) (*entity.Coun
 		FROM pipeliner.works w 
 		JOIN pipeliner.work_status ws ON w.status = ws.id
 		LEFT JOIN LATERAL (
-             SELECT * FROM pipeliner.variable_storage vs
-             WHERE vs.work_id = w.id AND vs.status != 'skipped'
-             ORDER BY vs.time DESC
-             --limit--
-        ) workers ON workers.work_id = w.id
+			SELECT * FROM pipeliner.variable_storage vs
+			WHERE vs.work_id = w.id AND vs.status != 'skipped'
+			ORDER BY vs.time DESC
+			--limit--
+		) workers ON workers.work_id = w.id
 		WHERE w.child_id IS NULL`
 
 	var args []interface{}
 	qActive := fmt.Sprintf("%s AND w.author = '%s'", q, userName)
 	qActive = strings.Replace(qActive, "--limit--", "LIMIT 1", -1)
-	active, err := db.getTasksCount(c, qActive, args)
+	active, err := db.getTasksCount(ctx, qActive, args)
 	if err != nil {
 		return nil, err
 	}
 
 	qApprover := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->'%s' "+
 		"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready')", q, userName)
-	approver, err := db.getTasksCount(c, qApprover, args)
+	approver, err := db.getTasksCount(ctx, qApprover, args)
 	if err != nil {
 		return nil, err
 	}
 
 	qExecutor := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->'%s' "+
 		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
-	executor, err := db.getTasksCount(c, qExecutor, args)
+	executor, err := db.getTasksCount(ctx, qExecutor, args)
 	if err != nil {
 		return nil, err
 	}
@@ -199,8 +238,8 @@ func (db *PGCon) GetTasksCount(c context.Context, userName string) (*entity.Coun
 	}, nil
 }
 
-func (db *PGCon) GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error) {
-	c, span := trace.StartSpan(c, "pg_get_pipeline_tasks")
+func (db *PGCon) GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_pipeline_tasks")
 	defer span.End()
 
 	// nolint:gocritic
@@ -223,11 +262,11 @@ func (db *PGCon) GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*ent
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
-	return db.getTasks(c, q, []interface{}{pipelineID})
+	return db.getTasks(ctx, q, []interface{}{pipelineID})
 }
 
-func (db *PGCon) GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
-	c, span := trace.StartSpan(c, "pg_get_version_tasks")
+func (db *PGCon) GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_version_tasks")
 	defer span.End()
 
 	// nolint:gocritic
@@ -249,11 +288,11 @@ func (db *PGCon) GetVersionTasks(c context.Context, versionID uuid.UUID) (*entit
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
-	return db.getTasks(c, q, []interface{}{versionID})
+	return db.getTasks(ctx, q, []interface{}{versionID})
 }
 
-func (db *PGCon) GetLastDebugTask(c context.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
-	c, span := trace.StartSpan(c, "pg_get_last_debug_task")
+func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_last_debug_task")
 	defer span.End()
 
 	// nolint:gocritic
@@ -278,14 +317,14 @@ func (db *PGCon) GetLastDebugTask(c context.Context, id uuid.UUID, author string
 
 	et := entity.EriusTask{}
 
-	conn, err := db.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	defer conn.Release()
 
-	row := conn.QueryRow(c, q, id, author)
+	row := conn.QueryRow(ctx, q, id, author)
 	parameters := ""
 
 	err = row.Scan(&et.ID, &et.StartedAt, &et.Status, &et.HumanStatus, &et.IsDebugMode, &parameters, &et.Author, &et.VersionID)
@@ -301,8 +340,8 @@ func (db *PGCon) GetLastDebugTask(c context.Context, id uuid.UUID, author string
 	return &et, nil
 }
 
-func (db *PGCon) GetTask(c context.Context, workNumber string) (*entity.EriusTask, error) {
-	c, span := trace.StartSpan(c, "pg_get_task")
+func (db *PGCon) GetTask(ctx c.Context, workNumber string) (*entity.EriusTask, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task")
 	defer span.End()
 
 	// nolint:gocritic
@@ -338,25 +377,25 @@ func (db *PGCon) GetTask(c context.Context, workNumber string) (*entity.EriusTas
 			AND w.child_id IS NULL
 `
 
-	return db.getTask(c, q, workNumber)
+	return db.getTask(ctx, q, workNumber)
 }
 
-func (db *PGCon) getTask(c context.Context, q, workNumber string) (*entity.EriusTask, error) {
-	c, span := trace.StartSpan(c, "pg_get_task_private")
+func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_private")
 	defer span.End()
 
 	et := entity.EriusTask{}
 
 	var nullStringParameters sql.NullString
 
-	conn, err := db.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	defer conn.Release()
 
-	row := conn.QueryRow(c, q, workNumber)
+	row := conn.QueryRow(ctx, q, workNumber)
 
 	err = row.Scan(
 		&et.ID,
@@ -387,11 +426,11 @@ func (db *PGCon) getTask(c context.Context, q, workNumber string) (*entity.Erius
 	return &et, nil
 }
 
-func (db *PGCon) getTasksCount(c context.Context, q string, args []interface{}) (int, error) {
-	c, span := trace.StartSpan(c, "pg_get_tasks_count")
+func (db *PGCon) getTasksCount(ctx c.Context, q string, args []interface{}) (int, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(ctx)
 	if err != nil {
 		return -1, err
 	}
@@ -401,28 +440,28 @@ func (db *PGCon) getTasksCount(c context.Context, q string, args []interface{}) 
 	q = fmt.Sprintf("SELECT COUNT(*) FROM (%s) sub", q)
 
 	var count int
-	if scanErr := conn.QueryRow(c, q, args...).Scan(&count); scanErr != nil {
+	if scanErr := conn.QueryRow(ctx, q, args...).Scan(&count); scanErr != nil {
 		return -1, scanErr
 	}
 	return count, nil
 }
 
-func (db *PGCon) getTasks(c context.Context, q string, args []interface{}) (*entity.EriusTasks, error) {
-	c, span := trace.StartSpan(c, "pg_get_tasks")
+func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.EriusTasks, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
 	defer span.End()
 
 	ets := entity.EriusTasks{
 		Tasks: make([]entity.EriusTask, 0),
 	}
 
-	conn, err := db.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	defer conn.Release()
 
-	rows, err := conn.Query(c, q, args...)
+	rows, err := conn.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -466,13 +505,13 @@ func (db *PGCon) getTasks(c context.Context, q string, args []interface{}) (*ent
 	return &ets, nil
 }
 
-func (db *PGCon) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error) {
-	c, span := trace.StartSpan(c, "pg_get_task_steps")
+func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_steps")
 	defer span.End()
 
 	el := entity.TaskSteps{}
 
-	conn, err := db.Pool.Acquire(c)
+	conn, err := db.Pool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +534,7 @@ func (db *PGCon) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 			WHERE work_id = $1 AND vs.status != 'skipped'
 		ORDER BY vs.time DESC`
 
-	rows, err := conn.Query(c, query, id)
+	rows, err := conn.Query(ctx, query, id)
 	if err != nil {
 		return nil, err
 	}

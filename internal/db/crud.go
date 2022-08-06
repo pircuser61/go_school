@@ -280,8 +280,6 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author strin
 			---author---
 		ORDER BY created_at`
 
-	fmt.Println("author: ", author)
-
 	if author != "" {
 		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
 	}
@@ -1759,10 +1757,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, nil
 }
 
-func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(
-	ctx context.Context,
-	id uuid.UUID,
-	stepType string,
+func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
 ) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
 	defer span.End()

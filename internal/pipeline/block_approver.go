@@ -495,6 +495,8 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 				SLA:                0,
 				IsEditable:         false,
 				RepeatPrevDecision: false,
+				ApproversGroupID:   "",
+				ApproversGroupName: "",
 			},
 		},
 		Sockets: []string{approvedSocket, rejectedSocket, editAppSocket},
