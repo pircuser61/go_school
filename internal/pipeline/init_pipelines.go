@@ -102,6 +102,8 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 		state := &ApplicationData{}
 
 		for j := range steps {
+			fmt.Println("steps[j].Type: ", steps[j].Type)
+
 			if steps[j].Type == "servicedesk_application" {
 				step, errStep := p.db.GetTaskStepById(ctx, steps[j].ID)
 				if errStep != nil {
@@ -125,12 +127,16 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 
 				break
 			}
+		}
 
-			return fmt.Errorf(
+		if state.BlueprintID == "" {
+			log.Error(fmt.Sprintf(
 				"can`t run pipeline with work number: %s, %s",
 				unfinished.Tasks[i].WorkNumber,
 				"servicedesk_application block is not found",
-			)
+			))
+
+			continue
 		}
 
 		ctx = c.WithValue(ctx, SdApplicationDataCtx{}, SdApplicationData{
@@ -145,7 +151,7 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 			routineCtx = logger.WithLogger(routineCtx, log)
 			err = ep.Run(routineCtx, variableStorage)
 			if err != nil {
-				log.Error("can`t run pipeline with number: ", workNumber)
+				log.Error(err, "can`t run pipeline with number: ", workNumber)
 				variableStorage.AddError(err)
 			}
 		}(workNumber)
