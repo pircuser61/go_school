@@ -59,10 +59,11 @@ type ExecutablePipeline struct {
 
 	endExecution bool
 
-	Initiator       string
-	initiatorEmail  string
-	currDescription string
-	notifiedBlocks  map[string][]TaskHumanStatus
+	Initiator              string
+	initiatorEmail         string
+	currDescription        string
+	notifiedBlocks         map[string][]TaskHumanStatus
+	prevUpdateStatusBlocks map[string]TaskHumanStatus
 }
 
 func (ep *ExecutablePipeline) GetStatus() Status {
@@ -210,10 +211,18 @@ func (ep *ExecutablePipeline) changeTaskStatus(ctx c.Context, taskStatus int) er
 }
 
 // TODO: что-то сделать
-func (ep *ExecutablePipeline) updateStatusByStep(ctx c.Context, status TaskHumanStatus) error {
+func (ep *ExecutablePipeline) updateStatusByStep(ctx c.Context, step string, status TaskHumanStatus) error {
+	if ep.prevUpdateStatusBlocks == nil {
+		ep.prevUpdateStatusBlocks = make(map[string]TaskHumanStatus)
+	}
+	prev := ep.prevUpdateStatusBlocks[step]
+	if prev == status {
+		return nil
+	}
 	if status != "" {
 		return ep.Storage.UpdateTaskHumanStatus(ctx, ep.TaskID, string(status))
 	}
+	ep.prevUpdateStatusBlocks[step] = status
 	return nil
 }
 
@@ -298,6 +307,15 @@ func (ep *ExecutablePipeline) handleSkippedBlocks(ctx c.Context, runCtx *store.V
 	return nil
 }
 
+func (ep *ExecutablePipeline) deleteActiveBlock(step string) {
+	if ep.ActiveBlocks != nil {
+		delete(ep.ActiveBlocks, step)
+	}
+	if ep.prevUpdateStatusBlocks != nil {
+		delete(ep.prevUpdateStatusBlocks, step) // we may want to rerun block later (and change pipeline status)
+	}
+}
+
 //nolint:gocognit,gocyclo //its really complex
 func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "pipeline_flow")
@@ -316,7 +334,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 		return errChange
 	}
 
-	errUpdate := ep.updateStatusByStep(ctx, ep.GetTaskHumanStatus())
+	errUpdate := ep.updateStatusByStep(ctx, "", ep.GetTaskHumanStatus())
 	if errUpdate != nil {
 		return errUpdate
 	}
@@ -367,11 +385,11 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 					if updErr != nil {
 						return updErr
 					}
-					delete(ep.ActiveBlocks, step)
+					ep.deleteActiveBlock(step)
 					continue
 				}
 
-				errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskHumanStatus())
+				errUpdate = ep.updateStatusByStep(ctx, step, currentBlock.GetTaskHumanStatus())
 				if errUpdate != nil {
 					return errUpdate
 				}
@@ -390,7 +408,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 				return updErr
 			}
 
-			errUpdate = ep.updateStatusByStep(ctx, currentBlock.GetTaskHumanStatus())
+			errUpdate = ep.updateStatusByStep(ctx, step, currentBlock.GetTaskHumanStatus())
 			if errUpdate != nil {
 				return errUpdate
 			}
@@ -405,7 +423,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 				continue
 			}
 
-			delete(ep.ActiveBlocks, step)
+			ep.deleteActiveBlock(step)
 
 			switch currentBlock.GetType() {
 			case BlockGoEndId:
