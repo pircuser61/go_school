@@ -15,12 +15,12 @@ type Service struct {
 	cli *http.Client
 }
 
-func NewService(c Config) (*Service, error) {
+func NewService(cfg Config) (*Service, error) {
 	newCli := &http.Client{}
 
 	s := &Service{
 		cli:           newCli,
-		chainsmithURL: c.ChainsmithURL,
+		chainsmithURL: cfg.ChainsmithURL,
 	}
 
 	return s, nil
