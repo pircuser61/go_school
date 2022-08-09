@@ -6,15 +6,18 @@ import (
 	"fmt"
 	"net/http"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"go.opencensus.io/trace"
 )
 
 const (
-	getGroup = "/v1/approver/"
+	authorizationHeader = "Authorization"
+	getGroup            = "/v1/approver/"
 )
 
 type Approver struct {
-	Login string `json:"approver"`
+	Login string `json:"login"`
 }
 
 type ApproversGroup struct {
@@ -32,7 +35,7 @@ func (s *Service) GetApproversGroup(ctx context.Context, groupID string) (*Appro
 
 	reqURL := fmt.Sprintf("%s%s%s", s.chainsmithURL, getGroup, groupID)
 
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err = makeRequest(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -52,6 +55,9 @@ func (s *Service) GetApproversGroup(ctx context.Context, groupID string) (*Appro
 	if unmErr := json.NewDecoder(resp.Body).Decode(res); unmErr != nil {
 		return nil, unmErr
 	}
+
+	log := logger.GetLogger(ctx)
+	log.Info(fmt.Sprintf("got %d from group: %s", len(res.People), res.GroupName))
 
 	return res, nil
 }
