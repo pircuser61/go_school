@@ -54,6 +54,10 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, ep 
 			return nil, errors.Wrap(errGroup, "can`t get approvers group with id: "+params.ApproversGroupID)
 		}
 
+		if len(approversGroup.People) == 0 {
+			return nil, errors.Wrap(errGroup, "zero approvers in group: "+params.ApproversGroupID)
+		}
+
 		approversGroupName = approversGroup.GroupName
 
 		approvers = make(map[string]struct{})
