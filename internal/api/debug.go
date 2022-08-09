@@ -197,6 +197,7 @@ func (ae *APIEnv) executablePipeline(
 		Remedy:        ae.Remedy,
 		Sender:        ae.Mail,
 		People:        ae.People,
+		ServiceDesc:   ae.ServiceDesc,
 	}
 
 	err := ep.CreateBlocks(ctx, version.Pipeline.Blocks)
