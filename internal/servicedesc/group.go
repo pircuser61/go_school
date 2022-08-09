@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"net/http"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"go.opencensus.io/trace"
 )
