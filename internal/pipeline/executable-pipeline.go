@@ -220,7 +220,9 @@ func (ep *ExecutablePipeline) updateStatusByStep(ctx c.Context, step string, sta
 		return nil
 	}
 	if status != "" {
-		return ep.Storage.UpdateTaskHumanStatus(ctx, ep.TaskID, string(status))
+		if err := ep.Storage.UpdateTaskHumanStatus(ctx, ep.TaskID, string(status)); err != nil {
+			return err
+		}
 	}
 	ep.prevUpdateStatusBlocks[step] = status
 	return nil
