@@ -74,6 +74,11 @@ func (a *ApproverData) GetApproversGroupID() string {
 }
 
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
+	_, ok := a.Approvers[login]
+	if !ok {
+		return fmt.Errorf("%s not found in approvers", login)
+	}
+
 	if a.Decision != nil {
 		return errors.New("decision already set")
 	}
