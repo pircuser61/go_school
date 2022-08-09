@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -12,14 +13,15 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 const (
-	XRequestIDHeader = "X-Request-Id"
-
-	AsOtherHeader = "X-As-Other"
+	XRequestIDHeader    = "X-Request-Id"
+	AuthorizationHeader = "Authorization"
+	AsOtherHeader       = "X-As-Other"
 )
 
 func RequestIDMiddleware(next http.Handler) http.Handler {
@@ -107,6 +109,24 @@ func WithAsOtherUserInfo(ps *people.Service, log logger.Logger) func(next http.H
 				}
 
 				ctx = user.SetAsOtherUserInfoToCtx(ctx, ui)
+				r = r.WithContext(ctx)
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func SetAuthTokenInContext(log logger.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+
+			token := r.Header.Get(AuthorizationHeader)
+			log.Info("auth token: ", token)
+
+			if token != "" {
+				ctx = context.WithValue(ctx, script.AuthorizationHeader{}, token)
 				r = r.WithContext(ctx)
 			}
 

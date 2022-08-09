@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	getGroup = "/v1/approver/"
+	authorizationHeader = "Authorization"
+	getGroup            = "/v1/approver/"
 )
 
 type Approver struct {
@@ -32,7 +33,7 @@ func (s *Service) GetApproversGroup(ctx context.Context, groupID string) (*Appro
 
 	reqURL := fmt.Sprintf("%s%s%s", s.chainsmithURL, getGroup, groupID)
 
-	req, err = http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err = makeRequest(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
