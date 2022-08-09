@@ -2487,8 +2487,8 @@ components:
     compareOperator:
       type: string
       description: Used operator to compare operands
-      enum: [ "Равно", "Не равно" ]
-      x-enum-varnames: [ "Equal", "NotEqual" ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Содержит", "Не Содержит" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Contain", "NotContain" ]
 
     ConditionParams:
       type: object

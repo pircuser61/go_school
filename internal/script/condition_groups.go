@@ -3,6 +3,8 @@ package script
 import (
 	"math"
 	"strconv"
+	"strings"
+	"time"
 
 	"encoding/json"
 
@@ -10,13 +12,22 @@ import (
 )
 
 const (
-	EqualCompareOperator    string = "Equal"
-	NotEqualCompareOperator string = "NotEqual"
+	EqualCompareOperator       string = "Equal"
+	NotEqualCompareOperator    string = "NotEqual"
+	MoreThenCompareOperator    string = "More"
+	MoreOrEqualCompareOperator string = "MoreOrEqual"
+	LessThenCompareOperator    string = "Less"
+	LessOrEqualCompareOperator string = "LessOrEqual"
+	ContainCompareOperator     string = "Contain"
+	NotContainCompareOperator  string = "NotContain"
 
 	stringOperandType  string = "string"
 	booleanOperandType string = "boolean"
 	integerOperandType string = "integer"
 	floatOperandType   string = "float"
+	timeOperandType    string = "time"
+
+	timeFormat string = "01.02.2006"
 )
 
 var (
@@ -280,25 +291,16 @@ func (condition *Condition) IsTrue() (bool, error) {
 
 func getAllowedOperators(operandDataType string) (map[string]CompareOperator, error) {
 	switch operandDataType {
-	case stringOperandType, booleanOperandType:
-		return genericOperators(), nil
+	case booleanOperandType:
+		return genericBoolOperators(), nil
+	case stringOperandType:
+		return genericStringOperators()
 	case integerOperandType:
-		return genericOperators(), nil
+		return genericIntegerOperators()
 	case floatOperandType:
-		return map[string]CompareOperator{
-			EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var equalityThreshold = 1e-9
-				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
-				return math.Abs(leftValue-rightValue) <= equalityThreshold
-			},
-			NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
-				var equalityThreshold = 1e-9
-				var leftValue = leftOperand.GetValue().(float64)
-				var rightValue = leftOperand.GetValue().(float64)
-				return math.Abs(leftValue-rightValue) >= equalityThreshold
-			},
-		}, nil
+		return genericFloatOperators()
+	case timeOperandType:
+		return genericTimeOperators()
 	}
 	return nil, ErrNoAllowedOperators
 }
@@ -335,6 +337,9 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 			default:
 				return nil
 			}
+		},
+		{From: stringOperandType, To: timeOperandType}: func(source Operand) interface{} {
+			return source.GetValue()
 		},
 		{From: booleanOperandType, To: booleanOperandType}: func(source Operand) interface{} {
 			return source.GetValue()
@@ -402,6 +407,15 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 			}
 			return nil
 		},
+		{From: timeOperandType, To: timeOperandType}: func(source Operand) interface{} {
+			return source.GetValue()
+		},
+		{From: timeOperandType, To: stringOperandType}: func(source Operand) interface{} {
+			if stringValue, ok := source.GetValue().(string); ok {
+				return stringValue
+			}
+			return nil
+		},
 	}
 
 	result := make(map[TypeCast]CastFunction)
@@ -419,7 +433,7 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 	return result, nil
 }
 
-func genericOperators() map[string]CompareOperator {
+func genericBoolOperators() map[string]CompareOperator {
 	var operatorFunctionsMap = map[string]CompareOperator{
 		EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
 			return leftOperand.GetValue() == rightOperand.GetValue()
@@ -429,6 +443,180 @@ func genericOperators() map[string]CompareOperator {
 		},
 	}
 	return operatorFunctionsMap
+}
+
+func genericTimeOperators() (map[string]CompareOperator, error) {
+	var operatorFunctionsMap = map[string]CompareOperator{
+		EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			var err error
+			leftValue, err := time.Parse(timeFormat, leftOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			rightValue, err := time.Parse(timeFormat, rightOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			return leftValue == rightValue
+		},
+		NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			var err error
+			leftValue, err := time.Parse(timeFormat, leftOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			rightValue, err := time.Parse(timeFormat, rightOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			return leftValue == rightValue
+		},
+		MoreOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			var err error
+			leftValue, err := time.Parse(timeFormat, leftOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			rightValue, err := time.Parse(timeFormat, rightOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			return leftValue.After(rightValue) || leftValue == rightValue
+		},
+		MoreThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			var err error
+			leftValue, err := time.Parse(timeFormat, leftOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			rightValue, err := time.Parse(timeFormat, rightOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			return leftValue.After(rightValue)
+		},
+		LessOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			var err error
+			leftValue, err := time.Parse(timeFormat, leftOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			rightValue, err := time.Parse(timeFormat, rightOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			return leftValue.Before(rightValue) || leftValue == rightValue
+		},
+		LessThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			var err error
+			leftValue, err := time.Parse(timeFormat, leftOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			rightValue, err := time.Parse(timeFormat, rightOperand.GetValue().(string))
+			if err != nil {
+				return false
+			}
+			return leftValue.Before(rightValue)
+		},
+	}
+	return operatorFunctionsMap, nil
+}
+
+func genericFloatOperators() (map[string]CompareOperator, error) {
+	var operatorFunctionsMap = map[string]CompareOperator{
+		EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			equalityThreshold := 1e-9
+			leftValue := leftOperand.GetValue().(float64)
+			rightValue := rightOperand.GetValue().(float64)
+			return math.Abs(leftValue-rightValue) <= equalityThreshold
+		},
+		NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			equalityThreshold := 1e-9
+			leftValue := leftOperand.GetValue().(float64)
+			rightValue := rightOperand.GetValue().(float64)
+			return math.Abs(leftValue-rightValue) <= equalityThreshold
+		},
+		MoreOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			equalityThreshold := 1e-9
+			leftValue := leftOperand.GetValue().(float64)
+			rightValue := rightOperand.GetValue().(float64)
+			return (leftValue - rightValue) >= equalityThreshold
+		},
+		MoreThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			equalityThreshold := 1e-9
+			leftValue := leftOperand.GetValue().(float64)
+			rightValue := rightOperand.GetValue().(float64)
+			return (leftValue - rightValue) > equalityThreshold
+		},
+		LessOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			equalityThreshold := 1e-9
+			leftValue := leftOperand.GetValue().(float64)
+			rightValue := rightOperand.GetValue().(float64)
+			return (rightValue - leftValue) >= equalityThreshold
+		},
+		LessThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			equalityThreshold := 1e-9
+			leftValue := leftOperand.GetValue().(float64)
+			rightValue := rightOperand.GetValue().(float64)
+			return (rightValue - leftValue) > equalityThreshold
+		},
+	}
+	return operatorFunctionsMap, nil
+}
+
+func genericIntegerOperators() (map[string]CompareOperator, error) {
+	var operatorFunctionsMap = map[string]CompareOperator{
+		EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			leftValue := int(leftOperand.GetValue().(float64))
+			rightValue := int(rightOperand.GetValue().(float64))
+			return leftValue == rightValue
+		},
+		NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			leftValue := int(leftOperand.GetValue().(float64))
+			rightValue := int(rightOperand.GetValue().(float64))
+			return leftValue == rightValue
+		},
+		MoreOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			leftValue := int(leftOperand.GetValue().(float64))
+			rightValue := int(rightOperand.GetValue().(float64))
+			return leftValue >= rightValue
+		},
+		MoreThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			leftValue := int(leftOperand.GetValue().(float64))
+			rightValue := int(rightOperand.GetValue().(float64))
+			return leftValue > rightValue
+		},
+		LessOrEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			leftValue := int(leftOperand.GetValue().(float64))
+			rightValue := int(rightOperand.GetValue().(float64))
+			return leftValue <= rightValue
+		},
+		LessThenCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			leftValue := int(leftOperand.GetValue().(float64))
+			rightValue := int(rightOperand.GetValue().(float64))
+			return leftValue < rightValue
+		},
+	}
+	return operatorFunctionsMap, nil
+}
+
+func genericStringOperators() (map[string]CompareOperator, error) {
+	var operatorFunctionsMap = map[string]CompareOperator{
+		EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return leftOperand.GetValue() == rightOperand.GetValue()
+		},
+		NotEqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return leftOperand.GetValue() == rightOperand.GetValue()
+		},
+		ContainCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return strings.Contains(leftOperand.GetValue().(string), rightOperand.GetValue().(string))
+		},
+		NotContainCompareOperator: func(leftOperand, rightOperand Operand) bool {
+			return !strings.Contains(leftOperand.GetValue().(string), rightOperand.GetValue().(string))
+		},
+	}
+	return operatorFunctionsMap, nil
 }
 
 func (c *ConditionParams) Validate() error {
