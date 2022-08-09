@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type Service struct {
@@ -30,7 +32,7 @@ func makeRequest(ctx c.Context, method, url string, body io.Reader) (req *http.R
 		return nil, err
 	}
 
-	token := ctx.Value(authorizationHeader)
+	token := ctx.Value(script.AuthorizationHeader{})
 
 	if token == nil {
 		return nil, errors.New("auth token is nil")

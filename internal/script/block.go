@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
+type AuthorizationHeader struct {}
+
 type Block int
 
 const (
