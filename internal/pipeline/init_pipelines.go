@@ -73,7 +73,8 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 		}
 
 		ep := ExecutablePipeline{}
-		ep.PipelineID = unfinished.Tasks[i].ID
+		ep.TaskID = unfinished.Tasks[i].ID
+		ep.PipelineID = version.ID
 		ep.VersionID = unfinished.Tasks[i].VersionID
 		ep.Storage = p.db
 		ep.EntryPoint = version.Pipeline.Entrypoint
@@ -90,6 +91,11 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 		ep.Initiator = unfinished.Tasks[i].Author
 		ep.ServiceDesc = p.serviceDesc
 
+		errCreation := ep.CreateBlocks(ctx, version.Pipeline.Blocks)
+		if errCreation != nil {
+			return errCreation
+		}
+
 		variableStorage := store.NewStore()
 
 		workNumber := unfinished.Tasks[i].WorkNumber
@@ -102,8 +108,6 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 		state := &ApplicationData{}
 
 		for j := range steps {
-			fmt.Println("steps[j].Type: ", steps[j].Type)
-
 			if steps[j].Type == "servicedesk_application" {
 				step, errStep := p.db.GetTaskStepById(ctx, steps[j].ID)
 				if errStep != nil {
@@ -120,8 +124,7 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 					)
 				}
 
-				err = json.Unmarshal(data, state)
-				if err != nil {
+				if err = json.Unmarshal(data, state); err != nil {
 					return errors.Wrap(err, "invalid format of servicedesk_application state")
 				}
 
@@ -151,7 +154,7 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 			routineCtx = logger.WithLogger(routineCtx, log)
 			err = ep.Run(routineCtx, variableStorage)
 			if err != nil {
-				log.Error(err, "can`t run pipeline with number: ", workNumber)
+				log.Error(err, ", can`t run pipeline with number: ", workNumber)
 				variableStorage.AddError(err)
 			}
 		}(workNumber)

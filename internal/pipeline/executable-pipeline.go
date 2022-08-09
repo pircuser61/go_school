@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -333,13 +334,16 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 
 			currentBlock, ok := ep.Blocks[step]
 			if !ok || currentBlock == nil {
-				_, _, err := ep.createStep(ctx, step, true, StatusFinished)
+				stepID, _, err := ep.createStep(ctx, step, true, StatusFinished)
 				if err != nil {
 					return err
 				}
 
+				fmt.Println("stepID: ", stepID)
+
 				return errUnknownBlock
 			}
+
 			ep.StepType = currentBlock.GetType()
 
 			// initialize step state
@@ -509,35 +513,35 @@ func (ep *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 }
 
 //nolint:gocyclo //ok
-func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *entity.EriusFunc) (Runner, error) {
+func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc) (Runner, error) {
 	ctx, s := trace.StartSpan(ctx, "create_block")
 	defer s.End()
 
-	switch block.BlockType {
+	switch bl.BlockType {
 	case script.TypeGo:
-		return ep.CreateGoBlock(ctx, block, name)
+		return ep.CreateGoBlock(ctx, bl, name)
 	case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 		fb := FunctionBlock{
 			Name:           name,
-			Type:           block.BlockType,
-			FunctionName:   block.Title,
+			Type:           bl.BlockType,
+			FunctionName:   bl.Title,
 			FunctionInput:  make(map[string]string),
 			FunctionOutput: make(map[string]string),
-			Nexts:          block.Next,
+			Nexts:          bl.Next,
 			RunURL:         ep.FaaS + "function/%s",
 		}
 
-		for _, v := range block.Input {
+		for _, v := range bl.Input {
 			fb.FunctionInput[v.Name] = v.Global
 		}
 
-		for _, v := range block.Output {
+		for _, v := range bl.Output {
 			fb.FunctionOutput[v.Name] = v.Global
 		}
 
 		return &fb, nil
 	case script.TypeScenario:
-		p, err := ep.Storage.GetExecutableByName(ctx, block.Title)
+		p, err := ep.Storage.GetExecutableByName(ctx, bl.Title)
 		if err != nil {
 			return nil, err
 		}
@@ -550,12 +554,12 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *ent
 		epi.FaaS = ep.FaaS
 		epi.Input = make(map[string]string)
 		epi.Output = make(map[string]string)
-		epi.Nexts = block.Next
-		epi.Name = block.Title
+		epi.Nexts = bl.Next
+		epi.Name = bl.Title
 		epi.PipelineModel = p
 
 		parametersMap := make(map[string]interface{})
-		for _, v := range block.Input {
+		for _, v := range bl.Input {
 			parametersMap[v.Name] = v.Global
 		}
 
@@ -578,18 +582,18 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *ent
 			return nil, err
 		}
 
-		for _, v := range block.Input {
+		for _, v := range bl.Input {
 			epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
 		}
 
-		for _, v := range block.Output {
+		for _, v := range bl.Output {
 			epi.Output[v.Name] = v.Global
 		}
 
 		return &epi, nil
 	}
 
-	return nil, errors.Errorf("can't create block with type: %s", block.BlockType)
+	return nil, errors.Errorf("can't create block with type: %s", bl.BlockType)
 }
 
 //nolint:gocyclo //need bigger cyclomatic

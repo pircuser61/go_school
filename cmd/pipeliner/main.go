@@ -103,7 +103,7 @@ func main() {
 		return
 	}
 
-	serviceDescService, err := servicedesc.NewService(cfg.Servicedesc)
+	serviceDescService, err := servicedesc.NewService(cfg.ServiceDesc)
 	if err != nil {
 		log.WithError(err).Error("can't create servicedesc service")
 

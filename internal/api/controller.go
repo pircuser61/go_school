@@ -62,6 +62,7 @@ func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
 			r.Use(WithUserInfo(param.SSOService, logger.GetLogger(ctx)))
 			r.Use(WithAsOtherUserInfo(param.PeopleService, logger.GetLogger(ctx)))
 			r.Use(StatisticMiddleware(param.APIEnv.Statistic))
+			r.Use(SetAuthTokenInContext(logger.GetLogger(ctx)))
 
 			HandlerFromMux(param.APIEnv, r)
 		})
