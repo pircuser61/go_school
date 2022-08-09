@@ -412,15 +412,16 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 
 	ep := pipeline.ExecutablePipeline{
-		Storage:    ae.DB,
-		Remedy:     ae.Remedy,
-		FaaS:       ae.FaaS,
-		HTTPClient: ae.HTTPClient,
-		PipelineID: scenario.ID,
-		VersionID:  scenario.VersionID,
-		EntryPoint: scenario.Pipeline.Entrypoint,
-		Sender:     ae.Mail,
-		People:     ae.People,
+		Storage:     ae.DB,
+		Remedy:      ae.Remedy,
+		FaaS:        ae.FaaS,
+		HTTPClient:  ae.HTTPClient,
+		PipelineID:  scenario.ID,
+		VersionID:   scenario.VersionID,
+		EntryPoint:  scenario.Pipeline.Entrypoint,
+		Sender:      ae.Mail,
+		People:      ae.People,
+		ServiceDesc: ae.ServiceDesc,
 	}
 
 	couldUpdateOne := false
