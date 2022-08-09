@@ -2,9 +2,8 @@ package pipeline
 
 import (
 	"context"
-	"testing"
-
 	"encoding/json"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -1695,13 +1694,13 @@ func TestIF_DebugRun(t *testing.T) {
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2020-01-02",
+												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2020-01-01",
+												Value: "11.09.2022",
 											},
 											Operator: "NotEqual",
 										},
@@ -1763,8 +1762,8 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
-					res.SetValue("data.testStringVariable1", "2020-01-02")
-					res.SetValue("data.testStringVariable2", "2020-01-02")
+					res.SetValue("data.testStringVariable1", "11.08.2022")
+					res.SetValue("data.testStringVariable2", "11.08.2022")
 
 					return res
 				}(),
@@ -1792,13 +1791,13 @@ func TestIF_DebugRun(t *testing.T) {
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2010-01-02",
+												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2020-01-02",
+												Value: "11.08.2023",
 											},
 											Operator: "Less",
 										},
@@ -1840,13 +1839,13 @@ func TestIF_DebugRun(t *testing.T) {
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2010-01-02",
+												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2020-01-02",
+												Value: "11.08.2032",
 											},
 											Operator: "LessOrEqual",
 										},
@@ -1888,13 +1887,13 @@ func TestIF_DebugRun(t *testing.T) {
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2030-01-02",
+												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2020-01-02",
+												Value: "11.08.2012",
 											},
 											Operator: "More",
 										},
@@ -1936,13 +1935,13 @@ func TestIF_DebugRun(t *testing.T) {
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2030-01-02",
+												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2020-01-02",
+												Value: "11.08.2012",
 											},
 											Operator: "MoreOrEqual",
 										},
@@ -1984,13 +1983,13 @@ func TestIF_DebugRun(t *testing.T) {
 												OperandBase: script.OperandBase{
 													DataType: "string",
 												},
-												Value: "2020-01-02",
+												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2020-01-02",
+												Value: "11.08.2022",
 											},
 											Operator: "Equal",
 										},
@@ -2031,13 +2030,13 @@ func TestIF_DebugRun(t *testing.T) {
 												OperandBase: script.OperandBase{
 													DataType: "time",
 												},
-												Value: "2020-01-02",
+												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
 													DataType: "string",
 												},
-												Value: "2020-01-02",
+												Value: "11.08.2022",
 											},
 											Operator: "Equal",
 										},
