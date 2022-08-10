@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -354,12 +353,10 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 
 			currentBlock, ok := ep.Blocks[step]
 			if !ok || currentBlock == nil {
-				stepID, _, err := ep.createStep(ctx, step, true, StatusFinished)
+				_, _, err := ep.createStep(ctx, step, true, StatusFinished)
 				if err != nil {
 					return err
 				}
-
-				fmt.Println("stepID: ", stepID)
 
 				return errUnknownBlock
 			}
@@ -427,6 +424,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 				log.WithError(errNotif).Error("couldn't notify initiator")
 			}
 
+			// TODO SAVE map active blocks, skipped, notification, prevUpdateStatusBlocks to work table
+
 			switch currentBlock.GetStatus() {
 			case StatusFinished, StatusNoSuccess:
 			default:
@@ -464,6 +463,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 
 			skipped := currentBlock.Skipped(ep.VarStore)
 			ep.MergeSkippedBlocks(skipped)
+
+			// TODO SAVE map active blocks, skipped, notification, prevUpdateStatusBlocks to work table
 
 			if runCtx.StopPoints.IsStopPoint(step) {
 				errChangeStopped := ep.changeTaskStatus(ctx, db.RunStatusStopped)

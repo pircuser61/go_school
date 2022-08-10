@@ -143,6 +143,8 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 		}
 
 		variableStorage := store.NewStore()
+		// TODO add finished
+		// variableStorage.
 
 		workNumber := task.WorkNumber
 
@@ -201,6 +203,8 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 			Description:     sdState.Description,
 			ApplicationBody: sdState.ApplicationBody,
 		})
+
+		ep.currDescription = sdState.Description
 
 		go func(workNumber string) {
 			routineCtx := c.WithValue(c.Background(), XRequestIDHeader, uuid.New().String())
