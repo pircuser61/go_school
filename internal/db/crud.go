@@ -1563,8 +1563,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.Status,
 	)
 	if err != nil {
-		fmt.Println("step id: ", id)
-		fmt.Println("WorkID: ", dto.WorkID)
 		return NullUuid, time.Time{}, err
 	}
 
