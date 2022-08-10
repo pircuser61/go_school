@@ -254,6 +254,7 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 			return errors.Wrap(err, "Unable to grab variables storage")
 		}
 
+		approvers := make(map[string]struct{})
 		for approverVariableRef := range state.Approvers {
 			approverVar := getVariable(allVariables, approverVariableRef)
 
@@ -262,10 +263,11 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 			}
 
 			if actualApproverUsername, castOK := approverVar.(string); castOK {
-				state.Approvers[actualApproverUsername] = state.Approvers[approverVariableRef]
-				delete(state.Approvers, approverVariableRef)
+				approvers[actualApproverUsername] = state.Approvers[approverVariableRef]
 			}
 		}
+
+		gb.State.Approvers = approvers
 	}
 
 	gb.State = &state
