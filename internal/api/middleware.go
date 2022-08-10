@@ -13,6 +13,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -125,7 +126,7 @@ func SetAuthTokenInContext(log logger.Logger) func(next http.Handler) http.Handl
 			log.Info("auth token: ", token)
 
 			if token != "" {
-				ctx = context.WithValue(ctx, AuthorizationHeader, token)
+				ctx = context.WithValue(ctx, script.AuthorizationHeader{}, token)
 				r = r.WithContext(ctx)
 			}
 

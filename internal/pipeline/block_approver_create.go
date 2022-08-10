@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -51,6 +52,10 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, ep 
 		approversGroup, errGroup := ep.ServiceDesc.GetApproversGroup(ctx, params.ApproversGroupID)
 		if errGroup != nil {
 			return nil, errors.Wrap(errGroup, "can`t get approvers group with id: "+params.ApproversGroupID)
+		}
+
+		if len(approversGroup.People) == 0 {
+			return nil, errors.Wrap(errGroup, "zero approvers in group: "+params.ApproversGroupID)
 		}
 
 		approversGroupName = approversGroup.GroupName

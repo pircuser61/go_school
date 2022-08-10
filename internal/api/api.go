@@ -109,9 +109,21 @@ const (
 
 // Defines values for CompareOperator.
 const (
+	CompareOperatorБольше CompareOperator = "Больше"
+
+	CompareOperatorБольшеИлиРавно CompareOperator = "Больше или равно"
+
+	CompareOperatorМеньше CompareOperator = "Меньше"
+
+	CompareOperatorМеньшеИлиРавно CompareOperator = "Меньше или равно"
+
 	CompareOperatorНеРавно CompareOperator = "Не равно"
 
+	CompareOperatorНеСодержит CompareOperator = "Не Содержит"
+
 	CompareOperatorРавно CompareOperator = "Равно"
+
+	CompareOperatorСодержит CompareOperator = "Содержит"
 )
 
 // Defines values for ExecutionDecision.

@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,6 +33,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -218,7 +218,6 @@ func main() {
 		err = init.InitPipelines(ctx)
 		if err != nil {
 			log.Error(err)
-			return
 		}
 	}()
 

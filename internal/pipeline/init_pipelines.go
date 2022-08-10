@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/google/uuid"
 
@@ -13,6 +14,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -32,7 +34,7 @@ type initiation struct {
 }
 
 func NewInitiation(
-	db db.Database,
+	dbConn db.Database,
 	faaS string,
 	httpClient *http.Client,
 	remedy string,
@@ -41,7 +43,7 @@ func NewInitiation(
 	peopleSrv *people.Service,
 ) *initiation {
 	return &initiation{
-		db:          db,
+		db:          dbConn,
 		faaS:        faaS,
 		httpClient:  httpClient,
 		remedy:      remedy,
@@ -55,6 +57,10 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 	log := logger.GetLogger(ctx)
 	log.Info("--- init pipelines ---")
 
+	var (
+		success, failed int
+	)
+
 	unfinished, err := p.db.GetUnfinishedTasks(ctx)
 	if err != nil {
 		return err
@@ -66,18 +72,56 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 
 	log.Info(fmt.Sprintf("--- init pipelines count: %d ---", len(unfinished.Tasks)))
 
-	for i := range unfinished.Tasks {
-		version, errVersion := p.db.GetVersionByWorkNumber(ctx, unfinished.Tasks[i].WorkNumber)
+	failedPipelinesCh := make(chan string, len(unfinished.Tasks))
+
+	workers := 5
+	if workers > len(unfinished.Tasks) {
+		workers = 1
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	go p.poolWorkers(ctx, &wg, workers, unfinished.Tasks, failedPipelinesCh)
+	wg.Wait()
+
+	close(failedPipelinesCh)
+
+	for range failedPipelinesCh {
+		failed++
+	}
+
+	success = len(unfinished.Tasks) - failed
+
+	log.Info(fmt.Sprintf("--- init pipelines finished with: success: %d, failed: %d---", success, failed))
+
+	return nil
+}
+
+func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.EriusTask, outCh chan string) {
+	defer wg.Done()
+	for {
+		task, ok := <-in
+		if !ok {
+			return
+		}
+
+		log := logger.GetLogger(ctx)
+
+		isFailed := false
+
+		version, errVersion := p.db.GetVersionByWorkNumber(ctx, task.WorkNumber)
 		if errVersion != nil {
-			return errVersion
+			log.Error(errVersion)
+			outCh <- task.WorkNumber
+			continue
 		}
 
 		ep := ExecutablePipeline{}
-		ep.TaskID = unfinished.Tasks[i].ID
+		ep.WorkNumber = task.WorkNumber
+		ep.TaskID = task.ID
 		ep.PipelineID = version.ID
-		ep.VersionID = unfinished.Tasks[i].VersionID
+		ep.VersionID = task.VersionID
 		ep.Storage = p.db
-		ep.EntryPoint = version.Pipeline.Entrypoint
 		ep.FaaS = p.faaS
 		ep.PipelineModel = version
 		ep.HTTPClient = p.httpClient
@@ -87,78 +131,111 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 		ep.EntryPoint = BlockGoFirstStart
 		ep.Sender = p.sender
 		ep.People = p.peopleSrv
-		ep.Name = unfinished.Tasks[i].Name
-		ep.Initiator = unfinished.Tasks[i].Author
+		ep.Name = task.Name
+		ep.Initiator = task.Author
 		ep.ServiceDesc = p.serviceDesc
 
 		errCreation := ep.CreateBlocks(ctx, version.Pipeline.Blocks)
 		if errCreation != nil {
-			return errCreation
+			log.Error(errCreation, ", work number: ", task.WorkNumber)
+			outCh <- task.WorkNumber
+			continue
 		}
 
 		variableStorage := store.NewStore()
 
-		workNumber := unfinished.Tasks[i].WorkNumber
+		workNumber := task.WorkNumber
 
-		steps, errSteps := p.db.GetTaskSteps(ctx, unfinished.Tasks[i].ID)
+		steps, errSteps := p.db.GetTaskSteps(ctx, task.ID)
 		if errSteps != nil {
-			return errSteps
+			log.Error(errSteps, "work number: ", workNumber)
+			outCh <- task.WorkNumber
+			continue
 		}
 
-		state := &ApplicationData{}
+		sdState := &ApplicationData{}
 
 		for j := range steps {
-			if steps[j].Type == "servicedesk_application" {
-				step, errStep := p.db.GetTaskStepById(ctx, steps[j].ID)
-				if errStep != nil {
-					return errStep
-				}
+			if steps[j].Type != "servicedesk_application" {
+				continue
+			}
+			step, errStep := p.db.GetTaskStepById(ctx, steps[j].ID)
+			if errStep != nil {
+				log.Error(errStep, "work number: ", workNumber)
+				outCh <- task.WorkNumber
+				break
+			}
 
-				// get state from step.State
-				data, ok := step.State[steps[j].Name]
-				if !ok {
-					return fmt.Errorf(
-						"can`t run pipeline with work number: %s, %s",
-						unfinished.Tasks[i].WorkNumber,
-						"state is`t found with name: "+steps[j].Name,
-					)
-				}
+			// get sdState from step.State
+			data, okState := step.State[steps[j].Name]
+			if !okState {
+				log.Error(fmt.Errorf(
+					"can`t run pipeline with work number: %s, %s",
+					workNumber,
+					"sdState is`t found with name: "+steps[j].Name,
+				))
+				outCh <- task.WorkNumber
+				break
+			}
 
-				if err = json.Unmarshal(data, state); err != nil {
-					return errors.Wrap(err, "invalid format of servicedesk_application state")
-				}
-
+			if err := json.Unmarshal(data, sdState); err != nil {
+				log.Error(err, "invalid format of servicedesk_application sdState, work number:", workNumber)
+				outCh <- task.WorkNumber
 				break
 			}
 		}
 
-		if state.BlueprintID == "" {
+		if sdState.BlueprintID == "" {
 			log.Error(fmt.Sprintf(
 				"can`t run pipeline with work number: %s, %s",
-				unfinished.Tasks[i].WorkNumber,
+				workNumber,
 				"servicedesk_application block is not found",
 			))
 
+			outCh <- task.WorkNumber
 			continue
 		}
 
 		ctx = c.WithValue(ctx, SdApplicationDataCtx{}, SdApplicationData{
-			BlueprintID:     state.BlueprintID,
-			Description:     state.Description,
-			ApplicationBody: state.ApplicationBody,
+			BlueprintID:     sdState.BlueprintID,
+			Description:     sdState.Description,
+			ApplicationBody: sdState.ApplicationBody,
 		})
 
 		go func(workNumber string) {
 			routineCtx := c.WithValue(c.Background(), XRequestIDHeader, uuid.New().String())
 			routineCtx = c.WithValue(routineCtx, SdApplicationDataCtx{}, ctx.Value(SdApplicationDataCtx{}))
 			routineCtx = logger.WithLogger(routineCtx, log)
-			err = ep.Run(routineCtx, variableStorage)
+			err := ep.Run(routineCtx, variableStorage)
 			if err != nil {
+				isFailed = true
 				log.Error(err, ", can`t run pipeline with number: ", workNumber)
 				variableStorage.AddError(err)
 			}
 		}(workNumber)
+
+		if isFailed {
+			outCh <- workNumber
+		}
+	}
+}
+
+func (p *initiation) poolWorkers(
+	ctx c.Context,
+	wg *sync.WaitGroup,
+	workers int,
+	pipelines []entity.EriusTask,
+	startedPipelinesCh chan string,
+) {
+	pipelinesCh := make(chan entity.EriusTask)
+
+	for i := 0; i < workers; i++ {
+		go p.worker(ctx, wg, pipelinesCh, startedPipelinesCh)
 	}
 
-	return nil
+	for i := range pipelines {
+		pipelinesCh <- pipelines[i]
+	}
+
+	close(pipelinesCh)
 }

@@ -489,7 +489,7 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, pipeline *Executa
 	}
 
 	if err = params.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid execution parameters")
+		return nil, errors.Wrap(err, "invalid execution parameters, work number")
 	}
 
 	b.State = &ExecutionData{

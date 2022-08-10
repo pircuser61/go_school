@@ -186,7 +186,7 @@ func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
 				ORDER BY vs.time DESC
 				LIMIT 1
 			) descr ON descr.work_id = w.id
-		WHERE w.status = 1`
+		WHERE w.status = 1 AND w.child_id IS NULL`
 
 	return db.getTasks(ctx, query, []interface{}{})
 }
