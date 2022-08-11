@@ -38,8 +38,12 @@ type ApproverParams struct {
 }
 
 func (a *ApproverParams) Validate() error {
-	if a.Approver == "" {
+	if a.Approver == "" && a.Type == ApproverTypeUser {
 		return errors.New("approver is empty")
+	}
+
+	if a.ApproversGroupID == "" && a.Type == ApproverTypeGroup {
+		return errors.New("approvers group id is empty")
 	}
 
 	typeApprove := ApproverType(a.Type.String())
