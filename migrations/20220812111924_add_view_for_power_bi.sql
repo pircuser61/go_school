@@ -4,7 +4,7 @@ DROP VIEW IF EXISTS pipeliner.processes;
 
 CREATE VIEW pipeliner.processes
 AS
-SELECT w.work_number application_id,
+    SELECT w.work_number application_id,
        p.name process_name,
        ''::text as process_sla,
        vs.step_type,
@@ -32,12 +32,12 @@ SELECT w.work_number application_id,
        w.finished_at as process_fineshed_at,
        w.human_status process_status
 
-FROM pipeliner.works w
+    FROM pipeliner.works w
          LEFT JOIN pipeliner.variable_storage vs on vs.work_id = w.id
          LEFT JOIN pipeliner.versions v on v.id = w.version_id
          LEFT JOIN pipeliner.pipelines p on p.id = v.pipeline_id
-WHERE w.child_id IS NULL
-ORDER BY vs.time;
+    WHERE w.child_id IS NULL
+        ORDER BY vs.time;
 -- +goose StatementEnd
 
 -- +goose Down
