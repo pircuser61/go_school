@@ -1584,16 +1584,18 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	q := `
 	UPDATE pipeliner.variable_storage
 	SET
-	    break_points = $2
+		break_points = $2
 		, has_error = $3
-	    , status = $4
-	    --content--
+		, status = $4
+		--content--
+		--updated_at--
 	WHERE
 		id = $1
 `
 	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status}
 	if !dto.WithoutContent {
 		q = strings.Replace(q, "--content--", ", content = $5", -1)
+		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
 		args = append(args, dto.Content)
 	}
 
