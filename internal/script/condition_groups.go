@@ -24,7 +24,7 @@ const (
 	stringOperandType  string = "string"
 	booleanOperandType string = "boolean"
 	integerOperandType string = "integer"
-	NumberOperandType  string = "number"
+	numberOperandType  string = "number"
 	dateOperandType    string = "date"
 
 	timeFormat string = "01.02.2006"
@@ -297,7 +297,7 @@ func getAllowedOperators(operandDataType string) (map[string]CompareOperator, er
 		return genericStringOperators()
 	case integerOperandType:
 		return genericIntegerOperators()
-	case NumberOperandType:
+	case numberOperandType:
 		return genericNumberOperators()
 	case dateOperandType:
 		return genericDateOperators()
@@ -319,7 +319,7 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 			}
 			return floatValue
 		},
-		{From: stringOperandType, To: NumberOperandType}: func(source Operand) interface{} {
+		{From: stringOperandType, To: numberOperandType}: func(source Operand) interface{} {
 			var stringValue = source.GetValue().(string)
 			floatValue, err := strconv.ParseFloat(stringValue, 64)
 			if err != nil {
@@ -375,7 +375,7 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 			}
 			return nil
 		},
-		{From: integerOperandType, To: NumberOperandType}: func(source Operand) interface{} {
+		{From: integerOperandType, To: numberOperandType}: func(source Operand) interface{} {
 			if floatVal, ok := source.GetValue().(float64); ok {
 				return floatVal
 			}
@@ -392,16 +392,16 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 				return nil
 			}
 		},
-		{From: NumberOperandType, To: NumberOperandType}: func(source Operand) interface{} {
+		{From: numberOperandType, To: numberOperandType}: func(source Operand) interface{} {
 			return source.GetValue()
 		},
-		{From: NumberOperandType, To: stringOperandType}: func(source Operand) interface{} {
+		{From: numberOperandType, To: stringOperandType}: func(source Operand) interface{} {
 			if floatVal, ok := source.GetValue().(float64); ok {
 				return strconv.FormatFloat(floatVal, 'f', -1, 64)
 			}
 			return nil
 		},
-		{From: NumberOperandType, To: integerOperandType}: func(source Operand) interface{} {
+		{From: numberOperandType, To: integerOperandType}: func(source Operand) interface{} {
 			if floatVal, ok := source.GetValue().(float64); ok {
 				return math.Trunc(floatVal)
 			}
