@@ -813,7 +813,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare with string and float (float-string pair)",
+			name:          "compare with string and number (number-string pair)",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -832,7 +832,7 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 10.05,
 											},
@@ -860,7 +860,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare with string and float (string-float pair)",
+			name:          "compare with string and number (string-number pair)",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -885,7 +885,7 @@ func TestIF_DebugRun(t *testing.T) {
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 10.05,
 											},
@@ -907,7 +907,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare with int and float (int-float pair)",
+			name:          "compare with int and number (int-number pair)",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -932,7 +932,7 @@ func TestIF_DebugRun(t *testing.T) {
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 10,
 											},
@@ -954,7 +954,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare with int and float (float-int pair)",
+			name:          "compare with int and number (number-int pair)",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -973,7 +973,7 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 10.05,
 											},
@@ -1481,7 +1481,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare float variables - less",
+			name:          "compare number variables - less",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1500,13 +1500,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 10.05,
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 100,
 											},
@@ -1529,7 +1529,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare float variables - lessOrEqual",
+			name:          "compare number variables - lessOrEqual",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1548,13 +1548,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 10.05,
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 100,
 											},
@@ -1577,7 +1577,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare float variables - more",
+			name:          "compare number variables - more",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1596,13 +1596,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 100,
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 10.05,
 											},
@@ -1625,7 +1625,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare float variables - moreOrEqal",
+			name:          "compare number variables - moreOrEqal",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1644,13 +1644,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 100,
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "float",
+													DataType: "number",
 												},
 												Value: 10.05,
 											},
@@ -1673,7 +1673,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare time values - not equal",
+			name:          "compare date values - not equal",
 			wantErr:       false,
 			wantedGroupID: "",
 			args: args{
@@ -1692,13 +1692,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.09.2022",
 											},
@@ -1720,7 +1720,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare time variables - equal",
+			name:          "compare date variables - equal",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1739,13 +1739,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
 											RightOperand: &script.VariableOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												VariableRef: "data.testStringVariable2",
 											},
@@ -1770,7 +1770,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare time variables - less",
+			name:          "compare date variables - less",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1789,13 +1789,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2023",
 											},
@@ -1818,7 +1818,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare time variables - lessOrEqual",
+			name:          "compare date variables - lessOrEqual",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1837,13 +1837,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2032",
 											},
@@ -1866,7 +1866,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare time variables - more",
+			name:          "compare date variables - more",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1885,13 +1885,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2012",
 											},
@@ -1914,7 +1914,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare time variables - moreOrEqal",
+			name:          "compare date variables - moreOrEqal",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1933,13 +1933,13 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2012",
 											},
@@ -1962,7 +1962,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare with string and time (string-time pair)",
+			name:          "compare with string and date (string-date pair)",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -1987,7 +1987,7 @@ func TestIF_DebugRun(t *testing.T) {
 											},
 											RightOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
@@ -2009,7 +2009,7 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare with string and time (time-string pair)",
+			name:          "compare with string and date (date-string pair)",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
 			args: args{
@@ -2028,7 +2028,7 @@ func TestIF_DebugRun(t *testing.T) {
 										{
 											LeftOperand: &script.ValueOperand{
 												OperandBase: script.OperandBase{
-													DataType: "time",
+													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},

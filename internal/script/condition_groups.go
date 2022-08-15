@@ -24,8 +24,8 @@ const (
 	stringOperandType  string = "string"
 	booleanOperandType string = "boolean"
 	integerOperandType string = "integer"
-	floatOperandType   string = "float"
-	timeOperandType    string = "time"
+	NumberOperandType  string = "number"
+	dateOperandType    string = "date"
 
 	timeFormat string = "01.02.2006"
 )
@@ -297,10 +297,10 @@ func getAllowedOperators(operandDataType string) (map[string]CompareOperator, er
 		return genericStringOperators()
 	case integerOperandType:
 		return genericIntegerOperators()
-	case floatOperandType:
-		return genericFloatOperators()
-	case timeOperandType:
-		return genericTimeOperators()
+	case NumberOperandType:
+		return genericNumberOperators()
+	case dateOperandType:
+		return genericDateOperators()
 	}
 	return nil, ErrNoAllowedOperators
 }
@@ -319,7 +319,7 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 			}
 			return floatValue
 		},
-		{From: stringOperandType, To: floatOperandType}: func(source Operand) interface{} {
+		{From: stringOperandType, To: NumberOperandType}: func(source Operand) interface{} {
 			var stringValue = source.GetValue().(string)
 			floatValue, err := strconv.ParseFloat(stringValue, 64)
 			if err != nil {
@@ -338,7 +338,7 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 				return nil
 			}
 		},
-		{From: stringOperandType, To: timeOperandType}: func(source Operand) interface{} {
+		{From: stringOperandType, To: dateOperandType}: func(source Operand) interface{} {
 			return source.GetValue()
 		},
 		{From: booleanOperandType, To: booleanOperandType}: func(source Operand) interface{} {
@@ -375,7 +375,7 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 			}
 			return nil
 		},
-		{From: integerOperandType, To: floatOperandType}: func(source Operand) interface{} {
+		{From: integerOperandType, To: NumberOperandType}: func(source Operand) interface{} {
 			if floatVal, ok := source.GetValue().(float64); ok {
 				return floatVal
 			}
@@ -392,25 +392,25 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 				return nil
 			}
 		},
-		{From: floatOperandType, To: floatOperandType}: func(source Operand) interface{} {
+		{From: NumberOperandType, To: NumberOperandType}: func(source Operand) interface{} {
 			return source.GetValue()
 		},
-		{From: floatOperandType, To: stringOperandType}: func(source Operand) interface{} {
+		{From: NumberOperandType, To: stringOperandType}: func(source Operand) interface{} {
 			if floatVal, ok := source.GetValue().(float64); ok {
 				return strconv.FormatFloat(floatVal, 'f', -1, 64)
 			}
 			return nil
 		},
-		{From: floatOperandType, To: integerOperandType}: func(source Operand) interface{} {
+		{From: NumberOperandType, To: integerOperandType}: func(source Operand) interface{} {
 			if floatVal, ok := source.GetValue().(float64); ok {
 				return math.Trunc(floatVal)
 			}
 			return nil
 		},
-		{From: timeOperandType, To: timeOperandType}: func(source Operand) interface{} {
+		{From: dateOperandType, To: dateOperandType}: func(source Operand) interface{} {
 			return source.GetValue()
 		},
-		{From: timeOperandType, To: stringOperandType}: func(source Operand) interface{} {
+		{From: dateOperandType, To: stringOperandType}: func(source Operand) interface{} {
 			if stringValue, ok := source.GetValue().(string); ok {
 				return stringValue
 			}
@@ -445,7 +445,7 @@ func genericBoolOperators() map[string]CompareOperator {
 	return operatorFunctionsMap
 }
 
-func genericTimeOperators() (map[string]CompareOperator, error) {
+func genericDateOperators() (map[string]CompareOperator, error) {
 	var operatorFunctionsMap = map[string]CompareOperator{
 		EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
 			var err error
@@ -523,7 +523,7 @@ func genericTimeOperators() (map[string]CompareOperator, error) {
 	return operatorFunctionsMap, nil
 }
 
-func genericFloatOperators() (map[string]CompareOperator, error) {
+func genericNumberOperators() (map[string]CompareOperator, error) {
 	var operatorFunctionsMap = map[string]CompareOperator{
 		EqualCompareOperator: func(leftOperand, rightOperand Operand) bool {
 			equalityThreshold := 1e-9
