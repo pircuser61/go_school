@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -246,6 +247,8 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
+	gb.State = &state
+
 	if state.Type == script.ApproverTypeFromSchema {
 		// get approver from application body
 		var allVariables map[string]interface{}
@@ -254,7 +257,11 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 			return errors.Wrap(err, "Unable to grab variables storage")
 		}
 
-		for approverVariableRef := range state.Approvers {
+		approvers := make(map[string]struct{})
+		for approverVariableRef := range gb.State.Approvers {
+			if len(strings.Split(approverVariableRef, dotSeparator)) == 1 {
+				continue
+			}
 			approverVar := getVariable(allVariables, approverVariableRef)
 
 			if approverVar == nil {
@@ -262,13 +269,15 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 			}
 
 			if actualApproverUsername, castOK := approverVar.(string); castOK {
-				state.Approvers[actualApproverUsername] = state.Approvers[approverVariableRef]
-				delete(state.Approvers, approverVariableRef)
+				approvers[actualApproverUsername] = gb.State.Approvers[approverVariableRef]
 			}
 		}
-	}
 
-	gb.State = &state
+		if len(approvers) != 0 {
+			gb.State.Approvers = approvers
+			gb.State.LeftToNotify = approvers
+		}
+	}
 
 	if step.Status != string(StatusIdle) {
 		handled, errSLA := gb.handleSLA(ctx, id, stepCtx)
