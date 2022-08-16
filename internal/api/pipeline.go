@@ -155,42 +155,14 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request, params
 
 	myPipelines := params.My != nil && *params.My
 
-	drafts, err := ae.draftVersions(ctx, myPipelines)
+	pipelines, err := ae.listPipelines(ctx, myPipelines)
 	if err != nil {
 		_ = err.sendError(w)
 
 		return
 	}
 
-	approved, err := ae.approvedVersions(ctx)
-	if err != nil {
-		_ = err.sendError(w)
-
-		return
-	}
-
-	onApprove, perr := ae.onApprovedVersions(ctx)
-	if perr != nil {
-		_ = perr.sendError(w)
-
-		return
-	}
-
-	tags, err := ae.tags(ctx)
-	if err != nil {
-		_ = err.sendError(w)
-
-		return
-	}
-
-	resp := entity.EriusScenarioList{
-		Pipelines: approved,
-		OnApprove: onApprove,
-		Drafts:    drafts,
-		Tags:      tags,
-	}
-
-	if err := sendResponse(w, http.StatusOK, resp); err != nil {
+	if err := sendResponse(w, http.StatusOK, pipelines); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -436,48 +408,10 @@ func (ae *APIEnv) RenamePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// onApprovedVersions выбирает версии сценариев с признаком OnApprove,
-// разрешенные для данного пользователя
-//nolint:dupl //different logic
-func (ae *APIEnv) onApprovedVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
-	ctx, s := trace.StartSpan(ctx, "list_on_approve_versions")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	onApprove, err := ae.DB.GetOnApproveVersions(ctx)
-	if err != nil {
-		log.Error(GetAllOnApproveError.errorMessage(err))
-
-		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllOnApproveError}
-	}
-
-	return onApprove, nil
-}
-
-// approvedVersions выбирает последние рабочие версии сценариев,
-// разрешенные для данного пользователя
-//nolint:dupl //different logic
-func (ae *APIEnv) approvedVersions(ctx context.Context) ([]entity.EriusScenarioInfo, *PipelinerError) {
-	ctx, s := trace.StartSpan(ctx, "list_approved_versions")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	approved, err := ae.DB.GetApprovedVersions(ctx)
-	if err != nil {
-		log.Error(GetAllApprovedError.errorMessage(err))
-
-		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllApprovedError}
-	}
-
-	return approved, nil
-}
-
-// draftVersions выбирает версии сценария с признаком Draft,
+// listPipelines выбирает версии сценария с признаком Draft,
 // разрешенные для данного пользователя
 //nolint:dupl //diff logic
-func (ae *APIEnv) draftVersions(ctx context.Context, myPipelines bool) ([]entity.EriusScenarioInfo, *PipelinerError) {
+func (ae *APIEnv) listPipelines(ctx context.Context, myPipelines bool) ([]entity.EriusScenarioInfo, *PipelinerError) {
 	ctx, s := trace.StartSpan(ctx, "list_drafts")
 	defer s.End()
 
@@ -492,42 +426,12 @@ func (ae *APIEnv) draftVersions(ctx context.Context, myPipelines bool) ([]entity
 		authorLogin = userFromContext.Username
 	}
 
-	drafts, err := ae.DB.GetDraftVersions(ctx, authorLogin)
+	drafts, err := ae.DB.GetPipelinesWithLatestVersion(ctx, authorLogin)
 	if err != nil {
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllDraftsError}
 	}
 
-	onapprove, err := ae.DB.GetOnApproveVersions(ctx)
-	if err != nil {
-		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllOnApproveError}
-	}
-
-	rejected, err := ae.DB.GetRejectedVersions(ctx)
-	if err != nil {
-		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllRejectedError}
-	}
-
-	drafts = append(drafts, onapprove...)
-	drafts = append(drafts, rejected...)
-
 	return drafts, nil
-}
-
-// nolint:dupl // original code
-func (ae *APIEnv) tags(ctx context.Context) ([]entity.EriusTagInfo, *PipelinerError) {
-	ctx, s := trace.StartSpan(ctx, "list_tags")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	tags, err := ae.DB.GetAllTags(ctx)
-	if err != nil {
-		log.Error(GetAllTagsError.errorMessage(err))
-
-		return []entity.EriusTagInfo{}, &PipelinerError{GetAllTagsError}
-	}
-
-	return tags, nil
 }
 
 func scenarioUsage(ctx context.Context, pipelineStorager db.PipelineStorager, id uuid.UUID) ([]entity.EriusScenario, error) {

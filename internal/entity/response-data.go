@@ -9,13 +9,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-type EriusScenarioList struct {
-	Pipelines []EriusScenarioInfo `json:"pipelines"`  // Согласованные сценарии
-	Drafts    []EriusScenarioInfo `json:"drafts"`     // Черновики
-	OnApprove []EriusScenarioInfo `json:"on_approve"` // Сценарии на одобрении
-	Tags      []EriusTagInfo      `json:"tags"`       // Теги
-}
-
 type EriusScenarioInfo struct {
 	ID              uuid.UUID          `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
 	VersionID       uuid.UUID          `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`

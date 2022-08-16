@@ -517,6 +517,29 @@ func (_m *MockedDatabase) GetPipelineVersion(c context.Context, id uuid.UUID) (*
 	return r0, r1
 }
 
+// GetPipelinesWithLatestVersion provides a mock function with given fields: c, author
+func (_m *MockedDatabase) GetPipelinesWithLatestVersion(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
+	ret := _m.Called(c, author)
+
+	var r0 []entity.EriusScenarioInfo
+	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.EriusScenarioInfo); ok {
+		r0 = rf(c, author)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.EriusScenarioInfo)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(c, author)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetRejectedVersions provides a mock function with given fields: c
 func (_m *MockedDatabase) GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(c)

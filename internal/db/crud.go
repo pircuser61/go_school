@@ -161,6 +161,57 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 	return versionHistoryList, nil
 }
 
+func (db *PGCon) GetPipelinesWithLatestVersion(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
+	c, span := trace.StartSpan(c, "pg_get_pipelines_with_latest_version")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+SELECT pv.id,
+       pv.status,
+       pv.pipeline_id,
+       pv.created_at,
+       pv.author,
+       pv.approver,
+       pp.name,
+       pw.started_at,
+       pws.name,
+       pv.comment_rejected,
+       pv.comment
+FROM pipeliner.versions pv
+         JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
+         LEFT OUTER JOIN pipeliner.works pw ON pw.id = pv.last_run_id
+         LEFT OUTER JOIN pipeliner.work_status pws ON pws.id = pw.status
+WHERE pp.deleted_at IS NULL
+  AND updated_at = (
+    SELECT MAX(updated_at)
+    FROM pipeliner.versions pv2
+    WHERE pv.pipeline_id = pv2.pipeline_id
+      AND pv2.status NOT IN (3, 4)
+)
+  ---author---
+ORDER BY created_at;`
+
+	fmt.Println("author: ", author)
+
+	if author != "" {
+		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
+	}
+
+	rows, err := db.Pool.Query(c, q)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := parseRowsVersionList(c, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (db *PGCon) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_approved_versions")
 	defer span.End()

@@ -59,6 +59,7 @@ type Database interface {
 	PipelineStorager
 	TaskStorager
 
+	GetPipelinesWithLatestVersion(c context.Context, author string) ([]entity.EriusScenarioInfo, error)
 	GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	GetVersionsByStatus(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error)
 	GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error)
