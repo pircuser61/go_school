@@ -21,6 +21,9 @@ type ExecutionParams struct {
 	Type      ExecutionType `json:"type"`
 	Executors string        `json:"executors"`
 
+	ExecutorsGroupID   string `json:"executors_group_id"`
+	ExecutorsGroupName string `json:"executors_group_name"`
+
 	SLA int `json:"sla"`
 }
 

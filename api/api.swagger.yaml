@@ -2551,10 +2551,18 @@ components:
           type: integer
           description: Execution SLA (in working hours)
           minimum: 1
+        executors_group_id:
+          type: string
+          description: Executors group id in SD
+        executors_group_name:
+          type: string
+          description: Executors group name in SD
       required:
         - type
         - executors
         - sla
+        - executors_group_id
+        - executors_group_name
 
     ApproverType:
       type: string
