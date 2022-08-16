@@ -34,7 +34,7 @@ type ApproversGroup struct {
 type ExecutorsGroup struct {
 	GroupID   string     `json:"groupID"`
 	GroupName string     `json:"groupName"`
-	People    []Approver `json:"people"`
+	People    []Executor `json:"people"`
 }
 
 func (s *Service) GetApproversGroup(ctx context.Context, groupID string) (*ApproversGroup, error) {
