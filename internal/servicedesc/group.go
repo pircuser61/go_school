@@ -14,7 +14,7 @@ import (
 const (
 	authorizationHeader = "Authorization"
 	getApproversGroup   = "/v1/approver/"
-	getExecutorsGroup   = "/v1/approver/"
+	getExecutorsGroup   = "/v1/executors/"
 )
 
 type Approver struct {
@@ -73,7 +73,7 @@ func (s *Service) GetApproversGroup(ctx context.Context, groupID string) (*Appro
 	return res, nil
 }
 
-func (s *Service) GetExecutorsGroup(ctx context.Context, groupID string) (*ApproversGroup, error) {
+func (s *Service) GetExecutorsGroup(ctx context.Context, groupID string) (*ExecutorsGroup, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_executors_group")
 	defer span.End()
 
@@ -98,7 +98,7 @@ func (s *Service) GetExecutorsGroup(ctx context.Context, groupID string) (*Appro
 		return nil, fmt.Errorf("got bad status code: %d", resp.StatusCode)
 	}
 
-	res := &ApproversGroup{}
+	res := &ExecutorsGroup{}
 	if unmErr := json.NewDecoder(resp.Body).Decode(res); unmErr != nil {
 		return nil, unmErr
 	}
