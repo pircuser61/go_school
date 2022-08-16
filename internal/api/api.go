@@ -435,6 +435,12 @@ type ExecutionParams struct {
 	// Executor value (depends on type)
 	Executors string `json:"executors"`
 
+	// Executors group id in SD
+	ExecutorsGroupId string `json:"executors_group_id"`
+
+	// Executors group name in SD
+	ExecutorsGroupName string `json:"executors_group_name"`
+
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`
 

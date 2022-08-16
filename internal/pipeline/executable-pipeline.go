@@ -620,7 +620,7 @@ func (ep *ExecutablePipeline) CreateGoBlock(ctx c.Context, ef *entity.EriusFunc,
 	case BlockGoSdApplicationID:
 		return createGoSdApplicationBlock(name, ef)
 	case BlockGoExecutionID:
-		return createGoExecutionBlock(name, ef, ep)
+		return createGoExecutionBlock(ctx, name, ef, ep)
 	case BlockGoStartId:
 		return createGoStartBlock(name, ef), nil
 	case BlockGoEndId:
