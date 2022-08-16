@@ -17,7 +17,7 @@ people:
 database:
   kind: postgres
   host: localhost
-  port: 5432
+  port: 5433
   user: "jocasta"
   pass: "4V7Debjee4s2KvTg"
   dbname: 'pipeliner'

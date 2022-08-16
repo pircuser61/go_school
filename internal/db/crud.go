@@ -661,43 +661,6 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 	return false, nil
 }
 
-func (db *PGCon) DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error) {
-	c, span := trace.StartSpan(c, "pg_draft_pipeline_creatable")
-	defer span.End()
-
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return false, err
-	}
-
-	defer conn.Release()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `
-		SELECT COUNT(id) AS count
-		FROM pipeliner.versions 
-		WHERE 
-			pipeline_id = $1 AND 
-			author = $2 AND 
-			(status = $3 OR status = $4 OR status = $5)`
-
-	row := conn.QueryRow(c, q, id, author, StatusDraft, StatusOnApprove, StatusRejected)
-
-	count := 0
-
-	err = row.Scan(&count)
-	if err != nil {
-		return false, err
-	}
-
-	if count == 0 {
-		return true, nil
-	}
-
-	return false, nil
-}
-
 func (db *PGCon) CreatePipeline(c context.Context,
 	p *entity.EriusScenario, author string, pipelineData []byte) error {
 	c, span := trace.StartSpan(c, "pg_create_pipeline")

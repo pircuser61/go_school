@@ -89,7 +89,6 @@ type Database interface {
 	AttachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
 	DetachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
 	RemovePipelineTags(c context.Context, id uuid.UUID) error
-	DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error)
 	DeleteAllVersions(c context.Context, id uuid.UUID) error
 	PipelineNameCreatable(c context.Context, name string) (bool, error)
 	SwitchRejected(c context.Context, versionID uuid.UUID, comment, author string) error
