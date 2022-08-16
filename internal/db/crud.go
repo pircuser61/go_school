@@ -1443,10 +1443,11 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	SET 
 		status = $1, 
 		content = $2, 
-		comment = $3 
-	WHERE id = $4`
+		comment = $3,
+	    is_actual = $4
+	WHERE id = $5`
 
-	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.Comment, p.VersionID)
+	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, p.VersionID)
 	if err != nil {
 		return err
 	}
@@ -2165,7 +2166,7 @@ func (db *PGCon) GetVersionsByBlueprintID(c context.Context, bID string) ([]enti
 	) as servicedesk_node_params
 		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
 	WHERE pv.status = 2 AND
-			pv.created_at = (SELECT MAX(v.created_at) FROM pipeliner.versions v WHERE v.pipeline_id = pv.pipeline_id AND v.status = 2) AND
+			pv.is_actual = TRUE AND
 			servicedesk_node_params.blueprint_id = $1 AND
 			servicedesk_node_params.type_id = 'servicedesk_application';
 `
