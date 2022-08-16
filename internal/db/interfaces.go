@@ -70,6 +70,7 @@ type Database interface {
 		p *entity.EriusScenario, author string, pipelineData []byte) error
 	DeleteVersion(c context.Context, versionID uuid.UUID) error
 	GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
+	GetPipelineVersions(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error)
 	UpdateDraft(c context.Context,
 		p *entity.EriusScenario, pipelineData []byte) error
 	SaveStepContext(c context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)

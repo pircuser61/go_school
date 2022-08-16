@@ -337,6 +337,39 @@ func (ae *APIEnv) DeleteDraftPipeline(ctx context.Context, w http.ResponseWriter
 	return nil
 }
 
+func (ae *APIEnv) GetPipelineVersions(w http.ResponseWriter, req *http.Request, pipelineID string) {
+	ctx, span := trace.StartSpan(req.Context(), "get_pipeline_versions")
+	defer span.End()
+
+	log := logger.GetLogger(ctx)
+
+	id, err := uuid.Parse(pipelineID)
+	if err != nil {
+		e := UUIDParsingError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	vv, err := ae.DB.GetPipelineVersions(ctx, id)
+	if err != nil {
+		e := GetPipelineVersionsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	err = sendResponse(w, http.StatusOK, vv)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 func (ae *APIEnv) RenamePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "rename_pipeline")
 	defer s.End()

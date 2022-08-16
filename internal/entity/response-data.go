@@ -28,10 +28,13 @@ type EriusScenarioInfo struct {
 
 type EriusVersionInfo struct {
 	VersionID  uuid.UUID  `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	CreatedAt  time.Time  `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
 	ApprovedAt *time.Time `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Approver   string     `json:"approver,omitempty" example:"testApprover"`
 	Author     string     `json:"author" example:"testAuthor"`
-	Approver   string     `json:"approver" example:"testApprover"`
+	CreatedAt  time.Time  `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	UpdatedAt  time.Time  `json:"updated_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	IsActual   bool       `json:"is_actual"`
+	Status     int        `json:"status"`
 }
 
 type EriusTagInfo struct {

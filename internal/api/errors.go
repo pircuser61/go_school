@@ -28,6 +28,7 @@ const (
 	GetAllDraftsError
 	GetPipelineError
 	GetVersionError
+	GetPipelineVersionsError
 	PipelineIsDraft
 	ApproveError
 	PipelineDeleteError
@@ -93,6 +94,7 @@ var errorText = map[Err]string{
 	UUIDParsingError:              "can't find uuid",
 	GetPipelineError:              "can't get pipeline",
 	GetVersionError:               "can't get pipeline version",
+	GetPipelineVersionsError:      "can't get pipeline versions",
 	RequestReadError:              "can't read request",
 	PipelineReadError:             "can't read pipeline data",
 	PipelineWriteError:            "can't write pipeline data",
@@ -162,6 +164,7 @@ var errorDescription = map[Err]string{
 	UUIDParsingError:              "Не удалось прочитать идентификатор",
 	GetPipelineError:              "Не удалось получить информацию о сценарии",
 	GetVersionError:               "Не удалось получить информацию о сценарии",
+	GetPipelineVersionsError:      "Не удалось получить информацию о версиях сценарии",
 	RequestReadError:              "Не удалось прочитать запрос",
 	PipelineReadError:             "Не удалось прочитать информацию о сценарии",
 	PipelineIsDraft:               "Редактирование согласованного сценария запрещено, необходимо создать новую версию",

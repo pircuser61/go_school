@@ -1799,44 +1799,10 @@ components:
         - comment
         - comment_rejected
 
-    ScenarionVersionInfo:
-      type: object
-      description: A certain version description
-      properties:
-        version_id:
-          type: string
-          format: uuid
-          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-        author:
-          type: string
-          description: Author login
-        created_at:
-          type: string
-          example: 2020-07-16T17:10:25.112704+03:00
-        updated_at:
-          type: string
-          example: 2020-07-16T17:10:25.112704+03:00
-        usage_count:
-          type: integer
-          description: How many times is the version used as a subprocess
-        is_actual:
-          type: boolean
-          description: If the version is currently used as an actual one
-        status:
-          $ref: '#/components/schemas/scenarioStatus'
-      required:
-        - version_id
-        - created_at
-        - updated_at
-        - usage_count
-        - author
-        - is_actual
-        - status
-
     ScenarioVersionInfoList:
       type: array
       items:
-        $ref: '#/components/schemas/ScenarionVersionInfo'
+        $ref: '#/components/schemas/EriusVersionInfo'
 
     EriusScenarioInfo:
       type: object
@@ -2001,8 +1967,11 @@ components:
 
     EriusVersionInfo:
       type: object
-      required: [version_id,created_at,author,approver]
       properties:
+        version_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         approved_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
@@ -2015,10 +1984,27 @@ components:
         created_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
-        version_id:
+        updated_at:
           type: string
-          format: uuid
-          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          example: 2020-07-16T17:10:25.112704+03:00
+        usage_count:
+          type: integer
+          description: How many times is the version used as a subprocess
+        is_actual:
+          type: boolean
+          description: If the version is currently used as an actual one
+        status:
+          $ref: '#/components/schemas/scenarioStatus'
+      required:
+        - version_id
+        - approved_at
+        - author
+        - created_at
+        - updated_at
+        - usage_count
+        - is_actual
+        - status
+
     scenarioStatus:
       type: integer
       enum:

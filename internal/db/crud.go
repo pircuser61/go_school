@@ -144,10 +144,13 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 
 		err := rows.Scan(
 			&e.VersionID,
-			&e.CreatedAt,
-			&e.Author,
-			&approver,
 			&e.ApprovedAt,
+			&approver,
+			&e.Author,
+			&e.CreatedAt,
+			&e.UpdatedAt,
+			&e.IsActual,
+			&e.Status,
 		)
 		if err != nil {
 			return nil, err
@@ -254,7 +257,7 @@ func (db *PGCon) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioI
 	for i := range final {
 		vs := final[i]
 
-		versionHistory, err := db.getVersionHistory(c, vs.ID)
+		versionHistory, err := db.getVersionHistory(c, vs.ID, StatusApproved)
 		if err != nil {
 			return nil, err
 		}
@@ -264,6 +267,13 @@ func (db *PGCon) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioI
 	}
 
 	return final, nil
+}
+
+func (db *PGCon) GetPipelineVersions(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error) {
+	c, span := trace.StartSpan(c, "pg_get_pipeline_versions")
+	defer span.End()
+
+	return db.getVersionHistory(c, id, -1)
 }
 
 func (db *PGCon) findApproveDate(c context.Context, id uuid.UUID) (time.Time, error) {
@@ -2063,7 +2073,7 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 	return &s, nil
 }
 
-func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error) {
+func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) ([]entity.EriusVersionInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_version_history")
 	defer span.End()
 
@@ -2079,20 +2089,26 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID) ([]entity.Er
 	q := `
 	SELECT 
 		pv.id, 
+	    pv.approved_at,
+	    pv.approver,
+	    pv.author, 
 		pv.created_at, 
-		pv.author, 
-		pv.approver, 
-		ph.date
+	    pv.updated_at,
+		pv.is_actual,
+	    pv.status
 	FROM pipeliner.versions pv
 	JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
-	LEFT OUTER JOIN pipeliner.pipeline_history ph ON pv.id = ph.version_id
 	WHERE 
-		pv.status = $1 
-		AND pp.id = $2 
+		pp.id = $1 
+		--status--
 		AND pp.deleted_at IS NULL
-	ORDER BY date`
+	ORDER BY created_at DESC`
 
-	rows, err := conn.Query(c, q, StatusApproved, id)
+	if status != -1 {
+		q = strings.Replace(q, "--status--", fmt.Sprintf("AND pv.status=%d", status), 1)
+	}
+
+	rows, err := conn.Query(c, q, id)
 	if err != nil {
 		return nil, err
 	}
