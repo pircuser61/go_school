@@ -23,7 +23,6 @@ type EriusScenarioInfo struct {
 	Status          int                `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	Comment         string             `json:"comment"`
 	CommentRejected string             `json:"comment_rejected"`
-	History         []EriusVersionInfo `json:"version_history"`
 }
 
 type EriusVersionInfo struct {

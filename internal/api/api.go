@@ -358,10 +358,9 @@ type EriusScenarioInfo struct {
 	//  * 3 - Deleted
 	//  * 4 - Rejected
 	//  * 5 - On approve
-	Status         ScenarioStatus     `json:"status"`
-	Tags           []EriusTagInfo     `json:"tags"`
-	VersionHistory []EriusVersionInfo `json:"version_history"`
-	VersionId      string             `json:"version_id"`
+	Status    ScenarioStatus `json:"status"`
+	Tags      []EriusTagInfo `json:"tags"`
+	VersionId string         `json:"version_id"`
 }
 
 // EriusScenarioList defines model for EriusScenarioList.

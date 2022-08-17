@@ -1841,10 +1841,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EriusTagInfo'
-        version_history:
-          type: array
-          items:
-            $ref: '#/components/schemas/EriusVersionInfo'
         version_id:
           type: string
           format: uuid
@@ -1861,7 +1857,6 @@ components:
         - status
         - comment
         - comment_rejected
-        - version_history
 
     EriusScenarioList:
       type: array

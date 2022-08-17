@@ -144,7 +144,6 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 
 		err := rows.Scan(
 			&e.VersionID,
-			&e.ApprovedAt,
 			&approver,
 			&e.Author,
 			&e.CreatedAt,
@@ -251,18 +250,6 @@ func (db *PGCon) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioI
 	for i := range vMap {
 		v := vMap[i]
 		final[n] = v
-		n++
-	}
-
-	for i := range final {
-		vs := final[i]
-
-		versionHistory, err := db.getVersionHistory(c, vs.ID, StatusApproved)
-		if err != nil {
-			return nil, err
-		}
-
-		final[i].History = versionHistory
 		n++
 	}
 
@@ -2088,8 +2075,7 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) 
 	// language=PostgreSQL
 	q := `
 	SELECT 
-		pv.id, 
-	    pv.approved_at,
+		pv.id,
 	    pv.approver,
 	    pv.author, 
 		pv.created_at, 
