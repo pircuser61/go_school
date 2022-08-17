@@ -2509,7 +2509,13 @@ components:
           description: People to get notifications
           items:
             type: string
-            description: Email or login
+            description: Logins
+        emails:
+          type: array
+          description: Emails to get notifications
+          items:
+            type: string
+            description: Emails
         subject:
           type: string
           description: Notification subject
@@ -2518,6 +2524,7 @@ components:
           description: Notification body
       required:
         - people
+        - emails
         - subject
         - text
 
