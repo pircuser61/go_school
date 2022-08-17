@@ -73,7 +73,7 @@ func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *stor
 	}
 	emails = append(emails, gb.State.Emails...)
 
-	if badEmails == len(emails) {
+	if badEmails == len(gb.State.People)+len(gb.State.Emails) {
 		return errors.New("can't find any working emails from logins")
 	}
 	return gb.Pipeline.Sender.SendNotification(ctx, emails, mail.Template{
