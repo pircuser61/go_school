@@ -144,10 +144,12 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 
 		err := rows.Scan(
 			&e.VersionID,
-			&e.CreatedAt,
-			&e.Author,
 			&approver,
-			&e.ApprovedAt,
+			&e.Author,
+			&e.CreatedAt,
+			&e.UpdatedAt,
+			&e.IsActual,
+			&e.Status,
 		)
 		if err != nil {
 			return nil, err
@@ -159,6 +161,57 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 	}
 
 	return versionHistoryList, nil
+}
+
+func (db *PGCon) GetPipelinesWithLatestVersion(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
+	c, span := trace.StartSpan(c, "pg_get_pipelines_with_latest_version")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+SELECT pv.id,
+       pv.status,
+       pv.pipeline_id,
+       pv.created_at,
+       pv.author,
+       pv.approver,
+       pp.name,
+       pw.started_at,
+       pws.name,
+       pv.comment_rejected,
+       pv.comment
+FROM pipeliner.versions pv
+         JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
+         LEFT OUTER JOIN pipeliner.works pw ON pw.id = pv.last_run_id
+         LEFT OUTER JOIN pipeliner.work_status pws ON pws.id = pw.status
+WHERE pp.deleted_at IS NULL
+  AND updated_at = (
+    SELECT MAX(updated_at)
+    FROM pipeliner.versions pv2
+    WHERE pv.pipeline_id = pv2.pipeline_id
+      AND pv2.status NOT IN (3, 4)
+)
+  ---author---
+ORDER BY created_at;`
+
+	fmt.Println("author: ", author)
+
+	if author != "" {
+		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
+	}
+
+	rows, err := db.Pool.Query(c, q)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := parseRowsVersionList(c, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (db *PGCon) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
@@ -200,19 +253,14 @@ func (db *PGCon) GetApprovedVersions(c context.Context) ([]entity.EriusScenarioI
 		n++
 	}
 
-	for i := range final {
-		vs := final[i]
-
-		versionHistory, err := db.getVersionHistory(c, vs.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		final[i].History = versionHistory
-		n++
-	}
-
 	return final, nil
+}
+
+func (db *PGCon) GetPipelineVersions(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error) {
+	c, span := trace.StartSpan(c, "pg_get_pipeline_versions")
+	defer span.End()
+
+	return db.getVersionHistory(c, id, -1)
 }
 
 func (db *PGCon) findApproveDate(c context.Context, id uuid.UUID) (time.Time, error) {
@@ -661,43 +709,6 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 	return false, nil
 }
 
-func (db *PGCon) DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error) {
-	c, span := trace.StartSpan(c, "pg_draft_pipeline_creatable")
-	defer span.End()
-
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return false, err
-	}
-
-	defer conn.Release()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `
-		SELECT COUNT(id) AS count
-		FROM pipeliner.versions 
-		WHERE 
-			pipeline_id = $1 AND 
-			author = $2 AND 
-			(status = $3 OR status = $4 OR status = $5)`
-
-	row := conn.QueryRow(c, q, id, author, StatusDraft, StatusOnApprove, StatusRejected)
-
-	count := 0
-
-	err = row.Scan(&count)
-	if err != nil {
-		return false, err
-	}
-
-	if count == 0 {
-		return true, nil
-	}
-
-	return false, nil
-}
-
 func (db *PGCon) CreatePipeline(c context.Context,
 	p *entity.EriusScenario, author string, pipelineData []byte) error {
 	c, span := trace.StartSpan(c, "pg_create_pipeline")
@@ -763,7 +774,8 @@ func (db *PGCon) CreateVersion(c context.Context,
 		created_at, 
 		content, 
 		author, 
-		comment
+		comment,
+	    updated_at                            
 	)
 	VALUES (
 		$1, 
@@ -777,7 +789,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 
 	createdAt := time.Now()
 
-	_, err := db.Pool.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author, p.Comment)
+	_, err := db.Pool.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author, p.Comment, createdAt)
 	if err != nil {
 		return err
 	}
@@ -1480,10 +1492,12 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	SET 
 		status = $1, 
 		content = $2, 
-		comment = $3 
-	WHERE id = $4`
+		comment = $3,
+	    is_actual = $4,
+	    updated_at = $5
+	WHERE id = $6`
 
-	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.Comment, p.VersionID)
+	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), p.VersionID)
 	if err != nil {
 		return err
 	}
@@ -2046,7 +2060,7 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 	return &s, nil
 }
 
-func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error) {
+func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) ([]entity.EriusVersionInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_version_history")
 	defer span.End()
 
@@ -2061,21 +2075,26 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID) ([]entity.Er
 	// language=PostgreSQL
 	q := `
 	SELECT 
-		pv.id, 
+		pv.id,
+	    pv.approver,
+	    pv.author, 
 		pv.created_at, 
-		pv.author, 
-		pv.approver, 
-		ph.date
+	    pv.updated_at,
+		pv.is_actual,
+	    pv.status
 	FROM pipeliner.versions pv
 	JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
-	LEFT OUTER JOIN pipeliner.pipeline_history ph ON pv.id = ph.version_id
 	WHERE 
-		pv.status = $1 
-		AND pp.id = $2 
+		pp.id = $1 
+		--status--
 		AND pp.deleted_at IS NULL
-	ORDER BY date`
+	ORDER BY created_at DESC`
 
-	rows, err := conn.Query(c, q, StatusApproved, id)
+	if status != -1 {
+		q = strings.Replace(q, "--status--", fmt.Sprintf("AND pv.status=%d", status), 1)
+	}
+
+	rows, err := conn.Query(c, q, id)
 	if err != nil {
 		return nil, err
 	}
@@ -2202,7 +2221,7 @@ func (db *PGCon) GetVersionsByBlueprintID(c context.Context, bID string) ([]enti
 	) as servicedesk_node_params
 		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
 	WHERE pv.status = 2 AND
-			pv.created_at = (SELECT MAX(v.created_at) FROM pipeliner.versions v WHERE v.pipeline_id = pv.pipeline_id AND v.status = 2) AND
+			pv.is_actual = TRUE AND
 			servicedesk_node_params.blueprint_id = $1 AND
 			servicedesk_node_params.type_id = 'servicedesk_application';
 `

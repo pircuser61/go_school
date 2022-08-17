@@ -9,13 +9,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
-type EriusScenarioList struct {
-	Pipelines []EriusScenarioInfo `json:"pipelines"`  // Согласованные сценарии
-	Drafts    []EriusScenarioInfo `json:"drafts"`     // Черновики
-	OnApprove []EriusScenarioInfo `json:"on_approve"` // Сценарии на одобрении
-	Tags      []EriusTagInfo      `json:"tags"`       // Теги
-}
-
 type EriusScenarioInfo struct {
 	ID              uuid.UUID          `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
 	VersionID       uuid.UUID          `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
@@ -30,15 +23,17 @@ type EriusScenarioInfo struct {
 	Status          int                `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	Comment         string             `json:"comment"`
 	CommentRejected string             `json:"comment_rejected"`
-	History         []EriusVersionInfo `json:"version_history"`
 }
 
 type EriusVersionInfo struct {
 	VersionID  uuid.UUID  `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	CreatedAt  time.Time  `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
 	ApprovedAt *time.Time `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Approver   string     `json:"approver,omitempty" example:"testApprover"`
 	Author     string     `json:"author" example:"testAuthor"`
-	Approver   string     `json:"approver" example:"testApprover"`
+	CreatedAt  time.Time  `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	UpdatedAt  time.Time  `json:"updated_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	IsActual   bool       `json:"is_actual"`
+	Status     int        `json:"status"`
 }
 
 type EriusTagInfo struct {

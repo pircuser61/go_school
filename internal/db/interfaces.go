@@ -59,6 +59,7 @@ type Database interface {
 	PipelineStorager
 	TaskStorager
 
+	GetPipelinesWithLatestVersion(c context.Context, author string) ([]entity.EriusScenarioInfo, error)
 	GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
 	GetVersionsByStatus(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error)
 	GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error)
@@ -69,6 +70,7 @@ type Database interface {
 		p *entity.EriusScenario, author string, pipelineData []byte) error
 	DeleteVersion(c context.Context, versionID uuid.UUID) error
 	GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
+	GetPipelineVersions(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error)
 	UpdateDraft(c context.Context,
 		p *entity.EriusScenario, pipelineData []byte) error
 	SaveStepContext(c context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
@@ -89,7 +91,6 @@ type Database interface {
 	AttachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
 	DetachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
 	RemovePipelineTags(c context.Context, id uuid.UUID) error
-	DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error)
 	DeleteAllVersions(c context.Context, id uuid.UUID) error
 	PipelineNameCreatable(c context.Context, name string) (bool, error)
 	SwitchRejected(c context.Context, versionID uuid.UUID, comment, author string) error
