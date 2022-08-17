@@ -155,6 +155,8 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, step
 }
 
 func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
+	const workHoursDay = 8
+
 	if gb.State.DidSLANotification {
 		return false, nil
 	}
@@ -162,7 +164,7 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 		l := logger.GetLogger(ctx)
 
 		// nolint:dupl // handle approvers
-		if gb.State.SLA > 8 {
+		if gb.State.SLA > workHoursDay {
 			emails := make([]string, 0, len(gb.State.Approvers))
 			for approver := range gb.State.Approvers {
 				email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
@@ -174,6 +176,7 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 			if len(emails) == 0 {
 				return false, nil
 			}
+
 			err := gb.Pipeline.Sender.SendNotification(ctx, emails,
 				mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
 			if err != nil {
