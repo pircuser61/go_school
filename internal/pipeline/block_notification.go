@@ -61,19 +61,17 @@ func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *stor
 	defer s.End()
 
 	emails := make([]string, 0, len(gb.State.People)+len(gb.State.Emails))
-	badEmails := 0
 	for _, person := range gb.State.People {
 		email, err := gb.Pipeline.People.GetUserEmail(ctx, person)
 		if err != nil {
 			log.Println("can't get email of user", person)
-			badEmails++
 			continue
 		}
 		emails = append(emails, email)
 	}
 	emails = append(emails, gb.State.Emails...)
 
-	if badEmails == len(gb.State.People)+len(gb.State.Emails) {
+	if len(emails) == 0 {
 		return errors.New("can't find any working emails from logins")
 	}
 	return gb.Pipeline.Sender.SendNotification(ctx, emails, mail.Template{
