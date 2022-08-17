@@ -511,6 +511,9 @@ type FunctionValueModel struct {
 
 // Notification params
 type NotificationParams struct {
+	// Emails to get notifications
+	Emails []string `json:"emails"`
+
 	// People to get notifications
 	People []string `json:"people"`
 
