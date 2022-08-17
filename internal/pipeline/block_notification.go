@@ -3,11 +3,10 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"strings"
-
-	"go.opencensus.io/trace"
+	"log"
 
 	"github.com/pkg/errors"
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -62,18 +61,21 @@ func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *stor
 	defer s.End()
 
 	emails := make([]string, 0, len(gb.State.People)+len(gb.State.Emails))
+	badEmails := 0
 	for _, person := range gb.State.People {
-		if strings.Contains(person, "@") {
-			emails = append(emails, person)
-			continue
-		}
 		email, err := gb.Pipeline.People.GetUserEmail(ctx, person)
 		if err != nil {
-			return err
+			log.Println("can't get email of user", person)
+			badEmails++
+			continue
 		}
 		emails = append(emails, email)
 	}
 	emails = append(emails, gb.State.Emails...)
+
+	if badEmails == len(emails) {
+		return errors.New("can't find any working emails from logins")
+	}
 	return gb.Pipeline.Sender.SendNotification(ctx, emails, mail.Template{
 		Subject:   gb.State.Subject,
 		Text:      gb.State.Text,
