@@ -111,6 +111,7 @@ const (
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
 	TaskUpdateActionSendEditApp          TaskUpdateAction = "send_edit_app"
 	TaskUpdateActionCancelApp            TaskUpdateAction = "cancel_app"
+	TaskUpdateActionRequestAddInfo       TaskUpdateAction = "request_add_info"
 )
 
 type TaskUpdate struct {
