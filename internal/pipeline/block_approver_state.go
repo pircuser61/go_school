@@ -172,10 +172,10 @@ func createAddInfo(login string, params updateAddInfoParams) *RequestAddInfo {
 
 	var addInfoApplication RequestAddInfo
 
-	if params.Author == "initiator" {
+	switch params.Author {
+	case "initiator":
 		addInfoApplication.Initiator = &addInfo
-	}
-	if params.Author == "approver" {
+	case "approver":
 		addInfoApplication.Approver = &addInfo
 	}
 

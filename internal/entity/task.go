@@ -114,19 +114,25 @@ const (
 	TaskUpdateActionRequestAddInfo       TaskUpdateAction = "request_add_info"
 )
 
+var (
+	checkTaskUpdateMap = map[TaskUpdateAction]struct{}{
+		TaskUpdateActionApprovement:          {},
+		TaskUpdateActionExecution:            {},
+		TaskUpdateActionChangeExecutor:       {},
+		TaskUpdateActionRequestExecutionInfo: {},
+		TaskUpdateActionSendEditApp:          {},
+		TaskUpdateActionCancelApp:            {},
+		TaskUpdateActionRequestAddInfo:       {},
+	}
+)
+
 type TaskUpdate struct {
 	Action     TaskUpdateAction `json:"action" enums:"approvement,execution,change_executor,request_execution_info"`
 	Parameters json.RawMessage  `json:"parameters" swaggertype:"object"`
 }
 
 func (t *TaskUpdate) Validate() error {
-	if t.Action != TaskUpdateActionApprovement &&
-		t.Action != TaskUpdateActionExecution &&
-		t.Action != TaskUpdateActionCancelApp &&
-		t.Action != TaskUpdateActionRequestExecutionInfo &&
-		t.Action != TaskUpdateActionSendEditApp &&
-		t.Action != TaskUpdateActionChangeExecutor &&
-		t.Action != TaskUpdateActionRequestAddInfo {
+	if _, ok := checkTaskUpdateMap[t.Action]; !ok {
 		return errors.New("unknown action")
 	}
 
