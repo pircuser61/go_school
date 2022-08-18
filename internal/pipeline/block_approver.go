@@ -182,29 +182,27 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 			if err != nil {
 				return false, err
 			}
+
+			gb.State.DidSLANotification = true
 		}
 
-		gb.State.DidSLANotification = true
-
 		if gb.State.AutoAction != nil {
-			if err := gb.setApproverDecision(ctx,
-				id,
-				AutoApprover,
+			err := gb.setApproverDecision(ctx, id, AutoApprover,
 				approverUpdateParams{
 					Decision: decisionFromAutoAction(*gb.State.AutoAction),
 					Comment:  AutoActionComment,
-				}); err != nil {
-				gb.State.DidSLANotification = false
+				})
+			if  err != nil {
 				return false, err
 			}
 		} else {
 			if err := gb.dumpCurrState(ctx, id); err != nil {
-				gb.State.DidSLANotification = false
 				return false, err
 			}
 		}
 		return true, nil
 	}
+
 	return false, nil
 }
 
