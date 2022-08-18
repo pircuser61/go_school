@@ -775,7 +775,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 		content, 
 		author, 
 		comment,
-	    updated_at                            
+		updated_at
 	)
 	VALUES (
 		$1, 
@@ -784,7 +784,8 @@ func (db *PGCon) CreateVersion(c context.Context,
 		$4, 
 		$5, 
 		$6, 
-		$7
+		$7,
+		$8
 	)`
 
 	createdAt := time.Now()
@@ -1493,8 +1494,8 @@ func (db *PGCon) UpdateDraft(c context.Context,
 		status = $1, 
 		content = $2, 
 		comment = $3,
-	    is_actual = $4,
-	    updated_at = $5
+		is_actual = $4,
+		updated_at = $5
 	WHERE id = $6`
 
 	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), p.VersionID)

@@ -61,14 +61,11 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, a s
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
+	state.Approvers = gb.State.Approvers
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	err = gb.State.SetDecision(
-		a,
-		u.Decision,
-		u.Comment,
-	)
+	err = gb.State.SetDecision(a, u.Decision, u.Comment)
 	if err != nil {
 		return err
 	}
