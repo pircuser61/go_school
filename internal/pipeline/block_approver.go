@@ -177,26 +177,29 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 				return false, nil
 			}
 
-			err := gb.Pipeline.Sender.SendNotification(ctx, emails,
-				mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
+			tpl := mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress)
+			err := gb.Pipeline.Sender.SendNotification(ctx, emails, tpl)
 			if err != nil {
 				return false, err
 			}
-
-			gb.State.DidSLANotification = true
 		}
 
+		gb.State.DidSLANotification = true
+
 		if gb.State.AutoAction != nil {
-			err := gb.setApproverDecision(ctx, id, AutoApprover,
+			if err := gb.setApproverDecision(ctx,
+				id,
+				AutoApprover,
 				approverUpdateParams{
 					Decision: decisionFromAutoAction(*gb.State.AutoAction),
 					Comment:  AutoActionComment,
-				})
-			if  err != nil {
+				}); err != nil {
+				l.WithError(err).Error("couldn't set auto decision")
 				return false, err
 			}
 		} else {
 			if err := gb.dumpCurrState(ctx, id); err != nil {
+				l.WithError(err).Error("couldn't dump state with id: " + id.String())
 				return false, err
 			}
 		}
