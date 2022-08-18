@@ -125,7 +125,8 @@ func (t *TaskUpdate) Validate() error {
 		t.Action != TaskUpdateActionCancelApp &&
 		t.Action != TaskUpdateActionRequestExecutionInfo &&
 		t.Action != TaskUpdateActionSendEditApp &&
-		t.Action != TaskUpdateActionChangeExecutor {
+		t.Action != TaskUpdateActionChangeExecutor &&
+		t.Action != TaskUpdateActionRequestAddInfo {
 		return errors.New("unknown action")
 	}
 
