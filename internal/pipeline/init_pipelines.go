@@ -175,8 +175,20 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 		}
 
 		variableStorage := store.NewStore()
-		// TODO add finished
-		// variableStorage.
+
+		steps, err := ep.Storage.GetTaskSteps(ctx, task.ID)
+		if err != nil {
+			log.Error(err, ", work number: ", task.WorkNumber)
+			outCh <- task.WorkNumber
+			continue
+		}
+
+		if len(steps) > 0 {
+			variableStorage.State = steps[0].State
+			variableStorage.Steps = steps[0].Steps
+			variableStorage.Errors = steps[0].Errors
+			variableStorage.Values = steps[0].Storage
+		}
 
 		workNumber := task.WorkNumber
 
