@@ -123,7 +123,6 @@ func SetAuthTokenInContext(log logger.Logger) func(next http.Handler) http.Handl
 			ctx := r.Context()
 
 			token := r.Header.Get(AuthorizationHeader)
-			log.Info("auth token: ", token)
 
 			if token != "" {
 				ctx = context.WithValue(ctx, script.AuthorizationHeader{}, token)

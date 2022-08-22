@@ -104,7 +104,7 @@ func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string
 	var handleKey func(key string)
 	handleKey = func(key string) {
 		for socketName, bb := range pipeline.PipelineModel.Pipeline.Blocks[key].Next {
-			if socketName == editAppSocket {
+			if socketName == editAppSocket || socketName == requestAddInfoSocket {
 				continue
 			}
 

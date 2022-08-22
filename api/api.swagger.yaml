@@ -4,12 +4,12 @@ info:
   contact: {}
   version: "0.1"
 servers:
-- url: //localhost:8181/api/pipeliner/v1
+  - url: //localhost:8181/api/pipeliner/v1
 paths:
   /debug/:
     post:
       tags:
-      - debug
+        - debug
       summary: Create debug task
       description: Создать сессию отладки
       operationId: create-debug-task
@@ -30,8 +30,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusTask'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -54,17 +54,17 @@ paths:
   /debug/{workNumber}:
     get:
       tags:
-      - tasks
+        - tasks
       summary: Debug task
       description: Получить debug-задачу
       operationId: debug-task
       parameters:
-      - name: workNumber
-        in: path
-        description: work number
-        required: true
-        schema:
-          type: string
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -75,8 +75,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/DebugResult'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -98,7 +98,7 @@ paths:
   /debug/run:
     post:
       tags:
-      - debug
+        - debug
       summary: Start debug task
       description: Начать отладку
       operationId: start-debug-task
@@ -119,8 +119,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusTask'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -143,7 +143,7 @@ paths:
   /modules:
     get:
       tags:
-      - modules
+        - modules
       summary: Get list of modules
       description: Список блоков
       operationId: get-modules
@@ -157,8 +157,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusFunctionList'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -174,17 +174,17 @@ paths:
   /modules/{moduleName}:
     post:
       tags:
-      - modules
+        - modules
       summary: Run Module By Name
       description: Запустить блок
       operationId: module-run
       parameters:
-      - name: moduleName
-        in: path
-        description: module name
-        required: true
-        schema:
-          type: string
+        - name: moduleName
+          in: path
+          description: module name
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -195,8 +195,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/UsageResponse'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -212,17 +212,17 @@ paths:
   /modules/{moduleName}/usage:
     get:
       tags:
-      - modules
+        - modules
       summary: Usage of module in pipelines
       description: Сценарии, в которых используется блок
       operationId: module-usage
       parameters:
-      - name: moduleName
-        in: path
-        description: module name
-        required: true
-        schema:
-          type: string
+        - name: moduleName
+          in: path
+          description: module name
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -233,8 +233,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/UsageResponse'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -250,7 +250,7 @@ paths:
   /modules/usage:
     get:
       tags:
-      - modules
+        - modules
       summary: Get list of modules usage
       description: Блоки и сценарии, в которых они используются
       operationId: all-modules-usage
@@ -264,8 +264,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/AllUsageResponse'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -281,7 +281,7 @@ paths:
   /pipelines:
     get:
       tags:
-      - pipeline
+        - pipeline
       summary: Get list of pipelines
       description: Список сценариев
       operationId: list-pipelines
@@ -302,8 +302,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusScenarioList'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         401:
           description: Unauthorized
           content:
@@ -318,7 +318,7 @@ paths:
                 $ref: '#/components/schemas/httpError'
     post:
       tags:
-      - pipeline
+        - pipeline
       summary: Create pipeline
       description: Создать новый сценарий
       operationId: create-pipeline
@@ -339,8 +339,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusScenario'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -363,17 +363,17 @@ paths:
   /pipelines/{pipelineID}:
     get:
       tags:
-      - pipeline
+        - pipeline
       summary: Get pipeline
       description: Получить сценарий по ID
       operationId: get-pipeline
       parameters:
-      - name: pipelineID
-        in: path
-        description: Pipeline ID
-        required: true
-        schema:
-          type: string
+        - name: pipelineID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -384,8 +384,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusScenario'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -406,17 +406,17 @@ paths:
                 $ref: '#/components/schemas/httpError'
     delete:
       tags:
-      - pipeline
+        - pipeline
       summary: Delete Pipeline
       description: Удалить сценарий
       operationId: delete-pipeline
       parameters:
-      - name: pipelineID
-        in: path
-        description: Pipeline ID
-        required: true
-        schema:
-          type: string
+        - name: pipelineID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -442,20 +442,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
+  /pipelines/{pipelineID}/versions:
+    get:
+      tags:
+        - pipeline
+      summary: Get pipeline versions
+      description: Получить все версии сценария по ID
+      operationId: get-pipeline-versions
+      parameters:
+        - name: pipelineID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ScenarioVersionInfoList'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /pipelines/{pipelineID}/scheduler-tasks:
     post:
       tags:
-      - pipeline
+        - pipeline
       summary: Active scheduler tasks
       description: Наличие у сценария активных заданий в шедулере
       operationId: list-scheduler-tasks
       parameters:
-      - name: pipelineID
-        in: path
-        description: Pipeline ID
-        required: true
-        schema:
-          type: string
+        - name: pipelineID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -466,8 +512,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/SchedulerTasksResponse'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -483,18 +529,18 @@ paths:
   /pipelines/{pipelineID}/tags:
     get:
       tags:
-      - pipeline
-      - tags
+        - pipeline
+        - tags
       summary: Get Pipeline Tags
       description: Список тегов сценария
       operationId: get-pipeline-tags
       parameters:
-      - name: pipelineID
-        in: path
-        description: Pipeline ID
-        required: true
-        schema:
-          type: string
+        - name: pipelineID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -507,8 +553,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/EriusTagInfo'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -530,24 +576,24 @@ paths:
   /pipelines/{pipelineID}/tags/{ID}:
     put:
       tags:
-      - pipeline
-      - tags
+        - pipeline
+        - tags
       summary: Attach Tag
       description: Прикрепить тег к сценарию
       operationId: attach-tag
       parameters:
-      - name: pipelineID
-        in: path
-        description: Pipeline ID
-        required: true
-        schema:
-          type: string
-      - name: ID
-        in: path
-        description: Tag ID
-        required: true
-        schema:
-          type: string
+        - name: pipelineID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
+        - name: ID
+          in: path
+          description: Tag ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -558,8 +604,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusTagInfo'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -580,24 +626,24 @@ paths:
                 $ref: '#/components/schemas/httpError'
     delete:
       tags:
-      - pipeline
-      - tags
+        - pipeline
+        - tags
       summary: Detach Tag
       description: Открепить тег от сценария
       operationId: detach-tag
       parameters:
-      - name: pipelineID
-        in: path
-        description: Pipeline ID
-        required: true
-        schema:
-          type: string
-      - name: ID
-        in: path
-        description: Tag ID
-        required: true
-        schema:
-          type: string
+        - name: pipelineID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
+        - name: ID
+          in: path
+          description: Tag ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -626,7 +672,7 @@ paths:
   /pipelines/version:
     put:
       tags:
-      - pipeline
+        - pipeline
       summary: Edit Draft
       description: Изменить черновик
       operationId: edit-version
@@ -647,8 +693,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusScenario'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -671,17 +717,17 @@ paths:
   /pipelines/version/{ID}:
     get:
       tags:
-      - version
+        - version
       summary: Get pipeline version
       description: Получить версию сценария по ID
       operationId: get-pipeline-version
       parameters:
-      - name: ID
-        in: path
-        description: Version ID
-        required: true
-        schema:
-          type: string
+        - name: ID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -692,8 +738,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusScenario'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -714,17 +760,17 @@ paths:
                 $ref: '#/components/schemas/httpError'
     post:
       tags:
-      - version
+        - version
       summary: Create pipeline version
       description: Создать новую версию сценария
       operationId: create-pipeline-version
       parameters:
-      - name: ID
-        in: path
-        description: Pipeline ID
-        required: true
-        schema:
-          type: string
+        - name: ID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
       requestBody:
         description: New version
         content:
@@ -742,8 +788,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusScenario'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -765,17 +811,17 @@ paths:
       x-codegen-request-body-name: pipeline
     delete:
       tags:
-      - version
+        - version
       summary: Delete Version
       description: Удалить версию
       operationId: delete-version
       parameters:
-      - name: ID
-        in: path
-        description: Version ID
-        required: true
-        schema:
-          type: string
+        - name: ID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -844,18 +890,18 @@ paths:
   /run/{pipelineID}:
     post:
       tags:
-      - pipeline
-      - run
+        - pipeline
+        - run
       summary: Run Pipeline
       description: Запустить сценарий
       operationId: run-pipeline
       parameters:
-      - name: pipelineID
-        in: path
-        description: Pipeline ID
-        required: true
-        schema:
-          type: string
+        - name: pipelineID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
       requestBody:
         description: pipeline input
         content:
@@ -873,8 +919,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/RunResponse'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -897,18 +943,18 @@ paths:
   /run/version/{versionID}:
     post:
       tags:
-      - version
-      - run
+        - version
+        - run
       summary: Run Version
       description: Запустить версию
       operationId: run-version
       parameters:
-      - name: versionID
-        in: path
-        description: Version ID
-        required: true
-        schema:
-          type: string
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
       requestBody:
         description: pipeline input
         content:
@@ -926,8 +972,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/RunResponse'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -950,8 +996,8 @@ paths:
   /run/versions/blueprint_id:
     post:
       tags:
-      - version
-      - run
+        - version
+        - run
       summary: Run Version By blueprintID
       description: Запустить все версии c blueprintID и первым блоком sd_application
       operationId: run-versions-by-blueprint-id
@@ -974,8 +1020,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/RunResponse'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -998,8 +1044,8 @@ paths:
   /run/version/new_version:
     post:
       tags:
-      - version
-      - run
+        - version
+        - run
       summary: Run Version
       description: Запустить версию
       operationId: run-new-version-by-prev-version
@@ -1035,7 +1081,7 @@ paths:
   /tags:
     get:
       tags:
-      - tags
+        - tags
       summary: Get Tags
       description: Cписок тегов
       operationId: get-tags
@@ -1051,8 +1097,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/EriusTagInfo'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -1073,7 +1119,7 @@ paths:
                 $ref: '#/components/schemas/httpError'
     put:
       tags:
-      - tags
+        - tags
       summary: Edit Tag
       description: Изменить тег
       operationId: edit-tag
@@ -1094,8 +1140,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusTagInfo'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -1117,7 +1163,7 @@ paths:
       x-codegen-request-body-name: tag
     post:
       tags:
-      - tags
+        - tags
       summary: Create Tag
       description: Создать новый тег
       operationId: create-tag
@@ -1138,8 +1184,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusTagInfo'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -1162,17 +1208,17 @@ paths:
   /tags/{ID}:
     delete:
       tags:
-      - tags
+        - tags
       summary: Remove Tag
       description: Удалить тег
       operationId: remove-tag
       parameters:
-      - name: ID
-        in: path
-        description: Tag ID
-        required: true
-        schema:
-          type: string
+        - name: ID
+          in: path
+          description: Tag ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -1201,55 +1247,55 @@ paths:
   /tasks:
     get:
       tags:
-      - pipeline
-      - tasks
+        - pipeline
+        - tasks
       summary: Get Tasks
       description: Получить задачи
       operationId: get-tasks
       parameters:
-      - name: name
-        in: query
-        description: Pipeline name
-        schema:
-          type: string
-      - name: taskIDs
-        in: query
-        description: Task IDs
-        style: form
-        explode: false
-        schema:
-          type: array
-          items:
+        - name: name
+          in: query
+          description: Pipeline name
+          schema:
             type: string
-      - name: order
-        in: query
-        description: Order
-        schema:
-          type: string
-      - name: limit
-        in: query
-        description: Limit
-        schema:
-          type: integer
-          default: 10
-      - name: offset
-        in: query
-        description: Offset
-        schema:
-          type: integer
-          default: 0
-      - name: created
-        in: query
-        schema:
-          $ref: '#/components/schemas/Created'
-      - name: archived
-        in: query
-        schema:
-          type: boolean
-      - name: selectAs
-        in: query
-        schema:
-          type: string
+        - name: taskIDs
+          in: query
+          description: Task IDs
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: order
+          in: query
+          description: Order
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Limit
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          description: Offset
+          schema:
+            type: integer
+            default: 0
+        - name: created
+          in: query
+          schema:
+            $ref: '#/components/schemas/Created'
+        - name: archived
+          in: query
+          schema:
+            type: boolean
+        - name: selectAs
+          in: query
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -1260,8 +1306,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusTasksPage'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -1283,17 +1329,17 @@ paths:
   /tasks/{workNumber}:
     get:
       tags:
-      - tasks
+        - tasks
       summary: Get Task
       description: Получить экземпляр задачи
       operationId: get-task
       parameters:
-      - name: workNumber
-        in: path
-        description: work number
-        required: true
-        schema:
-          type: string
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -1304,8 +1350,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/eriusTaskResponse'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -1326,17 +1372,17 @@ paths:
                 $ref: '#/components/schemas/httpError'
     post:
       tags:
-      - tasks
+        - tasks
       summary: Update Task
       description: Update task
       operationId: update-task
       parameters:
-      - name: workNumber
-        in: path
-        description: work number
-        required: true
-        schema:
-          type: string
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
       requestBody:
         description: Task update data
         content:
@@ -1373,8 +1419,8 @@ paths:
   /tasks/count:
     get:
       tags:
-      - pipeline
-      - tasks
+        - pipeline
+        - tasks
       summary: Get amount of tasks
       description: Получить количество задач по каждой категории
       operationId: get-tasks-count
@@ -1388,8 +1434,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/CountTasks'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -1411,17 +1457,17 @@ paths:
   /tasks/last-by-version/{versionID}:
     get:
       tags:
-      - tasks
+        - tasks
       summary: Get last debug task for version
       description: Получить последнюю debug-задачу версии сценария
       operationId: last-version-debug-task
       parameters:
-      - name: versionID
-        in: path
-        description: Version ID
-        required: true
-        schema:
-          type: string
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -1432,8 +1478,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusTask'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -1455,18 +1501,18 @@ paths:
   /tasks/pipeline/{pipelineID}:
     get:
       tags:
-      - pipeline
-      - tasks
+        - pipeline
+        - tasks
       summary: Get Pipeline Tasks
       description: Получить задачи по сценарию
       operationId: get-pipeline-tasks
       parameters:
-      - name: pipelineID
-        in: path
-        description: Pipeline ID
-        required: true
-        schema:
-          type: string
+        - name: pipelineID
+          in: path
+          description: Pipeline ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -1477,8 +1523,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusTasks'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -1500,18 +1546,18 @@ paths:
   /tasks/version/{versionID}:
     get:
       tags:
-      - version
-      - tasks
+        - version
+        - tasks
       summary: Get Version Tasks
       description: Получить задачи по версии сценарию
       operationId: get-version-tasks
       parameters:
-      - name: versionID
-        in: path
-        description: Version ID
-        required: true
-        schema:
-          type: string
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -1522,8 +1568,8 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EriusTasks'
-                  httpResponse:
-                    $ref: '#/components/schemas/httpResponse'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -1669,17 +1715,17 @@ components:
         - global
 
     pipeline:
+      type: object
+      properties:
+        blocks:
           type: object
-          properties:
-            blocks:
-              type: object
-              additionalProperties:
-                $ref: '#/components/schemas/EriusFunc'
-            entrypoint:
-              type: string
-          required:
-            - entrypoint
-            - blocks
+          additionalProperties:
+            $ref: '#/components/schemas/EriusFunc'
+        entrypoint:
+          type: string
+      required:
+        - entrypoint
+        - blocks
     pipelineRename:
       type: object
       properties:
@@ -1752,6 +1798,12 @@ components:
         - tags
         - comment
         - comment_rejected
+
+    ScenarioVersionInfoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/EriusVersionInfo'
+
     EriusScenarioInfo:
       type: object
       properties:
@@ -1789,14 +1841,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EriusTagInfo'
-        version_history:
-          type: array
-          items:
-            $ref: '#/components/schemas/EriusVersionInfo'
         version_id:
           type: string
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+
       required:
         - id
         - version_id
@@ -1808,35 +1857,11 @@ components:
         - status
         - comment
         - comment_rejected
-        - version_history
+
     EriusScenarioList:
-      type: object
-      properties:
-        drafts:
-          type: array
-          description: Черновики
-          items:
-            $ref: '#/components/schemas/EriusScenarioInfo'
-        on_approve:
-          type: array
-          description: Сценарии на одобрении
-          items:
-            $ref: '#/components/schemas/EriusScenarioInfo'
-        pipelines:
-          type: array
-          description: Согласованные сценарии
-          items:
-            $ref: '#/components/schemas/EriusScenarioInfo'
-        tags:
-          type: array
-          description: Теги
-          items:
-            $ref: '#/components/schemas/EriusTagInfo'
-      required:
-        - pipelines
-        - drafts
-        - on_approve
-        - tags
+      type: array
+      items:
+        $ref: '#/components/schemas/EriusScenarioInfo'
 
     EriusTagInfo:
       type: object
@@ -1937,8 +1962,11 @@ components:
 
     EriusVersionInfo:
       type: object
-      required: [version_id,created_at,author,approver]
       properties:
+        version_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         approved_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
@@ -1951,10 +1979,27 @@ components:
         created_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
-        version_id:
+        updated_at:
           type: string
-          format: uuid
-          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          example: 2020-07-16T17:10:25.112704+03:00
+        usage_count:
+          type: integer
+          description: How many times is the version used as a subprocess
+        is_actual:
+          type: boolean
+          description: If the version is currently used as an actual one
+        status:
+          $ref: '#/components/schemas/scenarioStatus'
+      required:
+        - version_id
+        - approved_at
+        - author
+        - created_at
+        - updated_at
+        - usage_count
+        - is_actual
+        - status
+
     scenarioStatus:
       type: integer
       enum:
@@ -2073,10 +2118,10 @@ components:
           type: string
           example: approvement
           enum:
-          - approvement
-          - execution
-          - change_executor
-          - request_execution_info
+            - approvement
+            - execution
+            - change_executor
+            - request_execution_info
         parameters:
           type: object
           description: Task update params
@@ -2314,16 +2359,7 @@ components:
           type: string
         status_code:
           type: integer
-    httpResponse:
-      type: object
-      properties:
-        data:
-          type: object
-          properties: {}
-        status_code:
-          type: integer
-      required:
-        - status_code
+
     step:
       type: object
       properties:
@@ -2509,7 +2545,13 @@ components:
           description: People to get notifications
           items:
             type: string
-            description: Email or login
+            description: Logins
+        emails:
+          type: array
+          description: Emails to get notifications
+          items:
+            type: string
+            description: Emails
         subject:
           type: string
           description: Notification subject
@@ -2518,6 +2560,7 @@ components:
           description: Notification body
       required:
         - people
+        - emails
         - subject
         - text
 
@@ -2551,10 +2594,18 @@ components:
           type: integer
           description: Execution SLA (in working hours)
           minimum: 1
+        executors_group_id:
+          type: string
+          description: Executors group id in SD
+        executors_group_name:
+          type: string
+          description: Executors group name in SD
       required:
         - type
         - executors
         - sla
+        - executors_group_id
+        - executors_group_name
 
     ApproverType:
       type: string
@@ -2656,3 +2707,14 @@ components:
           type: integer
         end:
           type: integer
+
+    httpResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties: { }
+        status_code:
+          type: integer
+      required:
+        - status_code

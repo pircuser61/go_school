@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,12 +53,32 @@ func (gb *GoApproverBlock) GetStatus() Status {
 		return StatusIdle
 	}
 
+	if gb.State.RequestAddInfo != nil {
+		if gb.State.RequestAddInfo.Initiator != nil &&
+			gb.State.RequestAddInfo.Approver != nil {
+			return StatusRunning
+		}
+		if gb.State.RequestAddInfo.Approver != nil {
+			return StatusIdle
+		}
+	}
+
 	return StatusRunning
 }
 
 func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 	if gb.State != nil && gb.State.EditingApp != nil {
 		return StatusWait
+	}
+
+	if gb.State != nil && gb.State.RequestAddInfo != nil {
+		if gb.State.RequestAddInfo.Initiator != nil &&
+			gb.State.RequestAddInfo.Approver != nil {
+			return StatusApprovement
+		}
+		if gb.State.RequestAddInfo.Approver != nil {
+			return StatusWait
+		}
 	}
 
 	if gb.State != nil && gb.State.Decision != nil {
@@ -154,6 +175,8 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, step
 }
 
 func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
+	const workHoursDay = 8
+
 	if gb.State.DidSLANotification {
 		return false, nil
 	}
@@ -161,7 +184,7 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 		l := logger.GetLogger(ctx)
 
 		// nolint:dupl // handle approvers
-		if gb.State.SLA > 8 {
+		if gb.State.SLA > workHoursDay {
 			emails := make([]string, 0, len(gb.State.Approvers))
 			for approver := range gb.State.Approvers {
 				email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
@@ -173,8 +196,9 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 			if len(emails) == 0 {
 				return false, nil
 			}
-			err := gb.Pipeline.Sender.SendNotification(ctx, emails,
-				mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
+
+			tpl := mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress)
+			err := gb.Pipeline.Sender.SendNotification(ctx, emails, tpl)
 			if err != nil {
 				return false, err
 			}
@@ -190,17 +214,18 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 					Decision: decisionFromAutoAction(*gb.State.AutoAction),
 					Comment:  AutoActionComment,
 				}); err != nil {
-				gb.State.DidSLANotification = false
+				l.WithError(err).Error("couldn't set auto decision")
 				return false, err
 			}
 		} else {
 			if err := gb.dumpCurrState(ctx, id); err != nil {
-				gb.State.DidSLANotification = false
+				l.WithError(err).Error("couldn't dump state with id: " + id.String())
 				return false, err
 			}
 		}
 		return true, nil
 	}
+
 	return false, nil
 }
 
@@ -246,6 +271,8 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
+	gb.State = &state
+
 	if state.Type == script.ApproverTypeFromSchema {
 		// get approver from application body
 		var allVariables map[string]interface{}
@@ -255,7 +282,10 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 		}
 
 		approvers := make(map[string]struct{})
-		for approverVariableRef := range state.Approvers {
+		for approverVariableRef := range gb.State.Approvers {
+			if len(strings.Split(approverVariableRef, dotSeparator)) == 1 {
+				continue
+			}
 			approverVar := getVariable(allVariables, approverVariableRef)
 
 			if approverVar == nil {
@@ -263,14 +293,15 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 			}
 
 			if actualApproverUsername, castOK := approverVar.(string); castOK {
-				approvers[actualApproverUsername] = state.Approvers[approverVariableRef]
+				approvers[actualApproverUsername] = gb.State.Approvers[approverVariableRef]
 			}
 		}
 
-		gb.State.Approvers = approvers
+		if len(approvers) != 0 {
+			gb.State.Approvers = approvers
+			gb.State.LeftToNotify = approvers
+		}
 	}
-
-	gb.State = &state
 
 	if step.Status != string(StatusIdle) {
 		handled, errSLA := gb.handleSLA(ctx, id, stepCtx)
@@ -446,6 +477,10 @@ func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 		key = editAppSocket
 	}
 
+	if gb.State != nil && gb.State.Decision == nil && gb.State.RequestAddInfo != nil {
+		key = requestAddInfoSocket
+	}
+
 	nexts, ok := gb.Nexts[key]
 	if !ok {
 		return nil, false
@@ -501,6 +536,6 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 				ApproversGroupName: "",
 			},
 		},
-		Sockets: []string{approvedSocket, rejectedSocket, editAppSocket},
+		Sockets: []string{approvedSocket, rejectedSocket, editAppSocket, requestAddInfoSocket},
 	}
 }

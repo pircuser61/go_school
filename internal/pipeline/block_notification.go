@@ -3,11 +3,10 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"strings"
-
-	"go.opencensus.io/trace"
+	"log"
 
 	"github.com/pkg/errors"
+	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -17,6 +16,7 @@ import (
 
 type NotificationData struct {
 	People  []string `json:"people"`
+	Emails  []string `json:"emails"`
 	Subject string   `json:"subject"`
 	Text    string   `json:"text"`
 }
@@ -60,19 +60,20 @@ func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *stor
 	ctx, s := trace.StartSpan(ctx, "run_go_notification_block")
 	defer s.End()
 
-	emails := make([]string, 0, len(gb.State.People))
+	emails := make([]string, 0, len(gb.State.People)+len(gb.State.Emails))
 	for _, person := range gb.State.People {
-		if strings.Contains(person, "@") {
-			emails = append(emails, person)
-			continue
-		}
 		email, err := gb.Pipeline.People.GetUserEmail(ctx, person)
 		if err != nil {
-			return err
+			log.Println("can't get email of user", person)
+			continue
 		}
 		emails = append(emails, email)
 	}
+	emails = append(emails, gb.State.Emails...)
 
+	if len(emails) == 0 {
+		return errors.New("can't find any working emails from logins")
+	}
 	return gb.Pipeline.Sender.SendNotification(ctx, emails, mail.Template{
 		Subject:   gb.State.Subject,
 		Text:      gb.State.Text,
@@ -111,6 +112,7 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 			Type: BlockGoNotificationID,
 			Params: &script.NotificationParams{
 				People:  []string{},
+				Emails:  []string{},
 				Subject: "",
 				Text:    "",
 			},
@@ -151,6 +153,7 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, pipeline *Exec
 
 	b.State = &NotificationData{
 		People:  params.People,
+		Emails:  params.Emails,
 		Text:    params.Text,
 		Subject: params.Subject,
 	}
