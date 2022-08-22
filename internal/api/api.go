@@ -107,23 +107,67 @@ const (
 	BlockTypeScenario BlockType = "scenario"
 )
 
-// Defines values for CompareOperator.
+// Defines values for CompareBooleanOperator.
 const (
-	CompareOperatorБольше CompareOperator = "Больше"
+	CompareBooleanOperatorНеРавно CompareBooleanOperator = "Не равно"
 
-	CompareOperatorБольшеИлиРавно CompareOperator = "Больше или равно"
+	CompareBooleanOperatorРавно CompareBooleanOperator = "Равно"
+)
 
-	CompareOperatorМеньше CompareOperator = "Меньше"
+// Defines values for CompareDateOperator.
+const (
+	CompareDateOperatorБольше CompareDateOperator = "Больше"
 
-	CompareOperatorМеньшеИлиРавно CompareOperator = "Меньше или равно"
+	CompareDateOperatorБольшеИлиРавно CompareDateOperator = "Больше или равно"
 
-	CompareOperatorНеРавно CompareOperator = "Не равно"
+	CompareDateOperatorМеньше CompareDateOperator = "Меньше"
 
-	CompareOperatorНеСодержит CompareOperator = "Не Содержит"
+	CompareDateOperatorМеньшеИлиРавно CompareDateOperator = "Меньше или равно"
 
-	CompareOperatorРавно CompareOperator = "Равно"
+	CompareDateOperatorНеРавно CompareDateOperator = "Не равно"
 
-	CompareOperatorСодержит CompareOperator = "Содержит"
+	CompareDateOperatorРавно CompareDateOperator = "Равно"
+)
+
+// Defines values for CompareIntegerOperator.
+const (
+	CompareIntegerOperatorБольше CompareIntegerOperator = "Больше"
+
+	CompareIntegerOperatorБольшеИлиРавно CompareIntegerOperator = "Больше или равно"
+
+	CompareIntegerOperatorМеньше CompareIntegerOperator = "Меньше"
+
+	CompareIntegerOperatorМеньшеИлиРавно CompareIntegerOperator = "Меньше или равно"
+
+	CompareIntegerOperatorНеРавно CompareIntegerOperator = "Не равно"
+
+	CompareIntegerOperatorРавно CompareIntegerOperator = "Равно"
+)
+
+// Defines values for CompareNumberOperator.
+const (
+	CompareNumberOperatorБольше CompareNumberOperator = "Больше"
+
+	CompareNumberOperatorБольшеИлиРавно CompareNumberOperator = "Больше или равно"
+
+	CompareNumberOperatorМеньше CompareNumberOperator = "Меньше"
+
+	CompareNumberOperatorМеньшеИлиРавно CompareNumberOperator = "Меньше или равно"
+
+	CompareNumberOperatorНеРавно CompareNumberOperator = "Не равно"
+
+	CompareNumberOperatorРавно CompareNumberOperator = "Равно"
+)
+
+// Defines values for CompareStringOperator.
+const (
+	CompareStringOperatorНеРавно CompareStringOperator = "Не равно"
+
+	CompareStringOperatorНеСодержит CompareStringOperator = "Не Содержит"
+
+	CompareStringOperatorРавно CompareStringOperator = "Равно"
+
+	CompareStringOperatorСодержит CompareStringOperator = "Содержит"
 )
 
 // Defines values for ExecutionDecision.
@@ -220,10 +264,8 @@ type ApproverUpdateParams struct {
 // Compare operands using operator
 type Condition struct {
 	// Operand for comparison
-	LeftOperand Operand `json:"leftOperand"`
-
-	// Used operator to compare operands
-	Operator CompareOperator `json:"operator"`
+	LeftOperand Operand     `json:"leftOperand"`
+	Operator    interface{} `json:"operator"`
 
 	// Operand for comparison
 	RightOperand Operand `json:"rightOperand"`
@@ -656,8 +698,20 @@ type BasicOperandOperandType string
 // Block type (language)
 type BlockType string
 
-// Used operator to compare operands
-type CompareOperator string
+// Used operator to compare bool operands
+type CompareBooleanOperator string
+
+// Used operator to compare date operands
+type CompareDateOperator string
+
+// Used operator to compare integer operands
+type CompareIntegerOperator string
+
+// Used operator to compare number operands
+type CompareNumberOperator string
+
+// Used operator to compare string operands
+type CompareStringOperator string
 
 // EriusTaskResponse defines model for eriusTaskResponse.
 type EriusTaskResponse struct {

@@ -2468,7 +2468,12 @@ components:
         rightOperand:
           $ref: '#/components/schemas/operand'
         operator:
-          $ref: '#/components/schemas/compareOperator'
+          oneOf:
+            - $ref: '#/components/schemas/compareStringOperator'
+            - $ref: '#/components/schemas/compareIntegerOperator'
+            - $ref: '#/components/schemas/compareNumberOperator'
+            - $ref: '#/components/schemas/compareBooleanOperator'
+            - $ref: '#/components/schemas/compareDateOperator'
       required:
         - leftOperand
         - rightOperand
@@ -2520,11 +2525,35 @@ components:
           required:
             - value
 
-    compareOperator:
+    compareStringOperator:
       type: string
-      description: Used operator to compare operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Содержит", "Не Содержит" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Contain", "NotContain" ]
+      description: Used operator to compare string operands
+      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "Contain", "NotContain" ]
+
+    compareIntegerOperator:
+      type: string
+      description: Used operator to compare integer operands
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual" ]
+
+    compareNumberOperator:
+      type: string
+      description: Used operator to compare number operands
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual" ]
+
+    compareBooleanOperator:
+      type: string
+      description: Used operator to compare bool operands
+      enum: [ "Равно", "Не равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual" ]
+
+    compareDateOperator:
+      type: string
+      description: Used operator to compare date operands
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual" ]
 
     ConditionParams:
       type: object
