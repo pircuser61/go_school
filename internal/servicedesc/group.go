@@ -13,8 +13,10 @@ import (
 
 const (
 	authorizationHeader = "Authorization"
-	getApproversGroup   = "/v1/approver/"
-	getExecutorsGroup   = "/v1/executors/"
+	getApproversGroup   = "/api/chainsmith/v1/approver/"
+	getExecutorsGroup   = "/api/chainsmith/v1/executors/"
+
+	getSchemaFieldsByApplication = "/api/herald/v1/application/%s/schemaFields"
 )
 
 type Approver struct {
@@ -44,7 +46,7 @@ func (s *Service) GetApproversGroup(ctx context.Context, groupID string) (*Appro
 	var req *http.Request
 	var err error
 
-	reqURL := fmt.Sprintf("%s%s%s", s.chainsmithURL, getApproversGroup, groupID)
+	reqURL := fmt.Sprintf("%s%s%s", s.sdURL, getApproversGroup, groupID)
 
 	req, err = makeRequest(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
@@ -80,7 +82,7 @@ func (s *Service) GetExecutorsGroup(ctx context.Context, groupID string) (*Execu
 	var req *http.Request
 	var err error
 
-	reqURL := fmt.Sprintf("%s%s%s", s.chainsmithURL, getExecutorsGroup, groupID)
+	reqURL := fmt.Sprintf("%s%s%s", s.sdURL, getExecutorsGroup, groupID)
 
 	req, err = makeRequest(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {

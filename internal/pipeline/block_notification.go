@@ -56,6 +56,27 @@ func (gb *GoNotificationBlock) IsScenario() bool {
 	return false
 }
 
+func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, error) {
+	author, err := gb.Pipeline.People.GetUser(ctx, gb.Pipeline.Initiator)
+	if err != nil {
+
+	}
+	typedAuthor, err := author.ToSSOUserTyped()
+	if err != nil {
+
+	}
+	text := mail.MakeBodyHeader(typedAuthor.Username, typedAuthor.Attributes.FullName,
+		gb.Pipeline.Sender.GetApplicationLink(gb.Pipeline.WorkNumber), gb.State.Text)
+	keys, err := gb.Pipeline.ServiceDesc.GetSchemaFieldsByApplication(ctx, gb.Pipeline.WorkNumber)
+	if err != nil {
+
+	}
+	descr := mail.MakeDescription(data, keys)
+	text = mail.WrapDescription(text, descr, attachments)
+	text = mail.AddStyles(text)
+	return text, nil
+}
+
 func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *store.VariableStore) (err error) {
 	ctx, s := trace.StartSpan(ctx, "run_go_notification_block")
 	defer s.End()
@@ -74,9 +95,14 @@ func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *stor
 	if len(emails) == 0 {
 		return errors.New("can't find any working emails from logins")
 	}
+
+	text, err := gb.compileText(ctx)
+	if err != nil {
+
+	}
 	return gb.Pipeline.Sender.SendNotification(ctx, emails, mail.Template{
 		Subject:   gb.State.Subject,
-		Text:      gb.State.Text,
+		Text:      text,
 		Variables: nil,
 	})
 }

@@ -3,6 +3,7 @@ package mail
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/mail"
 	"text/template"
 
@@ -44,6 +45,10 @@ func NewService(c Config) (*Service, error) {
 		SdAddress: c.SdAddress,
 	}
 	return &s, nil
+}
+
+func (s *Service) GetApplicationLink(applicationID string) string {
+	return fmt.Sprintf(TaskUrlTemplate, s.SdAddress, applicationID)
 }
 
 func (s *Service) SendNotification(ctx context.Context, to []string, tmpl Template) error {

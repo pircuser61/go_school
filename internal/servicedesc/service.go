@@ -10,7 +10,7 @@ import (
 )
 
 type Service struct {
-	chainsmithURL string
+	sdURL string
 
 	cli *http.Client
 }
@@ -19,8 +19,8 @@ func NewService(cfg Config) (*Service, error) {
 	newCli := &http.Client{}
 
 	s := &Service{
-		cli:           newCli,
-		chainsmithURL: cfg.ChainsmithURL,
+		cli:   newCli,
+		sdURL: cfg.ServicedeskURL,
 	}
 
 	return s, nil
