@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/pkg/errors"
 
 	"github.com/jackc/pgx/v4"
