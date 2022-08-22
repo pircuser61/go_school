@@ -2503,10 +2503,85 @@ components:
         - dataType
         - operandType
 
+    StringOperand:
+      type: object
+      description: Basic string operand, can provide working compare types for this type
+      properties:
+        dataType:
+          type: string
+          enum: ["integer", "number", "date", "boolean", "string"]
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    IntegerOperand:
+      type: object
+      description: Basic integer operand, can provide working compare types for this type
+      properties:
+        dataType:
+          type: string
+          enum: ["integer", "number",  "boolean" ]
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    NumberOperand:
+      type: object
+      description: Basic number operand, can provide working compare types for this type
+      properties:
+        dataType:
+          type: string
+          enum: ["integer", "number", "string"]
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    BooleanOperand:
+      type: object
+      description: Basic boolean operand, can provide working compare types for this type
+      properties:
+        dataType:
+          type: string
+          enum: ["integer", "boolean", "string"]
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    DateOperand:
+      type: object
+      description: Basic date operand, can provide working compare types for this type
+      properties:
+        dataType:
+          type: string
+          enum: ["date", "string"]
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
     variableOperand:
-      description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment")
-      allOf:
+      description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment"), required one Operand
+      anyOf:
         - $ref: '#/components/schemas/basicOperand'
+        - $ref: '#/components/schemas/StringOperand'
+        - $ref: '#/components/schemas/IntegerOperand'
+        - $ref: '#/components/schemas/NumberOperand'
+        - $ref: '#/components/schemas/BooleanOperand'
+        - $ref: '#/components/schemas/DateOperand'
         - type: object
           properties:
             variableRef:
@@ -2515,9 +2590,14 @@ components:
             - variableRef
 
     valueOperand:
-      description: Operand which uses simple value to compare in conditions
-      allOf:
+      description: Operand which uses simple value to compare in conditions, required one Operand
+      anyOf:
         - $ref: '#/components/schemas/basicOperand'
+        - $ref: '#/components/schemas/StringOperand'
+        - $ref: '#/components/schemas/IntegerOperand'
+        - $ref: '#/components/schemas/NumberOperand'
+        - $ref: '#/components/schemas/BooleanOperand'
+        - $ref: '#/components/schemas/DateOperand'
         - type: object
           properties:
             value:
