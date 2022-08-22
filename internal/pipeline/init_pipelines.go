@@ -190,15 +190,6 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 			variableStorage.Values = steps[0].Storage
 		}
 
-		workNumber := task.WorkNumber
-
-		steps, errSteps := p.db.GetTaskSteps(ctx, task.ID)
-		if errSteps != nil {
-			log.Error(errSteps, "work number: ", workNumber)
-			outCh <- task.WorkNumber
-			continue
-		}
-
 		sdState := &ApplicationData{}
 
 		for j := range steps {
@@ -207,7 +198,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 			}
 			step, errStep := p.db.GetTaskStepById(ctx, steps[j].ID)
 			if errStep != nil {
-				log.Error(errStep, "work number: ", workNumber)
+				log.Error(errStep, "work number: ", task.WorkNumber)
 				outCh <- task.WorkNumber
 				break
 			}
@@ -217,7 +208,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 			if !okState {
 				log.Error(fmt.Errorf(
 					"can`t run pipeline with work number: %s, %s",
-					workNumber,
+					task.WorkNumber,
 					"sdState is`t found with name: "+steps[j].Name,
 				))
 				outCh <- task.WorkNumber
@@ -225,7 +216,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 			}
 
 			if err := json.Unmarshal(data, sdState); err != nil {
-				log.Error(err, "invalid format of servicedesk_application sdState, work number:", workNumber)
+				log.Error(err, "invalid format of servicedesk_application sdState, work number:", task.WorkNumber)
 				outCh <- task.WorkNumber
 				break
 			}
@@ -234,7 +225,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 		if sdState.BlueprintID == "" {
 			log.Error(fmt.Sprintf(
 				"can`t run pipeline with work number: %s, %s",
-				workNumber,
+				task.WorkNumber,
 				"servicedesk_application block is not found",
 			))
 
@@ -249,7 +240,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 		})
 
 		ep.currDescription = sdState.Description
-
+		workNumber := task.WorkNumber
 		go func(workNumber string) {
 			//nolint:gocritic
 			routineCtx := c.WithValue(c.Background(), XRequestIDHeader, uuid.New().String())
@@ -264,7 +255,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 		}(workNumber)
 
 		if isFailed {
-			outCh <- workNumber
+			outCh <- task.WorkNumber
 		}
 	}
 }
