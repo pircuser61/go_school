@@ -451,8 +451,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 				log.WithError(errNotif).Error("couldn't notify initiator")
 			}
 
-			if err = ep.dumpTaskBlocksData(ctx); err != nil {
-				return err
+			if errDump := ep.dumpTaskBlocksData(ctx); errDump != nil {
+				return errDump
 			}
 
 			switch currentBlock.GetStatus() {
@@ -471,7 +471,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 				state, exists := ep.VarStore.GetState(step)
 				if exists {
 					var stateData ApplicationData
-					if err := json.Unmarshal(state.(json.RawMessage), &stateData); err != nil {
+					if err = json.Unmarshal(state.(json.RawMessage), &stateData); err != nil {
 						log.WithError(err).Error("couldn't get application state")
 					} else {
 						ep.currDescription = stateData.Description
@@ -493,8 +493,8 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 			skipped := currentBlock.Skipped(ep.VarStore)
 			ep.MergeSkippedBlocks(skipped)
 
-			if err = ep.dumpTaskBlocksData(ctx); err != nil {
-				return err
+			if errDump := ep.dumpTaskBlocksData(ctx); errDump != nil {
+				return errDump
 			}
 
 			if runCtx.StopPoints.IsStopPoint(step) {

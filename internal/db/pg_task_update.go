@@ -97,22 +97,22 @@ func (db *PGCon) UpdateTaskBlocksData(c context.Context, dto *UpdateTaskBlocksDa
 
 	activeBlocks, err := json.Marshal(dto.ActiveBlocks)
 	if err != nil {
-		return errors.Wrap(err,"can`t marshal activeBlocks")
+		return errors.Wrap(err, "can`t marshal activeBlocks")
 	}
 
 	skippedBlocks, err := json.Marshal(dto.SkippedBlocks)
 	if err != nil {
-		return errors.Wrap(err,"can`t marshal skippedBlocks")
+		return errors.Wrap(err, "can`t marshal skippedBlocks")
 	}
 
 	notifiedBlocks, err := json.Marshal(dto.NotifiedBlocks)
 	if err != nil {
-		return errors.Wrap(err,"can`t marshal notifiedBlocks")
+		return errors.Wrap(err, "can`t marshal notifiedBlocks")
 	}
 
 	prevUpdateStatusBlocks, err := json.Marshal(dto.PrevUpdateStatusBlocks)
 	if err != nil {
-		return errors.Wrap(err,"can`t marshal prevUpdateStatusBlocks")
+		return errors.Wrap(err, "can`t marshal prevUpdateStatusBlocks")
 	}
 
 	conn, err := db.Pool.Acquire(c)
