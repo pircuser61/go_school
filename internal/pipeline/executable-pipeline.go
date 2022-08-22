@@ -228,6 +228,33 @@ func (ep *ExecutablePipeline) updateStatusByStep(ctx c.Context, step string, sta
 	return nil
 }
 
+func (ep *ExecutablePipeline) dumpTaskBlocksData(ctx c.Context) error {
+	notifiedBlocks := make(map[string][]string)
+	for i := range ep.notifiedBlocks {
+		for j := range ep.notifiedBlocks[i] {
+			notifiedBlocks[i][j] = string(ep.notifiedBlocks[i][j])
+		}
+	}
+
+	prevUpdateStatusBlocks := make(map[string]string)
+	for i := range ep.prevUpdateStatusBlocks {
+		prevUpdateStatusBlocks[i] = string(ep.prevUpdateStatusBlocks[i])
+	}
+
+	err := ep.Storage.UpdateTaskBlocksData(ctx, &db.UpdateTaskBlocksDataRequest{
+		Id:                     ep.TaskID,
+		ActiveBlocks:           ep.ActiveBlocks,
+		SkippedBlocks:          ep.SkippedBlocks,
+		NotifiedBlocks:         notifiedBlocks,
+		PrevUpdateStatusBlocks: prevUpdateStatusBlocks,
+	})
+	if err != nil {
+		err = errors.Wrap(err, "can`t dump task blocks data")
+	}
+
+	return err
+}
+
 func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step string) error {
 	log := logger.GetLogger(ctx)
 
@@ -424,7 +451,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 				log.WithError(errNotif).Error("couldn't notify initiator")
 			}
 
-			// TODO SAVE map active blocks, skipped, notification, prevUpdateStatusBlocks to work table
+			if err = ep.dumpTaskBlocksData(ctx); err != nil {
+				return err
+			}
 
 			switch currentBlock.GetStatus() {
 			case StatusFinished, StatusNoSuccess:
@@ -464,7 +493,9 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 			skipped := currentBlock.Skipped(ep.VarStore)
 			ep.MergeSkippedBlocks(skipped)
 
-			// TODO SAVE map active blocks, skipped, notification, prevUpdateStatusBlocks to work table
+			if err = ep.dumpTaskBlocksData(ctx); err != nil {
+				return err
+			}
 
 			if runCtx.StopPoints.IsStopPoint(step) {
 				errChangeStopped := ep.changeTaskStatus(ctx, db.RunStatusStopped)

@@ -34,7 +34,11 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			w.work_number,
 			p.name,
 			COALESCE(descr.description, ''),
-			COALESCE(descr.blueprint_id, '')
+			COALESCE(descr.blueprint_id, ''),
+			w.active_blocks,
+			w.skipped_blocks,
+			w.notified_blocks,
+			w.prev_update_status_blocks
 		FROM pipeliner.works w 
 		JOIN pipeliner.versions v ON v.id = w.version_id
 		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
@@ -172,7 +176,11 @@ func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
 			w.work_number,
 			p.name,
 			COALESCE(descr.description, ''),
-			COALESCE(descr.blueprint_id, '')
+			COALESCE(descr.blueprint_id, ''),
+			w.active_blocks,
+			w.skipped_blocks,
+			w.notified_blocks,
+			w.prev_update_status_blocks
 		FROM pipeliner.works w 
 			JOIN pipeliner.versions v ON v.id = w.version_id
 			JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
@@ -186,7 +194,7 @@ func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
 				ORDER BY vs.time DESC
 				LIMIT 1
 			) descr ON descr.work_id = w.id
-		WHERE w.status = 1 AND w.child_id IS NULL`
+		WHERE w.status = 1 AND w.child_id IS NULL AND w.id = '32bde489-fb03-42cb-8e7f-e403b08c3682'`
 
 	return db.getTasks(ctx, query, []interface{}{})
 }
@@ -471,6 +479,10 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 		et := entity.EriusTask{}
 
 		var nullStringParameters sql.NullString
+		var nullJsonActiveBlocks sql.NullString
+		var nullJsonSkippedBlocks sql.NullString
+		var nullJsonNotifiedBlocks sql.NullString
+		var nullJsonPrevUpdateStatusBlocks sql.NullString
 
 		err = rows.Scan(
 			&et.ID,
@@ -486,6 +498,10 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			&et.Name,
 			&et.Description,
 			&et.BlueprintID,
+			&nullJsonActiveBlocks,
+			&nullJsonSkippedBlocks,
+			&nullJsonNotifiedBlocks,
+			&nullJsonPrevUpdateStatusBlocks,
 		)
 
 		if err != nil {
@@ -494,6 +510,34 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 
 		if nullStringParameters.Valid && nullStringParameters.String != "" {
 			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if nullJsonActiveBlocks.Valid {
+			err = json.Unmarshal([]byte(nullJsonActiveBlocks.String), &et.ActiveBlocks)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if nullJsonSkippedBlocks.Valid {
+			err = json.Unmarshal([]byte(nullJsonSkippedBlocks.String), &et.SkippedBlocks)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if nullJsonNotifiedBlocks.Valid {
+			err = json.Unmarshal([]byte(nullJsonNotifiedBlocks.String), &et.NotifiedBlocks)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if nullJsonPrevUpdateStatusBlocks.Valid {
+			err = json.Unmarshal([]byte(nullJsonPrevUpdateStatusBlocks.String), &et.PrevUpdateStatusBlocks)
 			if err != nil {
 				return nil, err
 			}

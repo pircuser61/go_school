@@ -20,6 +20,10 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
+func (_m *MockedDatabase) UpdateTaskBlocksData(ctx context.Context, dto *db.UpdateTaskBlocksDataRequest) error {
+	return nil
+}
+
 func (_m *MockedDatabase) GetUnfinishedTasks(ctx context.Context) (*entity.EriusTasks, error) {
 	return nil, nil
 }

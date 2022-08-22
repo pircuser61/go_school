@@ -134,6 +134,37 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 		ep.Name = task.Name
 		ep.Initiator = task.Author
 		ep.ServiceDesc = p.serviceDesc
+		ep.notifiedBlocks = map[string][]TaskHumanStatus{}
+		ep.prevUpdateStatusBlocks = map[string]TaskHumanStatus{}
+
+		if task.ActiveBlocks != nil {
+			ep.ActiveBlocks = task.ActiveBlocks
+		}
+
+		if task.SkippedBlocks != nil {
+			ep.SkippedBlocks = task.SkippedBlocks
+		}
+
+		if task.NotifiedBlocks != nil {
+			notifiedBlocks := make(map[string][]TaskHumanStatus)
+
+			for i := range task.NotifiedBlocks {
+				for j := range task.NotifiedBlocks[i] {
+					notifiedBlocks[i][j] = TaskHumanStatus(task.NotifiedBlocks[i][j])
+				}
+			}
+
+			ep.notifiedBlocks = notifiedBlocks
+		}
+
+		if task.PrevUpdateStatusBlocks != nil {
+			prevUpdateStatusBlocks := make(map[string]TaskHumanStatus)
+			for i := range task.PrevUpdateStatusBlocks {
+				prevUpdateStatusBlocks[i] = TaskHumanStatus(task.PrevUpdateStatusBlocks[i])
+			}
+
+			ep.prevUpdateStatusBlocks = prevUpdateStatusBlocks
+		}
 
 		errCreation := ep.CreateBlocks(ctx, version.Pipeline.Blocks)
 		if errCreation != nil {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
@@ -57,6 +58,14 @@ type UpdateStepRequest struct {
 	WithoutContent bool
 }
 
+type UpdateTaskBlocksDataRequest struct {
+	Id                     uuid.UUID
+	ActiveBlocks           map[string]struct{}
+	SkippedBlocks          map[string]struct{}
+	NotifiedBlocks         map[string][]string
+	PrevUpdateStatusBlocks map[string]string
+}
+
 //go:generate mockery --name=Database --structname=MockedDatabase
 type Database interface {
 	PipelineStorager
@@ -76,6 +85,7 @@ type Database interface {
 	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte) error
 	SaveStepContext(ctx c.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
 	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
+	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 
 	GetExecutableScenarios(ctx c.Context) ([]e.EriusScenario, error)
 	GetExecutableByName(ctx c.Context, name string) (*e.EriusScenario, error)
