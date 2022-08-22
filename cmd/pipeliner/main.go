@@ -48,6 +48,7 @@ const serviceName = "jocasta.pipeliner"
 
 // @host localhost:8181
 // @BasePath /api/pipeliner/v1
+//nolint:gocyclo //its ok here
 func main() {
 	configPath := flag.String("c", "./config.yaml", "path to config")
 	flag.Parse()

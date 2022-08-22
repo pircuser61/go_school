@@ -104,6 +104,7 @@ type setActionAppDTO struct {
 	action       string
 }
 
+//nolint:gocyclo //its ok here
 func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionAppDTO) error {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, dto.stepId)
 	if err != nil {

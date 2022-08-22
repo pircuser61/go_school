@@ -97,6 +97,7 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 	return nil
 }
 
+//nolint:gocyclo //its ok here
 func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.EriusTask, outCh chan string) {
 	defer wg.Done()
 	for {
@@ -238,6 +239,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 		ep.currDescription = sdState.Description
 
 		go func(workNumber string) {
+			//nolint:gocritic
 			routineCtx := c.WithValue(c.Background(), XRequestIDHeader, uuid.New().String())
 			routineCtx = c.WithValue(routineCtx, SdApplicationDataCtx{}, ctx.Value(SdApplicationDataCtx{}))
 			routineCtx = logger.WithLogger(routineCtx, log)
