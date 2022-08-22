@@ -33,6 +33,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -47,6 +48,7 @@ const serviceName = "jocasta.pipeliner"
 
 // @host localhost:8181
 // @BasePath /api/pipeliner/v1
+//nolint:gocyclo //its ok here
 func main() {
 	configPath := flag.String("c", "./config.yaml", "path to config")
 	flag.Parse()
@@ -102,7 +104,7 @@ func main() {
 		return
 	}
 
-	servicedescService, err := servicedesc.NewService(cfg.Servicedesc)
+	serviceDescService, err := servicedesc.NewService(cfg.ServiceDesc)
 	if err != nil {
 		log.WithError(err).Error("can't create servicedesc service")
 
@@ -140,7 +142,7 @@ func main() {
 			Statistic:            stat,
 			Mail:                 mailService,
 			People:               peopleService,
-			ServiceDesc:          servicedescService,
+			ServiceDesc:          serviceDescService,
 		},
 		SSOService:        ssoService,
 		PeopleService:     peopleService,
@@ -200,6 +202,23 @@ func main() {
 			GRPCGWPort: cfg.GRPCGWPort,
 		}); err != nil {
 			os.Exit(-3)
+		}
+	}()
+
+	go func() {
+		init := pipeline.NewInitiation(
+			&dbConn,
+			cfg.FaaS,
+			httpClient,
+			cfg.Remedy,
+			mailService,
+			serviceDescService,
+			peopleService,
+		)
+
+		err = init.InitPipelines(ctx)
+		if err != nil {
+			log.Error(err)
 		}
 	}()
 

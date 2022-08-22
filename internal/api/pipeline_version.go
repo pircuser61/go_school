@@ -627,19 +627,19 @@ type execVersionInternalDTO struct {
 	workNumber    string
 }
 
-func (ae *APIEnv) execVersionInternal(ctx c.Context, p *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
+func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
 	log := logger.GetLogger(ctx)
 
 	//nolint:staticcheck // поправить потом
-	ctx = c.WithValue(ctx, XRequestIDHeader, p.reqID)
+	ctx = c.WithValue(ctx, XRequestIDHeader, dto.reqID)
 
 	ep := pipeline.ExecutablePipeline{}
-	ep.PipelineID = p.p.ID
-	ep.VersionID = p.p.VersionID
+	ep.PipelineID = dto.p.ID
+	ep.VersionID = dto.p.VersionID
 	ep.Storage = ae.DB
-	ep.EntryPoint = p.p.Pipeline.Entrypoint
+	ep.EntryPoint = dto.p.Pipeline.Entrypoint
 	ep.FaaS = ae.FaaS
-	ep.PipelineModel = p.p
+	ep.PipelineModel = dto.p
 	ep.HTTPClient = ae.HTTPClient
 	ep.Remedy = ae.Remedy
 	ep.ActiveBlocks = map[string]struct{}{}
@@ -647,15 +647,15 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, p *execVersionInternalDTO) 
 	ep.EntryPoint = pipeline.BlockGoFirstStart
 	ep.Sender = ae.Mail
 	ep.People = ae.People
-	ep.Name = p.p.Name
-	ep.Initiator = p.userName
+	ep.Name = dto.p.Name
+	ep.Initiator = dto.userName
 	ep.ServiceDesc = ae.ServiceDesc
 
-	if p.makeNewWork {
-		ep.WorkNumber = p.workNumber
+	if dto.makeNewWork {
+		ep.WorkNumber = dto.workNumber
 	}
 
-	err := ep.CreateBlocks(ctx, p.p.Pipeline.Blocks)
+	err := ep.CreateBlocks(ctx, dto.p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError
 		return &ep, e, err
@@ -663,7 +663,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, p *execVersionInternalDTO) 
 
 	variableStorage := store.NewStore()
 
-	pipelineVars := p.vars
+	pipelineVars := dto.vars
 
 	parameters, err := json.Marshal(pipelineVars)
 	if err != nil {
@@ -672,20 +672,20 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, p *execVersionInternalDTO) 
 	}
 
 	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
-		Author:     p.userName,
+		Author:     dto.userName,
 		IsDebug:    false,
 		Params:     parameters,
-		WorkNumber: p.workNumber,
+		WorkNumber: dto.workNumber,
 	}); err != nil {
 		e := PipelineRunError
 		return &ep, e, err
 	}
 
 	//nolint:nestif //its simple
-	if p.syncExecution {
+	if dto.syncExecution {
 		ep.Output = make(map[string]string)
 
-		for _, item := range p.p.Output {
+		for _, item := range dto.p.Output {
 			ep.Output[item.Global] = ""
 		}
 

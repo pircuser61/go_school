@@ -264,7 +264,8 @@ func Test_createGoApproverBlock(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := createGoApproverBlock(context.Background(), tt.args.name, tt.args.ef, nil)
+			ctx := context.Background()
+			got, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, nil)
 			assert.Equalf(t, tt.wantErr, err != nil, "createGoApproverBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 			assert.Equalf(t, tt.want, got, "createGoApproverBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 		})

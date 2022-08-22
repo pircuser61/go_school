@@ -328,8 +328,6 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author strin
 			---author---
 		ORDER BY created_at`
 
-	fmt.Println("author: ", author)
-
 	if author != "" {
 		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
 	}
@@ -1520,16 +1518,19 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	var id uuid.UUID
 	var t time.Time
 
-	q := `
-	SELECT id, time
-	FROM pipeliner.variable_storage 
-	WHERE work_id = $1 AND step_name = $2 AND status IN ('idle', 'ready', 'running')
+	const q = `
+		SELECT id, time
+			FROM pipeliner.variable_storage 
+		WHERE work_id = $1 AND
+			step_name = $2 AND
+			status IN ('idle', 'ready', 'running')
 `
-	if scanErr := conn.QueryRow(ctx, q,
-		dto.WorkID,
-		dto.StepName).Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
+
+	if scanErr := conn.QueryRow(ctx, q, dto.WorkID, dto.StepName).
+		Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
 		return NullUuid, time.Time{}, nil
 	}
+
 	if id != NullUuid {
 		return id, t, nil
 	}
@@ -1538,34 +1539,34 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
-	q = `
-	INSERT INTO pipeliner.variable_storage (
-		id, 
-		work_id, 
-		step_type,
-		step_name, 
-		content, 
-		time, 
-		break_points, 
-		has_error,
-		status
-	)
-	VALUES (
-		$1, 
-		$2, 
-		$3, 
-		$4, 
-		$5, 
-		$6, 
-		$7,
-	    $8,
-	    $9
-	)
+	const query = `
+		INSERT INTO pipeliner.variable_storage (
+			id, 
+			work_id, 
+			step_type,
+			step_name, 
+			content, 
+			time, 
+			break_points, 
+			has_error,
+			status
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4, 
+			$5, 
+			$6, 
+			$7,
+			$8,
+			$9
+		)
 `
 
 	_, err = conn.Exec(
 		ctx,
-		q,
+		query,
 		id,
 		dto.WorkID,
 		dto.StepType,
@@ -1776,10 +1777,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, nil
 }
 
-func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(
-	ctx context.Context,
-	id uuid.UUID,
-	stepType string,
+func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
 ) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
 	defer span.End()
