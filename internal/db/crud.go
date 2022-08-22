@@ -1484,6 +1484,11 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	c, span := trace.StartSpan(c, "pg_update_draft")
 	defer span.End()
 
+	tx, err := db.Pool.BeginTx(c, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
@@ -1496,12 +1501,26 @@ func (db *PGCon) UpdateDraft(c context.Context,
 		updated_at = $5
 	WHERE id = $6`
 
-	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), p.VersionID)
+	_, err = tx.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), p.VersionID)
 	if err != nil {
+		_ = tx.Rollback(c)
 		return err
 	}
 
-	return nil
+	if p.Status == StatusApproved {
+		q = `
+	UPDATE pipeliner.versions
+	SET is_actual = FALSE
+	WHERE id != $1
+	AND pipeline_id = $2`
+		_, err = tx.Exec(c, q, p.VersionID, p.ID)
+		if err != nil {
+			_ = tx.Rollback(c)
+			return err
+		}
+	}
+
+	return tx.Commit(c)
 }
 
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
