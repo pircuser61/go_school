@@ -53,12 +53,8 @@ func (gb *GoApproverBlock) GetStatus() Status {
 		return StatusIdle
 	}
 
-	if gb.State.RequestAddInfo != nil {
-		if gb.State.RequestAddInfo.Initiator != nil &&
-			gb.State.RequestAddInfo.Approver != nil {
-			return StatusRunning
-		}
-		if gb.State.RequestAddInfo.Approver != nil {
+	if len(gb.State.AddInfo) != 0 {
+		if gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
 			return StatusIdle
 		}
 	}
@@ -71,14 +67,11 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 		return StatusWait
 	}
 
-	if gb.State != nil && gb.State.RequestAddInfo != nil {
-		if gb.State.RequestAddInfo.Initiator != nil &&
-			gb.State.RequestAddInfo.Approver != nil {
-			return StatusApprovement
-		}
-		if gb.State.RequestAddInfo.Approver != nil {
+	if gb.State != nil && len(gb.State.AddInfo) != 0 {
+		if gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
 			return StatusWait
 		}
+		return StatusApprovement
 	}
 
 	if gb.State != nil && gb.State.Decision != nil {
@@ -477,7 +470,7 @@ func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 		key = editAppSocket
 	}
 
-	if gb.State != nil && gb.State.Decision == nil && gb.State.RequestAddInfo != nil {
+	if gb.State != nil && gb.State.Decision == nil && len(gb.State.AddInfo) != 0 {
 		key = requestAddInfoSocket
 	}
 
