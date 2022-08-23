@@ -42,6 +42,11 @@ const (
 	ReplyAddInfoType   AdditionalInfoType = "reply"
 )
 
+var additionalInfoTypeMap = map[AdditionalInfoType]struct{}{
+	RequestAddInfoType: {},
+	ReplyAddInfoType:   {},
+}
+
 type AdditionalInfo struct {
 	Id          string             `json:"id"`
 	Login       string             `json:"login"`
@@ -145,6 +150,10 @@ func (a *ApproverData) setRequestAddInfo(login string, params updateAddInfoParam
 
 	if a.Decision != nil {
 		return errors.New("decision already set")
+	}
+
+	if _, ok := additionalInfoTypeMap[params.Type]; !ok {
+		return errors.New("incorrect type additional Info")
 	}
 
 	if len(a.AddInfo) == 0 && params.Type == ReplyAddInfoType {
