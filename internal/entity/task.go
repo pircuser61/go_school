@@ -59,6 +59,11 @@ type EriusTask struct {
 	Steps         TaskSteps              `json:"steps"`
 	WorkNumber    string                 `json:"work_number"`
 	BlueprintID   string                 `json:"blueprint_id"`
+
+	ActiveBlocks           map[string]struct{} `json:"active_blocks"`
+	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
+	NotifiedBlocks         map[string][]string `json:"notified_blocks"`
+	PrevUpdateStatusBlocks map[string]string   `json:"prev_update_status_blocks"`
 }
 
 func (et *EriusTask) IsRun() bool {

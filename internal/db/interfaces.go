@@ -1,38 +1,42 @@
 package db
 
 import (
-	"context"
+	c "context"
 	"time"
 
 	"github.com/google/uuid"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+
+	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 type PipelineStorager interface {
-	CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error
-	GetWorkedVersions(c context.Context) ([]entity.EriusScenario, error)
-	GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
-	PipelineRemovable(c context.Context, id uuid.UUID) (bool, error)
-	DeletePipeline(c context.Context, id uuid.UUID) error
-	RenamePipeline(c context.Context, id uuid.UUID, name string) error
+	GetWorkedVersions(ctx c.Context) ([]e.EriusScenario, error)
+	GetPipeline(ctx c.Context, id uuid.UUID) (*e.EriusScenario, error)
+
+	CreatePipeline(c c.Context, p *e.EriusScenario, author string, pipelineData []byte) error
+	PipelineRemovable(ctx c.Context, id uuid.UUID) (bool, error)
+	DeletePipeline(ctx c.Context, id uuid.UUID) error
+	RenamePipeline(ctx c.Context, id uuid.UUID, name string) error
 }
 
 type TaskStorager interface {
-	GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error)
-	GetTasksCount(c context.Context, userName string) (*entity.CountTasks, error)
-	GetPipelineTasks(c context.Context, pipelineID uuid.UUID) (*entity.EriusTasks, error)
-	GetTask(c context.Context, workNumber string) (*entity.EriusTask, error)
-	GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps, error)
-	GetUnfinishedTaskStepsByWorkIdAndStepType(c context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error)
-	GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error)
-	GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error)
-	GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error)
-	CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.EriusTask, error)
-	ChangeTaskStatus(c context.Context, taskID uuid.UUID, status int) error
-	GetVersionTasks(c context.Context, versionID uuid.UUID) (*entity.EriusTasks, error)
-	GetLastDebugTask(c context.Context, versionID uuid.UUID, author string) (*entity.EriusTask, error)
-	UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, status string) error
-	CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error)
+	GetTasks(ctx c.Context, filters e.TaskFilter) (*e.EriusTasksPage, error)
+	GetTasksCount(ctx c.Context, userName string) (*e.CountTasks, error)
+	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
+	GetTask(ctx c.Context, workNumber string) (*e.EriusTask, error)
+	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
+	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string) (e.TaskSteps, error)
+	GetTaskStepById(ctx c.Context, id uuid.UUID) (*e.Step, error)
+	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
+	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
+	GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*e.EriusTasks, error)
+	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
+	GetUnfinishedTasks(ctx c.Context) (*e.EriusTasks, error)
+
+	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
+	ChangeTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error
+	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error
+	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)
 }
 
 type SaveStepRequest struct {
@@ -54,48 +58,55 @@ type UpdateStepRequest struct {
 	WithoutContent bool
 }
 
+type UpdateTaskBlocksDataRequest struct {
+	Id                     uuid.UUID
+	ActiveBlocks           map[string]struct{}
+	SkippedBlocks          map[string]struct{}
+	NotifiedBlocks         map[string][]string
+	PrevUpdateStatusBlocks map[string]string
+}
+
 //go:generate mockery --name=Database --structname=MockedDatabase
 type Database interface {
 	PipelineStorager
 	TaskStorager
 
-	GetPipelinesWithLatestVersion(c context.Context, author string) ([]entity.EriusScenarioInfo, error)
-	GetApprovedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
-	GetVersionsByStatus(c context.Context, status int, author string) ([]entity.EriusScenarioInfo, error)
-	GetDraftVersions(c context.Context, author string) ([]entity.EriusScenarioInfo, error)
-	GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
-	SwitchApproved(c context.Context, pipelineID, versionID uuid.UUID, author string) error
-	VersionEditable(c context.Context, versionID uuid.UUID) (bool, error)
-	CreateVersion(c context.Context,
-		p *entity.EriusScenario, author string, pipelineData []byte) error
-	DeleteVersion(c context.Context, versionID uuid.UUID) error
-	GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error)
-	GetPipelineVersions(c context.Context, id uuid.UUID) ([]entity.EriusVersionInfo, error)
-	UpdateDraft(c context.Context,
-		p *entity.EriusScenario, pipelineData []byte) error
-	SaveStepContext(c context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
-	UpdateStepContext(c context.Context, dto *UpdateStepRequest) error
+	GetPipelinesWithLatestVersion(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
+	GetApprovedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
+	GetVersionsByStatus(ctx c.Context, status int, author string) ([]e.EriusScenarioInfo, error)
+	GetDraftVersions(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
+	GetOnApproveVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
+	SwitchApproved(ctx c.Context, pipelineID, versionID uuid.UUID, author string) error
+	VersionEditable(ctx c.Context, versionID uuid.UUID) (bool, error)
+	CreateVersion(ctx c.Context, p *e.EriusScenario, author string, pipelineData []byte) error
+	DeleteVersion(ctx c.Context, versionID uuid.UUID) error
+	GetPipelineVersion(ctx c.Context, id uuid.UUID) (*e.EriusScenario, error)
+	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
+	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte) error
+	SaveStepContext(ctx c.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
+	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
+	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 
-	GetExecutableScenarios(c context.Context) ([]entity.EriusScenario, error)
-	GetExecutableByName(c context.Context, name string) (*entity.EriusScenario, error)
+	GetExecutableScenarios(ctx c.Context) ([]e.EriusScenario, error)
+	GetExecutableByName(ctx c.Context, name string) (*e.EriusScenario, error)
 
-	ActiveAlertNGSA(c context.Context, sever int,
+	ActiveAlertNGSA(ctx c.Context, sever int,
 		state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error
-	ClearAlertNGSA(c context.Context, name string) error
-	CreateTag(c context.Context, e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error)
-	GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error)
-	EditTag(c context.Context, e *entity.EriusTagInfo) error
-	RemoveTag(c context.Context, id uuid.UUID) error
-	GetAllTags(c context.Context) ([]entity.EriusTagInfo, error)
-	GetPipelineTag(c context.Context, id uuid.UUID) ([]entity.EriusTagInfo, error)
-	AttachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
-	DetachTag(c context.Context, p uuid.UUID, e *entity.EriusTagInfo) error
-	RemovePipelineTags(c context.Context, id uuid.UUID) error
-	DeleteAllVersions(c context.Context, id uuid.UUID) error
-	PipelineNameCreatable(c context.Context, name string) (bool, error)
-	SwitchRejected(c context.Context, versionID uuid.UUID, comment, author string) error
-	GetRejectedVersions(c context.Context) ([]entity.EriusScenarioInfo, error)
-	RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error
-	GetVersionsByBlueprintID(c context.Context, blueprintID string) ([]entity.EriusScenario, error)
-	GetVersionByWorkNumber(c context.Context, workNumber string) (*entity.EriusScenario, error)
+	ClearAlertNGSA(ctx c.Context, name string) error
+	CreateTag(ctx c.Context, e *e.EriusTagInfo, author string) (*e.EriusTagInfo, error)
+	GetTag(ctx c.Context, e *e.EriusTagInfo) (*e.EriusTagInfo, error)
+	EditTag(ctx c.Context, e *e.EriusTagInfo) error
+	RemoveTag(ctx c.Context, id uuid.UUID) error
+	GetAllTags(ctx c.Context) ([]e.EriusTagInfo, error)
+	GetPipelineTag(ctx c.Context, id uuid.UUID) ([]e.EriusTagInfo, error)
+	AttachTag(ctx c.Context, id uuid.UUID, p *e.EriusTagInfo) error
+	DetachTag(ctx c.Context, id uuid.UUID, p *e.EriusTagInfo) error
+	RemovePipelineTags(ctx c.Context, id uuid.UUID) error
+	DeleteAllVersions(ctx c.Context, id uuid.UUID) error
+	PipelineNameCreatable(ctx c.Context, name string) (bool, error)
+	SwitchRejected(ctx c.Context, versionID uuid.UUID, comment, author string) error
+	GetRejectedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
+	RollbackVersion(ctx c.Context, pipelineID, versionID uuid.UUID) error
+	GetVersionsByBlueprintID(ctx c.Context, blueprintID string) ([]e.EriusScenario, error)
+	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
 }

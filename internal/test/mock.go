@@ -926,6 +926,14 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) UpdateTaskBlocksData(ctx context.Context, dto *db.UpdateTaskBlocksDataRequest) error {
+	return nil
+}
+
+func (_m *MockDB) GetUnfinishedTasks(ctx context.Context) (*entity.EriusTasks, error) {
+	return &entity.EriusTasks{}, nil
+}
+
 func (_m *MockDB) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	return []entity.EriusScenarioInfo{}, nil
 }
@@ -1155,10 +1163,6 @@ func (m *MockDB) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 }
 
 func (m *MockDB) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error) {
-	return false, errNotImplemented
-}
-
-func (m *MockDB) DraftPipelineCreatable(c context.Context, id uuid.UUID, author string) (bool, error) {
 	return false, errNotImplemented
 }
 

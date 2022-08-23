@@ -42,7 +42,7 @@ type Pipeliner struct {
 	GRPCPort              string             `yaml:"grpc_gw_port"`
 	GRPCGWPort            string             `yaml:"grpc_port"`
 	Mail                  mail.Config        `yaml:"mail"`
-	Servicedesc           servicedesc.Config `yaml:"servicedesc"`
+	ServiceDesc           servicedesc.Config `yaml:"servicedesc"`
 }
 
 type RunEnv struct {
