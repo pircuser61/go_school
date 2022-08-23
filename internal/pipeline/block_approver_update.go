@@ -28,9 +28,9 @@ type approverUpdateParams struct {
 }
 
 type updateAddInfoParams struct {
-	Author      string   `json:"author"`
-	Comment     string   `json:"comment"`
-	Attachments []string `json:"attachments"`
+	Type        AdditionalInfoType `json:"type"`
+	Comment     string             `json:"comment"`
+	Attachments []string           `json:"attachments"`
 }
 
 func (a *approverUpdateParams) Validate() error {
