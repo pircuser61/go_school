@@ -247,7 +247,7 @@ func (s *Service) getUser(ctx context.Context, search string) ([]SSOUser, error)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("got bad status code")
+		return nil, fmt.Errorf("got bad status code: %d for login: %s", resp.StatusCode, search)
 	}
 	var res SearchUsersResp
 	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
@@ -291,7 +291,7 @@ func (s *Service) getUsers(ctx context.Context, search string, limit int, filter
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("got bad status code")
+		return nil, fmt.Errorf("got bad status code: %d for login: %s", resp.StatusCode, search)
 	}
 	var res SearchUsersResp
 	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {

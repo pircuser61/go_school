@@ -232,7 +232,7 @@ func (ep *ExecutablePipeline) dumpTaskBlocksData(ctx c.Context) error {
 	notifiedBlocks := make(map[string][]string)
 	for i := range ep.notifiedBlocks {
 		for j := range ep.notifiedBlocks[i] {
-			notifiedBlocks[i][j] = string(ep.notifiedBlocks[i][j])
+			notifiedBlocks[i] = append(notifiedBlocks[i], string(ep.notifiedBlocks[i][j]))
 		}
 	}
 

@@ -151,7 +151,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 
 			for i := range task.NotifiedBlocks {
 				for j := range task.NotifiedBlocks[i] {
-					notifiedBlocks[i][j] = TaskHumanStatus(task.NotifiedBlocks[i][j])
+					notifiedBlocks[i] = append(notifiedBlocks[i], TaskHumanStatus(task.NotifiedBlocks[i][j]))
 				}
 			}
 
