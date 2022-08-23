@@ -21,11 +21,18 @@ type ExecutionParams struct {
 	Type      ExecutionType `json:"type"`
 	Executors string        `json:"executors"`
 
+	ExecutorsGroupID   string `json:"executors_group_id"`
+	ExecutorsGroupName string `json:"executors_group_name"`
+
 	SLA int `json:"sla"`
 }
 
 func (a *ExecutionParams) Validate() error {
-	if a.Executors == "" {
+	if a.ExecutorsGroupID == "" && a.Type == ExecutionTypeGroup {
+		return errors.New("executors group id is empty")
+	}
+
+	if a.Executors == "" && a.Type == ExecutionTypeUser {
 		return errors.New("executor is empty")
 	}
 

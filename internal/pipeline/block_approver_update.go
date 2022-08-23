@@ -27,6 +27,12 @@ type approverUpdateParams struct {
 	Comment  string           `json:"comment"`
 }
 
+type updateAddInfoParams struct {
+	Author      string   `json:"author"`
+	Comment     string   `json:"comment"`
+	Attachments []string `json:"attachments"`
+}
+
 func (a *approverUpdateParams) Validate() error {
 	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
 		return errors.New("unknown decision")
@@ -55,14 +61,11 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, a s
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
+	state.Approvers = gb.State.Approvers
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	err = gb.State.SetDecision(
-		a,
-		u.Decision,
-		u.Comment,
-	)
+	err = gb.State.SetDecision(a, u.Decision, u.Comment)
 	if err != nil {
 		return err
 	}
@@ -91,16 +94,18 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, a s
 	return nil
 }
 
-type setEditingAppDTO struct {
+type setActionAppDTO struct {
 	stepId       uuid.UUID
 	approver     string
 	initiator    string
 	workNumber   string
 	workTitle    string
-	updateParams updateEditingParams
+	updateParams interface{}
+	action       string
 }
 
-func (gb *GoApproverBlock) setEditingApp(ctx c.Context, dto *setEditingAppDTO) error {
+//nolint:gocyclo //its ok here
+func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionAppDTO) error {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, dto.stepId)
 	if err != nil {
 		return err
@@ -123,9 +128,25 @@ func (gb *GoApproverBlock) setEditingApp(ctx c.Context, dto *setEditingAppDTO) e
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	errSet := gb.State.SetEditApp(dto.approver, dto.updateParams.Comment, dto.updateParams.Attachments)
-	if errSet != nil {
-		return errSet
+	switch dto.action {
+	case string(entity.TaskUpdateActionSendEditApp):
+		params, ok := dto.updateParams.(updateEditingParams)
+		if !ok {
+			return errors.New("can't convert to updateEditingParams")
+		}
+		errSet := gb.State.setEditApp(dto.approver, params)
+		if errSet != nil {
+			return errSet
+		}
+	case string(entity.TaskUpdateActionRequestAddInfo):
+		params, ok := dto.updateParams.(updateAddInfoParams)
+		if !ok {
+			return errors.New("can't convert to updateEditingParams")
+		}
+		errSet := gb.State.setRequestAddInfo(dto.approver, params)
+		if errSet != nil {
+			return errSet
+		}
 	}
 
 	step.State[gb.Name], err = json.Marshal(gb.State)
@@ -168,7 +189,8 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		return nil, errors.New("empty data")
 	}
 
-	if data.Action == string(entity.TaskUpdateActionApprovement) {
+	switch data.Action {
+	case string(entity.TaskUpdateActionApprovement):
 		var updateParams approverUpdateParams
 		err := json.Unmarshal(data.Parameters, &updateParams)
 		if err != nil {
@@ -176,22 +198,39 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		}
 
 		return nil, gb.setApproverDecision(ctx, data.Id, data.ByLogin, updateParams)
-	}
 
-	if data.Action == string(entity.TaskUpdateActionSendEditApp) {
+	case string(entity.TaskUpdateActionSendEditApp):
 		var updateParams updateEditingParams
 		err := json.Unmarshal(data.Parameters, &updateParams)
 		if err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
 
-		return nil, gb.setEditingApp(ctx, &setEditingAppDTO{
+		return nil, gb.setActionApplication(ctx, &setActionAppDTO{
 			stepId:       data.Id,
 			approver:     data.ByLogin,
 			initiator:    data.Author,
 			workNumber:   data.WorkNumber,
 			workTitle:    data.WorkTitle,
 			updateParams: updateParams,
+			action:       data.Action,
+		})
+
+	case string(entity.TaskUpdateActionRequestAddInfo):
+		var updateParams updateAddInfoParams
+		err := json.Unmarshal(data.Parameters, &updateParams)
+		if err != nil {
+			return nil, errors.New("can't assert provided data")
+		}
+
+		return nil, gb.setActionApplication(ctx, &setActionAppDTO{
+			stepId:       data.Id,
+			approver:     data.ByLogin,
+			initiator:    data.Author,
+			workNumber:   data.WorkNumber,
+			workTitle:    data.WorkTitle,
+			updateParams: updateParams,
+			action:       data.Action,
 		})
 	}
 

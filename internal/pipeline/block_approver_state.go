@@ -34,6 +34,18 @@ type EditingApp struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type RequestAddInfo struct {
+	Initiator *AdditionalInfo `json:"initiator"`
+	Approver  *AdditionalInfo `json:"approver"`
+}
+
+type AdditionalInfo struct {
+	Login       string    `json:"login"`
+	Comment     string    `json:"comment"`
+	Attachments []string  `json:"attachments"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type ApproverData struct {
 	Type           script.ApproverType `json:"type"`
 	Approvers      map[string]struct{} `json:"approvers"`
@@ -55,6 +67,9 @@ type ApproverData struct {
 
 	ApproversGroupID   string `json:"approvers_group_id"`
 	ApproversGroupName string `json:"approvers_group_name"`
+
+	RequestAddInfo    *RequestAddInfo  `json:"request_additional_info,omitempty"`
+	RequestAddInfoLog []RequestAddInfo `json:"request_additional_info_log,omitempty"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -94,7 +109,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	return nil
 }
 
-func (a *ApproverData) SetEditApp(login, comment string, attachments []string) error {
+func (a *ApproverData) setEditApp(login string, params updateEditingParams) error {
 	_, ok := a.Approvers[login]
 	if !ok {
 		return fmt.Errorf("%s not found in approvers", login)
@@ -106,8 +121,8 @@ func (a *ApproverData) SetEditApp(login, comment string, attachments []string) e
 
 	editing := &EditingApp{
 		Approver:    login,
-		Comment:     comment,
-		Attachments: attachments,
+		Comment:     params.Comment,
+		Attachments: params.Attachments,
 		CreatedAt:   time.Now(),
 	}
 
@@ -116,4 +131,53 @@ func (a *ApproverData) SetEditApp(login, comment string, attachments []string) e
 	a.EditingApp = editing
 
 	return nil
+}
+
+func (a *ApproverData) setRequestAddInfo(login string, params updateAddInfoParams) error {
+	_, ok := a.Approvers[login]
+	if !ok {
+		return fmt.Errorf("%s not found in approvers", login)
+	}
+
+	if a.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	if a.RequestAddInfo != nil {
+		if a.RequestAddInfo.Initiator != nil && a.RequestAddInfo.Approver != nil {
+			a.RequestAddInfoLog = append(a.RequestAddInfoLog, *a.RequestAddInfo)
+			addInfo := createAddInfo(login, params)
+			a.RequestAddInfo = addInfo
+		}
+		if a.RequestAddInfo.Approver != nil {
+			addInfo := createAddInfo(login, params)
+			a.RequestAddInfo.Initiator = addInfo.Initiator
+		}
+		return nil
+	}
+
+	addIfno := createAddInfo(login, params)
+	a.RequestAddInfo = addIfno
+
+	return nil
+}
+
+func createAddInfo(login string, params updateAddInfoParams) *RequestAddInfo {
+	addInfo := AdditionalInfo{
+		Login:       login,
+		Comment:     params.Comment,
+		Attachments: params.Attachments,
+		CreatedAt:   time.Now(),
+	}
+
+	var addInfoApplication RequestAddInfo
+
+	switch params.Author {
+	case "initiator":
+		addInfoApplication.Initiator = &addInfo
+	case "approver":
+		addInfoApplication.Approver = &addInfo
+	}
+
+	return &addInfoApplication
 }

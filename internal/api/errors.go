@@ -28,6 +28,7 @@ const (
 	GetAllDraftsError
 	GetPipelineError
 	GetVersionError
+	GetPipelineVersionsError
 	PipelineIsDraft
 	ApproveError
 	PipelineDeleteError
@@ -54,7 +55,6 @@ const (
 	TagDetachError
 	ModuleFindError
 	PipelineIsNotDraft
-	PipelineHasDraft
 	SchedulerClientFailed
 	ScenarioIsUsedInOtherError
 	PipelineNameUsed
@@ -94,6 +94,7 @@ var errorText = map[Err]string{
 	UUIDParsingError:              "can't find uuid",
 	GetPipelineError:              "can't get pipeline",
 	GetVersionError:               "can't get pipeline version",
+	GetPipelineVersionsError:      "can't get pipeline versions",
 	RequestReadError:              "can't read request",
 	PipelineReadError:             "can't read pipeline data",
 	PipelineWriteError:            "can't write pipeline data",
@@ -123,7 +124,6 @@ var errorText = map[Err]string{
 	TagParseError:                 "can't pars tag data",
 	TagDetachError:                "can't detaсh tags from pipeline",
 	ModuleFindError:               "can't find module",
-	PipelineHasDraft:              "pipeline already has a draft",
 	SchedulerClientFailed:         "scheduler client failed",
 	NetworkMonitorClientFailed:    "network monitor client failed",
 	ScenarioIsUsedInOtherError:    "scenario is used in other",
@@ -164,6 +164,7 @@ var errorDescription = map[Err]string{
 	UUIDParsingError:              "Не удалось прочитать идентификатор",
 	GetPipelineError:              "Не удалось получить информацию о сценарии",
 	GetVersionError:               "Не удалось получить информацию о сценарии",
+	GetPipelineVersionsError:      "Не удалось получить информацию о версиях сценарии",
 	RequestReadError:              "Не удалось прочитать запрос",
 	PipelineReadError:             "Не удалось прочитать информацию о сценарии",
 	PipelineIsDraft:               "Редактирование согласованного сценария запрещено, необходимо создать новую версию",
@@ -193,7 +194,6 @@ var errorDescription = map[Err]string{
 	TagParseError:                 "Не удалось разбрать информацию о теге",
 	TagDetachError:                "Не удалось открепить тег от сценария",
 	ModuleFindError:               "Не удалось найти функцию",
-	PipelineHasDraft:              "Черновик данного сценария создан в разделе \"Мои сценарии\"",
 	SchedulerClientFailed:         "Ошибка клиента планировщика",
 	NetworkMonitorClientFailed:    "Ошибка клиента сетевого мониторинга",
 	ScenarioIsUsedInOtherError:    "Невозможно удалить: сценарий используется в других сценариях",

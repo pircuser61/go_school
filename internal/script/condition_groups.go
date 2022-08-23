@@ -1,6 +1,7 @@
 package script
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -345,7 +346,12 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 			return source.GetValue()
 		},
 		{From: booleanOperandType, To: stringOperandType}: func(source Operand) interface{} {
-			var boolValue = source.GetValue().(bool)
+			var boolValue, ok bool
+
+			if boolValue, ok = source.GetValue().(bool); !ok {
+				return fmt.Errorf("can`t cast source to bool")
+			}
+
 			switch boolValue {
 			case false:
 				return "false"
@@ -356,7 +362,12 @@ func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, err
 			}
 		},
 		{From: booleanOperandType, To: integerOperandType}: func(source Operand) interface{} {
-			var boolValue = source.GetValue().(bool)
+			var boolValue, ok bool
+
+			if boolValue, ok = source.GetValue().(bool); !ok {
+				return fmt.Errorf("can`t cast source to bool")
+			}
+
 			switch boolValue {
 			case false:
 				return float64(0)

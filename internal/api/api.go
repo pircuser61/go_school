@@ -358,26 +358,13 @@ type EriusScenarioInfo struct {
 	//  * 3 - Deleted
 	//  * 4 - Rejected
 	//  * 5 - On approve
-	Status         ScenarioStatus     `json:"status"`
-	Tags           []EriusTagInfo     `json:"tags"`
-	VersionHistory []EriusVersionInfo `json:"version_history"`
-	VersionId      string             `json:"version_id"`
+	Status    ScenarioStatus `json:"status"`
+	Tags      []EriusTagInfo `json:"tags"`
+	VersionId string         `json:"version_id"`
 }
 
 // EriusScenarioList defines model for EriusScenarioList.
-type EriusScenarioList struct {
-	// Черновики
-	Drafts []EriusScenarioInfo `json:"drafts"`
-
-	// Сценарии на одобрении
-	OnApprove []EriusScenarioInfo `json:"on_approve"`
-
-	// Согласованные сценарии
-	Pipelines []EriusScenarioInfo `json:"pipelines"`
-
-	// Теги
-	Tags []EriusTagInfo `json:"tags"`
-}
+type EriusScenarioList []EriusScenarioInfo
 
 // EriusTagInfo defines model for EriusTagInfo.
 type EriusTagInfo struct {
@@ -423,17 +410,38 @@ type EriusTasksPage struct {
 
 // EriusVersionInfo defines model for EriusVersionInfo.
 type EriusVersionInfo struct {
-	ApprovedAt *string `json:"approved_at,omitempty"`
-	Approver   string  `json:"approver"`
+	ApprovedAt string  `json:"approved_at"`
+	Approver   *string `json:"approver,omitempty"`
 	Author     string  `json:"author"`
 	CreatedAt  string  `json:"created_at"`
-	VersionId  string  `json:"version_id"`
+
+	// If the version is currently used as an actual one
+	IsActual bool `json:"is_actual"`
+
+	// Tag status:
+	//  * 1 - Draft
+	//  * 2 - Approved
+	//  * 3 - Deleted
+	//  * 4 - Rejected
+	//  * 5 - On approve
+	Status    ScenarioStatus `json:"status"`
+	UpdatedAt string         `json:"updated_at"`
+
+	// How many times is the version used as a subprocess
+	UsageCount int    `json:"usage_count"`
+	VersionId  string `json:"version_id"`
 }
 
 // Execution params
 type ExecutionParams struct {
 	// Executor value (depends on type)
 	Executors string `json:"executors"`
+
+	// Executors group id in SD
+	ExecutorsGroupId string `json:"executors_group_id"`
+
+	// Executors group name in SD
+	ExecutorsGroupName string `json:"executors_group_name"`
 
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`
@@ -503,6 +511,9 @@ type FunctionValueModel struct {
 
 // Notification params
 type NotificationParams struct {
+	// Emails to get notifications
+	Emails []string `json:"emails"`
+
 	// People to get notifications
 	People []string `json:"people"`
 
@@ -559,6 +570,9 @@ type RunVersionsByBlueprintIdRequest struct {
 	BlueprintId     string                 `json:"blueprint_id"`
 	Description     string                 `json:"description"`
 }
+
+// ScenarioVersionInfoList defines model for ScenarioVersionInfoList.
+type ScenarioVersionInfoList []EriusVersionInfo
 
 // SchedulerTasksResponse defines model for SchedulerTasksResponse.
 type SchedulerTasksResponse struct {
@@ -1059,6 +1073,9 @@ type ServerInterface interface {
 	// Attach Tag
 	// (PUT /pipelines/{pipelineID}/tags/{ID})
 	AttachTag(w http.ResponseWriter, r *http.Request, pipelineID string, iD string)
+	// Get pipeline versions
+	// (GET /pipelines/{pipelineID}/versions)
+	GetPipelineVersions(w http.ResponseWriter, r *http.Request, pipelineID string)
 	// Run Version
 	// (POST /run/version/new_version)
 	RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request)
@@ -1572,6 +1589,32 @@ func (siw *ServerInterfaceWrapper) AttachTag(w http.ResponseWriter, r *http.Requ
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AttachTag(w, r, pipelineID, iD)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetPipelineVersions operation middleware
+func (siw *ServerInterfaceWrapper) GetPipelineVersions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "pipelineID" -------------
+	var pipelineID string
+
+	err = runtime.BindStyledParameter("simple", false, "pipelineID", chi.URLParam(r, "pipelineID"), &pipelineID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipelineID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPipelineVersions(w, r, pipelineID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2159,6 +2202,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/pipelines/{pipelineID}/tags/{ID}", wrapper.AttachTag)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/pipelines/{pipelineID}/versions", wrapper.GetPipelineVersions)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/run/version/new_version", wrapper.RunNewVersionByPrevVersion)

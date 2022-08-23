@@ -228,7 +228,36 @@ func (ep *ExecutablePipeline) updateStatusByStep(ctx c.Context, step string, sta
 	return nil
 }
 
+func (ep *ExecutablePipeline) dumpTaskBlocksData(ctx c.Context) error {
+	notifiedBlocks := make(map[string][]string)
+	for i := range ep.notifiedBlocks {
+		for j := range ep.notifiedBlocks[i] {
+			notifiedBlocks[i][j] = string(ep.notifiedBlocks[i][j])
+		}
+	}
+
+	prevUpdateStatusBlocks := make(map[string]string)
+	for i := range ep.prevUpdateStatusBlocks {
+		prevUpdateStatusBlocks[i] = string(ep.prevUpdateStatusBlocks[i])
+	}
+
+	err := ep.Storage.UpdateTaskBlocksData(ctx, &db.UpdateTaskBlocksDataRequest{
+		Id:                     ep.TaskID,
+		ActiveBlocks:           ep.ActiveBlocks,
+		SkippedBlocks:          ep.SkippedBlocks,
+		NotifiedBlocks:         notifiedBlocks,
+		PrevUpdateStatusBlocks: prevUpdateStatusBlocks,
+	})
+	if err != nil {
+		err = errors.Wrap(err, "can`t dump task blocks data")
+	}
+
+	return err
+}
+
 func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step string) error {
+	log := logger.GetLogger(ctx)
+
 	if ep.notifiedBlocks == nil {
 		ep.notifiedBlocks = make(map[string][]TaskHumanStatus)
 	}
@@ -259,6 +288,8 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 			}
 			ep.initiatorEmail = email
 		}
+
+		log.Info("initiatorEmail: ", ep.initiatorEmail)
 		if err := ep.Sender.SendNotification(ctx, []string{ep.initiatorEmail}, tmpl); err != nil {
 			return err
 		}
@@ -356,6 +387,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 
 				return errUnknownBlock
 			}
+
 			ep.StepType = currentBlock.GetType()
 
 			// initialize step state
@@ -419,6 +451,10 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 				log.WithError(errNotif).Error("couldn't notify initiator")
 			}
 
+			if errDump := ep.dumpTaskBlocksData(ctx); errDump != nil {
+				return errDump
+			}
+
 			switch currentBlock.GetStatus() {
 			case StatusFinished, StatusNoSuccess:
 			default:
@@ -435,7 +471,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 				state, exists := ep.VarStore.GetState(step)
 				if exists {
 					var stateData ApplicationData
-					if err := json.Unmarshal(state.(json.RawMessage), &stateData); err != nil {
+					if err = json.Unmarshal(state.(json.RawMessage), &stateData); err != nil {
 						log.WithError(err).Error("couldn't get application state")
 					} else {
 						ep.currDescription = stateData.Description
@@ -456,6 +492,10 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 
 			skipped := currentBlock.Skipped(ep.VarStore)
 			ep.MergeSkippedBlocks(skipped)
+
+			if errDump := ep.dumpTaskBlocksData(ctx); errDump != nil {
+				return errDump
+			}
 
 			if runCtx.StopPoints.IsStopPoint(step) {
 				errChangeStopped := ep.changeTaskStatus(ctx, db.RunStatusStopped)
@@ -525,35 +565,35 @@ func (ep *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 }
 
 //nolint:gocyclo //ok
-func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *entity.EriusFunc) (Runner, error) {
+func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc) (Runner, error) {
 	ctx, s := trace.StartSpan(ctx, "create_block")
 	defer s.End()
 
-	switch block.BlockType {
+	switch bl.BlockType {
 	case script.TypeGo:
-		return ep.CreateGoBlock(ctx, block, name)
+		return ep.CreateGoBlock(ctx, bl, name)
 	case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
 		fb := FunctionBlock{
 			Name:           name,
-			Type:           block.BlockType,
-			FunctionName:   block.Title,
+			Type:           bl.BlockType,
+			FunctionName:   bl.Title,
 			FunctionInput:  make(map[string]string),
 			FunctionOutput: make(map[string]string),
-			Nexts:          block.Next,
+			Nexts:          bl.Next,
 			RunURL:         ep.FaaS + "function/%s",
 		}
 
-		for _, v := range block.Input {
+		for _, v := range bl.Input {
 			fb.FunctionInput[v.Name] = v.Global
 		}
 
-		for _, v := range block.Output {
+		for _, v := range bl.Output {
 			fb.FunctionOutput[v.Name] = v.Global
 		}
 
 		return &fb, nil
 	case script.TypeScenario:
-		p, err := ep.Storage.GetExecutableByName(ctx, block.Title)
+		p, err := ep.Storage.GetExecutableByName(ctx, bl.Title)
 		if err != nil {
 			return nil, err
 		}
@@ -566,12 +606,12 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *ent
 		epi.FaaS = ep.FaaS
 		epi.Input = make(map[string]string)
 		epi.Output = make(map[string]string)
-		epi.Nexts = block.Next
-		epi.Name = block.Title
+		epi.Nexts = bl.Next
+		epi.Name = bl.Title
 		epi.PipelineModel = p
 
 		parametersMap := make(map[string]interface{})
-		for _, v := range block.Input {
+		for _, v := range bl.Input {
 			parametersMap[v.Name] = v.Global
 		}
 
@@ -594,18 +634,18 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, block *ent
 			return nil, err
 		}
 
-		for _, v := range block.Input {
+		for _, v := range bl.Input {
 			epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
 		}
 
-		for _, v := range block.Output {
+		for _, v := range bl.Output {
 			epi.Output[v.Name] = v.Global
 		}
 
 		return &epi, nil
 	}
 
-	return nil, errors.Errorf("can't create block with type: %s", block.BlockType)
+	return nil, errors.Errorf("can't create block with type: %s", bl.BlockType)
 }
 
 //nolint:gocyclo //need bigger cyclomatic
@@ -620,7 +660,7 @@ func (ep *ExecutablePipeline) CreateGoBlock(ctx c.Context, ef *entity.EriusFunc,
 	case BlockGoSdApplicationID:
 		return createGoSdApplicationBlock(name, ef)
 	case BlockGoExecutionID:
-		return createGoExecutionBlock(name, ef, ep)
+		return createGoExecutionBlock(ctx, name, ef, ep)
 	case BlockGoStartId:
 		return createGoStartBlock(name, ef), nil
 	case BlockGoEndId:

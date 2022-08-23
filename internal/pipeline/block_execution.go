@@ -69,6 +69,9 @@ type ExecutionData struct {
 	ChangedExecutorsLogs     []ChangeExecutorLog       `json:"change_executors_logs,omitempty"`
 	RequestExecutionInfoLogs []RequestExecutionInfoLog `json:"request_execution_info_logs,omitempty"`
 
+	ExecutorsGroupID   string `json:"executors_group_id"`
+	ExecutorsGroupName string `json:"executors_group_name"`
+
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 }
 
@@ -463,7 +466,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoExecutionBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) (*GoExecutionBlock, error) {
+func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFunc, p *ExecutablePipeline) (*GoExecutionBlock, error) {
 	b := &GoExecutionBlock{
 		Name:   name,
 		Title:  ef.Title,
@@ -471,7 +474,7 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, pipeline *Executa
 		Output: map[string]string{},
 		Nexts:  ef.Next,
 
-		Pipeline: pipeline,
+		Pipeline: p,
 	}
 
 	for _, v := range ef.Input {
@@ -489,14 +492,40 @@ func createGoExecutionBlock(name string, ef *entity.EriusFunc, pipeline *Executa
 	}
 
 	if err = params.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid execution parameters")
+		return nil, errors.Wrap(err, "invalid execution parameters, work number")
+	}
+
+	executors := map[string]struct{}{
+		params.Executors: {},
+	}
+
+	executorsGroupName := ""
+
+	if params.Type == script.ExecutionTypeGroup {
+		executorsGroup, errGroup := p.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
+		if errGroup != nil {
+			return nil, errors.Wrap(errGroup, "can`t get executors group with id: "+params.ExecutorsGroupID)
+		}
+
+		if len(executorsGroup.People) == 0 {
+			return nil, errors.Wrap(errGroup, "zero executors in group: "+params.ExecutorsGroupID)
+		}
+
+		executorsGroupName = executorsGroup.GroupName
+
+		executors = make(map[string]struct{})
+		for i := range executorsGroup.People {
+			executors[executorsGroup.People[i].Login] = struct{}{}
+		}
 	}
 
 	b.State = &ExecutionData{
-		ExecutionType: params.Type,
-		Executors:     map[string]struct{}{params.Executors: {}},
-		SLA:           params.SLA,
-		LeftToNotify:  map[string]struct{}{params.Executors: {}},
+		ExecutionType:      params.Type,
+		Executors:          executors,
+		SLA:                params.SLA,
+		LeftToNotify:       executors,
+		ExecutorsGroupID:   params.ExecutorsGroupID,
+		ExecutorsGroupName: executorsGroupName,
 	}
 
 	return b, nil
