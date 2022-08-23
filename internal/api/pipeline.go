@@ -103,6 +103,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+//nolint:godupl // different logic (temporary saving old for compatibility)
 func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()

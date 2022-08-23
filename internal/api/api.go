@@ -1040,7 +1040,7 @@ type ServerInterface interface {
 	// Create pipeline
 	// (POST /pipelines)
 	CreatePipeline(w http.ResponseWriter, r *http.Request)
-	// Get pipeline version
+	// Creates copy of pipeline
 	// (POST /pipelines/copy)
 	CopyPipeline(w http.ResponseWriter, r *http.Request)
 	// Rename Pipeline
