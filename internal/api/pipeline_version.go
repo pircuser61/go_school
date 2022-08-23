@@ -50,9 +50,9 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	p.ID, err = uuid.Parse(pipelineID)
+	p.ID, err = uuid.NewUUID()
 	if err != nil {
-		e := VersionCreateError
+		e := PipelineCreateError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -83,7 +83,16 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = ae.DB.CreateVersion(ctx, &p, ui.Username, b)
+	updated, err := json.Marshal(p)
+	if err != nil {
+		e := PipelineParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
