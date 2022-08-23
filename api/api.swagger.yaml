@@ -674,7 +674,7 @@ paths:
     post:
       tags:
         - pipeline
-      summary: Get pipeline version
+      summary: Creates copy of pipeline
       description: Создать собственную копию процесса
       operationId: copy-pipeline
       responses:
