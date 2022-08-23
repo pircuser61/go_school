@@ -50,8 +50,14 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	p.ID = uuid.New()
-	p.VersionID = uuid.New()
+	p.ID, err = uuid.Parse(pipelineID)
+	if err != nil {
+		e := VersionCreateError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
