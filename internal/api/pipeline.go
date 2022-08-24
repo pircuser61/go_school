@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-
 	"io"
 	"net/http"
 	"strconv"
@@ -22,6 +21,90 @@ import (
 )
 
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
+	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(req.Body)
+	defer func() {
+		_ = req.Body.Close()
+	}()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	p := entity.EriusScenario{}
+
+	err = json.Unmarshal(b, &p)
+	if err != nil {
+		e := PipelineParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	userFromContext, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		log.Error("user failed: ", err.Error())
+	}
+
+	p.ID = uuid.New()
+	p.VersionID = uuid.New()
+
+	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !canCreate {
+		e := PipelineNameUsed
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
+	if err != nil {
+		e := PipelineCreateError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
+	if err != nil {
+		e := PipelineReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, created)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+//nolint:dupl // different logic (temporary saving old for compatibility)
+func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
 
