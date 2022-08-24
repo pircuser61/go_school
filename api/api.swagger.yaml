@@ -677,6 +677,12 @@ paths:
       summary: Creates copy of pipeline
       description: Создать собственную копию процесса
       operationId: copy-pipeline
+      requestBody:
+        description: Version body to copy
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EriusScenario'
       responses:
         200:
           description: OK
