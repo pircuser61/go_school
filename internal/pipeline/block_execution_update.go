@@ -214,7 +214,7 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 		}
 
 		tpl := mail.NewRequestExecutionInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
-		err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, tpl)
+		err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
 		if err != nil {
 			return err
 		}
@@ -232,7 +232,7 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 		}
 
 		tpl := mail.NewAnswerExecutionInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
-		err = gb.Pipeline.Sender.SendNotification(ctx, emails, tpl)
+		err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil, tpl)
 		if err != nil {
 			return err
 		}

@@ -2,10 +2,13 @@ package mail
 
 import (
 	"fmt"
-	"github.com/iancoleman/orderedmap"
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"reflect"
+	"regexp"
 	"strings"
+
+	"github.com/iancoleman/orderedmap"
+
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 )
 
 type userFromSD struct {
@@ -13,13 +16,41 @@ type userFromSD struct {
 	Username string `json:"username"`
 }
 
-type attachment struct {
-	fieldName string
-	attach    email.Attachment
-}
-
 func (u userFromSD) String() string {
 	return fmt.Sprintf("%s (%s)", u.Fullname, u.Username)
+}
+
+func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[string][]string {
+	aa := make(map[string][]string, 0)
+
+	ff := make(map[string]struct{})
+	for _, f := range fields {
+		ff[strings.Trim(f, ".")] = struct{}{}
+	}
+
+	var iter func(body orderedmap.OrderedMap)
+	iter = func(body orderedmap.OrderedMap) {
+		for _, k := range body.Keys() {
+			if _, ok := ff[k]; !ok {
+				continue
+			}
+			v, _ := body.Get(k)
+			switch val := v.(type) {
+			case string:
+				aa[k] = []string{val}
+			case []interface{}:
+				a := make([]string, 0)
+				for _, item := range val {
+					if _, ok := item.(string); ok {
+						a = append(a, item.(string))
+					}
+				}
+				aa[k] = a
+			}
+		}
+	}
+	iter(body)
+	return aa
 }
 
 func toUser(data orderedmap.OrderedMap) (userFromSD, bool) {
@@ -83,7 +114,7 @@ func makeDescriptionFromJSON(data orderedmap.OrderedMap) string {
 		res.WriteString(fmt.Sprintf("<p>%s: ", k))
 		v, _ := data.Get(k)
 		writeValue(&res, v)
-		res.WriteString("</p></br>")
+		res.WriteString("</p><br>")
 		if i == len(data.Keys())-1 {
 			continue
 		}
@@ -92,34 +123,44 @@ func makeDescriptionFromJSON(data orderedmap.OrderedMap) string {
 	return res.String()
 }
 
-func addAttachments(res *strings.Builder, attachments []attachment) {
-	for _, a := range attachments {
-		res.WriteString(fmt.Sprintf("<p>%s: %s</p></br>", a.fieldName, a.attach.Name))
+func CompileAttachments(body string, attachments map[string][]email.Attachment) string {
+	for k, aa := range attachments {
+		names := make([]string, 0, len(aa))
+		for _, a := range aa {
+			names = append(names, a.Name)
+		}
+		newAttachment := fmt.Sprintf(`<p>%s: %s</p><br>`, k, strings.Join(names, ", "))
+		body = regexp.MustCompile(
+			fmt.Sprintf(`<p>%s: [^<]+</p><br>`, k)).ReplaceAllString(body, newAttachment)
 	}
+	return body
 }
 
-func MakeDescription(data orderedmap.OrderedMap, keys map[string]string) string {
+func MakeDescription(data orderedmap.OrderedMap) string {
 	descr := makeDescriptionFromJSON(data)
-	for k, v := range keys {
-		descr = strings.Replace(descr, "<p>"+k+":", "<p>"+v+":", -1)
-	}
 	return descr
+}
+
+func SwapKeys(body string, keys map[string]string) string {
+	for k, v := range keys {
+		body = strings.Replace(body, "<p>"+k+":", "<p>"+v+":", -1)
+	}
+	return body
 }
 
 func MakeBodyHeader(fullname, username, link string, initialDescription string) string {
 	res := strings.Builder{}
-	res.WriteString(fmt.Sprintf("<p>%s<p>", initialDescription))
-	res.WriteString(fmt.Sprintf("<p> <b>Инициатор: </b>%s</p> </br>", userFromSD{fullname, username}.String()))
-	res.WriteString(fmt.Sprintf("<p> <b>Ссылка: </b><a href=\"%s\">%s</a></p> </br>", link, link))
+	res.WriteString(fmt.Sprintf("<p>%s<p><br>", initialDescription))
+	res.WriteString(fmt.Sprintf("<p> <b>Инициатор: </b>%s</p> <br>", userFromSD{fullname, username}.String()))
+	res.WriteString(fmt.Sprintf("<p> <b>Ссылка: </b><a href=\"%s\">%s</a></p> <br>", link, link))
 	return res.String()
 }
 
-func WrapDescription(header, body string, attachments []attachment) string {
+func WrapDescription(header, body string) string {
 	res := strings.Builder{}
 	res.WriteString(header)
-	res.WriteString("<p> ------------ Описание ------------ </p> </br>")
+	res.WriteString("<p> ------------ Описание ------------ </p> <br>")
 	res.WriteString(body)
-	addAttachments(&res, attachments)
 
 	return res.String()
 }
@@ -132,7 +173,6 @@ func AddStyles(description string) string {
     p { 
        font-family: Arial;
        font-size: 11px;
-       margin-bottom: -20px;
        }
 </style>`)
 	return res.String()

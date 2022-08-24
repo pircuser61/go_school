@@ -1,10 +1,12 @@
 package mail
 
 import (
-	"github.com/iancoleman/orderedmap"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/iancoleman/orderedmap"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestToUser(t *testing.T) {
@@ -117,6 +119,40 @@ func TestWriteValue(t *testing.T) {
 			res := strings.Builder{}
 			writeValue(&res, test.data)
 			assert.Equal(t, test.want, res.String())
+		})
+	}
+}
+
+func TestGetAttachmentsFromBody(t *testing.T) {
+	tests := []struct {
+		name   string
+		data   string
+		fields []string
+		want   map[string][]string
+	}{
+		{
+			name: "all types",
+			data: `{"recipient": {"email": "snkosya1@mts.ru", "phone": "15857", "mobile": "+79111157031", 
+"tabnum": "415336", "fullname": "Косяк Сергей Николаевич", "position": "ведущий разработчик", 
+"username": "snkosya1"}, "chislo_moe": 12, "stroka_moya": "строка", 
+"vlozhenie_odno": "34bc6b5b-2391-11ed-b54b-04505600ad66", 
+"vlozhenie_mnogo": ["34b9dd4a-2391-11ed-b54b-04505600ad66", "366bc146-2391-11ed-b54b-04505600ad66"]}`,
+			fields: []string{".vlozhenie_odno", ".vlozhenie_mnogo"},
+			want: map[string][]string{
+				"vlozhenie_odno":  []string{"34bc6b5b-2391-11ed-b54b-04505600ad66"},
+				"vlozhenie_mnogo": []string{"34b9dd4a-2391-11ed-b54b-04505600ad66", "366bc146-2391-11ed-b54b-04505600ad66"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data := orderedmap.New()
+			if err := data.UnmarshalJSON([]byte(test.data)); err != nil {
+				t.Fatal(err)
+			}
+			aa := GetAttachmentsFromBody(*data, test.fields)
+			assert.Equal(t, test.want, aa)
 		})
 	}
 }

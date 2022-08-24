@@ -51,14 +51,15 @@ func (s *Service) GetApplicationLink(applicationID string) string {
 	return fmt.Sprintf(TaskUrlTemplate, s.SdAddress, applicationID)
 }
 
-func (s *Service) SendNotification(ctx context.Context, to []string, tmpl Template) error {
+func (s *Service) SendNotification(ctx context.Context, to []string, files []email.Attachment, tmpl Template) error {
 	_, span := trace.StartSpan(ctx, "SendNotification")
 	defer span.End()
 
 	msg := &email.Mail{
-		From:    s.from,
-		To:      make([]*mail.Address, 0, len(to)),
-		Subject: tmpl.Subject,
+		From:        s.from,
+		To:          make([]*mail.Address, 0, len(to)),
+		Subject:     tmpl.Subject,
+		Attachments: files,
 	}
 
 	for _, person := range to {

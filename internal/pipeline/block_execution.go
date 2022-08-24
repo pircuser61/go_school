@@ -248,7 +248,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUI
 	if len(emails) == 0 {
 		return false, nil
 	}
-	err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+	err := gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
 		mail.NewApplicationPersonStatusNotification(
 			stepCtx.workNumber,
 			stepCtx.workTitle,
@@ -290,7 +290,7 @@ func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx
 			if len(emails) == 0 {
 				return false, nil
 			}
-			err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+			err := gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
 				mail.NewExecutionSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
 			if err != nil {
 				return false, err

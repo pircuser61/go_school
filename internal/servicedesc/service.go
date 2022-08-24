@@ -1,12 +1,13 @@
 package servicedesc
 
 import (
-	c "context"
-	"errors"
-	"io"
 	"net/http"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"go.opencensus.io/plugin/ochttp"
+
+	"gitlab.services.mts.ru/abp/myosotis/observability"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 type Service struct {
@@ -15,8 +16,18 @@ type Service struct {
 	cli *http.Client
 }
 
-func NewService(cfg Config) (*Service, error) {
+func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 	newCli := &http.Client{}
+
+	tr := TransportForPeople{
+		transport: ochttp.Transport{
+			Base:        newCli.Transport,
+			Propagation: observability.NewHTTPFormat(),
+		},
+		sso:   ssoS,
+		scope: cfg.Scope,
+	}
+	newCli.Transport = &tr
 
 	s := &Service{
 		cli:   newCli,
@@ -26,24 +37,17 @@ func NewService(cfg Config) (*Service, error) {
 	return s, nil
 }
 
-func makeRequest(ctx c.Context, method, url string, body io.Reader) (req *http.Request, err error) {
-	req, err = http.NewRequestWithContext(ctx, method, url, body)
+type TransportForPeople struct {
+	transport ochttp.Transport
+	sso       *sso.Service
+	scope     string
+}
+
+func (t *TransportForPeople) RoundTrip(req *http.Request) (*http.Response, error) {
+	err := t.sso.BindAuthHeader(req.Context(), req, t.scope)
 	if err != nil {
 		return nil, err
 	}
 
-	token := ctx.Value(script.AuthorizationHeader{})
-
-	if token == nil {
-		return nil, errors.New("auth token is nil")
-	}
-
-	stringToken, ok := token.(string)
-	if !ok {
-		return nil, errors.New("can`t cast auth token to string")
-	}
-
-	req.Header.Add(authorizationHeader, stringToken)
-
-	return req, nil
+	return t.transport.RoundTrip(req)
 }

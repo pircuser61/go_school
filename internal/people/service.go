@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -247,6 +248,8 @@ func (s *Service) getUser(ctx context.Context, search string) ([]SSOUser, error)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		res, _ := ioutil.ReadAll(resp.Body)
+		fmt.Println(res)
 		return nil, errors.New("got bad status code")
 	}
 	var res SearchUsersResp

@@ -3,8 +3,6 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"github.com/iancoleman/orderedmap"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"github.com/pkg/errors"
@@ -27,13 +25,13 @@ type SdApplicationDataCtx struct{}
 type ApplicationData struct {
 	BlueprintID     string                `json:"blueprint_id"`
 	Description     string                `json:"description"`
-	ApplicationBody orderedmap.OrderedMap `json:"application_body"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
 }
 
 type SdApplicationData struct {
 	BlueprintID     string                `json:"blueprint_id"`
 	Description     string                `json:"description"`
-	ApplicationBody orderedmap.OrderedMap `json:"application_body"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
 }
 
 type GoSdApplicationBlock struct {
@@ -46,7 +44,7 @@ type GoSdApplicationBlock struct {
 }
 
 func (gb *GoSdApplicationBlock) GetStatus() Status {
-	if len(gb.State.ApplicationBody.Keys()) != 0 {
+	if gb.State.ApplicationBody != nil {
 		return StatusFinished
 	}
 	return StatusRunning
