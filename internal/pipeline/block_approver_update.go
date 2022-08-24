@@ -28,9 +28,9 @@ type approverUpdateParams struct {
 }
 
 type updateAddInfoParams struct {
-	Author      string   `json:"author"`
-	Comment     string   `json:"comment"`
-	Attachments []string `json:"attachments"`
+	Type        AdditionalInfoType `json:"type"`
+	Comment     string             `json:"comment"`
+	Attachments []string           `json:"attachments"`
 }
 
 func (a *approverUpdateParams) Validate() error {
@@ -104,6 +104,7 @@ type setActionAppDTO struct {
 	action       string
 }
 
+//nolint:gocyclo //its ok here
 func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionAppDTO) error {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, dto.stepId)
 	if err != nil {

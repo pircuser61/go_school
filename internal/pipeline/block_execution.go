@@ -492,7 +492,7 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 	}
 
 	if err = params.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid execution parameters")
+		return nil, errors.Wrap(err, "invalid execution parameters, work number")
 	}
 
 	executors := map[string]struct{}{

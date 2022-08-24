@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -34,16 +35,25 @@ type EditingApp struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-type RequestAddInfo struct {
-	Initiator *AdditionalInfo `json:"initiator"`
-	Approver  *AdditionalInfo `json:"approver"`
+type AdditionalInfoType string
+
+const (
+	RequestAddInfoType AdditionalInfoType = "request"
+	ReplyAddInfoType   AdditionalInfoType = "reply"
+)
+
+var additionalInfoTypeMap = map[AdditionalInfoType]struct{}{
+	RequestAddInfoType: {},
+	ReplyAddInfoType:   {},
 }
 
 type AdditionalInfo struct {
-	Login       string    `json:"login"`
-	Comment     string    `json:"comment"`
-	Attachments []string  `json:"attachments"`
-	CreatedAt   time.Time `json:"created_at"`
+	Id          string             `json:"id"`
+	Login       string             `json:"login"`
+	Comment     string             `json:"comment"`
+	Attachments []string           `json:"attachments"`
+	Type        AdditionalInfoType `json:"type"`
+	CreatedAt   time.Time          `json:"created_at"`
 }
 
 type ApproverData struct {
@@ -68,8 +78,7 @@ type ApproverData struct {
 	ApproversGroupID   string `json:"approvers_group_id"`
 	ApproversGroupName string `json:"approvers_group_name"`
 
-	RequestAddInfo    *RequestAddInfo  `json:"request_additional_info,omitempty"`
-	RequestAddInfoLog []RequestAddInfo `json:"request_additional_info_log,omitempty"`
+	AddInfo []AdditionalInfo `json:"additional_info,omitempty"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -143,41 +152,22 @@ func (a *ApproverData) setRequestAddInfo(login string, params updateAddInfoParam
 		return errors.New("decision already set")
 	}
 
-	if a.RequestAddInfo != nil {
-		if a.RequestAddInfo.Initiator != nil && a.RequestAddInfo.Approver != nil {
-			a.RequestAddInfoLog = append(a.RequestAddInfoLog, *a.RequestAddInfo)
-			addInfo := createAddInfo(login, params)
-			a.RequestAddInfo = addInfo
-		}
-		if a.RequestAddInfo.Approver != nil {
-			addInfo := createAddInfo(login, params)
-			a.RequestAddInfo.Initiator = addInfo.Initiator
-		}
-		return nil
+	if _, ok := additionalInfoTypeMap[params.Type]; !ok {
+		return errors.New("incorrect type additional Info")
 	}
 
-	addIfno := createAddInfo(login, params)
-	a.RequestAddInfo = addIfno
+	if len(a.AddInfo) == 0 && params.Type == ReplyAddInfoType {
+		return errors.New("don't answer after request")
+	}
 
-	return nil
-}
-
-func createAddInfo(login string, params updateAddInfoParams) *RequestAddInfo {
-	addInfo := AdditionalInfo{
-		Login:       login,
+	a.AddInfo = append(a.AddInfo, AdditionalInfo{
+		Id:          uuid.NewString(),
+		Type:        params.Type,
 		Comment:     params.Comment,
 		Attachments: params.Attachments,
+		Login:       login,
 		CreatedAt:   time.Now(),
-	}
+	})
 
-	var addInfoApplication RequestAddInfo
-
-	switch params.Author {
-	case "initiator":
-		addInfoApplication.Initiator = &addInfo
-	case "approver":
-		addInfoApplication.Approver = &addInfo
-	}
-
-	return &addInfoApplication
+	return nil
 }

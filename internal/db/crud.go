@@ -328,8 +328,6 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author strin
 			---author---
 		ORDER BY created_at`
 
-	fmt.Println("author: ", author)
-
 	if author != "" {
 		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
 	}
@@ -1486,6 +1484,11 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	c, span := trace.StartSpan(c, "pg_update_draft")
 	defer span.End()
 
+	tx, err := db.Pool.BeginTx(c, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
@@ -1498,12 +1501,26 @@ func (db *PGCon) UpdateDraft(c context.Context,
 		updated_at = $5
 	WHERE id = $6`
 
-	_, err := db.Pool.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), p.VersionID)
+	_, err = tx.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), p.VersionID)
 	if err != nil {
+		_ = tx.Rollback(c)
 		return err
 	}
 
-	return nil
+	if p.Status == StatusApproved {
+		q = `
+	UPDATE pipeliner.versions
+	SET is_actual = FALSE
+	WHERE id != $1
+	AND pipeline_id = $2`
+		_, err = tx.Exec(c, q, p.VersionID, p.ID)
+		if err != nil {
+			_ = tx.Rollback(c)
+			return err
+		}
+	}
+
+	return tx.Commit(c)
 }
 
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
@@ -1520,16 +1537,19 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	var id uuid.UUID
 	var t time.Time
 
-	q := `
-	SELECT id, time
-	FROM pipeliner.variable_storage 
-	WHERE work_id = $1 AND step_name = $2 AND status IN ('idle', 'ready', 'running')
+	const q = `
+		SELECT id, time
+			FROM pipeliner.variable_storage 
+		WHERE work_id = $1 AND
+			step_name = $2 AND
+			status IN ('idle', 'ready', 'running')
 `
-	if scanErr := conn.QueryRow(ctx, q,
-		dto.WorkID,
-		dto.StepName).Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
+
+	if scanErr := conn.QueryRow(ctx, q, dto.WorkID, dto.StepName).
+		Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
 		return NullUuid, time.Time{}, nil
 	}
+
 	if id != NullUuid {
 		return id, t, nil
 	}
@@ -1538,34 +1558,34 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
-	q = `
-	INSERT INTO pipeliner.variable_storage (
-		id, 
-		work_id, 
-		step_type,
-		step_name, 
-		content, 
-		time, 
-		break_points, 
-		has_error,
-		status
-	)
-	VALUES (
-		$1, 
-		$2, 
-		$3, 
-		$4, 
-		$5, 
-		$6, 
-		$7,
-	    $8,
-	    $9
-	)
+	const query = `
+		INSERT INTO pipeliner.variable_storage (
+			id, 
+			work_id, 
+			step_type,
+			step_name, 
+			content, 
+			time, 
+			break_points, 
+			has_error,
+			status
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4, 
+			$5, 
+			$6, 
+			$7,
+			$8,
+			$9
+		)
 `
 
 	_, err = conn.Exec(
 		ctx,
-		q,
+		query,
 		id,
 		dto.WorkID,
 		dto.StepType,
@@ -1776,10 +1796,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, nil
 }
 
-func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(
-	ctx context.Context,
-	id uuid.UUID,
-	stepType string,
+func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
 ) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
 	defer span.End()
