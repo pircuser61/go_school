@@ -77,4 +77,5 @@ log:
       sourceField: 'sourcelog'
 
 servicedesc:
-  chainsmith_url: 'https://admin.dev.servicedesk.mts.ru/api/chainsmith'
+  servicedesk_url: 'https://dev.servicedesk.mts.ru'
+  scope: 'servicedesk-develop-aud'

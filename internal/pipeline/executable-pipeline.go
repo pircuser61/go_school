@@ -290,7 +290,7 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 		}
 
 		log.Info("initiatorEmail: ", ep.initiatorEmail)
-		if err := ep.Sender.SendNotification(ctx, []string{ep.initiatorEmail}, tmpl); err != nil {
+		if err := ep.Sender.SendNotification(ctx, []string{ep.initiatorEmail}, nil, tmpl); err != nil {
 			return err
 		}
 		ss = append(ss, currStatus)

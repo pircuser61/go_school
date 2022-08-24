@@ -12,9 +12,8 @@ import (
 )
 
 const (
-	authorizationHeader = "Authorization"
-	getApproversGroup   = "/v1/approver/"
-	getExecutorsGroup   = "/v1/executors/"
+	getApproversGroup = "/api/chainsmith/v1/approver/"
+	getExecutorsGroup = "/api/chainsmith/v1/executors/"
 )
 
 type Approver struct {
@@ -41,12 +40,9 @@ func (s *Service) GetApproversGroup(ctx context.Context, groupID string) (*Appro
 	ctxLocal, span := trace.StartSpan(ctx, "get_approvers_group")
 	defer span.End()
 
-	var req *http.Request
-	var err error
+	reqURL := fmt.Sprintf("%s%s%s", s.sdURL, getApproversGroup, groupID)
 
-	reqURL := fmt.Sprintf("%s%s%s", s.chainsmithURL, getApproversGroup, groupID)
-
-	req, err = makeRequest(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +73,9 @@ func (s *Service) GetExecutorsGroup(ctx context.Context, groupID string) (*Execu
 	ctxLocal, span := trace.StartSpan(ctx, "get_executors_group")
 	defer span.End()
 
-	var req *http.Request
-	var err error
+	reqURL := fmt.Sprintf("%s%s%s", s.sdURL, getExecutorsGroup, groupID)
 
-	reqURL := fmt.Sprintf("%s%s%s", s.chainsmithURL, getExecutorsGroup, groupID)
-
-	req, err = makeRequest(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
