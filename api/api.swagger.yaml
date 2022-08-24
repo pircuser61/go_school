@@ -2122,6 +2122,8 @@ components:
             - execution
             - change_executor
             - request_execution_info
+            - executor_start_work
+            - request_add_info
         parameters:
           type: object
           description: Task update params
