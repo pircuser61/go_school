@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -19,6 +20,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
+
+const copyPostfix = "копия"
 
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
@@ -141,6 +144,7 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
+	p.Name = fmt.Sprintf("%s - %s", p.Name, copyPostfix)
 
 	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
 	if err != nil {
