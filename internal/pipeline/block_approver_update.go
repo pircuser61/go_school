@@ -138,7 +138,7 @@ func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionApp
 		if errSet != nil {
 			return errSet
 		}
-	case string(entity.TaskUpdateActionRequestAddInfo):
+	case string(entity.TaskUpdateActionRequestApproveInfo):
 		params, ok := dto.updateParams.(updateAddInfoParams)
 		if !ok {
 			return errors.New("can't convert to updateEditingParams")
@@ -216,7 +216,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 			action:       data.Action,
 		})
 
-	case string(entity.TaskUpdateActionRequestAddInfo):
+	case string(entity.TaskUpdateActionRequestApproveInfo):
 		var updateParams updateAddInfoParams
 		err := json.Unmarshal(data.Parameters, &updateParams)
 		if err != nil {

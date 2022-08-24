@@ -114,9 +114,10 @@ const (
 	TaskUpdateActionExecution            TaskUpdateAction = "execution"
 	TaskUpdateActionChangeExecutor       TaskUpdateAction = "change_executor"
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
+	TaskUpdateActionExecutorStartWork    TaskUpdateAction = "executor_start_work"
 	TaskUpdateActionSendEditApp          TaskUpdateAction = "send_edit_app"
 	TaskUpdateActionCancelApp            TaskUpdateAction = "cancel_app"
-	TaskUpdateActionRequestAddInfo       TaskUpdateAction = "request_add_info"
+	TaskUpdateActionRequestApproveInfo   TaskUpdateAction = "request_add_info"
 )
 
 var (
@@ -125,14 +126,15 @@ var (
 		TaskUpdateActionExecution:            {},
 		TaskUpdateActionChangeExecutor:       {},
 		TaskUpdateActionRequestExecutionInfo: {},
+		TaskUpdateActionExecutorStartWork:    {},
 		TaskUpdateActionSendEditApp:          {},
 		TaskUpdateActionCancelApp:            {},
-		TaskUpdateActionRequestAddInfo:       {},
+		TaskUpdateActionRequestApproveInfo:   {},
 	}
 )
 
 type TaskUpdate struct {
-	Action     TaskUpdateAction `json:"action" enums:"approvement,execution,change_executor,request_execution_info"`
+	Action     TaskUpdateAction `json:"action" enums:"approvement,execution,change_executor,request_execution_info,executor_start_work"`
 	Parameters json.RawMessage  `json:"parameters" swaggertype:"object"`
 }
 

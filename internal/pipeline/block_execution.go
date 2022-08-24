@@ -73,6 +73,8 @@ type ExecutionData struct {
 	ExecutorsGroupName string `json:"executors_group_name"`
 
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
+
+	IsTakenInWork bool `json:"is_taken_in_work"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
@@ -165,6 +167,10 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 		return StatusWait
 	}
 
+	if !gb.State.IsTakenInWork && gb.State.ExecutorsGroupID != "" {
+		return StatusWait
+	}
+
 	return StatusExecution
 }
 
@@ -178,6 +184,10 @@ func (gb *GoExecutionBlock) GetStatus() Status {
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
 		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
+		return StatusIdle
+	}
+
+	if !gb.State.IsTakenInWork && gb.State.ExecutorsGroupID != "" {
 		return StatusIdle
 	}
 
