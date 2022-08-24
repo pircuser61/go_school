@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -52,7 +54,17 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 	}
 
 	if data.Action == string(entity.TaskUpdateActionRequestExecutionInfo) {
-		if err := gb.updateRequestExecutionInfo(ctx, updateRequestExecutionInfoDto{data, step}); err != nil {
+		if err := gb.updateRequestExecutionInfo(ctx, &updateRequestExecutionInfoDto{data, step}); err != nil {
+			return nil, err
+		}
+	}
+
+	if data.Action == string(entity.TaskUpdateActionExecutorStartWork) {
+		if err := gb.executorStartWork(ctx, &executorsStartWork{
+			stepId:  data.Id,
+			step:    step,
+			byLogin: data.ByLogin,
+		}); err != nil {
 			return nil, err
 		}
 	}
@@ -158,7 +170,13 @@ type RequestInfoUpdateParams struct {
 	Attachments []string        `json:"attachments"`
 }
 
-func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto updateRequestExecutionInfoDto) (err error) {
+type executorsStartWork struct {
+	stepId  uuid.UUID
+	step    *entity.Step
+	byLogin string
+}
+
+func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updateRequestExecutionInfoDto) (err error) {
 	var updateParams RequestInfoUpdateParams
 	err = json.Unmarshal(dto.data.Parameters, &updateParams)
 	if err != nil {
@@ -239,4 +257,43 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto update
 	}
 
 	return err
+}
+
+func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStartWork) (err error) {
+	if _, ok := gb.State.Executors[dto.byLogin]; !ok {
+		return fmt.Errorf("login %s is not found in executors", dto.byLogin)
+	}
+
+	gb.State.Executors = map[string]struct{}{
+		dto.byLogin: {},
+	}
+
+	gb.State.IsTakenInWork = true
+	workHours := getWorkWorkHoursBetweenDates(
+		dto.step.Time,
+		time.Now(),
+	)
+	gb.State.IncreaseSLA(workHours)
+
+	dto.step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	var content []byte
+	content, err = json.Marshal(store.NewFromStep(dto.step))
+	if err != nil {
+		return err
+	}
+
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          dto.stepId,
+		Content:     content,
+		BreakPoints: dto.step.BreakPoints,
+		Status:      string(StatusRunning),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
