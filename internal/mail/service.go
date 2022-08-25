@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"net/mail"
+	"strings"
 	"text/template"
 
 	"go.opencensus.io/trace"
@@ -13,6 +15,8 @@ import (
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/mail/pkg/mailclient"
 )
+
+const imageMimeTypePrefix = "image"
 
 type Service struct {
 	cli *mailclient.Client
@@ -56,10 +60,16 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 	defer span.End()
 
 	msg := &email.Mail{
-		From:        s.from,
-		To:          make([]*mail.Address, 0, len(to)),
-		Subject:     tmpl.Subject,
-		Attachments: files,
+		From:    s.from,
+		To:      make([]*mail.Address, 0, len(to)),
+		Subject: tmpl.Subject,
+	}
+
+	for _, f := range files {
+		if strings.HasPrefix(http.DetectContentType(f.Content), imageMimeTypePrefix) {
+			f.Type = email.PlainAttachment
+		}
+		msg.Attachments = append(msg.Attachments, f)
 	}
 
 	for _, person := range to {
