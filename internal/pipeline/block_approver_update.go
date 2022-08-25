@@ -31,6 +31,7 @@ type updateAddInfoParams struct {
 	Type        AdditionalInfoType `json:"type"`
 	Comment     string             `json:"comment"`
 	Attachments []string           `json:"attachments"`
+	LinkId      *string            `json:"link_id,omitempty"`
 }
 
 func (a *approverUpdateParams) Validate() error {

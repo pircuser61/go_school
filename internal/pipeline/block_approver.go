@@ -54,7 +54,7 @@ func (gb *GoApproverBlock) GetStatus() Status {
 	}
 
 	if len(gb.State.AddInfo) != 0 {
-		if gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
+		if gb.State.checkEmptyLinkIdAddInfo() {
 			return StatusIdle
 		}
 	}
@@ -68,7 +68,7 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 	}
 
 	if gb.State != nil && len(gb.State.AddInfo) != 0 {
-		if gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
+		if gb.State.checkEmptyLinkIdAddInfo() {
 			return StatusWait
 		}
 		return StatusApprovement
