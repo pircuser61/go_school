@@ -81,6 +81,10 @@ const (
 
 	TaskUpdateActionExecution TaskUpdateAction = "execution"
 
+	TaskUpdateActionExecutorStartWork TaskUpdateAction = "executor_start_work"
+
+	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
+
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
 )
 
@@ -1040,6 +1044,9 @@ type ServerInterface interface {
 	// Create pipeline
 	// (POST /pipelines)
 	CreatePipeline(w http.ResponseWriter, r *http.Request)
+	// Creates copy of pipeline
+	// (POST /pipelines/copy)
+	CopyPipeline(w http.ResponseWriter, r *http.Request)
 	// Rename Pipeline
 	// (PUT /pipelines/name)
 	RenamePipeline(w http.ResponseWriter, r *http.Request)
@@ -1307,6 +1314,21 @@ func (siw *ServerInterfaceWrapper) CreatePipeline(w http.ResponseWriter, r *http
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreatePipeline(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// CopyPipeline operation middleware
+func (siw *ServerInterfaceWrapper) CopyPipeline(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CopyPipeline(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2169,6 +2191,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines", wrapper.CreatePipeline)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/copy", wrapper.CopyPipeline)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/pipelines/name", wrapper.RenamePipeline)

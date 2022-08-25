@@ -669,6 +669,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
+  /pipelines/copy:
+    post:
+      tags:
+        - pipeline
+      summary: Creates copy of pipeline
+      description: Создать собственную копию процесса
+      operationId: copy-pipeline
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EriusScenario'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /pipelines/version:
     put:
       tags:
@@ -2122,6 +2161,8 @@ components:
             - execution
             - change_executor
             - request_execution_info
+            - executor_start_work
+            - request_add_info
         parameters:
           type: object
           description: Task update params

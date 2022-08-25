@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+
+	"github.com/pkg/errors"
+
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -56,27 +59,66 @@ func (gb *GoNotificationBlock) IsScenario() bool {
 	return false
 }
 
+func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email.Attachment, error) {
+	author, err := gb.Pipeline.People.GetUser(ctx, gb.Pipeline.Initiator)
+	if err != nil {
+		return "", nil, err
+	}
+	typedAuthor, err := author.ToSSOUserTyped()
+	if err != nil {
+		return "", nil, err
+	}
+	text := mail.MakeBodyHeader(typedAuthor.Username, typedAuthor.Attributes.FullName,
+		gb.Pipeline.Sender.GetApplicationLink(gb.Pipeline.WorkNumber), gb.State.Text)
+
+	body, err := gb.Pipeline.ServiceDesc.GetSchemaFieldsByApplication(ctx, gb.Pipeline.WorkNumber)
+	if err != nil {
+		return "", nil, err
+	}
+	descr := mail.MakeDescription(body.Body)
+	text = mail.WrapDescription(text, descr)
+
+	aa := mail.GetAttachmentsFromBody(body.Body, body.AttachmentFields)
+	attachments, err := gb.Pipeline.ServiceDesc.GetAttachments(ctx, aa)
+	if err != nil {
+		return "", nil, err
+	}
+	files := make([]email.Attachment, 0)
+	for k := range attachments {
+		files = append(files, attachments[k]...)
+	}
+	text = mail.CompileAttachments(text, attachments)
+	text = mail.SwapKeys(text, body.Keys)
+	text = mail.AddStyles(text)
+	return text, files, nil
+}
+
 func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *store.VariableStore) (err error) {
 	ctx, s := trace.StartSpan(ctx, "run_go_notification_block")
 	defer s.End()
 
 	emails := make([]string, 0, len(gb.State.People)+len(gb.State.Emails))
 	for _, person := range gb.State.People {
-		email, err := gb.Pipeline.People.GetUserEmail(ctx, person)
+		emailAddr, err := gb.Pipeline.People.GetUserEmail(ctx, person)
 		if err != nil {
 			log.Println("can't get email of user", person)
 			continue
 		}
-		emails = append(emails, email)
+		emails = append(emails, emailAddr)
 	}
 	emails = append(emails, gb.State.Emails...)
 
 	if len(emails) == 0 {
 		return errors.New("can't find any working emails from logins")
 	}
-	return gb.Pipeline.Sender.SendNotification(ctx, emails, mail.Template{
+
+	text, files, err := gb.compileText(ctx)
+	if err != nil {
+		return errors.New("couldn't compile notification text")
+	}
+	return gb.Pipeline.Sender.SendNotification(ctx, emails, files, mail.Template{
 		Subject:   gb.State.Subject,
-		Text:      gb.State.Text,
+		Text:      text,
 		Variables: nil,
 	})
 }

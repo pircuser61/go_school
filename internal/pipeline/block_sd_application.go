@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"github.com/pkg/errors"
@@ -24,14 +23,14 @@ const (
 type SdApplicationDataCtx struct{}
 
 type ApplicationData struct {
-	BlueprintID     string                 `json:"blueprint_id"`
-	Description     string                 `json:"description"`
+	BlueprintID     string                `json:"blueprint_id"`
+	Description     string                `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
 }
 
 type SdApplicationData struct {
-	BlueprintID     string                 `json:"blueprint_id"`
-	Description     string                 `json:"description"`
+	BlueprintID     string                `json:"blueprint_id"`
+	Description     string                `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
 }
 

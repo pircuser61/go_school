@@ -145,7 +145,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, step
 		return false, nil
 	}
 
-	err := gb.Pipeline.Sender.SendNotification(ctx, emails,
+	err := gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
 		mail.NewApplicationPersonStatusNotification(
 			stepCtx.workNumber,
 			stepCtx.workTitle,
@@ -191,7 +191,7 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 			}
 
 			tpl := mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress)
-			err := gb.Pipeline.Sender.SendNotification(ctx, emails, tpl)
+			err := gb.Pipeline.Sender.SendNotification(ctx, emails, nil, tpl)
 			if err != nil {
 				return false, err
 			}
