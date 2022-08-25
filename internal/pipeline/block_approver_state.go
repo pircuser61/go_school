@@ -52,6 +52,7 @@ type AdditionalInfo struct {
 	Login       string             `json:"login"`
 	Comment     string             `json:"comment"`
 	Attachments []string           `json:"attachments"`
+	LinkId      *string            `json:"link_id,omitempty"`
 	Type        AdditionalInfoType `json:"type"`
 	CreatedAt   time.Time          `json:"created_at"`
 }
@@ -143,9 +144,11 @@ func (a *ApproverData) setEditApp(login string, params updateEditingParams) erro
 }
 
 func (a *ApproverData) setRequestAddInfo(login string, params updateAddInfoParams) error {
-	_, ok := a.Approvers[login]
-	if !ok {
-		return fmt.Errorf("%s not found in approvers", login)
+	if params.Type == RequestAddInfoType {
+		_, ok := a.Approvers[login]
+		if !ok {
+			return fmt.Errorf("%s not found in approvers", login)
+		}
 	}
 
 	if a.Decision != nil {
@@ -160,14 +163,51 @@ func (a *ApproverData) setRequestAddInfo(login string, params updateAddInfoParam
 		return errors.New("don't answer after request")
 	}
 
+	var (
+		id     = uuid.NewString()
+		linkId *string
+	)
+
+	if params.Type == ReplyAddInfoType {
+		if params.LinkId == nil {
+			return errors.New("linkId is null when reply")
+		}
+
+		linkId = params.LinkId
+		setLinkIdRequest(id, *params.LinkId, a.AddInfo)
+	}
+
 	a.AddInfo = append(a.AddInfo, AdditionalInfo{
-		Id:          uuid.NewString(),
+		Id:          id,
 		Type:        params.Type,
 		Comment:     params.Comment,
 		Attachments: params.Attachments,
+		LinkId:      linkId,
 		Login:       login,
 		CreatedAt:   time.Now(),
 	})
 
 	return nil
+}
+
+func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) error {
+	for i := range addInfo {
+		if addInfo[i].Id == linkId {
+			addInfo[i].LinkId = &replyId
+			return nil
+		}
+	}
+
+	return errors.New("not found request by linkId")
+}
+
+// if exists empty link, then true, else false
+func (a *ApproverData) checkEmptyLinkIdAddInfo() bool {
+	for i := range a.AddInfo {
+		if a.AddInfo[i].LinkId == nil {
+			return true
+		}
+	}
+
+	return false
 }
