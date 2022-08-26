@@ -100,7 +100,7 @@ func (a *ApproverData) GetApproversGroupID() string {
 
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
 	_, ok := a.Approvers[login]
-	if !ok {
+	if !ok && login != "auto_approve" {
 		return fmt.Errorf("%s not found in approvers", login)
 	}
 
@@ -121,7 +121,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 func (a *ApproverData) setEditApp(login string, params updateEditingParams) error {
 	_, ok := a.Approvers[login]
-	if !ok {
+	if !ok && login != "auto_approve" {
 		return fmt.Errorf("%s not found in approvers", login)
 	}
 
@@ -146,7 +146,7 @@ func (a *ApproverData) setEditApp(login string, params updateEditingParams) erro
 func (a *ApproverData) setRequestAddInfo(login string, params updateAddInfoParams) error {
 	if params.Type == RequestAddInfoType {
 		_, ok := a.Approvers[login]
-		if !ok {
+		if !ok && login != "auto_approve" {
 			return fmt.Errorf("%s not found in approvers", login)
 		}
 	}
