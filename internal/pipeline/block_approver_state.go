@@ -100,7 +100,7 @@ func (a *ApproverData) GetApproversGroupID() string {
 
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
 	_, ok := a.Approvers[login]
-	if !ok && login != "auto_approve" {
+	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
 	}
 
@@ -121,7 +121,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 func (a *ApproverData) setEditApp(login string, params updateEditingParams) error {
 	_, ok := a.Approvers[login]
-	if !ok && login != "auto_approve" {
+	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
 	}
 
@@ -143,10 +143,10 @@ func (a *ApproverData) setEditApp(login string, params updateEditingParams) erro
 	return nil
 }
 
-func (a *ApproverData) setRequestAddInfo(login string, params updateAddInfoParams) error {
+func (a *ApproverData) setApproverRequestInfo(login string, params updateExecutorInfoParams) error {
 	if params.Type == RequestAddInfoType {
 		_, ok := a.Approvers[login]
-		if !ok && login != "auto_approve" {
+		if !ok && login != AutoApprover {
 			return fmt.Errorf("%s not found in approvers", login)
 		}
 	}
@@ -174,7 +174,10 @@ func (a *ApproverData) setRequestAddInfo(login string, params updateAddInfoParam
 		}
 
 		linkId = params.LinkId
-		setLinkIdRequest(id, *params.LinkId, a.AddInfo)
+		err := setLinkIdRequest(id, *params.LinkId, a.AddInfo)
+		if err != nil {
+			return err
+		}
 	}
 
 	a.AddInfo = append(a.AddInfo, AdditionalInfo{

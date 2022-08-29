@@ -454,6 +454,7 @@ func (db *PGCon) getTasksCount(ctx c.Context, q string, args []interface{}) (int
 	return count, nil
 }
 
+//nolint:gocyclo //its ok here
 func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.EriusTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
 	defer span.End()

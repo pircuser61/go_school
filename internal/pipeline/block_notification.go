@@ -99,7 +99,8 @@ func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *stor
 
 	emails := make([]string, 0, len(gb.State.People)+len(gb.State.Emails))
 	for _, person := range gb.State.People {
-		emailAddr, err := gb.Pipeline.People.GetUserEmail(ctx, person)
+		emailAddr := ""
+		emailAddr, err = gb.Pipeline.People.GetUserEmail(ctx, person)
 		if err != nil {
 			log.Println("can't get email of user", person)
 			continue

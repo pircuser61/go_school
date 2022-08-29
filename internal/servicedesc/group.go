@@ -36,6 +36,7 @@ type ExecutorsGroup struct {
 	People    []Executor `json:"people"`
 }
 
+//nolint:dupl //its not duplicate
 func (s *Service) GetApproversGroup(ctx context.Context, groupID string) (*ApproversGroup, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_approvers_group")
 	defer span.End()
@@ -69,6 +70,7 @@ func (s *Service) GetApproversGroup(ctx context.Context, groupID string) (*Appro
 	return res, nil
 }
 
+//nolint:dupl //its not duplicate
 func (s *Service) GetExecutorsGroup(ctx context.Context, groupID string) (*ExecutorsGroup, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_executors_group")
 	defer span.End()

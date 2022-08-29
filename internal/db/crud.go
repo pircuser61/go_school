@@ -1959,6 +1959,7 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 	return &s, nil
 }
 
+//nolint:dupl //its not duplicate
 func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_parent_task_step_by_name")
 	defer span.End()
@@ -2019,6 +2020,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, 
 	return &s, nil
 }
 
+//nolint:dupl //its not duplicate
 func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_name")
 	defer span.End()

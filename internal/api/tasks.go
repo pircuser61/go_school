@@ -133,6 +133,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 }
 
+//nolint:dupl //its not duplicate
 func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
 	defer s.End()
@@ -234,6 +235,7 @@ func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+//nolint:dupl //its not duplicate
 func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_tasks")
 	defer s.End()
@@ -267,6 +269,7 @@ func (ae *APIEnv) GetPipelineTasks(w http.ResponseWriter, req *http.Request, pip
 	}
 }
 
+//nolint:dupl //its not duplicate
 func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_logs")
 	defer s.End()

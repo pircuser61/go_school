@@ -191,6 +191,7 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+//nolint:dupl //its not duplicate
 func (ae *APIEnv) GetPipeline(w http.ResponseWriter, req *http.Request, pipelineID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline")
 	defer s.End()
