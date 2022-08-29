@@ -44,6 +44,7 @@ func (gb *GoBeginParallelTaskBlock) IsScenario() bool {
 	return false
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoBeginParallelTaskBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_go_block")
 	defer s.End()

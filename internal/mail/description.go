@@ -28,8 +28,7 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 		ff[strings.Trim(f, ".")] = struct{}{}
 	}
 
-	var iter func(body orderedmap.OrderedMap)
-	iter = func(body orderedmap.OrderedMap) {
+	iter := func(body orderedmap.OrderedMap) {
 		for _, k := range body.Keys() {
 			if _, ok := ff[k]; !ok {
 				continue
@@ -89,7 +88,7 @@ func writeValue(res *strings.Builder, data interface{}) {
 		if val {
 			toWrite = "Да"
 		}
-		res.WriteString(fmt.Sprintf("%v", toWrite))
+		res.WriteString(toWrite)
 	case []interface{}:
 		for i := range val {
 			item := val[i]
@@ -148,7 +147,7 @@ func SwapKeys(body string, keys map[string]string) string {
 	return body
 }
 
-func MakeBodyHeader(fullname, username, link string, initialDescription string) string {
+func MakeBodyHeader(fullname, username, link, initialDescription string) string {
 	res := strings.Builder{}
 	res.WriteString(fmt.Sprintf("<p>%s<p><br>", initialDescription))
 	res.WriteString(fmt.Sprintf("<p> <b>Инициатор: </b>%s</p> <br>", userFromSD{fullname, username}.String()))

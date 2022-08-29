@@ -165,9 +165,10 @@ type updateRequestExecutionInfoDto struct {
 }
 
 type RequestInfoUpdateParams struct {
-	Comment     string          `json:"comment"`
-	ReqType     RequestInfoType `json:"req_type"`
-	Attachments []string        `json:"attachments"`
+	Comment       string          `json:"comment"`
+	ReqType       RequestInfoType `json:"req_type"`
+	Attachments   []string        `json:"attachments"`
+	ExecutorLogin string          `json:"executor_login"`
 }
 
 type executorsStartWork struct {
@@ -194,6 +195,10 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updat
 
 	status := string(StatusIdle)
 	if updateParams.ReqType == RequestInfoAnswer {
+		if _, executorExists := gb.State.Executors[updateParams.ExecutorLogin]; !executorExists {
+			return fmt.Errorf("executor: %s is not found in executors", updateParams.ExecutorLogin)
+		}
+
 		status = string(StatusRunning)
 		if len(gb.State.RequestExecutionInfoLogs) > 0 {
 			workHours := getWorkWorkHoursBetweenDates(
@@ -295,5 +300,6 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

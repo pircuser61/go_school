@@ -27,7 +27,7 @@ type approverUpdateParams struct {
 	Comment  string           `json:"comment"`
 }
 
-type updateAddInfoParams struct {
+type updateExecutorInfoParams struct {
 	Type        AdditionalInfoType `json:"type"`
 	Comment     string             `json:"comment"`
 	Attachments []string           `json:"attachments"`
@@ -140,11 +140,11 @@ func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionApp
 			return errSet
 		}
 	case string(entity.TaskUpdateActionRequestApproveInfo):
-		params, ok := dto.updateParams.(updateAddInfoParams)
+		params, ok := dto.updateParams.(updateExecutorInfoParams)
 		if !ok {
 			return errors.New("can't convert to updateEditingParams")
 		}
-		errSet := gb.State.setRequestAddInfo(dto.approver, params)
+		errSet := gb.State.setApproverRequestInfo(dto.approver, params)
 		if errSet != nil {
 			return errSet
 		}
@@ -218,7 +218,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		})
 
 	case string(entity.TaskUpdateActionRequestApproveInfo):
-		var updateParams updateAddInfoParams
+		var updateParams updateExecutorInfoParams
 		err := json.Unmarshal(data.Parameters, &updateParams)
 		if err != nil {
 			return nil, errors.New("can't assert provided data")

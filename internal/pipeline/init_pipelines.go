@@ -169,7 +169,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 
 		errCreation := ep.CreateBlocks(ctx, version.Pipeline.Blocks)
 		if errCreation != nil {
-			log.Error(errCreation, ", work number: ", task.WorkNumber)
+			log.Error(errCreation, "work number: ", task.WorkNumber)
 			outCh <- task.WorkNumber
 			continue
 		}
@@ -178,7 +178,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 
 		steps, err := ep.Storage.GetTaskSteps(ctx, task.ID)
 		if err != nil {
-			log.Error(err, ", work number: ", task.WorkNumber)
+			log.Error(err, "work number: ", task.WorkNumber)
 			outCh <- task.WorkNumber
 			continue
 		}
@@ -246,11 +246,11 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 			routineCtx := c.WithValue(c.Background(), XRequestIDHeader, uuid.New().String())
 			routineCtx = c.WithValue(routineCtx, SdApplicationDataCtx{}, ctx.Value(SdApplicationDataCtx{}))
 			routineCtx = logger.WithLogger(routineCtx, log)
-			err := ep.Run(routineCtx, variableStorage)
-			if err != nil {
+			errRun := ep.Run(routineCtx, variableStorage)
+			if errRun != nil {
 				isFailed = true
-				log.Error(err, ", can`t run pipeline with number: ", workNumber)
-				variableStorage.AddError(err)
+				log.Error(errRun, "can`t run pipeline with number: ", workNumber)
+				variableStorage.AddError(errRun)
 			}
 		}(workNumber)
 

@@ -388,6 +388,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versio
 	}
 }
 
+//nolint:dupl //its not duplicate
 func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_pipeline_version")
 	defer s.End()
