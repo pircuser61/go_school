@@ -541,6 +541,9 @@ type RequestInfoUpdateParams struct {
 	// Comment from executor
 	Comment string `json:"comment"`
 
+	// executor login
+	ExecutorLogin string `json:"executorLogin"`
+
 	// Type of execution info
 	ReqType RequestExecutionInfoType `json:"reqType"`
 }
@@ -766,6 +769,9 @@ type ListPipelinesParams struct {
 // CreatePipelineJSONBody defines parameters for CreatePipeline.
 type CreatePipelineJSONBody EriusScenario
 
+// CopyPipelineJSONBody defines parameters for CopyPipeline.
+type CopyPipelineJSONBody EriusScenario
+
 // RenamePipelineJSONBody defines parameters for RenamePipeline.
 type RenamePipelineJSONBody PipelineRename
 
@@ -825,6 +831,9 @@ type StartDebugTaskJSONRequestBody StartDebugTaskJSONBody
 
 // CreatePipelineJSONRequestBody defines body for CreatePipeline for application/json ContentType.
 type CreatePipelineJSONRequestBody CreatePipelineJSONBody
+
+// CopyPipelineJSONRequestBody defines body for CopyPipeline for application/json ContentType.
+type CopyPipelineJSONRequestBody CopyPipelineJSONBody
 
 // RenamePipelineJSONRequestBody defines body for RenamePipeline for application/json ContentType.
 type RenamePipelineJSONRequestBody RenamePipelineJSONBody
