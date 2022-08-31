@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"github.com/google/uuid"
