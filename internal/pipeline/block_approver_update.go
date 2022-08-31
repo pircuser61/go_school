@@ -42,7 +42,7 @@ func (a *approverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, a string, u approverUpdateParams) error {
+func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, login string, u approverUpdateParams) error {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, sID)
 	if err != nil {
 		return err
@@ -62,11 +62,10 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, a s
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
-	state.Approvers = gb.State.Approvers
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	err = gb.State.SetDecision(a, u.Decision, u.Comment)
+	err = gb.State.SetDecision(login, u.Decision, u.Comment)
 	if err != nil {
 		return err
 	}
