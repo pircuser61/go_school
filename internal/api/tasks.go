@@ -196,8 +196,8 @@ func (c *Created) toEntity() *entity.TimePeriod {
 	var timePeriod *entity.TimePeriod
 	if c != nil {
 		timePeriod = &entity.TimePeriod{
-			Start: ptrToInt(c.Start),
-			End:   ptrToInt(c.End),
+			Start: c.Start,
+			End:   c.End,
 		}
 	}
 	return timePeriod

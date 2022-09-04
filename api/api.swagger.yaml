@@ -1331,8 +1331,10 @@ paths:
             default: 0
         - name: created
           in: query
-          schema:
-            $ref: '#/components/schemas/Created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Created'
         - name: archived
           in: query
           schema:
@@ -2758,7 +2760,9 @@ components:
           type: integer
         end:
           type: integer
-
+      required:
+        - start
+        - end
     httpResponse:
       type: object
       properties:
