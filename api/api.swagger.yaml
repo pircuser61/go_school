@@ -1343,6 +1343,11 @@ paths:
           in: query
           schema:
             type: string
+        - name: forCarousel
+          in: query
+          schema:
+            type: boolean
+          description: get tasks with status wait or done
       responses:
         200:
           description: OK

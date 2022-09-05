@@ -1004,6 +1004,9 @@ type GetTasksParams struct {
 	Created  *Created `json:"created,omitempty"`
 	Archived *bool    `json:"archived,omitempty"`
 	SelectAs *string  `json:"selectAs,omitempty"`
+
+	// get tasks with status wait or done
+	ForCarousel *bool `json:"forCarousel,omitempty"`
 }
 
 // UpdateTaskJSONBody defines parameters for UpdateTask.
@@ -2091,6 +2094,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "selectAs", r.URL.Query(), &params.SelectAs)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "selectAs", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "forCarousel" -------------
+	if paramValue := r.URL.Query().Get("forCarousel"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "forCarousel", r.URL.Query(), &params.ForCarousel)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "forCarousel", Err: err})
 		return
 	}
 
