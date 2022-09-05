@@ -401,8 +401,8 @@ type CreateTaskRequest struct {
 
 // Created defines model for Created.
 type Created struct {
-	End   *int `json:"end,omitempty"`
-	Start *int `json:"start,omitempty"`
+	End   int `json:"end"`
+	Start int `json:"start"`
 }
 
 // Basic date operand, can provide working compare types for this type
@@ -2061,12 +2061,15 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	// ------------- Optional query parameter "created" -------------
 	if paramValue := r.URL.Query().Get("created"); paramValue != "" {
 
-	}
+		var value Created
+		err = json.Unmarshal([]byte(paramValue), &value)
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &UnmarshalingParamError{ParamName: "created", Err: err})
+			return
+		}
 
-	err = runtime.BindQueryParameter("form", true, false, "created", r.URL.Query(), &params.Created)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "created", Err: err})
-		return
+		params.Created = &value
+
 	}
 
 	// ------------- Optional query parameter "archived" -------------
