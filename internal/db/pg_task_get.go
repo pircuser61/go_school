@@ -117,7 +117,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 
 	if filters.ForCarousel != nil && *filters.ForCarousel {
 		q = fmt.Sprintf("%s AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'", q)
-		q = fmt.Sprintf("%s AND w.status IN('wait','done')", q)
+		q = fmt.Sprintf("%s AND w.human_status IN('wait','done')", q)
 	}
 
 	if order != "" {
