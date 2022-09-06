@@ -2548,18 +2548,18 @@ components:
           varOperand: variableOperand
           valOperand: valueOperand
 
-    basicOperand:
-      type: object
-      description: Basic operand, used for polymorphism
-      properties:
-        dataType:
-          type: string
-        operandType:
-          type: string
-          enum: ["variableOperand", "valueOperand"]
-      required:
-        - dataType
-        - operandType
+    # basicOperand:
+    #   type: object
+    #   description: Basic operand, used for polymorphism
+    #   properties:
+    #     dataType:
+    #       type: string
+    #     operandType:
+    #       type: string
+    #       enum: ["variableOperand", "valueOperand"]
+    #   required:
+    #     - dataType
+    #     - operandType
 
     StringOperand:
       type: object
@@ -2633,35 +2633,35 @@ components:
 
     variableOperand:
       description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment"), required one Operand
-      anyOf:
-        - $ref: '#/components/schemas/basicOperand'
-        - $ref: '#/components/schemas/StringOperand'
-        - $ref: '#/components/schemas/IntegerOperand'
-        - $ref: '#/components/schemas/NumberOperand'
-        - $ref: '#/components/schemas/BooleanOperand'
-        - $ref: '#/components/schemas/DateOperand'
+      allOf:
         - type: object
           properties:
             variableRef:
               type: string
           required:
             - variableRef
+        - anyOf:
+            - $ref: '#/components/schemas/StringOperand'
+            - $ref: '#/components/schemas/IntegerOperand'
+            - $ref: '#/components/schemas/NumberOperand'
+            - $ref: '#/components/schemas/BooleanOperand'
+            - $ref: '#/components/schemas/DateOperand'
 
     valueOperand:
       description: Operand which uses simple value to compare in conditions, required one Operand
-      anyOf:
-        - $ref: '#/components/schemas/basicOperand'
-        - $ref: '#/components/schemas/StringOperand'
-        - $ref: '#/components/schemas/IntegerOperand'
-        - $ref: '#/components/schemas/NumberOperand'
-        - $ref: '#/components/schemas/BooleanOperand'
-        - $ref: '#/components/schemas/DateOperand'
+      allOf:
         - type: object
           properties:
             value:
               type: string
           required:
             - value
+        - anyOf:
+            - $ref: '#/components/schemas/StringOperand'
+            - $ref: '#/components/schemas/IntegerOperand'
+            - $ref: '#/components/schemas/NumberOperand'
+            - $ref: '#/components/schemas/BooleanOperand'
+            - $ref: '#/components/schemas/DateOperand'
 
     compareStringOperator:
       type: string
