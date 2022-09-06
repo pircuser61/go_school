@@ -177,13 +177,6 @@ const (
 	ApproverDecisionRejected ApproverDecision = "rejected"
 )
 
-// Defines values for BasicOperandOperandType.
-const (
-	BasicOperandOperandTypeValueOperand BasicOperandOperandType = "valueOperand"
-
-	BasicOperandOperandTypeVariableOperand BasicOperandOperandType = "variableOperand"
-)
-
 // Defines values for BlockType.
 const (
 	BlockTypeGo BlockType = "go"
@@ -835,15 +828,6 @@ type UsedBy struct {
 //  * rejected - approver rejected block
 type ApproverDecision string
 
-// Basic operand, used for polymorphism
-type BasicOperand struct {
-	DataType    string                  `json:"dataType"`
-	OperandType BasicOperandOperandType `json:"operandType"`
-}
-
-// BasicOperandOperandType defines model for BasicOperand.OperandType.
-type BasicOperandOperandType string
-
 // Block type (language)
 type BlockType string
 
@@ -934,11 +918,19 @@ type ScenarioStatus int
 // Task human readable status
 type TaskHumanStatus string
 
-// Operand which uses simple value to compare in conditions, required one Operand
-type ValueOperand interface{}
+// ValueOperand defines model for valueOperand.
+type ValueOperand struct {
+	// Embedded fields due to inline allOf schema
+	Value string `json:"value"`
+	// Embedded fields due to inline allOf schema
+}
 
-// Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment"), required one Operand
-type VariableOperand interface{}
+// VariableOperand defines model for variableOperand.
+type VariableOperand struct {
+	// Embedded fields due to inline allOf schema
+	VariableRef string `json:"variableRef"`
+	// Embedded fields due to inline allOf schema
+}
 
 // CreateDebugTaskJSONBody defines parameters for CreateDebugTask.
 type CreateDebugTaskJSONBody CreateTaskRequest
