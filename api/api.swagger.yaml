@@ -2627,7 +2627,7 @@ components:
               type: string
           required:
             - variableRef
-        - anyOf:
+        - oneOf:
             - $ref: '#/components/schemas/StringOperand'
             - $ref: '#/components/schemas/IntegerOperand'
             - $ref: '#/components/schemas/NumberOperand'
@@ -2643,7 +2643,7 @@ components:
               type: string
           required:
             - value
-        - anyOf:
+        - oneOf:
             - $ref: '#/components/schemas/StringOperand'
             - $ref: '#/components/schemas/IntegerOperand'
             - $ref: '#/components/schemas/NumberOperand'
