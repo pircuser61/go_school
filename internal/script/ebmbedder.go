@@ -13,11 +13,6 @@ const (
 	shapeConnector
 	shapeVariable
 
-	// TODO: rm copy
-	defaultSocket = "default"
-	trueSocket    = "true"
-	falseSocket   = "false"
-
 	TypeBool   string = "bool"
 	TypeString string = "string"
 	TypeArray  string = "array"
