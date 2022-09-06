@@ -25,12 +25,12 @@ type NotificationData struct {
 }
 
 type GoNotificationBlock struct {
-	Name   string
-	Title  string
-	Input  map[string]string
-	Output map[string]string
-	Nexts  map[string][]string
-	State  *NotificationData
+	Name    string
+	Title   string
+	Input   map[string]string
+	Output  map[string]string
+	Sockets []script.Socket
+	State   *NotificationData
 
 	Pipeline *ExecutablePipeline
 }
@@ -125,7 +125,7 @@ func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *stor
 }
 
 func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := gb.Nexts[DefaultSocket]
+	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
@@ -160,18 +160,18 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 				Text:    "",
 			},
 		},
-		Sockets: []string{DefaultSocket},
+		Sockets: []script.Socket{script.DefaultSocket},
 	}
 }
 
 // nolint:dupl // another block
 func createGoNotificationBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) (*GoNotificationBlock, error) {
 	b := &GoNotificationBlock{
-		Name:   name,
-		Title:  ef.Title,
-		Input:  map[string]string{},
-		Output: map[string]string{},
-		Nexts:  ef.Next,
+		Name:    name,
+		Title:   ef.Title,
+		Input:   map[string]string{},
+		Output:  map[string]string{},
+		Sockets: entity.ConvertSocket(ef.Sockets),
 
 		Pipeline: pipeline,
 	}

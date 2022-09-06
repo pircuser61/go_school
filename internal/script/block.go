@@ -38,7 +38,7 @@ func (m Block) Model() FunctionModel {
 				},
 			},
 			ShapeType: shapeFunction,
-			Sockets:   []string{defaultSocket},
+			Sockets:   []Socket{{Id: DefaultSocketID, Title: DefaultSocketTitle}},
 		}
 	case Equal:
 		f = FunctionModel{
@@ -54,8 +54,11 @@ func (m Block) Model() FunctionModel {
 					Type: TypeString,
 				},
 			},
-			Outputs:   nil,
-			Sockets:   []string{trueSocket, falseSocket},
+			Outputs: nil,
+			Sockets: []Socket{
+				{Id: trueSocketID, Title: trueSocketTitle},
+				{Id: falseSocketID, Title: falseSocketTitle},
+			},
 			ShapeType: shapeRhombus,
 		}
 	case Vars:
@@ -64,7 +67,7 @@ func (m Block) Model() FunctionModel {
 			Title:     "variables",
 			Inputs:    nil,
 			Outputs:   []FunctionValueModel{},
-			Sockets:   []string{defaultSocket},
+			Sockets:   []Socket{{Id: DefaultSocketID, Title: DefaultSocketTitle}},
 			ShapeType: shapeVariable,
 		}
 	case Connector:
@@ -86,7 +89,7 @@ func (m Block) Model() FunctionModel {
 					Type: TypeArray,
 				},
 			},
-			Sockets:   []string{defaultSocket},
+			Sockets:   []Socket{{Id: DefaultSocketID, Title: DefaultSocketTitle}},
 			ShapeType: shapeConnector,
 		}
 	case ForState:
@@ -110,7 +113,10 @@ func (m Block) Model() FunctionModel {
 				},
 			},
 			ShapeType: shapeRhombus,
-			Sockets:   []string{trueSocket, falseSocket},
+			Sockets: []Socket{
+				{Id: trueSocketID, Title: trueSocketTitle},
+				{Id: falseSocketID, Title: falseSocketTitle},
+			},
 		}
 	}
 

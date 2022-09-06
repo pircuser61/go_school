@@ -25,7 +25,7 @@ type IF struct {
 	FunctionName  string
 	FunctionInput map[string]string
 	Result        bool
-	Nexts         map[string][]string
+	Sockets       []script.Socket
 	State         *ConditionsData
 
 	Storage db.Database
@@ -54,16 +54,14 @@ func (e *IF) GetType() string {
 }
 
 func (e *IF) Next(_ *store.VariableStore) ([]string, bool) {
-	chosenGroup := e.State.ChosenGroupID
-
-	if chosenGroup == "" {
-		nexts, ok := e.Nexts[DefaultSocket]
+	if e.State.ChosenGroupID == "" {
+		nexts, ok := script.GetNexts(e.Sockets, DefaultSocketID)
 		if !ok {
 			return nil, false
 		}
 		return nexts, true
 	} else {
-		nexts, ok := e.Nexts[chosenGroup]
+		nexts, ok := script.GetNexts(e.Sockets, e.State.ChosenGroupID)
 		if !ok {
 			return nil, false
 		}
@@ -72,15 +70,16 @@ func (e *IF) Next(_ *store.VariableStore) ([]string, bool) {
 }
 
 func (e *IF) Skipped(_ *store.VariableStore) []string {
-	chosenGroup := e.State.ChosenGroupID
-	if chosenGroup == "" {
-		chosenGroup = DefaultSocket
+	chosenGroupSocket := script.Socket{Id: e.State.ChosenGroupID}
+	if chosenGroupSocket.Id == "" {
+		chosenGroupSocket = script.DefaultSocket
 	}
 
 	skipped := make([]string, 0)
-	for k := range e.Nexts {
-		if k != chosenGroup {
-			skipped = append(skipped, e.Nexts[k]...)
+	for i := range e.Sockets {
+		var socket = e.Sockets[i]
+		if socket.Id != chosenGroupSocket.Id {
+			skipped = append(skipped, socket.NextBlockIds...)
 		}
 	}
 	return skipped
@@ -149,17 +148,17 @@ func (e *IF) Model() script.FunctionModel {
 				Type: "",
 			},
 		},
-		Sockets: []string{DefaultSocket},
+		Sockets: []script.Socket{script.DefaultSocket},
 	}
 }
 
 func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
 	b := &IF{
-		Name:   name,
-		Title:  ef.Title,
-		Input:  map[string]string{},
-		Output: map[string]string{},
-		Nexts:  ef.Next,
+		Name:    name,
+		Title:   ef.Title,
+		Input:   map[string]string{},
+		Output:  map[string]string{},
+		Sockets: entity.ConvertSocket(ef.Sockets),
 	}
 
 	for _, v := range ef.Input {

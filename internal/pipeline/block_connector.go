@@ -14,7 +14,7 @@ type ConnectorBlock struct {
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	Nexts          map[string][]string
+	Sockets        []script.Socket
 }
 
 func (cb *ConnectorBlock) GetStatus() Status {
@@ -58,7 +58,7 @@ func (cb *ConnectorBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *stor
 }
 
 func (cb *ConnectorBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := cb.Nexts[DefaultSocket]
+	nexts, ok := script.GetNexts(cb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}

@@ -55,7 +55,7 @@ type FunctionModel struct {
 	ShapeType int                  `json:"shape_type"`
 	ID        string               `json:"id"`
 	Params    *FunctionParams      `json:"params,omitempty"`
-	Sockets   []string             `json:"sockets"`
+	Sockets   []Socket             `json:"sockets"`
 }
 
 // TODO: find a better way to implement oneOf
@@ -68,4 +68,89 @@ type FunctionValueModel struct {
 	Name    string `json:"name"`
 	Type    string `json:"type"`
 	Comment string `json:"comment"`
+}
+
+type Socket struct {
+	Id           string   `json:"id"`
+	Title        string   `json:"title"`
+	NextBlockIds []string `json:"nextBlockIds"`
+}
+
+const (
+	approvedSocketID    = "approved"
+	approvedSocketTitle = "Согласовано"
+
+	rejectedSocketID    = "rejected"
+	RejectedSocketTitle = "Отклонено"
+
+	editAppSocketID    = "edit_app"
+	editAppSocketTitle = "На доработку"
+
+	executedSocketID    = "executed"
+	executedSocketTitle = "Исполнено"
+
+	notExecutedSocketID    = "not_executed"
+	notExecutedSocketTitle = "Не исполнено"
+
+	DefaultSocketID    = "default"
+	DefaultSocketTitle = "Выход по умолчанию"
+
+	trueSocketID    = "true"
+	trueSocketTitle = "Да"
+
+	falseSocketID    = "false"
+	falseSocketTitle = "Нет"
+
+	requestAddInfoSocketID    = "req_add_info"
+	requestAddInfoSocketTitle = "Необходима дополнительная информация"
+)
+
+var (
+	DefaultSocket = Socket{Id: DefaultSocketID, Title: DefaultSocketTitle}
+
+	ApprovedSocket       = Socket{Id: approvedSocketID, Title: approvedSocketTitle}
+	RejectedSocket       = Socket{Id: rejectedSocketID, Title: RejectedSocketTitle}
+	EditAppSocket        = Socket{Id: editAppSocketID, Title: editAppSocketTitle}
+	RequestAddInfoSocket = Socket{Id: requestAddInfoSocketID, Title: requestAddInfoSocketTitle}
+
+	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
+	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}
+
+	TrueSocket  = Socket{Id: trueSocketID, Title: trueSocketTitle}
+	FalseSocket = Socket{Id: falseSocketID, Title: falseSocketTitle}
+)
+
+var (
+	AvailableSockets = []Socket{
+		DefaultSocket,
+		ApprovedSocket,
+		RejectedSocket,
+		EditAppSocket,
+		RequestAddInfoSocket,
+		ExecutedSocket,
+		TrueSocket,
+		FalseSocket,
+	}
+)
+
+func NewSocket(id string, nexts []string) Socket {
+	return Socket{
+		Id:           id,
+		NextBlockIds: nexts,
+	}
+}
+
+func (s *Socket) WithNexts(nextIds []string) Socket {
+	s.NextBlockIds = nextIds
+	return *s
+}
+
+func GetNexts(from []Socket, socketId string) ([]string, bool) {
+	for _, socket := range from {
+		if socket.Id == socketId {
+			return socket.NextBlockIds, true
+		}
+	}
+
+	return nil, false
 }

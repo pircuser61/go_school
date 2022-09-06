@@ -444,6 +444,7 @@ type EriusFunc struct {
 	ParamType  *string                 `json:"param_type,omitempty"`
 	Params     *map[string]interface{} `json:"params,omitempty"`
 	ShortTitle *string                 `json:"short_title,omitempty"`
+	Sockets    *[]Socket               `json:"sockets,omitempty"`
 	Title      string                  `json:"title"`
 	True       *int                    `json:"true,omitempty"`
 	TypeId     string                  `json:"type_id"`
@@ -638,7 +639,7 @@ type FunctionModel struct {
 	Outputs   *[]FunctionValueModel `json:"outputs,omitempty"`
 	Params    *FunctionParams       `json:"params,omitempty"`
 	ShapeType int                   `json:"shape_type"`
-	Sockets   []string              `json:"sockets"`
+	Sockets   []Socket              `json:"sockets"`
 	Title     string                `json:"title"`
 }
 
@@ -770,6 +771,18 @@ type ShapeEntity struct {
 	Icon  string `json:"icon"`
 	Id    int    `json:"id"`
 	Title string `json:"title"`
+}
+
+// Socket object
+type Socket struct {
+	// Id of socket
+	Id string `json:"id"`
+
+	// IDs of next blocks
+	NextBlockIds *[]string `json:"nextBlockIds,omitempty"`
+
+	// User-friendly title of socket for user
+	Title *string `json:"title,omitempty"`
 }
 
 // Step defines model for Step.

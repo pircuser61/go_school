@@ -13,12 +13,11 @@ import (
 // nolint:dupl // another block
 func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, ep *ExecutablePipeline) (*GoApproverBlock, error) {
 	b := &GoApproverBlock{
-		Name:   name,
-		Title:  ef.Title,
-		Input:  map[string]string{},
-		Output: map[string]string{},
-		Nexts:  ef.Next,
-
+		Name:     name,
+		Title:    ef.Title,
+		Input:    map[string]string{},
+		Output:   map[string]string{},
+		Sockets:  entity.ConvertSocket(ef.Sockets),
 		Pipeline: ep,
 	}
 
