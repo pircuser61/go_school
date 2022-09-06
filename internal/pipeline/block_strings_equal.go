@@ -14,7 +14,7 @@ type StringsEqual struct {
 	FunctionName  string
 	FunctionInput map[string]string
 	Result        bool
-	Nexts         map[string][]string
+	Sockets       []script.Socket
 }
 
 func (se *StringsEqual) GetStatus() Status {
@@ -73,14 +73,14 @@ func (se *StringsEqual) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.
 
 func (se *StringsEqual) Next(runCtx *store.VariableStore) ([]string, bool) {
 	if se.Result {
-		nexts, ok := se.Nexts[trueSocket]
+		nexts, ok := script.GetNexts(se.Sockets, trueSocketID)
 		if !ok {
 			return nil, false
 		}
 		return nexts, true
 	}
 
-	nexts, ok := se.Nexts[falseSocket]
+	nexts, ok := script.GetNexts(se.Sockets, falseSocketID)
 	if !ok {
 		return nil, false
 	}
@@ -89,9 +89,19 @@ func (se *StringsEqual) Next(runCtx *store.VariableStore) ([]string, bool) {
 
 func (se *StringsEqual) Skipped(_ *store.VariableStore) []string {
 	if se.Result {
-		return se.Nexts[falseSocket]
+		var next, ok = script.GetNexts(se.Sockets, falseSocketID)
+		if !ok {
+			return nil
+		}
+
+		return next
 	}
-	return se.Nexts[trueSocket]
+	var next, ok = script.GetNexts(se.Sockets, trueSocketID)
+	if !ok {
+		return nil
+	}
+
+	return next
 }
 
 func (se *StringsEqual) GetState() interface{} {

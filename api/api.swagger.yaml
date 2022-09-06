@@ -1704,6 +1704,10 @@ components:
             type: array
             items:
               type: string
+        sockets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Socket'
         output:
           type: array
           items:
@@ -2476,7 +2480,7 @@ components:
         sockets:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Socket'
         title:
           type: string
       required:
@@ -2486,6 +2490,24 @@ components:
         - next_funcs
         - id
         - sockets
+
+    Socket:
+      type: object
+      description: Socket object
+      properties:
+        id:
+          type: string
+          description: Id of socket
+        title:
+          type: string
+          description: User-friendly title of socket for user
+        nextBlockIds:
+          type: array
+          items:
+            type: string
+          description: IDs of next blocks
+      required:
+        - id
 
     Params:
       type: object

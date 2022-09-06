@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"testing"
 )
@@ -14,7 +15,7 @@ func TestGoSdBlock_DebugRun(t *testing.T) {
 		Title   string
 		Input   map[string]string
 		Output  map[string]string
-		Nexts   map[string][]string
+		Sockets []script.Socket
 		State   *ApplicationData
 	}
 	type args struct {
@@ -35,7 +36,7 @@ func TestGoSdBlock_DebugRun(t *testing.T) {
 				Title:   "",
 				Input:   nil,
 				Output:  nil,
-				Nexts:   map[string][]string{},
+				Sockets: []script.Socket{},
 			},
 			args: args{
 				ctx:    context.Background(),
@@ -52,7 +53,7 @@ func TestGoSdBlock_DebugRun(t *testing.T) {
 				Title:   tt.fields.Title,
 				Input:   tt.fields.Input,
 				Output:  tt.fields.Output,
-				Nexts:   tt.fields.Nexts,
+				Sockets: tt.fields.Sockets,
 				State:   tt.fields.State,
 			}
 

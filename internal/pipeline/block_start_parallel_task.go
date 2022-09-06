@@ -13,11 +13,11 @@ import (
 type BeginParallelData struct{}
 
 type GoBeginParallelTaskBlock struct {
-	Name   string
-	Title  string
-	Input  map[string]string
-	Output map[string]string
-	Nexts  map[string][]string
+	Name    string
+	Title   string
+	Input   map[string]string
+	Output  map[string]string
+	Sockets []script.Socket
 }
 
 func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
@@ -71,7 +71,7 @@ func (gb *GoBeginParallelTaskBlock) DebugRun(ctx context.Context, stepCtx *stepC
 }
 
 func (gb *GoBeginParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := gb.Nexts[DefaultSocket]
+	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
@@ -97,17 +97,19 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 		Title:     BlockGoBeginParallelTaskTitle,
 		Inputs:    nil,
 		Outputs:   nil,
-		Sockets:   []string{DefaultSocket},
+		Sockets: []script.Socket{
+			script.DefaultSocket,
+		},
 	}
 }
 
 func createGoStartParallelBlock(name string, ef *entity.EriusFunc) *GoBeginParallelTaskBlock {
 	b := &GoBeginParallelTaskBlock{
-		Name:   name,
-		Title:  ef.Title,
-		Input:  map[string]string{},
-		Output: map[string]string{},
-		Nexts:  ef.Next,
+		Name:    name,
+		Title:   ef.Title,
+		Input:   map[string]string{},
+		Output:  map[string]string{},
+		Sockets: entity.ConvertSocket(ef.Sockets),
 	}
 
 	for _, v := range ef.Input {

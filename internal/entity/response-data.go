@@ -81,6 +81,13 @@ type EriusFunc struct {
 	ParamType  string               `json:"param_type,omitempty"`
 	Params     json.RawMessage      `json:"params,omitempty" swaggertype:"object"`
 	Next       map[string][]string  `json:"next,omitempty"`
+	Sockets    []Socket             `json:"sockets,omitempty"`
+}
+
+type Socket struct {
+	Id           string   `json:"id"`
+	Title        string   `json:"title"`
+	NextBlockIds []string `json:"nextBlockIds,omitempty"`
 }
 
 type EriusFunctionValue struct {
@@ -125,4 +132,18 @@ type DebugResult struct {
 	BlockStatus string     `json:"status" example:"run,error,finished,created"` // todo define values
 	BreakPoints []string   `json:"break_points"`
 	Task        *EriusTask `json:"task"`
+}
+
+func ConvertSocket(sockets []Socket) []script.Socket {
+	var result = make([]script.Socket, 0)
+
+	for _, socket := range sockets {
+		result = append(result, script.Socket{
+			Id:           socket.Id,
+			Title:        socket.Title,
+			NextBlockIds: socket.NextBlockIds,
+		})
+	}
+
+	return result
 }

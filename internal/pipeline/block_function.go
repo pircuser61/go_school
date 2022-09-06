@@ -28,7 +28,7 @@ type FunctionBlock struct {
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	Nexts          map[string][]string
+	Sockets        []script.Socket
 	RunURL         string
 }
 
@@ -133,7 +133,7 @@ func (fb *FunctionBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store
 }
 
 func (fb *FunctionBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := fb.Nexts[DefaultSocket]
+	nexts, ok := script.GetNexts(fb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}

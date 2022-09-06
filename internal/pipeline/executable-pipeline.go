@@ -45,6 +45,7 @@ type ExecutablePipeline struct {
 	VarStore      *store.VariableStore
 	Blocks        map[string]Runner
 	Nexts         map[string][]string
+	Sockets       []script.Socket
 	Input         map[string]string
 	Output        map[string]string
 	Name          string
@@ -525,7 +526,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 }
 
 func (ep *ExecutablePipeline) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := ep.Nexts[DefaultSocket]
+	nexts, ok := script.GetNexts(ep.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
@@ -579,7 +580,7 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, bl *entity
 			FunctionName:   bl.Title,
 			FunctionInput:  make(map[string]string),
 			FunctionOutput: make(map[string]string),
-			Nexts:          bl.Next,
+			Sockets:        entity.ConvertSocket(bl.Sockets),
 			RunURL:         ep.FaaS + "function/%s",
 		}
 

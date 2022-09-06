@@ -15,7 +15,7 @@ type ForState struct {
 	FunctionName   string
 	FunctionInput  map[string]string
 	FunctionOutput map[string]string
-	Nexts          map[string][]string
+	Sockets        []script.Socket
 }
 
 func (e *ForState) GetStatus() Status {
@@ -76,7 +76,7 @@ func (e *ForState) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store
 func (e *ForState) Next(runCtx *store.VariableStore) ([]string, bool) {
 	arr, _ := runCtx.GetArray(e.FunctionInput["iter"])
 	if len(arr) == 0 {
-		nexts, ok := e.Nexts[trueSocket]
+		nexts, ok := script.GetNexts(e.Sockets, trueSocketID)
 		if !ok {
 			return nil, false
 		}
@@ -94,14 +94,14 @@ func (e *ForState) Next(runCtx *store.VariableStore) ([]string, bool) {
 	}
 
 	if index >= len(arr)+1 {
-		nexts, ok := e.Nexts[trueSocket]
+		nexts, ok := script.GetNexts(e.Sockets, trueSocketID)
 		if !ok {
 			return nil, false
 		}
 		return nexts, true
 	}
 
-	nexts, ok := e.Nexts[falseSocket]
+	nexts, ok := script.GetNexts(e.Sockets, falseSocketID)
 	if !ok {
 		return nil, false
 	}

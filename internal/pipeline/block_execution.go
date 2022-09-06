@@ -144,12 +144,12 @@ func (a *ExecutionData) SetChangeExecutor(oldLogin, newLogin, comment string) er
 }
 
 type GoExecutionBlock struct {
-	Name   string
-	Title  string
-	Input  map[string]string
-	Output map[string]string
-	Nexts  map[string][]string
-	State  *ExecutionData
+	Name    string
+	Title   string
+	Input   map[string]string
+	Output  map[string]string
+	Sockets []script.Socket
+	State   *ExecutionData
 
 	Pipeline *ExecutablePipeline
 }
@@ -412,11 +412,11 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 }
 
 func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	key := notExecutedSocket
+	key := notExecutedSocketID
 	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ExecutionDecisionExecuted {
-		key = executedSocket
+		key = executedSocketID
 	}
-	nexts, ok := gb.Nexts[key]
+	nexts, ok := script.GetNexts(gb.Sockets, key)
 	if !ok {
 		return nil, false
 	}
@@ -424,11 +424,16 @@ func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 }
 
 func (gb *GoExecutionBlock) Skipped(_ *store.VariableStore) []string {
-	key := executedSocket
+	key := executedSocketID
 	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ExecutionDecisionExecuted {
-		key = notExecutedSocket
+		key = notExecutedSocketID
 	}
-	return gb.Nexts[key]
+	var next, ok = script.GetNexts(gb.Sockets, key)
+	if !ok {
+		return nil
+	}
+
+	return next
 }
 
 func (gb *GoExecutionBlock) GetState() interface{} {
@@ -471,18 +476,21 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 				SLA:       0,
 			},
 		},
-		Sockets: []string{executedSocket, notExecutedSocket},
+		Sockets: []script.Socket{
+			script.ExecutedSocket,
+			script.NotExecutedSocket,
+		},
 	}
 }
 
 // nolint:dupl // another block
 func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFunc, p *ExecutablePipeline) (*GoExecutionBlock, error) {
 	b := &GoExecutionBlock{
-		Name:   name,
-		Title:  ef.Title,
-		Input:  map[string]string{},
-		Output: map[string]string{},
-		Nexts:  ef.Next,
+		Name:    name,
+		Title:   ef.Title,
+		Input:   map[string]string{},
+		Output:  map[string]string{},
+		Sockets: entity.ConvertSocket(ef.Sockets),
 
 		Pipeline: p,
 	}
