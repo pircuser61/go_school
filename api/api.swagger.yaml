@@ -2548,19 +2548,6 @@ components:
           varOperand: variableOperand
           valOperand: valueOperand
 
-    # basicOperand:
-    #   type: object
-    #   description: Basic operand, used for polymorphism
-    #   properties:
-    #     dataType:
-    #       type: string
-    #     operandType:
-    #       type: string
-    #       enum: ["variableOperand", "valueOperand"]
-    #   required:
-    #     - dataType
-    #     - operandType
-
     StringOperand:
       type: object
       description: Basic string operand, can provide working compare types for this type
