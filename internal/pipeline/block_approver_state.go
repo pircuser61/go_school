@@ -57,12 +57,27 @@ type AdditionalInfo struct {
 	CreatedAt   time.Time          `json:"created_at"`
 }
 
+type ApprovementRule string
+
+const (
+	AllOfApprovementRequired ApprovementRule = "all_of"
+	AnyOfApprovementRequired ApprovementRule = "any_of"
+)
+
+type ApproverLogEntry struct {
+	Login     string
+	Decision  ApproverDecision
+	Comment   string
+	CreatedAt time.Time
+}
+
 type ApproverData struct {
-	Type           script.ApproverType `json:"type"`
-	Approvers      map[string]struct{} `json:"approvers"`
-	Decision       *ApproverDecision   `json:"decision,omitempty"`
-	Comment        *string             `json:"comment,omitempty"`
-	ActualApprover *string             `json:"actual_approver,omitempty"`
+	Type            script.ApproverType `json:"type"`
+	Approvers       map[string]struct{} `json:"approvers"`
+	Decision        *ApproverDecision   `json:"decision,omitempty"`
+	Comment         *string             `json:"comment,omitempty"`
+	ActualApprover  *string             `json:"actual_approver,omitempty"`
+	ApprovementRule ApprovementRule     `json:"approvement_rule,omitempty"`
 
 	SLA        int                `json:"sla"`
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
@@ -76,8 +91,9 @@ type ApproverData struct {
 	EditingApp         *EditingApp  `json:"editing_app,omitempty"`
 	EditingAppLog      []EditingApp `json:"editing_app_log,omitempty"`
 
-	ApproversGroupID   string `json:"approvers_group_id"`
-	ApproversGroupName string `json:"approvers_group_name"`
+	ApproversGroupID     string             `json:"approvers_group_id"`
+	ApproversGroupName   string             `json:"approvers_group_name"`
+	ApproverDecisionsLog []ApproverLogEntry `json:"approvers_log,omitempty"`
 
 	AddInfo []AdditionalInfo `json:"additional_info,omitempty"`
 }
@@ -115,6 +131,15 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	a.Decision = &decision
 	a.Comment = &comment
 	a.ActualApprover = &login
+
+	var entry = ApproverLogEntry{
+		Login:     login,
+		Comment:   comment,
+		Decision:  decision,
+		CreatedAt: time.Now(),
+	}
+
+	a.ApproverDecisionsLog = append(a.ApproverDecisionsLog, entry)
 
 	return nil
 }

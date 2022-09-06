@@ -67,15 +67,16 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, ep 
 	}
 
 	b.State = &ApproverData{
-		Type:               params.Type,
-		Approvers:          approvers,
-		SLA:                params.SLA,
-		AutoAction:         params.AutoAction,
-		LeftToNotify:       approvers,
-		IsEditable:         params.IsEditable,
-		RepeatPrevDecision: params.RepeatPrevDecision,
-		ApproversGroupID:   params.ApproversGroupID,
-		ApproversGroupName: approversGroupName,
+		Type:                 params.Type,
+		Approvers:            approvers,
+		SLA:                  params.SLA,
+		AutoAction:           params.AutoAction,
+		LeftToNotify:         approvers,
+		IsEditable:           params.IsEditable,
+		RepeatPrevDecision:   params.RepeatPrevDecision,
+		ApproversGroupID:     params.ApproversGroupID,
+		ApproversGroupName:   approversGroupName,
+		ApproverDecisionsLog: make([]ApproverLogEntry, 0),
 	}
 
 	return b, nil

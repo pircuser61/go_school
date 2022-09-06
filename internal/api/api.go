@@ -19,6 +19,13 @@ const (
 	ApproveAutoActionReject ApproveAutoAction = "reject"
 )
 
+// Defines values for ApproverParamsApprovementType.
+const (
+	ApproverParamsApprovementTypeAllOf ApproverParamsApprovementType = "allOf"
+
+	ApproverParamsApprovementTypeAnyOf ApproverParamsApprovementType = "anyOf"
+)
+
 // Defines values for ApproverType.
 const (
 	ApproverTypeFromSchema ApproverType = "fromSchema"
@@ -176,7 +183,10 @@ type ApproveAutoAction string
 
 // Approver params
 type ApproverParams struct {
-	// Apprver value (depends on type)
+	// Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
+	ApprovementType *ApproverParamsApprovementType `json:"approvementType,omitempty"`
+
+	// Approver value (depends on type)
 	Approver string `json:"approver"`
 
 	// Approvers group id in SD
@@ -202,6 +212,9 @@ type ApproverParams struct {
 	//   * FromSchema - Selected by initiator
 	Type ApproverType `json:"type"`
 }
+
+// Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
+type ApproverParamsApprovementType string
 
 // Approver type:
 //   * user - Single user
