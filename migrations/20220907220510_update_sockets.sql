@@ -95,7 +95,7 @@ begin
                                                                      pipeline_id,
                                                                      content -> 'pipeline' #> '{blocks}'                    as cont,
                                                                      jsonb_object_keys(content -> 'pipeline' #> '{blocks}') as keys
-                                                              from pipeliner.versions_07092022
+                                                              from pipeliner.versions
                                                           )
                                                               as i)
                                                      as j
@@ -106,7 +106,7 @@ begin
              ) as n
         group by n.id, n.pipeline_id, blockName, currentNext
         loop
-            update pipeliner.versions_07092022
+            update pipeliner.versions
             set content = jsonb_set(content, v_cursor.updatePath, v_cursor.newNext, false)
             WHERE id = v_cursor.id;
         end loop;
