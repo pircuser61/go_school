@@ -78,6 +78,7 @@ type ApproverData struct {
 	Comment         *string             `json:"comment,omitempty"`
 	ActualApprover  *string             `json:"actual_approver,omitempty"`
 	ApprovementRule ApprovementRule     `json:"approvement_rule,omitempty"`
+	ApproverLog     []ApproverLogEntry  `json:"approver_log,omitempty"`
 
 	SLA        int                `json:"sla"`
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
@@ -91,9 +92,8 @@ type ApproverData struct {
 	EditingApp         *EditingApp  `json:"editing_app,omitempty"`
 	EditingAppLog      []EditingApp `json:"editing_app_log,omitempty"`
 
-	ApproversGroupID     string             `json:"approvers_group_id"`
-	ApproversGroupName   string             `json:"approvers_group_name"`
-	ApproverDecisionsLog []ApproverLogEntry `json:"approvers_log,omitempty"`
+	ApproversGroupID   string `json:"approvers_group_id"`
+	ApproversGroupName string `json:"approvers_group_name"`
 
 	AddInfo []AdditionalInfo `json:"additional_info,omitempty"`
 }
@@ -124,22 +124,55 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		return errors.New("decision already set")
 	}
 
-	if decision != ApproverDecisionApproved && decision != ApproverDecisionRejected {
+	var approvementRule = a.ApprovementRule
+
+	if approvementRule == AnyOfApprovementRequired {
+		if decision != ApproverDecisionApproved && decision != ApproverDecisionRejected {
+			return fmt.Errorf("unknown decision %s", decision.String())
+		}
+
+		a.Decision = &decision
+		a.Comment = &comment
+		a.ActualApprover = &login
+
+	}
+
+	if approvementRule == AllOfApprovementRequired {
+		var approvedCount = 0
+		var membersCount = len(a.Approvers)
+		var overallDecision ApproverDecision
+
+		for _, approver := range a.ApproverLog {
+			if approver.Decision == ApproverDecisionApproved {
+				approvedCount++
+			}
+
+			switch approver.Decision {
+			case ApproverDecisionApproved:
+				approvedCount++
+				break
+			case ApproverDecisionRejected:
+				overallDecision = ApproverDecisionRejected
+				break
+			default:
+				return fmt.Errorf("unknown decision %s", decision.String())
+			}
+		}
+
+		if approvedCount == membersCount {
+			overallDecision = ApproverDecisionApproved
+		}
+
+		a.Decision = &overallDecision
+	}
+
+	if approvementRule != AnyOfApprovementRequired && approvementRule != AllOfApprovementRequired {
 		return fmt.Errorf("unknown decision %s", decision.String())
 	}
 
 	a.Decision = &decision
 	a.Comment = &comment
 	a.ActualApprover = &login
-
-	var entry = ApproverLogEntry{
-		Login:     login,
-		Comment:   comment,
-		Decision:  decision,
-		CreatedAt: time.Now(),
-	}
-
-	a.ApproverDecisionsLog = append(a.ApproverDecisionsLog, entry)
 
 	return nil
 }
