@@ -48,7 +48,7 @@ begin
             blockName,
             currentNext,
             json_agg(newNextSingle)::jsonb as newNext,
-            ('{pipeline,blocks,' || blockName || ',next}')::text[] as updatePath
+            ('{pipeline,blocks,' || blockName || ',sockets}')::text[] as updatePath
         from (
                  select pipeline_id,
                         id,
@@ -107,7 +107,7 @@ begin
         group by n.id, n.pipeline_id, blockName, currentNext
         loop
             update pipeliner.versions
-            set content = jsonb_set(content, v_cursor.updatePath, v_cursor.newNext, false)
+            set content = jsonb_set(content, v_cursor.updatePath, v_cursor.newNext, true)
             WHERE id = v_cursor.id;
         end loop;
 end
