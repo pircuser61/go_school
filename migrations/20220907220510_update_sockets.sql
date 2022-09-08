@@ -1,10 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-alter table pipeliner.versions_07092022
-    drop constraint if exists versions_07092022_ok;
-
-drop index if exists versions_07092022_pipeline_id_index;
-
 drop table if exists pipeliner.versions_07092022;
 
 create table pipeliner.versions_07092022
@@ -25,6 +20,11 @@ create table pipeliner.versions_07092022
     is_actual        boolean default false,
     updated_at       timestamp with time zone
 );
+
+alter table pipeliner.versions_07092022
+    drop constraint if exists versions_07092022_ok;
+
+drop index if exists versions_07092022_pipeline_id_index;
 
 alter table pipeliner.versions_07092022
     owner to jocasta;
