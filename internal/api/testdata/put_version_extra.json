@@ -45,11 +45,13 @@
         "block_type": "go",
         "title": "start",
         "type_id": "start",
-        "next": {
-          "default": [
-            "action-1"
-          ]
-        }
+        "sockets" : [
+          {
+            "id" :  "default",
+            "title" : "",
+            "nextBlockIds": ["action-1"]
+          }
+        ]
       },
       "action-1": {
         "x": 587,
@@ -75,11 +77,13 @@
         "block_type": "go",
         "title": "go_test_block",
         "type_id": "go_test_block",
-        "next": {
-          "default": [
-            "end-1"
-          ]
-        }
+        "sockets" : [
+          {
+            "id" :  "default",
+            "title" : "",
+            "nextBlockIds": ["end-1"]
+          }
+        ]
       },
       "end-1": {
         "x": 587,
@@ -105,7 +109,7 @@
         "block_type": "go",
         "title": "end",
         "type_id": "end",
-        "next": {}
+        "sockets": []
       }
     },
     "entrypoint": "start_0"
