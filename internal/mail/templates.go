@@ -146,3 +146,35 @@ func NewAnswerSendToEditTemplate(id, name, sdUrl string) Template {
 		},
 	}
 }
+
+func NewExecutionTakenInWork(id, name, sdUrl, executorName, description string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка №%s <b>взята в работу</b> пользователем %s", id, executorName),
+		Text: `<p>Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b></p></br>
+ <b>Инициатор: </b>%_Инициатор_из_заявки%</p> </br>
+ <b>Ссылка на заявку: </b><a href={{.Link}}>ссылке</a></p> </br>
+ ------------ Описание ------------  </br>
+<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>
+
+<style>
+    p {
+        font-family: : Arial;
+        font-size: 11px;
+        margin-bottom: -20px;
+    }
+</style>`,
+		Variables: struct {
+			Id          string `json:"id"`
+			Name        string `json:"name"`
+			Executor    string `json:"executor"`
+			Link        string `json:"link"`
+			Description string `json:"description"`
+		}{
+			Id:          id,
+			Name:        name,
+			Executor:    executorName,
+			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Description: description,
+		},
+	}
+}

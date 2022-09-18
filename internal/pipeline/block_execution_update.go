@@ -268,6 +268,16 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 	if _, ok := gb.State.Executors[dto.byLogin]; !ok {
 		return fmt.Errorf("login %s is not found in executors", dto.byLogin)
 	}
+	var notificationEmails []string
+	for login := range gb.State.Executors {
+		if login != dto.byLogin {
+			email, emailErr := gb.Pipeline.People.GetUserEmail(ctx, login)
+			if emailErr != nil {
+				return emailErr
+			}
+			notificationEmails = append(notificationEmails, email)
+		}
+	}
 
 	gb.State.Executors = map[string]struct{}{
 		dto.byLogin: {},
@@ -297,6 +307,20 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 		BreakPoints: dto.step.BreakPoints,
 		Status:      string(StatusRunning),
 	})
+	if err != nil {
+		return err
+	}
+
+	author, err := gb.Pipeline.People.GetUser(ctx, dto.byLogin)
+	if err != nil {
+		return err
+	}
+	typedAuthor, err := author.ToSSOUserTyped()
+	if err != nil {
+		return err
+	}
+	tpl := mail.NewExecutionTakenInWork(gb.Pipeline.WorkNumber, gb.Title, gb.Pipeline.Sender.SdAddress, typedAuthor.LastName+typedAuthor.FirstName, gb.Pipeline.currDescription)
+	err = gb.Pipeline.Sender.SendNotification(ctx, notificationEmails, nil, tpl)
 	if err != nil {
 		return err
 	}
