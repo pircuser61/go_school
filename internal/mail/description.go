@@ -16,6 +16,8 @@ type userFromSD struct {
 	Username string `json:"username"`
 }
 
+const propsDelimiter = ", "
+
 func (u userFromSD) String() string {
 	return fmt.Sprintf("%s (%s)", u.Fullname, u.Username)
 }
@@ -100,6 +102,12 @@ func writeValue(res *strings.Builder, data interface{}) {
 	case orderedmap.OrderedMap:
 		if user, ok := toUser(val); ok {
 			res.WriteString(user.String())
+		}
+		for _, k := range val.Keys() {
+			if v, ok := val.Get(k); ok {
+				res.WriteString(fmt.Sprintf("%s", v))
+				res.WriteString(propsDelimiter)
+			}
 		}
 	default:
 		res.WriteString(fmt.Sprintf("%v", data))
