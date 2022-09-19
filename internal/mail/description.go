@@ -105,7 +105,7 @@ func writeValue(res *strings.Builder, data interface{}) {
 		}
 		for _, k := range val.Keys() {
 			if v, ok := val.Get(k); ok {
-				res.WriteString(fmt.Sprintf("%v", v))
+				res.WriteString(fmt.Sprintf("%s", v))
 				res.WriteString(propsDelimiter)
 			}
 		}
