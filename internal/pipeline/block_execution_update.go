@@ -319,7 +319,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 	if err != nil {
 		return err
 	}
-	tpl := mail.NewExecutionTakenInWork(gb.Pipeline.WorkNumber, gb.Title, gb.Pipeline.Sender.SdAddress, typedAuthor.LastName+typedAuthor.FirstName, gb.Pipeline.currDescription)
+	tpl := mail.NewExecutionTakenInWork(gb.Pipeline.WorkNumber, gb.Title, gb.Pipeline.Sender.SdAddress, typedAuthor.LastName+typedAuthor.FirstName, gb.Pipeline.Initiator, gb.Pipeline.currDescription)
 	err = gb.Pipeline.Sender.SendNotification(ctx, notificationEmails, nil, tpl)
 	if err != nil {
 		return err
