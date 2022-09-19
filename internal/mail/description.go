@@ -102,11 +102,16 @@ func writeValue(res *strings.Builder, data interface{}) {
 	case orderedmap.OrderedMap:
 		if user, ok := toUser(val); ok {
 			res.WriteString(user.String())
-		}
-		for _, k := range val.Keys() {
-			if v, ok := val.Get(k); ok {
-				res.WriteString(fmt.Sprintf("%s", v))
-				res.WriteString(propsDelimiter)
+		} else {
+			var propCount = 0
+			for _, k := range val.Keys() {
+				propCount++
+				if v, ok := val.Get(k); ok {
+					res.WriteString(fmt.Sprintf("%s", v))
+					if propCount < len(val.Keys()) {
+						res.WriteString(propsDelimiter)
+					}
+				}
 			}
 		}
 	default:

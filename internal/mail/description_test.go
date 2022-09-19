@@ -166,13 +166,15 @@ func TestMakeDescription(t *testing.T) {
 		{
 			name: "all types",
 			data: `{"input_float64": 1.1, "int64": 2, "bool_true": true, "bool_false": false, "array": ["test", "test2"],
-"user": {"fullname": "Иванов Иван Иванович", "username": "ivanov"}, "string": "string"}`,
+"user": {"fullname": "Иванов Иван Иванович", "username": "ivanov"}, 
+"map" : {"testProperty1" : "testPropertyValue1", "testProperty2" : "testPropertyValue2"}, "string": "string"}`,
 			want: `<p>input_float64: 1.1</p><br>
 <p>int64: 2</p><br>
 <p>bool_true: Да</p><br>
 <p>bool_false: Нет</p><br>
 <p>array: test, test2</p><br>
 <p>user: Иванов Иван Иванович (ivanov)</p><br>
+<p>map: testPropertyValue1, testPropertyValue2</p><br>
 <p>string: string</p><br>`,
 		},
 	}
