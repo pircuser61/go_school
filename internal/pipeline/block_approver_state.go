@@ -135,6 +135,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		a.Comment = &comment
 		a.ActualApprover = &login
 
+		// todo: добавить в историю
 	}
 
 	if approvementRule == AllOfApprovementRequired {
@@ -170,7 +171,6 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		return fmt.Errorf("unknown decision %s", decision.String())
 	}
 
-	a.Decision = &decision
 	a.Comment = &comment
 	a.ActualApprover = &login
 
