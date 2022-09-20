@@ -19,6 +19,13 @@ const (
 	ApproveAutoActionReject ApproveAutoAction = "reject"
 )
 
+// Defines values for ApproverParamsApprovementRule.
+const (
+	ApproverParamsApprovementRuleВсеСогласующие ApproverParamsApprovementRule = "Все согласующие"
+
+	ApproverParamsApprovementRuleОдинИзСогласующих ApproverParamsApprovementRule = "Один из согласующих"
+)
+
 // Defines values for ApproverType.
 const (
 	ApproverTypeFromSchema ApproverType = "fromSchema"
@@ -295,7 +302,10 @@ type ApproveAutoAction string
 
 // Approver params
 type ApproverParams struct {
-	// Apprver value (depends on type)
+	// Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
+	ApprovementRule *ApproverParamsApprovementRule `json:"approvementRule,omitempty"`
+
+	// Approver value (depends on type)
 	Approver string `json:"approver"`
 
 	// Approvers group id in SD
@@ -321,6 +331,9 @@ type ApproverParams struct {
 	//   * FromSchema - Selected by initiator
 	Type ApproverType `json:"type"`
 }
+
+// Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
+type ApproverParamsApprovementRule string
 
 // Approver type:
 //   * user - Single user

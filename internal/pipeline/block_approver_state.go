@@ -57,12 +57,28 @@ type AdditionalInfo struct {
 	CreatedAt   time.Time          `json:"created_at"`
 }
 
+type ApprovementRule string
+
+const (
+	AllOfApprovementRequired ApprovementRule = "AllOf"
+	AnyOfApprovementRequired ApprovementRule = "AnyOf"
+)
+
+type ApproverLogEntry struct {
+	Login     string
+	Decision  ApproverDecision
+	Comment   string
+	CreatedAt time.Time
+}
+
 type ApproverData struct {
-	Type           script.ApproverType `json:"type"`
-	Approvers      map[string]struct{} `json:"approvers"`
-	Decision       *ApproverDecision   `json:"decision,omitempty"`
-	Comment        *string             `json:"comment,omitempty"`
-	ActualApprover *string             `json:"actual_approver,omitempty"`
+	Type            script.ApproverType `json:"type"`
+	Approvers       map[string]struct{} `json:"approvers"`
+	Decision        *ApproverDecision   `json:"decision,omitempty"`
+	Comment         *string             `json:"comment,omitempty"`
+	ActualApprover  *string             `json:"actual_approver,omitempty"`
+	ApprovementRule ApprovementRule     `json:"approvement_rule,omitempty"`
+	ApproverLog     []ApproverLogEntry  `json:"approver_log,omitempty"`
 
 	SLA        int                `json:"sla"`
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
@@ -104,17 +120,50 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		return fmt.Errorf("%s not found in approvers", login)
 	}
 
-	if a.Decision != nil {
-		return errors.New("decision already set")
-	}
-
 	if decision != ApproverDecisionApproved && decision != ApproverDecisionRejected {
 		return fmt.Errorf("unknown decision %s", decision.String())
 	}
 
-	a.Decision = &decision
-	a.Comment = &comment
-	a.ActualApprover = &login
+	if a.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	var approvementRule = a.ApprovementRule
+
+	if approvementRule == AnyOfApprovementRequired {
+		a.Decision = &decision
+		a.Comment = &comment
+		a.ActualApprover = &login
+	}
+
+	if approvementRule == AllOfApprovementRequired {
+		var approvedCount = 0
+		var membersCount = len(a.Approvers)
+		var overallDecision ApproverDecision
+
+		for _, approver := range a.ApproverLog {
+			if approver.Decision == ApproverDecisionApproved {
+				approvedCount++
+			}
+
+			switch approver.Decision {
+			case ApproverDecisionApproved:
+				approvedCount++
+				break
+			case ApproverDecisionRejected:
+				overallDecision = ApproverDecisionRejected
+				break
+			default:
+				return fmt.Errorf("unknown decision %s", decision.String())
+			}
+		}
+
+		if approvedCount == membersCount {
+			overallDecision = ApproverDecisionApproved
+		}
+
+		a.Decision = &overallDecision
+	}
 
 	return nil
 }

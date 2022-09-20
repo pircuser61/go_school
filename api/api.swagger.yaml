@@ -2805,7 +2805,9 @@ components:
           $ref: '#/components/schemas/ApproverType'
         approver:
           type: string
-          description: Apprver value (depends on type)
+          description: Approver value (depends on type)
+        approvementRule:
+          $ref: '#/components/schemas/ApprovementRule'
         sla:
           type: integer
           description: Approvement SLA (in working hours)
@@ -2831,6 +2833,13 @@ components:
         - is_editable
         - approvers_group_id
         - approvers_group_name
+
+    ApprovementRule:
+      type: string
+      enum: [ "Один из согласующих", "Все согласующие" ]
+      x-enum-varnames: [ "AnyOf", "AllOf" ]
+      description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of'
+      will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 
     ApproveAutoAction:
       type: string
