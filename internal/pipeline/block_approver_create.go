@@ -79,5 +79,9 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, ep 
 		ApproverLog:        make([]ApproverLogEntry, 0),
 	}
 
+	if b.State.ApprovementRule == "" {
+		b.State.ApprovementRule = AnyOfApprovementRequired
+	}
+
 	return b, nil
 }

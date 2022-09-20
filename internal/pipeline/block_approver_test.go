@@ -248,11 +248,13 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Approvers: map[string]struct{}{
 						login: {},
 					},
-					Decision:       nil,
-					Comment:        nil,
-					ActualApprover: nil,
-					AutoAction:     nil,
-					SLA:            1,
+					Decision:        nil,
+					Comment:         nil,
+					ActualApprover:  nil,
+					AutoAction:      nil,
+					ApprovementRule: AnyOfApprovementRequired,
+					ApproverLog:     make([]ApproverLogEntry, 0),
+					SLA:             1,
 					LeftToNotify: map[string]struct{}{
 						login: {},
 					},

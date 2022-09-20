@@ -120,6 +120,10 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		return fmt.Errorf("%s not found in approvers", login)
 	}
 
+	if decision != ApproverDecisionApproved && decision != ApproverDecisionRejected {
+		return fmt.Errorf("unknown decision %s", decision.String())
+	}
+
 	if a.Decision != nil {
 		return errors.New("decision already set")
 	}
@@ -127,15 +131,9 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	var approvementRule = a.ApprovementRule
 
 	if approvementRule == AnyOfApprovementRequired {
-		if decision != ApproverDecisionApproved && decision != ApproverDecisionRejected {
-			return fmt.Errorf("unknown decision %s", decision.String())
-		}
-
 		a.Decision = &decision
 		a.Comment = &comment
 		a.ActualApprover = &login
-
-		// todo: добавить в историю
 	}
 
 	if approvementRule == AllOfApprovementRequired {
@@ -166,13 +164,6 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 		a.Decision = &overallDecision
 	}
-
-	if approvementRule != AnyOfApprovementRequired && approvementRule != AllOfApprovementRequired {
-		return fmt.Errorf("unknown decision %s", decision.String())
-	}
-
-	a.Comment = &comment
-	a.ActualApprover = &login
 
 	return nil
 }
