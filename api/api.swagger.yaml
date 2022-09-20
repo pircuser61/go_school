@@ -2806,11 +2806,11 @@ components:
         approver:
           type: string
           description: Approver value (depends on type)
-        approvementType:
+        approvementRule:
           type: string
-          enum:
-            - anyOf
-            - allOf
+          enum: [ "Один из согласующих", "Все согласующие"]
+          x-enum-varnames: [ "AnyOf", "AllOf"]
+
           description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
         sla:
           type: integer

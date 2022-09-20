@@ -60,8 +60,8 @@ type AdditionalInfo struct {
 type ApprovementRule string
 
 const (
-	AllOfApprovementRequired ApprovementRule = "all_of"
-	AnyOfApprovementRequired ApprovementRule = "any_of"
+	AllOfApprovementRequired ApprovementRule = "AllOf"
+	AnyOfApprovementRequired ApprovementRule = "AnyOf"
 )
 
 type ApproverLogEntry struct {
