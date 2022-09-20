@@ -37,11 +37,41 @@ const (
 	ApproverTypeUser ApproverType = "user"
 )
 
+// Defines values for BooleanOperandDataType.
+const (
+	BooleanOperandDataTypeBoolean BooleanOperandDataType = "boolean"
+
+	BooleanOperandDataTypeInteger BooleanOperandDataType = "integer"
+
+	BooleanOperandDataTypeString BooleanOperandDataType = "string"
+)
+
+// Defines values for BooleanOperandOperandType.
+const (
+	BooleanOperandOperandTypeValueOperand BooleanOperandOperandType = "valueOperand"
+
+	BooleanOperandOperandTypeVariableOperand BooleanOperandOperandType = "variableOperand"
+)
+
 // Defines values for ConditionGroupLogicalOperator.
 const (
 	ConditionGroupLogicalOperatorAnd ConditionGroupLogicalOperator = "and"
 
 	ConditionGroupLogicalOperatorOr ConditionGroupLogicalOperator = "or"
+)
+
+// Defines values for DateOperandDataType.
+const (
+	DateOperandDataTypeDate DateOperandDataType = "date"
+
+	DateOperandDataTypeString DateOperandDataType = "string"
+)
+
+// Defines values for DateOperandOperandType.
+const (
+	DateOperandOperandTypeValueOperand DateOperandOperandType = "valueOperand"
+
+	DateOperandOperandTypeVariableOperand DateOperandOperandType = "variableOperand"
 )
 
 // Defines values for ExecutionParamsType.
@@ -62,6 +92,38 @@ const (
 	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
 )
 
+// Defines values for IntegerOperandDataType.
+const (
+	IntegerOperandDataTypeBoolean IntegerOperandDataType = "boolean"
+
+	IntegerOperandDataTypeInteger IntegerOperandDataType = "integer"
+
+	IntegerOperandDataTypeNumber IntegerOperandDataType = "number"
+)
+
+// Defines values for IntegerOperandOperandType.
+const (
+	IntegerOperandOperandTypeValueOperand IntegerOperandOperandType = "valueOperand"
+
+	IntegerOperandOperandTypeVariableOperand IntegerOperandOperandType = "variableOperand"
+)
+
+// Defines values for NumberOperandDataType.
+const (
+	NumberOperandDataTypeInteger NumberOperandDataType = "integer"
+
+	NumberOperandDataTypeNumber NumberOperandDataType = "number"
+
+	NumberOperandDataTypeString NumberOperandDataType = "string"
+)
+
+// Defines values for NumberOperandOperandType.
+const (
+	NumberOperandOperandTypeValueOperand NumberOperandOperandType = "valueOperand"
+
+	NumberOperandOperandTypeVariableOperand NumberOperandOperandType = "variableOperand"
+)
+
 // Defines values for RequestExecutionInfoType.
 const (
 	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
@@ -78,6 +140,26 @@ const (
 	StepStatusReady StepStatus = "ready"
 
 	StepStatusRunning StepStatus = "running"
+)
+
+// Defines values for StringOperandDataType.
+const (
+	StringOperandDataTypeBoolean StringOperandDataType = "boolean"
+
+	StringOperandDataTypeDate StringOperandDataType = "date"
+
+	StringOperandDataTypeInteger StringOperandDataType = "integer"
+
+	StringOperandDataTypeNumber StringOperandDataType = "number"
+
+	StringOperandDataTypeString StringOperandDataType = "string"
+)
+
+// Defines values for StringOperandOperandType.
+const (
+	StringOperandOperandTypeValueOperand StringOperandOperandType = "valueOperand"
+
+	StringOperandOperandTypeVariableOperand StringOperandOperandType = "variableOperand"
 )
 
 // Defines values for TaskUpdateAction.
@@ -102,13 +184,6 @@ const (
 	ApproverDecisionRejected ApproverDecision = "rejected"
 )
 
-// Defines values for BasicOperandOperandType.
-const (
-	BasicOperandOperandTypeValueOperand BasicOperandOperandType = "valueOperand"
-
-	BasicOperandOperandTypeVariableOperand BasicOperandOperandType = "variableOperand"
-)
-
 // Defines values for BlockType.
 const (
 	BlockTypeGo BlockType = "go"
@@ -118,23 +193,67 @@ const (
 	BlockTypeScenario BlockType = "scenario"
 )
 
-// Defines values for CompareOperator.
+// Defines values for CompareBooleanOperator.
 const (
-	CompareOperatorБольше CompareOperator = "Больше"
+	CompareBooleanOperatorНеРавно CompareBooleanOperator = "Не равно"
 
-	CompareOperatorБольшеИлиРавно CompareOperator = "Больше или равно"
+	CompareBooleanOperatorРавно CompareBooleanOperator = "Равно"
+)
 
-	CompareOperatorМеньше CompareOperator = "Меньше"
+// Defines values for CompareDateOperator.
+const (
+	CompareDateOperatorБольше CompareDateOperator = "Больше"
 
-	CompareOperatorМеньшеИлиРавно CompareOperator = "Меньше или равно"
+	CompareDateOperatorБольшеИлиРавно CompareDateOperator = "Больше или равно"
 
-	CompareOperatorНеРавно CompareOperator = "Не равно"
+	CompareDateOperatorМеньше CompareDateOperator = "Меньше"
 
-	CompareOperatorНеСодержит CompareOperator = "Не Содержит"
+	CompareDateOperatorМеньшеИлиРавно CompareDateOperator = "Меньше или равно"
 
-	CompareOperatorРавно CompareOperator = "Равно"
+	CompareDateOperatorНеРавно CompareDateOperator = "Не равно"
 
-	CompareOperatorСодержит CompareOperator = "Содержит"
+	CompareDateOperatorРавно CompareDateOperator = "Равно"
+)
+
+// Defines values for CompareIntegerOperator.
+const (
+	CompareIntegerOperatorБольше CompareIntegerOperator = "Больше"
+
+	CompareIntegerOperatorБольшеИлиРавно CompareIntegerOperator = "Больше или равно"
+
+	CompareIntegerOperatorМеньше CompareIntegerOperator = "Меньше"
+
+	CompareIntegerOperatorМеньшеИлиРавно CompareIntegerOperator = "Меньше или равно"
+
+	CompareIntegerOperatorНеРавно CompareIntegerOperator = "Не равно"
+
+	CompareIntegerOperatorРавно CompareIntegerOperator = "Равно"
+)
+
+// Defines values for CompareNumberOperator.
+const (
+	CompareNumberOperatorБольше CompareNumberOperator = "Больше"
+
+	CompareNumberOperatorБольшеИлиРавно CompareNumberOperator = "Больше или равно"
+
+	CompareNumberOperatorМеньше CompareNumberOperator = "Меньше"
+
+	CompareNumberOperatorМеньшеИлиРавно CompareNumberOperator = "Меньше или равно"
+
+	CompareNumberOperatorНеРавно CompareNumberOperator = "Не равно"
+
+	CompareNumberOperatorРавно CompareNumberOperator = "Равно"
+)
+
+// Defines values for CompareStringOperator.
+const (
+	CompareStringOperatorНеРавно CompareStringOperator = "Не равно"
+
+	CompareStringOperatorНеСодержит CompareStringOperator = "Не Содержит"
+
+	CompareStringOperatorРавно CompareStringOperator = "Равно"
+
+	CompareStringOperatorСодержит CompareStringOperator = "Содержит"
 )
 
 // Defines values for ExecutionDecision.
@@ -234,13 +353,23 @@ type ApproverUpdateParams struct {
 	Decision ApproverDecision `json:"decision"`
 }
 
+// Basic boolean operand, can provide working compare types for this type
+type BooleanOperand struct {
+	DataType    BooleanOperandDataType    `json:"dataType"`
+	OperandType BooleanOperandOperandType `json:"operandType"`
+}
+
+// BooleanOperandDataType defines model for BooleanOperand.DataType.
+type BooleanOperandDataType string
+
+// BooleanOperandOperandType defines model for BooleanOperand.OperandType.
+type BooleanOperandOperandType string
+
 // Compare operands using operator
 type Condition struct {
 	// Operand for comparison
-	LeftOperand Operand `json:"leftOperand"`
-
-	// Used operator to compare operands
-	Operator CompareOperator `json:"operator"`
+	LeftOperand Operand     `json:"leftOperand"`
+	Operator    interface{} `json:"operator"`
 
 	// Operand for comparison
 	RightOperand Operand `json:"rightOperand"`
@@ -278,9 +407,21 @@ type CreateTaskRequest struct {
 
 // Created defines model for Created.
 type Created struct {
-	End   *int `json:"end,omitempty"`
-	Start *int `json:"start,omitempty"`
+	End   int `json:"end"`
+	Start int `json:"start"`
 }
+
+// Basic date operand, can provide working compare types for this type
+type DateOperand struct {
+	DataType    DateOperandDataType    `json:"dataType"`
+	OperandType DateOperandOperandType `json:"operandType"`
+}
+
+// DateOperandDataType defines model for DateOperand.DataType.
+type DateOperandDataType string
+
+// DateOperandOperandType defines model for DateOperand.OperandType.
+type DateOperandOperandType string
 
 // DebugResult defines model for DebugResult.
 type DebugResult struct {
@@ -309,6 +450,7 @@ type EriusFunc struct {
 	ParamType  *string                 `json:"param_type,omitempty"`
 	Params     *map[string]interface{} `json:"params,omitempty"`
 	ShortTitle *string                 `json:"short_title,omitempty"`
+	Sockets    *[]Socket               `json:"sockets,omitempty"`
 	Title      string                  `json:"title"`
 	True       *int                    `json:"true,omitempty"`
 	TypeId     string                  `json:"type_id"`
@@ -503,7 +645,7 @@ type FunctionModel struct {
 	Outputs   *[]FunctionValueModel `json:"outputs,omitempty"`
 	Params    *FunctionParams       `json:"params,omitempty"`
 	ShapeType int                   `json:"shape_type"`
-	Sockets   []string              `json:"sockets"`
+	Sockets   []Socket              `json:"sockets"`
 	Title     string                `json:"title"`
 }
 
@@ -526,6 +668,18 @@ type FunctionValueModel struct {
 	Type    *string `json:"type,omitempty"`
 }
 
+// Basic integer operand, can provide working compare types for this type
+type IntegerOperand struct {
+	DataType    IntegerOperandDataType    `json:"dataType"`
+	OperandType IntegerOperandOperandType `json:"operandType"`
+}
+
+// IntegerOperandDataType defines model for IntegerOperand.DataType.
+type IntegerOperandDataType string
+
+// IntegerOperandOperandType defines model for IntegerOperand.OperandType.
+type IntegerOperandOperandType string
+
 // Notification params
 type NotificationParams struct {
 	// Emails to get notifications
@@ -540,6 +694,18 @@ type NotificationParams struct {
 	// Notification body
 	Text string `json:"text"`
 }
+
+// Basic number operand, can provide working compare types for this type
+type NumberOperand struct {
+	DataType    NumberOperandDataType    `json:"dataType"`
+	OperandType NumberOperandOperandType `json:"operandType"`
+}
+
+// NumberOperandDataType defines model for NumberOperand.DataType.
+type NumberOperandDataType string
+
+// NumberOperandOperandType defines model for NumberOperand.OperandType.
+type NumberOperandOperandType string
 
 // Block constant params
 type Params interface{}
@@ -613,6 +779,18 @@ type ShapeEntity struct {
 	Title string `json:"title"`
 }
 
+// Socket object
+type Socket struct {
+	// Id of socket
+	Id string `json:"id"`
+
+	// IDs of next blocks
+	NextBlockIds *[]string `json:"nextBlockIds,omitempty"`
+
+	// User-friendly title of socket for user
+	Title *string `json:"title,omitempty"`
+}
+
 // Step defines model for Step.
 type Step struct {
 	Errors   []string               `json:"errors"`
@@ -630,6 +808,18 @@ type Step struct {
 
 // Task step execution status
 type StepStatus string
+
+// Basic string operand, can provide working compare types for this type
+type StringOperand struct {
+	DataType    StringOperandDataType    `json:"dataType"`
+	OperandType StringOperandOperandType `json:"operandType"`
+}
+
+// StringOperandDataType defines model for StringOperand.DataType.
+type StringOperandDataType string
+
+// StringOperandOperandType defines model for StringOperand.OperandType.
+type StringOperandOperandType string
 
 // TaskUpdate defines model for TaskUpdate.
 type TaskUpdate struct {
@@ -664,20 +854,23 @@ type UsedBy struct {
 //  * rejected - approver rejected block
 type ApproverDecision string
 
-// Basic operand, used for polymorphism
-type BasicOperand struct {
-	DataType    string                  `json:"dataType"`
-	OperandType BasicOperandOperandType `json:"operandType"`
-}
-
-// BasicOperandOperandType defines model for BasicOperand.OperandType.
-type BasicOperandOperandType string
-
 // Block type (language)
 type BlockType string
 
-// Used operator to compare operands
-type CompareOperator string
+// Used operator to compare bool operands
+type CompareBooleanOperator string
+
+// Used operator to compare date operands
+type CompareDateOperator string
+
+// Used operator to compare integer operands
+type CompareIntegerOperator string
+
+// Used operator to compare number operands
+type CompareNumberOperator string
+
+// Used operator to compare string operands
+type CompareStringOperator string
 
 // EriusTaskResponse defines model for eriusTaskResponse.
 type EriusTaskResponse struct {
@@ -753,18 +946,16 @@ type TaskHumanStatus string
 
 // ValueOperand defines model for valueOperand.
 type ValueOperand struct {
-	// Embedded struct due to allOf(#/components/schemas/basicOperand)
-	BasicOperand `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
 	Value string `json:"value"`
+	// Embedded fields due to inline allOf schema
 }
 
 // VariableOperand defines model for variableOperand.
 type VariableOperand struct {
-	// Embedded struct due to allOf(#/components/schemas/basicOperand)
-	BasicOperand `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
 	VariableRef string `json:"variableRef"`
+	// Embedded fields due to inline allOf schema
 }
 
 // CreateDebugTaskJSONBody defines parameters for CreateDebugTask.
@@ -831,6 +1022,9 @@ type GetTasksParams struct {
 	Created  *Created `json:"created,omitempty"`
 	Archived *bool    `json:"archived,omitempty"`
 	SelectAs *string  `json:"selectAs,omitempty"`
+
+	// get tasks with status wait or done
+	ForCarousel *bool `json:"forCarousel,omitempty"`
 }
 
 // UpdateTaskJSONBody defines parameters for UpdateTask.
@@ -1888,12 +2082,15 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	// ------------- Optional query parameter "created" -------------
 	if paramValue := r.URL.Query().Get("created"); paramValue != "" {
 
-	}
+		var value Created
+		err = json.Unmarshal([]byte(paramValue), &value)
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &UnmarshalingParamError{ParamName: "created", Err: err})
+			return
+		}
 
-	err = runtime.BindQueryParameter("form", true, false, "created", r.URL.Query(), &params.Created)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "created", Err: err})
-		return
+		params.Created = &value
+
 	}
 
 	// ------------- Optional query parameter "archived" -------------
@@ -1915,6 +2112,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "selectAs", r.URL.Query(), &params.SelectAs)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "selectAs", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "forCarousel" -------------
+	if paramValue := r.URL.Query().Get("forCarousel"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "forCarousel", r.URL.Query(), &params.ForCarousel)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "forCarousel", Err: err})
 		return
 	}
 

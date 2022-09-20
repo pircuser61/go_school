@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -55,7 +56,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 		FunctionName   string
 		FunctionInput  map[string]string
 		FunctionOutput map[string]string
-		NextStep       map[string][]string
+		NextStep       []script.Socket
 		runURL         string
 	}
 	type args struct {
@@ -82,7 +83,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				FunctionName:   "RunOnlyFunction",
 				FunctionInput:  nil,
 				FunctionOutput: nil,
-				NextStep:       map[string][]string{},
+				NextStep:       []script.Socket{},
 				runURL:         "",
 			},
 			args: args{
@@ -103,7 +104,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				FunctionOutput: map[string]string{
 					"sOutput": "global.sOutput",
 				},
-				NextStep: map[string][]string{},
+				NextStep: []script.Socket{},
 				runURL:   "",
 			},
 			args: args{
@@ -143,7 +144,7 @@ func TestFunctionBlock_Run(t *testing.T) {
 				FunctionName:   tt.fields.FunctionName,
 				FunctionInput:  tt.fields.FunctionInput,
 				FunctionOutput: tt.fields.FunctionOutput,
-				Nexts:          tt.fields.NextStep,
+				Sockets:        tt.fields.NextStep,
 				RunURL:         server.URL + "/%s",
 			}
 			if err := fb.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {

@@ -16,11 +16,11 @@ type SyncData struct {
 }
 
 type GoWaitForAllInputsBlock struct {
-	Name   string
-	Title  string
-	Input  map[string]string
-	Output map[string]string
-	Nexts  map[string][]string
+	Name    string
+	Title   string
+	Input   map[string]string
+	Output  map[string]string
+	Sockets []script.Socket
 
 	State *SyncData
 
@@ -70,7 +70,7 @@ func (gb *GoWaitForAllInputsBlock) DebugRun(ctx context.Context, stepCtx *stepCt
 }
 
 func (gb *GoWaitForAllInputsBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := gb.Nexts[DefaultSocket]
+	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
@@ -96,20 +96,20 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 		Title:     BlockGoWaitForAllInputsTitle,
 		Inputs:    nil,
 		Outputs:   nil,
-		Sockets:   []string{DefaultSocket},
+		Sockets:   []script.Socket{script.DefaultSocket},
 	}
 }
 
 func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string) {
 	var handleKey func(key string)
 	handleKey = func(key string) {
-		for socketName, bb := range pipeline.PipelineModel.Pipeline.Blocks[key].Next {
-			if socketName == editAppSocket || socketName == requestAddInfoSocket {
+		for _, bb := range pipeline.PipelineModel.Pipeline.Blocks[key].Sockets {
+			if bb.Id == editAppSocketID || bb.Id == requestAddInfoSocketID {
 				continue
 			}
 
 			addKey := false
-			for _, nextBlockName := range bb {
+			for _, nextBlockName := range bb.NextBlockIds {
 				if nextBlockName == name {
 					addKey = true
 					continue
@@ -146,7 +146,7 @@ func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, pipeline *
 		Title:    ef.Title,
 		Input:    map[string]string{},
 		Output:   map[string]string{},
-		Nexts:    ef.Next,
+		Sockets:  entity.ConvertSocket(ef.Sockets),
 		State:    &SyncData{IncomingBlockIds: getInputBlocks(pipeline, name)},
 		Pipeline: pipeline,
 	}

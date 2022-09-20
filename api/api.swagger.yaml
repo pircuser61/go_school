@@ -1331,8 +1331,10 @@ paths:
             default: 0
         - name: created
           in: query
-          schema:
-            $ref: '#/components/schemas/Created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Created'
         - name: archived
           in: query
           schema:
@@ -1341,6 +1343,11 @@ paths:
           in: query
           schema:
             type: string
+        - name: forCarousel
+          in: query
+          schema:
+            type: boolean
+          description: get tasks with status wait or done
       responses:
         200:
           description: OK
@@ -1697,6 +1704,10 @@ components:
             type: array
             items:
               type: string
+        sockets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Socket'
         output:
           type: array
           items:
@@ -2469,7 +2480,7 @@ components:
         sockets:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Socket'
         title:
           type: string
       required:
@@ -2479,6 +2490,24 @@ components:
         - next_funcs
         - id
         - sockets
+
+    Socket:
+      type: object
+      description: Socket object
+      properties:
+        id:
+          type: string
+          description: Id of socket
+        title:
+          type: string
+          description: User-friendly title of socket for user
+        nextBlockIds:
+          type: array
+          items:
+            type: string
+          description: IDs of next blocks
+      required:
+        - id
 
     Params:
       type: object
@@ -2519,7 +2548,12 @@ components:
         rightOperand:
           $ref: '#/components/schemas/operand'
         operator:
-          $ref: '#/components/schemas/compareOperator'
+          oneOf:
+            - $ref: '#/components/schemas/compareStringOperator'
+            - $ref: '#/components/schemas/compareIntegerOperator'
+            - $ref: '#/components/schemas/compareNumberOperator'
+            - $ref: '#/components/schemas/compareBooleanOperator'
+            - $ref: '#/components/schemas/compareDateOperator'
       required:
         - leftOperand
         - rightOperand
@@ -2536,12 +2570,69 @@ components:
           varOperand: variableOperand
           valOperand: valueOperand
 
-    basicOperand:
+    StringOperand:
       type: object
-      description: Basic operand, used for polymorphism
+      description: Basic string operand, can provide working compare types for this type
       properties:
         dataType:
           type: string
+          enum: ["integer", "number", "date", "boolean", "string"]
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    IntegerOperand:
+      type: object
+      description: Basic integer operand, can provide working compare types for this type
+      properties:
+        dataType:
+          type: string
+          enum: ["integer", "number",  "boolean" ]
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    NumberOperand:
+      type: object
+      description: Basic number operand, can provide working compare types for this type
+      properties:
+        dataType:
+          type: string
+          enum: ["integer", "number", "string"]
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    BooleanOperand:
+      type: object
+      description: Basic boolean operand, can provide working compare types for this type
+      properties:
+        dataType:
+          type: string
+          enum: ["integer", "boolean", "string"]
+        operandType:
+          type: string
+          enum: ["variableOperand", "valueOperand"]
+      required:
+        - dataType
+        - operandType
+
+    DateOperand:
+      type: object
+      description: Basic date operand, can provide working compare types for this type
+      properties:
+        dataType:
+          type: string
+          enum: ["date", "string"]
         operandType:
           type: string
           enum: ["variableOperand", "valueOperand"]
@@ -2550,32 +2641,66 @@ components:
         - operandType
 
     variableOperand:
-      description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment")
+      description: Operand which uses variable to compare in conditions. You can use for accessing object variable members (i.e. "applicationData", "applicationData.comment"), required one Operand
       allOf:
-        - $ref: '#/components/schemas/basicOperand'
         - type: object
           properties:
             variableRef:
               type: string
           required:
             - variableRef
+        - oneOf:
+            - $ref: '#/components/schemas/StringOperand'
+            - $ref: '#/components/schemas/IntegerOperand'
+            - $ref: '#/components/schemas/NumberOperand'
+            - $ref: '#/components/schemas/BooleanOperand'
+            - $ref: '#/components/schemas/DateOperand'
 
     valueOperand:
-      description: Operand which uses simple value to compare in conditions
+      description: Operand which uses simple value to compare in conditions, required one Operand
       allOf:
-        - $ref: '#/components/schemas/basicOperand'
         - type: object
           properties:
             value:
               type: string
           required:
             - value
+        - oneOf:
+            - $ref: '#/components/schemas/StringOperand'
+            - $ref: '#/components/schemas/IntegerOperand'
+            - $ref: '#/components/schemas/NumberOperand'
+            - $ref: '#/components/schemas/BooleanOperand'
+            - $ref: '#/components/schemas/DateOperand'
 
-    compareOperator:
+    compareStringOperator:
       type: string
-      description: Used operator to compare operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Содержит", "Не Содержит" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Contain", "NotContain" ]
+      description: Used operator to compare string operands
+      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "Contain", "NotContain" ]
+
+    compareIntegerOperator:
+      type: string
+      description: Used operator to compare integer operands
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual" ]
+
+    compareNumberOperator:
+      type: string
+      description: Used operator to compare number operands
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual" ]
+
+    compareBooleanOperator:
+      type: string
+      description: Used operator to compare bool operands
+      enum: [ "Равно", "Не равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual" ]
+
+    compareDateOperator:
+      type: string
+      description: Used operator to compare date operands
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual" ]
 
     ConditionParams:
       type: object
@@ -2764,7 +2889,9 @@ components:
           type: integer
         end:
           type: integer
-
+      required:
+        - start
+        - end
     httpResponse:
       type: object
       properties:

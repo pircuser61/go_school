@@ -157,7 +157,19 @@ func Test_createGoApproverBlock(t *testing.T) {
 		title   = "title"
 		login   = "login1"
 	)
-	next := map[string][]string{approvedSocket: []string{"next_0"}, rejectedSocket: []string{"next_1"}}
+
+	next := []entity.Socket{
+		{
+			Id:           DefaultSocketID,
+			Title:        script.DefaultSocketTitle,
+			NextBlockIds: []string{"next_0"},
+		},
+		{
+			Id:           rejectedSocketID,
+			Title:        script.RejectedSocketTitle,
+			NextBlockIds: []string{"next_1"},
+		},
+	}
 
 	type args struct {
 		name string
@@ -179,7 +191,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Input:     nil,
 					Output:    nil,
 					Params:    nil,
-					Next:      next,
+					Sockets:   next,
 				},
 			},
 			want:    nil,
@@ -195,7 +207,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Input:     nil,
 					Output:    nil,
 					Params:    []byte("{}"),
-					Next:      next,
+					Sockets:   next,
 				},
 			},
 			want:    nil,
@@ -231,7 +243,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 
 						return r
 					}(),
-					Next: next,
+					Sockets: next,
 				},
 			},
 			want: &GoApproverBlock{
@@ -259,7 +271,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 						login: {},
 					},
 				},
-				Nexts: next,
+				Sockets: entity.ConvertSocket(next),
 			},
 			wantErr: false,
 		},
@@ -284,7 +296,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 		Title    string
 		Input    map[string]string
 		Output   map[string]string
-		NextStep map[string][]string
+		NextStep []script.Socket
 		Pipeline *ExecutablePipeline
 	}
 	type args struct {
@@ -765,7 +777,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				Title:    tt.fields.Title,
 				Input:    tt.fields.Input,
 				Output:   tt.fields.Output,
-				Nexts:    tt.fields.NextStep,
+				Sockets:  tt.fields.NextStep,
 				State:    &ApproverData{},
 				Pipeline: tt.fields.Pipeline,
 			}

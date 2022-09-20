@@ -11,11 +11,11 @@ import (
 )
 
 type GoStartBlock struct {
-	Name   string
-	Title  string
-	Input  map[string]string
-	Output map[string]string
-	Nexts  map[string][]string
+	Name    string
+	Title   string
+	Input   map[string]string
+	Output  map[string]string
+	Sockets []script.Socket
 }
 
 func (gb *GoStartBlock) GetStatus() Status {
@@ -69,7 +69,7 @@ func (gb *GoStartBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.
 }
 
 func (gb *GoStartBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := gb.Nexts[DefaultSocket]
+	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
@@ -95,17 +95,17 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 		Title:     BlockGoStartTitle,
 		Inputs:    nil,
 		Outputs:   nil,
-		Sockets:   []string{DefaultSocket},
+		Sockets:   []script.Socket{script.DefaultSocket},
 	}
 }
 
 func createGoStartBlock(name string, ef *entity.EriusFunc) *GoStartBlock {
 	b := &GoStartBlock{
-		Name:   name,
-		Title:  ef.Title,
-		Input:  map[string]string{},
-		Output: map[string]string{},
-		Nexts:  ef.Next,
+		Name:    name,
+		Title:   ef.Title,
+		Input:   map[string]string{},
+		Output:  map[string]string{},
+		Sockets: entity.ConvertSocket(ef.Sockets),
 	}
 
 	for _, v := range ef.Input {

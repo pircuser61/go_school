@@ -19,6 +19,10 @@ type Notification struct {
 	To       []string
 }
 
+type ExecutorNotifTemplate struct {
+	Id, Name, SdUrl, ExecutorName, Initiator, Description string
+}
+
 func NewApprovementSLATemplate(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время согласования", id, name),
@@ -143,6 +147,40 @@ func NewAnswerSendToEditTemplate(id, name, sdUrl string) Template {
 			Id:   id,
 			Name: name,
 			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
+func NewExecutionTakenInWork(dto *ExecutorNotifTemplate) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка №%s <b>взята в работу</b> пользователем %s", dto.Id, dto.ExecutorName),
+		Text: `<p>Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b></br>
+ <b>Инициатор: </b>{{.Initiator}}</br>
+ <b>Ссылка на заявку: </b><a href={{.Link}}>ссылке</a></br>
+ ------------ Описание ------------  </br>
+<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>
+
+<style>
+    p {
+        font-family: : Arial;
+        font-size: 11px;
+        margin-bottom: -20px;
+    }
+</style>`,
+		Variables: struct {
+			Id          string `json:"id"`
+			Name        string `json:"name"`
+			Executor    string `json:"executor"`
+			Link        string `json:"link"`
+			Initiator   string `json:"initiator"`
+			Description string `json:"description"`
+		}{
+			Id:          dto.Id,
+			Name:        dto.Name,
+			Executor:    dto.ExecutorName,
+			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.Id),
+			Initiator:   dto.Initiator,
+			Description: dto.Description,
 		},
 	}
 }

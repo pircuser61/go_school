@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
 	"github.com/google/uuid"
 
@@ -25,7 +26,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 		Title    string
 		Input    map[string]string
 		Output   map[string]string
-		NextStep map[string][]string
+		NextStep []script.Socket
 		State    *ExecutionData
 		Pipeline *ExecutablePipeline
 	}
@@ -47,7 +48,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: map[string][]string{},
+				NextStep: []script.Socket{},
 			},
 			args: args{
 				ctx:    context.Background(),
@@ -63,7 +64,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: map[string][]string{},
+				NextStep: []script.Socket{},
 			},
 			args: args{
 				ctx: context.Background(),
@@ -85,7 +86,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
-				NextStep: map[string][]string{},
+				NextStep: []script.Socket{},
 				Pipeline: &ExecutablePipeline{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
@@ -117,11 +118,11 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoExecutionBlock{
-				Name:    tt.fields.Name,
-				Title:   tt.fields.Title,
-				Input:   tt.fields.Input,
-				Output:  tt.fields.Output,
-				Nexts:   tt.fields.NextStep,
+				Name:     tt.fields.Name,
+				Title:    tt.fields.Title,
+				Input:    tt.fields.Input,
+				Output:   tt.fields.Output,
+				Sockets:  tt.fields.NextStep,
 				Pipeline: tt.fields.Pipeline,
 			}
 			if err := gb.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {

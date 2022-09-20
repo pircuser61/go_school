@@ -17,7 +17,7 @@ func TestIF_Next(t *testing.T) {
 		FunctionName  string
 		FunctionInput map[string]string
 		Result        bool
-		Nexts         map[string][]string
+		Nexts         []script.Socket
 		State         *ConditionsData
 	}
 	type args struct {
@@ -33,7 +33,7 @@ func TestIF_Next(t *testing.T) {
 		{
 			name: "default socket",
 			fields: fields{
-				Nexts: map[string][]string{DefaultSocket: []string{""}},
+				Nexts: []script.Socket{script.DefaultSocket},
 				State: &ConditionsData{},
 			},
 			args: args{
@@ -44,12 +44,12 @@ func TestIF_Next(t *testing.T) {
 				}(),
 			},
 			ok:   true,
-			want: []string{""},
+			want: []string(nil),
 		},
 		{
 			name: "test chosen group",
 			fields: fields{
-				Nexts: map[string][]string{"test-group-1": []string{""}},
+				Nexts: []script.Socket{script.NewSocket("test-group-1", []string{"test-next"})},
 				State: &ConditionsData{ChosenGroupID: "test-group-1"},
 			},
 			args: args{
@@ -60,7 +60,7 @@ func TestIF_Next(t *testing.T) {
 				}(),
 			},
 			ok:   true,
-			want: []string{""},
+			want: []string{"test-next"},
 		},
 	}
 	for _, tt := range tests {
@@ -70,7 +70,7 @@ func TestIF_Next(t *testing.T) {
 				FunctionName:  tt.fields.FunctionName,
 				FunctionInput: tt.fields.FunctionInput,
 				Result:        tt.fields.Result,
-				Nexts:         tt.fields.Nexts,
+				Sockets:       tt.fields.Nexts,
 				State:         tt.fields.State,
 			}
 			got, _ := e.Next(tt.args.runCtx)

@@ -36,12 +36,12 @@ type SdApplicationData struct {
 }
 
 type GoSdApplicationBlock struct {
-	Name   string
-	Title  string
-	Input  map[string]string
-	Output map[string]string
-	Nexts  map[string][]string
-	State  *ApplicationData
+	Name    string
+	Title   string
+	Input   map[string]string
+	Output  map[string]string
+	Sockets []script.Socket
+	State   *ApplicationData
 }
 
 func (gb *GoSdApplicationBlock) GetStatus() Status {
@@ -110,7 +110,7 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx
 }
 
 func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := gb.Nexts[DefaultSocket]
+	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
@@ -158,7 +158,7 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 				BlueprintID: "",
 			},
 		},
-		Sockets: []string{DefaultSocket},
+		Sockets: []script.Socket{script.DefaultSocket},
 	}
 }
 
@@ -167,11 +167,11 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc) (*GoSdApplica
 	log.WithField("params", ef.Params).Info("sd_application parameters")
 
 	b := &GoSdApplicationBlock{
-		Name:   name,
-		Title:  ef.Title,
-		Input:  map[string]string{},
-		Output: map[string]string{},
-		Nexts:  ef.Next,
+		Name:    name,
+		Title:   ef.Title,
+		Input:   map[string]string{},
+		Output:  map[string]string{},
+		Sockets: entity.ConvertSocket(ef.Sockets),
 	}
 
 	for _, v := range ef.Input {

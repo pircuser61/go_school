@@ -5,13 +5,6 @@ const (
 	defaultOffset = 0
 )
 
-func ptrToInt(v *int) int {
-	if v != nil {
-		return *v
-	}
-	return 0
-}
-
 func parseLimitOffsetWithDefault(limit, offset *int) (lim, off int) {
 	lim, off = defaultLimit, defaultOffset
 	if limit != nil {

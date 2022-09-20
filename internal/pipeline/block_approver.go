@@ -31,12 +31,12 @@ const (
 )
 
 type GoApproverBlock struct {
-	Name   string
-	Title  string
-	Input  map[string]string
-	Output map[string]string
-	Nexts  map[string][]string
-	State  *ApproverData
+	Name    string
+	Title   string
+	Input   map[string]string
+	Output  map[string]string
+	Sockets []script.Socket
+	State   *ApproverData
 
 	Pipeline *ExecutablePipeline
 }
@@ -461,20 +461,20 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviou
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	key := rejectedSocket
+	key := rejectedSocketID
 	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
-		key = approvedSocket
+		key = approvedSocketID
 	}
 
 	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {
-		key = editAppSocket
+		key = editAppSocketID
 	}
 
 	if gb.State != nil && gb.State.Decision == nil && len(gb.State.AddInfo) != 0 {
-		key = requestAddInfoSocket
+		key = requestAddInfoSocketID
 	}
 
-	nexts, ok := gb.Nexts[key]
+	nexts, ok := script.GetNexts(gb.Sockets, key)
 	if !ok {
 		return nil, false
 	}
@@ -483,11 +483,16 @@ func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 }
 
 func (gb *GoApproverBlock) Skipped(_ *store.VariableStore) []string {
-	key := approvedSocket
+	key := approvedSocketID
 	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
-		key = rejectedSocket
+		key = rejectedSocketID
 	}
-	return gb.Nexts[key]
+	var nexts, ok = script.GetNexts(gb.Sockets, key)
+	if !ok {
+		return nil
+	}
+
+	return nexts
 }
 
 func (gb *GoApproverBlock) GetState() interface{} {
@@ -529,6 +534,11 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 				ApproversGroupName: "",
 			},
 		},
-		Sockets: []string{approvedSocket, rejectedSocket, editAppSocket, requestAddInfoSocket},
+		Sockets: []script.Socket{
+			script.ApprovedSocket,
+			script.RejectedSocket,
+			script.EditAppSocket,
+			script.RequestAddInfoSocket,
+		},
 	}
 }
