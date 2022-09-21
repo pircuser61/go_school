@@ -20,6 +20,4 @@ CREATE TABLE function_store.functions
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS function_store.functions;
-
-DROP SCHEMA if EXISTS function_store;
 -- +goose StatementEnd

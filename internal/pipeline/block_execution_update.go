@@ -274,13 +274,6 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 		dto.byLogin: {},
 	}
 
-	gb.State.IsTakenInWork = true
-	workHours := getWorkWorkHoursBetweenDates(
-		dto.step.Time,
-		time.Now(),
-	)
-	gb.State.IncreaseSLA(workHours)
-
 	dto.step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
 		return err
