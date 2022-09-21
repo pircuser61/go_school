@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE INDEX CONCURRENTLY IF NOT EXISTS
+CREATE INDEX IF NOT EXISTS
     count_index
     ON pipeliner.variable_storage(work_id)
     WHERE
