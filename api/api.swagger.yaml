@@ -171,44 +171,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /modules/{moduleName}:
-    post:
-      tags:
-        - modules
-      summary: Run Module By Name
-      description: Запустить блок
-      operationId: module-run
-      parameters:
-        - name: moduleName
-          in: path
-          description: module name
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/UsageResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /modules/{moduleName}/usage:
     get:
       tags:
@@ -2188,6 +2150,7 @@ components:
             - $ref: '#/components/schemas/ExecutionUpdateParams'
             - $ref: '#/components/schemas/ExecutorChangeParams'
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
+            - $ref: '#/components/schemas/ExecutableFunctionParams'
       required:
         - action
         - parameters
@@ -2273,6 +2236,20 @@ components:
         - comment
         - attachments
         - executorLogin
+
+    ExecutableFunctionParams:
+      type: object
+      description: Chosen function to be executed
+      properties:
+        name:
+          type: string
+          description: Function name
+        version:
+          type: string
+          description: Used function version
+      required:
+        - name
+        - version
 
     RequestExecutionInfoType:
       type: string
@@ -2838,8 +2815,7 @@ components:
       type: string
       enum: [ "Один из согласующих", "Все согласующие" ]
       x-enum-varnames: [ "AnyOf", "AllOf" ]
-      description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of'
-      will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
+      description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 
     ApproveAutoAction:
       type: string

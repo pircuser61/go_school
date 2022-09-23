@@ -42,4 +42,7 @@ const (
 
 	BlockGoNotificationID    = "notification"
 	BlockGoNotificationTitle = "notification"
+
+	BlockExecutableFunctionID    = "executable_function"
+	BlockExecutableFunctionTitle = "executable_function"
 )
