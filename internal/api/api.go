@@ -19,11 +19,11 @@ const (
 	ApproveAutoActionReject ApproveAutoAction = "reject"
 )
 
-// Defines values for ApproverParamsApprovementRule.
+// Defines values for ApprovementRule.
 const (
-	ApproverParamsApprovementRuleВсеСогласующие ApproverParamsApprovementRule = "Все согласующие"
+	ApprovementRuleВсеСогласующие ApprovementRule = "Все согласующие"
 
-	ApproverParamsApprovementRuleОдинИзСогласующих ApproverParamsApprovementRule = "Один из согласующих"
+	ApprovementRuleОдинИзСогласующих ApprovementRule = "Один из согласующих"
 )
 
 // Defines values for ApproverType.
@@ -300,10 +300,13 @@ type AllUsageResponse_Pipelines struct {
 // Action to do automatically in case SLA is breached
 type ApproveAutoAction string
 
+// Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
+type ApprovementRule string
+
 // Approver params
 type ApproverParams struct {
 	// Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
-	ApprovementRule *ApproverParamsApprovementRule `json:"approvementRule,omitempty"`
+	ApprovementRule *ApprovementRule `json:"approvementRule,omitempty"`
 
 	// Approver value (depends on type)
 	Approver string `json:"approver"`
@@ -331,9 +334,6 @@ type ApproverParams struct {
 	//   * FromSchema - Selected by initiator
 	Type ApproverType `json:"type"`
 }
-
-// Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
-type ApproverParamsApprovementRule string
 
 // Approver type:
 //   * user - Single user
@@ -589,6 +589,15 @@ type EriusVersionInfo struct {
 	// How many times is the version used as a subprocess
 	UsageCount int    `json:"usage_count"`
 	VersionId  string `json:"version_id"`
+}
+
+// Chosen function to be executed
+type ExecutableFunctionParams struct {
+	// Function name
+	Name string `json:"name"`
+
+	// Used function version
+	Version string `json:"version"`
 }
 
 // Execution params
@@ -1248,9 +1257,6 @@ type ServerInterface interface {
 	// Get list of modules usage
 	// (GET /modules/usage)
 	AllModulesUsage(w http.ResponseWriter, r *http.Request)
-	// Run Module By Name
-	// (POST /modules/{moduleName})
-	ModuleRun(w http.ResponseWriter, r *http.Request, moduleName string)
 	// Usage of module in pipelines
 	// (GET /modules/{moduleName}/usage)
 	ModuleUsage(w http.ResponseWriter, r *http.Request, moduleName string)
@@ -1432,32 +1438,6 @@ func (siw *ServerInterfaceWrapper) AllModulesUsage(w http.ResponseWriter, r *htt
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AllModulesUsage(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// ModuleRun operation middleware
-func (siw *ServerInterfaceWrapper) ModuleRun(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "moduleName" -------------
-	var moduleName string
-
-	err = runtime.BindStyledParameter("simple", false, "moduleName", chi.URLParam(r, "moduleName"), &moduleName)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "moduleName", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ModuleRun(w, r, moduleName)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2409,9 +2389,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules/usage", wrapper.AllModulesUsage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/modules/{moduleName}", wrapper.ModuleRun)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules/{moduleName}/usage", wrapper.ModuleUsage)
