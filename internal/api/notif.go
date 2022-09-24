@@ -74,6 +74,9 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 		if ok {
 			recName = fullname
 		} else {
+			if item.Recipient == "" {
+				continue
+			}
 			var user people.SSOUser
 			user, err = ae.People.GetUser(ctxSh, item.Recipient)
 			if err != nil {
