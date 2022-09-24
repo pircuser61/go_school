@@ -146,3 +146,10 @@ func (t *TaskUpdate) Validate() error {
 
 	return nil
 }
+
+type NeededNotif struct {
+	Initiator   string
+	Recipient   string
+	WorkNum     string
+	Description string
+}

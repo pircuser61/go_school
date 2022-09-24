@@ -20,6 +20,7 @@ type PipelineStorager interface {
 }
 
 type TaskStorager interface {
+	GetNotifData(ctx c.Context) ([]e.NeededNotif, error)
 	GetTasks(ctx c.Context, filters e.TaskFilter) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, userName string) (*e.CountTasks, error)
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
