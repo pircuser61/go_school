@@ -10,6 +10,7 @@ import (
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"go.opencensus.io/trace"
 )
 
@@ -44,18 +45,18 @@ func (ae *APIEnv) makeAndSendNotif() error {
 	}
 
 	f := excelize.NewFile()
-	sheetName := "Sheet1"
-	streamingWriter, err := f.NewStreamWriter(sheetName)
+	streamingWriter, err := f.NewStreamWriter("Sheet1")
 	records := [][]interface{}{{"Номер заявки", "Инициатор", "Получатель", "Поля"}}
-	people := make(map[string]string)
+	peopleMap := make(map[string]string)
 
 	for _, item := range data {
 		initName, recName := "", ""
-		fullname, ok := people[item.Initiator]
+		fullname, ok := peopleMap[item.Initiator]
 		if ok {
 			initName = fullname
 		} else {
-			user, err := ae.People.GetUser(context.Background(), item.Initiator)
+			var user people.SSOUser
+			user, err = ae.People.GetUser(context.Background(), item.Initiator)
 			if err != nil {
 				return err
 			}
@@ -65,11 +66,12 @@ func (ae *APIEnv) makeAndSendNotif() error {
 			}
 			initName = typed.Attributes.FullName
 		}
-		fullname, ok = people[item.Recipient]
+		fullname, ok = peopleMap[item.Recipient]
 		if ok {
 			recName = fullname
 		} else {
-			user, err := ae.People.GetUser(context.Background(), item.Recipient)
+			var user people.SSOUser
+			user, err = ae.People.GetUser(context.Background(), item.Recipient)
 			if err != nil {
 				return err
 			}

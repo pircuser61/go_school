@@ -68,7 +68,7 @@ func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
 		})
 
 	go func() {
-		param.APIEnv.makeAndSendNotif()
+		param.APIEnv.MakeAndSendNotifSheduler(ctx)
 	}()
 
 	return &http.Server{
