@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	c "context"
 	"time"
 
@@ -21,6 +22,7 @@ type PipelineStorager interface {
 
 type TaskStorager interface {
 	GetNotifData(ctx c.Context) ([]e.NeededNotif, error)
+	UpdateCacheTime(ctx context.Context) error
 	GetTasks(ctx c.Context, filters e.TaskFilter) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, userName string) (*e.CountTasks, error)
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)

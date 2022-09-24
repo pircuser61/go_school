@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	c "context"
 	"database/sql"
 	"encoding/json"
@@ -139,13 +140,14 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 
 func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {
 	q := `select w.work_number,
-       w.author,
-       vs.content::json -> 'State' -> 'servicedesk_application_0' -> 'application_body' -> 'recipient' ->> 'username',
-       vs.content::json -> 'State' -> 'servicedesk_application_0' ->> 'description'
-from pipeliner.variable_storage vs
-         join pipeliner.works w on vs.work_id = w.id
-where work_id in (select id from pipeliner.works where version_id = '12ba4306-dec4-4623-9d2d-666326948e0a')
-  and step_type = 'servicedesk_application'`
+       		w.author,
+       		vs.content::json -> 'State' -> 'servicedesk_application_0' -> 'application_body' -> 'recipient' ->> 'username',
+       		vs.content::json -> 'State' -> 'servicedesk_application_0' ->> 'description'
+		from pipeliner.variable_storage vs
+        	join pipeliner.works w on vs.work_id = w.id
+		where work_id in (select id from pipeliner.works where version_id = '19a80f2c-36bf-4ae0-8be7-49ed9fd04cc5')
+			and step_type = 'servicedesk_application' 
+			and w.started_at > (select update_time from pipeliner.cache_time_update)`
 	rows, err := db.Pool.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -159,6 +161,11 @@ where work_id in (select id from pipeliner.works where version_id = '12ba4306-de
 		res = append(res, item)
 	}
 	return res, nil
+}
+
+func (db *PGCon) UpdateCacheTime(ctx context.Context) error {
+	_, err := db.Pool.Exec(ctx, "update pipeliner.cache_time_update set update_time = now()")
+	return err
 }
 
 //nolint:gocritic //filters
