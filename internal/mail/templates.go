@@ -147,6 +147,8 @@ func NewAnswerSendToEditTemplate(id, name, sdUrl string) Template {
 	}
 }
 
-func NewEmptyTemplate() Template {
-	return Template{}
+func NewMakeAndSendNotifTemplate() Template {
+	return Template{
+		Subject: "Предоставление информации о высшем образовании и воинской обязанности",
+	}
 }

@@ -1087,20 +1087,6 @@ func (_m *MockedDatabase) SwitchRejected(ctx context.Context, versionID uuid.UUI
 	return r0
 }
 
-// UpdateCacheTime provides a mock function with given fields: ctx
-func (_m *MockedDatabase) UpdateCacheTime(ctx context.Context) error {
-	ret := _m.Called(ctx)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
-		r0 = rf(ctx)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // UpdateDraft provides a mock function with given fields: ctx, p, pipelineData
 func (_m *MockedDatabase) UpdateDraft(ctx context.Context, p *entity.EriusScenario, pipelineData []byte) error {
 	ret := _m.Called(ctx, p, pipelineData)

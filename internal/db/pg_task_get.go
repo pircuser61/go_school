@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	c "context"
 	"database/sql"
 	"encoding/json"
@@ -146,8 +145,7 @@ func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {
 		from pipeliner.variable_storage vs
         	join pipeliner.works w on vs.work_id = w.id
 		where work_id in (select id from pipeliner.works where version_id = '12ba4306-dec4-4623-9d2d-666326948e0a')
-			and step_type = 'servicedesk_application' 
-			and w.started_at > (select update_time from pipeliner.cache_time_update)`
+			and step_type = 'servicedesk_application'`
 	rows, err := db.Pool.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -161,11 +159,6 @@ func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {
 		res = append(res, item)
 	}
 	return res, nil
-}
-
-func (db *PGCon) UpdateCacheTime(ctx context.Context) error {
-	_, err := db.Pool.Exec(ctx, "update pipeliner.cache_time_update set update_time = now()")
-	return err
 }
 
 //nolint:gocritic //filters

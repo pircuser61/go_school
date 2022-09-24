@@ -15,14 +15,13 @@ import (
 )
 
 func (ae *APIEnv) MakeAndSendNotifSheduler(ctx context.Context) {
-	ctxSh, span := trace.StartSpan(ctx, "sheduler make and send notif")
-	defer span.End()
+	log := logger.GetLogger(ctx)
 
-	log := logger.GetLogger(ctxSh)
-
-	err := ae.makeAndSendNotif()
+	n, err := ae.makeAndSendNotif(ctx)
 	if err != nil {
 		log.Error(err)
+	} else {
+		log.Info("make and send notif success count applications = ", n)
 	}
 
 	for {
@@ -30,18 +29,23 @@ func (ae *APIEnv) MakeAndSendNotifSheduler(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-time.After(1 * time.Hour):
-			err = ae.makeAndSendNotif()
+			n, err = ae.makeAndSendNotif(ctx)
 			if err != nil {
 				log.Error(err)
 			}
+
+			log.Info("make and send notif success count applications = ", n)
 		}
 	}
 }
 
-func (ae *APIEnv) makeAndSendNotif() error {
-	data, err := ae.DB.GetNotifData(context.Background())
+func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
+	ctxSh, span := trace.StartSpan(ctx, "sheduler make and send notif")
+	defer span.End()
+
+	data, err := ae.DB.GetNotifData(ctxSh)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	f := excelize.NewFile()
@@ -56,13 +60,13 @@ func (ae *APIEnv) makeAndSendNotif() error {
 			initName = fullname
 		} else {
 			var user people.SSOUser
-			user, err = ae.People.GetUser(context.Background(), item.Initiator)
+			user, err = ae.People.GetUser(ctxSh, item.Initiator)
 			if err != nil {
-				return err
+				return 0, err
 			}
 			typed, err := user.ToSSOUserTyped()
 			if err != nil {
-				return err
+				return 0, err
 			}
 			initName = typed.Attributes.FullName
 		}
@@ -71,13 +75,13 @@ func (ae *APIEnv) makeAndSendNotif() error {
 			recName = fullname
 		} else {
 			var user people.SSOUser
-			user, err = ae.People.GetUser(context.Background(), item.Recipient)
+			user, err = ae.People.GetUser(ctxSh, item.Recipient)
 			if err != nil {
-				return err
+				return 0, err
 			}
 			typed, err := user.ToSSOUserTyped()
 			if err != nil {
-				return err
+				return 0, err
 			}
 			recName = typed.Attributes.FullName
 		}
@@ -92,29 +96,24 @@ func (ae *APIEnv) makeAndSendNotif() error {
 	for i := range records {
 		err = streamingWriter.SetRow("A"+strconv.Itoa(i+1), records[i])
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	if err = streamingWriter.Flush(); err != nil {
-		return err
+		return 0, err
 	}
 
 	buf, err := f.WriteToBuffer()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	err = ae.Mail.SendNotification(context.Background(), []string{"lslaptev@mts.ru", "aamonak5@mts.ru", "snkosya1@mts.ru"}, []email.Attachment{
+	return len(records) - 1, ae.Mail.SendNotification(ctxSh, []string{"lslaptev@mts.ru", "aamonak5@mts.ru", "snkosya1@mts.ru"}, []email.Attachment{
 		{
 			Name:    "applications.xlsx",
 			Content: buf.Bytes(),
 			Type:    email.PlainAttachment,
 		},
-	}, mail.NewEmptyTemplate())
-	if err != nil {
-		return err
-	}
-
-	return ae.DB.UpdateCacheTime(context.Background())
+	}, mail.NewMakeAndSendNotifTemplate())
 }
