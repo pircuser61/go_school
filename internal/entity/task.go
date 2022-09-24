@@ -152,4 +152,28 @@ type NeededNotif struct {
 	Recipient   string
 	WorkNum     string
 	Description string
+	DoubleKey   string
+}
+
+func CheckDoubleNeededNotify(notif []NeededNotif) []NeededNotif {
+	resMap := make(map[string][]NeededNotif, 0)
+
+	for i := range notif {
+		if _, ok := resMap[notif[i].Initiator]; !ok {
+			resMap[notif[i].Initiator] = []NeededNotif{notif[i]}
+			continue
+		}
+		for _, v := range resMap[notif[i].Initiator] {
+			if notif[i].DoubleKey != v.DoubleKey {
+				resMap[notif[i].Initiator] = append(resMap[notif[i].Initiator], notif[i])
+			}
+		}
+	}
+
+	res := make([]NeededNotif, 0)
+	for k := range resMap {
+		res = append(res, resMap[k]...)
+	}
+
+	return res
 }

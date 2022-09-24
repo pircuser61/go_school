@@ -9,6 +9,7 @@ import (
 	"github.com/xuri/excelize/v2"
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"go.opencensus.io/trace"
@@ -43,10 +44,11 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 	ctxSh, span := trace.StartSpan(ctx, "sheduler make and send notif")
 	defer span.End()
 
-	data, err := ae.DB.GetNotifData(ctxSh)
+	dataWithDouble, err := ae.DB.GetNotifData(ctxSh)
 	if err != nil {
 		return 0, err
 	}
+	data := entity.CheckDoubleNeededNotify(dataWithDouble)
 
 	f := excelize.NewFile()
 	streamingWriter, err := f.NewStreamWriter("Sheet1")
