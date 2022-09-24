@@ -2,21 +2,54 @@ package api
 
 import (
 	"context"
-	"encoding/csv"
 	"fmt"
-	"os"
+	"strconv"
+	"time"
+
+	"github.com/xuri/excelize/v2"
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"go.opencensus.io/trace"
 )
 
-func  (ae *APIEnv)  makeAndSandNotif() error {
+func (ae *APIEnv) MakeAndSendNotifSheduler(ctx context.Context) {
+	ctxSh, span := trace.StartSpan(ctx, "sheduler make and send notif")
+	defer span.End()
+
+	log := logger.GetLogger(ctxSh)
+
+	err := ae.makeAndSendNotif()
+	if err != nil {
+		log.Error(err)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(1 * time.Hour):
+			err = ae.makeAndSendNotif()
+			if err != nil {
+				log.Error(err)
+			}
+		}
+	}
+}
+
+func (ae *APIEnv) makeAndSendNotif() error {
 	data, err := ae.DB.GetNotifData(context.Background())
 	if err != nil {
 		return err
 	}
+
+	f := excelize.NewFile()
+	sheetName := "Sheet1"
+	streamingWriter, err := f.NewStreamWriter(sheetName)
+	records := [][]interface{}{{"Номер заявки", "Инициатор", "Получатель", "Поля"}}
 	people := make(map[string]string)
-	records := [][]string{
-		{"Номер заявки", "Инициатор", "Получатель", "Поля"},
-	}
-	for _, item := range data  {
+
+	for _, item := range data {
 		initName, recName := "", ""
 		fullname, ok := people[item.Initiator]
 		if ok {
@@ -46,26 +79,40 @@ func  (ae *APIEnv)  makeAndSandNotif() error {
 			}
 			recName = typed.Attributes.FullName
 		}
-		records = append(records, []string{
+		records = append(records, []interface{}{
 			item.WorkNum,
 			fmt.Sprintf("%s (%s)", item.Initiator, initName),
 			fmt.Sprintf("%s (%s)", item.Recipient, recName),
 			item.Description,
 		})
 	}
-	f, err := os.Create("temp.csv")
-	defer f.Close()
 
+	for i := range records {
+		err = streamingWriter.SetRow("A"+strconv.Itoa(i+1), records[i])
+		if err != nil {
+			return err
+		}
+	}
+
+	if err = streamingWriter.Flush(); err != nil {
+		return err
+	}
+
+	buf, err := f.WriteToBuffer()
 	if err != nil {
 		return err
 	}
 
-	w := csv.NewWriter(f)
-	err = w.WriteAll(records) // calls Flush internally
-
+	err = ae.Mail.SendNotification(context.Background(), []string{"lslaptev@mts.ru", "aamonak5@mts.ru", "snkosya1@mts.ru"}, []email.Attachment{
+		{
+			Name:    "applications.xlsx",
+			Content: buf.Bytes(),
+			Type:    email.PlainAttachment,
+		},
+	}, mail.NewEmptyTemplate())
 	if err != nil {
 		return err
 	}
 
-	ae.Mail.SendNotification(context.Background(), []string{"snkosya1@mts.ru"}, atts, )
+	return ae.DB.UpdateCacheTime(context.Background())
 }

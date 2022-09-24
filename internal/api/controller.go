@@ -67,6 +67,10 @@ func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
 			HandlerFromMux(param.APIEnv, r)
 		})
 
+	go func() {
+		param.APIEnv.makeAndSendNotif()
+	}()
+
 	return &http.Server{
 		Addr:    param.ServerAddr,
 		Handler: mux,

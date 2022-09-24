@@ -145,7 +145,7 @@ func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {
        		vs.content::json -> 'State' -> 'servicedesk_application_0' ->> 'description'
 		from pipeliner.variable_storage vs
         	join pipeliner.works w on vs.work_id = w.id
-		where work_id in (select id from pipeliner.works where version_id = '19a80f2c-36bf-4ae0-8be7-49ed9fd04cc5')
+		where work_id in (select id from pipeliner.works where version_id = '12ba4306-dec4-4623-9d2d-666326948e0a')
 			and step_type = 'servicedesk_application' 
 			and w.started_at > (select update_time from pipeliner.cache_time_update)`
 	rows, err := db.Pool.Query(ctx, q)

@@ -146,3 +146,7 @@ func NewAnswerSendToEditTemplate(id, name, sdUrl string) Template {
 		},
 	}
 }
+
+func NewEmptyTemplate() Template {
+	return Template{}
+}

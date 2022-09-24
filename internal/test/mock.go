@@ -966,6 +966,10 @@ func (m *MockDB) GetNotifData(ctx context.Context) ([]entity.NeededNotif, error)
 	return nil, nil
 }
 
+func (m *MockDB) UpdateCacheTime(ctx context.Context) error {
+	return nil
+}
+
 //nolint:gocritic //filters
 func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
 	return nil, errNotImplemented
