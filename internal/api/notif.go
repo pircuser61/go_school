@@ -3,13 +3,13 @@ package api
 import (
 	"context"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"strconv"
 	"time"
 
 	"github.com/xuri/excelize/v2"
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"go.opencensus.io/trace"
@@ -44,16 +44,26 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 	ctxSh, span := trace.StartSpan(ctx, "sheduler make and send notif")
 	defer span.End()
 
-	dataWithDouble, err := ae.DB.GetNotifData(ctxSh)
+	data, err := ae.DB.GetNotifData(ctxSh)
 	if err != nil {
 		return 0, err
 	}
-	data := entity.CheckDoubleNeededNotify(dataWithDouble)
 
 	f := excelize.NewFile()
 	streamingWriter, err := f.NewStreamWriter("Sheet1")
-	records := [][]interface{}{{"Номер заявки", "Инициатор", "Получатель", "Поля"}}
+	if err != nil {
+		return 0, err
+	}
+	records := [][]interface{}{{"Номер заявки", "Инициатор", "Получатель", "Поля", "Статус"}}
 	peopleMap := make(map[string]string)
+
+	statusMapping := map[pipeline.TaskHumanStatus]string{
+		pipeline.StatusDone:              "Готово",
+		pipeline.StatusExecutionRejected: "Отклонено",
+		pipeline.StatusNew:               "Новый",
+		pipeline.StatusWait:              "Ожидание",
+		pipeline.StatusExecution:         "Обработка",
+	}
 
 	for _, item := range data {
 		initName, recName := "", ""
@@ -95,6 +105,7 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 			fmt.Sprintf("%s (%s)", item.Initiator, initName),
 			fmt.Sprintf("%s (%s)", item.Recipient, recName),
 			item.Description,
+			statusMapping[item.Status],
 		})
 	}
 

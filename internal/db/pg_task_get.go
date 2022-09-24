@@ -138,23 +138,28 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 }
 
 func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {
-	q := `select w.work_number,
-       		w.author,
-       		vs.content::json -> 'State' -> 'servicedesk_application_0' -> 'application_body' -> 'recipient' ->> 'username',
-       		vs.content::json -> 'State' -> 'servicedesk_application_0' ->> 'description',
-			coalesce(content::json -> 'State' -> 'servicedesk_application_0', '{}')::text
-		from pipeliner.variable_storage vs
-        	join pipeliner.works w on vs.work_id = w.id
-		where work_id in (select id from pipeliner.works where version_id = '12ba4306-dec4-4623-9d2d-666326948e0a')
-			and step_type = 'servicedesk_application'`
+	q := `select
+    w.work_number,
+    w.author,
+    vs.content::json -> 'State' -> 'servicedesk_application_0' -> 'application_body' -> 'recipient' ->> 'username',
+    vs.content::json -> 'State' -> 'servicedesk_application_0' ->> 'description',
+    md5(content::json -> 'State' ->> 'servicedesk_application_0'),
+    w.human_status
+from pipeliner.variable_storage vs
+         join pipeliner.works w on vs.work_id = w.id
+where work_id in (select id from pipeliner.works where version_id = '12ba4306-dec4-4623-9d2d-666326948e0a')
+  and step_type = 'servicedesk_application'
+  and vs.content::json -> 'State' -> 'servicedesk_application_0' ->> 'application_body' != ''
+order by w.started_at asc`
 	rows, err := db.Pool.Query(ctx, q)
 	if err != nil {
 		return nil, err
 	}
 	res := make([]entity.NeededNotif, 0)
+
 	for rows.Next() {
 		var item entity.NeededNotif
-		if err := rows.Scan(&item.WorkNum, &item.Initiator, &item.Recipient, &item.Description, &item.DoubleKey); err != nil {
+		if err := rows.Scan(&item.WorkNum, &item.Initiator, &item.Recipient, &item.Description, &item.DoubleKey, &item.Status); err != nil {
 			return nil, err
 		}
 		res = append(res, item)

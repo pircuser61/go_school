@@ -2,6 +2,7 @@ package entity
 
 import (
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"time"
 
 	"github.com/pkg/errors"
@@ -153,6 +154,7 @@ type NeededNotif struct {
 	WorkNum     string
 	Description string
 	DoubleKey   string
+	Status      pipeline.TaskHumanStatus
 }
 
 func CheckDoubleNeededNotify(notif []NeededNotif) []NeededNotif {
@@ -163,10 +165,20 @@ func CheckDoubleNeededNotify(notif []NeededNotif) []NeededNotif {
 			resMap[notif[i].Initiator] = []NeededNotif{notif[i]}
 			continue
 		}
-		for _, v := range resMap[notif[i].Initiator] {
-			if notif[i].DoubleKey != v.DoubleKey {
-				resMap[notif[i].Initiator] = append(resMap[notif[i].Initiator], notif[i])
+
+		toAdd := true
+
+		if notif[i].Status != pipeline.StatusDone && notif[i].Status != pipeline.StatusExecutionRejected {
+			for _, v := range resMap[notif[i].Initiator] {
+				if notif[i].DoubleKey == v.DoubleKey {
+					toAdd = false
+					break
+				}
 			}
+		}
+
+		if toAdd {
+			resMap[notif[i].Initiator] = append(resMap[notif[i].Initiator], notif[i])
 		}
 	}
 
