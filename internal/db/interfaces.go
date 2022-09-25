@@ -2,6 +2,7 @@ package db
 
 import (
 	c "context"
+	"github.com/iancoleman/orderedmap"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,6 +21,8 @@ type PipelineStorager interface {
 }
 
 type TaskStorager interface {
+	GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error)
+	SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error
 	GetNotifData(ctx c.Context) ([]e.NeededNotif, error)
 	GetTasks(ctx c.Context, filters e.TaskFilter) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, userName string) (*e.CountTasks, error)

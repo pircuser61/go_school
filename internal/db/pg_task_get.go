@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/iancoleman/orderedmap"
+	"golang.org/x/net/context"
 	"strings"
 	"time"
 
@@ -135,6 +137,31 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	}
 
 	return q, args
+}
+
+func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
+	q := `SELECT content->'State'->'servicedesk_application_0'
+from pipeliner.variable_storage 
+where step_type = 'servicedesk_application' 
+and work_id = (select id from pipeliner.works where work_number = $1)`
+	var data *orderedmap.OrderedMap
+	if err := db.Pool.QueryRow(context.Background(), q, workNumber).Scan(&data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
+	q := `UPDATE pipeliner.variable_storage 
+set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
+where work_id = (select id from pipeliner.works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	q = fmt.Sprintf(q, string(bytes))
+	_, err = db.Pool.Exec(context.Background(), q, workNumber)
+	return err
 }
 
 func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {

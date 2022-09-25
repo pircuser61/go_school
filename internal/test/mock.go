@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/iancoleman/orderedmap"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -959,6 +960,14 @@ func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author
 }
 
 func (m *MockDB) UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, status string) error {
+	return nil
+}
+
+func (m *MockDB) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
+	return nil, nil
+}
+
+func (m *MockDB) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
 	return nil
 }
 

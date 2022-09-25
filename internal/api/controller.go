@@ -56,6 +56,8 @@ func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
 
 	mux.Mount(baseURL+"/pprof", middleware.Profiler())
 	mux.Handle(baseURL+"/metrics", param.APIEnv.ServePrometheus())
+	mux.Get("/api/pipeliner/v1/application", param.APIEnv.GetApplication)
+	mux.Post("/api/pipeliner/v1/application", param.APIEnv.SetApplication)
 
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
