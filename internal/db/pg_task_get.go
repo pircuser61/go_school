@@ -72,23 +72,23 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
-					"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready')", q, len(args))
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.approvers.' || $%d )::jsonpath "+
+					" AND workers.status IN ('running', 'idle', 'ready')", q, len(args))
 			}
 		case "finished_approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
-					"IS NOT NULL AND workers.status IN ('finished', 'no_success')", q, len(args))
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.approvers.' || $%d )::jsonpath "+
+					" AND workers.status IN ('finished', 'no_success')", q, len(args))
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
 			}
 		case "finished_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND (workers.status IN ('finished', 'no_success'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
 			}
 		}
 	} else {
