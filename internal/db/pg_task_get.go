@@ -265,38 +265,34 @@ func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const query = `SELECT 
-			w.id, 
-			w.started_at, 
-			w.started_at, 
-			ws.name,
-			w.human_status,
-			w.debug, 
-			COALESCE(w.parameters, '{}') AS parameters,
-			w.author,
-			w.version_id,
-			w.work_number,
-			p.name,
-			COALESCE(descr.description, ''),
-			COALESCE(descr.blueprint_id, ''),
-			w.active_blocks,
-			w.skipped_blocks,
-			w.notified_blocks,
-			w.prev_update_status_blocks
-		FROM pipeliner.works w 
-			JOIN pipeliner.versions v ON v.id = w.version_id
-			JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
-			JOIN pipeliner.work_status ws ON w.status = ws.id
-			LEFT JOIN LATERAL (
-				SELECT work_id, 
-					content::json->'State'->step_name->>'description' description,
-					content::json->'State'->step_name->>'blueprint_id' blueprint_id
-				FROM pipeliner.variable_storage vs
-				WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
-				ORDER BY vs.time DESC
-				LIMIT 1
-			) descr ON descr.work_id = w.id
-		WHERE w.status = 1 AND w.child_id IS NULL AND w.id = '32bde489-fb03-42cb-8e7f-e403b08c3682'`
+	const query = `SELECT
+    w.id,
+    w.started_at,
+    w.started_at,
+    ws.name,
+    w.human_status,
+    w.debug,
+    COALESCE(w.parameters, '{}') AS parameters,
+    w.author,
+    w.version_id,
+    w.work_number,
+    'Срочный сценарий',
+    COALESCE(descr.content::json->'State' -> 'servicedesk_application_0' ->>'description', ''),
+    COALESCE(descr.content::json->'State' -> 'servicedesk_application_0' ->>'blueprint_id', ''),
+    w.active_blocks,
+    w.skipped_blocks,
+    w.notified_blocks,
+    w.prev_update_status_blocks
+FROM pipeliner.works w
+--          JOIN pipeliner.versions v ON v.id = w.version_id
+--          JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
+         JOIN pipeliner.work_status ws ON w.status = ws.id
+         LEFT JOIN LATERAL (
+    SELECT work_id, content
+    FROM pipeliner.variable_storage vs
+    WHERE vs.work_id = w.id and vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
+    ) descr ON descr.work_id = w.id
+WHERE w.status = 1 AND w.child_id IS NULL and w.version_id = '12ba4306-dec4-4623-9d2d-666326948e0a'`
 
 	return db.getTasks(ctx, query, []interface{}{})
 }
