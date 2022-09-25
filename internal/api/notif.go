@@ -3,16 +3,22 @@ package api
 import (
 	"context"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"reflect"
 	"strconv"
 	"time"
 
+	"go.opencensus.io/trace"
+
 	"github.com/xuri/excelize/v2"
+
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
-	"go.opencensus.io/trace"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )
 
 func (ae *APIEnv) MakeAndSendNotifSheduler(ctx context.Context) {
@@ -48,13 +54,21 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	if len(data) == 0 {
+		return 0, nil
+	}
 
 	f := excelize.NewFile()
 	streamingWriter, err := f.NewStreamWriter("Sheet1")
 	if err != nil {
 		return 0, err
 	}
-	records := [][]interface{}{{"Номер заявки", "Инициатор", "Получатель", "Поля", "Статус"}}
+	titles := []interface{}{"Номер заявки", "Инициатор", "Получатель", "Статус"}
+	fc := reflect.TypeOf(entity.NotifData5{}).NumField()
+	for i := 0; i < fc; i++ {
+		titles = append(titles, reflect.TypeOf(entity.NotifData5{}).Field(i).Tag.Get("xlsx"))
+	}
+	records := [][]interface{}{titles}
 	peopleMap := make(map[string]string)
 
 	statusMapping := map[pipeline.TaskHumanStatus]string{
@@ -100,13 +114,21 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 			}
 			recName = typed.Attributes.FullName
 		}
-		records = append(records, []interface{}{
+		newRow := []interface{}{
 			item.WorkNum,
 			fmt.Sprintf("%s (%s)", item.Initiator, initName),
 			fmt.Sprintf("%s (%s)", item.Recipient, recName),
-			item.Description,
-			statusMapping[item.Status],
-		})
+			statusMapping[pipeline.TaskHumanStatus(item.Status)],
+		}
+		for i := 0; i < reflect.ValueOf(item.Description).NumField(); i++ {
+			if reflect.ValueOf(item.Description).Field(i).Kind() == reflect.Interface {
+				newRow = append(newRow, fmt.Sprintf("%v", reflect.ValueOf(item.Description).Field(i).Interface()))
+			} else {
+				newRow = append(newRow, reflect.ValueOf(item.Description).Field(i).String())
+			}
+
+		}
+		records = append(records, newRow)
 	}
 
 	for i := range records {
@@ -125,7 +147,11 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 		return 0, err
 	}
 
-	return len(records) - 1, ae.Mail.SendNotification(ctxSh, []string{"lslaptev@mts.ru", "aamonak5@mts.ru", "snkosya1@mts.ru"}, []email.Attachment{
+	return len(records) - 1, ae.Mail.SendNotification(ctxSh, []string{
+		"yvyegorova@mts.ru",
+		"ampetr13@mts.ru",
+		"lslaptev@mts.ru",
+		"Maksim.Kiselev@mts.ru"}, []email.Attachment{
 		{
 			Name:    "applications.xlsx",
 			Content: buf.Bytes(),

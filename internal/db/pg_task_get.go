@@ -142,8 +142,7 @@ func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {
     w.work_number,
     w.author,
     vs.content::json -> 'State' -> 'servicedesk_application_0' -> 'application_body' -> 'recipient' ->> 'username',
-    vs.content::json -> 'State' -> 'servicedesk_application_0' ->> 'description',
-    md5(content::json -> 'State' ->> 'servicedesk_application_0'),
+    vs.content::json -> 'State' -> 'servicedesk_application_0' -> 'application_body',
     w.human_status
 from pipeliner.variable_storage vs
          join pipeliner.works w on vs.work_id = w.id
@@ -159,8 +158,73 @@ order by w.started_at asc`
 
 	for rows.Next() {
 		var item entity.NeededNotif
-		if err := rows.Scan(&item.WorkNum, &item.Initiator, &item.Recipient, &item.Description, &item.DoubleKey, &item.Status); err != nil {
+		var descr map[string]interface{}
+		if err := rows.Scan(&item.WorkNum, &item.Initiator, &item.Recipient, &descr, &item.Status); err != nil {
 			return nil, err
+		}
+		if descr["kolichestvo_visschih_obrazovanii"] == nil {
+			var description entity.NotifData1
+			bytes, err := json.Marshal(descr)
+			if err != nil {
+				return nil, err
+			}
+			if err := json.Unmarshal(bytes, &description); err != nil {
+				return nil, err
+			}
+			item.Description = description
+		} else {
+			switch descr["kolichestvo_visschih_obrazovanii"].(string) {
+			case "5":
+				var description entity.NotifData5
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			case "4":
+				var description entity.NotifData4
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			case "3":
+				var description entity.NotifData3
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			case "2":
+				var description entity.NotifData2
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			default:
+				var description entity.NotifData1
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			}
 		}
 		res = append(res, item)
 	}
