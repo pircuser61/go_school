@@ -24,19 +24,12 @@ import (
 func (ae *APIEnv) MakeAndSendNotifSheduler(ctx context.Context) {
 	log := logger.GetLogger(ctx)
 
-	n, err := ae.makeAndSendNotif(ctx)
-	if err != nil {
-		log.Error(err)
-	} else {
-		log.Info("make and send notif success count applications = ", n)
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(1 * time.Hour):
-			n, err = ae.makeAndSendNotif(ctx)
+		case <-time.After(3 * time.Hour):
+			n, err := ae.makeAndSendNotif(ctx)
 			if err != nil {
 				log.Error(err)
 			}
@@ -47,7 +40,7 @@ func (ae *APIEnv) MakeAndSendNotifSheduler(ctx context.Context) {
 }
 
 func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
-	ctxSh, span := trace.StartSpan(ctx, "sheduler make and send notif")
+	ctxSh, span := trace.StartSpan(ctx, "makeAndSendNotif", trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 
 	data, err := ae.DB.GetNotifData(ctxSh)
@@ -58,9 +51,13 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 		return 0, nil
 	}
 
+
+	_, secSpan := trace.StartSpan(ctxSh, "makeExcel")
+
 	f := excelize.NewFile()
 	streamingWriter, err := f.NewStreamWriter("Sheet1")
 	if err != nil {
+		secSpan.End()
 		return 0, err
 	}
 	titles := []interface{}{"Номер заявки", "Инициатор", "Получатель", "Статус"}
@@ -88,10 +85,12 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 			var user people.SSOUser
 			user, err = ae.People.GetUser(ctxSh, item.Initiator)
 			if err != nil {
+				secSpan.End()
 				return 0, err
 			}
 			typed, err := user.ToSSOUserTyped()
 			if err != nil {
+				secSpan.End()
 				return 0, err
 			}
 			initName = typed.Attributes.FullName
@@ -106,10 +105,12 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 			var user people.SSOUser
 			user, err = ae.People.GetUser(ctxSh, item.Recipient)
 			if err != nil {
+				secSpan.End()
 				return 0, err
 			}
 			typed, err := user.ToSSOUserTyped()
 			if err != nil {
+				secSpan.End()
 				return 0, err
 			}
 			recName = typed.Attributes.FullName
@@ -147,6 +148,7 @@ func (ae *APIEnv) makeAndSendNotif(ctx context.Context) (int, error) {
 		return 0, err
 	}
 
+	secSpan.End()
 	return len(records) - 1, ae.Mail.SendNotification(ctxSh, []string{
 		"yvyegorova@mts.ru",
 		"ampetr13@mts.ru",

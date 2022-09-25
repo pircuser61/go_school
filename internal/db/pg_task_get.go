@@ -138,6 +138,8 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 }
 
 func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {
+	ctxLocal, span := trace.StartSpan(ctx, "makeAndSendNotif")
+	defer span.End()
 	q := `select
     w.work_number,
     w.author,
@@ -150,7 +152,7 @@ where work_id in (select id from pipeliner.works where version_id = '12ba4306-de
   and step_type = 'servicedesk_application'
   and vs.content::json -> 'State' -> 'servicedesk_application_0' ->> 'application_body' != ''
 order by w.started_at asc`
-	rows, err := db.Pool.Query(ctx, q)
+	rows, err := db.Pool.Query(ctxLocal, q)
 	if err != nil {
 		return nil, err
 	}
