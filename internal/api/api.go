@@ -297,6 +297,11 @@ type AllUsageResponse_Pipelines struct {
 	AdditionalProperties map[string][]string `json:"-"`
 }
 
+// Application defines model for Application.
+type Application struct {
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // Action to do automatically in case SLA is breached
 type ApproveAutoAction string
 
@@ -967,6 +972,9 @@ type VariableOperand struct {
 	// Embedded fields due to inline allOf schema
 }
 
+// SetApplicationJSONBody defines parameters for SetApplication.
+type SetApplicationJSONBody Application
+
 // CreateDebugTaskJSONBody defines parameters for CreateDebugTask.
 type CreateDebugTaskJSONBody CreateTaskRequest
 
@@ -1038,6 +1046,9 @@ type GetTasksParams struct {
 
 // UpdateTaskJSONBody defines parameters for UpdateTask.
 type UpdateTaskJSONBody TaskUpdate
+
+// SetApplicationJSONRequestBody defines body for SetApplication for application/json ContentType.
+type SetApplicationJSONRequestBody SetApplicationJSONBody
 
 // CreateDebugTaskJSONRequestBody defines body for CreateDebugTask for application/json ContentType.
 type CreateDebugTaskJSONRequestBody CreateDebugTaskJSONBody
@@ -1122,6 +1133,59 @@ func (a *AllUsageResponse_Pipelines) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for AllUsageResponse_Pipelines to handle AdditionalProperties
 func (a AllUsageResponse_Pipelines) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Application. Returns the specified
+// element and whether it was found
+func (a Application) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Application
+func (a *Application) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Application to handle AdditionalProperties
+func (a *Application) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Application to handle AdditionalProperties
+func (a Application) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -1242,6 +1306,12 @@ func (a Pipeline_Blocks) MarshalJSON() ([]byte, error) {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// get application
+	// (GET /application/{workNumber})
+	GetApplication(w http.ResponseWriter, r *http.Request, workNumber string)
+	// set application
+	// (POST /application/{workNumber})
+	SetApplication(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Create debug task
 	// (POST /debug/)
 	CreateDebugTask(w http.ResponseWriter, r *http.Request)
@@ -1360,6 +1430,58 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
+
+// GetApplication operation middleware
+func (siw *ServerInterfaceWrapper) GetApplication(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApplication(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SetApplication operation middleware
+func (siw *ServerInterfaceWrapper) SetApplication(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetApplication(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
 
 // CreateDebugTask operation middleware
 func (siw *ServerInterfaceWrapper) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
@@ -2375,6 +2497,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/application/{workNumber}", wrapper.GetApplication)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/application/{workNumber}", wrapper.SetApplication)
+	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/debug/", wrapper.CreateDebugTask)
 	})
