@@ -6,6 +6,85 @@ info:
 servers:
   - url: //localhost:8181/api/pipeliner/v1
 paths:
+  /application/{workNumber}:
+    get:
+      summary: get application
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
+      operationId: getApplication
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Application'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    post:
+      summary: set application
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
+      operationId: setApplication
+      requestBody:
+        description: New debug task
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Application'
+        required: true
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /debug/:
     post:
       tags:
@@ -2823,6 +2902,10 @@ components:
       enum:
         - approve
         - reject
+
+    Application:
+      type: object
+      additionalProperties: true
 
     FunctionParams:
       type: object
