@@ -272,16 +272,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 		return nil, err
 	}
 
-	filters.Limit = nil
-	filters.Offset = nil
-	emptyOrder := ""
-	filters.Order = &emptyOrder
-	q, args = compileGetTasksQuery(filters)
-
-	count, err := db.getTasksCount(ctx, q, args)
-	if err != nil {
-		return nil, err
-	}
+	count := 100
 
 	return &entity.EriusTasksPage{
 		Tasks: tasks.Tasks,
