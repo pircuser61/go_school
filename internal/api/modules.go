@@ -48,6 +48,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		(&pipeline.IF{}).Model(),
 		(&pipeline.GoBeginParallelTaskBlock{}).Model(),
 		(&pipeline.ExecutableFunctionBlock{}).Model(),
+		(&pipeline.GoFormBlock{}).Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
