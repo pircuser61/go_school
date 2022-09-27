@@ -573,8 +573,26 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, bl *entity
 	switch bl.BlockType {
 	case script.TypeGo:
 		return ep.CreateGoBlock(ctx, bl, name)
-	case script.TypeExternal:
-		return createExecutableFunctionBlock(name, bl)
+	case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
+		fb := FunctionBlock{
+			Name:           name,
+			Type:           bl.BlockType,
+			FunctionName:   bl.Title,
+			FunctionInput:  make(map[string]string),
+			FunctionOutput: make(map[string]string),
+			Sockets:        entity.ConvertSocket(bl.Sockets),
+			RunURL:         ep.FaaS + "function/%s",
+		}
+
+		for _, v := range bl.Input {
+			fb.FunctionInput[v.Name] = v.Global
+		}
+
+		for _, v := range bl.Output {
+			fb.FunctionOutput[v.Name] = v.Global
+		}
+
+		return &fb, nil
 	case script.TypeScenario:
 		p, err := ep.Storage.GetExecutableByName(ctx, bl.Title)
 		if err != nil {
