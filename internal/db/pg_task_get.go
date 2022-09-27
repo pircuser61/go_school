@@ -143,11 +143,6 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
 	}
 
-	if filters.Limit != nil {
-		args = append(args, *filters.Limit)
-		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
-	}
-
 	return q, args
 }
 
