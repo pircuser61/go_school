@@ -124,6 +124,11 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		q = fmt.Sprintf("%s OR w.human_status = 'wait')", q)
 	}
 
+	if filters.Receiver != nil {
+		args = append(args, *filters.Receiver)
+		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
+	}
+
 	if order != "" {
 		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
 	}
@@ -131,6 +136,11 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	if filters.Offset != nil {
 		args = append(args, *filters.Offset)
 		q = fmt.Sprintf("%s\n OFFSET $%d", q, len(args))
+	}
+
+	if filters.Limit != nil {
+		args = append(args, *filters.Limit)
+		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
 	}
 
 	if filters.Limit != nil {

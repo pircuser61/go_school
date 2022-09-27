@@ -1427,6 +1427,11 @@ paths:
           schema:
             type: boolean
           description: get tasks with status wait or done
+        - name: receiver
+          in: query
+          schema:
+            type: string
+          description: receiver login
       responses:
         200:
           description: OK
