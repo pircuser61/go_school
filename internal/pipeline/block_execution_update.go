@@ -177,6 +177,7 @@ type executorsStartWork struct {
 	byLogin string
 }
 
+//nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updateRequestExecutionInfoDto) (err error) {
 	var updateParams RequestInfoUpdateParams
 	err = json.Unmarshal(dto.data.Parameters, &updateParams)

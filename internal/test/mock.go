@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/iancoleman/orderedmap"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/iancoleman/orderedmap"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 

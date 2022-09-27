@@ -2,10 +2,13 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/iancoleman/orderedmap"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"go.opencensus.io/trace"
 	"net/http"
+
+	"github.com/iancoleman/orderedmap"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"go.opencensus.io/trace"
 )
 
 func (ae *APIEnv) GetApplication(w http.ResponseWriter, req *http.Request, workNumber string) {

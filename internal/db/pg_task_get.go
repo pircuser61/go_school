@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/iancoleman/orderedmap"
-	"golang.org/x/net/context"
 	"strings"
 	"time"
+
+	"github.com/iancoleman/orderedmap"
+
+	"golang.org/x/net/context"
 
 	"go.opencensus.io/trace"
 
@@ -164,6 +166,7 @@ where work_id = (select id from pipeliner.works where work_number = $1) and step
 	return err
 }
 
+//nolint:gocyclo //its ok here
 func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "makeAndSendNotif")
 	defer span.End()
