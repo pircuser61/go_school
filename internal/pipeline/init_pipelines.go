@@ -74,7 +74,7 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 
 	failedPipelinesCh := make(chan string, len(unfinished.Tasks))
 
-	workers := 5
+	workers := 20
 	if workers > len(unfinished.Tasks) {
 		workers = 1
 	}
