@@ -8,6 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+
+	"golang.org/x/net/context"
+
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
@@ -137,6 +141,128 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	return q, args
 }
 
+func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
+	q := `SELECT content->'State'->'servicedesk_application_0'
+from pipeliner.variable_storage 
+where step_type = 'servicedesk_application' 
+and work_id = (select id from pipeliner.works where work_number = $1)`
+	var data *orderedmap.OrderedMap
+	if err := db.Pool.QueryRow(context.Background(), q, workNumber).Scan(&data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
+	q := `UPDATE pipeliner.variable_storage 
+set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
+where work_id = (select id from pipeliner.works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	q = fmt.Sprintf(q, string(bytes))
+	_, err = db.Pool.Exec(context.Background(), q, workNumber)
+	return err
+}
+
+//nolint:gocyclo //its ok here
+func (db *PGCon) GetNotifData(ctx c.Context) ([]entity.NeededNotif, error) {
+	ctxLocal, span := trace.StartSpan(ctx, "makeAndSendNotif")
+	defer span.End()
+	q := `select
+    w.work_number,
+    w.author,
+    vs.content::json -> 'State' -> 'servicedesk_application_0' -> 'application_body' -> 'recipient' ->> 'username',
+    vs.content::json -> 'State' -> 'servicedesk_application_0' -> 'application_body',
+    w.human_status
+from pipeliner.variable_storage vs
+         join pipeliner.works w on vs.work_id = w.id
+where work_id in (select id from pipeliner.works where version_id = '12ba4306-dec4-4623-9d2d-666326948e0a')
+  and step_type = 'servicedesk_application'
+  and vs.content::json -> 'State' -> 'servicedesk_application_0' ->> 'application_body' != ''
+order by w.started_at asc`
+	rows, err := db.Pool.Query(ctxLocal, q)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]entity.NeededNotif, 0)
+
+	for rows.Next() {
+		var item entity.NeededNotif
+		var descr map[string]interface{}
+		if err := rows.Scan(&item.WorkNum, &item.Initiator, &item.Recipient, &descr, &item.Status); err != nil {
+			return nil, err
+		}
+		if descr["kolichestvo_visschih_obrazovanii"] == nil {
+			var description entity.NotifData1
+			bytes, err := json.Marshal(descr)
+			if err != nil {
+				return nil, err
+			}
+			if err := json.Unmarshal(bytes, &description); err != nil {
+				return nil, err
+			}
+			item.Description = description
+		} else {
+			switch descr["kolichestvo_visschih_obrazovanii"].(string) {
+			case "5":
+				var description entity.NotifData5
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			case "4":
+				var description entity.NotifData4
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			case "3":
+				var description entity.NotifData3
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			case "2":
+				var description entity.NotifData2
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			default:
+				var description entity.NotifData1
+				bytes, err := json.Marshal(descr)
+				if err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(bytes, &description); err != nil {
+					return nil, err
+				}
+				item.Description = description
+			}
+		}
+		res = append(res, item)
+	}
+	return res, nil
+}
+
 //nolint:gocritic //filters
 func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
@@ -151,6 +277,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 
 	filters.Limit = nil
 	filters.Offset = nil
+	emptyOrder := ""
+	filters.Order = &emptyOrder
 	q, args = compileGetTasksQuery(filters)
 
 	count, err := db.getTasksCount(ctx, q, args)
@@ -202,7 +330,7 @@ func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
 				ORDER BY vs.time DESC
 				LIMIT 1
 			) descr ON descr.work_id = w.id
-		WHERE w.status = 1 AND w.child_id IS NULL AND w.id = '32bde489-fb03-42cb-8e7f-e403b08c3682'`
+		WHERE w.status = 1 AND w.child_id IS NULL`
 
 	return db.getTasks(ctx, query, []interface{}{})
 }

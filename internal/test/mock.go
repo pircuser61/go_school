@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
 	"github.com/google/uuid"
@@ -960,6 +962,18 @@ func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author
 
 func (m *MockDB) UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, status string) error {
 	return nil
+}
+
+func (m *MockDB) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
+	return nil, nil
+}
+
+func (m *MockDB) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
+	return nil
+}
+
+func (m *MockDB) GetNotifData(ctx context.Context) ([]entity.NeededNotif, error) {
+	return nil, nil
 }
 
 //nolint:gocritic //filters
