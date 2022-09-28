@@ -81,6 +81,15 @@ const (
 	ExecutionParamsTypeUser ExecutionParamsType = "user"
 )
 
+// Defines values for FormAccessType.
+const (
+	FormAccessTypeСкрыть FormAccessType = "Скрыть"
+
+	FormAccessTypeТолькоДляЧтения FormAccessType = "Только для чтения"
+
+	FormAccessTypeЧтениеИРедактирование FormAccessType = "Чтение и редактирование"
+)
+
 // Defines values for FunctionParamsType.
 const (
 	FunctionParamsTypeApprover FunctionParamsType = "approver"
@@ -324,6 +333,9 @@ type ApproverParams struct {
 
 	// Action to do automatically in case SLA is breached
 	AutoAction *ApproveAutoAction `json:"auto_action,omitempty"`
+
+	// List of accessibility properties for forms
+	FormsAccessibility *[]FormsAccessibility `json:"formsAccessibility,omitempty"`
 
 	// Show action edit application in SD
 	IsEditable         bool `json:"is_editable"`
@@ -616,6 +628,9 @@ type ExecutionParams struct {
 	// Executors group name in SD
 	ExecutorsGroupName string `json:"executors_group_name"`
 
+	// List of accessibility properties for forms
+	FormsAccessibility *[]FormsAccessibility `json:"formsAccessibility,omitempty"`
+
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`
 
@@ -648,6 +663,21 @@ type ExecutorChangeParams struct {
 
 	// New executor login
 	NewExecutorLogin string `json:"newExecutorLogin"`
+}
+
+// Form accessibility preferences for certain node
+type FormAccessType string
+
+// FormsAccessibility defines model for FormsAccessibility.
+type FormsAccessibility struct {
+	// Form accessibility preferences for certain node
+	AccessType *FormAccessType `json:"accessType,omitempty"`
+
+	// Form ID
+	Id *string `json:"id,omitempty"`
+
+	// Form name
+	Name *string `json:"name,omitempty"`
 }
 
 // FunctionModel defines model for FunctionModel.

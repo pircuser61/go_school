@@ -2869,10 +2869,16 @@ components:
         executors:
           type: string
           description: Executor value (depends on type)
+
         sla:
           type: integer
           description: Execution SLA (in working hours)
           minimum: 1
+        formsAccessibility:
+          type: array
+          description: List of accessibility properties for forms
+          items:
+            $ref: '#/components/schemas/FormsAccessibility'
         executors_group_id:
           type: string
           description: Executors group id in SD
@@ -2911,6 +2917,11 @@ components:
           description: Approver value (depends on type)
         approvementRule:
           $ref: '#/components/schemas/ApprovementRule'
+        formsAccessibility:
+          type: array
+          description: List of accessibility properties for forms
+          items:
+            $ref: '#/components/schemas/FormsAccessibility'
         sla:
           type: integer
           description: Approvement SLA (in working hours)
@@ -2936,6 +2947,24 @@ components:
         - is_editable
         - approvers_group_id
         - approvers_group_name
+
+    FormsAccessibility:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Form ID
+        name:
+          type: string
+          description: Form name
+        accessType:
+          $ref: '#/components/schemas/FormAccessType'
+
+    FormAccessType:
+      type: string
+      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование" ]
+      x-enum-varnames: [ "None", "Read", "ReadWrite" ]
+      description: Form accessibility preferences for certain node
 
     ApprovementRule:
       type: string

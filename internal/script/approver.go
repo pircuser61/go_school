@@ -27,8 +27,9 @@ type ApproverParams struct {
 	Type     ApproverType `json:"type"`
 	Approver string       `json:"approver"`
 
-	SLA        int         `json:"sla"`
-	AutoAction *AutoAction `json:"auto_action,omitempty"`
+	SLA                int                 `json:"sla"`
+	AutoAction         *AutoAction         `json:"auto_action,omitempty"`
+	FormsAccessibility []FormAccessibility `json:"formsAccessibility"`
 
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
