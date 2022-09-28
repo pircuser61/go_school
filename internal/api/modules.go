@@ -50,6 +50,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		(&pipeline.GoNotificationBlock{}).Model(),
 		(&pipeline.IF{}).Model(),
 		(&pipeline.GoBeginParallelTaskBlock{}).Model(),
+		(&pipeline.ExecutableFunctionBlock{}).Model(),
+		(&pipeline.GoFormBlock{}).Model(),
 	)
 
 	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
@@ -107,6 +109,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			eriusFunctions[i].Title = "Заявка Servicedesk"
 		case "execution":
 			eriusFunctions[i].Title = "Исполнение"
+		case "form":
+			eriusFunctions[i].Title = "Форма"
 		case "start":
 			eriusFunctions[i].Title = "Начало"
 		case "end":
@@ -267,21 +271,20 @@ func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request, moduleName
 		return
 	}
 
-	fb := pipeline.FunctionBlock{
-		Name:           block.Title,
-		FunctionName:   block.Title,
-		FunctionInput:  make(map[string]string),
-		FunctionOutput: make(map[string]string),
-		Sockets:        []script.Socket{script.DefaultSocket},
-		RunURL:         ae.FaaS + "function/%s",
+	fb := pipeline.ExecutableFunctionBlock{
+		Name:    block.Title,
+		Input:   make(map[string]string),
+		Output:  make(map[string]string),
+		Sockets: []script.Socket{script.DefaultSocket},
+		RunURL:  ae.FaaS + "function/%s",
 	}
 
 	for _, v := range block.Inputs {
-		fb.FunctionInput[v.Name] = v.Name
+		fb.Input[v.Name] = v.Name
 	}
 
 	for _, v := range block.Outputs {
-		fb.FunctionOutput[v.Name] = v.Name
+		fb.Output[v.Name] = v.Name
 	}
 
 	vs := store.NewStore()

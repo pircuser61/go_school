@@ -972,10 +972,6 @@ func (m *MockDB) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 	return nil
 }
 
-func (m *MockDB) GetNotifData(ctx context.Context) ([]entity.NeededNotif, error) {
-	return nil, nil
-}
-
 //nolint:gocritic //filters
 func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
 	return nil, errNotImplemented
