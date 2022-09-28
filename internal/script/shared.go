@@ -10,6 +10,6 @@ const (
 
 type FormAccessibility struct {
 	Id         string     `json:"id"`
-	Title      string     `json:"title"`
+	Name       string     `json:"name"`
 	AccessType AccessType `json:"accessType"`
 }

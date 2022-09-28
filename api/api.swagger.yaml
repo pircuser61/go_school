@@ -2954,9 +2954,9 @@ components:
         id:
           type: string
           description: Form ID
-        title:
+        name:
           type: string
-          description: Form title
+          description: Form name
         accessType:
           $ref: '#/components/schemas/FormAccessType'
 

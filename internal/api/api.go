@@ -676,8 +676,8 @@ type FormsAccessibility struct {
 	// Form ID
 	Id *string `json:"id,omitempty"`
 
-	// Form title
-	Title *string `json:"title,omitempty"`
+	// Form name
+	Name *string `json:"name,omitempty"`
 }
 
 // FunctionModel defines model for FunctionModel.
