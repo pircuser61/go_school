@@ -2879,6 +2879,7 @@ components:
           description: List of accessibility properties for forms
           items:
             $ref: '#/components/schemas/FormsAccessibility'
+            $ref: '#/components/schemas/FormsAccessibility'
         executors_group_id:
           type: string
           description: Executors group id in SD
@@ -2957,13 +2958,13 @@ components:
         title:
           type: string
           description: Form title
-        permission:
-          $ref: '#/components/schemas/FormAccessibility'
+        accessType:
+          $ref: '#/components/schemas/FormAccessType'
 
-    FormAccessibility:
+    FormAccessType:
       type: string
-      enum: [ "Скрыть", "Только для чтения", "Редактировать" ]
-      x-enum-varnames: [ "Hide", "ReadOnly", "Write" ]
+      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование" ]
+      x-enum-varnames: [ "None", "Read", "ReadWrite" ]
       description: Form accessibility preferences for certain node
 
     ApprovementRule:
