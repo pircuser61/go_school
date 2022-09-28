@@ -2879,7 +2879,6 @@ components:
           description: List of accessibility properties for forms
           items:
             $ref: '#/components/schemas/FormsAccessibility'
-            $ref: '#/components/schemas/FormsAccessibility'
         executors_group_id:
           type: string
           description: Executors group id in SD
