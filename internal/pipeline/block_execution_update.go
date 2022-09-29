@@ -275,6 +275,8 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 		dto.byLogin: {},
 	}
 
+	gb.State.IsTakenInWork = true
+
 	dto.step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
 		return err
@@ -296,9 +298,10 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 		return err
 	}
 
-	if err := gb.emailGroupExecutors(ctx, executorLogins, dto.byLogin); err != nil {
+	if err = gb.emailGroupExecutors(ctx, executorLogins, dto.byLogin); err != nil {
 		return nil
 	}
+
 	return nil
 }
 
