@@ -84,6 +84,7 @@ const (
 	PipelineRenameParseError
 	PipelineRenameError
 	GetPipelinesSearchError
+	ValidationPipelineSearchError
 )
 
 //nolint:dupl //its not duplicate
@@ -154,6 +155,7 @@ var errorText = map[Err]string{
 	PipelineRenameParseError:      "can't parse rename pipeline data",
 	PipelineRenameError:           "can't rename pipeline",
 	GetPipelinesSearchError:       "can't find pipelines by search",
+	ValidationPipelineSearchError: "name and id are empty",
 }
 
 // JOKE.
@@ -226,6 +228,7 @@ var errorDescription = map[Err]string{
 	PipelineRenameParseError:      "Не удалось получить информацию о переимоновании сценария",
 	PipelineRenameError:           "Не удалось переименовать сценарий",
 	GetPipelinesSearchError:       "Не удалось найти сценарии в базе данных",
+	ValidationPipelineSearchError: "Не заполнены имя и айди сценария",
 }
 
 var errorStatus = map[Err]int{

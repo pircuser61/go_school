@@ -566,11 +566,11 @@ func (_m *MockedDatabase) GetPipelineVersions(ctx context.Context, id uuid.UUID)
 }
 
 // GetPipelinesByNameOrId provides a mock function with given fields: ctx, dto
-func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, dto db.SearchPipelineRequest) ([]entity.SearchPipeline, error) {
+func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, dto *db.SearchPipelineRequest) ([]entity.SearchPipeline, error) {
 	ret := _m.Called(ctx, dto)
 
 	var r0 []entity.SearchPipeline
-	if rf, ok := ret.Get(0).(func(context.Context, db.SearchPipelineRequest) []entity.SearchPipeline); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *db.SearchPipelineRequest) []entity.SearchPipeline); ok {
 		r0 = rf(ctx, dto)
 	} else {
 		if ret.Get(0) != nil {
@@ -579,7 +579,7 @@ func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, dto db.Sea
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, db.SearchPipelineRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *db.SearchPipelineRequest) error); ok {
 		r1 = rf(ctx, dto)
 	} else {
 		r1 = ret.Error(1)

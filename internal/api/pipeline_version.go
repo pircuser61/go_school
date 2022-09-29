@@ -734,7 +734,7 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 	log := logger.GetLogger(ctx)
 
 	if params.PipelineId == nil && params.PipelineName == nil {
-		e := ValidationError
+		e := ValidationPipelineSearchError
 		log.Error(e.errorMessage(errors.New("name and id are empty")))
 		_ = e.sendError(w)
 
