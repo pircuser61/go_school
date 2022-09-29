@@ -8,18 +8,27 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
+
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+)
+
+const (
+	defaultPage    = 1
+	defaultPerPage = 10
 )
 
 func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, pipelineID string) {
@@ -724,7 +733,7 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 
 	log := logger.GetLogger(ctx)
 
-	if params.PipelineId == nil && params.Name == nil {
+	if params.PipelineId == nil && params.PipelineName == nil {
 		e := ValidationError
 		log.Error(e.errorMessage(errors.New("name and id are empty")))
 		_ = e.sendError(w)
@@ -732,26 +741,7 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 		return
 	}
 
-	page, perpage, name := prepareParams(params)
-
-	pipelineId := uuid.UUID{}
-	if params.PipelineId != nil {
-		pId, err := uuid.Parse(*params.PipelineId)
-		if err != nil {
-			e := UUIDParsingError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
-		pipelineId = pId
-	}
-
-	pipelines, err := ae.DB.GetPipelinesByNameOrId(ctx, db.SearchPipelineRequest{
-		Id:      pipelineId,
-		Name:    name,
-		Page:    page,
-		PerPage: perpage})
+	items, err := ae.DB.GetPipelinesByNameOrId(ctx, toDbSearchPipelinesParams(&params))
 	if err != nil {
 		e := GetPipelinesSearchError
 		log.Error(e.errorMessage(err))
@@ -760,25 +750,20 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 		return
 	}
 
-	if len(pipelines) == 0 {
-		err = sendResponse(w, http.StatusOK, ResponsePipelineSearch{[]Pipelines{}, 0})
-		if err != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
+	res := &ResponsePipelineSearch{}
 
-			return
-		}
+	for i := range items {
+		res.Items = append(res.Items, SearchPipelineItem{
+			Name:       &items[i].PipelineName,
+			PipelineId: &items[i].PipelineId,
+		})
 	}
-	responsePipelines := &ResponsePipelineSearch{}
 
-	for i := range pipelines {
-		id := (pipelines)[i].PipelineId.String()
-		responsePipelines.Pipelines = append(responsePipelines.Pipelines, Pipelines{
-			PipelineId: &id, Name: &(pipelines)[i].PipelineName})
+	if len(items) > 0 {
+		res.Total = items[0].Total
 	}
-	responsePipelines.Total = (pipelines)[0].Total
-	err = sendResponse(w, http.StatusOK, responsePipelines)
+
+	err = sendResponse(w, http.StatusOK, res)
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
@@ -788,21 +773,24 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 	}
 }
 
-func prepareParams(params SearchPipelinesParams) (page, perpage int, name string) {
-	if params.Page == nil {
-		page = 1
-	} else {
-		page = *params.Page
+func toDbSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelineRequest) {
+	var (
+		page    = defaultPage
+		perPage = defaultPerPage
+	)
+
+	if in.Page == nil {
+		in.Page = &page
 	}
-	if params.Perpage == nil {
-		perpage = 20
-	} else {
-		perpage = *params.Perpage
+
+	if in.PerPage == nil {
+		in.PerPage = &perPage
 	}
-	if params.Name != nil {
-		name = *params.Name
-	} else {
-		name = ""
+
+	return &db.SearchPipelineRequest{
+		PipelineName: in.PipelineName,
+		PipelineId:   in.PipelineId,
+		Limit:        *in.PerPage,
+		Offset:       (*in.Page * *in.PerPage) - *in.PerPage,
 	}
-	return
 }

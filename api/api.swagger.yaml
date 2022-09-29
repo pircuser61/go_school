@@ -1020,13 +1020,13 @@ paths:
       description: поиск списка сценариев по айди или названию
       operationId: search-pipelines
       parameters:
-        - name: name
+        - name: pipelineName
           in: query
           description: имя пайплайна
           required: false
           schema:
             type: string
-        - name: pipeline_id
+        - name: pipelineId
           in: query
           description: id пайплайна
           required: false
@@ -1040,7 +1040,7 @@ paths:
           required: false
           schema:
             type: integer
-        - name: perpage
+        - name: perPage
           in: query
           description: сколько отображать на одной странице
           required: false
@@ -2443,19 +2443,18 @@ components:
     ResponsePipelineSearch:
       type: object
       properties:
-        pipelines:
+        items:
           type: array
           items:
-            $ref: '#/components/schemas/Pipelines'
+            $ref: '#/components/schemas/SearchPipelineItem'
           description: list of pipelines
         total:
           type: integer
       required:
-        - pipelines
+        - items
         - total
 
-
-    Pipelines:
+    SearchPipelineItem:
       type: object
       properties:
         name:

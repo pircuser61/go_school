@@ -136,7 +136,7 @@ type DebugResult struct {
 
 type SearchPipeline struct {
 	PipelineName string
-	PipelineId   uuid.UUID `pg:"type:uuid" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	PipelineId   string
 	Total        int
 }
 

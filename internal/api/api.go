@@ -355,10 +355,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   - user - Single user
-//   - group - Approver group ID
-//   - head - Receiver's head
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -643,8 +643,8 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//   - user - Single user
-//   - group - Execution group ID
+//  * user - Single user
+//  * group - Execution group ID
 type ExecutionParamsType string
 
 // Executor update params
@@ -756,15 +756,6 @@ type NumberOperandOperandType string
 // Block constant params
 type Params interface{}
 
-// Pipelines defines model for Pipelines.
-type Pipelines struct {
-	// Имя пайплайна
-	Name *string `json:"name,omitempty"`
-
-	// ID пайплайна
-	PipelineId *string `json:"pipeline_id,omitempty"`
-}
-
 // Type of execution info
 type RequestExecutionInfoType string
 
@@ -785,8 +776,8 @@ type RequestInfoUpdateParams struct {
 // ResponsePipelineSearch defines model for ResponsePipelineSearch.
 type ResponsePipelineSearch struct {
 	// list of pipelines
-	Pipelines []Pipelines `json:"pipelines"`
-	Total     int         `json:"total"`
+	Items []SearchPipelineItem `json:"items"`
+	Total int                  `json:"total"`
 }
 
 // RunNewVersionByPrevVersionRequest defines model for RunNewVersionByPrevVersionRequest.
@@ -832,6 +823,15 @@ type SchedulerTasksResponse struct {
 type SdApplicationParams struct {
 	// Template application ID
 	BlueprintId string `json:"blueprint_id"`
+}
+
+// SearchPipelineItem defines model for SearchPipelineItem.
+type SearchPipelineItem struct {
+	// Имя пайплайна
+	Name *string `json:"name,omitempty"`
+
+	// ID пайплайна
+	PipelineId *string `json:"pipeline_id,omitempty"`
 }
 
 // ShapeEntity defines model for ShapeEntity.
@@ -912,8 +912,8 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//   - approved - approver approved block
-//   - rejected - approver rejected block
+//  * approved - approver approved block
+//  * rejected - approver rejected block
 type ApproverDecision string
 
 // Block type (language)
@@ -955,8 +955,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//   - executed - executor executed block
-//   - rejected - executor rejected block
+//  * executed - executor executed block
+//  * rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -996,11 +996,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//   - 1 - Draft
-//   - 2 - Approved
-//   - 3 - Deleted
-//   - 4 - Rejected
-//   - 5 - On approve
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1047,16 +1047,16 @@ type RenamePipelineJSONBody PipelineRename
 // SearchPipelinesParams defines parameters for SearchPipelines.
 type SearchPipelinesParams struct {
 	// имя пайплайна
-	Name *string `json:"name,omitempty"`
+	PipelineName *string `json:"pipelineName,omitempty"`
 
 	// id пайплайна
-	PipelineId *string `json:"pipeline_id,omitempty"`
+	PipelineId *string `json:"pipelineId,omitempty"`
 
 	// страница для отображения
 	Page *int `json:"page,omitempty"`
 
 	// сколько отображать на одной странице
-	Perpage *int `json:"perpage,omitempty"`
+	PerPage *int `json:"perPage,omitempty"`
 }
 
 // EditVersionJSONBody defines parameters for EditVersion.
@@ -1778,25 +1778,25 @@ func (siw *ServerInterfaceWrapper) SearchPipelines(w http.ResponseWriter, r *htt
 	// Parameter object where we will unmarshal all parameters from the context
 	var params SearchPipelinesParams
 
-	// ------------- Optional query parameter "name" -------------
-	if paramValue := r.URL.Query().Get("name"); paramValue != "" {
+	// ------------- Optional query parameter "pipelineName" -------------
+	if paramValue := r.URL.Query().Get("pipelineName"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "name", r.URL.Query(), &params.Name)
+	err = runtime.BindQueryParameter("form", true, false, "pipelineName", r.URL.Query(), &params.PipelineName)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipelineName", Err: err})
 		return
 	}
 
-	// ------------- Optional query parameter "pipeline_id" -------------
-	if paramValue := r.URL.Query().Get("pipeline_id"); paramValue != "" {
+	// ------------- Optional query parameter "pipelineId" -------------
+	if paramValue := r.URL.Query().Get("pipelineId"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "pipeline_id", r.URL.Query(), &params.PipelineId)
+	err = runtime.BindQueryParameter("form", true, false, "pipelineId", r.URL.Query(), &params.PipelineId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipeline_id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipelineId", Err: err})
 		return
 	}
 
@@ -1811,14 +1811,14 @@ func (siw *ServerInterfaceWrapper) SearchPipelines(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// ------------- Optional query parameter "perpage" -------------
-	if paramValue := r.URL.Query().Get("perpage"); paramValue != "" {
+	// ------------- Optional query parameter "perPage" -------------
+	if paramValue := r.URL.Query().Get("perPage"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "perpage", r.URL.Query(), &params.Perpage)
+	err = runtime.BindQueryParameter("form", true, false, "perPage", r.URL.Query(), &params.PerPage)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "perpage", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "perPage", Err: err})
 		return
 	}
 

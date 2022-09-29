@@ -2294,9 +2294,11 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 	return res, nil
 }
 
-func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto SearchPipelineRequest) ([]entity.SearchPipeline, error) {
-	c, span := trace.StartSpan(ctx, "pg_search_pipeline")
+func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipelineRequest) ([]entity.SearchPipeline, error) {
+	c, span := trace.StartSpan(ctx, "pg_get_pipelines_by_name_or_id")
 	defer span.End()
+
+	res := make([]entity.SearchPipeline, 0, dto.Limit)
 
 	conn, err := db.Pool.Acquire(c)
 	if err != nil {
@@ -2309,40 +2311,43 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto SearchPipelineR
 	// language=PostgreSQL
 	var q = `
 		SELECT
-		p.name,
-		p.id,
-		count(*) over () as total
+			p.id,
+			p.name,
+			count(*) over () as total
 		FROM pipeliner.pipelines p
-		WHERE p.deleted_at is null  --pipe--
+		WHERE p.deleted_at IS NULL  --pipe--
 		LIMIT $1 OFFSET $2;
 `
 
-	if dto.Name != "" {
-		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.name ilike'%%%s%%'", dto.Name))
-	} else {
-		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.id='%s'", dto.Id.String()))
+	if dto.PipelineName != nil {
+		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.name ilike'%%%s%%'", *dto.PipelineName))
 	}
-	rows, err := conn.Query(ctx, q, dto.PerPage, (dto.Page-1)*dto.PerPage)
+
+	if dto.PipelineId != nil {
+		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.id='%s'", *dto.PipelineId))
+	}
+
+	rows, err := conn.Query(ctx, q, dto.Limit, dto.Offset)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
+		return res, err
 	}
+
 	defer rows.Close()
-	var res []entity.SearchPipeline
+
 	//nolint:dupl //scan
 	for rows.Next() {
 		s := entity.SearchPipeline{}
 		err = rows.Scan(
-			&s.PipelineName,
 			&s.PipelineId,
+			&s.PipelineName,
 			&s.Total,
 		)
 		if err != nil {
-			return nil, err
+			return res, err
 		}
+
 		res = append(res, s)
 	}
+
 	return res, nil
 }

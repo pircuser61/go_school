@@ -71,10 +71,10 @@ type UpdateTaskBlocksDataRequest struct {
 }
 
 type SearchPipelineRequest struct {
-	Id      uuid.UUID
-	Name    string
-	Page    int
-	PerPage int
+	PipelineId   *string
+	PipelineName *string
+	Limit        int
+	Offset       int
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase
@@ -120,5 +120,5 @@ type Database interface {
 	RollbackVersion(ctx c.Context, pipelineID, versionID uuid.UUID) error
 	GetVersionsByPipelineID(ctx c.Context, blueprintID string) ([]e.EriusScenario, error)
 	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
-	GetPipelinesByNameOrId(ctx c.Context, dto SearchPipelineRequest) ([]e.SearchPipeline, error)
+	GetPipelinesByNameOrId(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
 }
