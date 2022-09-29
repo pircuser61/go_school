@@ -747,7 +747,11 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 		pipelineId = pId
 	}
 
-	pipelines, err := ae.DB.GetPipelinesByNameOrId(ctx, pipelineId, name, page, perpage)
+	pipelines, err := ae.DB.GetPipelinesByNameOrId(ctx, db.SearchPipelineRequest{
+		Id:      pipelineId,
+		Name:    name,
+		Page:    page,
+		PerPage: perpage})
 	if err != nil {
 		e := GetPipelinesSearchError
 		log.Error(e.errorMessage(err))
