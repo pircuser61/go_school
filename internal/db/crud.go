@@ -2322,7 +2322,6 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto SearchPipelineR
 	} else {
 		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.id='%s'", dto.Id.String()))
 	}
-	fmt.Println(q)
 	rows, err := conn.Query(ctx, q, dto.PerPage, (dto.Page-1)*dto.PerPage)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
