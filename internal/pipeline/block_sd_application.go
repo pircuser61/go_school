@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	keyOutputBlueprintID       = "blueprint_id"
+	keyOutputPipelineID        = "pipeline_id"
 	keyOutputSdApplicationDesc = "description"
 	keyOutputSdApplication     = "application_body"
 )
@@ -24,13 +24,13 @@ const (
 type SdApplicationDataCtx struct{}
 
 type ApplicationData struct {
-	BlueprintID     string                 `json:"blueprint_id"`
+	PipelineID      string                 `json:"pipeline_id"`
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
 }
 
 type SdApplicationData struct {
-	BlueprintID     string                 `json:"blueprint_id"`
+	PipelineID      string                 `json:"pipeline_id"`
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
 }
@@ -89,9 +89,9 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx
 		return errors.New("invalid application data in context")
 	}
 
-	log.WithField("blueprintID", appData.BlueprintID).Info("run sd_application block")
+	log.WithField("pipelineID", appData.PipelineID).Info("run sd_application block")
 
-	runCtx.SetValue(gb.Output[keyOutputBlueprintID], appData.BlueprintID)
+	runCtx.SetValue(gb.Output[keyOutputPipelineID], appData.PipelineID)
 	runCtx.SetValue(gb.Output[keyOutputSdApplicationDesc], appData.Description)
 	runCtx.SetValue(gb.Output[keyOutputSdApplication], appData.ApplicationBody)
 
@@ -137,9 +137,9 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
-				Name:    keyOutputBlueprintID,
+				Name:    keyOutputPipelineID,
 				Type:    "string",
-				Comment: "application blueprint id",
+				Comment: "application pipeline id",
 			},
 			{
 				Name:    keyOutputSdApplicationDesc,
@@ -155,7 +155,7 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockGoSdApplicationID,
 			Params: &script.SdApplicationParams{
-				BlueprintID: "",
+				PipelineID: "",
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -193,7 +193,7 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc) (*GoSdApplica
 	}
 
 	b.State = &ApplicationData{
-		BlueprintID: params.BlueprintID,
+		PipelineID: params.PipelineID,
 	}
 
 	return b, nil

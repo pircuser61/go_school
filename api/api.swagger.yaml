@@ -1011,6 +1011,66 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: draft
+
+  /pipelines/search:
+    get:
+      tags:
+        - pipeline
+      summary: search list of pipelines
+      description: поиск списка сценариев по айди или названию
+      operationId: search-pipelines
+      parameters:
+        - name: name
+          in: query
+          description: имя пайплайна
+          required: false
+          schema:
+            type: string
+        - name: pipeline_id
+          in: query
+          description: id пайплайна
+          required: false
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: page
+          in: query
+          description: страница для отображения
+          required: false
+          schema:
+            type: integer
+        - name: perpage
+          in: query
+          description: сколько отображать на одной странице
+          required: false
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ResponsePipelineSearch'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /run/{pipelineID}:
     post:
       tags:
@@ -1117,20 +1177,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-  /run/versions/blueprint_id:
+  /run/versions/pipeline_id:
     post:
       tags:
         - version
         - run
-      summary: Run Version By blueprintID
-      description: Запустить все версии c blueprintID и первым блоком sd_application
-      operationId: run-versions-by-blueprint-id
+      summary: Run Version By pipeline_id
+      description: Запустить все версии c pipelineID и первым блоком sd_application
+      operationId: run-versions-by-pipeline-id
       requestBody:
         description: pipeline input
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RunVersionsByBlueprintIdRequest'
+              $ref: '#/components/schemas/RunVersionsByPipelineIdRequest'
         required: false
       responses:
         200:
@@ -2379,6 +2439,33 @@ components:
       enum:
         - question
         - answer
+        -
+    ResponsePipelineSearch:
+      type: object
+      properties:
+        pipelines:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pipelines'
+          description: list of pipelines
+        total:
+          type: integer
+      required:
+        - pipelines
+        - total
+
+
+    Pipelines:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя пайплайна
+        pipeline_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          description: ID пайплайна
 
     UsageResponse:
       type: object
@@ -2441,24 +2528,24 @@ components:
       type: object
     RunVersionBody:
       type: object
-    RunVersionsByBlueprintIdRequest:
-      required: [application_body,blueprint_id,description]
+    RunVersionsByPipelineIdRequest:
+      required: [application_body,pipeline_id,description]
       type: object
       properties:
         application_body:
           type: object
           properties: {}
-        blueprint_id:
+        pipeline_id:
           type: string
         description:
           type: string
     RunNewVersionByPrevVersionRequest:
-      required: [work_number,blueprint_id,description,application_body]
+      required: [work_number,pipeline_id,description,application_body]
       type: object
       properties:
         work_number:
           type: string
-        blueprint_id:
+        pipeline_id:
           type: string
         description:
           type: string

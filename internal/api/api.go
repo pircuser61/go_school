@@ -137,6 +137,8 @@ const (
 const (
 	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
 
+	RequestExecutionInfoTypeNil RequestExecutionInfoType = "<nil>"
+
 	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
 )
 
@@ -353,10 +355,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -641,8 +643,8 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
+//   - user - Single user
+//   - group - Execution group ID
 type ExecutionParamsType string
 
 // Executor update params
@@ -754,6 +756,15 @@ type NumberOperandOperandType string
 // Block constant params
 type Params interface{}
 
+// Pipelines defines model for Pipelines.
+type Pipelines struct {
+	// Имя пайплайна
+	Name *string `json:"name,omitempty"`
+
+	// ID пайплайна
+	PipelineId *string `json:"pipeline_id,omitempty"`
+}
+
 // Type of execution info
 type RequestExecutionInfoType string
 
@@ -771,11 +782,18 @@ type RequestInfoUpdateParams struct {
 	ReqType RequestExecutionInfoType `json:"reqType"`
 }
 
+// ResponsePipelineSearch defines model for ResponsePipelineSearch.
+type ResponsePipelineSearch struct {
+	// list of pipelines
+	Pipelines []Pipelines `json:"pipelines"`
+	Total     int         `json:"total"`
+}
+
 // RunNewVersionByPrevVersionRequest defines model for RunNewVersionByPrevVersionRequest.
 type RunNewVersionByPrevVersionRequest struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
-	BlueprintId     string                 `json:"blueprint_id"`
 	Description     string                 `json:"description"`
+	PipelineId      string                 `json:"pipeline_id"`
 	WorkNumber      string                 `json:"work_number"`
 }
 
@@ -794,11 +812,11 @@ type RunResponse struct {
 // RunVersionBody defines model for RunVersionBody.
 type RunVersionBody map[string]interface{}
 
-// RunVersionsByBlueprintIdRequest defines model for RunVersionsByBlueprintIdRequest.
-type RunVersionsByBlueprintIdRequest struct {
+// RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
+type RunVersionsByPipelineIdRequest struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
-	BlueprintId     string                 `json:"blueprint_id"`
 	Description     string                 `json:"description"`
+	PipelineId      string                 `json:"pipeline_id"`
 }
 
 // ScenarioVersionInfoList defines model for ScenarioVersionInfoList.
@@ -894,8 +912,8 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//  * approved - approver approved block
-//  * rejected - approver rejected block
+//   - approved - approver approved block
+//   - rejected - approver rejected block
 type ApproverDecision string
 
 // Block type (language)
@@ -937,8 +955,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -978,11 +996,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1026,6 +1044,21 @@ type CopyPipelineJSONBody EriusScenario
 // RenamePipelineJSONBody defines parameters for RenamePipeline.
 type RenamePipelineJSONBody PipelineRename
 
+// SearchPipelinesParams defines parameters for SearchPipelines.
+type SearchPipelinesParams struct {
+	// имя пайплайна
+	Name *string `json:"name,omitempty"`
+
+	// id пайплайна
+	PipelineId *string `json:"pipeline_id,omitempty"`
+
+	// страница для отображения
+	Page *int `json:"page,omitempty"`
+
+	// сколько отображать на одной странице
+	Perpage *int `json:"perpage,omitempty"`
+}
+
 // EditVersionJSONBody defines parameters for EditVersion.
 type EditVersionJSONBody EriusScenario
 
@@ -1038,8 +1071,8 @@ type RunNewVersionByPrevVersionJSONBody RunNewVersionByPrevVersionRequest
 // RunVersionJSONBody defines parameters for RunVersion.
 type RunVersionJSONBody RunVersionBody
 
-// RunVersionsByBlueprintIdJSONBody defines parameters for RunVersionsByBlueprintId.
-type RunVersionsByBlueprintIdJSONBody RunVersionsByBlueprintIdRequest
+// RunVersionsByPipelineIdJSONBody defines parameters for RunVersionsByPipelineId.
+type RunVersionsByPipelineIdJSONBody RunVersionsByPipelineIdRequest
 
 // RunPipelineJSONBody defines parameters for RunPipeline.
 type RunPipelineJSONBody RunPipelineBody
@@ -1110,8 +1143,8 @@ type RunNewVersionByPrevVersionJSONRequestBody RunNewVersionByPrevVersionJSONBod
 // RunVersionJSONRequestBody defines body for RunVersion for application/json ContentType.
 type RunVersionJSONRequestBody RunVersionJSONBody
 
-// RunVersionsByBlueprintIdJSONRequestBody defines body for RunVersionsByBlueprintId for application/json ContentType.
-type RunVersionsByBlueprintIdJSONRequestBody RunVersionsByBlueprintIdJSONBody
+// RunVersionsByPipelineIdJSONRequestBody defines body for RunVersionsByPipelineId for application/json ContentType.
+type RunVersionsByPipelineIdJSONRequestBody RunVersionsByPipelineIdJSONBody
 
 // RunPipelineJSONRequestBody defines body for RunPipeline for application/json ContentType.
 type RunPipelineJSONRequestBody RunPipelineJSONBody
@@ -1378,6 +1411,9 @@ type ServerInterface interface {
 	// Rename Pipeline
 	// (PUT /pipelines/name)
 	RenamePipeline(w http.ResponseWriter, r *http.Request)
+	// search list of pipelines
+	// (GET /pipelines/search)
+	SearchPipelines(w http.ResponseWriter, r *http.Request, params SearchPipelinesParams)
 	// Edit Draft
 	// (PUT /pipelines/version)
 	EditVersion(w http.ResponseWriter, r *http.Request)
@@ -1417,9 +1453,9 @@ type ServerInterface interface {
 	// Run Version
 	// (POST /run/version/{versionID})
 	RunVersion(w http.ResponseWriter, r *http.Request, versionID string)
-	// Run Version By blueprintID
-	// (POST /run/versions/blueprint_id)
-	RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Request)
+	// Run Version By pipeline_id
+	// (POST /run/versions/pipeline_id)
+	RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request)
 	// Run Pipeline
 	// (POST /run/{pipelineID})
 	RunPipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
@@ -1724,6 +1760,70 @@ func (siw *ServerInterfaceWrapper) RenamePipeline(w http.ResponseWriter, r *http
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RenamePipeline(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SearchPipelines operation middleware
+func (siw *ServerInterfaceWrapper) SearchPipelines(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchPipelinesParams
+
+	// ------------- Optional query parameter "name" -------------
+	if paramValue := r.URL.Query().Get("name"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "name", r.URL.Query(), &params.Name)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "pipeline_id" -------------
+	if paramValue := r.URL.Query().Get("pipeline_id"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "pipeline_id", r.URL.Query(), &params.PipelineId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipeline_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+	if paramValue := r.URL.Query().Get("page"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "page", r.URL.Query(), &params.Page)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "perpage" -------------
+	if paramValue := r.URL.Query().Get("perpage"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "perpage", r.URL.Query(), &params.Perpage)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "perpage", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchPipelines(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2067,12 +2167,12 @@ func (siw *ServerInterfaceWrapper) RunVersion(w http.ResponseWriter, r *http.Req
 	handler(w, r.WithContext(ctx))
 }
 
-// RunVersionsByBlueprintId operation middleware
-func (siw *ServerInterfaceWrapper) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Request) {
+// RunVersionsByPipelineId operation middleware
+func (siw *ServerInterfaceWrapper) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RunVersionsByBlueprintId(w, r)
+		siw.Handler.RunVersionsByPipelineId(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2610,6 +2710,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/pipelines/name", wrapper.RenamePipeline)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/pipelines/search", wrapper.SearchPipelines)
+	})
+	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/pipelines/version", wrapper.EditVersion)
 	})
 	r.Group(func(r chi.Router) {
@@ -2649,7 +2752,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/run/version/{versionID}", wrapper.RunVersion)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/run/versions/blueprint_id", wrapper.RunVersionsByBlueprintId)
+		r.Post(options.BaseURL+"/run/versions/pipeline_id", wrapper.RunVersionsByPipelineId)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/run/{pipelineID}", wrapper.RunPipeline)

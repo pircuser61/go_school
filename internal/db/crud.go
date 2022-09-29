@@ -2195,7 +2195,7 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 	return res, nil
 }
 
-func (db *PGCon) GetVersionsByBlueprintID(c context.Context, bID string) ([]entity.EriusScenario, error) {
+func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_get_versions_by_blueprint_id")
 	defer span.End()
 
@@ -2242,11 +2242,11 @@ func (db *PGCon) GetVersionsByBlueprintID(c context.Context, bID string) ([]enti
 		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
 	WHERE pv.status = 2 AND
 			pv.is_actual = TRUE AND
-			servicedesk_node_params.blueprint_id = $1 AND
+			pv.pipeline_id = $1 AND
 			servicedesk_node_params.type_id = 'servicedesk_application';
 `
 
-	rows, err := conn.Query(c, query, bID)
+	rows, err := conn.Query(c, query, pID)
 	if err != nil {
 		return nil, err
 	}
@@ -2291,5 +2291,60 @@ func (db *PGCon) GetVersionsByBlueprintID(c context.Context, bID string) ([]enti
 		res = append(res, p)
 	}
 
+	return res, nil
+}
+
+func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, id *uuid.UUID, name *string, page, perPage *int) ([]entity.SearchPipeline, error) {
+	c, span := trace.StartSpan(ctx, "pg_search_pipeline")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(c)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	var q = `
+		SELECT
+		p.name,
+		p.id,
+		count(*) over () as total
+		FROM pipeliner.pipelines p
+
+		WHERE p.deleted_at is null AND --pipe--
+		LIMIT $1 OFFSET $2;
+`
+	if id != nil {
+		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.id='%s'", id.String()))
+	}
+
+	if name != nil {
+		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.name ilike'%%%s%%'", *name))
+	}
+	rows, err := conn.Query(ctx, q, *perPage, (*page)*(*perPage))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+	var res []entity.SearchPipeline
+	//nolint:dupl //scan
+	for rows.Next() {
+		s := entity.SearchPipeline{}
+		err = rows.Scan(
+			&s.PipelineId,
+			&s.PipelineName,
+			&s.Total,
+		)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, s)
+	}
 	return res, nil
 }
