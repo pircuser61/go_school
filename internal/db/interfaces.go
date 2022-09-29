@@ -113,5 +113,5 @@ type Database interface {
 	RollbackVersion(ctx c.Context, pipelineID, versionID uuid.UUID) error
 	GetVersionsByPipelineID(ctx c.Context, blueprintID string) ([]e.EriusScenario, error)
 	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
-	GetPipelinesByNameOrId(ctx c.Context, id *uuid.UUID, name *string, page, perPage *int) ([]e.SearchPipeline, error)
+	GetPipelinesByNameOrId(ctx c.Context, id uuid.UUID, name string, page, perPage int) ([]e.SearchPipeline, error)
 }

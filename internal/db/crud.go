@@ -2294,7 +2294,7 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 	return res, nil
 }
 
-func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, id *uuid.UUID, name *string, page, perPage *int) ([]entity.SearchPipeline, error) {
+func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, id uuid.UUID, name string, page, perPage int) ([]entity.SearchPipeline, error) {
 	c, span := trace.StartSpan(ctx, "pg_search_pipeline")
 	defer span.End()
 
@@ -2313,18 +2313,17 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, id *uuid.UUID, name
 		p.id,
 		count(*) over () as total
 		FROM pipeliner.pipelines p
-
-		WHERE p.deleted_at is null AND --pipe--
+		WHERE p.deleted_at is null  --pipe--
 		LIMIT $1 OFFSET $2;
 `
-	if id != nil {
+
+	if name != "" {
+		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.name ilike'%%%s%%'", name))
+	} else {
 		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.id='%s'", id.String()))
 	}
-
-	if name != nil {
-		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.name ilike'%%%s%%'", *name))
-	}
-	rows, err := conn.Query(ctx, q, *perPage, (*page)*(*perPage))
+	fmt.Println(q)
+	rows, err := conn.Query(ctx, q, perPage, (page-1)*perPage)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -2337,8 +2336,8 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, id *uuid.UUID, name
 	for rows.Next() {
 		s := entity.SearchPipeline{}
 		err = rows.Scan(
-			&s.PipelineId,
 			&s.PipelineName,
+			&s.PipelineId,
 			&s.Total,
 		)
 		if err != nil {

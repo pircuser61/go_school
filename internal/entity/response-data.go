@@ -134,6 +134,12 @@ type DebugResult struct {
 	Task        *EriusTask `json:"task"`
 }
 
+type SearchPipeline struct {
+	PipelineName string
+	PipelineId   uuid.UUID `pg:"type:uuid" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	Total        int
+}
+
 func ConvertSocket(sockets []Socket) []script.Socket {
 	var result = make([]script.Socket, 0)
 

@@ -83,6 +83,7 @@ const (
 	GetVersionsByWorkNumberError
 	PipelineRenameParseError
 	PipelineRenameError
+	GetPipelinesSearchError
 )
 
 //nolint:dupl //its not duplicate
@@ -152,9 +153,11 @@ var errorText = map[Err]string{
 	GetVersionsByWorkNumberError:  "can`t find version by work id",
 	PipelineRenameParseError:      "can't parse rename pipeline data",
 	PipelineRenameError:           "can't rename pipeline",
+	GetPipelinesSearchError:       "can't find pipelines by search",
 }
 
 // JOKE.
+//
 //nolint:dupl //its not duplicate
 var errorDescription = map[Err]string{
 	UnknownError:                  "Сохраняйте спокойствие, что-то произошло непонятное",
@@ -222,6 +225,7 @@ var errorDescription = map[Err]string{
 	GetVersionsByWorkNumberError:  "Ошибка при получении сценария по id процесса",
 	PipelineRenameParseError:      "Не удалось получить информацию о переимоновании сценария",
 	PipelineRenameError:           "Не удалось переименовать сценарий",
+	GetPipelinesSearchError:       "Не удалось найти сценарии в базе данных",
 }
 
 var errorStatus = map[Err]int{

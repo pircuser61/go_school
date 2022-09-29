@@ -566,11 +566,11 @@ func (_m *MockedDatabase) GetPipelineVersions(ctx context.Context, id uuid.UUID)
 }
 
 // GetPipelinesByNameOrId provides a mock function with given fields: ctx, id, name, page, perPage
-func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, id *uuid.UUID, name *string, page *int, perPage *int) ([]entity.SearchPipeline, error) {
+func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, id uuid.UUID, name string, page int, perPage int) ([]entity.SearchPipeline, error) {
 	ret := _m.Called(ctx, id, name, page, perPage)
 
 	var r0 []entity.SearchPipeline
-	if rf, ok := ret.Get(0).(func(context.Context, *uuid.UUID, *string, *int, *int) []entity.SearchPipeline); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, int, int) []entity.SearchPipeline); ok {
 		r0 = rf(ctx, id, name, page, perPage)
 	} else {
 		if ret.Get(0) != nil {
@@ -579,7 +579,7 @@ func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, id *uuid.U
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *uuid.UUID, *string, *int, *int) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, int, int) error); ok {
 		r1 = rf(ctx, id, name, page, perPage)
 	} else {
 		r1 = ret.Error(1)
