@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -773,9 +772,7 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 		id := (pipelines)[i].PipelineId.String()
 		responsePipelines.Pipelines = append(responsePipelines.Pipelines, Pipelines{
 			PipelineId: &id, Name: &(pipelines)[i].PipelineName})
-
 	}
-	fmt.Println(len(pipelines))
 	responsePipelines.Total = (pipelines)[0].Total
 	err = sendResponse(w, http.StatusOK, responsePipelines)
 	if err != nil {
@@ -785,7 +782,6 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 
 		return
 	}
-
 }
 
 func prepareParams(params SearchPipelinesParams) (page, perpage int, name string) {
