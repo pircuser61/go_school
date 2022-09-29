@@ -8,18 +8,27 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
+
 	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+)
+
+const (
+	defaultPage    = 1
+	defaultPerPage = 10
 )
 
 func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, pipelineID string) {
@@ -147,8 +156,8 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID
 	})
 }
 
-func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Request) {
-	ctx, s := trace.StartSpan(r.Context(), "run_versions_by_blueprint_id")
+func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "run_versions_by_pipeline_id")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -164,7 +173,7 @@ func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	req := &RunVersionsByBlueprintIdRequest{}
+	req := &RunVersionsByPipelineIdRequest{}
 
 	err = json.Unmarshal(body, req)
 	if err != nil {
@@ -175,15 +184,15 @@ func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if req.BlueprintId == "" {
+	if req.PipelineId == "" {
 		e := ValidationError
-		log.Error(e.errorMessage(errors.New("blueprintID is empty")))
+		log.Error(e.errorMessage(errors.New("PipelineID is empty")))
 		_ = e.sendError(w)
 
 		return
 	}
 
-	versions, err := ae.DB.GetVersionsByBlueprintID(ctx, req.BlueprintId)
+	versions, err := ae.DB.GetVersionsByPipelineID(ctx, req.PipelineId)
 	if err != nil {
 		e := GetVersionsByBlueprintIdError
 		log.Error(e.errorMessage(err))
@@ -197,7 +206,7 @@ func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Reques
 	respChan := make(chan *entity.RunResponse, len(versions))
 
 	ctx = c.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
-		BlueprintID:     req.BlueprintId,
+		PipelineID:      req.PipelineId,
 		Description:     req.Description,
 		ApplicationBody: req.ApplicationBody,
 	})
@@ -219,7 +228,7 @@ func (ae *APIEnv) RunVersionsByBlueprintId(w http.ResponseWriter, r *http.Reques
 			}
 
 			if v == nil {
-				log.Error("run_versions_by_blueprint_id execution error")
+				log.Error("run_versions_by_pipeline_id execution error")
 				return
 			}
 			ch <- v
@@ -273,9 +282,9 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if req.BlueprintId == "" {
+	if req.PipelineId == "" {
 		e := ValidationError
-		log.Error(e.errorMessage(errors.New("blueprintID is empty")))
+		log.Error(e.errorMessage(errors.New("PipelineId is empty")))
 		_ = e.sendError(w)
 
 		return
@@ -299,7 +308,7 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 	}
 
 	ctx = c.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
-		BlueprintID:     req.BlueprintId,
+		PipelineID:      req.PipelineId,
 		Description:     req.Description,
 		ApplicationBody: req.ApplicationBody,
 	})
@@ -558,7 +567,7 @@ type execVersionDTO struct {
 	workNumber  string
 }
 
-//nolint //need big cyclo,need equal string for all usages
+// nolint //need big cyclo,need equal string for all usages
 func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunResponse, error) {
 	_, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
@@ -716,4 +725,72 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		}()
 	}
 	return &ep, 0, nil
+}
+
+func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, params SearchPipelinesParams) {
+	ctx, s := trace.StartSpan(req.Context(), "search_pipelines")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	if params.PipelineId == nil && params.PipelineName == nil {
+		e := ValidationPipelineSearchError
+		log.Error(e.errorMessage(errors.New("name and id are empty")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	items, err := ae.DB.GetPipelinesByNameOrId(ctx, toDbSearchPipelinesParams(&params))
+	if err != nil {
+		e := GetPipelinesSearchError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	res := &ResponsePipelineSearch{}
+
+	for i := range items {
+		res.Items = append(res.Items, SearchPipelineItem{
+			Name:       &items[i].PipelineName,
+			PipelineId: &items[i].PipelineId,
+		})
+	}
+
+	if len(items) > 0 {
+		res.Total = items[0].Total
+	}
+
+	err = sendResponse(w, http.StatusOK, res)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func toDbSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelineRequest) {
+	var (
+		page    = defaultPage
+		perPage = defaultPerPage
+	)
+
+	if in.Page == nil {
+		in.Page = &page
+	}
+
+	if in.PerPage == nil {
+		in.PerPage = &perPage
+	}
+
+	return &db.SearchPipelineRequest{
+		PipelineName: in.PipelineName,
+		PipelineId:   in.PipelineId,
+		Limit:        *in.PerPage,
+		Offset:       (*in.Page * *in.PerPage) - *in.PerPage,
+	}
 }
