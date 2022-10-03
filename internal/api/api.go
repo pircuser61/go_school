@@ -337,7 +337,7 @@ type ApproverParams struct {
 	AutoAction *ApproveAutoAction `json:"auto_action,omitempty"`
 
 	// List of accessibility properties for forms
-	FormsAccessibility *[]FormsAccessibility `json:"formsAccessibility,omitempty"`
+	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
 	// Show action edit application in SD
 	IsEditable         bool `json:"is_editable"`
@@ -631,7 +631,7 @@ type ExecutionParams struct {
 	ExecutorsGroupName string `json:"executors_group_name"`
 
 	// List of accessibility properties for forms
-	FormsAccessibility *[]FormsAccessibility `json:"formsAccessibility,omitempty"`
+	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`
@@ -669,6 +669,18 @@ type ExecutorChangeParams struct {
 
 // Form accessibility preferences for certain node
 type FormAccessType string
+
+// Form params
+type FormParams struct {
+	// form template id
+	BlueprintId string `json:"blueprint_id"`
+
+	// form template id name
+	BlueprintName string `json:"blueprint_name"`
+
+	// Executor value
+	Executor *string `json:"executor,omitempty"`
+}
 
 // FormsAccessibility defines model for FormsAccessibility.
 type FormsAccessibility struct {
