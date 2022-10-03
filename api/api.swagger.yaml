@@ -2874,7 +2874,7 @@ components:
           type: integer
           description: Execution SLA (in working hours)
           minimum: 1
-        formsAccessibility:
+        forms_accessibility:
           type: array
           description: List of accessibility properties for forms
           items:
@@ -2917,7 +2917,7 @@ components:
           description: Approver value (depends on type)
         approvementRule:
           $ref: '#/components/schemas/ApprovementRule'
-        formsAccessibility:
+        forms_accessibility:
           type: array
           description: List of accessibility properties for forms
           items:

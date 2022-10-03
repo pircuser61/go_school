@@ -335,7 +335,7 @@ type ApproverParams struct {
 	AutoAction *ApproveAutoAction `json:"auto_action,omitempty"`
 
 	// List of accessibility properties for forms
-	FormsAccessibility *[]FormsAccessibility `json:"formsAccessibility,omitempty"`
+	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
 	// Show action edit application in SD
 	IsEditable         bool `json:"is_editable"`
@@ -629,7 +629,7 @@ type ExecutionParams struct {
 	ExecutorsGroupName string `json:"executors_group_name"`
 
 	// List of accessibility properties for forms
-	FormsAccessibility *[]FormsAccessibility `json:"formsAccessibility,omitempty"`
+	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`
