@@ -4,9 +4,10 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
+
+	"golang.org/x/net/context"
 
 	"github.com/pkg/errors"
 
@@ -20,17 +21,17 @@ import (
 )
 
 const (
-	keyOutputExecutor = "executor"
-	keyOutputFormBody = "form_body"
+	keyOutputFormExecutor = "executor"
+	keyOutputFormBody     = "application_body"
 )
 
 type FormData struct {
-	FormId         string                 `json:"form_id"`
-	Type           script.ApproverType    `json:"type"`
-	Executors      map[string]struct{}    `json:"executors"`
-	FormBody       map[string]interface{} `json:"form_body"`
-	IsFilled       bool                   `json:"is_filled"`
-	ActualExecutor *string                `json:"actual_executor,omitempty"`
+	BlueprintId     string                 `json:"blueprint_id"`
+	BlueprintName   string                 `json:"blueprint_name"`
+	Executors       map[string]struct{}    `json:"executors"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+	IsFilled        bool                   `json:"is_filled"`
+	ActualExecutor  *string                `json:"actual_executor,omitempty"`
 
 	SLA int `json:"sla"`
 
@@ -82,6 +83,22 @@ func (gb *GoFormBlock) IsScenario() bool {
 	return false
 }
 
+func (gb *GoFormBlock) GetState() interface{} {
+	return gb.State
+}
+
+func (gb *GoFormBlock) Skipped(_ *store.VariableStore) []string {
+	return nil
+}
+
+func (gb *GoFormBlock) Next(_ *store.VariableStore) ([]string, bool) {
+	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
+}
+
 //nolint:gocyclo //ok
 func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
 	ctx, s := trace.StartSpan(ctx, "run_go_form_block")
@@ -131,8 +148,8 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 			actualExecutor = *state.ActualExecutor
 		}
 
-		runCtx.SetValue(gb.Output[keyOutputExecutor], actualExecutor)
-		runCtx.SetValue(gb.Output[keyOutputFormBody], gb.State.FormBody)
+		runCtx.SetValue(gb.Output[keyOutputFormExecutor], actualExecutor)
+		runCtx.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
 
 		var stateBytes []byte
 		stateBytes, err = json.Marshal(gb.State)
@@ -148,44 +165,66 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 
 func (gb *GoFormBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
-		ID:        BlockGoApproverID,
+		ID:        BlockGoFormID,
 		BlockType: script.TypeGo,
 		Title:     gb.Title,
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
-				Name:    keyOutputApprover,
+				Name:    keyOutputFormExecutor,
 				Type:    "string",
-				Comment: "approver login which made a decision",
+				Comment: "form executor login",
 			},
 			{
-				Name:    keyOutputDecision,
+				Name:    keyOutputFormBody,
 				Type:    "string",
-				Comment: "block decision",
-			},
-			{
-				Name:    keyOutputComment,
-				Type:    "string",
-				Comment: "approver comment",
+				Comment: "form body",
 			},
 		},
 		Params: &script.FunctionParams{
-			Type: BlockGoApproverID,
-			Params: &script.ApproverParams{
-				Approver:           "",
-				Type:               "",
-				SLA:                0,
-				IsEditable:         false,
-				RepeatPrevDecision: false,
-				ApproversGroupID:   "",
-				ApproversGroupName: "",
-			},
+			Type:   BlockGoFormID,
+			Params: &script.FormParams{},
 		},
-		Sockets: []script.Socket{
-			script.ApprovedSocket,
-			script.RejectedSocket,
-			script.EditAppSocket,
-			script.RequestAddInfoSocket,
-		},
+		Sockets: []script.Socket{script.DefaultSocket},
 	}
+}
+
+func (gb *GoFormBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+	return nil, nil
+}
+
+// nolint:dupl // another block
+func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) {
+	b := &GoFormBlock{
+		Name:    name,
+		Title:   ef.Title,
+		Input:   map[string]string{},
+		Output:  map[string]string{},
+		Sockets: entity.ConvertSocket(ef.Sockets),
+	}
+
+	for _, v := range ef.Input {
+		b.Input[v.Name] = v.Global
+	}
+
+	for _, v := range ef.Output {
+		b.Output[v.Name] = v.Global
+	}
+
+	var params script.FormParams
+	err := json.Unmarshal(ef.Params, &params)
+	if err != nil {
+		return nil, errors.Wrap(err, "can not get form parameters")
+	}
+
+	if err = params.Validate(); err != nil {
+		return nil, errors.Wrap(err, "invalid form parameters")
+	}
+
+	b.State = &FormData{
+		BlueprintId:   params.BlueprintId,
+		BlueprintName: params.BlueprintName,
+	}
+
+	return b, nil
 }
