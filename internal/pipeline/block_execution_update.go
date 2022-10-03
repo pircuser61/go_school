@@ -177,6 +177,7 @@ type executorsStartWork struct {
 	byLogin string
 }
 
+//nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updateRequestExecutionInfoDto) (err error) {
 	var updateParams RequestInfoUpdateParams
 	err = json.Unmarshal(dto.data.Parameters, &updateParams)
@@ -274,6 +275,8 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 		dto.byLogin: {},
 	}
 
+	gb.State.IsTakenInWork = true
+
 	dto.step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
 		return err
@@ -295,9 +298,10 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 		return err
 	}
 
-	if err := gb.emailGroupExecutors(ctx, executorLogins, dto.byLogin); err != nil {
+	if err = gb.emailGroupExecutors(ctx, executorLogins, dto.byLogin); err != nil {
 		return nil
 	}
+
 	return nil
 }
 

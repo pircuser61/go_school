@@ -532,6 +532,7 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 				RepeatPrevDecision: false,
 				ApproversGroupID:   "",
 				ApproversGroupName: "",
+				FormsAccessibility: []script.FormAccessibility{},
 			},
 		},
 		Sockets: []script.Socket{

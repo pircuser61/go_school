@@ -11,12 +11,12 @@ require (
 	github.com/go-chi/render v1.0.1
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
+	github.com/iancoleman/orderedmap v0.2.0
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose v2.7.0+incompatible
 	github.com/prometheus/client_golang v1.10.0
 	github.com/stretchr/testify v1.7.1
-	github.com/swaggo/http-swagger v1.0.0
 	github.com/swaggo/swag v1.7.0
 	gitlab.services.mts.ru/abp/mail/pkg v1.18.6
 	gitlab.services.mts.ru/abp/myosotis v1.4.1
@@ -24,9 +24,10 @@ require (
 	gitlab.services.mts.ru/erius/network-monitor-client v1.0.5
 	gitlab.services.mts.ru/erius/scheduler_client v0.0.5
 	go.opencensus.io v0.23.0
+	golang.org/x/net v0.0.0-20220812174116-3211cb980234
 	google.golang.org/grpc v1.40.0
 	gopkg.in/square/go-jose.v2 v2.6.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.0
 )
 
 require (
@@ -50,7 +51,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
-	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -71,12 +71,10 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
-	golang.org/x/crypto v0.0.0-20220513210258-46612604a0f9 // indirect
-	golang.org/x/net v0.0.0-20220513224357-95641704303c // indirect
+	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220513210249-45d2b4557a2a // indirect
+	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.10 // indirect
 	google.golang.org/api v0.37.0 // indirect

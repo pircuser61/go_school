@@ -4,6 +4,8 @@ import (
 	c "context"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+
 	"github.com/google/uuid"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -20,6 +22,8 @@ type PipelineStorager interface {
 }
 
 type TaskStorager interface {
+	GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error)
+	SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error
 	GetTasks(ctx c.Context, filters e.TaskFilter) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, userName string) (*e.CountTasks, error)
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
@@ -66,6 +70,13 @@ type UpdateTaskBlocksDataRequest struct {
 	PrevUpdateStatusBlocks map[string]string
 }
 
+type SearchPipelineRequest struct {
+	PipelineId   *string
+	PipelineName *string
+	Limit        int
+	Offset       int
+}
+
 //go:generate mockery --name=Database --structname=MockedDatabase
 type Database interface {
 	PipelineStorager
@@ -107,6 +118,7 @@ type Database interface {
 	SwitchRejected(ctx c.Context, versionID uuid.UUID, comment, author string) error
 	GetRejectedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	RollbackVersion(ctx c.Context, pipelineID, versionID uuid.UUID) error
-	GetVersionsByBlueprintID(ctx c.Context, blueprintID string) ([]e.EriusScenario, error)
+	GetVersionsByPipelineID(ctx c.Context, blueprintID string) ([]e.EriusScenario, error)
 	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
+	GetPipelinesByNameOrId(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
 }

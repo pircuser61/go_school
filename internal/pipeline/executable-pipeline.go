@@ -654,6 +654,10 @@ func (ep *ExecutablePipeline) CreateGoBlock(ctx c.Context, ef *entity.EriusFunc,
 		return createGoStartParallelBlock(name, ef), nil
 	case BlockGoNotificationID:
 		return createGoNotificationBlock(name, ef, ep)
+	case BlockExecutableFunctionID:
+		return createExecutableFunctionBlock(name, ef)
+	case BlockGoFormID:
+		return createGoFormBlock(name, ef)
 	}
 
 	return nil, errors.New("unknown go-block type: " + ef.TypeID)

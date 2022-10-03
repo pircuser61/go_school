@@ -8,6 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+
+	"golang.org/x/net/context"
+
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
@@ -120,6 +124,11 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		q = fmt.Sprintf("%s OR w.human_status = 'wait')", q)
 	}
 
+	if filters.Receiver != nil {
+		args = append(args, *filters.Receiver)
+		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
+	}
+
 	if order != "" {
 		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
 	}
@@ -137,6 +146,31 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	return q, args
 }
 
+func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
+	q := `SELECT content->'State'->'servicedesk_application_0'
+from pipeliner.variable_storage 
+where step_type = 'servicedesk_application' 
+and work_id = (select id from pipeliner.works where work_number = $1)`
+	var data *orderedmap.OrderedMap
+	if err := db.Pool.QueryRow(context.Background(), q, workNumber).Scan(&data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
+	q := `UPDATE pipeliner.variable_storage 
+set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
+where work_id = (select id from pipeliner.works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	q = fmt.Sprintf(q, string(bytes))
+	_, err = db.Pool.Exec(context.Background(), q, workNumber)
+	return err
+}
+
 //nolint:gocritic //filters
 func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
@@ -151,6 +185,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 
 	filters.Limit = nil
 	filters.Offset = nil
+	emptyOrder := ""
+	filters.Order = &emptyOrder
 	q, args = compileGetTasksQuery(filters)
 
 	count, err := db.getTasksCount(ctx, q, args)
@@ -202,7 +238,7 @@ func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
 				ORDER BY vs.time DESC
 				LIMIT 1
 			) descr ON descr.work_id = w.id
-		WHERE w.status = 1 AND w.child_id IS NULL AND w.id = '32bde489-fb03-42cb-8e7f-e403b08c3682'`
+		WHERE w.status = 1 AND w.child_id IS NULL`
 
 	return db.getTasks(ctx, query, []interface{}{})
 }

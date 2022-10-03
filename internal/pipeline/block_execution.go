@@ -471,9 +471,10 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockGoExecutionID,
 			Params: &script.ExecutionParams{
-				Executors: "",
-				Type:      "",
-				SLA:       0,
+				Executors:          "",
+				Type:               "",
+				SLA:                0,
+				FormsAccessibility: []script.FormAccessibility{},
 			},
 		},
 		Sockets: []script.Socket{

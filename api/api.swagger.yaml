@@ -250,6 +250,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /modules/{moduleName}:
+    post:
+      tags:
+        - modules
+      summary: Run Module By Name
+      description: Запустить блок
+      operationId: module-run
+      parameters:
+        - name: moduleName
+          in: path
+          description: module name
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UsageResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /modules/{moduleName}/usage:
     get:
       tags:
@@ -973,6 +1011,66 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: draft
+
+  /pipelines/search:
+    get:
+      tags:
+        - pipeline
+      summary: search list of pipelines
+      description: поиск списка сценариев по айди или названию
+      operationId: search-pipelines
+      parameters:
+        - name: pipelineName
+          in: query
+          description: имя пайплайна
+          required: false
+          schema:
+            type: string
+        - name: pipelineId
+          in: query
+          description: id пайплайна
+          required: false
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: page
+          in: query
+          description: страница для отображения
+          required: false
+          schema:
+            type: integer
+        - name: perPage
+          in: query
+          description: сколько отображать на одной странице
+          required: false
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ResponsePipelineSearch'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /run/{pipelineID}:
     post:
       tags:
@@ -1079,20 +1177,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-  /run/versions/blueprint_id:
+  /run/versions/pipeline_id:
     post:
       tags:
         - version
         - run
-      summary: Run Version By blueprintID
-      description: Запустить все версии c blueprintID и первым блоком sd_application
-      operationId: run-versions-by-blueprint-id
+      summary: Run Version By pipeline_id
+      description: Запустить все версии c pipelineID и первым блоком sd_application
+      operationId: run-versions-by-pipeline-id
       requestBody:
         description: pipeline input
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RunVersionsByBlueprintIdRequest'
+              $ref: '#/components/schemas/RunVersionsByPipelineIdRequest'
         required: false
       responses:
         200:
@@ -1389,6 +1487,11 @@ paths:
           schema:
             type: boolean
           description: get tasks with status wait or done
+        - name: receiver
+          in: query
+          schema:
+            type: string
+          description: receiver login
       responses:
         200:
           description: OK
@@ -2336,6 +2439,32 @@ components:
       enum:
         - question
         - answer
+        -
+    ResponsePipelineSearch:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchPipelineItem'
+          description: list of pipelines
+        total:
+          type: integer
+      required:
+        - items
+        - total
+
+    SearchPipelineItem:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя пайплайна
+        pipeline_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          description: ID пайплайна
 
     UsageResponse:
       type: object
@@ -2367,6 +2496,10 @@ components:
         - name
         - id
 
+    Application:
+      type: object
+      additionalProperties: true
+
     CreateTaskRequest:
       type: object
       required: [parameters,version_id]
@@ -2394,24 +2527,24 @@ components:
       type: object
     RunVersionBody:
       type: object
-    RunVersionsByBlueprintIdRequest:
-      required: [application_body,blueprint_id,description]
+    RunVersionsByPipelineIdRequest:
+      required: [application_body,pipeline_id,description]
       type: object
       properties:
         application_body:
           type: object
           properties: {}
-        blueprint_id:
+        pipeline_id:
           type: string
         description:
           type: string
     RunNewVersionByPrevVersionRequest:
-      required: [work_number,blueprint_id,description,application_body]
+      required: [work_number,pipeline_id,description,application_body]
       type: object
       properties:
         work_number:
           type: string
-        blueprint_id:
+        pipeline_id:
           type: string
         description:
           type: string
@@ -2823,10 +2956,16 @@ components:
         executors:
           type: string
           description: Executor value (depends on type)
+
         sla:
           type: integer
           description: Execution SLA (in working hours)
           minimum: 1
+        formsAccessibility:
+          type: array
+          description: List of accessibility properties for forms
+          items:
+            $ref: '#/components/schemas/FormsAccessibility'
         executors_group_id:
           type: string
           description: Executors group id in SD
@@ -2844,6 +2983,9 @@ components:
       type: object
       description: Form params
       properties:
+        executor:
+          type: string
+          description: Executor value
         blueprint_id:
           type: string
           description: form template id
@@ -2879,6 +3021,11 @@ components:
           description: Approver value (depends on type)
         approvementRule:
           $ref: '#/components/schemas/ApprovementRule'
+        formsAccessibility:
+          type: array
+          description: List of accessibility properties for forms
+          items:
+            $ref: '#/components/schemas/FormsAccessibility'
         sla:
           type: integer
           description: Approvement SLA (in working hours)
@@ -2905,6 +3052,24 @@ components:
         - approvers_group_id
         - approvers_group_name
 
+    FormsAccessibility:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Form ID
+        name:
+          type: string
+          description: Form name
+        accessType:
+          $ref: '#/components/schemas/FormAccessType'
+
+    FormAccessType:
+      type: string
+      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование" ]
+      x-enum-varnames: [ "None", "Read", "ReadWrite" ]
+      description: Form accessibility preferences for certain node
+
     ApprovementRule:
       type: string
       enum: [ "Один из согласующих", "Все согласующие" ]
@@ -2917,10 +3082,6 @@ components:
       enum:
         - approve
         - reject
-
-    Application:
-      type: object
-      additionalProperties: true
 
     FunctionParams:
       type: object

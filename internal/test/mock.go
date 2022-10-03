@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
 	"github.com/google/uuid"
@@ -37,7 +39,7 @@ var (
 	errNotImplemented = errors.New("not implemented")
 )
 
-//nolint //need globals
+// nolint //need globals
 var (
 	linearPipelineBlock = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		type InputStruct struct {
@@ -962,6 +964,14 @@ func (m *MockDB) UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, stat
 	return nil
 }
 
+func (m *MockDB) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
+	return nil, nil
+}
+
+func (m *MockDB) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
+	return nil
+}
+
 //nolint:gocritic //filters
 func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
 	return nil, errNotImplemented
@@ -1186,6 +1196,9 @@ func (m *MockDB) RollbackVersion(c context.Context, pipelineID, versionID uuid.U
 	return errNotImplemented
 }
 
-func (m *MockDB) GetVersionsByBlueprintID(c context.Context, blueprintID string) ([]entity.EriusScenario, error) {
+func (m *MockDB) GetVersionsByPipelineID(c context.Context, pipelineID string) ([]entity.EriusScenario, error) {
+	return nil, errNotImplemented
+}
+func (m *MockDB) GetPipelinesByNameOrId(c context.Context, dto *db.SearchPipelineRequest) ([]entity.SearchPipeline, error) {
 	return nil, errNotImplemented
 }

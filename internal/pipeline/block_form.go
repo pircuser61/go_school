@@ -222,6 +222,9 @@ func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) 
 	}
 
 	b.State = &FormData{
+		Executors: map[string]struct{}{
+			params.Executor: {},
+		},
 		BlueprintId:   params.BlueprintId,
 		BlueprintName: params.BlueprintName,
 	}

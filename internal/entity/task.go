@@ -96,6 +96,7 @@ type GetTaskParams struct {
 	SelectAs    *string     `json:"select_as"`
 	Archived    *bool       `json:"archived"`
 	ForCarousel *bool       `json:"forCarousel"`
+	Receiver    *string     `json:"receiver"`
 }
 
 type TimePeriod struct {
@@ -145,4 +146,12 @@ func (t *TaskUpdate) Validate() error {
 	}
 
 	return nil
+}
+
+type NeededNotif struct {
+	Initiator   string
+	Recipient   string
+	WorkNum     string
+	Description interface{}
+	Status      string
 }

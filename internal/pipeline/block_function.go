@@ -1,8 +1,13 @@
 package pipeline
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
 
 	"go.opencensus.io/trace"
 
@@ -30,6 +35,7 @@ type ExecutableFunctionBlock struct {
 	Output  map[string]string
 	Sockets []script.Socket
 	State   *ExecutableFunction
+	RunURL  string
 }
 
 func (fb *ExecutableFunctionBlock) GetStatus() Status {
@@ -75,6 +81,66 @@ func (fb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool)
 
 func (fb *ExecutableFunctionBlock) Skipped(_ *store.VariableStore) []string {
 	return nil
+}
+
+func (fb *ExecutableFunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStore) (interface{}, error) {
+	_, s := trace.StartSpan(ctx, "run_function_block")
+	defer s.End()
+
+	values := make(map[string]interface{})
+
+	for ikey, gkey := range fb.Input {
+		val, ok := runCtx.GetValue(gkey) // if no value - empty value
+		if ok {
+			values[ikey] = val
+		}
+	}
+
+	url := fmt.Sprintf(fb.RunURL, fb.Name)
+
+	b, err := json.Marshal(values)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	// fixme extract "X-Request-Id" to variable
+	req.Header.Set("Content-Type", "application/json")
+
+	const timeoutMinutes = 15
+
+	client := &http.Client{
+		Timeout: timeoutMinutes * time.Minute,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(body) != 0 {
+		result := make(map[string]interface{})
+		err = json.Unmarshal(body, &result)
+
+		if err != nil {
+			return string(body), nil
+		}
+
+		return result, nil
+	}
+
+	return string(body), nil
 }
 
 func (fb *ExecutableFunctionBlock) GetState() interface{} {
