@@ -3,13 +3,14 @@ package script
 import "errors"
 
 type FormParams struct {
-	FormId   string `json:"form_id"`
-	FormName string `json:"form_name"`
+	BlueprintId   string `json:"blueprint_id"`
+	BlueprintName string `json:"blueprint_name"`
+	Executor      string `json:"executor"`
 }
 
 func (a *FormParams) Validate() error {
-	if a.FormId == "" || a.FormName == "" {
-		return errors.New("got no form name or id")
+	if a.BlueprintId == "" || a.BlueprintName == "" || a.Executor == "" {
+		return errors.New("got no form name, id or executor")
 	}
 
 	return nil

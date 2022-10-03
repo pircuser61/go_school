@@ -2707,6 +2707,7 @@ components:
         - $ref: '#/components/schemas/SdApplicationParams'
         - $ref: '#/components/schemas/NotificationParams'
         - $ref: "#/components/schemas/ConditionParams"
+        - $ref: "#/components/schemas/FormParams"
 
     ConditionGroup:
       type: object
@@ -2977,6 +2978,23 @@ components:
         - sla
         - executors_group_id
         - executors_group_name
+
+    FormParams:
+      type: object
+      description: Form params
+      properties:
+        executor:
+          type: string
+          description: Executor value
+        blueprint_id:
+          type: string
+          description: form template id
+        blueprint_name:
+          type: string
+          description: form template id name
+      required:
+        - blueprint_id
+        - blueprint_name
 
     ApproverType:
       type: string

@@ -22,17 +22,16 @@ import (
 
 const (
 	keyOutputFormExecutor = "executor"
-	keyOutputFormBody     = "form_body"
+	keyOutputFormBody     = "application_body"
 )
 
 type FormData struct {
-	FormId         string                 `json:"form_id"`
-	FormName       string                 `json:"form_name"`
-	Type           script.ApproverType    `json:"type"`
-	Executors      map[string]struct{}    `json:"executors"`
-	FormBody       map[string]interface{} `json:"form_body"`
-	IsFilled       bool                   `json:"is_filled"`
-	ActualExecutor *string                `json:"actual_executor,omitempty"`
+	BlueprintId     string                 `json:"blueprint_id"`
+	BlueprintName   string                 `json:"blueprint_name"`
+	Executors       map[string]struct{}    `json:"executors"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+	IsFilled        bool                   `json:"is_filled"`
+	ActualExecutor  *string                `json:"actual_executor,omitempty"`
 
 	SLA int `json:"sla"`
 
@@ -150,7 +149,7 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 		}
 
 		runCtx.SetValue(gb.Output[keyOutputFormExecutor], actualExecutor)
-		runCtx.SetValue(gb.Output[keyOutputFormBody], gb.State.FormBody)
+		runCtx.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
 
 		var stateBytes []byte
 		stateBytes, err = json.Marshal(gb.State)
@@ -223,8 +222,11 @@ func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) 
 	}
 
 	b.State = &FormData{
-		FormId:   params.FormId,
-		FormName: params.FormName,
+		Executors: map[string]struct{}{
+			params.Executor: {},
+		},
+		BlueprintId:   params.BlueprintId,
+		BlueprintName: params.BlueprintName,
 	}
 
 	return b, nil
