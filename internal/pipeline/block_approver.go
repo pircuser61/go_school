@@ -539,7 +539,6 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			script.ApprovedSocket,
 			script.RejectedSocket,
 			script.EditAppSocket,
-			script.RequestAddInfoSocket,
 		},
 	}
 }
