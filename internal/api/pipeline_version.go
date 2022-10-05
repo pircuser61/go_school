@@ -206,7 +206,6 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	respChan := make(chan *entity.RunResponse, len(versions))
 
 	ctx = c.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
-		PipelineID:      req.PipelineId,
 		Description:     req.Description,
 		ApplicationBody: req.ApplicationBody,
 	})
@@ -308,7 +307,6 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 	}
 
 	ctx = c.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
-		PipelineID:      req.PipelineId,
 		Description:     req.Description,
 		ApplicationBody: req.ApplicationBody,
 	})

@@ -5,13 +5,12 @@ import (
 )
 
 type SdApplicationParams struct {
-	PipelineID string `json:"pipeline_id"`
+	BlueprintID string `json:"blueprint_id"`
 }
 
 func (a *SdApplicationParams) Validate() error {
-	if a.PipelineID == "" {
-		return errors.New("pipelineID is empty")
+	if a.BlueprintID == "" {
+		return errors.New("blueprintID is empty")
 	}
-
 	return nil
 }
