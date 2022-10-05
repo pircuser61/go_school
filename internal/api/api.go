@@ -673,11 +673,11 @@ type FormsAccessibility struct {
 	// Form accessibility preferences for certain node
 	AccessType *FormAccessType `json:"accessType,omitempty"`
 
-	// Form ID
-	Id *string `json:"id,omitempty"`
-
 	// Form name
 	Name *string `json:"name,omitempty"`
+
+	// Form node ID
+	NodeId *string `json:"node_id,omitempty"`
 }
 
 // FunctionModel defines model for FunctionModel.

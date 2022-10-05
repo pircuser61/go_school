@@ -2951,9 +2951,9 @@ components:
     FormsAccessibility:
       type: object
       properties:
-        id:
+        node_id:
           type: string
-          description: Form ID
+          description: Form node ID
         name:
           type: string
           description: Form name

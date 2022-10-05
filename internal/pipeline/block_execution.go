@@ -66,8 +66,9 @@ type ExecutionData struct {
 	SLA                int                  `json:"sla"`
 	DidSLANotification bool                 `json:"did_sla_notification"`
 
-	ChangedExecutorsLogs     []ChangeExecutorLog       `json:"change_executors_logs,omitempty"`
-	RequestExecutionInfoLogs []RequestExecutionInfoLog `json:"request_execution_info_logs,omitempty"`
+	ChangedExecutorsLogs     []ChangeExecutorLog        `json:"change_executors_logs,omitempty"`
+	RequestExecutionInfoLogs []RequestExecutionInfoLog  `json:"request_execution_info_logs,omitempty"`
+	FormsAccessibility       []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
 	ExecutorsGroupID   string `json:"executors_group_id"`
 	ExecutorsGroupName string `json:"executors_group_name"`
