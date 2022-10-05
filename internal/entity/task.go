@@ -120,6 +120,7 @@ const (
 	TaskUpdateActionSendEditApp          TaskUpdateAction = "send_edit_app"
 	TaskUpdateActionCancelApp            TaskUpdateAction = "cancel_app"
 	TaskUpdateActionRequestApproveInfo   TaskUpdateAction = "request_add_info"
+	TaskUpdateActionRequestFillForm      TaskUpdateAction = "fill_form"
 )
 
 var (
@@ -132,6 +133,7 @@ var (
 		TaskUpdateActionSendEditApp:          {},
 		TaskUpdateActionCancelApp:            {},
 		TaskUpdateActionRequestApproveInfo:   {},
+		TaskUpdateActionRequestFillForm:      {},
 	}
 )
 

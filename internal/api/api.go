@@ -667,19 +667,27 @@ type ExecutorChangeParams struct {
 	NewExecutorLogin string `json:"newExecutorLogin"`
 }
 
+// Fill form
+type FillFormUpdateParams struct {
+	ApplicationBody *map[string]interface{} `json:"application_body,omitempty"`
+
+	// form data
+	Description string `json:"description"`
+}
+
 // Form accessibility preferences for certain node
 type FormAccessType string
 
 // Form params
 type FormParams struct {
-	// form template id
-	BlueprintId string `json:"blueprint_id"`
-
-	// form template id name
-	BlueprintName string `json:"blueprint_name"`
-
 	// Executor value
 	Executor *string `json:"executor,omitempty"`
+
+	// form template id
+	SchemaId *string `json:"schema_id,omitempty"`
+
+	// form template id name
+	SchemaName *string `json:"schema_name,omitempty"`
 }
 
 // FormsAccessibility defines model for FormsAccessibility.
