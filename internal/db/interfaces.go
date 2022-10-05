@@ -22,6 +22,7 @@ type PipelineStorager interface {
 }
 
 type TaskStorager interface {
+	GetAdditionalForms(workNumber, nodeName string) ([]string, error)
 	GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error)
 	SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error
 	GetTasks(ctx c.Context, filters e.TaskFilter) (*e.EriusTasksPage, error)

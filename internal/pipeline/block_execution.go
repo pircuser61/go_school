@@ -259,13 +259,24 @@ func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUI
 	if len(emails) == 0 {
 		return false, nil
 	}
-	err := gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
+	descr := gb.Pipeline.currDescription
+	additionalDescriptions, err := gb.Pipeline.Storage.GetAdditionalForms(gb.Pipeline.WorkNumber, gb.Name)
+	if err != nil {
+		return false, err
+	}
+	for _, item := range additionalDescriptions {
+		if item == "" {
+			continue
+		}
+		descr = fmt.Sprintf("%s\n\n%s", descr, item)
+	}
+	err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
 		mail.NewApplicationPersonStatusNotification(
 			stepCtx.workNumber,
 			stepCtx.workTitle,
 			statusToTaskAction[StatusExecution],
 			ComputeDeadline(stepCtx.stepStart, gb.State.SLA),
-			gb.Pipeline.currDescription,
+			descr,
 			gb.Pipeline.Sender.SdAddress))
 	if err != nil {
 		return false, err

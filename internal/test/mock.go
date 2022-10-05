@@ -928,6 +928,10 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
+	return nil, nil
+}
+
 func (_m *MockDB) UpdateTaskBlocksData(ctx context.Context, dto *db.UpdateTaskBlocksDataRequest) error {
 	return nil
 }
