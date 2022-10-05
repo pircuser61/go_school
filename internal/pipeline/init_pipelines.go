@@ -222,7 +222,7 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 			}
 		}
 
-		if sdState.PipelineID == "" {
+		if sdState.BlueprintID == "" {
 			log.Error(fmt.Sprintf(
 				"can`t run pipeline with work number: %s, %s",
 				task.WorkNumber,
@@ -234,7 +234,6 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 		}
 
 		ctx = c.WithValue(ctx, SdApplicationDataCtx{}, SdApplicationData{
-			PipelineID:      sdState.PipelineID,
 			Description:     sdState.Description,
 			ApplicationBody: sdState.ApplicationBody,
 		})
