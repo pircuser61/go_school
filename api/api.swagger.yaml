@@ -2959,6 +2959,10 @@ components:
           description: Form name
         accessType:
           $ref: '#/components/schemas/FormAccessType'
+      required:
+        - node_id
+        - name
+        - accessType
 
     FormAccessType:
       type: string
