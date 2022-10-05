@@ -515,5 +515,9 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
 		return pipeline.BlockGoExecutionID
 	}
 
+	if action == entity.TaskUpdateActionRequestFillForm {
+		return pipeline.BlockGoFormID
+	}
+
 	return ""
 }

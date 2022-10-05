@@ -7,8 +7,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"golang.org/x/net/context"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -26,9 +24,10 @@ const (
 )
 
 type FormData struct {
-	BlueprintId     string                 `json:"blueprint_id"`
-	BlueprintName   string                 `json:"blueprint_name"`
+	SchemaId        string                 `json:"schema_id"`
+	SchemaName      string                 `json:"schema_name"`
 	Executors       map[string]struct{}    `json:"executors"`
+	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
 	IsFilled        bool                   `json:"is_filled"`
 	ActualExecutor  *string                `json:"actual_executor,omitempty"`
@@ -189,10 +188,6 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 	}
 }
 
-func (gb *GoFormBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
-	return nil, nil
-}
-
 // nolint:dupl // another block
 func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) {
 	b := &GoFormBlock{
@@ -225,8 +220,8 @@ func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) 
 		Executors: map[string]struct{}{
 			params.Executor: {},
 		},
-		BlueprintId:   params.BlueprintId,
-		BlueprintName: params.BlueprintName,
+		SchemaId:   params.SchemaId,
+		SchemaName: params.SchemaName,
 	}
 
 	return b, nil

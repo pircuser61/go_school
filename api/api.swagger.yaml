@@ -2333,9 +2333,24 @@ components:
             - $ref: '#/components/schemas/ExecutorChangeParams'
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
             - $ref: '#/components/schemas/ExecutableFunctionParams'
+            - $ref: '#/components/schemas/FillFormUpdateParams'
       required:
         - action
         - parameters
+
+    FillFormUpdateParams:
+      type: object
+      description: Fill form
+      properties:
+        description:
+          type: string
+          description: form data
+        application_body:
+          type: object
+          properties: {}
+      required:
+        - description
+        - applicationBody
 
     ApproverUpdateParams:
       type: object
@@ -2986,10 +3001,10 @@ components:
         executor:
           type: string
           description: Executor value
-        blueprint_id:
+        schema_id:
           type: string
           description: form template id
-        blueprint_name:
+        schema_name:
           type: string
           description: form template id name
       required:
