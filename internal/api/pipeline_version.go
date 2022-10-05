@@ -281,14 +281,6 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if req.PipelineId == "" {
-		e := ValidationError
-		log.Error(e.errorMessage(errors.New("PipelineId is empty")))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	if req.WorkNumber == "" {
 		e := ValidationError
 		log.Error(e.errorMessage(errors.New("workNumber is empty")))

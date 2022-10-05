@@ -2554,12 +2554,10 @@ components:
         description:
           type: string
     RunNewVersionByPrevVersionRequest:
-      required: [work_number,pipeline_id,description,application_body]
+      required: [work_number,description,application_body]
       type: object
       properties:
         work_number:
-          type: string
-        pipeline_id:
           type: string
         description:
           type: string

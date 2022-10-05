@@ -804,7 +804,6 @@ type ResponsePipelineSearch struct {
 type RunNewVersionByPrevVersionRequest struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
 	Description     string                 `json:"description"`
-	PipelineId      string                 `json:"pipeline_id"`
 	WorkNumber      string                 `json:"work_number"`
 }
 
