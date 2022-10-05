@@ -23,7 +23,7 @@ func (u userFromSD) String() string {
 }
 
 func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[string][]string {
-	aa := make(map[string][]string, 0)
+	aa := make(map[string][]string)
 
 	ff := make(map[string]struct{})
 	for _, f := range fields {

@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Pipeliner API
-  contact: {}
+  contact: { }
   version: "0.1"
 servers:
   - url: //localhost:8181/api/pipeliner/v1
@@ -1860,7 +1860,7 @@ components:
           type: string
         params:
           type: object
-          properties: {}
+          properties: { }
         short_title:
           type: string
           example: lock-bts
@@ -2065,7 +2065,7 @@ components:
 
     EriusTagInfo:
       type: object
-      required: [id,name,status,color,isMarker]
+      required: [ id,name,status,color,isMarker ]
       properties:
         color:
           type: string
@@ -2111,7 +2111,7 @@ components:
           type: string
         parameters:
           type: object
-          properties: {}
+          properties: { }
         started_at:
           type: string
         status:
@@ -2241,7 +2241,7 @@ components:
             type: string
         output:
           type: object
-          properties: {}
+          properties: { }
         pipeline_id:
           type: string
           format: uuid
@@ -2280,7 +2280,7 @@ components:
           type: string
         state:
           type: object
-          properties: {}
+          properties: { }
         status:
           type: string
           description: Task step execution status
@@ -2295,7 +2295,7 @@ components:
             type: string
         storage:
           type: object
-          properties: {}
+          properties: { }
         time:
           type: string
         type:
@@ -2347,7 +2347,7 @@ components:
           description: form data
         application_body:
           type: object
-          properties: {}
+          properties: { }
       required:
         - description
         - applicationBody
@@ -2517,17 +2517,17 @@ components:
 
     CreateTaskRequest:
       type: object
-      required: [parameters,version_id]
+      required: [ parameters,version_id ]
       properties:
         parameters:
           type: object
-          properties: {}
+          properties: { }
         version_id:
           type: string
           format: uuid
     DebugRunRequest:
       type: object
-      required: [action,break_points,work_number]
+      required: [ action,break_points,work_number ]
       properties:
         action:
           type: string
@@ -2543,18 +2543,18 @@ components:
     RunVersionBody:
       type: object
     RunVersionsByPipelineIdRequest:
-      required: [application_body,pipeline_id,description]
+      required: [ application_body,pipeline_id,description ]
       type: object
       properties:
         application_body:
           type: object
-          properties: {}
+          properties: { }
         pipeline_id:
           type: string
         description:
           type: string
     RunNewVersionByPrevVersionRequest:
-      required: [work_number,description,application_body]
+      required: [ work_number,description,application_body ]
       type: object
       properties:
         work_number:
@@ -2563,7 +2563,7 @@ components:
           type: string
         application_body:
           type: object
-          properties: {}
+          properties: { }
     eriusTaskResponse:
       type: object
       properties:
@@ -2585,7 +2585,7 @@ components:
           type: string
         parameters:
           type: object
-          properties: {}
+          properties: { }
         started_at:
           type: string
         status:
@@ -2637,7 +2637,7 @@ components:
           type: string
         state:
           type: object
-          properties: {}
+          properties: { }
         status:
           type: string
         steps:
@@ -2646,7 +2646,7 @@ components:
             type: string
         storage:
           type: object
-          properties: {}
+          properties: { }
         time:
           type: string
         type:
@@ -2779,10 +2779,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "number", "date", "boolean", "string"]
+          enum: [ "integer", "number", "date", "boolean", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -2793,10 +2793,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "number",  "boolean" ]
+          enum: [ "integer", "number",  "boolean" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -2807,10 +2807,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "number", "string"]
+          enum: [ "integer", "number", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -2821,10 +2821,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "boolean", "string"]
+          enum: [ "integer", "boolean", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -2835,10 +2835,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["date", "string"]
+          enum: [ "date", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -3111,6 +3111,8 @@ components:
             - servicedesk_application
             - execution
             - notification
+            - form
+            - if
         params:
           $ref: '#/components/schemas/Params'
       required:

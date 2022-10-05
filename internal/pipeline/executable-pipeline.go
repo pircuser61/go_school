@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -273,6 +274,17 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 			return nil
 		}
 	}
+	descr := ep.currDescription
+	additionalDescriptions, err := ep.Storage.GetAdditionalForms(ep.WorkNumber, "")
+	if err != nil {
+		return err
+	}
+	for _, item := range additionalDescriptions {
+		if item == "" {
+			continue
+		}
+		descr = fmt.Sprintf("%s\n\n%s", descr, item)
+	}
 
 	switch currStatus {
 	case StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
@@ -280,7 +292,7 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 			ep.WorkNumber,
 			ep.Name,
 			statusToTaskState[currStatus],
-			ep.currDescription,
+			descr,
 			ep.Sender.SdAddress)
 		if ep.initiatorEmail == "" {
 			email, err := ep.People.GetUserEmail(ctx, ep.Initiator)

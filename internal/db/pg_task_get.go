@@ -146,6 +146,44 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	return q, args
 }
 
+func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
+	q := `WITH content as (
+    SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
+    FROM pipeliner.variable_storage
+    WHERE work_id = (SELECT id
+                     FROM pipeliner.works
+                     WHERE work_number = $1)
+)
+SELECT content -> 'State' -> step_name ->> 'description'
+FROM pipeliner.variable_storage
+WHERE step_name in (
+    SELECT rules ->> 'node_id' as rule
+    FROM content
+    WHERE rules ->> 'accessType' != 'None'
+)
+  AND work_id = (SELECT id
+                 FROM pipeliner.works
+                 WHERE work_number = $2)
+ORDER BY time`
+	ff := make([]string, 0)
+	rows, err := db.Pool.Query(context.Background(), q, workNumber, workNumber, nodeName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var form string
+		if scanErr := rows.Scan(&form); scanErr != nil {
+			return nil, scanErr
+		}
+		ff = append(ff, form)
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return ff, nil
+}
+
 func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
 	q := `SELECT content->'State'->'servicedesk_application_0'
 from pipeliner.variable_storage 
