@@ -546,7 +546,7 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 		LeftToNotify:       executors,
 		ExecutorsGroupID:   params.ExecutorsGroupID,
 		ExecutorsGroupName: executorsGroupName,
-		FormsAccessibility: make([]script.FormAccessibility, 0),
+		FormsAccessibility: params.FormsAccessibility,
 	}
 
 	return b, nil

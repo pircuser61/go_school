@@ -76,7 +76,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, ep 
 		ApproversGroupID:   params.ApproversGroupID,
 		ApproversGroupName: approversGroupName,
 		ApproverLog:        make([]ApproverLogEntry, 0),
-		FormsAccessibility: make([]script.FormAccessibility, 0),
+		FormsAccessibility: params.FormsAccessibility,
 	}
 
 	if b.State.ApprovementRule == "" {
