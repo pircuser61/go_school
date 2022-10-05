@@ -13,5 +13,4 @@ func (a *SdApplicationParams) Validate() error {
 		return errors.New("blueprintID is empty")
 	}
 	return nil
-
 }
