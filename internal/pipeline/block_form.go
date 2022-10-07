@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -22,6 +23,12 @@ const (
 	keyOutputFormBody     = "application_body"
 )
 
+type ChangesLogItem struct {
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+	CreatedAt       time.Time              `json:"created_at"`
+}
+
 type FormData struct {
 	SchemaId        string                 `json:"schema_id"`
 	SchemaName      string                 `json:"schema_name"`
@@ -30,6 +37,7 @@ type FormData struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
 	IsFilled        bool                   `json:"is_filled"`
 	ActualExecutor  *string                `json:"actual_executor,omitempty"`
+	ChangesLog      []ChangesLogItem       `json:"changes_log"`
 
 	SLA int `json:"sla"`
 
@@ -158,6 +166,8 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 		runCtx.ReplaceState(gb.Name, stateBytes)
 	}
 
+	//TODO добавить нотификацию о необходимости заполнить форму
+
 	return nil
 }
 
@@ -221,6 +231,7 @@ func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) 
 		},
 		SchemaId:   params.SchemaId,
 		SchemaName: params.SchemaName,
+		ChangesLog: make([]ChangesLogItem, 0),
 	}
 
 	return b, nil
