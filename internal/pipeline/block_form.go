@@ -4,12 +4,12 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -23,13 +23,14 @@ const (
 )
 
 type FormData struct {
-	SchemaId        string                 `json:"schema_id"`
-	SchemaName      string                 `json:"schema_name"`
-	Executors       map[string]struct{}    `json:"executors"`
-	Description     string                 `json:"description"`
-	ApplicationBody map[string]interface{} `json:"application_body"`
-	IsFilled        bool                   `json:"is_filled"`
-	ActualExecutor  *string                `json:"actual_executor,omitempty"`
+	FormExecutorType script.FormExecutorType `json:"form_executor_type"`
+	SchemaId         string                  `json:"schema_id"`
+	SchemaName       string                  `json:"schema_name"`
+	Executors        map[string]struct{}     `json:"executors"`
+	Description      string                  `json:"description"`
+	ApplicationBody  map[string]interface{}  `json:"application_body"`
+	IsFilled         bool                    `json:"is_filled"`
+	ActualExecutor   *string                 `json:"actual_executor,omitempty"`
 
 	SLA int `json:"sla"`
 
@@ -188,7 +189,7 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) {
+func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline) (*GoFormBlock, error) {
 	b := &GoFormBlock{
 		Name:    name,
 		Title:   ef.Title,
@@ -216,11 +217,49 @@ func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) 
 	}
 
 	b.State = &FormData{
-		Executors: map[string]struct{}{
+		SchemaId:         params.SchemaId,
+		SchemaName:       params.SchemaName,
+		FormExecutorType: params.FormExecutorType,
+	}
+
+	if b.State.FormExecutorType == script.FormExecutorTypeUser {
+		b.State.Executors = map[string]struct{}{
 			params.Executor: {},
-		},
-		SchemaId:   params.SchemaId,
-		SchemaName: params.SchemaName,
+		}
+	}
+
+	if b.State.FormExecutorType == script.FormExecutorTypeInitiator {
+		b.State.Executors = map[string]struct{}{
+			ep.PipelineModel.Author: {},
+		}
+	}
+
+	if b.State.FormExecutorType == script.FormExecutorTypeFromSchema {
+		var allVariables map[string]interface{}
+		allVariables, err = ep.VarStore.GrabStorage()
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to grab variables storage")
+		}
+
+		formExecutors := make(map[string]struct{})
+		for formExecutorVariableRef := range b.State.Executors {
+			if len(strings.Split(formExecutorVariableRef, dotSeparator)) == 1 {
+				continue
+			}
+			formExecutorVar := getVariable(allVariables, formExecutorVariableRef)
+
+			if formExecutorVar == nil {
+				return nil, errors.Wrap(err, "Unable to find form executor by variable reference")
+			}
+
+			if actualFormExecutorUsername, castOK := formExecutorVar.(string); castOK {
+				formExecutors[actualFormExecutorUsername] = b.State.Executors[formExecutorVariableRef]
+			}
+		}
+
+		if len(formExecutors) != 0 {
+			b.State.Executors = formExecutors
+		}
 	}
 
 	return b, nil

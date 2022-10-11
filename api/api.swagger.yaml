@@ -2996,6 +2996,8 @@ components:
       type: object
       description: Form params
       properties:
+        form_executor_type:
+          $ref: '#/components/schemas/FormExecutorType'
         executor:
           type: string
           description: Executor value
@@ -3008,6 +3010,18 @@ components:
       required:
         - blueprint_id
         - blueprint_name
+
+    FormExecutorType:
+      type: string
+      enum:
+        - user
+        - initiator
+        - fromSchema
+      description: >
+        Form executor type:
+          * User - Single user
+          * Initiator - Process initiator
+          * FromSchema - Selected by initiator
 
     ApproverType:
       type: string

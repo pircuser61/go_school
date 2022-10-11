@@ -90,11 +90,24 @@ const (
 	FormAccessTypeЧтениеИРедактирование FormAccessType = "Чтение и редактирование"
 )
 
+// Defines values for FormExecutorType.
+const (
+	FormExecutorTypeFromSchema FormExecutorType = "fromSchema"
+
+	FormExecutorTypeInitiator FormExecutorType = "initiator"
+
+	FormExecutorTypeUser FormExecutorType = "user"
+)
+
 // Defines values for FunctionParamsType.
 const (
 	FunctionParamsTypeApprover FunctionParamsType = "approver"
 
 	FunctionParamsTypeExecution FunctionParamsType = "execution"
+
+	FunctionParamsTypeForm FunctionParamsType = "form"
+
+	FunctionParamsTypeIf FunctionParamsType = "if"
 
 	FunctionParamsTypeNotification FunctionParamsType = "notification"
 
@@ -678,10 +691,22 @@ type FillFormUpdateParams struct {
 // Form accessibility preferences for certain node
 type FormAccessType string
 
+// Form executor type:
+//   * User - Single user
+//   * Initiator - Process initiator
+//   * FromSchema - Selected by initiator
+type FormExecutorType string
+
 // Form params
 type FormParams struct {
 	// Executor value
 	Executor *string `json:"executor,omitempty"`
+
+	// Form executor type:
+	//   * User - Single user
+	//   * Initiator - Process initiator
+	//   * FromSchema - Selected by initiator
+	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
 
 	// form template id
 	SchemaId *string `json:"schema_id,omitempty"`
