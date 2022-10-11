@@ -3,6 +3,8 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -28,10 +30,16 @@ type approverUpdateParams struct {
 }
 
 type updateExecutorInfoParams struct {
+	Approver    string             `json:"approver"`
 	Type        AdditionalInfoType `json:"type"`
 	Comment     string             `json:"comment"`
 	Attachments []string           `json:"attachments"`
 	LinkId      *string            `json:"link_id,omitempty"`
+}
+
+type updateRequestApproverInfoDto struct {
+	data *script.BlockUpdateData
+	step *entity.Step
 }
 
 func (a *approverUpdateParams) Validate() error {
@@ -184,9 +192,100 @@ func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionApp
 	return nil
 }
 
+func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, dto *updateRequestApproverInfoDto) (err error) {
+	var updateParams updateExecutorInfoParams
+	err = json.Unmarshal(dto.data.Parameters, &updateParams)
+	if err != nil {
+		return errors.New("can't assert provided update requestApproverInfo data")
+	}
+
+	if errSet := gb.State.SetRequestApproverInfo(
+		dto.data.ByLogin,
+		updateParams.Comment,
+		updateParams.Type,
+		updateParams.Attachments,
+	); errSet != nil {
+		return errSet
+	}
+
+	status := string(StatusIdle)
+
+	var tpl mail.Template
+
+	if updateParams.Type == RequestAddInfoType {
+		authorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, dto.data.Author)
+		if emailErr != nil {
+			return emailErr
+		}
+
+		tpl = mail.NewRequestApproverInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+		err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
+		if err != nil {
+			return err
+		}
+	}
+
+	if updateParams.Type == ReplyAddInfoType {
+		if _, approverExists := gb.State.Approvers[updateParams.Approver]; !approverExists {
+			return fmt.Errorf("approver: %s is not found in approvers", updateParams.Approver)
+		}
+
+		status = string(StatusRunning)
+
+		if len(gb.State.RequestApproverInfoLog) > 0 {
+			workHours := getWorkWorkHoursBetweenDates(
+				gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].CreatedAt,
+				time.Now(),
+			)
+			gb.State.IncreaseSLA(workHours)
+		}
+
+		tpl = mail.NewAnswerApproverInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+		approverEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, updateParams.Approver)
+		if emailErr != nil {
+			return emailErr
+		}
+
+		err = gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl)
+		if err != nil {
+			return err
+		}
+	}
+
+	dto.step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	var content []byte
+	content, err = json.Marshal(store.NewFromStep(dto.step))
+	if err != nil {
+		return err
+	}
+
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          dto.data.Id,
+		Content:     content,
+		BreakPoints: dto.step.BreakPoints,
+		Status:      status,
+	})
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
 func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
 	if data == nil {
 		return nil, errors.New("empty data")
+	}
+
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+	if err != nil {
+		return nil, err
+	} else if step == nil {
+		return nil, errors.New("can't get step from database")
 	}
 
 	switch data.Action {
@@ -223,15 +322,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 			return nil, errors.New("can't assert provided data")
 		}
 
-		return nil, gb.setActionApplication(ctx, &setActionAppDTO{
-			stepId:       data.Id,
-			approver:     data.ByLogin,
-			initiator:    data.Author,
-			workNumber:   data.WorkNumber,
-			workTitle:    data.WorkTitle,
-			updateParams: updateParams,
-			action:       data.Action,
-		})
+		return nil, gb.updateRequestApproverInfo(ctx, &updateRequestApproverInfoDto{data, step})
 	}
 
 	return nil, errors.New("cant`t update execution block, unknown action: " + data.Action)
