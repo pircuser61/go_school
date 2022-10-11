@@ -57,13 +57,6 @@ type AdditionalInfo struct {
 	CreatedAt   time.Time          `json:"created_at"`
 }
 
-type ApprovementRule string
-
-const (
-	AllOfApprovementRequired ApprovementRule = "AllOf"
-	AnyOfApprovementRequired ApprovementRule = "AnyOf"
-)
-
 type ApproverLogEntry struct {
 	Login     string
 	Decision  ApproverDecision
@@ -72,13 +65,13 @@ type ApproverLogEntry struct {
 }
 
 type ApproverData struct {
-	Type            script.ApproverType `json:"type"`
-	Approvers       map[string]struct{} `json:"approvers"`
-	Decision        *ApproverDecision   `json:"decision,omitempty"`
-	Comment         *string             `json:"comment,omitempty"`
-	ActualApprover  *string             `json:"actual_approver,omitempty"`
-	ApprovementRule ApprovementRule     `json:"approvement_rule,omitempty"`
-	ApproverLog     []ApproverLogEntry  `json:"approver_log,omitempty"`
+	Type            script.ApproverType    `json:"type"`
+	Approvers       map[string]struct{}    `json:"approvers"`
+	Decision        *ApproverDecision      `json:"decision,omitempty"`
+	Comment         *string                `json:"comment,omitempty"`
+	ActualApprover  *string                `json:"actual_approver,omitempty"`
+	ApprovementRule script.ApprovementRule `json:"approvement_rule,omitempty"`
+	ApproverLog     []ApproverLogEntry     `json:"approver_log,omitempty"`
 
 	SLA        int                `json:"sla"`
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
@@ -130,13 +123,13 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 	var approvementRule = a.ApprovementRule
 
-	if approvementRule == AnyOfApprovementRequired {
+	if approvementRule == script.AnyOfApprovementRequired {
 		a.Decision = &decision
 		a.Comment = &comment
 		a.ActualApprover = &login
 	}
 
-	if approvementRule == AllOfApprovementRequired {
+	if approvementRule == script.AllOfApprovementRequired {
 		var approvedCount = 0
 		var membersCount = len(a.Approvers)
 		var overallDecision ApproverDecision
