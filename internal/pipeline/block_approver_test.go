@@ -270,6 +270,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 					LeftToNotify: map[string]struct{}{
 						login: {},
 					},
+					FormsAccessibility: make([]script.FormAccessibility, 0),
 				},
 				Sockets: entity.ConvertSocket(next),
 			},

@@ -1,11 +1,90 @@
 openapi: 3.0.1
 info:
   title: Pipeliner API
-  contact: {}
+  contact: { }
   version: "0.1"
 servers:
   - url: //localhost:8181/api/pipeliner/v1
 paths:
+  /application/{workNumber}:
+    get:
+      summary: get application
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
+      operationId: getApplication
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Application'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    post:
+      summary: set application
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
+      operationId: setApplication
+      requestBody:
+        description: New debug task
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Application'
+        required: true
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /debug/:
     post:
       tags:
@@ -932,6 +1011,66 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: draft
+
+  /pipelines/search:
+    get:
+      tags:
+        - pipeline
+      summary: search list of pipelines
+      description: поиск списка сценариев по айди или названию
+      operationId: search-pipelines
+      parameters:
+        - name: pipelineName
+          in: query
+          description: имя пайплайна
+          required: false
+          schema:
+            type: string
+        - name: pipelineId
+          in: query
+          description: id пайплайна
+          required: false
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: page
+          in: query
+          description: страница для отображения
+          required: false
+          schema:
+            type: integer
+        - name: perPage
+          in: query
+          description: сколько отображать на одной странице
+          required: false
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ResponsePipelineSearch'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /run/{pipelineID}:
     post:
       tags:
@@ -1038,20 +1177,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-  /run/versions/blueprint_id:
+  /run/versions/pipeline_id:
     post:
       tags:
         - version
         - run
-      summary: Run Version By blueprintID
-      description: Запустить все версии c blueprintID и первым блоком sd_application
-      operationId: run-versions-by-blueprint-id
+      summary: Run Version By pipeline_id
+      description: Запустить все версии c pipelineID и первым блоком sd_application
+      operationId: run-versions-by-pipeline-id
       requestBody:
         description: pipeline input
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RunVersionsByBlueprintIdRequest'
+              $ref: '#/components/schemas/RunVersionsByPipelineIdRequest'
         required: false
       responses:
         200:
@@ -1348,6 +1487,11 @@ paths:
           schema:
             type: boolean
           description: get tasks with status wait or done
+        - name: receiver
+          in: query
+          schema:
+            type: string
+          description: receiver login
       responses:
         200:
           description: OK
@@ -1716,7 +1860,7 @@ components:
           type: string
         params:
           type: object
-          properties: {}
+          properties: { }
         short_title:
           type: string
           example: lock-bts
@@ -1921,7 +2065,7 @@ components:
 
     EriusTagInfo:
       type: object
-      required: [id,name,status,color,isMarker]
+      required: [ id,name,status,color,isMarker ]
       properties:
         color:
           type: string
@@ -1967,7 +2111,7 @@ components:
           type: string
         parameters:
           type: object
-          properties: {}
+          properties: { }
         started_at:
           type: string
         status:
@@ -2097,7 +2241,7 @@ components:
             type: string
         output:
           type: object
-          properties: {}
+          properties: { }
         pipeline_id:
           type: string
           format: uuid
@@ -2136,7 +2280,7 @@ components:
           type: string
         state:
           type: object
-          properties: {}
+          properties: { }
         status:
           type: string
           description: Task step execution status
@@ -2151,7 +2295,7 @@ components:
             type: string
         storage:
           type: object
-          properties: {}
+          properties: { }
         time:
           type: string
         type:
@@ -2188,9 +2332,25 @@ components:
             - $ref: '#/components/schemas/ExecutionUpdateParams'
             - $ref: '#/components/schemas/ExecutorChangeParams'
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
+            - $ref: '#/components/schemas/ExecutableFunctionParams'
+            - $ref: '#/components/schemas/FillFormUpdateParams'
       required:
         - action
         - parameters
+
+    FillFormUpdateParams:
+      type: object
+      description: Fill form
+      properties:
+        description:
+          type: string
+          description: form data
+        application_body:
+          type: object
+          properties: { }
+      required:
+        - description
+        - applicationBody
 
     ApproverUpdateParams:
       type: object
@@ -2274,12 +2434,52 @@ components:
         - attachments
         - executorLogin
 
+    ExecutableFunctionParams:
+      type: object
+      description: Chosen function to be executed
+      properties:
+        name:
+          type: string
+          description: Function name
+        version:
+          type: string
+          description: Used function version
+      required:
+        - name
+        - version
+
     RequestExecutionInfoType:
       type: string
       description: Type of execution info
       enum:
         - question
         - answer
+        -
+    ResponsePipelineSearch:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchPipelineItem'
+          description: list of pipelines
+        total:
+          type: integer
+      required:
+        - items
+        - total
+
+    SearchPipelineItem:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя пайплайна
+        pipeline_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          description: ID пайплайна
 
     UsageResponse:
       type: object
@@ -2311,19 +2511,23 @@ components:
         - name
         - id
 
+    Application:
+      type: object
+      additionalProperties: true
+
     CreateTaskRequest:
       type: object
-      required: [parameters,version_id]
+      required: [ parameters,version_id ]
       properties:
         parameters:
           type: object
-          properties: {}
+          properties: { }
         version_id:
           type: string
           format: uuid
     DebugRunRequest:
       type: object
-      required: [action,break_points,work_number]
+      required: [ action,break_points,work_number ]
       properties:
         action:
           type: string
@@ -2338,30 +2542,28 @@ components:
       type: object
     RunVersionBody:
       type: object
-    RunVersionsByBlueprintIdRequest:
-      required: [application_body,blueprint_id,description]
+    RunVersionsByPipelineIdRequest:
+      required: [ application_body,pipeline_id,description ]
       type: object
       properties:
         application_body:
           type: object
-          properties: {}
-        blueprint_id:
+          properties: { }
+        pipeline_id:
           type: string
         description:
           type: string
     RunNewVersionByPrevVersionRequest:
-      required: [work_number,blueprint_id,description,application_body]
+      required: [ work_number,description,application_body ]
       type: object
       properties:
         work_number:
-          type: string
-        blueprint_id:
           type: string
         description:
           type: string
         application_body:
           type: object
-          properties: {}
+          properties: { }
     eriusTaskResponse:
       type: object
       properties:
@@ -2383,7 +2585,7 @@ components:
           type: string
         parameters:
           type: object
-          properties: {}
+          properties: { }
         started_at:
           type: string
         status:
@@ -2435,7 +2637,7 @@ components:
           type: string
         state:
           type: object
-          properties: {}
+          properties: { }
         status:
           type: string
         steps:
@@ -2444,7 +2646,7 @@ components:
             type: string
         storage:
           type: object
-          properties: {}
+          properties: { }
         time:
           type: string
         type:
@@ -2518,6 +2720,7 @@ components:
         - $ref: '#/components/schemas/SdApplicationParams'
         - $ref: '#/components/schemas/NotificationParams'
         - $ref: "#/components/schemas/ConditionParams"
+        - $ref: "#/components/schemas/FormParams"
 
     ConditionGroup:
       type: object
@@ -2576,10 +2779,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "number", "date", "boolean", "string"]
+          enum: [ "integer", "number", "date", "boolean", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -2590,10 +2793,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "number",  "boolean" ]
+          enum: [ "integer", "number",  "boolean" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -2604,10 +2807,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "number", "string"]
+          enum: [ "integer", "number", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -2618,10 +2821,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["integer", "boolean", "string"]
+          enum: [ "integer", "boolean", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -2632,10 +2835,10 @@ components:
       properties:
         dataType:
           type: string
-          enum: ["date", "string"]
+          enum: [ "date", "string" ]
         operandType:
           type: string
-          enum: ["variableOperand", "valueOperand"]
+          enum: [ "variableOperand", "valueOperand" ]
       required:
         - dataType
         - operandType
@@ -2766,10 +2969,16 @@ components:
         executors:
           type: string
           description: Executor value (depends on type)
+
         sla:
           type: integer
           description: Execution SLA (in working hours)
           minimum: 1
+        forms_accessibility:
+          type: array
+          description: List of accessibility properties for forms
+          items:
+            $ref: '#/components/schemas/FormsAccessibility'
         executors_group_id:
           type: string
           description: Executors group id in SD
@@ -2782,6 +2991,23 @@ components:
         - sla
         - executors_group_id
         - executors_group_name
+
+    FormParams:
+      type: object
+      description: Form params
+      properties:
+        executor:
+          type: string
+          description: Executor value
+        schema_id:
+          type: string
+          description: form template id
+        schema_name:
+          type: string
+          description: form template id name
+      required:
+        - blueprint_id
+        - blueprint_name
 
     ApproverType:
       type: string
@@ -2808,6 +3034,11 @@ components:
           description: Approver value (depends on type)
         approvementRule:
           $ref: '#/components/schemas/ApprovementRule'
+        forms_accessibility:
+          type: array
+          description: List of accessibility properties for forms
+          items:
+            $ref: '#/components/schemas/FormsAccessibility'
         sla:
           type: integer
           description: Approvement SLA (in working hours)
@@ -2834,12 +3065,33 @@ components:
         - approvers_group_id
         - approvers_group_name
 
+    FormsAccessibility:
+      type: object
+      properties:
+        node_id:
+          type: string
+          description: Form node ID
+        name:
+          type: string
+          description: Form name
+        accessType:
+          $ref: '#/components/schemas/FormAccessType'
+      required:
+        - node_id
+        - name
+        - accessType
+
+    FormAccessType:
+      type: string
+      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование" ]
+      x-enum-varnames: [ "None", "Read", "ReadWrite" ]
+      description: Form accessibility preferences for certain node
+
     ApprovementRule:
       type: string
       enum: [ "Один из согласующих", "Все согласующие" ]
       x-enum-varnames: [ "AnyOf", "AllOf" ]
-      description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of'
-      will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
+      description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 
     ApproveAutoAction:
       type: string
@@ -2859,6 +3111,8 @@ components:
             - servicedesk_application
             - execution
             - notification
+            - form
+            - if
         params:
           $ref: '#/components/schemas/Params'
       required:

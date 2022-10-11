@@ -85,6 +85,8 @@ type ApproverData struct {
 	EditingApp         *EditingApp  `json:"editing_app,omitempty"`
 	EditingAppLog      []EditingApp `json:"editing_app_log,omitempty"`
 
+	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
+
 	ApproversGroupID   string `json:"approvers_group_id"`
 	ApproversGroupName string `json:"approvers_group_name"`
 
@@ -142,10 +144,8 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 			switch approver.Decision {
 			case ApproverDecisionApproved:
 				approvedCount++
-				break
 			case ApproverDecisionRejected:
 				overallDecision = ApproverDecisionRejected
-				break
 			default:
 				return fmt.Errorf("unknown decision %s", decision.String())
 			}

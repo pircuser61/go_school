@@ -37,7 +37,8 @@ const (
 	TypePythonFlask = "python3-flask"
 	TypePythonHTTP  = "python3-http"
 
-	TypeGo = "go"
+	TypeGo       = "go"
+	TypeExternal = "external"
 )
 
 type FunctionModels []FunctionModel
@@ -95,18 +96,14 @@ const (
 
 	falseSocketID    = "false"
 	falseSocketTitle = "Нет"
-
-	requestAddInfoSocketID    = "req_add_info"
-	requestAddInfoSocketTitle = "Необходима дополнительная информация"
 )
 
 var (
 	DefaultSocket = Socket{Id: DefaultSocketID, Title: DefaultSocketTitle}
 
-	ApprovedSocket       = Socket{Id: approvedSocketID, Title: approvedSocketTitle}
-	RejectedSocket       = Socket{Id: rejectedSocketID, Title: RejectedSocketTitle}
-	EditAppSocket        = Socket{Id: editAppSocketID, Title: editAppSocketTitle}
-	RequestAddInfoSocket = Socket{Id: requestAddInfoSocketID, Title: requestAddInfoSocketTitle}
+	ApprovedSocket = Socket{Id: approvedSocketID, Title: approvedSocketTitle}
+	RejectedSocket = Socket{Id: rejectedSocketID, Title: RejectedSocketTitle}
+	EditAppSocket  = Socket{Id: editAppSocketID, Title: editAppSocketTitle}
 
 	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
 	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}
@@ -121,7 +118,6 @@ var (
 		ApprovedSocket,
 		RejectedSocket,
 		EditAppSocket,
-		RequestAddInfoSocket,
 		ExecutedSocket,
 		TrueSocket,
 		FalseSocket,
