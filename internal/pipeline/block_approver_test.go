@@ -264,7 +264,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Comment:         nil,
 					ActualApprover:  nil,
 					AutoAction:      nil,
-					ApprovementRule: AnyOfApprovementRequired,
+					ApprovementRule: script.AnyOfApprovementRequired,
 					ApproverLog:     make([]ApproverLogEntry, 0),
 					SLA:             1,
 					LeftToNotify: map[string]struct{}{
@@ -612,7 +612,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 												exampleApprover:       {},
 												secondExampleApprover: {},
 											},
-											ApprovementRule: AnyOfApprovementRequired,
+											ApprovementRule: script.AnyOfApprovementRequired,
 										})
 
 										return r
@@ -673,7 +673,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 												exampleApprover:       {},
 												secondExampleApprover: {},
 											},
-											ApprovementRule: AnyOfApprovementRequired,
+											ApprovementRule: script.AnyOfApprovementRequired,
 										})
 
 										return r
