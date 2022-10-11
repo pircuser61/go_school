@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"github.com/pkg/errors"
 	"strings"
 
 	"github.com/google/uuid"
@@ -31,4 +32,27 @@ func getVariable(variables map[string]interface{}, key string) interface{} {
 		currK = variableMemberNames[i+1]
 	}
 	return newVariables[currK]
+}
+
+func resolve(variableStorage map[string]interface{}, toResolve map[string]struct{}) (
+	entitiesToResolve map[string]struct{}, err error) {
+	entitiesToResolve = make(map[string]struct{})
+	for entityVariableRef := range toResolve {
+		if len(strings.Split(entityVariableRef, dotSeparator)) == 1 {
+			continue
+		}
+		entityVar := getVariable(variableStorage, entityVariableRef)
+
+		if entityVar == nil {
+			return nil, errors.Wrap(err, "Unable to find entity by variable reference")
+		}
+
+		if actualFormExecutorUsername, castOK := entityVar.(string); castOK {
+			entitiesToResolve[actualFormExecutorUsername] = toResolve[entityVariableRef]
+		}
+
+		return entitiesToResolve, err
+	}
+
+	return nil, errors.Wrap(err, "Unexpected behavior")
 }
