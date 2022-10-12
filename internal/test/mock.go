@@ -1206,7 +1206,3 @@ func (m *MockDB) GetVersionsByPipelineID(c context.Context, pipelineID string) (
 func (m *MockDB) GetPipelinesByNameOrId(c context.Context, dto *db.SearchPipelineRequest) ([]entity.SearchPipeline, error) {
 	return nil, errNotImplemented
 }
-
-func (m *MockDB) GetTaskStepByWorkNumber(ctx context.Context, workNumber string, stepName string) (*entity.Step, error) {
-	return nil, errNotImplemented
-}

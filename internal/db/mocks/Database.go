@@ -749,29 +749,6 @@ func (_m *MockedDatabase) GetTaskStepByName(ctx context.Context, workID uuid.UUI
 	return r0, r1
 }
 
-// GetTaskStepByWorkNumber provides a mock function with given fields: ctx, workNumber, stepName
-func (_m *MockedDatabase) GetTaskStepByWorkNumber(ctx context.Context, workNumber string, stepName string) (*entity.Step, error) {
-	ret := _m.Called(ctx, workNumber, stepName)
-
-	var r0 *entity.Step
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *entity.Step); ok {
-		r0 = rf(ctx, workNumber, stepName)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.Step)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, workNumber, stepName)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetTaskSteps provides a mock function with given fields: ctx, id
 func (_m *MockedDatabase) GetTaskSteps(ctx context.Context, id uuid.UUID) (entity.TaskSteps, error) {
 	ret := _m.Called(ctx, id)
