@@ -327,7 +327,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	}
 
 	descr := description{}
-	if err := json.Unmarshal(dto.step.State["servicedesk_application_0"], &descr); err != nil {
+	if err = json.Unmarshal(dto.step.State["servicedesk_application_0"], &descr); err != nil {
 		return err
 	}
 	additionalDescriptions, err := gb.Pipeline.Storage.GetAdditionalForms(dto.workNumber, "")
