@@ -2351,3 +2351,63 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 
 	return res, nil
 }
+
+func (db *PGCon) GetTaskStepByWorkNumber(ctx context.Context, workNumber string, stepName string) (*entity.Step, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_name")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT 
+			vs.id,
+			vs.step_type,
+			vs.step_name, 
+			vs.time, 
+			vs.content, 
+			COALESCE(vs.break_points, '{}') AS break_points, 
+			vs.has_error,
+			vs.status
+		FROM pipeliner.variable_storage vs 
+		left join pipeliner.works w on vs.work_id = w.id
+			WHERE w.work_number = $1 AND vs.step_name = $2
+		LIMIT 1
+`
+
+	var s entity.Step
+	var content string
+	err = conn.QueryRow(ctx, query, workNumber, stepName).Scan(
+		&s.ID,
+		&s.Type,
+		&s.Name,
+		&s.Time,
+		&content,
+		&s.BreakPoints,
+		&s.HasError,
+		&s.Status,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	storage := store.NewStore()
+
+	err = json.Unmarshal([]byte(content), storage)
+	if err != nil {
+		return nil, err
+	}
+
+	s.State = storage.State
+	s.Steps = storage.Steps
+	s.Errors = storage.Errors
+	s.Storage = storage.Values
+
+	return &s, nil
+}

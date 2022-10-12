@@ -122,4 +122,5 @@ type Database interface {
 	GetVersionsByPipelineID(ctx c.Context, blueprintID string) ([]e.EriusScenario, error)
 	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
 	GetPipelinesByNameOrId(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
+	GetTaskStepByWorkNumber(ctx c.Context, workNumber string, stepName string) (*e.Step, error)
 }
