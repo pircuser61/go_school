@@ -80,7 +80,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, ep 
 	}
 
 	if b.State.ApprovementRule == "" {
-		b.State.ApprovementRule = AnyOfApprovementRequired
+		b.State.ApprovementRule = script.AnyOfApprovementRequired
 	}
 
 	return b, nil
