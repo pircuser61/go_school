@@ -9,7 +9,8 @@ const (
 )
 
 type FormAccessibility struct {
-	NodeId     string     `json:"node_id"`
-	Name       string     `json:"name"`
-	AccessType AccessType `json:"accessType"`
+	NodeId      string     `json:"node_id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	AccessType  AccessType `json:"accessType"`
 }

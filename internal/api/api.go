@@ -673,6 +673,9 @@ type FormsAccessibility struct {
 	// Form accessibility preferences for certain node
 	AccessType FormAccessType `json:"accessType"`
 
+	// Form short description
+	Descriotion *string `json:"descriotion,omitempty"`
+
 	// Form name
 	Name string `json:"name"`
 
