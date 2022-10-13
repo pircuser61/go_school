@@ -281,13 +281,6 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		return nil, errors.New("empty data")
 	}
 
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
-	if err != nil {
-		return nil, err
-	} else if step == nil {
-		return nil, errors.New("can't get step from database")
-	}
-
 	switch data.Action {
 	case string(entity.TaskUpdateActionApprovement):
 		var updateParams approverUpdateParams
@@ -316,8 +309,15 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		})
 
 	case string(entity.TaskUpdateActionRequestApproveInfo):
+		step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+		if err != nil {
+			return nil, err
+		} else if step == nil {
+			return nil, errors.New("can't get step from database")
+		}
+
 		var updateParams updateExecutorInfoParams
-		err := json.Unmarshal(data.Parameters, &updateParams)
+		err = json.Unmarshal(data.Parameters, &updateParams)
 		if err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
