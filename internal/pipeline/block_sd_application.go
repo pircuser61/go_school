@@ -30,7 +30,6 @@ type ApplicationData struct {
 }
 
 type SdApplicationData struct {
-	BlueprintID     string                 `json:"blueprint_id"`
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
 }
@@ -89,9 +88,9 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx
 		return errors.New("invalid application data in context")
 	}
 
-	log.WithField("blueprintID", appData.BlueprintID).Info("run sd_application block")
+	log.WithField("blueprintID", gb.State.BlueprintID).Info("run sd_application block")
 
-	runCtx.SetValue(gb.Output[keyOutputBlueprintID], appData.BlueprintID)
+	runCtx.SetValue(gb.Output[keyOutputBlueprintID], gb.State.BlueprintID)
 	runCtx.SetValue(gb.Output[keyOutputSdApplicationDesc], appData.Description)
 	runCtx.SetValue(gb.Output[keyOutputSdApplication], appData.ApplicationBody)
 
@@ -139,7 +138,7 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 			{
 				Name:    keyOutputBlueprintID,
 				Type:    "string",
-				Comment: "application blueprint id",
+				Comment: "application pipeline id",
 			},
 			{
 				Name:    keyOutputSdApplicationDesc,

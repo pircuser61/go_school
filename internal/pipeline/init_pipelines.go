@@ -74,7 +74,7 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 
 	failedPipelinesCh := make(chan string, len(unfinished.Tasks))
 
-	workers := 5
+	workers := 20
 	if workers > len(unfinished.Tasks) {
 		workers = 1
 	}
@@ -234,7 +234,6 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 		}
 
 		ctx = c.WithValue(ctx, SdApplicationDataCtx{}, SdApplicationData{
-			BlueprintID:     sdState.BlueprintID,
 			Description:     sdState.Description,
 			ApplicationBody: sdState.ApplicationBody,
 		})

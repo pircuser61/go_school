@@ -188,6 +188,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		SelectAs:    p.SelectAs,
 		Archived:    p.Archived,
 		ForCarousel: p.ForCarousel,
+		Receiver:    p.Receiver,
 	}
 
 	return filters, nil
@@ -512,6 +513,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
 
 	if action == entity.TaskUpdateActionExecutorStartWork {
 		return pipeline.BlockGoExecutionID
+	}
+
+	if action == entity.TaskUpdateActionRequestFillForm {
+		return pipeline.BlockGoFormID
 	}
 
 	return ""

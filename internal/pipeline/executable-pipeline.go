@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -273,6 +274,17 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 			return nil
 		}
 	}
+	descr := ep.currDescription
+	additionalDescriptions, err := ep.Storage.GetAdditionalForms(ep.WorkNumber, "")
+	if err != nil {
+		return err
+	}
+	for _, item := range additionalDescriptions {
+		if item == "" {
+			continue
+		}
+		descr = fmt.Sprintf("%s\n\n%s", descr, item)
+	}
 
 	switch currStatus {
 	case StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
@@ -280,7 +292,7 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 			ep.WorkNumber,
 			ep.Name,
 			statusToTaskState[currStatus],
-			ep.currDescription,
+			descr,
 			ep.Sender.SdAddress)
 		if ep.initiatorEmail == "" {
 			email, err := ep.People.GetUserEmail(ctx, ep.Initiator)
@@ -573,26 +585,8 @@ func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, bl *entity
 	switch bl.BlockType {
 	case script.TypeGo:
 		return ep.CreateGoBlock(ctx, bl, name)
-	case script.TypePython3, script.TypePythonFlask, script.TypePythonHTTP:
-		fb := FunctionBlock{
-			Name:           name,
-			Type:           bl.BlockType,
-			FunctionName:   bl.Title,
-			FunctionInput:  make(map[string]string),
-			FunctionOutput: make(map[string]string),
-			Sockets:        entity.ConvertSocket(bl.Sockets),
-			RunURL:         ep.FaaS + "function/%s",
-		}
-
-		for _, v := range bl.Input {
-			fb.FunctionInput[v.Name] = v.Global
-		}
-
-		for _, v := range bl.Output {
-			fb.FunctionOutput[v.Name] = v.Global
-		}
-
-		return &fb, nil
+	case script.TypeExternal:
+		return createExecutableFunctionBlock(name, bl)
 	case script.TypeScenario:
 		p, err := ep.Storage.GetExecutableByName(ctx, bl.Title)
 		if err != nil {
@@ -672,6 +666,10 @@ func (ep *ExecutablePipeline) CreateGoBlock(ctx c.Context, ef *entity.EriusFunc,
 		return createGoStartParallelBlock(name, ef), nil
 	case BlockGoNotificationID:
 		return createGoNotificationBlock(name, ef, ep)
+	case BlockExecutableFunctionID:
+		return createExecutableFunctionBlock(name, ef)
+	case BlockGoFormID:
+		return createGoFormBlock(name, ef)
 	}
 
 	return nil, errors.New("unknown go-block type: " + ef.TypeID)

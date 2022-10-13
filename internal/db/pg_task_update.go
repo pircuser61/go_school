@@ -70,12 +70,6 @@ func (db *PGCon) setTaskChild(c context.Context, tx pgx.Tx, workNumber string, n
 	c, span := trace.StartSpan(c, "set_task_child")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -83,7 +77,7 @@ func (db *PGCon) setTaskChild(c context.Context, tx pgx.Tx, workNumber string, n
 			SET child_id = $1
 		WHERE child_id IS NULL AND work_number = $2`
 
-	_, err = tx.Exec(c, query, newTaskID, workNumber)
+	_, err := tx.Exec(c, query, newTaskID, workNumber)
 	if err != nil {
 		_ = tx.Rollback(c)
 	}

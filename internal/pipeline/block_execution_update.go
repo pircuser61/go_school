@@ -177,7 +177,7 @@ type executorsStartWork struct {
 	byLogin string
 }
 
-//nolint:gocyclo // need to deal with it later
+//nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updateRequestExecutionInfoDto) (err error) {
 	var updateParams RequestInfoUpdateParams
 	err = json.Unmarshal(dto.data.Parameters, &updateParams)
@@ -306,6 +306,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 	if err := gb.emailGroupExecutors(ctx, executorLogins, dto.byLogin); err != nil {
 		return nil
 	}
+
 	return nil
 }
 
@@ -319,6 +320,17 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 			}
 			notificationEmails = append(notificationEmails, email)
 		}
+	}
+	descr := gb.Pipeline.currDescription
+	additionalDescriptions, err := gb.Pipeline.Storage.GetAdditionalForms(gb.Pipeline.WorkNumber, gb.Name)
+	if err != nil {
+		return err
+	}
+	for _, item := range additionalDescriptions {
+		if item == "" {
+			continue
+		}
+		descr = fmt.Sprintf("%s\n\n%s", descr, item)
 	}
 	author, err := gb.Pipeline.People.GetUser(ctx, executor)
 	if err != nil {
@@ -334,7 +346,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		SdUrl:        gb.Pipeline.Sender.SdAddress,
 		ExecutorName: typedAuthor.LastName + typedAuthor.FirstName,
 		Initiator:    gb.Pipeline.Initiator,
-		Description:  gb.Pipeline.currDescription,
+		Description:  descr,
 	})
 	err = gb.Pipeline.Sender.SendNotification(ctx, notificationEmails, nil, tpl)
 	if err != nil {

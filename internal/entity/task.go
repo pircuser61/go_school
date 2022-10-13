@@ -96,6 +96,7 @@ type GetTaskParams struct {
 	SelectAs    *string     `json:"select_as"`
 	Archived    *bool       `json:"archived"`
 	ForCarousel *bool       `json:"forCarousel"`
+	Receiver    *string     `json:"receiver"`
 }
 
 type TimePeriod struct {
@@ -119,6 +120,7 @@ const (
 	TaskUpdateActionSendEditApp          TaskUpdateAction = "send_edit_app"
 	TaskUpdateActionCancelApp            TaskUpdateAction = "cancel_app"
 	TaskUpdateActionRequestApproveInfo   TaskUpdateAction = "request_add_info"
+	TaskUpdateActionRequestFillForm      TaskUpdateAction = "fill_form"
 )
 
 var (
@@ -131,6 +133,7 @@ var (
 		TaskUpdateActionSendEditApp:          {},
 		TaskUpdateActionCancelApp:            {},
 		TaskUpdateActionRequestApproveInfo:   {},
+		TaskUpdateActionRequestFillForm:      {},
 	}
 )
 
@@ -145,4 +148,12 @@ func (t *TaskUpdate) Validate() error {
 	}
 
 	return nil
+}
+
+type NeededNotif struct {
+	Initiator   string
+	Recipient   string
+	WorkNum     string
+	Description interface{}
+	Status      string
 }

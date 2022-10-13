@@ -15,6 +15,8 @@ const (
 	// BlockGoApproverID represents id/type of approver block (using in script.FunctionModel)
 	BlockGoApproverID = "approver"
 
+	BlockGoFormID = "form"
+
 	BlockGoStartId    = "start"
 	BlockGoFirstStart = "start_0"
 	BlockGoStartTitle = "start"
@@ -42,4 +44,7 @@ const (
 
 	BlockGoNotificationID    = "notification"
 	BlockGoNotificationTitle = "notification"
+
+	BlockExecutableFunctionID    = "executable_function"
+	BlockExecutableFunctionTitle = "executable_function"
 )

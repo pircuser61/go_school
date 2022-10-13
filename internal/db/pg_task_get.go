@@ -8,6 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iancoleman/orderedmap"
+
+	"golang.org/x/net/context"
+
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
@@ -70,23 +74,23 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
-					"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready')", q, len(args))
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.approvers.' || $%d )::jsonpath "+
+					" AND workers.status IN ('running', 'idle', 'ready')", q, len(args))
 			}
 		case "finished_approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->$%d "+
-					"IS NOT NULL AND workers.status IN ('finished', 'no_success')", q, len(args))
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.approvers.' || $%d )::jsonpath "+
+					" AND workers.status IN ('finished', 'no_success')", q, len(args))
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
 			}
 		case "finished_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->$%d "+
-					"IS NOT NULL AND (workers.status IN ('finished', 'no_success'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
 			}
 		}
 	} else {
@@ -120,6 +124,11 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		q = fmt.Sprintf("%s OR w.human_status = 'wait')", q)
 	}
 
+	if filters.Receiver != nil {
+		args = append(args, *filters.Receiver)
+		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
+	}
+
 	if order != "" {
 		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
 	}
@@ -137,6 +146,69 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	return q, args
 }
 
+func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
+	q := `WITH content as (
+    SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
+    FROM pipeliner.variable_storage
+    WHERE work_id = (SELECT id
+                     FROM pipeliner.works
+                     WHERE work_number = $1)
+)
+SELECT content -> 'State' -> step_name ->> 'description'
+FROM pipeliner.variable_storage
+WHERE step_name in (
+    SELECT rules ->> 'node_id' as rule
+    FROM content
+    WHERE rules ->> 'accessType' != 'None'
+)
+  AND work_id = (SELECT id
+                 FROM pipeliner.works
+                 WHERE work_number = $2)
+ORDER BY time`
+	ff := make([]string, 0)
+	rows, err := db.Pool.Query(context.Background(), q, workNumber, workNumber, nodeName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var form string
+		if scanErr := rows.Scan(&form); scanErr != nil {
+			return nil, scanErr
+		}
+		ff = append(ff, form)
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return ff, nil
+}
+
+func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
+	q := `SELECT content->'State'->'servicedesk_application_0'
+from pipeliner.variable_storage 
+where step_type = 'servicedesk_application' 
+and work_id = (select id from pipeliner.works where work_number = $1)`
+	var data *orderedmap.OrderedMap
+	if err := db.Pool.QueryRow(context.Background(), q, workNumber).Scan(&data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
+	q := `UPDATE pipeliner.variable_storage 
+set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
+where work_id = (select id from pipeliner.works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	q = fmt.Sprintf(q, string(bytes))
+	_, err = db.Pool.Exec(context.Background(), q, workNumber)
+	return err
+}
+
 //nolint:gocritic //filters
 func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
@@ -151,6 +223,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 
 	filters.Limit = nil
 	filters.Offset = nil
+	emptyOrder := ""
+	filters.Order = &emptyOrder
 	q, args = compileGetTasksQuery(filters)
 
 	count, err := db.getTasksCount(ctx, q, args)
@@ -202,7 +276,7 @@ func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
 				ORDER BY vs.time DESC
 				LIMIT 1
 			) descr ON descr.work_id = w.id
-		WHERE w.status = 1 AND w.child_id IS NULL AND w.id = '32bde489-fb03-42cb-8e7f-e403b08c3682'`
+		WHERE w.status = 1 AND w.child_id IS NULL`
 
 	return db.getTasks(ctx, query, []interface{}{})
 }
