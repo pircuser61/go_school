@@ -4,12 +4,12 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type updateFillFormParams struct {
