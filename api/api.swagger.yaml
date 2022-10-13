@@ -3074,6 +3074,9 @@ components:
         name:
           type: string
           description: Form name
+        description:
+          type: string
+          description: Form short description
         accessType:
           $ref: '#/components/schemas/FormAccessType'
       required:
