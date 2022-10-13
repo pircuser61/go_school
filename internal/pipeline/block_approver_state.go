@@ -35,6 +35,14 @@ type EditingApp struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type RequestApproverInfoLog struct {
+	Approver    string             `json:"approver"`
+	Comment     string             `json:"comment"`
+	Attachments []string           `json:"attachments"`
+	Type        AdditionalInfoType `json:"type"`
+	CreatedAt   time.Time          `json:"created_at"`
+}
+
 type AdditionalInfoType string
 
 const (
@@ -80,10 +88,11 @@ type ApproverData struct {
 
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 
-	IsEditable         bool         `json:"is_editable"`
-	RepeatPrevDecision bool         `json:"repeat_prev_decision"`
-	EditingApp         *EditingApp  `json:"editing_app,omitempty"`
-	EditingAppLog      []EditingApp `json:"editing_app_log,omitempty"`
+	IsEditable             bool                     `json:"is_editable"`
+	RepeatPrevDecision     bool                     `json:"repeat_prev_decision"`
+	EditingApp             *EditingApp              `json:"editing_app,omitempty"`
+	EditingAppLog          []EditingApp             `json:"editing_app_log,omitempty"`
+	RequestApproverInfoLog []RequestApproverInfoLog `json:"request_approver_info_log,omitempty"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
@@ -255,4 +264,29 @@ func (a *ApproverData) checkEmptyLinkIdAddInfo() bool {
 	}
 
 	return false
+}
+
+func (a *ApproverData) SetRequestApproverInfo(login, comment string, reqType AdditionalInfoType, attach []string) error {
+	_, ok := a.Approvers[login]
+	if !ok && reqType == RequestAddInfoType {
+		return fmt.Errorf("%s not found in approvers", login)
+	}
+
+	if reqType != ReplyAddInfoType && reqType != RequestAddInfoType {
+		return fmt.Errorf("request info type is not valid")
+	}
+
+	a.RequestApproverInfoLog = append(a.RequestApproverInfoLog, RequestApproverInfoLog{
+		Approver:    login,
+		Comment:     comment,
+		CreatedAt:   time.Now(),
+		Type:        reqType,
+		Attachments: attach,
+	})
+
+	return nil
+}
+
+func (a *ApproverData) IncreaseSLA(addSla int) {
+	a.SLA += addSla
 }
