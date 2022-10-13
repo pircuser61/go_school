@@ -350,7 +350,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	tpl := mail.NewExecutionTakenInWork(&mail.ExecutorNotifTemplate{
 		Id:           dto.workNumber,
 		SdUrl:        gb.Pipeline.Sender.SdAddress,
-		ExecutorName: typedAuthor.LastName + " " + typedAuthor.FirstName,
+		ExecutorName: typedAuthor.GetFIO(),
 		Initiator:    dto.author,
 		Description:  descr.Value,
 	})

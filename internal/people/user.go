@@ -138,3 +138,7 @@ func (u SSOUser) ToUserinfo() (*sso.UserInfo, error) {
 type SearchUsersResp struct {
 	Resources []SSOUser `json:"resources"`
 }
+
+func (user *SSOUserTyped) GetFIO() string {
+	return user.LastName + user.FirstName
+}
