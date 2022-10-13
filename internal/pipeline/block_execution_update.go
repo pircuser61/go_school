@@ -276,6 +276,11 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 	}
 
 	gb.State.IsTakenInWork = true
+	workHours := getWorkWorkHoursBetweenDates(
+		dto.step.Time,
+		time.Now(),
+	)
+	gb.State.IncreaseSLA(workHours)
 
 	dto.step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
@@ -298,7 +303,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 		return err
 	}
 
-	if err = gb.emailGroupExecutors(ctx, executorLogins, dto.byLogin); err != nil {
+	if err := gb.emailGroupExecutors(ctx, executorLogins, dto.byLogin); err != nil {
 		return nil
 	}
 
