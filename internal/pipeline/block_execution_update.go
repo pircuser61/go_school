@@ -179,7 +179,6 @@ type executorsStartWork struct {
 	byLogin    string
 	workNumber string
 	author     string
-	executor   string
 }
 
 //nolint:gocyclo //its ok here
