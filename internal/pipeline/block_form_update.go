@@ -14,6 +14,7 @@ import (
 )
 
 type updateFillFormParams struct {
+	SchemaId        string                 `json:"schema_id"`
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
 }

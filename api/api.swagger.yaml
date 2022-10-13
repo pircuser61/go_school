@@ -2342,6 +2342,9 @@ components:
       type: object
       description: Fill form
       properties:
+        schema_id:
+          type: string
+          description: form schema id
         description:
           type: string
           description: form data
@@ -2349,6 +2352,7 @@ components:
           type: object
           properties: { }
       required:
+        - schema_id
         - description
         - applicationBody
 

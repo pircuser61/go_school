@@ -34,7 +34,7 @@ func getVariable(variables map[string]interface{}, key string) interface{} {
 	return newVariables[currK]
 }
 
-func resolve(variableStorage map[string]interface{}, toResolve map[string]struct{}) (
+func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolve map[string]struct{}) (
 	entitiesToResolve map[string]struct{}, err error) {
 	entitiesToResolve = make(map[string]struct{})
 	for entityVariableRef := range toResolve {

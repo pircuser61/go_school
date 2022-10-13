@@ -686,6 +686,9 @@ type FillFormUpdateParams struct {
 
 	// form data
 	Description string `json:"description"`
+
+	// form schema id
+	SchemaId string `json:"schema_id"`
 }
 
 // Form accessibility preferences for certain node

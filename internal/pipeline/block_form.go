@@ -4,11 +4,8 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -36,7 +33,8 @@ type FormData struct {
 
 	DidSLANotification bool `json:"did_sla_notification"`
 
-	LeftToNotify map[string]struct{} `json:"left_to_notify"`
+	LeftToNotify                map[string]struct{} `json:"left_to_notify"`
+	IsExecutorVariablesResolved bool                `json:"isExecutorVariablesResolved"`
 }
 
 type GoFormBlock struct {
@@ -139,6 +137,16 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 
 	gb.State = &state
 
+	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema && gb.State.IsExecutorVariablesResolved == false {
+		variables, err := runCtx.GrabStorage()
+		if err != nil {
+			return err
+		}
+		resolvedExecutors, err := resolveValuesFromVariables(variables, gb.State.Executors)
+		gb.State.Executors = resolvedExecutors
+		gb.State.IsExecutorVariablesResolved = true
+	}
+
 	// nolint:dupl // not dupl?
 	if gb.State.IsFilled {
 		var actualExecutor string
@@ -231,34 +239,6 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 	if b.State.FormExecutorType == script.FormExecutorTypeInitiator {
 		b.State.Executors = map[string]struct{}{
 			ep.PipelineModel.Author: {},
-		}
-	}
-
-	if b.State.FormExecutorType == script.FormExecutorTypeFromSchema {
-		var allVariables map[string]interface{}
-		allVariables, err = ep.VarStore.GrabStorage()
-		if err != nil {
-			return nil, errors.Wrap(err, "Unable to grab variables storage")
-		}
-
-		formExecutors := make(map[string]struct{})
-		for formExecutorVariableRef := range b.State.Executors {
-			if len(strings.Split(formExecutorVariableRef, dotSeparator)) == 1 {
-				continue
-			}
-			formExecutorVar := getVariable(allVariables, formExecutorVariableRef)
-
-			if formExecutorVar == nil {
-				return nil, errors.Wrap(err, "Unable to find form executor by variable reference")
-			}
-
-			if actualFormExecutorUsername, castOK := formExecutorVar.(string); castOK {
-				formExecutors[actualFormExecutorUsername] = b.State.Executors[formExecutorVariableRef]
-			}
-		}
-
-		if len(formExecutors) != 0 {
-			b.State.Executors = formExecutors
 		}
 	}
 
