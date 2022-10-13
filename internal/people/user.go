@@ -139,6 +139,6 @@ type SearchUsersResp struct {
 	Resources []SSOUser `json:"resources"`
 }
 
-func (user *SSOUserTyped) GetFIO() string {
+func (user *SSOUserTyped) GetFullName() string {
 	return user.LastName + user.FirstName
 }
