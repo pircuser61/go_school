@@ -236,9 +236,10 @@ func Test_createGoApproverBlock(t *testing.T) {
 					},
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.ApproverParams{
-							Type:     script.ApproverTypeUser,
-							Approver: login,
-							SLA:      1,
+							Type:               script.ApproverTypeUser,
+							Approver:           login,
+							SLA:                1,
+							FormsAccessibility: make([]script.FormAccessibility, 0),
 						})
 
 						return r
