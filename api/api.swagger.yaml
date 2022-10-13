@@ -2962,10 +2962,12 @@ components:
           enum:
             - user
             - group
+            - fromSchema
           description: >
             Execution type:
              * user - Single user
              * group - Execution group ID
+             * fromSchema - Selected by initiator
         executors:
           type: string
           description: Executor value (depends on type)

@@ -13,8 +13,9 @@ func (a ExecutionType) String() string {
 }
 
 const (
-	ExecutionTypeUser  ExecutionType = "user"
-	ExecutionTypeGroup ExecutionType = "group"
+	ExecutionTypeUser       ExecutionType = "user"
+	ExecutionTypeGroup      ExecutionType = "group"
+	ExecutionTypeFromSchema ExecutionType = "fromSchema"
 )
 
 type ExecutionParams struct {
@@ -41,7 +42,8 @@ func (a *ExecutionParams) Validate() error {
 	typeExecution := ExecutionType(strings.ToLower(a.Type.String()))
 
 	if typeExecution != ExecutionTypeUser &&
-		typeExecution != ExecutionTypeGroup {
+		typeExecution != ExecutionTypeGroup &&
+		typeExecution != ExecutionTypeFromSchema {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
 	}
 
