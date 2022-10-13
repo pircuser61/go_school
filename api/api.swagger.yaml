@@ -2957,7 +2957,7 @@ components:
         name:
           type: string
           description: Form name
-        descriotion:
+        description:
           type: string
           description: Form short description
         accessType:
