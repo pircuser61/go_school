@@ -140,5 +140,5 @@ type SearchUsersResp struct {
 }
 
 func (user *SSOUserTyped) GetFullName() string {
-	return user.LastName + user.FirstName
+	return user.LastName + " " + user.FirstName
 }
