@@ -8,9 +8,8 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type updateFillFormParams struct {
@@ -56,7 +55,6 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 		return nil, errors.Wrap(err, "invalid format of go-form-block state")
 	}
 
-	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
 	if _, ok = gb.State.Executors[data.ByLogin]; !ok {
