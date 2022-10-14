@@ -33,9 +33,9 @@ const (
 )
 
 type ApproverParams struct {
-	Type ApproverType `json:"type"`
-	ApprovementRule
-	Approver string `json:"approver"`
+	Type            ApproverType `json:"type"`
+	ApprovementRule `json:"approvementRule"`
+	Approver        string `json:"approver"`
 
 	SLA                int                 `json:"sla"`
 	AutoAction         *AutoAction         `json:"auto_action,omitempty"`
