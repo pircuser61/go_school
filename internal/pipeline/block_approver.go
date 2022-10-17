@@ -79,7 +79,10 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 		if *gb.State.Decision == ApproverDecisionApproved {
 			return StatusApproved
 		}
-		return StatusApprovementRejected
+		if *gb.State.Decision == ApproverDecisionRejected {
+			return StatusApprovementRejected
+		}
+		return StatusWait
 	}
 
 	return StatusApprovement
