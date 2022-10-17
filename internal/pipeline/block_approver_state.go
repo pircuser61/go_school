@@ -78,7 +78,7 @@ type ApproverData struct {
 	Decision        *ApproverDecision      `json:"decision,omitempty"`
 	Comment         *string                `json:"comment,omitempty"`
 	ActualApprover  *string                `json:"actual_approver,omitempty"`
-	ApprovementRule script.ApprovementRule `json:"approvement_rule,omitempty"`
+	ApprovementRule script.ApprovementRule `json:"approvementRule,omitempty"`
 	ApproverLog     []ApproverLogEntry     `json:"approver_log,omitempty"`
 
 	SLA        int                `json:"sla"`
