@@ -156,8 +156,9 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
 
+		var overallDecision ApproverDecision
 		if decision == ApproverDecisionRejected {
-			*a.Decision = ApproverDecisionRejected
+			overallDecision = ApproverDecisionRejected
 		}
 
 		var approvedCount = 0
@@ -168,7 +169,13 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		}
 
 		if approvedCount == len(a.Approvers) {
-			*a.Decision = ApproverDecisionApproved
+			overallDecision = ApproverDecisionApproved
+		}
+
+		a.Decision = &overallDecision
+
+		if decision != ApproverDecisionRejected && decision != ApproverDecisionApproved {
+			a.Decision = nil
 		}
 	}
 
