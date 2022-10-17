@@ -19,7 +19,6 @@ func (a ApproverDecision) String() string {
 const (
 	ApproverDecisionApproved ApproverDecision = "approved"
 	ApproverDecisionRejected ApproverDecision = "rejected"
-	ApproverDecisionPending  ApproverDecision = "pending"
 )
 
 func decisionFromAutoAction(action script.AutoAction) ApproverDecision {
@@ -157,9 +156,8 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
 
-		var overallDecision = ApproverDecisionPending
 		if decision == ApproverDecisionRejected {
-			overallDecision = ApproverDecisionRejected
+			*a.Decision = ApproverDecisionRejected
 		}
 
 		var approvedCount = 0
@@ -170,10 +168,8 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		}
 
 		if approvedCount == len(a.Approvers) {
-			overallDecision = ApproverDecisionApproved
+			*a.Decision = ApproverDecisionApproved
 		}
-
-		a.Decision = &overallDecision
 	}
 
 	return nil
