@@ -141,26 +141,34 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	}
 
 	if approvementRule == script.AllOfApprovementRequired {
-		var approvedCount = 0
-		var membersCount = len(a.Approvers)
-		var overallDecision ApproverDecision
-
-		for _, approver := range a.ApproverLog {
-			if approver.Decision == ApproverDecisionApproved {
-				approvedCount++
-			}
-
-			switch approver.Decision {
-			case ApproverDecisionApproved:
-				approvedCount++
-			case ApproverDecisionRejected:
-				overallDecision = ApproverDecisionRejected
-			default:
-				return fmt.Errorf("unknown decision %s", decision.String())
+		for _, entry := range a.ApproverLog {
+			if entry.Login == login {
+				return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 			}
 		}
 
-		if approvedCount == membersCount {
+		var approverLogEntry = ApproverLogEntry{
+			Login:     login,
+			Decision:  decision,
+			Comment:   comment,
+			CreatedAt: time.Now(),
+		}
+
+		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+
+		var overallDecision ApproverDecision
+		if decision == ApproverDecisionRejected {
+			overallDecision = ApproverDecisionRejected
+		}
+
+		var approvedCount = 0
+		for _, entry := range a.ApproverLog {
+			if entry.Decision == ApproverDecisionApproved {
+				approvedCount++
+			}
+		}
+
+		if approvedCount == len(a.Approvers) {
 			overallDecision = ApproverDecisionApproved
 		}
 
