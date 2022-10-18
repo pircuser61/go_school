@@ -92,6 +92,16 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
 					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
 			}
+		case "form_executor":
+			{
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
+			}
+		case "finished_form_executor":
+			{
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
+			}
 		}
 	} else {
 		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
