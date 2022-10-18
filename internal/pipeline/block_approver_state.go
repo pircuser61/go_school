@@ -174,7 +174,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 		a.Decision = &overallDecision
 
-		if decision != ApproverDecisionRejected && decision != ApproverDecisionApproved {
+		if overallDecision != ApproverDecisionRejected && overallDecision != ApproverDecisionApproved {
 			a.Decision = nil
 		}
 	}
