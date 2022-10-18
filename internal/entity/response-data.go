@@ -140,6 +140,12 @@ type SearchPipeline struct {
 	Total        int
 }
 
+type FormChangelogEntry struct {
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+	CreatedAt       time.Time              `json:"created_at"`
+}
+
 func ConvertSocket(sockets []Socket) []script.Socket {
 	var result = make([]script.Socket, 0)
 

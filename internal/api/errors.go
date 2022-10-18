@@ -41,6 +41,7 @@ const (
 	VersionCreateError
 	UnauthError
 	AuthServiceError
+	GetFormsChangelogError
 	GetTasksError
 	GetTaskError
 	GetTasksCountError
