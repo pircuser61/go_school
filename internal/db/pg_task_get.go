@@ -165,7 +165,7 @@ WHERE step_name in (
 )
   AND work_id IN (SELECT id
                  FROM pipeliner.works
-                 WHERE work_number = $2 LIMIT 1)
+                 WHERE work_number = $2)
 ORDER BY time`
 	ff := make([]string, 0)
 	rows, err := db.Pool.Query(context.Background(), q, workNumber, workNumber, nodeName)
