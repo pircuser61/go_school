@@ -153,6 +153,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
     WHERE work_id = (SELECT id
                      FROM pipeliner.works
                      WHERE work_number = $1)
+    LIMIT 1
 )
 SELECT content -> 'State' -> step_name ->> 'description'
 FROM pipeliner.variable_storage

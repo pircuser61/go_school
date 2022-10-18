@@ -47,7 +47,10 @@ func (gb *GoApproverBlock) GetStatus() Status {
 		if *gb.State.Decision == ApproverDecisionApproved {
 			return StatusFinished
 		}
-		return StatusNoSuccess
+
+		if *gb.State.Decision == ApproverDecisionRejected {
+			return StatusNoSuccess
+		}
 	}
 
 	if gb.State.EditingApp != nil {
