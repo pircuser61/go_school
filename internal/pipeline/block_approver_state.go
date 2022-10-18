@@ -66,10 +66,10 @@ type AdditionalInfo struct {
 }
 
 type ApproverLogEntry struct {
-	Login     string
-	Decision  ApproverDecision
-	Comment   string
-	CreatedAt time.Time
+	Login     string           `json:"login"`
+	Decision  ApproverDecision `json:"decision"`
+	Comment   string           `json:"comment"`
+	CreatedAt time.Time        `json:"created_at"`
 }
 
 type ApproverData struct {
