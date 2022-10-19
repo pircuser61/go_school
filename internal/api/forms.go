@@ -60,7 +60,7 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
-	var result = make([]entity.FormChangelogEntry, 0)
+	var result []entity.FormChangelogEntry
 	for _, changelog := range formData.ChangesLog {
 		result = append(result, entity.FormChangelogEntry{
 			CreatedAt:       changelog.CreatedAt,
