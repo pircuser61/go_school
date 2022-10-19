@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/google/uuid"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
@@ -14,13 +12,37 @@ import (
 )
 
 func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams) {
-	ctx, s := trace.StartSpan(r.Context(), "update_task")
+	ctx, s := trace.StartSpan(r.Context(), "get_forms_changelog")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	taskStep, err := ae.DB.GetTaskStepById(ctx, uuid.MustParse(params.BlockId))
+	dbTask, err := ae.DB.GetTask(ctx, params.WorkNumber)
 	if err != nil {
+		e := GetTaskError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	steps, err := ae.DB.GetTaskSteps(ctx, dbTask.ID)
+	if err != nil {
+		e := GetTaskError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var formState json.RawMessage
+	for _, step := range steps {
+		if step.Name == params.BlockId {
+			formState = step.State[params.BlockId]
+		}
+	}
+
+	if formState == nil {
 		e := GetFormsChangelogError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -28,11 +50,8 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
-	var stepName = taskStep.Name
-	var formBlockState = taskStep.State[stepName]
-
 	formData := pipeline.FormData{}
-	err = json.Unmarshal(formBlockState, &formData)
+	err = json.Unmarshal(formState, &formData)
 	if err != nil {
 		e := GetFormsChangelogError
 		log.Error(e.errorMessage(err))
