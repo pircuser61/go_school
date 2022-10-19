@@ -169,10 +169,6 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 		return StatusWait
 	}
 
-	if !gb.State.IsTakenInWork && gb.State.ExecutorsGroupID != "" {
-		return StatusWait
-	}
-
 	return StatusExecution
 }
 
@@ -186,10 +182,6 @@ func (gb *GoExecutionBlock) GetStatus() Status {
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
 		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
-		return StatusIdle
-	}
-
-	if !gb.State.IsTakenInWork && gb.State.ExecutorsGroupID != "" {
 		return StatusIdle
 	}
 
