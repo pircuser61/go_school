@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -25,14 +26,19 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 	}
 
 	var stepName = taskStep.Name
-	var blockState = taskStep.State[stepName]
+	var formBlockState = taskStep.State[stepName]
 
-	var formData = pipeline.FormData{
-		// TODO: mapping from State
+	formData := pipeline.FormData{}
+	err = json.Unmarshal(formBlockState, &formData)
+	if err != nil {
+		e := GetFormsChangelogError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
 
 	var result = make([]entity.FormChangelogEntry, 0)
-
 	for _, changelog := range formData.ChangesLog {
 		result = append(result, entity.FormChangelogEntry{
 			CreatedAt:       changelog.CreatedAt,
