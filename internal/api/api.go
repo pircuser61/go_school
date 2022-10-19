@@ -1079,7 +1079,10 @@ type StartDebugTaskJSONBody DebugRunRequest
 
 // GetFormsChangelogParams defines parameters for GetFormsChangelog.
 type GetFormsChangelogParams struct {
-	// Id of form block
+	// Work number
+	WorkNumber string `json:"work_number"`
+
+	// Id of form block (name)
 	BlockId string `json:"block_id"`
 }
 
@@ -1676,6 +1679,20 @@ func (siw *ServerInterfaceWrapper) GetFormsChangelog(w http.ResponseWriter, r *h
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetFormsChangelogParams
+
+	// ------------- Required query parameter "work_number" -------------
+	if paramValue := r.URL.Query().Get("work_number"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "work_number"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "work_number", r.URL.Query(), &params.WorkNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "work_number", Err: err})
+		return
+	}
 
 	// ------------- Required query parameter "block_id" -------------
 	if paramValue := r.URL.Query().Get("block_id"); paramValue != "" {
