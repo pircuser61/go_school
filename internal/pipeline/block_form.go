@@ -166,8 +166,6 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 		runCtx.ReplaceState(gb.Name, stateBytes)
 	}
 
-	//TODO добавить нотификацию о необходимости заполнить форму
-
 	return nil
 }
 
