@@ -68,11 +68,14 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	gb.State.Description = updateParams.Description
 	gb.State.IsFilled = true
 
-	gb.State.ChangesLog = append(gb.State.ChangesLog, ChangesLogItem{
-		Description:     updateParams.Description,
-		ApplicationBody: updateParams.ApplicationBody,
-		CreatedAt:       time.Now(),
-	})
+	gb.State.ChangesLog = append([]ChangesLogItem{
+		{
+			Description:     updateParams.Description,
+			ApplicationBody: updateParams.ApplicationBody,
+			CreatedAt:       time.Now(),
+			Executor:        data.ByLogin,
+		},
+	}, gb.State.ChangesLog...)
 
 	step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {

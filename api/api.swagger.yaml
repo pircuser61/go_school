@@ -3139,6 +3139,9 @@ components:
         created_at:
           type: string
           description: Date of log item creation
+        executor:
+          type: string
+          description: Login of form executor
 
     FormsAccessibility:
       type: object

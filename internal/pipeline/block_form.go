@@ -27,6 +27,7 @@ type ChangesLogItem struct {
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
 	CreatedAt       time.Time              `json:"created_at"`
+	Executor        string                 `json:"executor,omitempty"`
 }
 
 type FormData struct {

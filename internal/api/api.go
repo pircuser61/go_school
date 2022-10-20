@@ -696,6 +696,9 @@ type FormChangelogItem struct {
 
 	// Compiled field keys and values of form used for notifications
 	Description *string `json:"description,omitempty"`
+
+	// Login of form executor
+	Executor *string `json:"executor,omitempty"`
 }
 
 // Form params

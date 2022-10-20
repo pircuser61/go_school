@@ -68,6 +68,7 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 			CreatedAt:       &createdAtString,
 			Description:     &changelog.Description,
 			ApplicationBody: &changelog.ApplicationBody,
+			Executor:        &changelog.Executor,
 		}
 	}
 
