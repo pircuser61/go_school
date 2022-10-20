@@ -1784,6 +1784,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /forms/changelog:
+    get:
+      tags:
+        - forms
+      summary: Get forms changelog
+      description: Получить список изменений формы
+      operationId: get-forms-changelog
+      parameters:
+        - name: work_number
+          in: query
+          description: Work number
+          required: true
+          schema:
+            type: string
+        - name: block_id
+          in: query
+          description: Id of form block (name)
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/FormsChangelogResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
 components:
   schemas:
     AllUsageResponse:
@@ -3066,6 +3116,29 @@ components:
         - is_editable
         - approvers_group_id
         - approvers_group_name
+
+    FormsChangelogResponse:
+      type: object
+      properties:
+        changelog:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormChangelogItem'
+          description: Changelog of filled form data
+
+    FormChangelogItem:
+      type: object
+      properties:
+        application_body:
+          type: object
+          properties: { }
+          description: Filled form values
+        description:
+          type: string
+          description: Compiled field keys and values of form used for notifications
+        created_at:
+          type: string
+          description: Date of log item creation
 
     FormsAccessibility:
       type: object

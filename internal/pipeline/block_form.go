@@ -4,9 +4,9 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -23,6 +23,12 @@ const (
 	keyOutputFormBody     = "application_body"
 )
 
+type ChangesLogItem struct {
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+	CreatedAt       time.Time              `json:"created_at"`
+}
+
 type FormData struct {
 	SchemaId        string                 `json:"schema_id"`
 	SchemaName      string                 `json:"schema_name"`
@@ -31,6 +37,7 @@ type FormData struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
 	IsFilled        bool                   `json:"is_filled"`
 	ActualExecutor  *string                `json:"actual_executor,omitempty"`
+	ChangesLog      []ChangesLogItem       `json:"changes_log"`
 
 	SLA int `json:"sla"`
 
@@ -222,6 +229,7 @@ func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) 
 		},
 		SchemaId:   params.SchemaId,
 		SchemaName: params.SchemaName,
+		ChangesLog: make([]ChangesLogItem, 0),
 	}
 
 	return b, nil

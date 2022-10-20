@@ -98,6 +98,10 @@ const (
 
 	FunctionParamsTypeExecution FunctionParamsType = "execution"
 
+	FunctionParamsTypeForm FunctionParamsType = "form"
+
+	FunctionParamsTypeIf FunctionParamsType = "if"
+
 	FunctionParamsTypeNotification FunctionParamsType = "notification"
 
 	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
@@ -682,6 +686,18 @@ type FillFormUpdateParams struct {
 // Form accessibility preferences for certain node
 type FormAccessType string
 
+// FormChangelogItem defines model for FormChangelogItem.
+type FormChangelogItem struct {
+	// Filled form values
+	ApplicationBody *map[string]interface{} `json:"application_body,omitempty"`
+
+	// Date of log item creation
+	CreatedAt *string `json:"created_at,omitempty"`
+
+	// Compiled field keys and values of form used for notifications
+	Description *string `json:"description,omitempty"`
+}
+
 // Form params
 type FormParams struct {
 	// Executor value
@@ -707,6 +723,12 @@ type FormsAccessibility struct {
 
 	// Form node ID
 	NodeId string `json:"node_id"`
+}
+
+// FormsChangelogResponse defines model for FormsChangelogResponse.
+type FormsChangelogResponse struct {
+	// Changelog of filled form data
+	Changelog *[]FormChangelogItem `json:"changelog,omitempty"`
 }
 
 // FunctionModel defines model for FunctionModel.
@@ -1054,6 +1076,15 @@ type CreateDebugTaskJSONBody CreateTaskRequest
 
 // StartDebugTaskJSONBody defines parameters for StartDebugTask.
 type StartDebugTaskJSONBody DebugRunRequest
+
+// GetFormsChangelogParams defines parameters for GetFormsChangelog.
+type GetFormsChangelogParams struct {
+	// Work number
+	WorkNumber string `json:"work_number"`
+
+	// Id of form block (name)
+	BlockId string `json:"block_id"`
+}
 
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
@@ -1413,6 +1444,9 @@ type ServerInterface interface {
 	// Debug task
 	// (GET /debug/{workNumber})
 	DebugTask(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Get forms changelog
+	// (GET /forms/changelog)
+	GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams)
 	// Get list of modules
 	// (GET /modules)
 	GetModules(w http.ResponseWriter, r *http.Request)
@@ -1628,6 +1662,54 @@ func (siw *ServerInterfaceWrapper) DebugTask(w http.ResponseWriter, r *http.Requ
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DebugTask(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetFormsChangelog operation middleware
+func (siw *ServerInterfaceWrapper) GetFormsChangelog(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetFormsChangelogParams
+
+	// ------------- Required query parameter "work_number" -------------
+	if paramValue := r.URL.Query().Get("work_number"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "work_number"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "work_number", r.URL.Query(), &params.WorkNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "work_number", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "block_id" -------------
+	if paramValue := r.URL.Query().Get("block_id"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "block_id"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "block_id", r.URL.Query(), &params.BlockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "block_id", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetFormsChangelog(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2710,6 +2792,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/debug/{workNumber}", wrapper.DebugTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/forms/changelog", wrapper.GetFormsChangelog)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules", wrapper.GetModules)

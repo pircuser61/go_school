@@ -4,12 +4,14 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type updateFillFormParams struct {
@@ -64,6 +66,13 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	gb.State.ActualExecutor = &data.ByLogin
 	gb.State.ApplicationBody = updateParams.ApplicationBody
 	gb.State.Description = updateParams.Description
+	gb.State.IsFilled = true
+
+	gb.State.ChangesLog = append(gb.State.ChangesLog, ChangesLogItem{
+		Description:     updateParams.Description,
+		ApplicationBody: updateParams.ApplicationBody,
+		CreatedAt:       time.Now(),
+	})
 
 	step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
