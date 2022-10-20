@@ -1829,8 +1829,6 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	    status NOT IN ('finished', 'skipped')
 	ORDER BY vs.time ASC`
 
-	// todo: not in skipped
-
 	rows, err := conn.Query(ctx, q, id, stepType)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
