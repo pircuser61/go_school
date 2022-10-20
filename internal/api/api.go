@@ -76,7 +76,7 @@ const (
 
 // Defines values for ExecutionParamsType.
 const (
-	ExecutionParamsTypeFromSchema ExecutionParamsType = "fromSchema"
+	ExecutionParamsTypeFromSchema ExecutionParamsType = "from_schema"
 
 	ExecutionParamsTypeGroup ExecutionParamsType = "group"
 
@@ -645,14 +645,14 @@ type ExecutionParams struct {
 	// Execution type:
 	//  * user - Single user
 	//  * group - Execution group ID
-	//  * fromSchema - Selected by initiator
+	//  * from_schema - Selected by initiator
 	Type ExecutionParamsType `json:"type"`
 }
 
 // Execution type:
 //  * user - Single user
 //  * group - Execution group ID
-//  * fromSchema - Selected by initiator
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params

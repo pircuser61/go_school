@@ -15,7 +15,7 @@ func (a ExecutionType) String() string {
 const (
 	ExecutionTypeUser       ExecutionType = "user"
 	ExecutionTypeGroup      ExecutionType = "group"
-	ExecutionTypeFromSchema ExecutionType = "fromSchema"
+	ExecutionTypeFromSchema ExecutionType = "from_schema"
 )
 
 type ExecutionParams struct {
