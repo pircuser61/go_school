@@ -150,7 +150,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 	q := `WITH content as (
     SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
     FROM pipeliner.variable_storage
-    WHERE work_id = (SELECT id
+    WHERE work_id IN (SELECT id
                      FROM pipeliner.works
                      WHERE work_number = $1)
     LIMIT 1
@@ -161,8 +161,9 @@ WHERE step_name in (
     SELECT rules ->> 'node_id' as rule
     FROM content
     WHERE rules ->> 'accessType' != 'None'
+    LIMIT 1
 )
-  AND work_id = (SELECT id
+  AND work_id IN (SELECT id
                  FROM pipeliner.works
                  WHERE work_number = $2)
 ORDER BY time`
