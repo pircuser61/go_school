@@ -3012,12 +3012,12 @@ components:
           enum:
             - user
             - group
-            - fromSchema
+            - from_schema
           description: >
             Execution type:
              * user - Single user
              * group - Execution group ID
-             * fromSchema - Selected by initiator
+             * from_schema - Selected by initiator
         executors:
           type: string
           description: Executor value (depends on type)
