@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
@@ -62,12 +63,12 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 	var result = make([]FormChangelogItem, len(formData.ChangesLog))
 	for i := range formData.ChangesLog {
 		var changelog = formData.ChangesLog[i]
-		var createdAtString = changelog.CreatedAt.String()
-		result = append(result, FormChangelogItem{
+		var createdAtString = changelog.CreatedAt.Format(time.RFC3339)
+		result[i] = FormChangelogItem{
 			CreatedAt:       &createdAtString,
 			Description:     &changelog.Description,
 			ApplicationBody: &changelog.ApplicationBody,
-		})
+		}
 	}
 
 	err = sendResponse(w, http.StatusOK, result)
