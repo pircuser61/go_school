@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 
 	"go.opencensus.io/trace"
@@ -60,12 +59,13 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
-	var result []entity.FormChangelogEntry
+	var result = make([]FormChangelogItem, len(formData.ChangesLog))
 	for _, changelog := range formData.ChangesLog {
-		result = append(result, entity.FormChangelogEntry{
-			CreatedAt:       changelog.CreatedAt,
-			Description:     changelog.Description,
-			ApplicationBody: changelog.ApplicationBody,
+		var createdAtString = changelog.CreatedAt.String()
+		result = append(result, FormChangelogItem{
+			CreatedAt:       &createdAtString,
+			Description:     &changelog.Description,
+			ApplicationBody: &changelog.ApplicationBody,
 		})
 	}
 
