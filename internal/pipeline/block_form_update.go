@@ -72,6 +72,7 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 		Description:     updateParams.Description,
 		ApplicationBody: updateParams.ApplicationBody,
 		CreatedAt:       time.Now(),
+		Executor:        data.ByLogin,
 	})
 
 	step.State[gb.Name], err = json.Marshal(gb.State)
