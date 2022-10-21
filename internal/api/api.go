@@ -737,11 +737,8 @@ type FormsAccessibility struct {
 	NodeId string `json:"node_id"`
 }
 
-// FormsChangelogResponse defines model for FormsChangelogResponse.
-type FormsChangelogResponse struct {
-	// Changelog of filled form data
-	Changelog *[]FormChangelogItem `json:"changelog,omitempty"`
-}
+// Changelog of filled form data
+type FormsChangelogResponse []FormChangelogItem
 
 // FunctionModel defines model for FunctionModel.
 type FunctionModel struct {
