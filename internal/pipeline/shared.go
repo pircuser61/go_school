@@ -1,10 +1,10 @@
 package pipeline
 
 import (
-	"github.com/pkg/errors"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 type UpdateData struct {

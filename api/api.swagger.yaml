@@ -2395,9 +2395,6 @@ components:
       type: object
       description: Fill form
       properties:
-        schema_id:
-          type: string
-          description: form schema id
         description:
           type: string
           description: form data
@@ -2408,9 +2405,8 @@ components:
           type: string
           description: Form block id
       required:
-        - schema_id
         - description
-        - applicationBody
+        - application_body
         - block_id
 
     ApproverUpdateParams:
@@ -3079,12 +3075,12 @@ components:
       enum:
         - user
         - initiator
-        - fromSchema
+        - from_schema
       description: >
         Form executor type:
           * User - Single user
           * Initiator - Process initiator
-          * FromSchema - Selected by initiator
+          * From_schema - Selected by initiator
 
     ApproverType:
       type: string

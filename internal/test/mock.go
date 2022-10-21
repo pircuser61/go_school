@@ -1203,6 +1203,11 @@ func (m *MockDB) RollbackVersion(c context.Context, pipelineID, versionID uuid.U
 func (m *MockDB) GetVersionsByPipelineID(c context.Context, pipelineID string) ([]entity.EriusScenario, error) {
 	return nil, errNotImplemented
 }
+
 func (m *MockDB) GetPipelinesByNameOrId(c context.Context, dto *db.SearchPipelineRequest) ([]entity.SearchPipeline, error) {
 	return nil, errNotImplemented
+}
+
+func (m *MockDB) CheckUserCanEditForm(ctx context.Context, workNumber string, stepName string, login string) (bool, error) {
+	return false, errNotImplemented
 }

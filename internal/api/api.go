@@ -92,6 +92,15 @@ const (
 	FormAccessTypeЧтениеИРедактирование FormAccessType = "Чтение и редактирование"
 )
 
+// Defines values for FormExecutorType.
+const (
+	FormExecutorTypeFromSchema FormExecutorType = "from_schema"
+
+	FormExecutorTypeInitiator FormExecutorType = "initiator"
+
+	FormExecutorTypeUser FormExecutorType = "user"
+)
+
 // Defines values for FunctionParamsType.
 const (
 	FunctionParamsTypeApprover FunctionParamsType = "approver"
@@ -683,7 +692,7 @@ type ExecutorChangeParams struct {
 
 // Fill form
 type FillFormUpdateParams struct {
-	ApplicationBody *map[string]interface{} `json:"application_body,omitempty"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
 
 	// Form block id
 	BlockId string `json:"block_id"`
@@ -710,10 +719,22 @@ type FormChangelogItem struct {
 	Executor *string `json:"executor,omitempty"`
 }
 
+// Form executor type:
+//   * User - Single user
+//   * Initiator - Process initiator
+//   * From_schema - Selected by initiator
+type FormExecutorType string
+
 // Form params
 type FormParams struct {
 	// Executor value
 	Executor *string `json:"executor,omitempty"`
+
+	// Form executor type:
+	//   * User - Single user
+	//   * Initiator - Process initiator
+	//   * From_schema - Selected by initiator
+	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
 
 	// form template id
 	SchemaId *string `json:"schema_id,omitempty"`

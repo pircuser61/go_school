@@ -150,6 +150,22 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 
 	gb.State = &state
 
+	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema &&
+		gb.State.IsExecutorVariablesResolved == false {
+		variableStorage, grabStorageErr := runCtx.GrabStorage()
+		if grabStorageErr != nil {
+			return err
+		}
+
+		resolvedEntities, resolveErr := resolveValuesFromVariables(variableStorage, gb.State.Executors)
+		if resolveErr != nil {
+			return err
+		}
+
+		gb.State.Executors = resolvedEntities
+		gb.State.IsExecutorVariablesResolved = true
+	}
+
 	// nolint:dupl // not dupl?
 	if gb.State.IsFilled {
 		var actualExecutor string

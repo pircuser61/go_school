@@ -11,7 +11,7 @@ func (f FormExecutorType) String() string {
 const (
 	FormExecutorTypeUser       FormExecutorType = "user"
 	FormExecutorTypeInitiator  FormExecutorType = "initiator"
-	FormExecutorTypeFromSchema FormExecutorType = "fromSchema"
+	FormExecutorTypeFromSchema FormExecutorType = "from_schema"
 )
 
 type FormParams struct {

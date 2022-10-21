@@ -1808,11 +1808,11 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 		return nil, err
 	}
 
-	var notInStatuses string
+	var notInStatuses []string
 	if stepType == "form" {
-		notInStatuses = "AND status NOT IN ('finished', 'skipped')"
+		notInStatuses = []string{"skipped"}
 	} else {
-		notInStatuses = "AND status NOT 'skipped'"
+		notInStatuses = []string{"skipped", "finished"}
 	}
 
 	defer conn.Release()
@@ -1833,12 +1833,10 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	WHERE 
 	    work_id = $1 AND 
 	    step_type = $2
-	    --not_in_statuses--
+	    AND status != ANY($3)
 	    ORDER BY vs.time ASC`
 
-	q = strings.Replace(q, "--not_in_statuses--", notInStatuses, 1)
-
-	rows, err := conn.Query(ctx, q, id, stepType)
+	rows, err := conn.Query(ctx, q, id, stepType, notInStatuses)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -2359,4 +2357,46 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 	}
 
 	return res, nil
+}
+
+func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName, login string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_user_can_edit_form")
+	defer span.End()
+
+	conn, err := db.Pool.Acquire(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	defer conn.Release()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	var q = `
+			with accesses as (
+				select jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as data
+				from pipeliner.variable_storage
+				where step_type = 'approver'
+				  and content -> 'State' -> step_name -> 'approvers' ? $3
+				  and work_id = (SELECT id
+								 FROM pipeliner.works
+								 WHERE work_number = $1
+				      )
+			union
+			select jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as data
+			from pipeliner.variable_storage
+			where step_type = 'execution'
+			  and content -> 'State' -> step_name -> 'executors' ? $3
+			  and work_id = (SELECT id
+							 FROM pipeliner.works
+							 WHERE work_number = $1))
+			select count(*) from accesses
+			where accesses.data::jsonb ->> 'node_id' = $2 and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
+`
+	var count int
+	if scanErr := conn.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
+		return false, err
+	}
+
+	return count != 0, nil
 }
