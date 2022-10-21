@@ -197,13 +197,14 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoFormBlock(name string, ef *entity.EriusFunc) (*GoFormBlock, error) {
+func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline) (*GoFormBlock, error) {
 	b := &GoFormBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:     name,
+		Title:    ef.Title,
+		Input:    map[string]string{},
+		Output:   map[string]string{},
+		Sockets:  entity.ConvertSocket(ef.Sockets),
+		Pipeline: ep,
 	}
 
 	for _, v := range ef.Input {

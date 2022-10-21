@@ -17,6 +17,7 @@ import (
 type updateFillFormParams struct {
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
+	BlockId         string                 `json:"block_id"`
 }
 
 func (a *updateFillFormParams) Validate() error {
@@ -36,6 +37,10 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	err := json.Unmarshal(data.Parameters, &updateParams)
 	if err != nil {
 		return nil, errors.New("can't assert provided data")
+	}
+
+	if updateParams.BlockId != gb.Name {
+		return nil, errors.New("wrong form id")
 	}
 
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
