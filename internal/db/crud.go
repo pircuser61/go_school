@@ -1808,6 +1808,13 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 		return nil, err
 	}
 
+	var notInStatuses string
+	if stepType == "form" {
+		notInStatuses = "AND status NOT IN ('finished', 'skipped')"
+	} else {
+		notInStatuses = "AND status NOT 'skipped'"
+	}
+
 	defer conn.Release()
 
 	// nolint:gocritic
@@ -1825,9 +1832,11 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	FROM pipeliner.variable_storage vs 
 	WHERE 
 	    work_id = $1 AND 
-	    step_type = $2 AND
-	    status NOT IN ('finished', 'skipped')
-	ORDER BY vs.time ASC`
+	    step_type = $2
+	    --not_in_statuses--
+	    ORDER BY vs.time ASC`
+
+	q = strings.Replace(q, "--not_in_statuses--", notInStatuses, 1)
 
 	rows, err := conn.Query(ctx, q, id, stepType)
 	if err != nil {
