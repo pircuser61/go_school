@@ -64,8 +64,19 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	if _, ok = gb.State.Executors[data.ByLogin]; !ok {
-		return nil, fmt.Errorf("%s not found in executors", data.ByLogin)
+	if gb.State.IsFilled == true {
+		isAllowed, checkEditErr := gb.Pipeline.Storage.CheckUserCanEditForm(ctx, data.WorkNumber, gb.Name, data.ByLogin)
+		if checkEditErr != nil {
+			return nil, err
+		}
+
+		if isAllowed == false {
+			return nil, fmt.Errorf("%s have not permission to edit form", data.ByLogin)
+		}
+	} else {
+		if _, ok = gb.State.Executors[data.ByLogin]; !ok {
+			return nil, fmt.Errorf("%s not found in executors", data.ByLogin)
+		}
 	}
 
 	gb.State.ActualExecutor = &data.ByLogin

@@ -2406,7 +2406,7 @@ components:
           description: Form block id
       required:
         - description
-        - applicationBody
+        - application_body
         - block_id
 
     ApproverUpdateParams:
@@ -3055,6 +3055,8 @@ components:
       type: object
       description: Form params
       properties:
+        form_executor_type:
+          $ref: '#/components/schemas/FormExecutorType'
         executor:
           type: string
           description: Executor value
@@ -3067,6 +3069,18 @@ components:
       required:
         - blueprint_id
         - blueprint_name
+
+    FormExecutorType:
+      type: string
+      enum:
+        - user
+        - initiator
+        - from_schema
+      description: >
+        Form executor type:
+          * User - Single user
+          * Initiator - Process initiator
+          * From_schema - Selected by initiator
 
     ApproverType:
       type: string

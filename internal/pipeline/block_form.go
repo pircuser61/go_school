@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -31,20 +32,22 @@ type ChangesLogItem struct {
 }
 
 type FormData struct {
-	SchemaId        string                 `json:"schema_id"`
-	SchemaName      string                 `json:"schema_name"`
-	Executors       map[string]struct{}    `json:"executors"`
-	Description     string                 `json:"description"`
-	ApplicationBody map[string]interface{} `json:"application_body"`
-	IsFilled        bool                   `json:"is_filled"`
-	ActualExecutor  *string                `json:"actual_executor,omitempty"`
-	ChangesLog      []ChangesLogItem       `json:"changes_log"`
+	FormExecutorType script.FormExecutorType `json:"form_executor_type"`
+	SchemaId         string                  `json:"schema_id"`
+	SchemaName       string                  `json:"schema_name"`
+	Executors        map[string]struct{}     `json:"executors"`
+	Description      string                  `json:"description"`
+	ApplicationBody  map[string]interface{}  `json:"application_body"`
+	IsFilled         bool                    `json:"is_filled"`
+	ActualExecutor   *string                 `json:"actual_executor,omitempty"`
+	ChangesLog       []ChangesLogItem        `json:"changes_log"`
 
 	SLA int `json:"sla"`
 
 	DidSLANotification bool `json:"did_sla_notification"`
 
-	LeftToNotify map[string]struct{} `json:"left_to_notify"`
+	LeftToNotify                map[string]struct{} `json:"left_to_notify"`
+	IsExecutorVariablesResolved bool                `json:"isExecutorVariablesResolved"`
 }
 
 type GoFormBlock struct {
@@ -147,6 +150,22 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 
 	gb.State = &state
 
+	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema &&
+		gb.State.IsExecutorVariablesResolved == false {
+		variableStorage, grabStorageErr := runCtx.GrabStorage()
+		if grabStorageErr != nil {
+			return err
+		}
+
+		resolvedEntities, resolveErr := resolveValuesFromVariables(variableStorage, gb.State.Executors)
+		if resolveErr != nil {
+			return err
+		}
+
+		gb.State.Executors = resolvedEntities
+		gb.State.IsExecutorVariablesResolved = true
+	}
+
 	// nolint:dupl // not dupl?
 	if gb.State.IsFilled {
 		var actualExecutor string
@@ -229,9 +248,22 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 		Executors: map[string]struct{}{
 			params.Executor: {},
 		},
-		SchemaId:   params.SchemaId,
-		SchemaName: params.SchemaName,
-		ChangesLog: make([]ChangesLogItem, 0),
+		SchemaId:         params.SchemaId,
+		SchemaName:       params.SchemaName,
+		ChangesLog:       make([]ChangesLogItem, 0),
+		FormExecutorType: params.FormExecutorType,
+	}
+
+	if b.State.FormExecutorType == script.FormExecutorTypeUser {
+		b.State.Executors = map[string]struct{}{
+			params.Executor: {},
+		}
+	}
+
+	if b.State.FormExecutorType == script.FormExecutorTypeInitiator {
+		b.State.Executors = map[string]struct{}{
+			ep.PipelineModel.Author: {},
+		}
 	}
 
 	return b, nil
