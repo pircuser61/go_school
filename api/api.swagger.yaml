@@ -2374,6 +2374,9 @@ components:
             - request_execution_info
             - executor_start_work
             - request_add_info
+            - fill_form
+            - cancel_app
+            - send_edit_app
         parameters:
           type: object
           description: Task update params
@@ -2398,9 +2401,13 @@ components:
         application_body:
           type: object
           properties: { }
+        block_id:
+          type: string
+          description: Form block id
       required:
         - description
         - applicationBody
+        - block_id
 
     ApproverUpdateParams:
       type: object

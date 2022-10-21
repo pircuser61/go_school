@@ -183,15 +183,21 @@ const (
 const (
 	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
 
+	TaskUpdateActionCancelApp TaskUpdateAction = "cancel_app"
+
 	TaskUpdateActionChangeExecutor TaskUpdateAction = "change_executor"
 
 	TaskUpdateActionExecution TaskUpdateAction = "execution"
 
 	TaskUpdateActionExecutorStartWork TaskUpdateAction = "executor_start_work"
 
+	TaskUpdateActionFillForm TaskUpdateAction = "fill_form"
+
 	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
 
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
+
+	TaskUpdateActionSendEditApp TaskUpdateAction = "send_edit_app"
 )
 
 // Defines values for ApproverDecision.
@@ -678,6 +684,9 @@ type ExecutorChangeParams struct {
 // Fill form
 type FillFormUpdateParams struct {
 	ApplicationBody *map[string]interface{} `json:"application_body,omitempty"`
+
+	// Form block id
+	BlockId string `json:"block_id"`
 
 	// form data
 	Description string `json:"description"`
