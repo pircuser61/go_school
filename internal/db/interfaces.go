@@ -5,9 +5,8 @@ import (
 	"golang.org/x/net/context"
 	"time"
 
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/google/uuid"
+	"github.com/iancoleman/orderedmap"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
