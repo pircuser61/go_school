@@ -3139,13 +3139,10 @@ components:
         - approvers_group_name
 
     FormsChangelogResponse:
-      type: object
-      properties:
-        changelog:
-          type: array
-          items:
-            $ref: '#/components/schemas/FormChangelogItem'
-          description: Changelog of filled form data
+      type: array
+      items:
+        $ref: '#/components/schemas/FormChangelogItem'
+      description: Changelog of filled form data
 
     FormChangelogItem:
       type: object
