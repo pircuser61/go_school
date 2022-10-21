@@ -74,7 +74,7 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 
 	failedPipelinesCh := make(chan string, len(unfinished.Tasks))
 
-	workers := 20
+	workers := 5
 	if workers > len(unfinished.Tasks) {
 		workers = 1
 	}
@@ -99,14 +99,13 @@ func (p *initiation) InitPipelines(ctx c.Context) error {
 
 //nolint:gocyclo //its ok here
 func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.EriusTask, outCh chan string) {
+	log := logger.GetLogger(ctx)
 	defer wg.Done()
 	for {
 		task, ok := <-in
 		if !ok {
 			return
 		}
-
-		log := logger.GetLogger(ctx)
 
 		isFailed := false
 

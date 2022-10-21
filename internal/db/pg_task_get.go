@@ -92,6 +92,16 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
 					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
 			}
+		case "form_executor":
+			{
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
+			}
+		case "finished_form_executor":
+			{
+				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
+			}
 		}
 	} else {
 		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
@@ -150,9 +160,10 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 	q := `WITH content as (
     SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
     FROM pipeliner.variable_storage
-    WHERE work_id = (SELECT id
+    WHERE work_id IN (SELECT id
                      FROM pipeliner.works
                      WHERE work_number = $1)
+    LIMIT 1
 )
 SELECT content -> 'State' -> step_name ->> 'description'
 FROM pipeliner.variable_storage
@@ -160,8 +171,9 @@ WHERE step_name in (
     SELECT rules ->> 'node_id' as rule
     FROM content
     WHERE rules ->> 'accessType' != 'None'
+    LIMIT 1
 )
-  AND work_id = (SELECT id
+  AND work_id IN (SELECT id
                  FROM pipeliner.works
                  WHERE work_number = $2)
 ORDER BY time`
@@ -276,7 +288,9 @@ func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
 				ORDER BY vs.time DESC
 				LIMIT 1
 			) descr ON descr.work_id = w.id
-		WHERE w.status = 1 AND w.child_id IS NULL`
+		WHERE w.status = 1 AND w.child_id IS NULL
+        ORDER BY p.created_at DESC
+		LIMIT 100`
 
 	return db.getTasks(ctx, query, []interface{}{})
 }

@@ -35,6 +35,14 @@ type EditingApp struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type RequestApproverInfoLog struct {
+	Approver    string             `json:"approver"`
+	Comment     string             `json:"comment"`
+	Attachments []string           `json:"attachments"`
+	Type        AdditionalInfoType `json:"type"`
+	CreatedAt   time.Time          `json:"created_at"`
+}
+
 type AdditionalInfoType string
 
 const (
@@ -57,28 +65,21 @@ type AdditionalInfo struct {
 	CreatedAt   time.Time          `json:"created_at"`
 }
 
-type ApprovementRule string
-
-const (
-	AllOfApprovementRequired ApprovementRule = "AllOf"
-	AnyOfApprovementRequired ApprovementRule = "AnyOf"
-)
-
 type ApproverLogEntry struct {
-	Login     string
-	Decision  ApproverDecision
-	Comment   string
-	CreatedAt time.Time
+	Login     string           `json:"login"`
+	Decision  ApproverDecision `json:"decision"`
+	Comment   string           `json:"comment"`
+	CreatedAt time.Time        `json:"created_at"`
 }
 
 type ApproverData struct {
-	Type            script.ApproverType `json:"type"`
-	Approvers       map[string]struct{} `json:"approvers"`
-	Decision        *ApproverDecision   `json:"decision,omitempty"`
-	Comment         *string             `json:"comment,omitempty"`
-	ActualApprover  *string             `json:"actual_approver,omitempty"`
-	ApprovementRule ApprovementRule     `json:"approvement_rule,omitempty"`
-	ApproverLog     []ApproverLogEntry  `json:"approver_log,omitempty"`
+	Type            script.ApproverType    `json:"type"`
+	Approvers       map[string]struct{}    `json:"approvers"`
+	Decision        *ApproverDecision      `json:"decision,omitempty"`
+	Comment         *string                `json:"comment,omitempty"`
+	ActualApprover  *string                `json:"actual_approver,omitempty"`
+	ApprovementRule script.ApprovementRule `json:"approvementRule,omitempty"`
+	ApproverLog     []ApproverLogEntry     `json:"approver_log,omitempty"`
 
 	SLA        int                `json:"sla"`
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
@@ -87,10 +88,11 @@ type ApproverData struct {
 
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 
-	IsEditable         bool         `json:"is_editable"`
-	RepeatPrevDecision bool         `json:"repeat_prev_decision"`
-	EditingApp         *EditingApp  `json:"editing_app,omitempty"`
-	EditingAppLog      []EditingApp `json:"editing_app_log,omitempty"`
+	IsEditable             bool                     `json:"is_editable"`
+	RepeatPrevDecision     bool                     `json:"repeat_prev_decision"`
+	EditingApp             *EditingApp              `json:"editing_app,omitempty"`
+	EditingAppLog          []EditingApp             `json:"editing_app_log,omitempty"`
+	RequestApproverInfoLog []RequestApproverInfoLog `json:"request_approver_info_log,omitempty"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
@@ -132,37 +134,49 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 	var approvementRule = a.ApprovementRule
 
-	if approvementRule == AnyOfApprovementRequired {
+	if approvementRule == script.AnyOfApprovementRequired {
 		a.Decision = &decision
 		a.Comment = &comment
 		a.ActualApprover = &login
 	}
 
-	if approvementRule == AllOfApprovementRequired {
-		var approvedCount = 0
-		var membersCount = len(a.Approvers)
-		var overallDecision ApproverDecision
-
-		for _, approver := range a.ApproverLog {
-			if approver.Decision == ApproverDecisionApproved {
-				approvedCount++
-			}
-
-			switch approver.Decision {
-			case ApproverDecisionApproved:
-				approvedCount++
-			case ApproverDecisionRejected:
-				overallDecision = ApproverDecisionRejected
-			default:
-				return fmt.Errorf("unknown decision %s", decision.String())
+	if approvementRule == script.AllOfApprovementRequired {
+		for _, entry := range a.ApproverLog {
+			if entry.Login == login {
+				return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 			}
 		}
 
-		if approvedCount == membersCount {
+		var approverLogEntry = ApproverLogEntry{
+			Login:     login,
+			Decision:  decision,
+			Comment:   comment,
+			CreatedAt: time.Now(),
+		}
+
+		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+
+		var overallDecision ApproverDecision
+		if decision == ApproverDecisionRejected {
+			overallDecision = ApproverDecisionRejected
+		}
+
+		var approvedCount = 0
+		for _, entry := range a.ApproverLog {
+			if entry.Decision == ApproverDecisionApproved {
+				approvedCount++
+			}
+		}
+
+		if approvedCount == len(a.Approvers) {
 			overallDecision = ApproverDecisionApproved
 		}
 
 		a.Decision = &overallDecision
+
+		if overallDecision != ApproverDecisionRejected && overallDecision != ApproverDecisionApproved {
+			a.Decision = nil
+		}
 	}
 
 	return nil
@@ -262,4 +276,29 @@ func (a *ApproverData) checkEmptyLinkIdAddInfo() bool {
 	}
 
 	return false
+}
+
+func (a *ApproverData) SetRequestApproverInfo(login, comment string, reqType AdditionalInfoType, attach []string) error {
+	_, ok := a.Approvers[login]
+	if !ok && reqType == RequestAddInfoType {
+		return fmt.Errorf("%s not found in approvers", login)
+	}
+
+	if reqType != ReplyAddInfoType && reqType != RequestAddInfoType {
+		return fmt.Errorf("request info type is not valid")
+	}
+
+	a.RequestApproverInfoLog = append(a.RequestApproverInfoLog, RequestApproverInfoLog{
+		Approver:    login,
+		Comment:     comment,
+		CreatedAt:   time.Now(),
+		Type:        reqType,
+		Attachments: attach,
+	})
+
+	return nil
+}
+
+func (a *ApproverData) IncreaseSLA(addSla int) {
+	a.SLA += addSla
 }

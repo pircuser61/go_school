@@ -76,6 +76,8 @@ const (
 
 // Defines values for ExecutionParamsType.
 const (
+	ExecutionParamsTypeFromSchema ExecutionParamsType = "from_schema"
+
 	ExecutionParamsTypeGroup ExecutionParamsType = "group"
 
 	ExecutionParamsTypeUser ExecutionParamsType = "user"
@@ -88,15 +90,6 @@ const (
 	FormAccessTypeТолькоДляЧтения FormAccessType = "Только для чтения"
 
 	FormAccessTypeЧтениеИРедактирование FormAccessType = "Чтение и редактирование"
-)
-
-// Defines values for FormExecutorType.
-const (
-	FormExecutorTypeFromSchema FormExecutorType = "fromSchema"
-
-	FormExecutorTypeInitiator FormExecutorType = "initiator"
-
-	FormExecutorTypeUser FormExecutorType = "user"
 )
 
 // Defines values for FunctionParamsType.
@@ -190,15 +183,21 @@ const (
 const (
 	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
 
+	TaskUpdateActionCancelApp TaskUpdateAction = "cancel_app"
+
 	TaskUpdateActionChangeExecutor TaskUpdateAction = "change_executor"
 
 	TaskUpdateActionExecution TaskUpdateAction = "execution"
 
 	TaskUpdateActionExecutorStartWork TaskUpdateAction = "executor_start_work"
 
+	TaskUpdateActionFillForm TaskUpdateAction = "fill_form"
+
 	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
 
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
+
+	TaskUpdateActionSendEditApp TaskUpdateAction = "send_edit_app"
 )
 
 // Defines values for ApproverDecision.
@@ -652,12 +651,14 @@ type ExecutionParams struct {
 	// Execution type:
 	//  * user - Single user
 	//  * group - Execution group ID
+	//  * from_schema - Selected by initiator
 	Type ExecutionParamsType `json:"type"`
 }
 
 // Execution type:
 //  * user - Single user
 //  * group - Execution group ID
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -684,32 +685,35 @@ type ExecutorChangeParams struct {
 type FillFormUpdateParams struct {
 	ApplicationBody *map[string]interface{} `json:"application_body,omitempty"`
 
+	// Form block id
+	BlockId string `json:"block_id"`
+
 	// form data
 	Description string `json:"description"`
-
-	// form schema id
-	SchemaId string `json:"schema_id"`
 }
 
 // Form accessibility preferences for certain node
 type FormAccessType string
 
-// Form executor type:
-//   * User - Single user
-//   * Initiator - Process initiator
-//   * FromSchema - Selected by initiator
-type FormExecutorType string
+// FormChangelogItem defines model for FormChangelogItem.
+type FormChangelogItem struct {
+	// Filled form values
+	ApplicationBody *map[string]interface{} `json:"application_body,omitempty"`
+
+	// Date of log item creation
+	CreatedAt *string `json:"created_at,omitempty"`
+
+	// Compiled field keys and values of form used for notifications
+	Description *string `json:"description,omitempty"`
+
+	// Login of form executor
+	Executor *string `json:"executor,omitempty"`
+}
 
 // Form params
 type FormParams struct {
 	// Executor value
 	Executor *string `json:"executor,omitempty"`
-
-	// Form executor type:
-	//   * User - Single user
-	//   * Initiator - Process initiator
-	//   * FromSchema - Selected by initiator
-	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
 
 	// form template id
 	SchemaId *string `json:"schema_id,omitempty"`
@@ -723,11 +727,20 @@ type FormsAccessibility struct {
 	// Form accessibility preferences for certain node
 	AccessType FormAccessType `json:"accessType"`
 
+	// Form short description
+	Description *string `json:"description,omitempty"`
+
 	// Form name
 	Name string `json:"name"`
 
 	// Form node ID
 	NodeId string `json:"node_id"`
+}
+
+// FormsChangelogResponse defines model for FormsChangelogResponse.
+type FormsChangelogResponse struct {
+	// Changelog of filled form data
+	Changelog *[]FormChangelogItem `json:"changelog,omitempty"`
 }
 
 // FunctionModel defines model for FunctionModel.
@@ -1075,6 +1088,15 @@ type CreateDebugTaskJSONBody CreateTaskRequest
 
 // StartDebugTaskJSONBody defines parameters for StartDebugTask.
 type StartDebugTaskJSONBody DebugRunRequest
+
+// GetFormsChangelogParams defines parameters for GetFormsChangelog.
+type GetFormsChangelogParams struct {
+	// Work number
+	WorkNumber string `json:"work_number"`
+
+	// Id of form block (name)
+	BlockId string `json:"block_id"`
+}
 
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
@@ -1434,6 +1456,9 @@ type ServerInterface interface {
 	// Debug task
 	// (GET /debug/{workNumber})
 	DebugTask(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Get forms changelog
+	// (GET /forms/changelog)
+	GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams)
 	// Get list of modules
 	// (GET /modules)
 	GetModules(w http.ResponseWriter, r *http.Request)
@@ -1649,6 +1674,54 @@ func (siw *ServerInterfaceWrapper) DebugTask(w http.ResponseWriter, r *http.Requ
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DebugTask(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetFormsChangelog operation middleware
+func (siw *ServerInterfaceWrapper) GetFormsChangelog(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetFormsChangelogParams
+
+	// ------------- Required query parameter "work_number" -------------
+	if paramValue := r.URL.Query().Get("work_number"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "work_number"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "work_number", r.URL.Query(), &params.WorkNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "work_number", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "block_id" -------------
+	if paramValue := r.URL.Query().Get("block_id"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "block_id"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "block_id", r.URL.Query(), &params.BlockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "block_id", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetFormsChangelog(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2731,6 +2804,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/debug/{workNumber}", wrapper.DebugTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/forms/changelog", wrapper.GetFormsChangelog)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules", wrapper.GetModules)

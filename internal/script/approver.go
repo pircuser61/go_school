@@ -11,6 +11,12 @@ func (a ApproverType) String() string {
 	return string(a)
 }
 
+type ApprovementRule string
+
+func (a ApprovementRule) String() string {
+	return string(a)
+}
+
 type AutoAction string
 
 const (
@@ -19,13 +25,17 @@ const (
 	ApproverTypeHead       ApproverType = "head"
 	ApproverTypeFromSchema ApproverType = "fromSchema"
 
+	AllOfApprovementRequired ApprovementRule = "AllOf"
+	AnyOfApprovementRequired ApprovementRule = "AnyOf"
+
 	AutoActionApprove AutoAction = "approve"
 	AutoActionReject  AutoAction = "reject"
 )
 
 type ApproverParams struct {
-	Type     ApproverType `json:"type"`
-	Approver string       `json:"approver"`
+	Type            ApproverType `json:"type"`
+	ApprovementRule `json:"approvementRule"`
+	Approver        string `json:"approver"`
 
 	SLA                int                 `json:"sla"`
 	AutoAction         *AutoAction         `json:"auto_action,omitempty"`

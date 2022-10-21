@@ -4,11 +4,14 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -20,6 +23,13 @@ const (
 	keyOutputFormExecutor = "executor"
 	keyOutputFormBody     = "application_body"
 )
+
+type ChangesLogItem struct {
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+	CreatedAt       time.Time              `json:"created_at"`
+	Executor        string                 `json:"executor,omitempty"`
+}
 
 type FormData struct {
 	FormExecutorType script.FormExecutorType `json:"form_executor_type"`
@@ -139,16 +149,6 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 
 	gb.State = &state
 
-	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema && gb.State.IsExecutorVariablesResolved == false {
-		variables, err := runCtx.GrabStorage()
-		if err != nil {
-			return err
-		}
-		resolvedExecutors, err := resolveValuesFromVariables(variables, gb.State.Executors)
-		gb.State.Executors = resolvedExecutors
-		gb.State.IsExecutorVariablesResolved = true
-	}
-
 	// nolint:dupl // not dupl?
 	if gb.State.IsFilled {
 		var actualExecutor string
@@ -201,11 +201,12 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 // nolint:dupl // another block
 func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline) (*GoFormBlock, error) {
 	b := &GoFormBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:     name,
+		Title:    ef.Title,
+		Input:    map[string]string{},
+		Output:   map[string]string{},
+		Sockets:  entity.ConvertSocket(ef.Sockets),
+		Pipeline: ep,
 	}
 
 	for _, v := range ef.Input {
@@ -227,8 +228,12 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 	}
 
 	b.State = &FormData{
-		SchemaId:         params.SchemaId,
-		SchemaName:       params.SchemaName,
+		Executors: map[string]struct{}{
+			params.Executor: {},
+		},
+		SchemaId:   params.SchemaId,
+		SchemaName: params.SchemaName,
+		ChangesLog: make([]ChangesLogItem, 0),
 		FormExecutorType: params.FormExecutorType,
 	}
 

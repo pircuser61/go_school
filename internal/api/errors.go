@@ -41,6 +41,7 @@ const (
 	VersionCreateError
 	UnauthError
 	AuthServiceError
+	GetFormsChangelogError
 	GetTasksError
 	GetTaskError
 	GetTasksCountError
@@ -156,6 +157,7 @@ var errorText = map[Err]string{
 	PipelineRenameError:           "can't rename pipeline",
 	GetPipelinesSearchError:       "can't find pipelines by search",
 	ValidationPipelineSearchError: "name and id are empty",
+	GetFormsChangelogError:        "can't get forms history",
 }
 
 // JOKE.
@@ -229,6 +231,7 @@ var errorDescription = map[Err]string{
 	PipelineRenameError:           "Не удалось переименовать сценарий",
 	GetPipelinesSearchError:       "Не удалось найти сценарии в базе данных",
 	ValidationPipelineSearchError: "Не заполнены имя и айди сценария",
+	GetFormsChangelogError:        "Не удалось получить историю изменения форм",
 }
 
 var errorStatus = map[Err]int{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -168,10 +169,6 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 		return StatusWait
 	}
 
-	if !gb.State.IsTakenInWork && gb.State.ExecutorsGroupID != "" {
-		return StatusWait
-	}
-
 	return StatusExecution
 }
 
@@ -185,10 +182,6 @@ func (gb *GoExecutionBlock) GetStatus() Status {
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
 		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
-		return StatusIdle
-	}
-
-	if !gb.State.IsTakenInWork && gb.State.ExecutorsGroupID != "" {
 		return StatusIdle
 	}
 
@@ -369,6 +362,34 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 	var state ExecutionData
 	if err = json.Unmarshal(data, &state); err != nil {
 		return errors.Wrap(err, "invalid format of go-execution-block state")
+	}
+
+	if state.ExecutionType == script.ExecutionTypeFromSchema {
+		var allVariables map[string]interface{}
+		allVariables, err = runCtx.GrabStorage()
+		if err != nil {
+			return errors.Wrap(err, "Unable to grab variables storage")
+		}
+
+		executors := make(map[string]struct{})
+		for executorVariableRef := range gb.State.Executors {
+			if len(strings.Split(executorVariableRef, dotSeparator)) == 1 {
+				continue
+			}
+			executorVar := getVariable(allVariables, executorVariableRef)
+
+			if executorVar == nil {
+				return errors.Wrap(err, "Unable to find approver by variable reference")
+			}
+
+			if actualExecutorUsername, castOK := executorVar.(string); castOK {
+				executors[actualExecutorUsername] = gb.State.Executors[executorVariableRef]
+			}
+		}
+
+		if len(executors) != 0 {
+			gb.State.Executors = executors
+		}
 	}
 
 	gb.State = &state

@@ -4,18 +4,18 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type updateFillFormParams struct {
-	SchemaId        string                 `json:"schema_id"`
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
+	BlockId         string                 `json:"block_id"`
 }
 
 func (a *updateFillFormParams) Validate() error {
@@ -37,6 +37,10 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 		return nil, errors.New("can't assert provided data")
 	}
 
+	if updateParams.BlockId != gb.Name {
+		return nil, errors.New("wrong form id")
+	}
+
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return nil, err
@@ -55,6 +59,7 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 		return nil, errors.Wrap(err, "invalid format of go-form-block state")
 	}
 
+	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
 	if _, ok = gb.State.Executors[data.ByLogin]; !ok {
@@ -64,6 +69,16 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	gb.State.ActualExecutor = &data.ByLogin
 	gb.State.ApplicationBody = updateParams.ApplicationBody
 	gb.State.Description = updateParams.Description
+	gb.State.IsFilled = true
+
+	gb.State.ChangesLog = append([]ChangesLogItem{
+		{
+			Description:     updateParams.Description,
+			ApplicationBody: updateParams.ApplicationBody,
+			CreatedAt:       time.Now(),
+			Executor:        data.ByLogin,
+		},
+	}, gb.State.ChangesLog...)
 
 	step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
