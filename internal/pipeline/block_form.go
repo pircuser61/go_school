@@ -40,6 +40,7 @@ type FormData struct {
 	ApplicationBody  map[string]interface{}  `json:"application_body"`
 	IsFilled         bool                    `json:"is_filled"`
 	ActualExecutor   *string                 `json:"actual_executor,omitempty"`
+	ChangesLog       []ChangesLogItem        `json:"changes_log"`
 
 	SLA int `json:"sla"`
 
@@ -231,9 +232,9 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 		Executors: map[string]struct{}{
 			params.Executor: {},
 		},
-		SchemaId:   params.SchemaId,
-		SchemaName: params.SchemaName,
-		ChangesLog: make([]ChangesLogItem, 0),
+		SchemaId:         params.SchemaId,
+		SchemaName:       params.SchemaName,
+		ChangesLog:       make([]ChangesLogItem, 0),
 		FormExecutorType: params.FormExecutorType,
 	}
 
