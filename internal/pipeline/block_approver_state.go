@@ -118,6 +118,7 @@ func (a *ApproverData) GetApproversGroupID() string {
 	return a.ApproversGroupID
 }
 
+//nolint:gocyclo //its ok here
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
 	_, ok := a.Approvers[login]
 	if !ok && login != AutoApprover {

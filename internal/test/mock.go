@@ -1208,6 +1208,7 @@ func (m *MockDB) GetPipelinesByNameOrId(c context.Context, dto *db.SearchPipelin
 	return nil, errNotImplemented
 }
 
+// nolint:gocritic // it's ok
 func (m *MockDB) CheckUserCanEditForm(ctx context.Context, workNumber string, stepName string, login string) (bool, error) {
 	return false, errNotImplemented
 }
