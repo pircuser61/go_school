@@ -2,7 +2,6 @@ package db
 
 import (
 	c "context"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,7 +41,7 @@ type TaskStorager interface {
 	ChangeTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error
 	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)
-	CheckUserCanEditForm(ctx context.Context, workNumber string, stepName string, login string) (bool, error)
+	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 }
 
 type SaveStepRequest struct {

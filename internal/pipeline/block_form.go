@@ -150,8 +150,7 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 
 	gb.State = &state
 
-	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema &&
-		gb.State.IsExecutorVariablesResolved == false {
+	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema && !gb.State.IsExecutorVariablesResolved {
 		variableStorage, grabStorageErr := runCtx.GrabStorage()
 		if grabStorageErr != nil {
 			return err

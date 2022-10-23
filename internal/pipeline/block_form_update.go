@@ -21,7 +21,7 @@ type updateFillFormParams struct {
 }
 
 func (a *updateFillFormParams) Validate() error {
-	if a.Description == "" || len(a.ApplicationBody) == 0 {
+	if a.BlockId == "" || a.Description == "" || len(a.ApplicationBody) == 0 {
 		return errors.New("empty form data")
 	}
 
@@ -40,7 +40,7 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	}
 
 	if updateParams.BlockId != gb.Name {
-		return nil, errors.New("wrong form id")
+		return nil, fmt.Errorf("wrong form id: %s, gb.Name: %s", updateParams.BlockId, gb.Name)
 	}
 
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
@@ -64,13 +64,13 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	if gb.State.IsFilled == true {
+	if gb.State.IsFilled {
 		isAllowed, checkEditErr := gb.Pipeline.Storage.CheckUserCanEditForm(ctx, data.WorkNumber, gb.Name, data.ByLogin)
 		if checkEditErr != nil {
 			return nil, err
 		}
 
-		if isAllowed == false {
+		if !isAllowed {
 			return nil, fmt.Errorf("%s have not permission to edit form", data.ByLogin)
 		}
 	} else {
