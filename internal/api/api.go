@@ -21,9 +21,9 @@ const (
 
 // Defines values for ApprovementRule.
 const (
-	ApprovementRuleВсеСогласующие ApprovementRule = "Все согласующие"
+	ApprovementRuleAllOf ApprovementRule = "AllOf"
 
-	ApprovementRuleОдинИзСогласующих ApprovementRule = "Один из согласующих"
+	ApprovementRuleAnyOf ApprovementRule = "AnyOf"
 )
 
 // Defines values for ApproverType.
@@ -85,11 +85,11 @@ const (
 
 // Defines values for FormAccessType.
 const (
-	FormAccessTypeСкрыть FormAccessType = "Скрыть"
+	FormAccessTypeNone FormAccessType = "None"
 
-	FormAccessTypeТолькоДляЧтения FormAccessType = "Только для чтения"
+	FormAccessTypeRead FormAccessType = "Read"
 
-	FormAccessTypeЧтениеИРедактирование FormAccessType = "Чтение и редактирование"
+	FormAccessTypeReadWrite FormAccessType = "ReadWrite"
 )
 
 // Defines values for FormExecutorType.

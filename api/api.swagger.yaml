@@ -3182,22 +3182,38 @@ components:
 
     FormAccessType:
       type: string
-      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование" ]
-      x-enum-varnames: [ "None", "Read", "ReadWrite" ]
+      enum:
+      - None
+      - Read
+      - ReadWrite
       description: Form accessibility preferences for certain node
+
+    FormAccessTypeTranslated:
+      type: string
+      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование"]
+      x-enum-varnames: ['None', 'Read', 'ReadWrite']
+      description: Form accessibility preferences for certain node (translated)
 
     ApprovementRule:
       type: string
-      enum: [ "Один из согласующих", "Все согласующие" ]
-      x-enum-varnames: [ "AnyOf", "AllOf" ]
+      enum:
+        - AnyOf
+        - AllOf
       description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 
-    ApproveAutoAction:
+    ApprovementRuleTranslated:
       type: string
-      description: Action to do automatically in case SLA is breached
-      enum:
-        - approve
-        - reject
+      enum: [ "Один из согласующих", "Все согласующие"]
+      x-enum-varnames: [ 'AnyOf', 'AllOf' ]
+      description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions (translated).
+
+
+    ApproveAutoAction:
+        type: string
+        description: Action to do automatically in case SLA is breached
+        enum:
+          - approve
+          - reject
 
     FunctionParams:
       type: object
