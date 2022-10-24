@@ -50,11 +50,24 @@ func (a *approverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, login string, u approverUpdateParams) error {
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, sID)
+type setActionAppDTO struct {
+	stepId       uuid.UUID
+	approver     string
+	initiator    string
+	workNumber   string
+	workTitle    string
+	updateParams interface{}
+	action       string
+}
+
+//nolint:gocyclo //its ok here
+func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionAppDTO) error {
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, dto.stepId)
 	if err != nil {
 		return err
-	} else if step == nil {
+	}
+
+	if step == nil {
 		return errors.New("can't get step from database")
 	}
 
@@ -65,8 +78,87 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, log
 	}
 
 	var state ApproverData
-	err = json.Unmarshal(stepData, &state)
+	if err = json.Unmarshal(stepData, &state); err != nil {
+		return errors.Wrap(err, "invalid format of go-approver-block state")
+	}
+
+	state.DidSLANotification = gb.State.DidSLANotification
+	gb.State = &state
+
+	switch dto.action {
+	case string(entity.TaskUpdateActionSendEditApp):
+		params, ok := dto.updateParams.(updateEditingParams)
+		if !ok {
+			return errors.New("can't convert to updateEditingParams")
+		}
+
+		if errSet := gb.State.setEditApp(dto.approver, params); errSet != nil {
+			return errSet
+		}
+	case string(entity.TaskUpdateActionRequestApproveInfo):
+		params, ok := dto.updateParams.(updateExecutorInfoParams)
+		if !ok {
+			return errors.New("can't convert to updateEditingParams")
+		}
+
+		if errSet := gb.State.setApproverRequestInfo(dto.approver, params); errSet != nil {
+			return errSet
+		}
+	}
+
+	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
+		return err
+	}
+
+	content, err := json.Marshal(store.NewFromStep(step))
 	if err != nil {
+		return err
+	}
+
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          dto.stepId,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		HasError:    false,
+		Status:      string(StatusIdle),
+	})
+	if err != nil {
+		return err
+	}
+
+	initiatorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, dto.initiator)
+	if emailErr != nil {
+		return emailErr
+	}
+
+	tpl := mail.NewAnswerSendToEditTemplate(dto.workNumber, dto.workTitle, gb.Pipeline.Sender.SdAddress)
+	err = gb.Pipeline.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
+func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, login string, u approverUpdateParams) error {
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, sID)
+	if err != nil {
+		return err
+	}
+
+	if step == nil {
+		return errors.New("can't get step from database")
+	}
+
+	// get state from step.State
+	stepData, ok := step.State[gb.Name]
+	if !ok {
+		return errors.New("can't get step state")
+	}
+
+	var state ApproverData
+	if err = json.Unmarshal(stepData, &state); err != nil {
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
@@ -102,100 +194,9 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, log
 	return nil
 }
 
-type setActionAppDTO struct {
-	stepId       uuid.UUID
-	approver     string
-	initiator    string
-	workNumber   string
-	workTitle    string
-	updateParams interface{}
-	action       string
-}
-
-//nolint:gocyclo //its ok here
-func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionAppDTO) error {
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, dto.stepId)
-	if err != nil {
-		return err
-	} else if step == nil {
-		return errors.New("can't get step from database")
-	}
-
-	// get state from step.State
-	stepData, ok := step.State[gb.Name]
-	if !ok {
-		return errors.New("can't get step state")
-	}
-
-	var state ApproverData
-	err = json.Unmarshal(stepData, &state)
-	if err != nil {
-		return errors.Wrap(err, "invalid format of go-approver-block state")
-	}
-
-	state.DidSLANotification = gb.State.DidSLANotification
-	gb.State = &state
-
-	switch dto.action {
-	case string(entity.TaskUpdateActionSendEditApp):
-		params, ok := dto.updateParams.(updateEditingParams)
-		if !ok {
-			return errors.New("can't convert to updateEditingParams")
-		}
-		errSet := gb.State.setEditApp(dto.approver, params)
-		if errSet != nil {
-			return errSet
-		}
-	case string(entity.TaskUpdateActionRequestApproveInfo):
-		params, ok := dto.updateParams.(updateExecutorInfoParams)
-		if !ok {
-			return errors.New("can't convert to updateEditingParams")
-		}
-		errSet := gb.State.setApproverRequestInfo(dto.approver, params)
-		if errSet != nil {
-			return errSet
-		}
-	}
-
-	step.State[gb.Name], err = json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	content, err := json.Marshal(store.NewFromStep(step))
-	if err != nil {
-		return err
-	}
-
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          dto.stepId,
-		Content:     content,
-		BreakPoints: step.BreakPoints,
-		HasError:    false,
-		Status:      string(StatusIdle),
-	})
-	if err != nil {
-		return err
-	}
-
-	initiatorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, dto.initiator)
-	if emailErr != nil {
-		return emailErr
-	}
-
-	tpl := mail.NewAnswerSendToEditTemplate(dto.workNumber, dto.workTitle, gb.Pipeline.Sender.SdAddress)
-	err = gb.Pipeline.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, dto *updateRequestApproverInfoDto) (err error) {
 	var updateParams updateExecutorInfoParams
-	err = json.Unmarshal(dto.data.Parameters, &updateParams)
-	if err != nil {
+	if err = json.Unmarshal(dto.data.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update requestApproverInfo data")
 	}
 
@@ -246,8 +247,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, dto *updateR
 			return emailErr
 		}
 
-		err = gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl)
-		if err != nil {
+		if err = gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl); err != nil {
 			return err
 		}
 	}
@@ -284,8 +284,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 	switch data.Action {
 	case string(entity.TaskUpdateActionApprovement):
 		var updateParams approverUpdateParams
-		err := json.Unmarshal(data.Parameters, &updateParams)
-		if err != nil {
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
 
@@ -293,8 +292,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 
 	case string(entity.TaskUpdateActionSendEditApp):
 		var updateParams updateEditingParams
-		err := json.Unmarshal(data.Parameters, &updateParams)
-		if err != nil {
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
 
@@ -312,13 +310,14 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
 		if err != nil {
 			return nil, err
-		} else if step == nil {
+		}
+
+		if step == nil {
 			return nil, errors.New("can't get step from database")
 		}
 
 		var updateParams updateExecutorInfoParams
-		err = json.Unmarshal(data.Parameters, &updateParams)
-		if err != nil {
+		if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
 
