@@ -150,8 +150,6 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 		return errors.Wrap(err, "invalid format of go-form-block state")
 	}
 
-	gb.State = &state
-
 	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema && !gb.State.IsExecutorVariablesResolved {
 		resolveErr := gb.resolveFormExecutors(ctx, &resolveFormExecutorsDTO{runCtx: runCtx, step: step})
 
@@ -159,6 +157,8 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 			return err
 		}
 	}
+
+	gb.State = &state
 
 	// nolint:dupl // not dupl?
 	if gb.State.IsFilled {
