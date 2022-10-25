@@ -384,6 +384,8 @@ type ApproverType string
 
 // Approver update params
 type ApproverUpdateParams struct {
+	Attachments []string `json:"attachments"`
+
 	// Comment from approver
 	Comment string `json:"comment"`
 
@@ -672,6 +674,8 @@ type ExecutionParamsType string
 
 // Executor update params
 type ExecutionUpdateParams struct {
+	Attachments []string `json:"attachments"`
+
 	// Comment from executor
 	Comment string `json:"comment"`
 
@@ -683,6 +687,8 @@ type ExecutionUpdateParams struct {
 
 // Executor change params
 type ExecutorChangeParams struct {
+	Attachments []string `json:"attachments"`
+
 	// Comment from executor
 	Comment string `json:"comment"`
 

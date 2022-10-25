@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -50,11 +49,6 @@ const (
 	ReplyAddInfoType   AdditionalInfoType = "reply"
 )
 
-var additionalInfoTypeMap = map[AdditionalInfoType]struct{}{
-	RequestAddInfoType: {},
-	ReplyAddInfoType:   {},
-}
-
 type AdditionalInfo struct {
 	Id          string             `json:"id"`
 	Login       string             `json:"login"`
@@ -66,20 +60,22 @@ type AdditionalInfo struct {
 }
 
 type ApproverLogEntry struct {
-	Login     string           `json:"login"`
-	Decision  ApproverDecision `json:"decision"`
-	Comment   string           `json:"comment"`
-	CreatedAt time.Time        `json:"created_at"`
+	Login       string           `json:"login"`
+	Decision    ApproverDecision `json:"decision"`
+	Comment     string           `json:"comment"`
+	CreatedAt   time.Time        `json:"created_at"`
+	Attachments []string         `json:"attachments"`
 }
 
 type ApproverData struct {
-	Type            script.ApproverType    `json:"type"`
-	Approvers       map[string]struct{}    `json:"approvers"`
-	Decision        *ApproverDecision      `json:"decision,omitempty"`
-	Comment         *string                `json:"comment,omitempty"`
-	ActualApprover  *string                `json:"actual_approver,omitempty"`
-	ApprovementRule script.ApprovementRule `json:"approvementRule,omitempty"`
-	ApproverLog     []ApproverLogEntry     `json:"approver_log,omitempty"`
+	Type                script.ApproverType    `json:"type"`
+	Approvers           map[string]struct{}    `json:"approvers"`
+	Decision            *ApproverDecision      `json:"decision,omitempty"`
+	DecisionAttachments []string               `json:"decision_attachments,omitempty"`
+	Comment             *string                `json:"comment,omitempty"`
+	ActualApprover      *string                `json:"actual_approver,omitempty"`
+	ApprovementRule     script.ApprovementRule `json:"approvementRule,omitempty"`
+	ApproverLog         []ApproverLogEntry     `json:"approver_log,omitempty"`
 
 	SLA        int                `json:"sla"`
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
@@ -119,7 +115,7 @@ func (a *ApproverData) GetApproversGroupID() string {
 }
 
 //nolint:gocyclo //its ok here
-func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string) error {
+func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string, attach []string) error {
 	_, ok := a.Approvers[login]
 	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
@@ -139,6 +135,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		a.Decision = &decision
 		a.Comment = &comment
 		a.ActualApprover = &login
+		a.DecisionAttachments = attach
 	}
 
 	if approvementRule == script.AllOfApprovementRequired {
@@ -149,10 +146,11 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		}
 
 		var approverLogEntry = ApproverLogEntry{
-			Login:     login,
-			Decision:  decision,
-			Comment:   comment,
-			CreatedAt: time.Now(),
+			Login:       login,
+			Decision:    decision,
+			Comment:     comment,
+			Attachments: attach,
+			CreatedAt:   time.Now(),
 		}
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
@@ -205,67 +203,6 @@ func (a *ApproverData) setEditApp(login string, params updateEditingParams) erro
 	a.EditingApp = editing
 
 	return nil
-}
-
-func (a *ApproverData) setApproverRequestInfo(login string, params updateExecutorInfoParams) error {
-	if params.Type == RequestAddInfoType {
-		_, ok := a.Approvers[login]
-		if !ok && login != AutoApprover {
-			return fmt.Errorf("%s not found in approvers", login)
-		}
-	}
-
-	if a.Decision != nil {
-		return errors.New("decision already set")
-	}
-
-	if _, ok := additionalInfoTypeMap[params.Type]; !ok {
-		return errors.New("incorrect type additional Info")
-	}
-
-	if len(a.AddInfo) == 0 && params.Type == ReplyAddInfoType {
-		return errors.New("don't answer after request")
-	}
-
-	var (
-		id     = uuid.NewString()
-		linkId *string
-	)
-
-	if params.Type == ReplyAddInfoType {
-		if params.LinkId == nil {
-			return errors.New("linkId is null when reply")
-		}
-
-		linkId = params.LinkId
-		err := setLinkIdRequest(id, *params.LinkId, a.AddInfo)
-		if err != nil {
-			return err
-		}
-	}
-
-	a.AddInfo = append(a.AddInfo, AdditionalInfo{
-		Id:          id,
-		Type:        params.Type,
-		Comment:     params.Comment,
-		Attachments: params.Attachments,
-		LinkId:      linkId,
-		Login:       login,
-		CreatedAt:   time.Now(),
-	})
-
-	return nil
-}
-
-func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) error {
-	for i := range addInfo {
-		if addInfo[i].Id == linkId {
-			addInfo[i].LinkId = &replyId
-			return nil
-		}
-	}
-
-	return errors.New("not found request by linkId")
 }
 
 // if exists empty link, then true, else false
