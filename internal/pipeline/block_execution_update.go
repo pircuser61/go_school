@@ -25,7 +25,9 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return nil, err
-	} else if step == nil {
+	}
+
+	if step == nil {
 		return nil, errors.New("can't get step from database")
 	}
 
@@ -42,32 +44,35 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 	gb.State = &state
 
 	if data.Action == string(entity.TaskUpdateActionExecution) {
-		if err := gb.updateExecutionDecision(ctx, data, step); err != nil {
-			return nil, err
+		if errUpdate := gb.updateExecutionDecision(ctx, data, step); errUpdate != nil {
+			return nil, errUpdate
 		}
 	}
 
 	if data.Action == string(entity.TaskUpdateActionChangeExecutor) {
-		if err := gb.changeExecutor(ctx, data, step); err != nil {
-			return nil, err
+		if errUpdate := gb.changeExecutor(ctx, data, step); errUpdate != nil {
+			return nil, errUpdate
 		}
 	}
 
 	if data.Action == string(entity.TaskUpdateActionRequestExecutionInfo) {
-		if err := gb.updateRequestExecutionInfo(ctx, &updateRequestExecutionInfoDto{data, step}); err != nil {
-			return nil, err
+		if errUpdate := gb.updateRequestExecutionInfo(ctx, &updateRequestExecutionInfoDto{
+			data,
+			step,
+		}); errUpdate != nil {
+			return nil, errUpdate
 		}
 	}
 
 	if data.Action == string(entity.TaskUpdateActionExecutorStartWork) {
-		if err := gb.executorStartWork(ctx, &executorsStartWork{
+		if errUpdate := gb.executorStartWork(ctx, &executorsStartWork{
 			stepId:     data.Id,
 			step:       step,
 			byLogin:    data.ByLogin,
 			workNumber: data.WorkNumber,
 			author:     data.Author,
-		}); err != nil {
-			return nil, err
+		}); errUpdate != nil {
+			return nil, errUpdate
 		}
 	}
 
@@ -75,8 +80,9 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 }
 
 type ExecutorChangeParams struct {
-	NewExecutorLogin string `json:"new_executor_login"`
-	Comment          string `json:"comment"`
+	NewExecutorLogin string   `json:"new_executor_login"`
+	Comment          string   `json:"comment"`
+	Attachments      []string `json:"attachments,omitempty"`
 }
 
 func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpdateData, step *entity.Step) (err error) {
@@ -85,13 +91,11 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 	}
 
 	var updateParams ExecutorChangeParams
-	err = json.Unmarshal(data.Parameters, &updateParams)
-	if err != nil {
+	if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update data")
 	}
 
-	err = gb.State.SetChangeExecutor(data.ByLogin, updateParams.NewExecutorLogin, updateParams.Comment)
-	if err != nil {
+	if err = gb.State.SetChangeExecutor(data.ByLogin, &updateParams); err != nil {
 		return errors.New("can't assert provided change executor data")
 	}
 
@@ -99,8 +103,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 	gb.State.Executors[updateParams.NewExecutorLogin] = struct{}{}
 	gb.State.LeftToNotify[updateParams.NewExecutorLogin] = struct{}{}
 
-	step.State[gb.Name], err = json.Marshal(gb.State)
-	if err != nil {
+	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
 		return err
 	}
 
@@ -120,34 +123,47 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 	return err
 }
 
+func (a *ExecutionData) SetChangeExecutor(oldLogin string, in *ExecutorChangeParams) error {
+	_, ok := a.Executors[oldLogin]
+	if !ok {
+		return fmt.Errorf("%s not found in executors", oldLogin)
+	}
+
+	a.ChangedExecutorsLogs = append(a.ChangedExecutorsLogs, ChangeExecutorLog{
+		OldLogin:    oldLogin,
+		NewLogin:    in.NewExecutorLogin,
+		Comment:     in.Comment,
+		Attachments: in.Attachments,
+		CreatedAt:   time.Now(),
+	})
+
+	return nil
+}
+
 type ExecutionUpdateParams struct {
-	Decision ExecutionDecision `json:"decision"`
-	Comment  string            `json:"comment"`
+	Decision    ExecutionDecision `json:"decision"`
+	Comment     string            `json:"comment"`
+	Attachments []string          `json:"attachments"`
 }
 
 func (gb *GoExecutionBlock) updateExecutionDecision(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) error {
 	var updateParams ExecutionUpdateParams
+
 	err := json.Unmarshal(in.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update data")
 	}
 
-	if errSet := gb.State.SetDecision(
-		in.ByLogin,
-		updateParams.Decision,
-		updateParams.Comment,
-	); errSet != nil {
+	if errSet := gb.State.SetDecision(in.ByLogin, &updateParams); errSet != nil {
 		return errSet
 	}
 
-	step.State[gb.Name], err = json.Marshal(gb.State)
-	if err != nil {
+	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
 		return err
 	}
 
 	var content []byte
-	content, err = json.Marshal(store.NewFromStep(step))
-	if err != nil {
+	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
 		return err
 	}
 
@@ -159,6 +175,28 @@ func (gb *GoExecutionBlock) updateExecutionDecision(ctx c.Context, in *script.Bl
 	})
 
 	return err
+}
+
+func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams) error {
+	_, ok := a.Executors[login]
+	if !ok {
+		return fmt.Errorf("%s not found in executors", login)
+	}
+
+	if a.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	if in.Decision != ExecutionDecisionExecuted && in.Decision != ExecutionDecisionRejected {
+		return fmt.Errorf("unknown decision %s", in.Decision)
+	}
+
+	a.Decision = &in.Decision
+	a.DecisionComment = &in.Comment
+	a.DecisionAttachments = in.Attachments
+	a.ActualExecutor = &login
+
+	return nil
 }
 
 type updateRequestExecutionInfoDto struct {
@@ -184,17 +222,13 @@ type executorsStartWork struct {
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updateRequestExecutionInfoDto) (err error) {
 	var updateParams RequestInfoUpdateParams
+
 	err = json.Unmarshal(dto.data.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update requestExecutionInfo data")
 	}
 
-	if errSet := gb.State.SetRequestExecutionInfo(
-		dto.data.ByLogin,
-		updateParams.Comment,
-		updateParams.ReqType,
-		updateParams.Attachments,
-	); errSet != nil {
+	if errSet := gb.State.SetRequestExecutionInfo(dto.data.ByLogin, &updateParams); errSet != nil {
 		return errSet
 	}
 
@@ -269,6 +303,27 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updat
 	return err
 }
 
+func (a *ExecutionData) SetRequestExecutionInfo(login string, in *RequestInfoUpdateParams) error {
+	_, ok := a.Executors[login]
+	if !ok && in.ReqType == RequestInfoQuestion {
+		return fmt.Errorf("%s not found in executors", login)
+	}
+
+	if in.ReqType != RequestInfoAnswer && in.ReqType != RequestInfoQuestion {
+		return fmt.Errorf("request info type is not valid")
+	}
+
+	a.RequestExecutionInfoLogs = append(a.RequestExecutionInfoLogs, RequestExecutionInfoLog{
+		Login:       login,
+		Comment:     in.Comment,
+		CreatedAt:   time.Now(),
+		ReqType:     in.ReqType,
+		Attachments: in.Attachments,
+	})
+
+	return nil
+}
+
 func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStartWork) (err error) {
 	if _, ok := gb.State.Executors[dto.byLogin]; !ok {
 		return fmt.Errorf("login %s is not found in executors", dto.byLogin)
@@ -334,6 +389,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	if errUnmarshal := json.Unmarshal(dto.step.State["servicedesk_application_0"], &descr); errUnmarshal != nil {
 		return errUnmarshal
 	}
+
 	additionalDescriptions, err := gb.Pipeline.Storage.GetAdditionalForms(dto.workNumber, "")
 	if err != nil {
 		return err
@@ -344,14 +400,17 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		}
 		descr.Value = fmt.Sprintf("%s\n\n%s", descr.Value, item)
 	}
+
 	author, err := gb.Pipeline.People.GetUser(ctx, dto.byLogin)
 	if err != nil {
 		return err
 	}
+
 	typedAuthor, err := author.ToSSOUserTyped()
 	if err != nil {
 		return err
 	}
+
 	tpl := mail.NewExecutionTakenInWork(&mail.ExecutorNotifTemplate{
 		Id:           dto.workNumber,
 		SdUrl:        gb.Pipeline.Sender.SdAddress,
@@ -359,9 +418,10 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		Initiator:    dto.author,
 		Description:  descr.Value,
 	})
-	err = gb.Pipeline.Sender.SendNotification(ctx, notificationEmails, nil, tpl)
-	if err != nil {
+
+	if err := gb.Pipeline.Sender.SendNotification(ctx, notificationEmails, nil, tpl); err != nil {
 		return err
 	}
+
 	return nil
 }

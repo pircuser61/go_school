@@ -2418,9 +2418,14 @@ components:
         comment:
           type: string
           description: Comment from approver
+        attachments:
+          type: array
+          items:
+            type: string
       required:
         - decision
         - comment
+        - attachments
 
     ExecutionUpdateParams:
       type: object
@@ -2431,9 +2436,14 @@ components:
         comment:
           type: string
           description: Comment from executor
+        attachments:
+          type: array
+          items:
+            type: string
       required:
         - decision
         - comment
+        - attachments
 
     approverDecision:
       type: string
@@ -2465,9 +2475,14 @@ components:
         comment:
           type: string
           description: Comment from executor
+        attachments:
+          type: array
+          items:
+            type: string
       required:
         - newExecutorLogin
         - comment
+        - attachments
 
     RequestInfoUpdateParams:
       type: object
