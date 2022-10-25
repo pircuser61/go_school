@@ -112,7 +112,9 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setActionAppDT
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, dto.stepId)
 	if err != nil {
 		return err
-	} else if step == nil {
+	}
+
+	if step == nil {
 		return errors.New("can't get step from database")
 	}
 
@@ -123,8 +125,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setActionAppDT
 	}
 
 	var state ApproverData
-	err = json.Unmarshal(stepData, &state)
-	if err != nil {
+	if err = json.Unmarshal(stepData, &state); err != nil {
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
@@ -140,8 +141,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setActionAppDT
 		return errSet
 	}
 
-	step.State[gb.Name], err = json.Marshal(gb.State)
-	if err != nil {
+	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
 		return err
 	}
 
@@ -239,8 +239,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 			return emailErr
 		}
 
-		err = gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl)
-		if err != nil {
+		if err = gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl); err != nil {
 			return err
 		}
 	}
