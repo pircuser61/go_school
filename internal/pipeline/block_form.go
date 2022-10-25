@@ -4,6 +4,8 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
@@ -151,18 +153,11 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 	gb.State = &state
 
 	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema && !gb.State.IsExecutorVariablesResolved {
-		variableStorage, grabStorageErr := runCtx.GrabStorage()
-		if grabStorageErr != nil {
-			return err
-		}
+		resolveErr := gb.resolveFormExecutors(ctx, &resolveFormExecutorsDTO{runCtx: runCtx, step: step})
 
-		resolvedEntities, resolveErr := resolveValuesFromVariables(variableStorage, gb.State.Executors)
 		if resolveErr != nil {
 			return err
 		}
-
-		gb.State.Executors = resolvedEntities
-		gb.State.IsExecutorVariablesResolved = true
 	}
 
 	// nolint:dupl // not dupl?
@@ -266,4 +261,42 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 	}
 
 	return b, nil
+}
+
+type resolveFormExecutorsDTO struct {
+	runCtx *store.VariableStore
+	step   *entity.Step
+}
+
+func (gb *GoFormBlock) resolveFormExecutors(ctx context.Context, dto *resolveFormExecutorsDTO) (err error) {
+	variableStorage, grabStorageErr := dto.runCtx.GrabStorage()
+	if grabStorageErr != nil {
+		return err
+	}
+
+	resolvedEntities, resolveErr := resolveValuesFromVariables(variableStorage, gb.State.Executors)
+	if resolveErr != nil {
+		return err
+	}
+
+	gb.State.Executors = resolvedEntities
+	gb.State.IsExecutorVariablesResolved = true
+
+	var stateBytes []byte
+	stateBytes, err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          dto.step.ID,
+		Content:     stateBytes,
+		BreakPoints: dto.step.BreakPoints,
+		Status:      dto.step.Status,
+	})
+	if err != nil {
+		return errors.Wrap(err, "resolveExecutors.UpdateStepContext: ")
+	}
+
+	return nil
 }
