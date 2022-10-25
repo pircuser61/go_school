@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -76,7 +75,8 @@ type ExecutionData struct {
 
 	LeftToNotify map[string]struct{} `json:"left_to_notify"`
 
-	IsTakenInWork bool `json:"is_taken_in_work"`
+	IsTakenInWork               bool `json:"is_taken_in_work"`
+	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
@@ -364,31 +364,11 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 		return errors.Wrap(err, "invalid format of go-execution-block state")
 	}
 
-	if state.ExecutionType == script.ExecutionTypeFromSchema {
-		var allVariables map[string]interface{}
-		allVariables, err = runCtx.GrabStorage()
-		if err != nil {
-			return errors.Wrap(err, "Unable to grab variables storage")
-		}
+	if gb.State.ExecutionType == script.ExecutionTypeFromSchema && !gb.State.IsExecutorVariablesResolved {
+		resolveErr := gb.resolveExecutors(ctx, &resolveExecutorsDTO{runCtx: runCtx, step: step})
 
-		executors := make(map[string]struct{})
-		for executorVariableRef := range gb.State.Executors {
-			if len(strings.Split(executorVariableRef, dotSeparator)) == 1 {
-				continue
-			}
-			executorVar := getVariable(allVariables, executorVariableRef)
-
-			if executorVar == nil {
-				return errors.Wrap(err, "Unable to find approver by variable reference")
-			}
-
-			if actualExecutorUsername, castOK := executorVar.(string); castOK {
-				executors[actualExecutorUsername] = gb.State.Executors[executorVariableRef]
-			}
-		}
-
-		if len(executors) != 0 {
-			gb.State.Executors = executors
+		if resolveErr != nil {
+			return err
 		}
 	}
 
@@ -431,15 +411,15 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 		runCtx.SetValue(gb.Output[keyOutputExecutionLogin], executor)
 		runCtx.SetValue(gb.Output[keyOutputExecutionDecision], decision.String())
 		runCtx.SetValue(gb.Output[keyOutputExecutionComment], comment)
-
-		var stateBytes []byte
-		stateBytes, err = json.Marshal(gb.State)
-		if err != nil {
-			return err
-		}
-
-		runCtx.ReplaceState(gb.Name, stateBytes)
 	}
+
+	var stateBytes []byte
+	stateBytes, err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	runCtx.ReplaceState(gb.Name, stateBytes)
 
 	return err
 }
@@ -582,4 +562,42 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 	}
 
 	return b, nil
+}
+
+type resolveExecutorsDTO struct {
+	runCtx *store.VariableStore
+	step   *entity.Step
+}
+
+func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveExecutorsDTO) (err error) {
+	variableStorage, grabStorageErr := dto.runCtx.GrabStorage()
+	if grabStorageErr != nil {
+		return err
+	}
+
+	resolvedEntities, resolveErr := resolveValuesFromVariables(variableStorage, gb.State.Executors)
+	if resolveErr != nil {
+		return err
+	}
+
+	gb.State.Executors = resolvedEntities
+	gb.State.IsExecutorVariablesResolved = true
+
+	var stateBytes []byte
+	stateBytes, err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          dto.step.ID,
+		Content:     stateBytes,
+		BreakPoints: dto.step.BreakPoints,
+		Status:      dto.step.Status,
+	})
+	if err != nil {
+		return errors.Wrap(err, "resolveExecutors.UpdateStepContext: ")
+	}
+
+	return nil
 }
