@@ -411,15 +411,15 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 		runCtx.SetValue(gb.Output[keyOutputExecutionLogin], executor)
 		runCtx.SetValue(gb.Output[keyOutputExecutionDecision], decision.String())
 		runCtx.SetValue(gb.Output[keyOutputExecutionComment], comment)
-	}
 
-	var stateBytes []byte
-	stateBytes, err = json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
+		var stateBytes []byte
+		stateBytes, err = json.Marshal(gb.State)
+		if err != nil {
+			return err
+		}
 
-	runCtx.ReplaceState(gb.Name, stateBytes)
+		runCtx.ReplaceState(gb.Name, stateBytes)
+	}
 
 	return err
 }
