@@ -68,6 +68,23 @@ func NewRequestExecutionInfoTemplate(id, name, sdUrl string) Template {
 	}
 }
 
+func NewRequestFormExecutionInfoTemplate(id, name, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка №%s - Необходимо предоставить информацию", id),
+		Text: `Уважаемый коллега, по заявке {{.Id}} необходимо предоставить информацию.<br>
+				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>`,
+		Variables: struct {
+			Id   string `json:"id"`
+			Name string `json:"name"`
+			Link string `json:"link"`
+		}{
+			Id:   id,
+			Name: name,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
 func NewRequestApproverInfoTemplate(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),

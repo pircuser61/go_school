@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"time"
 
 	"github.com/google/uuid"
@@ -266,4 +267,41 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 	}
 
 	return b, nil
+}
+
+func (gb *GoFormBlock) handleNotifications(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (ok bool, err error) {
+	if len(gb.State.LeftToNotify) == 0 {
+		return false, nil
+	}
+	l := logger.GetLogger(ctx)
+
+	emails := make([]string, 0)
+
+	executorsWithPermissions, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, stepCtx.workNumber, "")
+	if err != nil {
+		return false, nil
+	}
+
+	for _, executor := range executorsWithPermissions {
+		email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
+		if err != nil {
+			l.WithError(err).Error("couldn't get email")
+		}
+		emails = append(emails, email)
+	}
+
+	if len(emails) == 0 {
+		return false, nil
+	}
+
+	err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
+		mail.NewRequestFormExecutionInfoTemplate(
+			"",
+			"",
+			gb.Pipeline.Sender.SdAddress))
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

@@ -716,3 +716,51 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 
 	return el, nil
 }
+
+func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber string, stepName string) ([]string, error) {
+	q :=
+		// nolint:gocritic
+		// language=PostgreSQL
+		`
+	with accesses_and_users as(
+		select array(select jsonb_object_keys(content -> 'State' -> step_name -> 'executors')) as users_array,
+			   jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as access_info
+		from pipeliner.variable_storage
+		where step_type = 'execution'
+		and work_id = (select id
+					   from pipeliner.works
+					   where work_number = $1)
+		union
+		select array(select jsonb_object_keys(content -> 'State' -> step_name -> 'approvers')) as users_array,
+			   jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as access_info
+		from pipeliner.variable_storage
+		where step_type = 'approver'
+		  and work_id = (select id
+						 from pipeliner.works
+						 where work_number = $1)
+    )
+	select unnest(users_array) from accesses_and_users
+    	where accesses_and_users.access_info::jsonb ->> 'node_id' = $2
+          and accesses_and_users.access_info::jsonb ->> 'accessType' = 'ReadWrite'
+	`
+
+	result := make([]string, 0)
+	rows, err := db.Pool.Query(context.Background(), q, workNumber, stepName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var user string
+		if scanErr := rows.Scan(&user); scanErr != nil {
+			return nil, scanErr
+		}
+		result = append(result, user)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return result, nil
+}
