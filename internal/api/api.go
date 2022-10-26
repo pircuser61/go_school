@@ -436,9 +436,10 @@ type ConditionParams struct {
 
 // CountTasks defines model for CountTasks.
 type CountTasks struct {
-	Active  int `json:"active"`
-	Approve int `json:"approve"`
-	Execute int `json:"execute"`
+	Active      int `json:"active"`
+	Approve     int `json:"approve"`
+	Execute     int `json:"execute"`
+	FormExecute int `json:"form_execute"`
 }
 
 // CreateTaskRequest defines model for CreateTaskRequest.
