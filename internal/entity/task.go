@@ -39,9 +39,10 @@ type EriusTasksPage struct {
 }
 
 type CountTasks struct {
-	TotalActive   int `json:"active"`
-	TotalApprover int `json:"approve"`
-	TotalExecutor int `json:"execute"`
+	TotalActive       int `json:"active"`
+	TotalApprover     int `json:"approve"`
+	TotalExecutor     int `json:"execute"`
+	TotalFormExecutor int `json:"form_execute"`
 }
 
 type EriusTask struct {
