@@ -1834,8 +1834,109 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /dictionaries/approve-action-names:
+    get:
+      tags:
+        - dictionaries
+      summary: Get approve action names dictionary
+      description: Получить словарь действий для ноды согласования
+      operationId: get-approve-action-names
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApproveActionNamesResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /dictionaries/approve-statuses:
+    get:
+      tags:
+        - dictionaries
+      summary: Get approve statuses dictionary
+      description: Получить словарь статусов согласования
+      operationId: get-approve-statuses
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApproveStatusesResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
 components:
   schemas:
+    ApproveStatusesResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: approve status id
+        title:
+          type: string
+          description: approve status title
+      required:
+        - id
+        - title
+
+    ApproveActionNamesResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: approve action id
+        title:
+          type: string
+          description: approve action title
+      required:
+        - id
+        - title
+
     AllUsageResponse:
       type: object
       properties:
@@ -3147,6 +3248,9 @@ components:
         approvers_group_name:
           type: string
           description: Approvers group name in SD
+        approve_status_name:
+          type: string
+          description: Approvement status
       required:
         - type
         - approver
@@ -3155,6 +3259,7 @@ components:
         - is_editable
         - approvers_group_id
         - approvers_group_name
+        - approve_status_name
 
     FormsChangelogResponse:
       type: array
