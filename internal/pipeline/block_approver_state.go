@@ -279,27 +279,6 @@ func (a *ApproverData) checkEmptyLinkIdAddInfo() bool {
 	return false
 }
 
-func (a *ApproverData) SetRequestApproverInfo(login, comment string, reqType AdditionalInfoType, attach []string) error {
-	_, ok := a.Approvers[login]
-	if !ok && reqType == RequestAddInfoType {
-		return fmt.Errorf("%s not found in approvers", login)
-	}
-
-	if reqType != ReplyAddInfoType && reqType != RequestAddInfoType {
-		return fmt.Errorf("request info type is not valid")
-	}
-
-	a.RequestApproverInfoLog = append(a.RequestApproverInfoLog, RequestApproverInfoLog{
-		Approver:    login,
-		Comment:     comment,
-		CreatedAt:   time.Now(),
-		Type:        reqType,
-		Attachments: attach,
-	})
-
-	return nil
-}
-
 func (a *ApproverData) IncreaseSLA(addSla int) {
 	a.SLA += addSla
 }

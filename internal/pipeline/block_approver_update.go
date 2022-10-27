@@ -39,7 +39,6 @@ type updateExecutorInfoParams struct {
 
 type updateRequestApproverInfoDto struct {
 	data *script.BlockUpdateData
-	step *entity.Step
 }
 
 func (a *approverUpdateParams) Validate() error {
@@ -192,33 +191,60 @@ func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionApp
 	return nil
 }
 
-func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, dto *updateRequestApproverInfoDto) (err error) {
+func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script.BlockUpdateData) (err error) {
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+	if err != nil {
+		return err
+	} else if step == nil {
+		return errors.New("can't get step from database")
+	}
+
+	// get state from step.State
+	stepData, ok := step.State[gb.Name]
+	if !ok {
+		return errors.New("can't get step state")
+	}
+
+	var state ApproverData
+	err = json.Unmarshal(stepData, &state)
+	if err != nil {
+		return errors.Wrap(err, "invalid format of go-approver-block state")
+	}
+
+	gb.State = &state
+
 	var updateParams updateExecutorInfoParams
-	err = json.Unmarshal(dto.data.Parameters, &updateParams)
+	err = json.Unmarshal(data.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update requestApproverInfo data")
 	}
 
-	if errSet := gb.State.SetRequestApproverInfo(
-		dto.data.ByLogin,
-		updateParams.Comment,
-		updateParams.Type,
-		updateParams.Attachments,
-	); errSet != nil {
-		return errSet
+	if gb.State.Decision != nil {
+		return errors.New("decision already set")
 	}
 
-	status := string(StatusIdle)
+	var (
+		id     = uuid.NewString()
+		linkId *string
+	)
 
+	status := string(StatusIdle)
 	var tpl mail.Template
 
 	if updateParams.Type == RequestAddInfoType {
-		authorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, dto.data.Author)
+		login := updateParams.Approver
+
+		_, ok := gb.State.Approvers[login]
+		if !ok && login != AutoApprover {
+			return fmt.Errorf("%s not found in approvers", login)
+		}
+
+		authorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, data.Author)
 		if emailErr != nil {
 			return emailErr
 		}
 
-		tpl = mail.NewRequestApproverInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+		tpl = mail.NewRequestApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.Pipeline.Sender.SdAddress)
 		err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
 		if err != nil {
 			return err
@@ -226,8 +252,18 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, dto *updateR
 	}
 
 	if updateParams.Type == ReplyAddInfoType {
-		if _, approverExists := gb.State.Approvers[updateParams.Approver]; !approverExists {
-			return fmt.Errorf("approver: %s is not found in approvers", updateParams.Approver)
+		if len(gb.State.AddInfo) == 0 {
+			return errors.New("don't answer after request")
+		}
+
+		if updateParams.LinkId == nil {
+			return errors.New("linkId is null when reply")
+		}
+
+		linkId = updateParams.LinkId
+		linkErr := setLinkIdRequest(id, *updateParams.LinkId, gb.State.AddInfo)
+		if linkErr != nil {
+			return linkErr
 		}
 
 		status = string(StatusRunning)
@@ -240,7 +276,8 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, dto *updateR
 			gb.State.IncreaseSLA(workHours)
 		}
 
-		tpl = mail.NewAnswerApproverInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+		tpl = mail.NewAnswerApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+
 		approverEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, updateParams.Approver)
 		if emailErr != nil {
 			return emailErr
@@ -252,28 +289,38 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, dto *updateR
 		}
 	}
 
-	dto.step.State[gb.Name], err = json.Marshal(gb.State)
+	gb.State.AddInfo = append(gb.State.AddInfo, AdditionalInfo{
+		Id:          id,
+		Type:        updateParams.Type,
+		Comment:     updateParams.Comment,
+		Attachments: updateParams.Attachments,
+		LinkId:      linkId,
+		Login:       updateParams.Approver,
+		CreatedAt:   time.Now(),
+	})
+
+	step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
 		return err
 	}
 
 	var content []byte
-	content, err = json.Marshal(store.NewFromStep(dto.step))
+	content, err = json.Marshal(store.NewFromStep(step))
 	if err != nil {
 		return err
 	}
 
 	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          dto.data.Id,
+		Id:          data.Id,
 		Content:     content,
-		BreakPoints: dto.step.BreakPoints,
+		BreakPoints: step.BreakPoints,
 		Status:      status,
 	})
 	if err != nil {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
@@ -322,7 +369,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 			return nil, errors.New("can't assert provided data")
 		}
 
-		return nil, gb.updateRequestApproverInfo(ctx, &updateRequestApproverInfoDto{data, step})
+		return nil, gb.updateRequestApproverInfo(ctx, data)
 	}
 
 	return nil, errors.New("cant`t update execution block, unknown action: " + data.Action)
