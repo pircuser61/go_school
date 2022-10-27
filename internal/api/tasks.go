@@ -171,12 +171,11 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
 	var filters entity.TaskFilter
 
-	//ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
-	//if err != nil {
-	//	return filters, err
-	//}
-	//filters.CurrentUser = ui.Username
-	filters.CurrentUser = "sobugreye1"
+	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
+	if err != nil {
+		return filters, err
+	}
+	filters.CurrentUser = ui.Username
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
 
 	filters.GetTaskParams = entity.GetTaskParams{

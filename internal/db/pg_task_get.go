@@ -120,7 +120,6 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	}
 
 	if filters.ForCarousel != nil && *filters.ForCarousel {
-		fmt.Println("sdfgsdfg")
 		q = fmt.Sprintf("%s AND ((w.human_status='done' AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days')", q)
 		q = fmt.Sprintf("%s OR w.human_status = 'wait')", q)
 	}
@@ -221,7 +220,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 	defer span.End()
 
 	q, args := compileGetTasksQuery(filters)
-	fmt.Println(q)
+
 	tasks, err := db.getTasks(ctx, q, args)
 	if err != nil {
 		return nil, err
