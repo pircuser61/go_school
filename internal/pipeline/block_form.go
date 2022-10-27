@@ -4,6 +4,8 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
@@ -47,7 +49,7 @@ type FormData struct {
 	DidSLANotification bool `json:"did_sla_notification"`
 
 	LeftToNotify                map[string]struct{} `json:"left_to_notify"`
-	IsExecutorVariablesResolved bool                `json:"isExecutorVariablesResolved"`
+	IsExecutorVariablesResolved bool                `json:"is_executor_variables_resolved"`
 }
 
 type GoFormBlock struct {
@@ -150,19 +152,12 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 
 	gb.State = &state
 
-	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema && !gb.State.IsExecutorVariablesResolved {
-		variableStorage, grabStorageErr := runCtx.GrabStorage()
-		if grabStorageErr != nil {
-			return err
-		}
+	if state.FormExecutorType == script.FormExecutorTypeFromSchema && !state.IsExecutorVariablesResolved {
+		resolveErr := gb.resolveFormExecutors(ctx, &resolveFormExecutorsDTO{runCtx: runCtx, step: step, id: id})
 
-		resolvedEntities, resolveErr := resolveValuesFromVariables(variableStorage, gb.State.Executors)
 		if resolveErr != nil {
-			return err
+			return resolveErr
 		}
-
-		gb.State.Executors = resolvedEntities
-		gb.State.IsExecutorVariablesResolved = true
 	}
 
 	// nolint:dupl // not dupl?
@@ -251,6 +246,7 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 		SchemaName:       params.SchemaName,
 		ChangesLog:       make([]ChangesLogItem, 0),
 		FormExecutorType: params.FormExecutorType,
+		ApplicationBody:  map[string]interface{}{},
 	}
 
 	if b.State.FormExecutorType == script.FormExecutorTypeUser {
@@ -266,4 +262,53 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 	}
 
 	return b, nil
+}
+
+type resolveFormExecutorsDTO struct {
+	runCtx *store.VariableStore
+	step   *entity.Step
+	id     uuid.UUID
+}
+
+func (gb *GoFormBlock) resolveFormExecutors(ctx context.Context, dto *resolveFormExecutorsDTO) (err error) {
+	variableStorage, grabStorageErr := dto.runCtx.GrabStorage()
+	if grabStorageErr != nil {
+		return err
+	}
+
+	resolvedEntities, resolveErr := resolveValuesFromVariables(variableStorage, gb.State.Executors)
+	if resolveErr != nil {
+		return err
+	}
+
+	gb.State.Executors = resolvedEntities
+
+	if len(gb.State.LeftToNotify) > 0 {
+		resolvedEntitiesToNotify, resolveErrToNotify := resolveValuesFromVariables(variableStorage, gb.State.LeftToNotify)
+		if resolveErrToNotify != nil {
+			return err
+		}
+
+		gb.State.LeftToNotify = resolvedEntitiesToNotify
+	}
+
+	gb.State.IsExecutorVariablesResolved = true
+
+	dto.step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	content, err := json.Marshal(store.NewFromStep(dto.step))
+	if err != nil {
+		return err
+	}
+
+	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          dto.id,
+		Content:     content,
+		BreakPoints: dto.step.BreakPoints,
+		HasError:    false,
+		Status:      string(StatusFinished),
+	})
 }
