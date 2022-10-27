@@ -4,16 +4,13 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -270,7 +267,7 @@ type resolveFormExecutorsDTO struct {
 	id     uuid.UUID
 }
 
-func (gb *GoFormBlock) resolveFormExecutors(ctx context.Context, dto *resolveFormExecutorsDTO) (err error) {
+func (gb *GoFormBlock) resolveFormExecutors(ctx c.Context, dto *resolveFormExecutorsDTO) (err error) {
 	variableStorage, grabStorageErr := dto.runCtx.GrabStorage()
 	if grabStorageErr != nil {
 		return err
