@@ -98,6 +98,10 @@ const (
 
 	FunctionParamsTypeExecution FunctionParamsType = "execution"
 
+	FunctionParamsTypeForm FunctionParamsType = "form"
+
+	FunctionParamsTypeIf FunctionParamsType = "if"
+
 	FunctionParamsTypeNotification FunctionParamsType = "notification"
 
 	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
@@ -1131,6 +1135,9 @@ type GetTasksParams struct {
 
 	// get tasks with status wait or done
 	ForCarousel *bool `json:"forCarousel,omitempty"`
+
+	// get tasks with different statuses
+	Status *string `json:"status,omitempty"`
 
 	// receiver login
 	Receiver *string `json:"receiver,omitempty"`
@@ -2413,6 +2420,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "forCarousel", r.URL.Query(), &params.ForCarousel)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "forCarousel", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+	if paramValue := r.URL.Query().Get("status"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
 		return
 	}
 

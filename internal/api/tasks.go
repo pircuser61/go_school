@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -170,12 +171,12 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
 	var filters entity.TaskFilter
 
-	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
-	if err != nil {
-		return filters, err
-	}
-	filters.CurrentUser = ui.Username
-
+	//ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
+	//if err != nil {
+	//	return filters, err
+	//}
+	//filters.CurrentUser = ui.Username
+	filters.CurrentUser = "sobugreye1"
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
 
 	filters.GetTaskParams = entity.GetTaskParams{
@@ -188,6 +189,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		SelectAs:    p.SelectAs,
 		Archived:    p.Archived,
 		ForCarousel: p.ForCarousel,
+		Status:      statusToEntity(p.Status),
 		Receiver:    p.Receiver,
 	}
 
@@ -203,6 +205,14 @@ func (c *Created) toEntity() *entity.TimePeriod {
 		}
 	}
 	return timePeriod
+}
+
+func statusToEntity(status *string) *string {
+	if status == nil {
+		return nil
+	}
+	sqlStatus := "'" + strings.Replace(*status, ",", "', '", -1) + "'"
+	return &sqlStatus
 }
 
 func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {

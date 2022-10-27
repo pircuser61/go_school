@@ -1487,6 +1487,11 @@ paths:
           schema:
             type: boolean
           description: get tasks with status wait or done
+        - name: status
+          in: query
+          schema:
+            type: string
+          description: get tasks with different statuses
         - name: receiver
           in: query
           schema:
