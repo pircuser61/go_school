@@ -8,6 +8,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
+//nolint:dupl //its not duplicate
 func (db *PGCon) GetApproveActionNames(ctx context.Context) ([]entity.ApproveActionName, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_approve_action_names")
 	defer span.End()
@@ -49,6 +50,7 @@ func (db *PGCon) GetApproveActionNames(ctx context.Context) ([]entity.ApproveAct
 	return items, nil
 }
 
+//nolint:dupl //its not duplicate
 func (db *PGCon) GetApproveStatuses(ctx context.Context) ([]entity.ApproveStatus, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_approve_statuses")
 	defer span.End()
@@ -78,7 +80,7 @@ func (db *PGCon) GetApproveStatuses(ctx context.Context) ([]entity.ApproveStatus
 	for rows.Next() {
 		item := entity.ApproveStatus{}
 
-		if err = rows.Scan(&item.Id, &item.Title); err != nil {
+		if err := rows.Scan(&item.Id, &item.Title); err != nil {
 			return nil, err
 		}
 

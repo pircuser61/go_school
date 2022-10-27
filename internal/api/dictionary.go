@@ -13,6 +13,7 @@ type GetApproveActionNamesResponse struct {
 	Title string `json:"title"`
 }
 
+//nolint:dupl //its not duplicate
 func (ae *APIEnv) GetApproveActionNames(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approve_action_names")
 	defer s.End()
@@ -50,6 +51,7 @@ type GetApproveStatusesResponse struct {
 	Title string `json:"title"`
 }
 
+//nolint:dupl //its not duplicate
 func (ae *APIEnv) GetApproveStatuses(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "get_approve_statuses")
 	defer s.End()
