@@ -387,10 +387,8 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 	}
 
 	if state.ExecutionType == script.ExecutionTypeFromSchema && !state.IsExecutorVariablesResolved {
-		resolveErr := gb.resolveExecutors(ctx, &resolveExecutorsDTO{runCtx: runCtx, step: step, id: id})
-
-		if resolveErr != nil {
-			return err
+		if resolveErr := gb.resolveExecutors(ctx, &resolveExecutorsDTO{runCtx: runCtx, id: id}, step); resolveErr != nil {
+			return resolveErr
 		}
 	}
 
@@ -566,19 +564,18 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 
 type resolveExecutorsDTO struct {
 	runCtx *store.VariableStore
-	step   *entity.Step
 	id     uuid.UUID
 }
 
-func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveExecutorsDTO) (err error) {
+func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveExecutorsDTO, step *entity.Step) (err error) {
 	variableStorage, grabStorageErr := dto.runCtx.GrabStorage()
 	if grabStorageErr != nil {
-		return err
+		return grabStorageErr
 	}
 
 	resolvedEntities, resolveErr := resolveValuesFromVariables(variableStorage, gb.State.Executors)
 	if resolveErr != nil {
-		return err
+		return resolveErr
 	}
 
 	gb.State.Executors = resolvedEntities
@@ -594,12 +591,12 @@ func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveEx
 
 	gb.State.IsExecutorVariablesResolved = true
 
-	dto.step.State[gb.Name], err = json.Marshal(gb.State)
+	step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
 		return err
 	}
 
-	content, err := json.Marshal(store.NewFromStep(dto.step))
+	content, err := json.Marshal(store.NewFromStep(step))
 	if err != nil {
 		return err
 	}
@@ -607,8 +604,7 @@ func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveEx
 	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          dto.id,
 		Content:     content,
-		BreakPoints: dto.step.BreakPoints,
-		HasError:    false,
-		Status:      string(StatusFinished),
+		BreakPoints: step.BreakPoints,
+		Status:      string(StatusRunning),
 	})
 }
