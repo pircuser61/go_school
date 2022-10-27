@@ -150,15 +150,15 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 		return errors.Wrap(err, "invalid format of go-form-block state")
 	}
 
-	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema && !gb.State.IsExecutorVariablesResolved {
-		resolveErr := gb.resolveFormExecutors(ctx, &resolveFormExecutorsDTO{runCtx: runCtx, step: step})
+	gb.State = &state
+
+	if state.FormExecutorType == script.FormExecutorTypeFromSchema && !state.IsExecutorVariablesResolved {
+		resolveErr := gb.resolveFormExecutors(ctx, &resolveFormExecutorsDTO{runCtx: runCtx, step: step, id: id})
 
 		if resolveErr != nil {
-			return err
+			return resolveErr
 		}
 	}
-
-	gb.State = &state
 
 	// nolint:dupl // not dupl?
 	if gb.State.IsFilled {
@@ -246,6 +246,7 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 		SchemaName:       params.SchemaName,
 		ChangesLog:       make([]ChangesLogItem, 0),
 		FormExecutorType: params.FormExecutorType,
+		ApplicationBody:  map[string]interface{}{},
 	}
 
 	if b.State.FormExecutorType == script.FormExecutorTypeUser {
@@ -266,6 +267,7 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 type resolveFormExecutorsDTO struct {
 	runCtx *store.VariableStore
 	step   *entity.Step
+	id     uuid.UUID
 }
 
 func (gb *GoFormBlock) resolveFormExecutors(ctx context.Context, dto *resolveFormExecutorsDTO) (err error) {
@@ -280,23 +282,33 @@ func (gb *GoFormBlock) resolveFormExecutors(ctx context.Context, dto *resolveFor
 	}
 
 	gb.State.Executors = resolvedEntities
+
+	if len(gb.State.LeftToNotify) > 0 {
+		resolvedEntitiesToNotify, resolveErrToNotify := resolveValuesFromVariables(variableStorage, gb.State.LeftToNotify)
+		if resolveErrToNotify != nil {
+			return err
+		}
+
+		gb.State.LeftToNotify = resolvedEntitiesToNotify
+	}
+
 	gb.State.IsExecutorVariablesResolved = true
 
-	var stateBytes []byte
-	stateBytes, err = json.Marshal(gb.State)
+	dto.step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
 		return err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          dto.step.ID,
-		Content:     stateBytes,
-		BreakPoints: dto.step.BreakPoints,
-		Status:      dto.step.Status,
-	})
+	content, err := json.Marshal(store.NewFromStep(dto.step))
 	if err != nil {
-		return errors.Wrap(err, "resolveExecutors.UpdateStepContext: ")
+		return err
 	}
 
-	return nil
+	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          dto.id,
+		Content:     content,
+		BreakPoints: dto.step.BreakPoints,
+		HasError:    false,
+		Status:      string(StatusFinished),
+	})
 }
