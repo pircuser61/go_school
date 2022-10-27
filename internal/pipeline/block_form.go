@@ -49,7 +49,7 @@ type FormData struct {
 	DidSLANotification bool `json:"did_sla_notification"`
 
 	LeftToNotify                map[string]struct{} `json:"left_to_notify"`
-	IsExecutorVariablesResolved bool                `json:"isExecutorVariablesResolved"`
+	IsExecutorVariablesResolved bool                `json:"is_executor_variables_resolved"`
 }
 
 type GoFormBlock struct {
