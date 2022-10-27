@@ -334,14 +334,35 @@ type Application struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// ApproveActionNamesResponse defines model for ApproveActionNamesResponse.
+type ApproveActionNamesResponse struct {
+	// approve action id
+	Id string `json:"id"`
+
+	// approve action title
+	Title string `json:"title"`
+}
+
 // Action to do automatically in case SLA is breached
 type ApproveAutoAction string
+
+// ApproveStatusesResponse defines model for ApproveStatusesResponse.
+type ApproveStatusesResponse struct {
+	// approve status id
+	Id string `json:"id"`
+
+	// approve status title
+	Title string `json:"title"`
+}
 
 // Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 type ApprovementRule string
 
 // Approver params
 type ApproverParams struct {
+	// Approvement status
+	ApproveStatusName string `json:"approve_status_name"`
+
 	// Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 	ApprovementRule *ApprovementRule `json:"approvementRule,omitempty"`
 
@@ -1481,6 +1502,12 @@ type ServerInterface interface {
 	// Debug task
 	// (GET /debug/{workNumber})
 	DebugTask(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Get approve action names dictionary
+	// (GET /dictionaries/approve-action-names)
+	GetApproveActionNames(w http.ResponseWriter, r *http.Request)
+	// Get approve statuses dictionary
+	// (GET /dictionaries/approve-statuses)
+	GetApproveStatuses(w http.ResponseWriter, r *http.Request)
 	// Get forms changelog
 	// (GET /forms/changelog)
 	GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams)
@@ -1699,6 +1726,36 @@ func (siw *ServerInterfaceWrapper) DebugTask(w http.ResponseWriter, r *http.Requ
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DebugTask(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetApproveActionNames operation middleware
+func (siw *ServerInterfaceWrapper) GetApproveActionNames(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApproveActionNames(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetApproveStatuses operation middleware
+func (siw *ServerInterfaceWrapper) GetApproveStatuses(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApproveStatuses(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2829,6 +2886,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/debug/{workNumber}", wrapper.DebugTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dictionaries/approve-action-names", wrapper.GetApproveActionNames)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dictionaries/approve-statuses", wrapper.GetApproveStatuses)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/forms/changelog", wrapper.GetFormsChangelog)

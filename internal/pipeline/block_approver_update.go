@@ -239,8 +239,8 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 			return emailErr
 		}
 
-		if err = gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl); err != nil {
-			return err
+		if errNotif := gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl); errNotif != nil {
+			return errNotif
 		}
 	}
 

@@ -22,6 +22,34 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
+func (_m *MockedDatabase) GetApproveActionNames(ctx context.Context) ([]entity.ApproveActionName, error) {
+	ret := _m.Called(ctx)
+
+	var r0 error
+	var r1 []entity.ApproveActionName
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r1, r0
+}
+
+func (_m *MockedDatabase) GetApproveStatuses(ctx context.Context) ([]entity.ApproveStatus, error) {
+	ret := _m.Called(ctx)
+
+	var r0 error
+	var r1 []entity.ApproveStatus
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r1, r0
+}
+
 // ActiveAlertNGSA provides a mock function with given fields: ctx, sever, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc
 func (_m *MockedDatabase) ActiveAlertNGSA(ctx context.Context, sever int, state string, source string, eventType string, cause string, addInf string, addTxt string, moID string, specProb string, notID string, usertext string, moi string, moc string) error {
 	ret := _m.Called(ctx, sever, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc)
