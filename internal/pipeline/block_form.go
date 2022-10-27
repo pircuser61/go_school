@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -269,7 +267,7 @@ type resolveFormExecutorsDTO struct {
 	id     uuid.UUID
 }
 
-func (gb *GoFormBlock) resolveFormExecutors(ctx context.Context, dto *resolveFormExecutorsDTO) (err error) {
+func (gb *GoFormBlock) resolveFormExecutors(ctx c.Context, dto *resolveFormExecutorsDTO) (err error) {
 	variableStorage, grabStorageErr := dto.runCtx.GrabStorage()
 	if grabStorageErr != nil {
 		return err
