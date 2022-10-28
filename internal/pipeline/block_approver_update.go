@@ -37,10 +37,6 @@ type updateExecutorInfoParams struct {
 	LinkId      *string            `json:"link_id,omitempty"`
 }
 
-type updateRequestApproverInfoDto struct {
-	data *script.BlockUpdateData
-}
-
 func (a *approverUpdateParams) Validate() error {
 	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
 		return errors.New("unknown decision")
@@ -191,6 +187,7 @@ func (gb *GoApproverBlock) setActionApplication(ctx c.Context, dto *setActionApp
 	return nil
 }
 
+//nolint:gocyclo //ok
 func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script.BlockUpdateData) (err error) {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
