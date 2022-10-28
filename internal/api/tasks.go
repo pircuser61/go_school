@@ -206,12 +206,15 @@ func (c *Created) toEntity() *entity.TimePeriod {
 	return timePeriod
 }
 
-func statusToEntity(status *string) *string {
+func statusToEntity(status *[]string) *string {
 	if status == nil {
 		return nil
 	}
-	sqlStatus := "'" + strings.Replace(*status, ",", "', '", -1) + "'"
-	return &sqlStatus
+	for i := range *status {
+		(*status)[i] = "'" + (*status)[i] + "'"
+	}
+	qStatus := strings.Join(*status, ",")
+	return &qStatus
 }
 
 func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {

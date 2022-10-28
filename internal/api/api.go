@@ -1137,7 +1137,7 @@ type GetTasksParams struct {
 	ForCarousel *bool `json:"forCarousel,omitempty"`
 
 	// get tasks with different statuses
-	Status *string `json:"status,omitempty"`
+	Status *[]string `json:"status,omitempty"`
 
 	// receiver login
 	Receiver *string `json:"receiver,omitempty"`

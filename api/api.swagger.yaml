@@ -1490,7 +1490,9 @@ paths:
         - name: status
           in: query
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: get tasks with different statuses
         - name: receiver
           in: query
