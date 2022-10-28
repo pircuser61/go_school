@@ -97,6 +97,7 @@ type GetTaskParams struct {
 	SelectAs    *string     `json:"select_as"`
 	Archived    *bool       `json:"archived"`
 	ForCarousel *bool       `json:"forCarousel"`
+	Status      *string     `json:"status"`
 	Receiver    *string     `json:"receiver"`
 }
 

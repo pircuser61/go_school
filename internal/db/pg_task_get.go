@@ -134,6 +134,10 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		q = fmt.Sprintf("%s OR w.human_status = 'wait')", q)
 	}
 
+	if filters.Status != nil {
+		q = fmt.Sprintf("%s AND (w.human_status IN (%s))", q, *filters.Status)
+	}
+
 	if filters.Receiver != nil {
 		args = append(args, *filters.Receiver)
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
