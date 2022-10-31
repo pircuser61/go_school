@@ -395,7 +395,6 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 	if errUpdate != nil {
 		return errUpdate
 	}
-
 	for !ep.IsOver() {
 		for step := range ep.ActiveBlocks {
 			if err := ep.handleSkippedBlocks(ctx, runCtx); err != nil {
@@ -480,12 +479,17 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 			}
 
 			switch currentBlock.GetStatus() {
-			case StatusFinished, StatusNoSuccess:
+			case StatusFinished, StatusNoSuccess, StatusCancel:
 			default:
 				continue
 			}
 
 			ep.deleteActiveBlock(step)
+
+			if currentBlock.GetStatus() == StatusCancel {
+				ep.endExecution = true
+				continue
+			}
 
 			switch currentBlock.GetType() {
 			case BlockGoEndId:

@@ -52,8 +52,6 @@ type step struct {
 
 type taskSteps []step
 
-const blockTypePipeline = "pipeline"
-
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	for i := range in.Steps {
@@ -370,8 +368,8 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	blockType := getTaskStepNameByAction(updateData.Action)
-	if blockType == "" {
+	blockTypes := getTaskStepNameByAction(updateData.Action)
+	if len(blockTypes) == 0 {
 		e := UpdateTaskValidationError
 		log.Error(e.errorMessage(nil))
 		_ = e.sendError(w)
@@ -388,12 +386,6 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	if blockType == blockTypePipeline {
-		// TODO: make func for canceling task
-		return
-	}
-
-	// can update only running tasks
 	if !dbTask.IsRun() {
 		e := UpdateNotRunningTaskError
 		log.Error(e.errorMessage(nil))
@@ -411,13 +403,16 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	steps, err := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
-	if err != nil {
-		e := GetTaskError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
+	var steps entity.TaskSteps
+	for _, blockType := range blockTypes {
+		stepsByBlock, er := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
+		if er != nil {
+			e := GetTaskError
+			log.Error(e.errorMessage(er))
+			_ = e.sendError(w)
+			return
+		}
+		steps = append(steps, stepsByBlock...)
 	}
 
 	if len(steps) == 0 {
@@ -426,6 +421,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		_ = e.sendError(w)
 
 		return
+	}
+	if updateData.Action == entity.TaskUpdateActionCancelApp {
+		steps = steps[:1]
 	}
 
 	ep := pipeline.ExecutablePipeline{
@@ -494,42 +492,42 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 }
 
-func getTaskStepNameByAction(action entity.TaskUpdateAction) string {
+func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	if action == entity.TaskUpdateActionApprovement {
-		return pipeline.BlockGoApproverID
+		return []string{pipeline.BlockGoApproverID}
 	}
 
 	if action == entity.TaskUpdateActionSendEditApp {
-		return pipeline.BlockGoApproverID
+		return []string{pipeline.BlockGoApproverID}
 	}
 
 	if action == entity.TaskUpdateActionRequestApproveInfo {
-		return pipeline.BlockGoApproverID
+		return []string{pipeline.BlockGoApproverID}
 	}
 
 	if action == entity.TaskUpdateActionExecution {
-		return pipeline.BlockGoExecutionID
+		return []string{pipeline.BlockGoExecutionID}
 	}
 
 	if action == entity.TaskUpdateActionChangeExecutor {
-		return pipeline.BlockGoExecutionID
+		return []string{pipeline.BlockGoExecutionID}
 	}
 
 	if action == entity.TaskUpdateActionRequestExecutionInfo {
-		return pipeline.BlockGoExecutionID
+		return []string{pipeline.BlockGoExecutionID}
 	}
 
 	if action == entity.TaskUpdateActionCancelApp {
-		return "pipeline"
+		return []string{pipeline.BlockGoApproverID, pipeline.BlockGoExecutionID, pipeline.BlockGoFormID, pipeline.BlockGoWaitForAllInputsTitle}
 	}
 
 	if action == entity.TaskUpdateActionExecutorStartWork {
-		return pipeline.BlockGoExecutionID
+		return []string{pipeline.BlockGoExecutionID}
 	}
 
 	if action == entity.TaskUpdateActionRequestFillForm {
-		return pipeline.BlockGoFormID
+		return []string{pipeline.BlockGoFormID}
 	}
 
-	return ""
+	return []string{}
 }
