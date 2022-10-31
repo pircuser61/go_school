@@ -52,8 +52,6 @@ type step struct {
 
 type taskSteps []step
 
-const blockTypePipeline = "pipeline"
-
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	for i := range in.Steps {
