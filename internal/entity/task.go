@@ -140,7 +140,7 @@ var (
 )
 
 type TaskUpdate struct {
-	Action     TaskUpdateAction `json:"action" enums:"approvement,execution,change_executor,request_execution_info,executor_start_work"`
+	Action     TaskUpdateAction `json:"action" enums:"approvement,execution,change_executor,request_execution_info,executor_start_work,cancel_app"`
 	Parameters json.RawMessage  `json:"parameters" swaggertype:"object"`
 }
 

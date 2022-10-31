@@ -55,6 +55,13 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 		}
 	}
 
+	if data.Action == string(entity.TaskUpdateActionCancelApp) {
+		fmt.Println("cancel")
+		if errUpdate := gb.executorCancelPipeline(ctx, data, step); errUpdate != nil {
+			return nil, errUpdate
+		}
+	}
+
 	if data.Action == string(entity.TaskUpdateActionRequestExecutionInfo) {
 		if errUpdate := gb.updateRequestExecutionInfo(ctx, &updateRequestExecutionInfoDto{
 			data,
@@ -424,4 +431,26 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	}
 
 	return nil
+}
+
+func (gb *GoExecutionBlock) executorCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+	gb.State.IsRevoked = true
+
+	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
+		return err
+	}
+
+	var content []byte
+	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
+		return err
+	}
+	fmt.Println(in.Id)
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          in.Id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		Status:      string(StatusCancel),
+	})
+
+	return err
 }

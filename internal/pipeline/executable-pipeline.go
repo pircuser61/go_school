@@ -288,24 +288,24 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 
 	switch currStatus {
 	case StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
-		tmpl := mail.NewApplicationInitiatorStatusNotification(
-			ep.WorkNumber,
-			ep.Name,
-			statusToTaskState[currStatus],
-			descr,
-			ep.Sender.SdAddress)
-		if ep.initiatorEmail == "" {
-			email, err := ep.People.GetUserEmail(ctx, ep.Initiator)
-			if err != nil {
-				return err
-			}
-			ep.initiatorEmail = email
-		}
+		//tmpl := mail.NewApplicationInitiatorStatusNotification(
+		//	ep.WorkNumber,
+		//	ep.Name,
+		//	statusToTaskState[currStatus],
+		//	descr,
+		//	ep.Sender.SdAddress)
+		//if ep.initiatorEmail == "" {
+		//	email, err := ep.People.GetUserEmail(ctx, ep.Initiator)
+		//	if err != nil {
+		//		return err
+		//	}
+		//	ep.initiatorEmail = email
+		//}
 
 		log.Info("initiatorEmail: ", ep.initiatorEmail)
-		if err := ep.Sender.SendNotification(ctx, []string{ep.initiatorEmail}, nil, tmpl); err != nil {
-			return err
-		}
+		//if err := ep.Sender.SendNotification(ctx, []string{ep.initiatorEmail}, nil, tmpl); err != nil {
+		//	return err
+		//}
 		ss = append(ss, currStatus)
 		ep.notifiedBlocks[step] = ss // TODO: dump somewhere?
 	default:
@@ -384,7 +384,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 	if errUpdate != nil {
 		return errUpdate
 	}
-
+	fmt.Println(ep.IsOver())
 	for !ep.IsOver() {
 		for step := range ep.ActiveBlocks {
 			if err := ep.handleSkippedBlocks(ctx, runCtx); err != nil {
@@ -469,12 +469,18 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 			}
 
 			switch currentBlock.GetStatus() {
-			case StatusFinished, StatusNoSuccess:
+			case StatusFinished, StatusNoSuccess, StatusCancel:
 			default:
 				continue
 			}
 
 			ep.deleteActiveBlock(step)
+
+			if currentBlock.GetStatus() == StatusCancel {
+				fmt.Println("endExecution")
+				ep.endExecution = true
+				continue
+			}
 
 			switch currentBlock.GetType() {
 			case BlockGoEndId:

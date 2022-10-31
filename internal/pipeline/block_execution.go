@@ -79,6 +79,8 @@ type ExecutionData struct {
 
 	IsTakenInWork               bool `json:"is_taken_in_work"`
 	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
+
+	IsRevoked bool `json:"is_revoked"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
@@ -101,6 +103,9 @@ type GoExecutionBlock struct {
 }
 
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
+	if gb.State != nil && gb.State.IsRevoked == true {
+		return StatusRevoke
+	}
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusDone
@@ -121,6 +126,9 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *GoExecutionBlock) GetStatus() Status {
+	if gb.State != nil && gb.State.IsRevoked == true {
+		return StatusCancel
+	}
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusFinished
