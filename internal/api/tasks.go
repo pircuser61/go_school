@@ -388,12 +388,6 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	//if blockType == blockTypePipeline {
-	//	// TODO: make func for canceling task
-	//	return
-	//}
-
-	// can update only running tasks
 	if !dbTask.IsRun() {
 		e := UpdateNotRunningTaskError
 		log.Error(e.errorMessage(nil))
