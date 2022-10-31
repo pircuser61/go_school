@@ -136,10 +136,6 @@ func (gb *GoExecutionBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoExecutionBlock) GetTaskStatus() TaskHumanStatus {
-	return StatusNew
-}
-
 func (gb *GoExecutionBlock) GetType() string {
 	return BlockGoExecutionID
 }

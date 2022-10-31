@@ -194,7 +194,7 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 			},
 			{
 				Name:    keyOutputFormBody,
-				Type:    "string",
+				Type:    "object",
 				Comment: "form body",
 			},
 		},

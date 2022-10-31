@@ -275,6 +275,17 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 		}
 	}
 	descr := ep.currDescription
+	if currBlock.GetType() == BlockGoSdApplicationID {
+		state, exists := ep.VarStore.GetState(step)
+		if exists {
+			var stateData ApplicationData
+			if err := json.Unmarshal(state.(json.RawMessage), &stateData); err != nil {
+				return err
+			} else {
+				descr = stateData.Description
+			}
+		}
+	}
 	additionalDescriptions, err := ep.Storage.GetAdditionalForms(ep.WorkNumber, "")
 	if err != nil {
 		return err
@@ -287,7 +298,7 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 	}
 
 	switch currStatus {
-	case StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
+	case StatusNew, StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
 		tmpl := mail.NewApplicationInitiatorStatusNotification(
 			ep.WorkNumber,
 			ep.Name,
