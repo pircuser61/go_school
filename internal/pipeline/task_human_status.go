@@ -14,6 +14,7 @@ const (
 )
 
 var statusToTaskState = map[TaskHumanStatus]string{
+	StatusNew:                 "была создана",
 	StatusApproved:            "согласована",
 	StatusApprovementRejected: "отклонена",
 	StatusExecution:           "взята в работу",
