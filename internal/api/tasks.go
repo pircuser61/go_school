@@ -413,10 +413,10 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 	var steps entity.TaskSteps
 	for _, blockType := range blockTypes {
-		stepsByBlock, err := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
-		if err != nil {
+		stepsByBlock, er := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
+		if er != nil {
 			e := GetTaskError
-			log.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(er))
 			_ = e.sendError(w)
 			return
 		}
@@ -429,6 +429,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		_ = e.sendError(w)
 
 		return
+	}
+	if updateData.Action == entity.TaskUpdateActionCancelApp {
+		steps = steps[:1]
 	}
 
 	ep := pipeline.ExecutablePipeline{

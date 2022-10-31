@@ -384,7 +384,6 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 	if errUpdate != nil {
 		return errUpdate
 	}
-	fmt.Println(ep.IsOver())
 	for !ep.IsOver() {
 		for step := range ep.ActiveBlocks {
 			if err := ep.handleSkippedBlocks(ctx, runCtx); err != nil {
@@ -477,7 +476,6 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 			ep.deleteActiveBlock(step)
 
 			if currentBlock.GetStatus() == StatusCancel {
-				fmt.Println("endExecution")
 				ep.endExecution = true
 				continue
 			}

@@ -56,7 +56,6 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 	}
 
 	if data.Action == string(entity.TaskUpdateActionCancelApp) {
-		fmt.Println("cancel")
 		if errUpdate := gb.executorCancelPipeline(ctx, data, step); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -444,13 +443,11 @@ func (gb *GoExecutionBlock) executorCancelPipeline(ctx c.Context, in *script.Blo
 	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
 		return err
 	}
-	fmt.Println(in.Id)
 	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      string(StatusCancel),
 	})
-
 	return err
 }

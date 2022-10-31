@@ -47,6 +47,8 @@ type FormData struct {
 
 	LeftToNotify                map[string]struct{} `json:"left_to_notify"`
 	IsExecutorVariablesResolved bool                `json:"is_executor_variables_resolved"`
+
+	IsRevoked bool `json:"is_revoked"`
 }
 
 type GoFormBlock struct {
@@ -61,6 +63,9 @@ type GoFormBlock struct {
 }
 
 func (gb *GoFormBlock) GetStatus() Status {
+	if gb.State != nil && gb.State.IsRevoked == true {
+		return StatusCancel
+	}
 	if gb.State != nil && gb.State.IsFilled {
 		return StatusFinished
 	}
@@ -69,6 +74,9 @@ func (gb *GoFormBlock) GetStatus() Status {
 }
 
 func (gb *GoFormBlock) GetTaskHumanStatus() TaskHumanStatus {
+	if gb.State != nil && gb.State.IsRevoked == true {
+		return StatusRevoke
+	}
 	if gb.State != nil && gb.State.IsFilled {
 		return StatusDone
 	}
