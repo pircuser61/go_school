@@ -26,7 +26,7 @@ func (a *ExecutableFunctionParams) Validate() error {
 		return errors.New("got no function name or version")
 	}
 
-	err := a.validateMapping(a.Mapping)
+	err := a.Mapping.Validate()
 	if err != nil {
 		return err
 	}
@@ -34,20 +34,20 @@ func (a *ExecutableFunctionParams) Validate() error {
 	return nil
 }
 
-func (a *ExecutableFunctionParams) validateMapping(mappingParam MappingParam) error {
-	if mappingParam != nil {
-		for _, mappingValue := range mappingParam {
+func (m MappingParam) Validate() error {
+	if m != nil {
+		for _, mappingValue := range m {
 			if mappingValue.Type == "" || mappingValue.Description == "" {
 				return errors.New("type and description are required")
 			}
 
-			err := a.validateMapping(mappingValue.Properties)
+			err := mappingValue.Properties.Validate()
 			if err != nil {
 				return err
 			}
 
 			for _, item := range mappingValue.Items {
-				err := a.validateMapping(item)
+				err := item.Validate()
 				if err != nil {
 					return err
 				}

@@ -164,7 +164,7 @@ func (fb *ExecutableFunctionBlock) Model() script.FunctionModel {
 			Params: &script.ExecutableFunctionParams{
 				Name:    "",
 				Version: "",
-				Mapping: nil,
+				Mapping: script.MappingParam{},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
