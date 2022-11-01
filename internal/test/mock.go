@@ -1212,3 +1212,7 @@ func (m *MockDB) GetPipelinesByNameOrId(c context.Context, dto *db.SearchPipelin
 func (m *MockDB) CheckUserCanEditForm(ctx context.Context, workNumber string, stepName string, login string) (bool, error) {
 	return false, errNotImplemented
 }
+
+func (m *MockDB) GetUsersWithReadWriteFormAccess(ctx context.Context, workNumber string, stepName string) ([]string, error) {
+	return nil, errNotImplemented
+}

@@ -885,6 +885,29 @@ func (_m *MockedDatabase) GetUnfinishedTasks(ctx context.Context) (*entity.Erius
 	return r0, r1
 }
 
+// GetUsersWithReadWriteFormAccess provides a mock function with given fields: ctx, workNumber, stepName
+func (_m *MockedDatabase) GetUsersWithReadWriteFormAccess(ctx context.Context, workNumber string, stepName string) ([]string, error) {
+	ret := _m.Called(ctx, workNumber, stepName)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) []string); ok {
+		r0 = rf(ctx, workNumber, stepName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, workNumber, stepName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetVersionByWorkNumber provides a mock function with given fields: ctx, workNumber
 func (_m *MockedDatabase) GetVersionByWorkNumber(ctx context.Context, workNumber string) (*entity.EriusScenario, error) {
 	ret := _m.Called(ctx, workNumber)

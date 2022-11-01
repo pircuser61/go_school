@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
@@ -45,10 +46,11 @@ type FormData struct {
 
 	SLA int `json:"sla"`
 
-	DidSLANotification bool `json:"did_sla_notification"`
+	DidSLANotification  bool `json:"did_sla_notification"`
+	DidFillNotification bool `json:"did_fill_notification"`
 
 	LeftToNotify                map[string]struct{} `json:"left_to_notify"`
-	IsExecutorVariablesResolved bool                `json:"isExecutorVariablesResolved"`
+	IsExecutorVariablesResolved bool                `json:"is_executor_variables_resolved"`
 }
 
 type GoFormBlock struct {
@@ -166,6 +168,11 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 		gb.State.IsExecutorVariablesResolved = true
 	}
 
+	_, err = gb.handleNotifications(ctx, stepCtx)
+	if err != nil {
+		l.WithError(err).Error("couldn't handle notifications")
+	}
+
 	// nolint:dupl // not dupl?
 	if gb.State.IsFilled {
 		var actualExecutor string
@@ -269,39 +276,50 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 	return b, nil
 }
 
-func (gb *GoFormBlock) handleNotifications(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (ok bool, err error) {
-	if len(gb.State.LeftToNotify) == 0 {
-		return false, nil
-	}
-	l := logger.GetLogger(ctx)
+func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx) (ok bool, err error) {
+	if gb.State.DidFillNotification == false {
+		l := logger.GetLogger(ctx)
 
-	emails := make([]string, 0)
+		emails := make([]string, 0)
 
-	executorsWithPermissions, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, stepCtx.workNumber, "")
-	if err != nil {
-		return false, nil
-	}
-
-	for _, executor := range executorsWithPermissions {
-		email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
+		executorsWithPermissions, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, stepCtx.workNumber, gb.Name)
 		if err != nil {
-			l.WithError(err).Error("couldn't get email")
+			return false, nil
 		}
-		emails = append(emails, email)
-	}
 
-	if len(emails) == 0 {
-		return false, nil
-	}
+		for _, executor := range executorsWithPermissions {
+			email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
+			if err != nil {
+				l.WithError(err).Error("couldn't get email")
+			}
+			emails = append(emails, email)
+		}
 
-	err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
-		mail.NewRequestFormExecutionInfoTemplate(
-			"",
-			"",
-			gb.Pipeline.Sender.SdAddress))
-	if err != nil {
-		return false, err
-	}
+		if len(emails) == 0 {
+			return false, nil
+		}
 
+		err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
+			mail.NewRequestFormExecutionInfoTemplate(
+				stepCtx.workNumber,
+				stepCtx.workTitle,
+				gb.Pipeline.Sender.SdAddress))
+		if err != nil {
+			return false, err
+		}
+	}
 	return true, nil
+}
+
+func (gb *GoFormBlock) resolve(ctx context.Context, workNumber string) (result map[string]struct{}, err error) {
+	executorsWithPermissions, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, workNumber, gb.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(executorsWithPermissions)
+
+	// чекаем тип
+
+	return nil, nil
 }
