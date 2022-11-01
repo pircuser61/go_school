@@ -1,17 +1,16 @@
-title: &title dev.jocasta.pipeliner
+title: &title pipeliner
 
 tracing:
-  url: 'http://jaeger-prod-collector.observability:14268/api/traces'
+  url: 'http://opentelemetry-collector:14268/api/traces'
   sample_fraction: 1.0
 
 serve_addr: ':8181'
 timeout: '30s'
 script_manager: 'http://localhost:8282'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
+auth: 'http://admin'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
-grpc_gw_port: ":3000"
-grpc_port: ":3001"
 
 people:
   url: "https://iga.dev.autobp.mts.ru/api/archivist/v2"
@@ -25,13 +24,6 @@ database:
   dbname: 'pipeliner'
   max_connections: 50
   timeout: 10
-
-sso:
-  address: "https://isso-dev.mts.ru"
-  client_secret_env_key: "SSO_SECRET"
-  client_id: "jocasta-dev"
-  realm: "mts"
-  access_cookie_name: "kc-access"
 
 mail:
   broker: "redis"
@@ -78,8 +70,16 @@ log:
     filename:
       sourceField: 'sourcelog'
 
+sso:
+  address: "https://isso-dev.mts.ru"
+  client_secret_env_key: "SSO_SECRET"
+  client_id: "jocasta-dev"
+  realm: "mts"
+  access_cookie_name: "kc-access"
+
 servicedesc:
-  chainsmith_url: 'https://admin.dev.servicedesk.mts.ru/api/chainsmith'
+  servicedesk_url: 'https://dev.servicedesk.mts.ru'
+  scope: 'servicedesk-develop-aud'
 
 observability:
   title: dev.pipeliner.jocasta

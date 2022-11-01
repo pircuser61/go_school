@@ -722,29 +722,46 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber strin
 		// nolint:gocritic
 		// language=PostgreSQL
 		`
-	with accesses_and_users as(
-		select array(select jsonb_object_keys(content -> 'State' -> step_name -> 'executors')) as users_array,
-			   jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as access_info
-		from pipeliner.variable_storage
-		where step_type = 'execution'
-		and work_id = (select id
-					   from pipeliner.works
-					   where work_number = $1)
-		union
-		select array(select jsonb_object_keys(content -> 'State' -> step_name -> 'approvers')) as users_array,
-			   jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as access_info
-		from pipeliner.variable_storage
-		where step_type = 'approver'
-		  and work_id = (select id
-						 from pipeliner.works
-						 where work_number = $1)
-    )
-	select unnest(users_array) from accesses_and_users
-    	where accesses_and_users.access_info::jsonb ->> 'node_id' = $2
-          and accesses_and_users.access_info::jsonb ->> 'accessType' = 'ReadWrite'
+	with blocks_executors_pair as (
+		select
+			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
+			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> 'type' as execution_type,
+			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_param as executor,
+			   executor_param,
+			   jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->
+						'forms_accessibility') as access_params
+		from (
+			with executor_approver_blocks as (
+			select content,
+				jsonb_object_keys(content -> 'pipeline' -> 'blocks') as block_name
+			from pipeliner.versions v
+				left join pipeliner.works w on v.id = w.version_id
+			where w.work_number = $1
+			)
+			select
+				content,
+				block_name,
+				case when block_name like 'approver%' then 'approver' when block_name like 'execution%' then 'executors' end as executor_param,
+				case when block_name like 'approver%' then 'approvers_group_id' when block_name like 'execution%' then 'executors_group_id' end as executor_group_param
+			from executor_approver_blocks
+			where
+				  block_name like 'execution%'
+			   or block_name like 'approver%'
+		) as result
+	)
+
+	select
+		case when execution_type = 'fromSchema' then 'from_schema' else execution_type end,
+		case when executor_param = 'executors' then 'execution' else executor_param end as block_type,
+		executors_group_id,
+		executor
+	
+	from blocks_executors_pair
+	where access_params ->> 'accessType' = 'ReadWrite'
+	and access_params ->> 'node_id' = $2
 	`
 
-	result := make([]string, 0)
+	result := make([]entity.UsersWithFormAccess, 0)
 	rows, err := db.Pool.Query(context.Background(), q, workNumber, stepName)
 	if err != nil {
 		return nil, err
@@ -752,15 +769,23 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber strin
 	defer rows.Close()
 
 	for rows.Next() {
-		var user string
-		if scanErr := rows.Scan(&user); scanErr != nil {
-			return nil, scanErr
+		s := entity.UsersWithFormAccess{}
+
+		err = rows.Scan(
+			&s.ExecutionType,
+			&s.BlockType,
+			&s.GroupId,
+			&s.Executor,
+		)
+
+		if err != nil {
+			return nil, err
 		}
-		result = append(result, user)
+		result = append(result, s)
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, rowsErr
 	}
-	return nil, nil
+	return result, nil
 }

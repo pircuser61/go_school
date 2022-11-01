@@ -4,17 +4,18 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	"go.opencensus.io/trace"
@@ -167,10 +168,10 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 		gb.State.IsExecutorVariablesResolved = true
 	}
 
-	//_, err = gb.handleNotifications(ctx, stepCtx)
-	//if err != nil {
-	//	l.WithError(err).Error("couldn't handle notifications")
-	//}
+	_, err = gb.handleNotifications(ctx, stepCtx, runCtx, id)
+	if err != nil {
+		l.WithError(err).Error("couldn't handle notifications")
+	}
 
 	// nolint:dupl // not dupl?
 	if gb.State.IsFilled {
@@ -275,19 +276,19 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 	return b, nil
 }
 
-func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx) (ok bool, err error) {
-	/*if gb.State.DidFillNotification == false {
+func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx, runCtx *store.VariableStore, id uuid.UUID) (ok bool, err error) {
+	if !gb.State.DidFillNotification {
 		l := logger.GetLogger(ctx)
 
-		emails := make([]string, 0)
-
-		executorsWithPermissions, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, stepCtx.workNumber, gb.Name)
-		if err != nil {
-			return false, nil
+		executors, executorsErr := gb.resolveExecutors(ctx, runCtx, stepCtx.workNumber)
+		if executorsErr != nil {
+			return false, executorsErr
 		}
 
-		/*for _, executor := range executorsWithPermissions {
-			email, err := gb.Pipeline.People.GetUserEmail(ctx, "")
+		var emails = make([]string, 0)
+
+		for _, executor := range executors {
+			email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
 			if err != nil {
 				l.WithError(err).Error("couldn't get email")
 			}
@@ -306,36 +307,133 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx) (ok 
 		if err != nil {
 			return false, err
 		}
-	}*/
+	}
 
-	// ставим флаг что нотификацию мы уже отправили
+	gb.State.DidFillNotification = true
+
+	err = gb.dumpCurrState(ctx, id)
+	if err != nil {
+		return false, err
+	}
 
 	return true, nil
 }
 
-func (gb *GoFormBlock) resolve(ctx context.Context, workNumber string) (result map[string]struct{}, err error) {
+//nolint:gocyclo //ok
+func (gb *GoFormBlock) resolveExecutors(ctx c.Context, runCtx *store.VariableStore, workNumber string) (users []string, err error) {
+	users = make([]string, 0)
+
+	var exists = func(entry string) bool {
+		for _, user := range users {
+			if user == entry {
+				return true
+			}
+		}
+		return false
+	}
+
+	var appendUnique = func(usersToAppend []string) {
+		for _, user := range usersToAppend {
+			if !exists(user) && user != "" {
+				users = append(users, user)
+			}
+		}
+	}
+
+	appendUnique(mapToString(gb.State.Executors))
+
 	executorsWithAccess, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, workNumber, gb.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	var executors = make(map[string]struct{}, 0)
-
-	fmt.Println(executors)
-
 	for _, executor := range executorsWithAccess {
-		// если тип user то берем executor
+		switch executor.ExecutionType {
+		case entity.GroupExecution:
+			if executor.BlockType == entity.ExecutionBlockType {
+				sdUsers, sdErr := gb.Pipeline.ServiceDesc.GetExecutorsGroup(ctx, executor.GroupId)
+				if sdErr != nil {
+					return nil, sdErr
+				}
+				appendUnique(executorsToString(sdUsers.People))
+			}
+			if executor.BlockType == entity.ApprovementBlockType {
+				sdUsers, sdErr := gb.Pipeline.ServiceDesc.GetApproversGroup(ctx, executor.GroupId)
+				if sdErr != nil {
+					return nil, sdErr
+				}
+				appendUnique(approversToString(sdUsers.People))
+			}
+		case entity.FromSchemaExecution:
+			variables, varErr := runCtx.GrabStorage()
+			if varErr != nil {
+				return nil, varErr
+			}
 
-		fmt.Println(executor)
-		// если тип group то идем по названию группы в servicedesk
-		// добавляем всех членов группы куда надо
+			var toResolve = map[string]struct{}{
+				executor.Executor: {},
+			}
 
-		// если тип из схемы то берем все что нужно из stepCtx и резолвим
+			schemaUsers, resolveErr := resolveValuesFromVariables(variables, toResolve)
+			if resolveErr != nil {
+				return nil, resolveErr
+			}
+			appendUnique(mapToString(schemaUsers))
+		case entity.UserExecution:
+			appendUnique([]string{executor.Executor})
+		default:
+			return nil, errors.New("invalid execution type from database")
+		}
 	}
 
-	fmt.Println(executorsWithAccess)
+	return users, nil
+}
 
-	// чекаем тип
+func executorsToString(executors []servicedesc.Executor) []string {
+	var res = make([]string, len(executors))
+	for _, executor := range executors {
+		res = append(res, executor.Login)
+	}
+	return res
+}
 
-	return nil, nil
+func approversToString(approvers []servicedesc.Approver) []string {
+	var res = make([]string, len(approvers))
+	for _, approver := range approvers {
+		res = append(res, approver.Login)
+	}
+	return res
+}
+
+func mapToString(schemaUsers map[string]struct{}) []string {
+	var res = make([]string, len(schemaUsers))
+	for userKey := range schemaUsers {
+		res = append(res, userKey)
+	}
+	return res
+}
+
+func (gb *GoFormBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
+	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	step.State[gb.Name], err = json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	content, err := json.Marshal(store.NewFromStep(step))
+	if err != nil {
+		return err
+	}
+
+	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		HasError:    false,
+		Status:      string(StatusFinished),
+	})
 }
