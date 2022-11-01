@@ -275,6 +275,17 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 		}
 	}
 	descr := ep.currDescription
+	if currBlock.GetType() == BlockGoSdApplicationID {
+		state, exists := ep.VarStore.GetState(step)
+		if exists {
+			var stateData ApplicationData
+			if err := json.Unmarshal(state.(json.RawMessage), &stateData); err != nil {
+				return err
+			} else {
+				descr = stateData.Description
+			}
+		}
+	}
 	additionalDescriptions, err := ep.Storage.GetAdditionalForms(ep.WorkNumber, "")
 	if err != nil {
 		return err
@@ -287,7 +298,7 @@ func (ep *ExecutablePipeline) handleInitiatorNotification(ctx c.Context, step st
 	}
 
 	switch currStatus {
-	case StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
+	case StatusNew, StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
 		tmpl := mail.NewApplicationInitiatorStatusNotification(
 			ep.WorkNumber,
 			ep.Name,
@@ -384,7 +395,6 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 	if errUpdate != nil {
 		return errUpdate
 	}
-
 	for !ep.IsOver() {
 		for step := range ep.ActiveBlocks {
 			if err := ep.handleSkippedBlocks(ctx, runCtx); err != nil {
@@ -469,12 +479,17 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 			}
 
 			switch currentBlock.GetStatus() {
-			case StatusFinished, StatusNoSuccess:
+			case StatusFinished, StatusNoSuccess, StatusCancel:
 			default:
 				continue
 			}
 
 			ep.deleteActiveBlock(step)
+
+			if currentBlock.GetStatus() == StatusCancel {
+				ep.endExecution = true
+				continue
+			}
 
 			switch currentBlock.GetType() {
 			case BlockGoEndId:

@@ -51,20 +51,22 @@ type RequestExecutionInfoLog struct {
 }
 
 type ChangeExecutorLog struct {
-	OldLogin  string    `json:"old_login"`
-	NewLogin  string    `json:"new_login"`
-	Comment   string    `json:"comment"`
-	CreatedAt time.Time `json:"created_at"`
+	OldLogin    string    `json:"old_login"`
+	NewLogin    string    `json:"new_login"`
+	Comment     string    `json:"comment"`
+	Attachments []string  `json:"attachments"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type ExecutionData struct {
-	ExecutionType      script.ExecutionType `json:"execution_type"`
-	Executors          map[string]struct{}  `json:"executors"`
-	Decision           *ExecutionDecision   `json:"decision,omitempty"`
-	Comment            *string              `json:"comment,omitempty"`
-	ActualExecutor     *string              `json:"actual_executor,omitempty"`
-	SLA                int                  `json:"sla"`
-	DidSLANotification bool                 `json:"did_sla_notification"`
+	ExecutionType       script.ExecutionType `json:"execution_type"`
+	Executors           map[string]struct{}  `json:"executors"`
+	Decision            *ExecutionDecision   `json:"decision,omitempty"`
+	DecisionAttachments []string             `json:"decision_attachments,omitempty"`
+	DecisionComment     *string              `json:"comment,omitempty"`
+	ActualExecutor      *string              `json:"actual_executor,omitempty"`
+	SLA                 int                  `json:"sla"`
+	DidSLANotification  bool                 `json:"did_sla_notification"`
 
 	ChangedExecutorsLogs     []ChangeExecutorLog        `json:"change_executors_logs,omitempty"`
 	RequestExecutionInfoLogs []RequestExecutionInfoLog  `json:"request_execution_info_logs,omitempty"`
@@ -77,72 +79,16 @@ type ExecutionData struct {
 
 	IsTakenInWork               bool `json:"is_taken_in_work"`
 	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
+
+	IsRevoked bool `json:"is_revoked"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
 	return a.Decision
 }
 
-func (a *ExecutionData) SetDecision(login string, decision ExecutionDecision, comment string) error {
-	_, ok := a.Executors[login]
-	if !ok {
-		return fmt.Errorf("%s not found in executors", login)
-	}
-
-	if a.Decision != nil {
-		return errors.New("decision already set")
-	}
-
-	if decision != ExecutionDecisionExecuted && decision != ExecutionDecisionRejected {
-		return fmt.Errorf("unknown decision %s", decision.String())
-	}
-
-	a.Decision = &decision
-	a.Comment = &comment
-	a.ActualExecutor = &login
-
-	return nil
-}
-
-func (a *ExecutionData) SetRequestExecutionInfo(login, comment string, reqType RequestInfoType, attach []string) error {
-	_, ok := a.Executors[login]
-	if !ok && reqType == RequestInfoQuestion {
-		return fmt.Errorf("%s not found in executors", login)
-	}
-
-	if reqType != RequestInfoAnswer && reqType != RequestInfoQuestion {
-		return fmt.Errorf("request info type is not valid")
-	}
-
-	a.RequestExecutionInfoLogs = append(a.RequestExecutionInfoLogs, RequestExecutionInfoLog{
-		Login:       login,
-		Comment:     comment,
-		CreatedAt:   time.Now(),
-		ReqType:     reqType,
-		Attachments: attach,
-	})
-
-	return nil
-}
-
 func (a *ExecutionData) IncreaseSLA(addSla int) {
 	a.SLA += addSla
-}
-
-func (a *ExecutionData) SetChangeExecutor(oldLogin, newLogin, comment string) error {
-	_, ok := a.Executors[oldLogin]
-	if !ok {
-		return fmt.Errorf("%s not found in executors", oldLogin)
-	}
-
-	a.ChangedExecutorsLogs = append(a.ChangedExecutorsLogs, ChangeExecutorLog{
-		OldLogin:  oldLogin,
-		NewLogin:  newLogin,
-		Comment:   comment,
-		CreatedAt: time.Now(),
-	})
-
-	return nil
 }
 
 type GoExecutionBlock struct {
@@ -157,11 +103,18 @@ type GoExecutionBlock struct {
 }
 
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
+	if gb.State != nil && gb.State.IsRevoked == true {
+		return StatusRevoke
+	}
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusDone
 		}
 		return StatusExecutionRejected
+	}
+
+	if gb.State.ExecutorsGroupID != "" && !gb.State.IsTakenInWork {
+		return StatusWait
 	}
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
@@ -173,6 +126,9 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *GoExecutionBlock) GetStatus() Status {
+	if gb.State != nil && gb.State.IsRevoked == true {
+		return StatusCancel
+	}
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusFinished
@@ -186,10 +142,6 @@ func (gb *GoExecutionBlock) GetStatus() Status {
 	}
 
 	return StatusRunning
-}
-
-func (gb *GoExecutionBlock) GetTaskStatus() TaskHumanStatus {
-	return StatusNew
 }
 
 func (gb *GoExecutionBlock) GetType() string {
@@ -278,7 +230,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUI
 	left := gb.State.LeftToNotify
 	gb.State.LeftToNotify = map[string]struct{}{}
 
-	if err := gb.dumpCurrState(ctx, id); err != nil {
+	if err = gb.dumpCurrState(ctx, id); err != nil {
 		gb.State.LeftToNotify = left
 		return false, err
 	}
@@ -387,10 +339,8 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 	}
 
 	if state.ExecutionType == script.ExecutionTypeFromSchema && !state.IsExecutorVariablesResolved {
-		resolveErr := gb.resolveExecutors(ctx, &resolveExecutorsDTO{runCtx: runCtx, step: step, id: id})
-
-		if resolveErr != nil {
-			return err
+		if resolveErr := gb.resolveExecutors(ctx, &resolveExecutorsDTO{runCtx: runCtx, id: id}, step); resolveErr != nil {
+			return resolveErr
 		}
 	}
 
@@ -404,8 +354,8 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 			executor = *state.ActualExecutor
 		}
 
-		if state.Comment != nil {
-			comment = *state.Comment
+		if state.DecisionComment != nil {
+			comment = *state.DecisionComment
 		}
 
 		runCtx.SetValue(gb.Output[keyOutputExecutionLogin], executor)
@@ -566,19 +516,18 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 
 type resolveExecutorsDTO struct {
 	runCtx *store.VariableStore
-	step   *entity.Step
 	id     uuid.UUID
 }
 
-func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveExecutorsDTO) (err error) {
+func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveExecutorsDTO, step *entity.Step) (err error) {
 	variableStorage, grabStorageErr := dto.runCtx.GrabStorage()
 	if grabStorageErr != nil {
-		return err
+		return grabStorageErr
 	}
 
 	resolvedEntities, resolveErr := resolveValuesFromVariables(variableStorage, gb.State.Executors)
 	if resolveErr != nil {
-		return err
+		return resolveErr
 	}
 
 	gb.State.Executors = resolvedEntities
@@ -594,12 +543,12 @@ func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveEx
 
 	gb.State.IsExecutorVariablesResolved = true
 
-	dto.step.State[gb.Name], err = json.Marshal(gb.State)
+	step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
 		return err
 	}
 
-	content, err := json.Marshal(store.NewFromStep(dto.step))
+	content, err := json.Marshal(store.NewFromStep(step))
 	if err != nil {
 		return err
 	}
@@ -607,8 +556,7 @@ func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveEx
 	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          dto.id,
 		Content:     content,
-		BreakPoints: dto.step.BreakPoints,
-		HasError:    false,
-		Status:      string(StatusFinished),
+		BreakPoints: step.BreakPoints,
+		Status:      string(StatusRunning),
 	})
 }

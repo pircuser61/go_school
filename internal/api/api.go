@@ -105,6 +105,8 @@ const (
 const (
 	FunctionParamsTypeApprover FunctionParamsType = "approver"
 
+	FunctionParamsTypeExecutableFunction FunctionParamsType = "executable_function"
+
 	FunctionParamsTypeExecution FunctionParamsType = "execution"
 
 	FunctionParamsTypeForm FunctionParamsType = "form"
@@ -334,14 +336,35 @@ type Application struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// ApproveActionNamesResponse defines model for ApproveActionNamesResponse.
+type ApproveActionNamesResponse struct {
+	// approve action id
+	Id string `json:"id"`
+
+	// approve action title
+	Title string `json:"title"`
+}
+
 // Action to do automatically in case SLA is breached
 type ApproveAutoAction string
+
+// ApproveStatusesResponse defines model for ApproveStatusesResponse.
+type ApproveStatusesResponse struct {
+	// approve status id
+	Id string `json:"id"`
+
+	// approve status title
+	Title string `json:"title"`
+}
 
 // Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 type ApprovementRule string
 
 // Approver params
 type ApproverParams struct {
+	// Approvement status
+	ApproveStatusName string `json:"approve_status_name"`
+
 	// Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 	ApprovementRule *ApprovementRule `json:"approvementRule,omitempty"`
 
@@ -376,14 +399,16 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
 type ApproverUpdateParams struct {
+	Attachments []string `json:"attachments"`
+
 	// Comment from approver
 	Comment string `json:"comment"`
 
@@ -434,9 +459,10 @@ type ConditionParams struct {
 
 // CountTasks defines model for CountTasks.
 type CountTasks struct {
-	Active  int `json:"active"`
-	Approve int `json:"approve"`
-	Execute int `json:"execute"`
+	Active      int `json:"active"`
+	Approve     int `json:"approve"`
+	Execute     int `json:"execute"`
+	FormExecute int `json:"form_execute"`
 }
 
 // CreateTaskRequest defines model for CreateTaskRequest.
@@ -633,6 +659,8 @@ type EriusVersionInfo struct {
 
 // Chosen function to be executed
 type ExecutableFunctionParams struct {
+	Mapping MappingParam `json:"mapping"`
+
 	// Function name
 	Name string `json:"name"`
 
@@ -665,13 +693,15 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
-//  * from_schema - Selected by initiator
+//   - user - Single user
+//   - group - Execution group ID
+//   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
 type ExecutionUpdateParams struct {
+	Attachments []string `json:"attachments"`
+
 	// Comment from executor
 	Comment string `json:"comment"`
 
@@ -683,6 +713,8 @@ type ExecutionUpdateParams struct {
 
 // Executor change params
 type ExecutorChangeParams struct {
+	Attachments []string `json:"attachments"`
+
 	// Comment from executor
 	Comment string `json:"comment"`
 
@@ -720,9 +752,9 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   * User - Single user
-//   * Initiator - Process initiator
-//   * From_schema - Selected by initiator
+//   - User - Single user
+//   - Initiator - Process initiator
+//   - From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -804,6 +836,25 @@ type IntegerOperandDataType string
 
 // IntegerOperandOperandType defines model for IntegerOperand.OperandType.
 type IntegerOperandOperandType string
+
+// MappingParam defines model for MappingParam.
+type MappingParam struct {
+	AdditionalProperties map[string]struct {
+		// Name of param
+		Description string `json:"description"`
+
+		// Format of param
+		Format     *string         `json:"format,omitempty"`
+		Items      *[]MappingParam `json:"items,omitempty"`
+		Properties *MappingParam   `json:"properties,omitempty"`
+
+		// Type of param
+		Type string `json:"type"`
+
+		// Global name for value
+		Value *string `json:"value,omitempty"`
+	} `json:"-"`
+}
 
 // Notification params
 type NotificationParams struct {
@@ -990,8 +1041,8 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//  * approved - approver approved block
-//  * rejected - approver rejected block
+//   - approved - approver approved block
+//   - rejected - approver rejected block
 type ApproverDecision string
 
 // Block type (language)
@@ -1033,8 +1084,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1074,11 +1125,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1192,6 +1243,9 @@ type GetTasksParams struct {
 
 	// get tasks with status wait or done
 	ForCarousel *bool `json:"forCarousel,omitempty"`
+
+	// get tasks with different statuses
+	Status *[]string `json:"status,omitempty"`
 
 	// receiver login
 	Receiver *string `json:"receiver,omitempty"`
@@ -1404,6 +1458,129 @@ func (a EriusFunc_Next) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for MappingParam. Returns the specified
+// element and whether it was found
+func (a MappingParam) Get(fieldName string) (value struct {
+	// Name of param
+	Description string `json:"description"`
+
+	// Format of param
+	Format     *string         `json:"format,omitempty"`
+	Items      *[]MappingParam `json:"items,omitempty"`
+	Properties *MappingParam   `json:"properties,omitempty"`
+
+	// Type of param
+	Type string `json:"type"`
+
+	// Global name for value
+	Value *string `json:"value,omitempty"`
+}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MappingParam
+func (a *MappingParam) Set(fieldName string, value struct {
+	// Name of param
+	Description string `json:"description"`
+
+	// Format of param
+	Format     *string         `json:"format,omitempty"`
+	Items      *[]MappingParam `json:"items,omitempty"`
+	Properties *MappingParam   `json:"properties,omitempty"`
+
+	// Type of param
+	Type string `json:"type"`
+
+	// Global name for value
+	Value *string `json:"value,omitempty"`
+}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]struct {
+			// Name of param
+			Description string `json:"description"`
+
+			// Format of param
+			Format     *string         `json:"format,omitempty"`
+			Items      *[]MappingParam `json:"items,omitempty"`
+			Properties *MappingParam   `json:"properties,omitempty"`
+
+			// Type of param
+			Type string `json:"type"`
+
+			// Global name for value
+			Value *string `json:"value,omitempty"`
+		})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MappingParam to handle AdditionalProperties
+func (a *MappingParam) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]struct {
+			// Name of param
+			Description string `json:"description"`
+
+			// Format of param
+			Format     *string         `json:"format,omitempty"`
+			Items      *[]MappingParam `json:"items,omitempty"`
+			Properties *MappingParam   `json:"properties,omitempty"`
+
+			// Type of param
+			Type string `json:"type"`
+
+			// Global name for value
+			Value *string `json:"value,omitempty"`
+		})
+		for fieldName, fieldBuf := range object {
+			var fieldVal struct {
+				// Name of param
+				Description string `json:"description"`
+
+				// Format of param
+				Format     *string         `json:"format,omitempty"`
+				Items      *[]MappingParam `json:"items,omitempty"`
+				Properties *MappingParam   `json:"properties,omitempty"`
+
+				// Type of param
+				Type string `json:"type"`
+
+				// Global name for value
+				Value *string `json:"value,omitempty"`
+			}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MappingParam to handle AdditionalProperties
+func (a MappingParam) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for Pipeline_Blocks. Returns the specified
 // element and whether it was found
 func (a Pipeline_Blocks) Get(fieldName string) (value EriusFunc, found bool) {
@@ -1474,6 +1651,12 @@ type ServerInterface interface {
 	// Debug task
 	// (GET /debug/{workNumber})
 	DebugTask(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Get approve action names dictionary
+	// (GET /dictionaries/approve-action-names)
+	GetApproveActionNames(w http.ResponseWriter, r *http.Request)
+	// Get approve statuses dictionary
+	// (GET /dictionaries/approve-statuses)
+	GetApproveStatuses(w http.ResponseWriter, r *http.Request)
 	// Get forms changelog
 	// (GET /forms/changelog)
 	GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams)
@@ -1692,6 +1875,36 @@ func (siw *ServerInterfaceWrapper) DebugTask(w http.ResponseWriter, r *http.Requ
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DebugTask(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetApproveActionNames operation middleware
+func (siw *ServerInterfaceWrapper) GetApproveActionNames(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApproveActionNames(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetApproveStatuses operation middleware
+func (siw *ServerInterfaceWrapper) GetApproveStatuses(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApproveStatuses(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2528,6 +2741,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// ------------- Optional query parameter "status" -------------
+	if paramValue := r.URL.Query().Get("status"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
 	// ------------- Optional query parameter "receiver" -------------
 	if paramValue := r.URL.Query().Get("receiver"); paramValue != "" {
 
@@ -2822,6 +3046,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/debug/{workNumber}", wrapper.DebugTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dictionaries/approve-action-names", wrapper.GetApproveActionNames)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dictionaries/approve-statuses", wrapper.GetApproveStatuses)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/forms/changelog", wrapper.GetFormsChangelog)

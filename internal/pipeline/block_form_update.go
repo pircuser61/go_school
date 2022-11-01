@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+
 	"time"
 
 	"github.com/pkg/errors"
@@ -12,6 +13,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 type updateFillFormParams struct {
@@ -32,7 +35,20 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	if data == nil {
 		return nil, errors.New("empty data")
 	}
+	if data.Action == string(entity.TaskUpdateActionCancelApp) {
+		step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+		if err != nil {
+			return nil, err
+		}
 
+		if step == nil {
+			return nil, errors.New("can't get step from database")
+		}
+		if errUpdate := gb.formCancelPipeline(ctx, data, step); errUpdate != nil {
+			return nil, errUpdate
+		}
+		return nil, nil
+	}
 	var updateParams updateFillFormParams
 	err := json.Unmarshal(data.Parameters, &updateParams)
 	if err != nil {
@@ -115,4 +131,23 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	}
 
 	return nil, nil
+}
+
+func (gb *GoFormBlock) formCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+	gb.State.IsRevoked = true
+
+	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
+		return err
+	}
+	var content []byte
+	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
+		return err
+	}
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          in.Id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		Status:      string(StatusCancel),
+	})
+	return err
 }

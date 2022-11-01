@@ -1542,7 +1542,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			FROM pipeliner.variable_storage 
 		WHERE work_id = $1 AND
 			step_name = $2 AND
-			status IN ('idle', 'ready', 'running')
+			status IN ('idle', 'ready', 'running', 'cancel')
 `
 
 	if scanErr := conn.QueryRow(ctx, q, dto.WorkID, dto.StepName).
@@ -1833,7 +1833,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	WHERE 
 	    work_id = $1 AND 
 	    step_type = $2
-	    AND status != ANY($3)
+	    AND NOT status = ANY($3)
 	    ORDER BY vs.time ASC`
 
 	rows, err := conn.Query(ctx, q, id, stepType, notInStatuses)
