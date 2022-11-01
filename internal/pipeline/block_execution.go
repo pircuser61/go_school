@@ -113,10 +113,6 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 		return StatusExecutionRejected
 	}
 
-	if gb.State.ExecutorsGroupID != "" && !gb.State.IsTakenInWork {
-		return StatusWait
-	}
-
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
 		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
 		return StatusWait
