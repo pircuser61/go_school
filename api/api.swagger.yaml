@@ -2661,8 +2661,6 @@ components:
         required:
           - description
           - type
-      required:
-        - type
 
     RequestExecutionInfoType:
       type: string
