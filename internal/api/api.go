@@ -105,6 +105,8 @@ const (
 const (
 	FunctionParamsTypeApprover FunctionParamsType = "approver"
 
+	FunctionParamsTypeExecutableFunction FunctionParamsType = "executable_function"
+
 	FunctionParamsTypeExecution FunctionParamsType = "execution"
 
 	FunctionParamsTypeForm FunctionParamsType = "form"
@@ -397,10 +399,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -657,6 +659,8 @@ type EriusVersionInfo struct {
 
 // Chosen function to be executed
 type ExecutableFunctionParams struct {
+	Mapping MappingParam `json:"mapping"`
+
 	// Function name
 	Name string `json:"name"`
 
@@ -689,9 +693,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
-//  * from_schema - Selected by initiator
+//   - user - Single user
+//   - group - Execution group ID
+//   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -748,9 +752,9 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   * User - Single user
-//   * Initiator - Process initiator
-//   * From_schema - Selected by initiator
+//   - User - Single user
+//   - Initiator - Process initiator
+//   - From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -832,6 +836,25 @@ type IntegerOperandDataType string
 
 // IntegerOperandOperandType defines model for IntegerOperand.OperandType.
 type IntegerOperandOperandType string
+
+// MappingParam defines model for MappingParam.
+type MappingParam struct {
+	AdditionalProperties map[string]struct {
+		// Name of param
+		Description string `json:"description"`
+
+		// Format of param
+		Format     *string         `json:"format,omitempty"`
+		Items      *[]MappingParam `json:"items,omitempty"`
+		Properties *MappingParam   `json:"properties,omitempty"`
+
+		// Type of param
+		Type string `json:"type"`
+
+		// Global name for value
+		Value *string `json:"value,omitempty"`
+	} `json:"-"`
+}
 
 // Notification params
 type NotificationParams struct {
@@ -1018,8 +1041,8 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//  * approved - approver approved block
-//  * rejected - approver rejected block
+//   - approved - approver approved block
+//   - rejected - approver rejected block
 type ApproverDecision string
 
 // Block type (language)
@@ -1061,8 +1084,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1102,11 +1125,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1423,6 +1446,129 @@ func (a *EriusFunc_Next) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for EriusFunc_Next to handle AdditionalProperties
 func (a EriusFunc_Next) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MappingParam. Returns the specified
+// element and whether it was found
+func (a MappingParam) Get(fieldName string) (value struct {
+	// Name of param
+	Description string `json:"description"`
+
+	// Format of param
+	Format     *string         `json:"format,omitempty"`
+	Items      *[]MappingParam `json:"items,omitempty"`
+	Properties *MappingParam   `json:"properties,omitempty"`
+
+	// Type of param
+	Type string `json:"type"`
+
+	// Global name for value
+	Value *string `json:"value,omitempty"`
+}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MappingParam
+func (a *MappingParam) Set(fieldName string, value struct {
+	// Name of param
+	Description string `json:"description"`
+
+	// Format of param
+	Format     *string         `json:"format,omitempty"`
+	Items      *[]MappingParam `json:"items,omitempty"`
+	Properties *MappingParam   `json:"properties,omitempty"`
+
+	// Type of param
+	Type string `json:"type"`
+
+	// Global name for value
+	Value *string `json:"value,omitempty"`
+}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]struct {
+			// Name of param
+			Description string `json:"description"`
+
+			// Format of param
+			Format     *string         `json:"format,omitempty"`
+			Items      *[]MappingParam `json:"items,omitempty"`
+			Properties *MappingParam   `json:"properties,omitempty"`
+
+			// Type of param
+			Type string `json:"type"`
+
+			// Global name for value
+			Value *string `json:"value,omitempty"`
+		})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MappingParam to handle AdditionalProperties
+func (a *MappingParam) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]struct {
+			// Name of param
+			Description string `json:"description"`
+
+			// Format of param
+			Format     *string         `json:"format,omitempty"`
+			Items      *[]MappingParam `json:"items,omitempty"`
+			Properties *MappingParam   `json:"properties,omitempty"`
+
+			// Type of param
+			Type string `json:"type"`
+
+			// Global name for value
+			Value *string `json:"value,omitempty"`
+		})
+		for fieldName, fieldBuf := range object {
+			var fieldVal struct {
+				// Name of param
+				Description string `json:"description"`
+
+				// Format of param
+				Format     *string         `json:"format,omitempty"`
+				Items      *[]MappingParam `json:"items,omitempty"`
+				Properties *MappingParam   `json:"properties,omitempty"`
+
+				// Type of param
+				Type string `json:"type"`
+
+				// Global name for value
+				Value *string `json:"value,omitempty"`
+			}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MappingParam to handle AdditionalProperties
+func (a MappingParam) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 

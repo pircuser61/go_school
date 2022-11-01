@@ -2627,9 +2627,42 @@ components:
         version:
           type: string
           description: Used function version
+        mapping:
+          $ref: '#/components/schemas/MappingParam'
       required:
         - name
         - version
+        - mapping
+
+    MappingParam:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          description:
+            type: string
+            description: Name of param
+          type:
+            type: string
+            description: Type of param
+          format:
+            type: string
+            description: Format of param
+          properties:
+            $ref: '#/components/schemas/MappingParam'
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/MappingParam'
+          value:
+            type: string
+            description: Global name for value
+            example: form_0.application_body.passport_number
+        required:
+          - description
+          - type
+      required:
+        - type
 
     RequestExecutionInfoType:
       type: string
@@ -2900,6 +2933,7 @@ components:
       oneOf:
         - $ref: '#/components/schemas/ApproverParams'
         - $ref: '#/components/schemas/ExecutionParams'
+        - $ref: '#/components/schemas/ExecutableFunctionParams'
         - $ref: '#/components/schemas/SdApplicationParams'
         - $ref: '#/components/schemas/NotificationParams'
         - $ref: "#/components/schemas/ConditionParams"
@@ -3355,6 +3389,7 @@ components:
             - approver
             - servicedesk_application
             - execution
+            - executable_function
             - notification
             - form
             - if
@@ -3362,6 +3397,7 @@ components:
           $ref: '#/components/schemas/Params'
       required:
         - type
+
     FunctionValueModel:
       type: object
       properties:
