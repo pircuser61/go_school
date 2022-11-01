@@ -1833,7 +1833,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	WHERE 
 	    work_id = $1 AND 
 	    step_type = $2
-	    AND status != ANY($3)
+	    AND NOT status = ANY($3)
 	    ORDER BY vs.time ASC`
 
 	rows, err := conn.Query(ctx, q, id, stepType, notInStatuses)
