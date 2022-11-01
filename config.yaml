@@ -1,3 +1,5 @@
+title: &title dev.jocasta.pipeliner
+
 tracing:
   url: 'http://jaeger-prod-collector.observability:14268/api/traces'
   sample_fraction: 1.0
@@ -78,3 +80,18 @@ log:
 
 servicedesc:
   chainsmith_url: 'https://admin.dev.servicedesk.mts.ru/api/chainsmith'
+
+observability:
+  title: dev.pipeliner.jocasta
+  tags:
+    app: *title
+    system: jocasta
+    env: develop
+  tracing:
+    jaeger:
+      collector_address: http://opentelemetry-collector:14268/api/traces
+    probability: 1.00
+  monitoring:
+    prometheus:
+      address: ":8080"
+      namespace: ""

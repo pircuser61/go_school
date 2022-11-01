@@ -1,6 +1,6 @@
 package entity
 
-type User struct {
+type UsersWithFormAccess struct {
 	GroupName     string
 	ExecutionType string
 	Executors     string

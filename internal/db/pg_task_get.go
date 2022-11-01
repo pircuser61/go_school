@@ -717,7 +717,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber string, stepName string) ([]string, error) {
+func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber string, stepName string) ([]entity.UsersWithFormAccess, error) {
 	q :=
 		// nolint:gocritic
 		// language=PostgreSQL
@@ -762,5 +762,5 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber strin
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, rowsErr
 	}
-	return result, nil
+	return nil, nil
 }

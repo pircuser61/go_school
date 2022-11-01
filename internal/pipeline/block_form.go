@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"golang.org/x/net/context"
 	"time"
 
@@ -168,10 +167,10 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 		gb.State.IsExecutorVariablesResolved = true
 	}
 
-	_, err = gb.handleNotifications(ctx, stepCtx)
-	if err != nil {
-		l.WithError(err).Error("couldn't handle notifications")
-	}
+	//_, err = gb.handleNotifications(ctx, stepCtx)
+	//if err != nil {
+	//	l.WithError(err).Error("couldn't handle notifications")
+	//}
 
 	// nolint:dupl // not dupl?
 	if gb.State.IsFilled {
@@ -277,7 +276,7 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 }
 
 func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx) (ok bool, err error) {
-	if gb.State.DidFillNotification == false {
+	/*if gb.State.DidFillNotification == false {
 		l := logger.GetLogger(ctx)
 
 		emails := make([]string, 0)
@@ -287,8 +286,8 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx) (ok 
 			return false, nil
 		}
 
-		for _, executor := range executorsWithPermissions {
-			email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
+		/*for _, executor := range executorsWithPermissions {
+			email, err := gb.Pipeline.People.GetUserEmail(ctx, "")
 			if err != nil {
 				l.WithError(err).Error("couldn't get email")
 			}
@@ -307,17 +306,34 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx) (ok 
 		if err != nil {
 			return false, err
 		}
-	}
+	}*/
+
+	// ставим флаг что нотификацию мы уже отправили
+
 	return true, nil
 }
 
 func (gb *GoFormBlock) resolve(ctx context.Context, workNumber string) (result map[string]struct{}, err error) {
-	executorsWithPermissions, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, workNumber, gb.Name)
+	executorsWithAccess, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, workNumber, gb.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(executorsWithPermissions)
+	var executors = make(map[string]struct{}, 0)
+
+	fmt.Println(executors)
+
+	for _, executor := range executorsWithAccess {
+		// если тип user то берем executor
+
+		fmt.Println(executor)
+		// если тип group то идем по названию группы в servicedesk
+		// добавляем всех членов группы куда надо
+
+		// если тип из схемы то берем все что нужно из stepCtx и резолвим
+	}
+
+	fmt.Println(executorsWithAccess)
 
 	// чекаем тип
 
