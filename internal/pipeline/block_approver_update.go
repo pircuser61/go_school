@@ -306,6 +306,17 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 	return nil
 }
 
+func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) error {
+	for i := range addInfo {
+		if addInfo[i].Id == linkId {
+			addInfo[i].LinkId = &replyId
+			return nil
+		}
+	}
+
+	return errors.New("not found request by linkId")
+}
+
 func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
 	if data == nil {
 		return nil, errors.New("empty data")
