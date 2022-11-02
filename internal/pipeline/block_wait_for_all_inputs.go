@@ -2,9 +2,13 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
+
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -13,6 +17,7 @@ import (
 type SyncData struct {
 	IncomingBlockIds []string `json:"incoming_block_ids"`
 	done             bool
+	IsRevoked        bool `json:"is_revoked"`
 }
 
 type GoWaitForAllInputsBlock struct {
@@ -28,6 +33,9 @@ type GoWaitForAllInputsBlock struct {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
+	if gb.State != nil && gb.State.IsRevoked == true {
+		return StatusCancel
+	}
 	if gb.State.done {
 		return StatusFinished
 	}
@@ -35,6 +43,9 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() TaskHumanStatus {
+	if gb.State != nil && gb.State.IsRevoked == true {
+		return StatusRevoke
+	}
 	return ""
 }
 
@@ -85,7 +96,24 @@ func (gb *GoWaitForAllInputsBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *GoWaitForAllInputsBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context, data *script.BlockUpdateData) (interface{}, error) {
+	if data == nil {
+		return nil, errors.New("empty data")
+	}
+	if data.Action == string(entity.TaskUpdateActionCancelApp) {
+		step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		if step == nil {
+			return nil, errors.New("can't get step from database")
+		}
+		if errUpdate := gb.formCancelPipeline(ctx, data, step); errUpdate != nil {
+			return nil, errUpdate
+		}
+		return nil, nil
+	}
 	return nil, nil
 }
 
@@ -160,4 +188,23 @@ func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, pipeline *
 	}
 
 	return b
+}
+
+func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+	gb.State.IsRevoked = true
+
+	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
+		return err
+	}
+	var content []byte
+	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
+		return err
+	}
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          in.Id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		Status:      string(StatusCancel),
+	})
+	return err
 }

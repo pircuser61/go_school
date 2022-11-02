@@ -54,43 +54,6 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		(&pipeline.GoFormBlock{}).Model(),
 	)
 
-	scenarios, err := ae.DB.GetExecutableScenarios(ctx)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	for i := range scenarios {
-		scenario := &scenarios[i]
-		b := script.FunctionModel{
-			BlockType: script.TypeScenario,
-			Title:     scenario.Name,
-			Inputs:    make([]script.FunctionValueModel, 0),
-			Outputs:   make([]script.FunctionValueModel, 0),
-			ShapeType: script.ShapeScenario,
-			Sockets:   []script.Socket{{Id: script.DefaultSocketID, Title: script.DefaultSocketTitle}},
-		}
-
-		for _, v := range scenario.Input {
-			b.Inputs = append(b.Inputs, script.FunctionValueModel{
-				Name: v.Name,
-				Type: v.Type,
-			})
-		}
-
-		for _, v := range scenario.Output {
-			b.Outputs = append(b.Outputs, script.FunctionValueModel{
-				Name: v.Name,
-				Type: v.Type,
-			})
-		}
-
-		eriusFunctions = append(eriusFunctions, b)
-	}
-
 	for i := range eriusFunctions {
 		switch eriusFunctions[i].ID {
 		case IfBase:

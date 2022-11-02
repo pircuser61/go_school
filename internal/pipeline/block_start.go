@@ -23,7 +23,7 @@ func (gb *GoStartBlock) GetStatus() Status {
 }
 
 func (gb *GoStartBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return StatusNew
+	return ""
 }
 
 func (gb *GoStartBlock) GetType() string {

@@ -134,6 +134,10 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		q = fmt.Sprintf("%s OR w.human_status = 'wait')", q)
 	}
 
+	if filters.Status != nil {
+		q = fmt.Sprintf("%s AND (w.human_status IN (%s))", q, *filters.Status)
+	}
+
 	if filters.Receiver != nil {
 		args = append(args, *filters.Receiver)
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
@@ -322,23 +326,31 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 	}
 
 	qApprover := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->'%s' "+
-		"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready')", q, userName)
+		"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready') AND workers.step_type = 'approver'", q, userName)
 	approver, err := db.getTasksCount(ctx, qApprover, args)
 	if err != nil {
 		return nil, err
 	}
 
 	qExecutor := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->'%s' "+
-		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
+		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready')) AND workers.step_type = 'execution'", q, userName)
 	executor, err := db.getTasksCount(ctx, qExecutor, args)
 	if err != nil {
 		return nil, err
 	}
 
+	qFormExecutor := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->'%s' "+
+		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready')) AND workers.step_type = 'form'", q, userName)
+	form, err := db.getTasksCount(ctx, qFormExecutor, args)
+	if err != nil {
+		return nil, err
+	}
+
 	return &entity.CountTasks{
-		TotalActive:   active,
-		TotalExecutor: executor,
-		TotalApprover: approver,
+		TotalActive:       active,
+		TotalExecutor:     executor,
+		TotalApprover:     approver,
+		TotalFormExecutor: form,
 	}, nil
 }
 

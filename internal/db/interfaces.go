@@ -10,6 +10,11 @@ import (
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
+type DictionaryStorager interface {
+	GetApproveActionNames(ctx c.Context) ([]e.ApproveActionName, error)
+	GetApproveStatuses(ctx c.Context) ([]e.ApproveStatus, error)
+}
+
 type PipelineStorager interface {
 	GetWorkedVersions(ctx c.Context) ([]e.EriusScenario, error)
 	GetPipeline(ctx c.Context, id uuid.UUID) (*e.EriusScenario, error)
@@ -83,6 +88,7 @@ type SearchPipelineRequest struct {
 type Database interface {
 	PipelineStorager
 	TaskStorager
+	DictionaryStorager
 
 	GetPipelinesWithLatestVersion(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
 	GetApprovedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)

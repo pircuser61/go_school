@@ -24,8 +24,9 @@ const (
 )
 
 type ExecutableFunction struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Name    string              `json:"name"`
+	Version string              `json:"version"`
+	Mapping script.MappingParam `json:"mapping"`
 }
 
 type ExecutableFunctionBlock struct {
@@ -163,6 +164,7 @@ func (fb *ExecutableFunctionBlock) Model() script.FunctionModel {
 			Params: &script.ExecutableFunctionParams{
 				Name:    "",
 				Version: "",
+				Mapping: script.MappingParam{},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -200,6 +202,7 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc) (*Executab
 	b.State = &ExecutableFunction{
 		Name:    params.Name,
 		Version: params.Version,
+		Mapping: params.Mapping,
 	}
 
 	return b, nil

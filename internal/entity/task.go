@@ -39,9 +39,10 @@ type EriusTasksPage struct {
 }
 
 type CountTasks struct {
-	TotalActive   int `json:"active"`
-	TotalApprover int `json:"approve"`
-	TotalExecutor int `json:"execute"`
+	TotalActive       int `json:"active"`
+	TotalApprover     int `json:"approve"`
+	TotalExecutor     int `json:"execute"`
+	TotalFormExecutor int `json:"form_execute"`
 }
 
 type EriusTask struct {
@@ -96,6 +97,7 @@ type GetTaskParams struct {
 	SelectAs    *string     `json:"select_as"`
 	Archived    *bool       `json:"archived"`
 	ForCarousel *bool       `json:"forCarousel"`
+	Status      *string     `json:"status"`
 	Receiver    *string     `json:"receiver"`
 }
 
@@ -138,7 +140,7 @@ var (
 )
 
 type TaskUpdate struct {
-	Action     TaskUpdateAction `json:"action" enums:"approvement,execution,change_executor,request_execution_info,executor_start_work"`
+	Action     TaskUpdateAction `json:"action"`
 	Parameters json.RawMessage  `json:"parameters" swaggertype:"object"`
 }
 

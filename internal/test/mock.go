@@ -928,6 +928,14 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetApproveActionNames(ctx context.Context) ([]entity.ApproveActionName, error) {
+	return nil, nil
+}
+
+func (_m *MockDB) GetApproveStatuses(ctx context.Context) ([]entity.ApproveStatus, error) {
+	return nil, nil
+}
+
 func (_m *MockDB) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
 	return nil, nil
 }

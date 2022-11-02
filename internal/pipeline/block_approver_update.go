@@ -239,8 +239,8 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 			return emailErr
 		}
 
-		if err = gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl); err != nil {
-			return err
+		if errNotif := gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl); errNotif != nil {
+			return errNotif
 		}
 	}
 
@@ -308,6 +308,20 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		}
 
 		return nil, gb.updateRequestApproverInfo(ctx, data)
+
+	case string(entity.TaskUpdateActionCancelApp):
+		step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		if step == nil {
+			return nil, errors.New("can't get step from database")
+		}
+		if errUpdate := gb.approverCancelPipeline(ctx, data, step); errUpdate != nil {
+			return nil, errUpdate
+		}
+		return nil, nil
 	}
 
 	return nil, errors.New("cant`t update execution block, unknown action: " + data.Action)
@@ -385,4 +399,24 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 
 		dto.runCtx.ReplaceState(gb.Name, stateBytes)
 	}
+}
+
+func (gb *GoApproverBlock) approverCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+	gb.State.IsRevoked = true
+
+	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
+		return err
+	}
+	var content []byte
+	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
+		return err
+	}
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          in.Id,
+		Content:     content,
+		BreakPoints: step.BreakPoints,
+		Status:      string(StatusCancel),
+	})
+
+	return err
 }
