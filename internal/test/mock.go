@@ -1221,6 +1221,9 @@ func (m *MockDB) CheckUserCanEditForm(ctx context.Context, workNumber string, st
 	return false, errNotImplemented
 }
 
-func (m *MockDB) GetUsersWithReadWriteFormAccess(ctx context.Context, workNumber string, stepName string) ([]entity.UsersWithFormAccess, error) {
+func (m *MockDB) GetUsersWithReadWriteFormAccess(
+	ctx context.Context,
+	workNumber string,
+	stepName string) ([]entity.UsersWithFormAccess, error) {
 	return nil, errNotImplemented
 }

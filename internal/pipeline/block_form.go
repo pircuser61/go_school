@@ -299,7 +299,8 @@ func (gb *GoFormBlock) resolveFormExecutors(ctx c.Context, dto *resolveFormExecu
 	gb.State.Executors = resolvedEntities
 
 	if len(gb.State.LeftToNotify) > 0 {
-		resolvedEntitiesToNotify, resolveErrToNotify := resolveValuesFromVariables(variableStorage, gb.State.LeftToNotify)
+		resolvedEntitiesToNotify, resolveErrToNotify :=
+			resolveValuesFromVariables(variableStorage, gb.State.LeftToNotify)
 		if resolveErrToNotify != nil {
 			return err
 		}
@@ -328,7 +329,11 @@ func (gb *GoFormBlock) resolveFormExecutors(ctx c.Context, dto *resolveFormExecu
 	})
 }
 
-func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx, runCtx *store.VariableStore, id uuid.UUID) (ok bool, err error) {
+func (gb *GoFormBlock) handleNotifications(
+	ctx c.Context,
+	stepCtx *stepCtx,
+	runCtx *store.VariableStore,
+	id uuid.UUID) (ok bool, err error) {
 	if !gb.State.DidFillNotification {
 		l := logger.GetLogger(ctx)
 
@@ -340,9 +345,9 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx, runC
 		var emails = make([]string, 0)
 
 		for _, executor := range executors {
-			email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
-			if err != nil {
-				l.WithError(err).Error("couldn't get email")
+			email, emailErr := gb.Pipeline.People.GetUserEmail(ctx, executor)
+			if emailErr != nil {
+				l.WithError(emailErr).Error("couldn't get email")
 			}
 			emails = append(emails, email)
 		}
@@ -372,7 +377,10 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context, stepCtx *stepCtx, runC
 }
 
 //nolint:gocyclo //ok
-func (gb *GoFormBlock) resolveExecutors(ctx c.Context, runCtx *store.VariableStore, workNumber string) (users []string, err error) {
+func (gb *GoFormBlock) resolveExecutors(
+	ctx c.Context,
+	runCtx *store.VariableStore,
+	workNumber string) (users []string, err error) {
 	users = make([]string, 0)
 
 	var exists = func(entry string) bool {
@@ -465,6 +473,7 @@ func mapToString(schemaUsers map[string]struct{}) []string {
 	return res
 }
 
+//nolint:dupl // different block
 func (gb *GoFormBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
 	if err != nil {

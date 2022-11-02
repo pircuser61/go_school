@@ -729,7 +729,10 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber string, stepName string) ([]entity.UsersWithFormAccess, error) {
+func (db *PGCon) GetUsersWithReadWriteFormAccess(
+	ctx c.Context,
+	workNumber string,
+	stepName string) ([]entity.UsersWithFormAccess, error) {
 	q :=
 		// nolint:gocritic
 		// language=PostgreSQL
@@ -753,8 +756,13 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber strin
 			select
 				content,
 				block_name,
-				case when block_name like 'approver%' then 'approver' when block_name like 'execution%' then 'executors' end as executor_param,
-				case when block_name like 'approver%' then 'approvers_group_id' when block_name like 'execution%' then 'executors_group_id' end as executor_group_param
+				case 
+				    when block_name like 'approver%' then 'approver' 
+				    when block_name like 'execution%' then 'executors' end as executor_param,
+				case 
+				    when block_name like 'approver%' then 'approvers_group_id' 
+				    when block_name like 'execution%' then 'executors_group_id' 
+				    end as executor_group_param
 			from executor_approver_blocks
 			where
 				  block_name like 'execution%'
@@ -774,7 +782,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber strin
 	`
 
 	result := make([]entity.UsersWithFormAccess, 0)
-	rows, err := db.Pool.Query(context.Background(), q, workNumber, stepName)
+	rows, err := db.Pool.Query(ctx, q, workNumber, stepName)
 	if err != nil {
 		return nil, err
 	}
