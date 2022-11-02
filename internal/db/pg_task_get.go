@@ -728,3 +728,84 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 
 	return el, nil
 }
+
+func (db *PGCon) GetUsersWithReadWriteFormAccess(
+	ctx c.Context,
+	workNumber string,
+	stepName string) ([]entity.UsersWithFormAccess, error) {
+	q :=
+		// nolint:gocritic
+		// language=PostgreSQL
+		`
+	with blocks_executors_pair as (
+		select
+			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
+			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> 'type' as execution_type,
+			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_param as executor,
+			   executor_param,
+			   jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->
+						'forms_accessibility') as access_params
+		from (
+			with executor_approver_blocks as (
+			select content,
+				jsonb_object_keys(content -> 'pipeline' -> 'blocks') as block_name
+			from pipeliner.versions v
+				left join pipeliner.works w on v.id = w.version_id
+			where w.work_number = $1
+			)
+			select
+				content,
+				block_name,
+				case 
+				    when block_name like 'approver%' then 'approver' 
+				    when block_name like 'execution%' then 'executors' end as executor_param,
+				case 
+				    when block_name like 'approver%' then 'approvers_group_id' 
+				    when block_name like 'execution%' then 'executors_group_id' 
+				    end as executor_group_param
+			from executor_approver_blocks
+			where
+				  block_name like 'execution%'
+			   or block_name like 'approver%'
+		) as result
+	)
+
+	select
+		case when execution_type = 'fromSchema' then 'from_schema' else execution_type end,
+		case when executor_param = 'executors' then 'execution' else executor_param end as block_type,
+		executors_group_id,
+		executor
+	
+	from blocks_executors_pair
+	where access_params ->> 'accessType' = 'ReadWrite'
+	and access_params ->> 'node_id' = $2
+	`
+
+	result := make([]entity.UsersWithFormAccess, 0)
+	rows, err := db.Pool.Query(ctx, q, workNumber, stepName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		s := entity.UsersWithFormAccess{}
+
+		err = rows.Scan(
+			&s.ExecutionType,
+			&s.BlockType,
+			&s.GroupId,
+			&s.Executor,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, s)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return result, nil
+}

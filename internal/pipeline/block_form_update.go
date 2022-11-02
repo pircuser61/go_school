@@ -31,6 +31,7 @@ func (a *updateFillFormParams) Validate() error {
 	return nil
 }
 
+//nolint:gocyclo //ok
 func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
 	if data == nil {
 		return nil, errors.New("empty data")
@@ -133,6 +134,7 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	return nil, nil
 }
 
+//nolint:dupl // different block
 func (gb *GoFormBlock) formCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
 	gb.State.IsRevoked = true
 

@@ -22,7 +22,7 @@ type FormParams struct {
 }
 
 func (a *FormParams) Validate() error {
-	if a.SchemaId == "" || a.Executor == "" {
+	if a.SchemaId == "" || (a.FormExecutorType == FormExecutorTypeUser && a.Executor == "") {
 		return errors.New("got no form name, id or executor")
 	}
 

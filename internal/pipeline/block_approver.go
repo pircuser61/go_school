@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
