@@ -93,6 +93,11 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 		}
 	}
 
+	var lastIdx = len(gb.State.RequestApproverInfoLog) - 1
+	if len(gb.State.RequestApproverInfoLog) > 0 && gb.State.RequestApproverInfoLog[lastIdx].Type == RequestAddInfoType {
+		return StatusWait
+	}
+
 	return StatusApprovement
 }
 

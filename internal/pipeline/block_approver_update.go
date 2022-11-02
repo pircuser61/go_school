@@ -50,9 +50,7 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, log
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, sID)
 	if err != nil {
 		return err
-	}
-
-	if step == nil {
+	} else if step == nil {
 		return errors.New("can't get step from database")
 	}
 
@@ -175,37 +173,55 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setActionAppDT
 	return nil
 }
 
-//nolint:gocyclo //its ok here
+//nolint:gocyclo //ok
 func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script.BlockUpdateData) (err error) {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return err
-	}
-
-	if step == nil {
+	} else if step == nil {
 		return errors.New("can't get step from database")
 	}
+
+	// get state from step.State
+	stepData, ok := step.State[gb.Name]
+	if !ok {
+		return errors.New("can't get step state")
+	}
+
+	var state ApproverData
+	err = json.Unmarshal(stepData, &state)
+	if err != nil {
+		return errors.Wrap(err, "invalid format of go-approver-block state")
+	}
+
+	gb.State = &state
 
 	var updateParams requestInfoParams
 	err = json.Unmarshal(data.Parameters, &updateParams)
 	if err != nil {
-		return errors.New("can't assert provided update requestInfoParams data")
+		return errors.New("can't assert provided update requestApproverInfo data")
 	}
 
-	if errSet := gb.State.SetRequestApproverInfo(
-		data.ByLogin,
-		updateParams.Comment,
-		updateParams.Type,
-		updateParams.Attachments,
-	); errSet != nil {
-		return errSet
+	if gb.State.Decision != nil {
+		return errors.New("decision already set")
 	}
+
+	var (
+		id     = uuid.NewString()
+		linkId *string
+	)
 
 	status := string(StatusIdle)
-
 	var tpl mail.Template
 
 	if updateParams.Type == RequestAddInfoType {
+		login := updateParams.Approver
+
+		_, ok := gb.State.Approvers[login]
+		if !ok && login != AutoApprover {
+			return fmt.Errorf("%s not found in approvers", login)
+		}
+
 		authorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, data.Author)
 		if emailErr != nil {
 			return emailErr
@@ -219,8 +235,18 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 	}
 
 	if updateParams.Type == ReplyAddInfoType {
-		if _, approverExists := gb.State.Approvers[updateParams.Approver]; !approverExists {
-			return fmt.Errorf("approver: %s is not found in approvers", updateParams.Approver)
+		if len(gb.State.AddInfo) == 0 {
+			return errors.New("don't answer after request")
+		}
+
+		if updateParams.LinkId == nil {
+			return errors.New("linkId is null when reply")
+		}
+
+		linkId = updateParams.LinkId
+		linkErr := setLinkIdRequest(id, *updateParams.LinkId, gb.State.AddInfo)
+		if linkErr != nil {
+			return linkErr
 		}
 
 		status = string(StatusRunning)
@@ -234,15 +260,27 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 		}
 
 		tpl = mail.NewAnswerApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+
 		approverEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, updateParams.Approver)
 		if emailErr != nil {
 			return emailErr
 		}
 
-		if errNotif := gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl); errNotif != nil {
-			return errNotif
+		err = gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl)
+		if err != nil {
+			return err
 		}
 	}
+
+	gb.State.AddInfo = append(gb.State.AddInfo, AdditionalInfo{
+		Id:          id,
+		Type:        updateParams.Type,
+		Comment:     updateParams.Comment,
+		Attachments: updateParams.Attachments,
+		LinkId:      linkId,
+		Login:       updateParams.Approver,
+		CreatedAt:   time.Now(),
+	})
 
 	step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
@@ -265,7 +303,18 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 		return err
 	}
 
-	return err
+	return nil
+}
+
+func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) error {
+	for i := range addInfo {
+		if addInfo[i].Id == linkId {
+			addInfo[i].LinkId = &replyId
+			return nil
+		}
+	}
+
+	return errors.New("not found request by linkId")
 }
 
 func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
