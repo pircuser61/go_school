@@ -65,6 +65,7 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 		var changelog = formData.ChangesLog[i]
 		var createdAtString = changelog.CreatedAt.Format(time.RFC3339)
 		result[i] = FormChangelogItem{
+			SchemaId:        &formData.SchemaId,
 			CreatedAt:       &createdAtString,
 			Description:     &changelog.Description,
 			ApplicationBody: &changelog.ApplicationBody,
