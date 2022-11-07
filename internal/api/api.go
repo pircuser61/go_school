@@ -399,10 +399,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   - user - Single user
-//   - group - Approver group ID
-//   - head - Receiver's head
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -693,9 +693,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//   - user - Single user
-//   - group - Execution group ID
-//   - from_schema - Selected by initiator
+//  * user - Single user
+//  * group - Execution group ID
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -749,12 +749,15 @@ type FormChangelogItem struct {
 
 	// Login of form executor
 	Executor *string `json:"executor,omitempty"`
+
+	// id of form schema id
+	SchemaId *string `json:"schema_id,omitempty"`
 }
 
 // Form executor type:
-//   - User - Single user
-//   - Initiator - Process initiator
-//   - From_schema - Selected by initiator
+//   * User - Single user
+//   * Initiator - Process initiator
+//   * From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -1041,8 +1044,8 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//   - approved - approver approved block
-//   - rejected - approver rejected block
+//  * approved - approver approved block
+//  * rejected - approver rejected block
 type ApproverDecision string
 
 // Block type (language)
@@ -1084,8 +1087,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//   - executed - executor executed block
-//   - rejected - executor rejected block
+//  * executed - executor executed block
+//  * rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1125,11 +1128,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//   - 1 - Draft
-//   - 2 - Approved
-//   - 3 - Deleted
-//   - 4 - Rejected
-//   - 5 - On approve
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status

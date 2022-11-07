@@ -3309,6 +3309,9 @@ components:
     FormChangelogItem:
       type: object
       properties:
+        schema_id:
+          type: string
+          description: id of form schema id
         application_body:
           type: object
           properties: { }
