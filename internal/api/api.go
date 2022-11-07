@@ -682,6 +682,12 @@ type ExecutionParams struct {
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
+	// Show action edit application in SD
+	IsEditable bool `json:"is_editable"`
+
+	// auto apply prev decision
+	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`
 
