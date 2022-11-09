@@ -34,65 +34,6 @@ const (
 	RequestInfoAnswer   RequestInfoType = "answer"
 )
 
-type RequestInfoType string
-
-type ExecutionDecision string
-
-func (a ExecutionDecision) String() string {
-	return string(a)
-}
-
-type RequestExecutionInfoLog struct {
-	Login       string          `json:"login"`
-	Comment     string          `json:"comment"`
-	CreatedAt   time.Time       `json:"created_at"`
-	ReqType     RequestInfoType `json:"req_type"`
-	Attachments []string        `json:"attachments"`
-}
-
-type ChangeExecutorLog struct {
-	OldLogin    string    `json:"old_login"`
-	NewLogin    string    `json:"new_login"`
-	Comment     string    `json:"comment"`
-	Attachments []string  `json:"attachments"`
-	CreatedAt   time.Time `json:"created_at"`
-}
-
-type ExecutionData struct {
-	ExecutionType       script.ExecutionType `json:"execution_type"`
-	Executors           map[string]struct{}  `json:"executors"`
-	Decision            *ExecutionDecision   `json:"decision,omitempty"`
-	DecisionAttachments []string             `json:"decision_attachments,omitempty"`
-	DecisionComment     *string              `json:"comment,omitempty"`
-	ActualExecutor      *string              `json:"actual_executor,omitempty"`
-	SLA                 int                  `json:"sla"`
-	DidSLANotification  bool                 `json:"did_sla_notification"`
-
-	ChangedExecutorsLogs     []ChangeExecutorLog        `json:"change_executors_logs,omitempty"`
-	RequestExecutionInfoLogs []RequestExecutionInfoLog  `json:"request_execution_info_logs,omitempty"`
-	FormsAccessibility       []script.FormAccessibility `json:"forms_accessibility,omitempty"`
-
-	ExecutorsGroupID   string `json:"executors_group_id"`
-	ExecutorsGroupName string `json:"executors_group_name"`
-
-	LeftToNotify map[string]struct{} `json:"left_to_notify"`
-
-	IsTakenInWork               bool `json:"is_taken_in_work"`
-	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
-
-	IsRevoked          bool `json:"is_revoked"`
-	IsEditable         bool `json:"is_editable"`
-	RepeatPrevDecision bool `json:"repeat_prev_decision"`
-}
-
-func (a *ExecutionData) GetDecision() *ExecutionDecision {
-	return a.Decision
-}
-
-func (a *ExecutionData) IncreaseSLA(addSla int) {
-	a.SLA += addSla
-}
-
 type GoExecutionBlock struct {
 	Name    string
 	Title   string
@@ -104,15 +45,21 @@ type GoExecutionBlock struct {
 	Pipeline *ExecutablePipeline
 }
 
+// nolint:dupl // another block
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusRevoke
 	}
+
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusDone
 		}
 		return StatusExecutionRejected
+	}
+
+	if gb.State.EditingApp != nil {
+		return StatusWait
 	}
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
@@ -123,15 +70,21 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return StatusExecution
 }
 
+// nolint:dupl // another block
 func (gb *GoExecutionBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel
 	}
+
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusFinished
 		}
 		return StatusNoSuccess
+	}
+
+	if gb.State.EditingApp != nil {
+		return StatusIdle
 	}
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&

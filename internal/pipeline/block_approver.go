@@ -42,7 +42,7 @@ type GoApproverBlock struct {
 }
 
 func (gb *GoApproverBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel
 	}
 	if gb.State != nil && gb.State.Decision != nil {
@@ -69,7 +69,7 @@ func (gb *GoApproverBlock) GetStatus() Status {
 }
 
 func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusRevoke
 	}
 	if gb.State != nil && gb.State.EditingApp != nil {

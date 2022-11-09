@@ -205,7 +205,7 @@ func NewAnswerSendToEditTemplate(id, name, sdUrl string) Template {
 func NewExecutionTakenInWork(dto *ExecutorNotifTemplate) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.Id, dto.ExecutorName),
-		Text: `<p>Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b></br>
+		Text: `<p>Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.byLogin}}</b></br>
  <b>Инициатор: </b>{{.Initiator}}</br>
  <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>
  ------------ Описание ------------  </br>

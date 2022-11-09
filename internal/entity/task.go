@@ -119,7 +119,8 @@ const (
 	TaskUpdateActionChangeExecutor       TaskUpdateAction = "change_executor"
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
 	TaskUpdateActionExecutorStartWork    TaskUpdateAction = "executor_start_work"
-	TaskUpdateActionSendEditApp          TaskUpdateAction = "send_edit_app"
+	TaskUpdateActionApproverSendEditApp  TaskUpdateAction = "approver_send_edit_app"
+	TaskUpdateActionExecutorSendEditApp  TaskUpdateAction = "executor_send_edit_app"
 	TaskUpdateActionCancelApp            TaskUpdateAction = "cancel_app"
 	TaskUpdateActionRequestApproveInfo   TaskUpdateAction = "request_add_info"
 	TaskUpdateActionRequestFillForm      TaskUpdateAction = "fill_form"
@@ -132,7 +133,8 @@ var (
 		TaskUpdateActionChangeExecutor:       {},
 		TaskUpdateActionRequestExecutionInfo: {},
 		TaskUpdateActionExecutorStartWork:    {},
-		TaskUpdateActionSendEditApp:          {},
+		TaskUpdateActionApproverSendEditApp:  {},
+		TaskUpdateActionExecutorSendEditApp:  {},
 		TaskUpdateActionCancelApp:            {},
 		TaskUpdateActionRequestApproveInfo:   {},
 		TaskUpdateActionRequestFillForm:      {},

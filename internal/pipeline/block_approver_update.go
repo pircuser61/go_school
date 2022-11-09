@@ -19,7 +19,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-type updateEditingParams struct {
+type approverUpdateEditingParams struct {
 	Comment     string   `json:"comment"`
 	Attachments []string `json:"attachments"`
 }
@@ -95,7 +95,7 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, log
 	return nil
 }
 
-type setActionAppDTO struct {
+type setApproverEditAppDTO struct {
 	stepId       uuid.UUID
 	approver     string
 	initiator    string
@@ -106,7 +106,7 @@ type setActionAppDTO struct {
 }
 
 //nolint:gocyclo //its ok here
-func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setActionAppDTO) error {
+func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setApproverEditAppDTO) error {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, dto.stepId)
 	if err != nil {
 		return err
@@ -130,9 +130,9 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setActionAppDT
 	state.DidSLANotification = gb.State.DidSLANotification
 	gb.State = &state
 
-	params, ok := dto.updateParams.(updateEditingParams)
+	params, ok := dto.updateParams.(approverUpdateEditingParams)
 	if !ok {
-		return errors.New("can't convert to updateEditingParams")
+		return errors.New("can't convert to approverUpdateEditingParams")
 	}
 	errSet := gb.State.setEditApp(dto.approver, params)
 	if errSet != nil {
@@ -332,14 +332,14 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 
 		return nil, gb.setApproverDecision(ctx, data.Id, data.ByLogin, updateParams)
 
-	case string(entity.TaskUpdateActionSendEditApp):
-		var updateParams updateEditingParams
+	case string(entity.TaskUpdateActionApproverSendEditApp):
+		var updateParams approverUpdateEditingParams
 
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
 
-		return nil, gb.setEditApplication(ctx, &setActionAppDTO{
+		return nil, gb.setEditApplication(ctx, &setApproverEditAppDTO{
 			stepId:       data.Id,
 			approver:     data.ByLogin,
 			initiator:    data.Author,
@@ -450,6 +450,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 	}
 }
 
+// nolint:dupl // another action
 func (gb *GoApproverBlock) approverCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
 	gb.State.IsRevoked = true
 

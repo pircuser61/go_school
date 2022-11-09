@@ -43,40 +43,42 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 
 	gb.State = &state
 
-	if data.Action == string(entity.TaskUpdateActionExecution) {
-		if errUpdate := gb.updateExecutionDecision(ctx, data, step); errUpdate != nil {
+	switch data.Action {
+	case string(entity.TaskUpdateActionExecution):
+		if errUpdate := gb.updateDecision(ctx, data, step); errUpdate != nil {
 			return nil, errUpdate
 		}
-	}
-
-	if data.Action == string(entity.TaskUpdateActionChangeExecutor) {
+	case string(entity.TaskUpdateActionChangeExecutor):
 		if errUpdate := gb.changeExecutor(ctx, data, step); errUpdate != nil {
 			return nil, errUpdate
 		}
-	}
-
-	if data.Action == string(entity.TaskUpdateActionCancelApp) {
-		if errUpdate := gb.executorCancelPipeline(ctx, data, step); errUpdate != nil {
+	case string(entity.TaskUpdateActionCancelApp):
+		if errUpdate := gb.cancelPipeline(ctx, data, step); errUpdate != nil {
 			return nil, errUpdate
 		}
-	}
-
-	if data.Action == string(entity.TaskUpdateActionRequestExecutionInfo) {
-		if errUpdate := gb.updateRequestExecutionInfo(ctx, &updateRequestExecutionInfoDto{
-			data,
-			step,
-		}); errUpdate != nil {
+	case string(entity.TaskUpdateActionRequestExecutionInfo):
+		if errUpdate := gb.updateRequestInfo(ctx, data, step); errUpdate != nil {
 			return nil, errUpdate
 		}
-	}
-
-	if data.Action == string(entity.TaskUpdateActionExecutorStartWork) {
+	case string(entity.TaskUpdateActionExecutorStartWork):
 		if errUpdate := gb.executorStartWork(ctx, &executorsStartWork{
 			stepId:     data.Id,
 			step:       step,
 			byLogin:    data.ByLogin,
 			workNumber: data.WorkNumber,
 			author:     data.Author,
+		}); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionExecutorSendEditApp):
+		if errUpdate := gb.toEditApplication(ctx, &setExecutorEditAppDto{
+			stepId:     data.Id,
+			byLogin:    data.ByLogin,
+			initiator:  data.Author,
+			workNumber: data.WorkNumber,
+			workTitle:  data.WorkTitle,
+			step:       step,
+			data:       data,
 		}); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -152,7 +154,7 @@ type ExecutionUpdateParams struct {
 	Attachments []string          `json:"attachments"`
 }
 
-func (gb *GoExecutionBlock) updateExecutionDecision(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) error {
+func (gb *GoExecutionBlock) updateDecision(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) error {
 	var updateParams ExecutionUpdateParams
 
 	err := json.Unmarshal(in.Parameters, &updateParams)
@@ -205,11 +207,6 @@ func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams) err
 	return nil
 }
 
-type updateRequestExecutionInfoDto struct {
-	data *script.BlockUpdateData
-	step *entity.Step
-}
-
 type RequestInfoUpdateParams struct {
 	Comment       string          `json:"comment"`
 	ReqType       RequestInfoType `json:"req_type"`
@@ -226,15 +223,15 @@ type executorsStartWork struct {
 }
 
 //nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updateRequestExecutionInfoDto) (err error) {
+func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
 	var updateParams RequestInfoUpdateParams
 
-	err = json.Unmarshal(dto.data.Parameters, &updateParams)
+	err = json.Unmarshal(in.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update requestExecutionInfo data")
 	}
 
-	if errSet := gb.State.SetRequestExecutionInfo(dto.data.ByLogin, &updateParams); errSet != nil {
+	if errSet := gb.State.SetRequestExecutionInfo(in.ByLogin, &updateParams); errSet != nil {
 		return errSet
 	}
 
@@ -254,21 +251,21 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updat
 		}
 	}
 
-	dto.step.State[gb.Name], err = json.Marshal(gb.State)
+	step.State[gb.Name], err = json.Marshal(gb.State)
 	if err != nil {
 		return err
 	}
 
 	var content []byte
-	content, err = json.Marshal(store.NewFromStep(dto.step))
+	content, err = json.Marshal(store.NewFromStep(step))
 	if err != nil {
 		return err
 	}
 
 	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          dto.data.Id,
+		Id:          in.Id,
 		Content:     content,
-		BreakPoints: dto.step.BreakPoints,
+		BreakPoints: step.BreakPoints,
 		Status:      status,
 	})
 	if err != nil {
@@ -276,12 +273,12 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updat
 	}
 
 	if updateParams.ReqType == RequestInfoQuestion {
-		authorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, dto.data.Author)
+		authorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, in.Author)
 		if emailErr != nil {
 			return emailErr
 		}
 
-		tpl := mail.NewRequestExecutionInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+		tpl := mail.NewRequestExecutionInfoTemplate(in.WorkNumber, in.WorkTitle, gb.Pipeline.Sender.SdAddress)
 		err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
 		if err != nil {
 			return err
@@ -299,7 +296,7 @@ func (gb *GoExecutionBlock) updateRequestExecutionInfo(ctx c.Context, dto *updat
 			emails = append(emails, email)
 		}
 
-		tpl := mail.NewAnswerExecutionInfoTemplate(dto.data.WorkNumber, dto.data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+		tpl := mail.NewAnswerExecutionInfoTemplate(in.WorkNumber, in.WorkTitle, gb.Pipeline.Sender.SdAddress)
 		err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil, tpl)
 		if err != nil {
 			return err
@@ -432,7 +429,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	return nil
 }
 
-func (gb *GoExecutionBlock) executorCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+// nolint:dupl // another action
+func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
 	gb.State.IsRevoked = true
 
 	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
@@ -450,4 +448,65 @@ func (gb *GoExecutionBlock) executorCancelPipeline(ctx c.Context, in *script.Blo
 		Status:      string(StatusCancel),
 	})
 	return err
+}
+
+type executorUpdateEditParams struct {
+	Comment     string   `json:"comment"`
+	Attachments []string `json:"attachments"`
+}
+
+type setExecutorEditAppDto struct {
+	stepId     uuid.UUID
+	byLogin    string
+	initiator  string
+	workNumber string
+	workTitle  string
+	step       *entity.Step
+	data       *script.BlockUpdateData
+}
+
+//nolint:gocyclo //its ok here
+func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, dto *setExecutorEditAppDto) (err error) {
+	var updateParams executorUpdateEditParams
+	if err = json.Unmarshal(dto.data.Parameters, &updateParams); err != nil {
+		return errors.New("can't assert provided update data")
+	}
+
+	if err = gb.State.setEditApp(dto.byLogin, updateParams); err != nil {
+		return err
+	}
+
+	if dto.step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
+		return err
+	}
+
+	var content []byte
+	content, err = json.Marshal(store.NewFromStep(dto.step))
+	if err != nil {
+		return err
+	}
+
+	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:          dto.stepId,
+		Content:     content,
+		BreakPoints: dto.step.BreakPoints,
+		HasError:    false,
+		Status:      string(StatusIdle),
+	})
+	if err != nil {
+		return err
+	}
+
+	initiatorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, dto.initiator)
+	if emailErr != nil {
+		return emailErr
+	}
+
+	tpl := mail.NewAnswerSendToEditTemplate(dto.workNumber, dto.workTitle, gb.Pipeline.Sender.SdAddress)
+	err = gb.Pipeline.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
