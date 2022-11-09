@@ -2204,7 +2204,7 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 `
 	var count int
 	if scanErr := db.Pool.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
-		return false, nil
+		return false, scanErr
 	}
 
 	return count != 0, nil
