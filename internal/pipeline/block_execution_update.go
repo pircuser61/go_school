@@ -4,12 +4,13 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -18,6 +19,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+//nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
 	if data == nil {
 		return nil, errors.New("update data is empty")
@@ -482,8 +484,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, dto *setExecutorEdi
 	}
 
 	var content []byte
-	content, err = json.Marshal(store.NewFromStep(dto.step))
-	if err != nil {
+	if content, err = json.Marshal(store.NewFromStep(dto.step)); err != nil {
 		return err
 	}
 

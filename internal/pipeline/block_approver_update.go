@@ -384,6 +384,7 @@ type setEditingAppLogDTO struct {
 	stepName string
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto *setEditingAppLogDTO) {
 	const funcName = "setEditingAppLogFromPreviousBlock"
 	l := logger.GetLogger(ctx)
