@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE INDEX IF NOT EXISTS
     count_index
-    ON pipeliner.variable_storage(work_id)
+    ON variable_storage(work_id)
     WHERE
                 status = ANY('{running,idle,ready}'::text[]) AND
                 status <> 'skipped'::text;
@@ -10,5 +10,5 @@ CREATE INDEX IF NOT EXISTS
 
 -- +goose Down
 -- +goose StatementBegin
-DROP INDEX pipeliner.count_index
+DROP INDEX count_index
 -- +goose StatementEnd
