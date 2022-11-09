@@ -367,16 +367,17 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		if step == nil {
 			return nil, errors.New("can't get step from database")
 		}
-		if errUpdate := gb.approverCancelPipeline(ctx, data, step); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx, data, step); errUpdate != nil {
 			return nil, errUpdate
 		}
 		return nil, nil
 	}
 
-	return nil, errors.New("cant`t update execution block, unknown action: " + data.Action)
+	return nil, errors.New("cant`t update approver block, unknown action: " + data.Action)
 }
 
 type setEditingAppLogDTO struct {
+	step     *entity.Step
 	id       uuid.UUID
 	runCtx   *store.VariableStore
 	workID   uuid.UUID
@@ -384,65 +385,52 @@ type setEditingAppLogDTO struct {
 }
 
 func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto *setEditingAppLogDTO) {
+	const funcName = "setEditingAppLogFromPreviousBlock"
 	l := logger.GetLogger(ctx)
 
-	var step *entity.Step
 	var parentStep *entity.Step
 	var err error
 
-	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, dto.id)
-	if err != nil {
-		l.Error(err)
-		return
-	}
-
 	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
-	if err != nil {
-		l.Error(err)
-		return
-	} else if parentStep == nil {
-		l.Error("setEditingAppLogFromPreviousBlock: step is nil")
+	if err != nil || parentStep == nil {
 		return
 	}
 
 	// get state from step.State
 	data, ok := parentStep.State[dto.stepName]
 	if !ok {
-		l.Error("setEditingAppLogFromPreviousBlock: step state is not found: " + dto.stepName)
+		l.Error(funcName, "step state is not found: "+dto.stepName)
 		return
 	}
 
 	var parentState ApproverData
-	err = json.Unmarshal(data, &parentState)
-	if err != nil {
-		l.Error("setEditingAppLogFromPreviousBlock: invalid format of go-approver-block state")
+	if err = json.Unmarshal(data, &parentState); err != nil {
+		l.Error(funcName, "invalid format of go-approver-block state")
 		return
 	}
 
 	if len(parentState.EditingAppLog) > 0 {
 		gb.State.EditingAppLog = parentState.EditingAppLog
 
-		step.State[gb.Name], err = json.Marshal(gb.State)
-		if err != nil {
+		if dto.step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
 			l.Error(err)
 			return
 		}
 
 		var stateBytes []byte
-		stateBytes, err = json.Marshal(store.NewFromStep(step))
-		if err != nil {
-			l.Error("setEditingAppLogFromPreviousBlock: ", err)
+		if stateBytes, err = json.Marshal(store.NewFromStep(dto.step)); err != nil {
+			l.Error(funcName, err)
 			return
 		}
 
 		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 			Id:          dto.id,
 			Content:     stateBytes,
-			BreakPoints: step.BreakPoints,
-			Status:      step.Status,
+			BreakPoints: dto.step.BreakPoints,
+			Status:      dto.step.Status,
 		})
 		if err != nil {
-			l.Error("setEditingAppLogFromPreviousBlock.UpdateStepContext: ", err)
+			l.Error(funcName, err)
 			return
 		}
 
@@ -451,7 +439,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 }
 
 // nolint:dupl // another action
-func (gb *GoApproverBlock) approverCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+func (gb *GoApproverBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
 	gb.State.IsRevoked = true
 
 	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
@@ -469,4 +457,77 @@ func (gb *GoApproverBlock) approverCancelPipeline(ctx c.Context, in *script.Bloc
 	})
 
 	return err
+}
+
+func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviousDecisionDTO) (isPrevDecisionAssigned bool) {
+	const funcName = "pipeline.approver.trySetPreviousDecision"
+	l := logger.GetLogger(ctx)
+
+	var parentStep *entity.Step
+	var err error
+
+	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
+	if err != nil || parentStep == nil {
+		l.Error(err)
+		return false
+	}
+
+	data, ok := parentStep.State[dto.stepName]
+	if !ok {
+		l.Error(funcName, "parent step state is not found: "+dto.stepName)
+		return false
+	}
+
+	var parentState ApproverData
+	if err = json.Unmarshal(data, &parentState); err != nil {
+		l.Error(funcName, "invalid format of go-approver-block state")
+		return false
+	}
+
+	if parentState.Decision != nil {
+		var actualApprover, comment string
+
+		if parentState.ActualApprover != nil {
+			actualApprover = *parentState.ActualApprover
+		}
+
+		if parentState.Comment != nil {
+			comment = *parentState.Comment
+		}
+
+		dto.runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
+		dto.runCtx.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
+		dto.runCtx.SetValue(gb.Output[keyOutputComment], comment)
+
+		gb.State.ActualApprover = &actualApprover
+		gb.State.Comment = &comment
+		gb.State.Decision = parentState.Decision
+
+		var stateBytes []byte
+		stateBytes, err = json.Marshal(gb.State)
+		if err != nil {
+			l.Error(funcName, err)
+			return false
+		}
+
+		if dto.step.State[gb.Name], err = json.Marshal(store.NewFromStep(dto.step)); err != nil {
+			l.Error(funcName, err)
+			return
+		}
+
+		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+			Id:          dto.id,
+			Content:     stateBytes,
+			BreakPoints: parentStep.BreakPoints,
+			Status:      string(StatusRunning),
+		})
+		if err != nil {
+			l.Error(funcName, err)
+			return
+		}
+
+		dto.runCtx.ReplaceState(gb.Name, stateBytes)
+	}
+
+	return true
 }

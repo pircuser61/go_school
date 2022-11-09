@@ -297,7 +297,30 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 
 	decision := gb.State.GetDecision()
 
-	// nolint:dupl // not dupl?
+	// nolint:dupl // not dupl
+	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
+		gb.setEditingAppLogFromPreviousBlock(ctx, &setEditingAppLogDTO{
+			step:     step,
+			id:       id,
+			runCtx:   runCtx,
+			workID:   gb.Pipeline.TaskID,
+			stepName: step.Name,
+		})
+	}
+
+	if decision == nil && gb.State.GetRepeatPrevDecision() {
+		if gb.trySetPreviousDecision(ctx, &getPreviousDecisionDTO{
+			step:     step,
+			id:       id,
+			runCtx:   runCtx,
+			workID:   gb.Pipeline.TaskID,
+			stepName: step.Name,
+		}) {
+			return nil
+		}
+	}
+
+	// nolint:dupl // not dupl
 	if decision != nil {
 		var executor, comment string
 

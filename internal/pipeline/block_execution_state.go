@@ -76,6 +76,10 @@ func (a *ExecutionData) IncreaseSLA(addSla int) {
 	a.SLA += addSla
 }
 
+func (a *ExecutionData) GetRepeatPrevDecision() bool {
+	return a.RepeatPrevDecision
+}
+
 func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams) error {
 	_, ok := a.Executors[login]
 	if !ok && login != AutoApprover {
@@ -98,4 +102,8 @@ func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams
 	a.EditingApp = editing
 
 	return nil
+}
+
+func (a *ExecutionData) GetIsEditable() bool {
+	return a.IsEditable
 }

@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"time"
 
 	"github.com/pkg/errors"
@@ -509,4 +510,132 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, dto *setExecutorEdi
 	}
 
 	return nil
+}
+
+//nolint:dupl //its not duplicate
+func (gb *GoExecutionBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto *setEditingAppLogDTO) {
+	const funcName = "setEditingAppLogFromPreviousBlock"
+	l := logger.GetLogger(ctx)
+
+	var parentStep *entity.Step
+	var err error
+
+	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
+	if err != nil || parentStep == nil {
+		return
+	}
+
+	// get state from step.State
+	data, ok := parentStep.State[dto.stepName]
+	if !ok {
+		l.Error(funcName, "step state is not found: "+dto.stepName)
+		return
+	}
+
+	var parentState ExecutionData
+	if err = json.Unmarshal(data, &parentState); err != nil {
+		l.Error(funcName, "invalid format of go-execution-block state")
+		return
+	}
+
+	if len(parentState.EditingAppLog) > 0 {
+		gb.State.EditingAppLog = parentState.EditingAppLog
+
+		if dto.step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
+			l.Error(err)
+			return
+		}
+
+		var stateBytes []byte
+		if stateBytes, err = json.Marshal(store.NewFromStep(dto.step)); err != nil {
+			l.Error(funcName, err)
+			return
+		}
+
+		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+			Id:          dto.id,
+			Content:     stateBytes,
+			BreakPoints: dto.step.BreakPoints,
+			Status:      dto.step.Status,
+		})
+		if err != nil {
+			l.Error(funcName, err)
+			return
+		}
+
+		dto.runCtx.ReplaceState(gb.Name, stateBytes)
+	}
+}
+
+// nolint:dupl // not dupl
+func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviousDecisionDTO) (isPrevDecisionAssigned bool) {
+	const funcName = "pipeline.execution.trySetPreviousDecision"
+	l := logger.GetLogger(ctx)
+
+	var parentStep *entity.Step
+	var err error
+
+	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
+	if err != nil || parentStep == nil {
+		l.Error(err)
+		return false
+	}
+
+	data, ok := parentStep.State[dto.stepName]
+	if !ok {
+		l.Error(funcName, "parent step state is not found: "+dto.stepName)
+		return false
+	}
+
+	var parentState ExecutionData
+	if err = json.Unmarshal(data, &parentState); err != nil {
+		l.Error(funcName, "invalid format of go-execution-block state")
+		return false
+	}
+
+	if parentState.Decision != nil {
+		var actualApprover, comment string
+
+		if parentState.ActualExecutor != nil {
+			actualApprover = *parentState.ActualExecutor
+		}
+
+		if parentState.DecisionComment != nil {
+			comment = *parentState.DecisionComment
+		}
+
+		dto.runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
+		dto.runCtx.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
+		dto.runCtx.SetValue(gb.Output[keyOutputComment], comment)
+
+		gb.State.ActualExecutor = &actualApprover
+		gb.State.DecisionComment = &comment
+		gb.State.Decision = parentState.Decision
+
+		var stateBytes []byte
+		if stateBytes, err = json.Marshal(gb.State); err != nil {
+			l.Error(funcName, err)
+			return false
+		}
+
+		if dto.step.State[gb.Name], err = json.Marshal(store.NewFromStep(dto.step)); err != nil {
+			l.Error(funcName, err)
+			return
+		}
+
+		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+			Id:          dto.id,
+			Content:     stateBytes,
+			BreakPoints: parentStep.BreakPoints,
+			Status:      string(StatusRunning),
+		})
+		if err != nil {
+			l.Error(funcName, err)
+			return
+		}
+
+		dto.runCtx.ReplaceState(gb.Name, stateBytes)
+	}
+
+	return true
 }
