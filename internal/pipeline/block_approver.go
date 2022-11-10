@@ -76,13 +76,6 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 		return StatusWait
 	}
 
-	if gb.State != nil && len(gb.State.AddInfo) != 0 {
-		if gb.State.checkEmptyLinkIdAddInfo() {
-			return StatusWait
-		}
-		return StatusApprovement
-	}
-
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ApproverDecisionApproved {
 			return StatusApproved
@@ -90,6 +83,13 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 		if *gb.State.Decision == ApproverDecisionRejected {
 			return StatusApprovementRejected
 		}
+	}
+
+	if gb.State != nil && len(gb.State.AddInfo) != 0 {
+		if gb.State.checkEmptyLinkIdAddInfo() {
+			return StatusWait
+		}
+		return StatusApprovement
 	}
 
 	var lastIdx = len(gb.State.RequestApproverInfoLog) - 1
