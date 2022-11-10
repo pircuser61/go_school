@@ -33,7 +33,7 @@ type GoWaitForAllInputsBlock struct {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel
 	}
 	if gb.State.done {
@@ -43,7 +43,7 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusRevoke
 	}
 	return ""
@@ -190,6 +190,7 @@ func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, pipeline *
 	return b
 }
 
+// nolint:dupl // another block
 func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
 	gb.State.IsRevoked = true
 

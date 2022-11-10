@@ -1865,8 +1865,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, 
 
 	storage := store.NewStore()
 
-	err = json.Unmarshal([]byte(content), storage)
-	if err != nil {
+	if err = json.Unmarshal([]byte(content), storage); err != nil {
 		return nil, err
 	}
 

@@ -342,8 +342,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 
 	var updateData entity.TaskUpdate
-	err = json.Unmarshal(b, &updateData)
-	if err != nil {
+	if err = json.Unmarshal(b, &updateData); err != nil {
 		e := UpdateTaskParsingError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -359,8 +358,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	err = updateData.Validate()
-	if err != nil {
+	if err = updateData.Validate(); err != nil {
 		e := UpdateTaskValidationError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -497,7 +495,7 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
-	if action == entity.TaskUpdateActionSendEditApp {
+	if action == entity.TaskUpdateActionApproverSendEditApp {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
@@ -527,6 +525,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 
 	if action == entity.TaskUpdateActionRequestFillForm {
 		return []string{pipeline.BlockGoFormID}
+	}
+
+	if action == entity.TaskUpdateActionExecutorSendEditApp {
+		return []string{pipeline.BlockGoExecutionID}
 	}
 
 	return []string{}

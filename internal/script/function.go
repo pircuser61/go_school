@@ -46,7 +46,7 @@ func (m MappingParam) Validate() error {
 		}
 
 		for _, item := range mappingValue.Items {
-			err := item.Validate()
+			err = item.Validate()
 			if err != nil {
 				return err
 			}

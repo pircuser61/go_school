@@ -38,7 +38,7 @@ func (db *PGCon) GetApproveActionNames(ctx context.Context) ([]entity.ApproveAct
 	for rows.Next() {
 		item := entity.ApproveActionName{}
 
-		if err = rows.Scan(&item.Id, &item.Title); err != nil {
+		if err := rows.Scan(&item.Id, &item.Title); err != nil {
 			return nil, err
 		}
 
