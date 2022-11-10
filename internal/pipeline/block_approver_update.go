@@ -361,9 +361,11 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		if step == nil {
 			return nil, errors.New("can't get step from database")
 		}
-		if errUpdate := gb.approverCancelPipeline(ctx, data, step); errUpdate != nil {
+
+		if errUpdate := gb.cancelPipeline(ctx, data, step); errUpdate != nil {
 			return nil, errUpdate
 		}
+
 		return nil, nil
 	}
 
@@ -444,8 +446,8 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 	}
 }
 
-func (gb *GoApproverBlock) approverCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
-	gb.State.IsRevoked = true
+func (gb *GoApproverBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+	gb.State.IsCanceled = true
 
 	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
 		return err
@@ -454,12 +456,11 @@ func (gb *GoApproverBlock) approverCancelPipeline(ctx c.Context, in *script.Bloc
 	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
 		return err
 	}
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+
+	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      string(StatusCancel),
 	})
-
-	return err
 }

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"strings"
 	"time"
 
@@ -729,11 +730,8 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetUsersWithReadWriteFormAccess(
-	ctx c.Context,
-	workNumber string,
-	stepName string) ([]entity.UsersWithFormAccess, error) {
-	q :=
+func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
+	const q =
 		// nolint:gocritic
 		// language=PostgreSQL
 		`
@@ -784,6 +782,9 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(
 	result := make([]entity.UsersWithFormAccess, 0)
 	rows, err := db.Pool.Query(ctx, q, workNumber, stepName)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return result, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -791,16 +792,15 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(
 	for rows.Next() {
 		s := entity.UsersWithFormAccess{}
 
-		err = rows.Scan(
+		if err = rows.Scan(
 			&s.ExecutionType,
 			&s.BlockType,
 			&s.GroupId,
 			&s.Executor,
-		)
-
-		if err != nil {
+		); err != nil {
 			return nil, err
 		}
+
 		result = append(result, s)
 	}
 

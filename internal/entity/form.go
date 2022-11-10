@@ -13,7 +13,7 @@ const (
 )
 
 type UsersWithFormAccess struct {
-	GroupId       string            `json:"executors_group_id"`
+	GroupId       *string           `json:"executors_group_id"`
 	ExecutionType UserExecutionType `json:"execution_type"`
 	Executor      string            `json:"executor"`
 	BlockType     BlockType         `json:"block_type"`
