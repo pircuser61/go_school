@@ -103,7 +103,7 @@ type GoExecutionBlock struct {
 }
 
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusRevoke
 	}
 	if gb.State != nil && gb.State.Decision != nil {
@@ -122,7 +122,7 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *GoExecutionBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel
 	}
 	if gb.State != nil && gb.State.Decision != nil {

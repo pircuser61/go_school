@@ -68,7 +68,7 @@ type GoFormBlock struct {
 }
 
 func (gb *GoFormBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel
 	}
 	if gb.State != nil && gb.State.IsFilled {
@@ -79,7 +79,7 @@ func (gb *GoFormBlock) GetStatus() Status {
 }
 
 func (gb *GoFormBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusRevoke
 	}
 	if gb.State != nil && gb.State.IsFilled {

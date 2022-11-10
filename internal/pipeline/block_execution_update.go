@@ -17,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+//nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
 	if data == nil {
 		return nil, errors.New("update data is empty")

@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
+	"golang.org/x/net/context"
 	"strings"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
 
-	"golang.org/x/net/context"
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
@@ -183,8 +183,11 @@ WHERE step_name in (
                  WHERE work_number = $2)
 ORDER BY time`
 	ff := make([]string, 0)
-	rows, err := db.Pool.Query(context.Background(), q, workNumber, workNumber, nodeName)
+	rows, err := db.Pool.Query(c.Background(), q, workNumber, workNumber, nodeName)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ff, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()

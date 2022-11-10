@@ -35,22 +35,20 @@ func (a *ExecutableFunctionParams) Validate() error {
 }
 
 func (m MappingParam) Validate() error {
-	if m != nil {
-		for _, mappingValue := range m {
-			if mappingValue.Type == "" || mappingValue.Description == "" {
-				return errors.New("type and description are required")
-			}
+	for _, mappingValue := range m {
+		if mappingValue.Type == "" || mappingValue.Description == "" {
+			return errors.New("type and description are required")
+		}
 
-			err := mappingValue.Properties.Validate()
+		err := mappingValue.Properties.Validate()
+		if err != nil {
+			return err
+		}
+
+		for _, item := range mappingValue.Items {
+			err = item.Validate()
 			if err != nil {
 				return err
-			}
-
-			for _, item := range mappingValue.Items {
-				err := item.Validate()
-				if err != nil {
-					return err
-				}
 			}
 		}
 	}

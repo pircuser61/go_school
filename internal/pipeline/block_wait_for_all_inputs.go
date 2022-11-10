@@ -33,7 +33,7 @@ type GoWaitForAllInputsBlock struct {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel
 	}
 	if gb.State.done {
@@ -43,7 +43,7 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked == true {
+	if gb.State != nil && gb.State.IsRevoked {
 		return StatusRevoke
 	}
 	return ""
