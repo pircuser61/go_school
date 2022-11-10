@@ -353,6 +353,11 @@ func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ExecutionDecisionExecuted {
 		key = executedSocketID
 	}
+
+	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {
+		key = editAppSocketID
+	}
+
 	nexts, ok := script.GetNexts(gb.Sockets, key)
 	if !ok {
 		return nil, false
@@ -417,6 +422,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		Sockets: []script.Socket{
 			script.ExecutedSocket,
 			script.NotExecutedSocket,
+			script.EditAppSocket,
 		},
 	}
 }

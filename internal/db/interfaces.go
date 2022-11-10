@@ -121,7 +121,6 @@ type Database interface {
 	AttachTag(ctx c.Context, id uuid.UUID, p *e.EriusTagInfo) error
 	DetachTag(ctx c.Context, id uuid.UUID, p *e.EriusTagInfo) error
 	RemovePipelineTags(ctx c.Context, id uuid.UUID) error
-	DeleteAllVersions(ctx c.Context, id uuid.UUID) error
 	PipelineNameCreatable(ctx c.Context, name string) (bool, error)
 	SwitchRejected(ctx c.Context, versionID uuid.UUID, comment, author string) error
 	GetRejectedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)

@@ -31,7 +31,6 @@ type approverUpdateParams struct {
 }
 
 type requestInfoParams struct {
-	Approver    string             `json:"approver"`
 	Type        AdditionalInfoType `json:"type"`
 	Comment     string             `json:"comment"`
 	Attachments []string           `json:"attachments"`
@@ -174,7 +173,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setApproverEdi
 }
 
 //nolint:gocyclo //ok
-func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script.BlockUpdateData) (err error) {
+func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin string, data *script.BlockUpdateData) (err error) {
 	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return err
@@ -189,16 +188,14 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 	}
 
 	var state ApproverData
-	err = json.Unmarshal(stepData, &state)
-	if err != nil {
+	if err = json.Unmarshal(stepData, &state); err != nil {
 		return errors.Wrap(err, "invalid format of go-approver-block state")
 	}
 
 	gb.State = &state
 
 	var updateParams requestInfoParams
-	err = json.Unmarshal(data.Parameters, &updateParams)
-	if err != nil {
+	if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update requestApproverInfo data")
 	}
 
@@ -215,11 +212,9 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 	var tpl mail.Template
 
 	if updateParams.Type == RequestAddInfoType {
-		login := updateParams.Approver
-
-		_, ok := gb.State.Approvers[login]
-		if !ok && login != AutoApprover {
-			return fmt.Errorf("%s not found in approvers", login)
+		_, ok = gb.State.Approvers[byLogin]
+		if !ok && byLogin != AutoApprover {
+			return fmt.Errorf("%s not found in approvers", byLogin)
 		}
 
 		authorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, data.Author)
@@ -228,8 +223,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 		}
 
 		tpl = mail.NewRequestApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.Pipeline.Sender.SdAddress)
-		err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
-		if err != nil {
+		if err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl); err != nil {
 			return err
 		}
 	}
@@ -261,7 +255,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 
 		tpl = mail.NewAnswerApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.Pipeline.Sender.SdAddress)
 
-		approverEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, updateParams.Approver)
+		approverEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, byLogin)
 		if emailErr != nil {
 			return emailErr
 		}
@@ -278,7 +272,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, data *script
 		Comment:     updateParams.Comment,
 		Attachments: updateParams.Attachments,
 		LinkId:      linkId,
-		Login:       updateParams.Approver,
+		Login:       byLogin,
 		CreatedAt:   time.Now(),
 	})
 
@@ -356,7 +350,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 			return nil, errors.New("can't assert provided data")
 		}
 
-		return nil, gb.updateRequestApproverInfo(ctx, data)
+		return nil, gb.updateRequestApproverInfo(ctx, data.ByLogin, data)
 
 	case string(entity.TaskUpdateActionCancelApp):
 		step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
