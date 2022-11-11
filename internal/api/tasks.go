@@ -437,6 +437,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		Sender:      ae.Mail,
 		People:      ae.People,
 		ServiceDesc: ae.ServiceDesc,
+		PipelineModel: &entity.EriusScenario{Author: dbTask.Author},
 	}
 
 	couldUpdateOne := false
