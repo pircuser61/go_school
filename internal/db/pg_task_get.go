@@ -43,12 +43,12 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			w.skipped_blocks,
 			w.notified_blocks,
 			w.prev_update_status_blocks
-		FROM pipeliner.works w 
-		JOIN pipeliner.versions v ON v.id = w.version_id
-		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
-		JOIN pipeliner.work_status ws ON w.status = ws.id
+		FROM works w 
+		JOIN versions v ON v.id = w.version_id
+		JOIN pipelines p ON p.id = v.pipeline_id
+		JOIN work_status ws ON w.status = ws.id
 		LEFT JOIN LATERAL (
-			SELECT * FROM pipeliner.variable_storage vs
+			SELECT * FROM variable_storage vs
 			WHERE vs.work_id = w.id AND vs.status != 'skipped'
 			ORDER BY vs.time DESC
 			--limit--
@@ -57,7 +57,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			SELECT work_id, 
 				content::json->'State'->step_name->>'description' description,
 				content::json->'State'->step_name->>'blueprint_id' blueprint_id
-			FROM pipeliner.variable_storage vs
+			FROM variable_storage vs
 			WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 			ORDER BY vs.time DESC
 			LIMIT 1
@@ -163,14 +163,14 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
 	q := `WITH content as (
     SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
-    FROM pipeliner.variable_storage
+    FROM variable_storage
     WHERE work_id IN (SELECT id
-                     FROM pipeliner.works
+                     FROM works
                      WHERE work_number = $1)
     LIMIT 1
 )
 SELECT content -> 'State' -> step_name ->> 'description'
-FROM pipeliner.variable_storage
+FROM variable_storage
 WHERE step_name in (
     SELECT rules ->> 'node_id' as rule
     FROM content
@@ -178,7 +178,7 @@ WHERE step_name in (
     LIMIT 1
 )
   AND work_id IN (SELECT id
-                 FROM pipeliner.works
+                 FROM works
                  WHERE work_number = $2)
 ORDER BY time`
 	ff := make([]string, 0)
@@ -202,9 +202,9 @@ ORDER BY time`
 
 func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
 	q := `SELECT content->'State'->'servicedesk_application_0'
-from pipeliner.variable_storage 
+from variable_storage 
 where step_type = 'servicedesk_application' 
-and work_id = (select id from pipeliner.works where work_number = $1)`
+and work_id = (select id from works where work_number = $1)`
 	var data *orderedmap.OrderedMap
 	if err := db.Pool.QueryRow(context.Background(), q, workNumber).Scan(&data); err != nil {
 		return nil, err
@@ -213,9 +213,9 @@ and work_id = (select id from pipeliner.works where work_number = $1)`
 }
 
 func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
-	q := `UPDATE pipeliner.variable_storage 
+	q := `UPDATE variable_storage 
 set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
-where work_id = (select id from pipeliner.works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
+where work_id = (select id from works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -279,15 +279,15 @@ func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
 			w.skipped_blocks,
 			w.notified_blocks,
 			w.prev_update_status_blocks
-		FROM pipeliner.works w 
-			JOIN pipeliner.versions v ON v.id = w.version_id
-			JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
-			JOIN pipeliner.work_status ws ON w.status = ws.id
+		FROM works w 
+			JOIN versions v ON v.id = w.version_id
+			JOIN pipelines p ON p.id = v.pipeline_id
+			JOIN work_status ws ON w.status = ws.id
 			LEFT JOIN LATERAL (
 				SELECT work_id, 
 					content::json->'State'->step_name->>'description' description,
 					content::json->'State'->step_name->>'blueprint_id' blueprint_id
-				FROM pipeliner.variable_storage vs
+				FROM variable_storage vs
 				WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 				ORDER BY vs.time DESC
 				LIMIT 1
@@ -307,10 +307,10 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 	q := `
 		SELECT 
 			w.id
-		FROM pipeliner.works w 
-		JOIN pipeliner.work_status ws ON w.status = ws.id
+		FROM works w 
+		JOIN work_status ws ON w.status = ws.id
 		LEFT JOIN LATERAL (
-			SELECT * FROM pipeliner.variable_storage vs
+			SELECT * FROM variable_storage vs
 			WHERE vs.work_id = w.id AND vs.status != 'skipped'
 			ORDER BY vs.time DESC
 			--limit--
@@ -370,10 +370,10 @@ func (db *PGCon) GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*entity.
 			w.author, 
 			w.version_id,
        		w.work_number
-		FROM pipeliner.works w 
-		JOIN pipeliner.versions v ON v.id = w.version_id
-		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
-		JOIN pipeliner.work_status ws ON w.status = ws.id
+		FROM works w 
+		JOIN versions v ON v.id = w.version_id
+		JOIN pipelines p ON p.id = v.pipeline_id
+		JOIN work_status ws ON w.status = ws.id
 		WHERE p.id = $1
 		ORDER BY w.started_at DESC
 		LIMIT 100`
@@ -397,9 +397,9 @@ func (db *PGCon) GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*entity.Er
 			w.author, 
 			w.version_id,
        		w.work_number
-		FROM pipeliner.works w 
-		JOIN pipeliner.versions v ON v.id = w.version_id
-		JOIN pipeliner.work_status ws ON w.status = ws.id
+		FROM works w 
+		JOIN versions v ON v.id = w.version_id
+		JOIN work_status ws ON w.status = ws.id
 		WHERE v.id = $1
 		ORDER BY w.started_at DESC
 		LIMIT 100`
@@ -422,9 +422,9 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 			w.parameters, 
 			w.author, 
 			w.version_id
-		FROM pipeliner.works w 
-		JOIN pipeliner.versions v ON v.id = w.version_id
-		JOIN pipeliner.work_status ws ON w.status = ws.id
+		FROM works w 
+		JOIN versions v ON v.id = w.version_id
+		JOIN work_status ws ON w.status = ws.id
 		WHERE v.id = $1
 		AND w.author = $2
 		AND w.debug = true
@@ -476,15 +476,15 @@ func (db *PGCon) GetTask(ctx c.Context, workNumber string) (*entity.EriusTask, e
 			p.name,
 			COALESCE(descr.description, ''),
 			COALESCE(descr.blueprint_id, '')
-		FROM pipeliner.works w 
-		JOIN pipeliner.versions v ON v.id = w.version_id
-		JOIN pipeliner.pipelines p ON p.id = v.pipeline_id
-		JOIN pipeliner.work_status ws ON w.status = ws.id
+		FROM works w 
+		JOIN versions v ON v.id = w.version_id
+		JOIN pipelines p ON p.id = v.pipeline_id
+		JOIN work_status ws ON w.status = ws.id
 		LEFT JOIN LATERAL (
 			SELECT work_id, 
 				content::json->'State'->step_name->>'description' description,
 				content::json->'State'->step_name->>'blueprint_id' blueprint_id
-			FROM pipeliner.variable_storage vs
+			FROM variable_storage vs
 			WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 			ORDER BY vs.time DESC
 			LIMIT 1
@@ -683,7 +683,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			COALESCE(vs.break_points, '{}') AS break_points, 
 			vs.has_error,
 			vs.status
-		FROM pipeliner.variable_storage vs 
+		FROM variable_storage vs 
 			WHERE work_id = $1 AND vs.status != 'skipped'
 		ORDER BY vs.time DESC`
 
@@ -749,8 +749,8 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(
 			with executor_approver_blocks as (
 			select content,
 				jsonb_object_keys(content -> 'pipeline' -> 'blocks') as block_name
-			from pipeliner.versions v
-				left join pipeliner.works w on v.id = w.version_id
+			from versions v
+				left join works w on v.id = w.version_id
 			where w.work_number = $1
 			)
 			select

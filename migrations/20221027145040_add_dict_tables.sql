@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE pipeliner.dict_approve_action_names (
+CREATE TABLE dict_approve_action_names (
      id uuid NOT NULL,
      title character varying NOT NULL,
      status_processing_title character varying NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE pipeliner.dict_approve_action_names (
      CONSTRAINT dict_approve_action_pkey PRIMARY KEY (id)
 );
 
-INSERT INTO pipeliner.dict_approve_action_names (
+INSERT INTO dict_approve_action_names (
          id,
          title,
          status_processing_title,
@@ -25,7 +25,7 @@ INSERT INTO pipeliner.dict_approve_action_names (
            ('96cdb5f7-d9af-453d-9292-f9d87339a059', 'Проинформирован', 'На информировании', 'Проинформировано', now()),
            ('43d16439-f7e3-4dbb-8431-3bd401f46d9b', 'Подписать', 'На подписании', 'Подписано', now());
 
-CREATE TABLE pipeliner.dict_approve_statuses (
+CREATE TABLE dict_approve_statuses (
      id uuid NOT NULL,
      title character varying NOT NULL,
      created_at timestamp with time zone NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE pipeliner.dict_approve_statuses (
      CONSTRAINT dict_approve_statuses_pkey PRIMARY KEY (id)
 );
 
-INSERT INTO pipeliner.dict_approve_statuses (
+INSERT INTO dict_approve_statuses (
         id,
         title,
         created_at
@@ -48,6 +48,6 @@ INSERT INTO pipeliner.dict_approve_statuses (
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS pipeliner.dict_approve_action_names;
-DROP TABLE IF EXISTS pipeliner.dict_approve_statuses;
+DROP TABLE IF EXISTS dict_approve_action_names;
+DROP TABLE IF EXISTS dict_approve_statuses;
 -- +goose StatementEnd

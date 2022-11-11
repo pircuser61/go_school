@@ -29,11 +29,11 @@ func (db *PGCon) ChangeTaskStatus(c context.Context,
 	// nolint:gocritic
 	// language=PostgreSQL
 	if status == RunStatusFinished {
-		q = `UPDATE pipeliner.works 
+		q = `UPDATE works 
 		SET status = $1, finished_at = now()
 		WHERE id = $2`
 	} else {
-		q = `UPDATE pipeliner.works 
+		q = `UPDATE works 
 		SET status = $1
 		WHERE id = $2`
 	}
@@ -58,7 +58,7 @@ func (db *PGCon) UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, stat
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `UPDATE pipeliner.works
+	q := `UPDATE works
 		SET human_status = $1
 		WHERE id = $2`
 
@@ -73,7 +73,7 @@ func (db *PGCon) setTaskChild(c context.Context, tx pgx.Tx, workNumber string, n
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		UPDATE pipeliner.works
+		UPDATE works
 			SET child_id = $1
 		WHERE child_id IS NULL AND work_number = $2`
 
@@ -118,7 +118,7 @@ func (db *PGCon) UpdateTaskBlocksData(c context.Context, dto *UpdateTaskBlocksDa
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		UPDATE pipeliner.works
+		UPDATE works
 			SET active_blocks = $2,
 				skipped_blocks = $3,
 				notified_blocks = $4,

@@ -11,7 +11,7 @@ func (db *PGCon) ActiveAlertNGSA(c context.Context, sever int,
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-	INSERT INTO pipeliner.alarm_for_ngsa (
+	INSERT INTO alarm_for_ngsa (
 		state,
 		"perceivedSeverity",
 		"eventSource",
@@ -53,7 +53,7 @@ func (db *PGCon) ClearAlertNGSA(c context.Context, name string) error {
 	t := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `UPDATE pipeliner.alarm_for_ngsa 
+	q := `UPDATE alarm_for_ngsa 
 		SET
 			state = 'CLEAR', 
 			cleartime = $1
