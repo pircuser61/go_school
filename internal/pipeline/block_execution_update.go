@@ -433,6 +433,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	return nil
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) executorCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
 	gb.State.IsRevoked = true
 

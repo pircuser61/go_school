@@ -190,6 +190,7 @@ func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, pipeline *
 	return b
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
 	gb.State.IsRevoked = true
 

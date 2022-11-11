@@ -223,7 +223,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 		}
 
 		tpl = mail.NewRequestApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.Pipeline.Sender.SdAddress)
-		if err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl); err != nil {
+		if err := gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl); err != nil {
 			return err
 		}
 	}

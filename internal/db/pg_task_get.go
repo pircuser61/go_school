@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 	"strings"
 	"time"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"github.com/iancoleman/orderedmap"
 
@@ -158,6 +159,9 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
 	}
 
+	log := logger.GetLogger(c.Background())
+	log.Info("compileGetTasksQuery", q)
+
 	return q, args
 }
 
@@ -210,7 +214,7 @@ from pipeliner.variable_storage
 where step_type = 'servicedesk_application' 
 and work_id = (select id from pipeliner.works where work_number = $1)`
 	var data *orderedmap.OrderedMap
-	if err := db.Pool.QueryRow(context.Background(), q, workNumber).Scan(&data); err != nil {
+	if err := db.Pool.QueryRow(c.Background(), q, workNumber).Scan(&data); err != nil {
 		return nil, err
 	}
 	return data, nil
@@ -225,7 +229,7 @@ where work_id = (select id from pipeliner.works where work_number = $1) and step
 		return err
 	}
 	q = fmt.Sprintf(q, string(bytes))
-	_, err = db.Pool.Exec(context.Background(), q, workNumber)
+	_, err = db.Pool.Exec(c.Background(), q, workNumber)
 	return err
 }
 
@@ -735,9 +739,9 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 
 func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
 	const q =
-		// nolint:gocritic
-		// language=PostgreSQL
-		`
+	// nolint:gocritic
+	// language=PostgreSQL
+	`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
@@ -795,7 +799,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	for rows.Next() {
 		s := entity.UsersWithFormAccess{}
 
-		if err = rows.Scan(
+		if err := rows.Scan(
 			&s.ExecutionType,
 			&s.BlockType,
 			&s.GroupId,
