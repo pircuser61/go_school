@@ -45,6 +45,10 @@ type GoExecutionBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoExecutionBlock) UpdateManual() bool {
+	return true
+}
+
 // nolint:dupl // another block
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 	if gb.State != nil && gb.State.IsRevoked {

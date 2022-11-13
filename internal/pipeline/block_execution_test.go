@@ -44,7 +44,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 		{
 			name: "can't get work id from variable store",
 			fields: fields{
-				Name:     stepName,
+				Name:     "exec",
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
@@ -60,7 +60,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 		{
 			name: "can't assert type of work id",
 			fields: fields{
-				Name:     stepName,
+				Name:     "exec",
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
@@ -71,7 +71,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 
-					res.SetValue(getWorkIdKey(stepName), "foo")
+					res.SetValue(getWorkIdKey("exec"), "foo")
 
 					return res
 				}(),
@@ -82,7 +82,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 		{
 			name: "unknown error from database",
 			fields: fields{
-				Name:     stepName,
+				Name:     "exec",
 				Title:    "",
 				Input:    nil,
 				Output:   nil,
@@ -107,7 +107,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
 
-					res.SetValue(getWorkIdKey(stepName), stepId)
+					res.SetValue(getWorkIdKey("exec"), stepId)
 
 					return res
 				}(),

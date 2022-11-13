@@ -32,7 +32,8 @@ func (a *updateFillFormParams) Validate() error {
 }
 
 //nolint:gocyclo //ok
-func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
+	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
 	}

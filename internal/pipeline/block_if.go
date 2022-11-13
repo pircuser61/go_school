@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"go.opencensus.io/trace"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -38,6 +36,10 @@ type ConditionsData struct {
 
 func (cd *ConditionsData) GetConditionGroups() []script.ConditionGroup {
 	return cd.ConditionGroups
+}
+
+func (e *IF) UpdateManual() bool {
+	return false
 }
 
 func (e *IF) GetStatus() Status {
@@ -96,19 +98,24 @@ func (e *IF) IsScenario() bool {
 	return false
 }
 
-func (e *IF) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "run_if_block")
-	defer s.End()
+func (e *IF) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
+	return nil
+}
 
-	runCtx.AddStep(e.Name)
+func (e *IF) GetState() interface{} {
+	return nil
+}
+
+func (e *IF) Update(_ context.Context) (interface{}, error) {
+	e.RunContext.VarStore.AddStep(e.Name)
 	var chosenGroup *script.ConditionGroup
 
 	if e.State != nil {
 		conditionGroups := e.State.GetConditionGroups()
 
-		variables, err := getVariables(runCtx)
+		variables, err := getVariables(e.RunContext.VarStore)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		chosenGroup = processConditionGroups(conditionGroups, variables)
@@ -123,14 +130,6 @@ func (e *IF) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableSto
 	}
 
 	e.State.ChosenGroupID = chosenGroupID
-	return nil
-}
-
-func (e *IF) GetState() interface{} {
-	return nil
-}
-
-func (e *IF) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
 	return nil, nil
 }
 

@@ -2,12 +2,13 @@ package pipeline
 
 import (
 	"context"
-
-	"go.opencensus.io/trace"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+)
+
+const (
+	keyOutputWorkNumber = "workNumber"
 )
 
 type GoStartBlock struct {
@@ -17,6 +18,10 @@ type GoStartBlock struct {
 	Output     map[string]string
 	Sockets    []script.Socket
 	RunContext *BlockRunContext
+}
+
+func (gb *GoStartBlock) UpdateManual() bool {
+	return false
 }
 
 func (gb *GoStartBlock) GetStatus() Status {
@@ -43,32 +48,6 @@ func (gb *GoStartBlock) IsScenario() bool {
 	return false
 }
 
-// nolint:dupl // not dupl?
-func (gb *GoStartBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "run_go_block")
-	defer s.End()
-
-	runCtx.AddStep(gb.Name)
-
-	values := make(map[string]interface{})
-
-	for ikey, gkey := range gb.Input {
-		val, ok := runCtx.GetValue(gkey) // if no value - empty value
-		if ok {
-			values[ikey] = val
-		}
-	}
-
-	for ikey, gkey := range gb.Output {
-		val, ok := values[ikey]
-		if ok {
-			runCtx.SetValue(gkey, val)
-		}
-	}
-
-	return nil
-}
-
 func (gb *GoStartBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
@@ -85,7 +64,14 @@ func (gb *GoStartBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoStartBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+// nolint:dupl // not dupl?
+func (gb *GoStartBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
+	return nil
+}
+
+func (gb *GoStartBlock) Update(_ context.Context) (interface{}, error) {
+	gb.RunContext.VarStore.AddStep(gb.Name)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputWorkNumber], gb.RunContext.WorkNumber)
 	return nil, nil
 }
 
@@ -95,8 +81,14 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     BlockGoStartTitle,
 		Inputs:    nil,
-		Outputs:   nil,
-		Sockets:   []script.Socket{script.DefaultSocket},
+		Outputs: []script.FunctionValueModel{
+			{
+				Name:    keyOutputWorkNumber,
+				Type:    "string",
+				Comment: "work number",
+			},
+		},
+		Sockets: []script.Socket{script.DefaultSocket},
 	}
 }
 
@@ -117,5 +109,6 @@ func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunConte
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
 	}
+
 	return b
 }

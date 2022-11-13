@@ -668,12 +668,6 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		ep.WorkNumber = dto.workNumber
 	}
 
-	err := ep.CreateBlocks(ctx, dto.p.Pipeline.Blocks)
-	if err != nil {
-		e := GetPipelineError
-		return &ep, e, err
-	}
-
 	variableStorage := store.NewStore()
 
 	pipelineVars := dto.vars
@@ -695,30 +689,27 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		return &ep, e, err
 	}
 
-	//nolint:nestif //its simple
-	if dto.syncExecution {
-		ep.Output = make(map[string]string)
-
-		for _, item := range dto.p.Output {
-			ep.Output[item.Global] = ""
+	go func() {
+		runCtx := &pipeline.BlockRunContext{
+			TaskID:      ep.TaskID,
+			WorkNumber:  ep.WorkNumber,
+			Initiator:   ep.Initiator,
+			Storage:     ep.Storage,
+			Sender:      ep.Sender,
+			People:      ep.People,
+			ServiceDesc: ep.ServiceDesc,
+			FaaS:        ep.FaaS,
+			VarStore:    variableStorage,
+			UpdateData:  nil,
 		}
-
-		err = ep.Run(ctx, variableStorage)
+		blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
+		routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+		routineCtx = logger.WithLogger(routineCtx, log)
+		err = pipeline.ProcessBlock(routineCtx, ep.EntryPoint, &blockData, runCtx, false)
 		if err != nil {
 			variableStorage.AddError(err)
-			return nil, PipelineExecutionError, err
 		}
-	} else {
-		go func() {
-			//nolint:staticcheck // поправить потом TODO
-			routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-			routineCtx = logger.WithLogger(routineCtx, log)
-			err = ep.Run(routineCtx, variableStorage)
-			if err != nil {
-				variableStorage.AddError(err)
-			}
-		}()
-	}
+	}()
 	return &ep, 0, nil
 }
 

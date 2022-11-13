@@ -67,6 +67,10 @@ type GoFormBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoFormBlock) UpdateManual() bool {
+	return true
+}
+
 func (gb *GoFormBlock) GetStatus() Status {
 	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel

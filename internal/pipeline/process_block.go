@@ -10,6 +10,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -29,6 +31,13 @@ type BlockRunContext struct {
 	ServiceDesc *servicedesc.Service
 	FaaS        string
 	VarStore    *store.VariableStore
+	UpdateData  *script.BlockUpdateData
+}
+
+func (runCtx *BlockRunContext) Copy() *BlockRunContext {
+	runCtxCopy := &(*runCtx)
+	runCtxCopy.VarStore = &(*runCtx.VarStore)
+	return runCtxCopy
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string) (uuid.UUID, time.Time, error) {
@@ -48,35 +57,70 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string
 	})
 }
 
-func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasError bool, status Status) error {
-	storageData, err := json.Marshal(runCtx.VarStore)
-	if err != nil {
-		return err
-	}
-
-	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:             id,
-		Content:        storageData,
-		BreakPoints:    []string{},
-		HasError:       hasError,
-		Status:         string(status),
-		WithoutContent: status != StatusFinished && status != StatusCancel && status != StatusNoSuccess,
-	})
-}
-
-func CreateAndSaveBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, error) {
-	ctx, s := trace.StartSpan(ctx, "create_and_save_block")
+func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
+	ctx, s := trace.StartSpan(ctx, "process_block")
 	defer s.End()
 
-	_, _, err := runCtx.saveStepInDB(ctx, name, bl.BlockType)
+	log := logger.GetLogger(ctx)
+
+	defer func() {
+		if err != nil {
+			if changeErr := runCtx.changeTaskStatus(ctx, db.RunStatusError); changeErr != nil {
+				log.WithError(changeErr).Error("couldn't change task status")
+			}
+		}
+	}()
+
+	status, getErr := runCtx.Storage.GetTaskStatus(ctx, runCtx.TaskID)
 	if err != nil {
-		return nil, err
+		err = getErr
+		return
 	}
-	block, err := CreateBlock(ctx, name, bl, runCtx)
+	if status != db.RunStatusRunning && status != db.RunStatusCreated {
+		return nil
+	}
+
+
+	if changeErr := runCtx.changeTaskStatus(ctx, db.RunStatusRunning); changeErr != nil {
+		err = changeErr
+		return
+	}
+
+	block, id, initErr := initBlock(ctx, name, bl, runCtx)
+	if initErr != nil {
+		err = initErr
+		return
+	}
+	if block.UpdateManual() && !manual {
+		return
+	}
+	err = updateBlock(ctx, block, name, id, runCtx)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return block, nil
+	if block.GetStatus() == StatusFinished || block.GetStatus() == StatusNoSuccess {
+		activeBlocks, ok := block.Next(runCtx.VarStore)
+		if !ok {
+			err = runCtx.updateStepInDB(ctx, id, true, block.GetStatus())
+			if err != nil {
+				return
+			}
+			err = ErrCantGetNextStep
+			return
+		}
+		for _, b := range activeBlocks {
+			blockData, blockErr := runCtx.Storage.GetBlockDataFromVersion(ctx, runCtx.WorkNumber, b)
+			if blockErr != nil {
+				err = blockErr
+				return
+			}
+			err = ProcessBlock(ctx, b, blockData, runCtx.Copy(), false)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return nil
 }
 
 func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, error) {
@@ -174,4 +218,58 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	}
 
 	return nil, errors.New("unknown go-block type: " + ef.TypeID)
+}
+
+func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
+	block, err := CreateBlock(ctx, name, bl, runCtx)
+	if err != nil {
+		return nil, uuid.Nil, err
+	}
+
+	if _, ok := runCtx.VarStore.State[name]; !ok {
+		state, stateErr := json.Marshal(block.GetState())
+		if stateErr != nil {
+			return nil, uuid.Nil, stateErr
+		}
+		runCtx.VarStore.ReplaceState(name, state)
+	}
+
+	id, _, err := runCtx.saveStepInDB(ctx, name, bl.TypeID)
+	if err != nil {
+		return nil, uuid.Nil, err
+	}
+	return block, id, nil
+}
+
+func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx *BlockRunContext) error {
+	_, err := block.Update(ctx)
+	if err != nil {
+		key := name + KeyDelimiter + ErrorKey
+		runCtx.VarStore.SetValue(key, err.Error())
+	}
+	err = runCtx.updateStepInDB(ctx, id, err != nil, block.GetStatus())
+	if err != nil {
+		return err
+	}
+	err = runCtx.updateStatusByStep(ctx, block.GetTaskHumanStatus())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasError bool, status Status) error {
+	storageData, err := json.Marshal(runCtx.VarStore)
+	if err != nil {
+		return err
+	}
+
+	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:             id,
+		Content:        storageData,
+		BreakPoints:    []string{},
+		HasError:       hasError,
+		Status:         string(status),
+		WithoutContent: status != StatusFinished && status != StatusCancel && status != StatusNoSuccess,
+	})
 }

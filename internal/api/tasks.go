@@ -424,16 +424,34 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		steps = steps[:1]
 	}
 
-	runCtx := &pipeline.BlockRunContext{
-		Storage:     ae.DB,
-		FaaS:        ae.FaaS,
-		Sender:      ae.Mail,
-		People:      ae.People,
-		ServiceDesc: ae.ServiceDesc,
-	}
-
 	couldUpdateOne := false
 	for _, item := range steps {
+		storage, err := ae.DB.GetVariableStorageForStep(ctx, dbTask.ID, item.Name)
+		if err != nil {
+			e := BlockNotFoundError
+			log.Error(e.errorMessage(nil))
+			_ = e.sendError(w)
+
+			return
+		}
+		runCtx := &pipeline.BlockRunContext{
+			Storage:     ae.DB,
+			FaaS:        ae.FaaS,
+			Sender:      ae.Mail,
+			People:      ae.People,
+			ServiceDesc: ae.ServiceDesc,
+			UpdateData: &script.BlockUpdateData{
+				Id:         item.ID,
+				ByLogin:    ui.Username,
+				Action:     string(updateData.Action),
+				Parameters: updateData.Parameters,
+				WorkNumber: dbTask.WorkNumber,
+				WorkTitle:  dbTask.Name,
+				Author:     dbTask.Author,
+			},
+			VarStore: storage,
+		}
+
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
 		if !ok {
 			e := BlockNotFoundError
@@ -442,25 +460,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 			return
 		}
-
-		block, blockErr := pipeline.CreateBlock(ctx, item.Name, &blockFunc, runCtx)
-		if blockErr != nil {
-			e := UpdateBlockError
-			log.Error(e.errorMessage(blockErr))
-			_ = e.sendError(w)
-
-			return
-		}
-
-		_, blockErr = block.Update(ctx, &script.BlockUpdateData{
-			Id:         item.ID,
-			ByLogin:    ui.Username,
-			Action:     string(updateData.Action),
-			Parameters: updateData.Parameters,
-			WorkNumber: dbTask.WorkNumber,
-			WorkTitle:  dbTask.Name,
-			Author:     dbTask.Author,
-		})
+		blockErr := pipeline.ProcessBlock(ctx, item.Name, &blockFunc, runCtx, true)
 		if blockErr == nil {
 			couldUpdateOne = true
 		} else {

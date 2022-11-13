@@ -10,12 +10,12 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 func OnlyReturnBlockGenerator(ret map[string]interface{}) http.HandlerFunc {
@@ -1139,6 +1139,10 @@ func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, errNotFound
 }
 
+func (m *MockDB) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
+	return nil, errNotImplemented
+}
+
 func (m *MockDB) ActiveAlertNGSA(c context.Context, sever int, state, source,
 	eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error {
 	return nil
@@ -1225,5 +1229,17 @@ func (m *MockDB) GetUsersWithReadWriteFormAccess(
 	ctx context.Context,
 	workNumber string,
 	stepName string) ([]entity.UsersWithFormAccess, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) GetTaskStatus(ctx context.Context, taskID uuid.UUID) (int, error) {
+	return -1, errNotImplemented
+}
+
+func (m *MockDB) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
 	return nil, errNotImplemented
 }

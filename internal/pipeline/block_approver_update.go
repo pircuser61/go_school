@@ -311,7 +311,8 @@ func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) error {
 	return errors.New("not found request by linkId")
 }
 
-func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
+	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
 	}

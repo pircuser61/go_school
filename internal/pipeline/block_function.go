@@ -150,7 +150,7 @@ func (fb *ExecutableFunctionBlock) GetState() interface{} {
 	return nil
 }
 
-func (fb *ExecutableFunctionBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (fb *ExecutableFunctionBlock) Update(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
@@ -171,6 +171,10 @@ func (fb *ExecutableFunctionBlock) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
+}
+
+func (fb *ExecutableFunctionBlock) UpdateManual() bool {
+	return false
 }
 
 // nolint:dupl // another block

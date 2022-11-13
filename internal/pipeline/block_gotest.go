@@ -20,6 +20,10 @@ type GoTestBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoTestBlock) UpdateManual() bool {
+	return false
+}
+
 func (gb *GoTestBlock) GetStatus() Status {
 	return StatusFinished
 }
@@ -86,7 +90,7 @@ func (gb *GoTestBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoTestBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoTestBlock) Update(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 

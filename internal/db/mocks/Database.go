@@ -7,6 +7,7 @@ import (
 
 	db "gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	entity "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -687,6 +688,52 @@ func (_m *MockedDatabase) GetPipelinesWithLatestVersion(ctx context.Context, aut
 	return r0, r1
 }
 
+// GetTaskStatus provides a mock function with given fields: ctx, taskID
+func (_m *MockedDatabase) GetTaskStatus(ctx context.Context, taskID uuid.UUID) (int, error) {
+	ret := _m.Called(ctx, taskID)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) int); ok {
+		r0 = rf(ctx, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(int)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetBlockDataFromVersion provides a mock function with given fields: ctx, workNumber, blockName
+func (_m *MockedDatabase) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
+	ret := _m.Called(ctx, workNumber, blockName)
+
+	var r0 *entity.EriusFunc
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *entity.EriusFunc); ok {
+		r0 = rf(ctx, workNumber, blockName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.EriusFunc)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, workNumber, blockName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetRejectedVersions provides a mock function with given fields: ctx
 func (_m *MockedDatabase) GetRejectedVersions(ctx context.Context) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(ctx)
@@ -1302,6 +1349,20 @@ func (_m *MockedDatabase) UpdateTaskHumanStatus(ctx context.Context, taskID uuid
 	return r0
 }
 
+// StopTaskBlocks provides a mock function with given fields: ctx, taskID
+func (_m *MockedDatabase) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
+	ret := _m.Called(ctx, taskID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, taskID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // VersionEditable provides a mock function with given fields: ctx, versionID
 func (_m *MockedDatabase) VersionEditable(ctx context.Context, versionID uuid.UUID) (bool, error) {
 	ret := _m.Called(ctx, versionID)
@@ -1316,6 +1377,27 @@ func (_m *MockedDatabase) VersionEditable(ctx context.Context, versionID uuid.UU
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
 		r1 = rf(ctx, versionID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetVariableStorageForStep provides a mock function with given fields: ctx, taskID, stepType
+func (_m *MockedDatabase) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
+	ret := _m.Called(ctx, taskID, stepType)
+
+	var r0 *store.VariableStore
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *store.VariableStore); ok {
+		r0 = rf(ctx, taskID, stepType)
+	} else {
+		r0 = ret.Get(0).(*store.VariableStore)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = rf(ctx, taskID, stepType)
 	} else {
 		r1 = ret.Error(1)
 	}

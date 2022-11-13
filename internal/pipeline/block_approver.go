@@ -41,6 +41,10 @@ type GoApproverBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoApproverBlock) UpdateManual() bool {
+	return true
+}
+
 func (gb *GoApproverBlock) GetStatus() Status {
 	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel

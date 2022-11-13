@@ -809,3 +809,20 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(
 	}
 	return result, nil
 }
+
+func (db *PGCon) GetTaskStatus(ctx context.Context, taskID uuid.UUID) (int, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_status")
+	defer span.End()
+
+	q := `
+		SELECT status
+		FROM works
+		WHERE id = $1`
+
+	var status int
+
+	if err := db.Pool.QueryRow(ctx, q, taskID).Scan(&status); err != nil {
+		return -1, err
+	}
+	return status, nil
+}

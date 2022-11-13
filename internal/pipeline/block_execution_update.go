@@ -20,7 +20,8 @@ import (
 )
 
 //nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
+	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("update data is empty")
 	}

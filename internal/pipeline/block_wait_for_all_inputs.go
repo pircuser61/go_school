@@ -32,6 +32,10 @@ type GoWaitForAllInputsBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoWaitForAllInputsBlock) UpdateManual() bool {
+	return false
+}
+
 func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel
@@ -96,7 +100,8 @@ func (gb *GoWaitForAllInputsBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context, data *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, error) {
+	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
 	}

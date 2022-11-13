@@ -14,5 +14,8 @@ func (runCtx *BlockRunContext) changeTaskStatus(ctx c.Context, taskStatus int) e
 }
 
 func (runCtx *BlockRunContext) updateStatusByStep(ctx c.Context, status TaskHumanStatus) error {
+	if status == "" {
+		return nil
+	}
 	return runCtx.Storage.UpdateTaskHumanStatus(ctx, runCtx.TaskID, string(status))
 }

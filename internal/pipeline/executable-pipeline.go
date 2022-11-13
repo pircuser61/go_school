@@ -83,6 +83,10 @@ func (ep *ExecutablePipeline) GetStatus() Status {
 	}
 }
 
+func (ep *ExecutablePipeline) UpdateManual() bool {
+	return false
+}
+
 func (ep *ExecutablePipeline) IsOver() bool {
 	return len(ep.ActiveBlocks) == 0 || ep.endExecution
 }
@@ -572,7 +576,7 @@ func (ep *ExecutablePipeline) GetState() interface{} {
 	return nil
 }
 
-func (ep *ExecutablePipeline) Update(_ c.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (ep *ExecutablePipeline) Update(_ c.Context) (interface{}, error) {
 	return nil, nil
 }
 

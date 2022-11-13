@@ -8,8 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"go.opencensus.io/trace"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -43,6 +41,10 @@ type GoSdApplicationBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoSdApplicationBlock) UpdateManual() bool {
+	return false
+}
+
 func (gb *GoSdApplicationBlock) GetStatus() Status {
 	if gb.State.ApplicationBody != nil {
 		return StatusFinished
@@ -70,37 +72,8 @@ func (gb *GoSdApplicationBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) (err error) {
-	_, s := trace.StartSpan(ctx, "run_go_sd_block")
-	defer s.End()
-
-	log := logger.CreateLogger(nil)
-
-	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-	if err != nil {
-		return errors.Wrap(err, "can't get task run context")
-	}
-
-	runCtx.AddStep(gb.Name)
-
-	log.WithField("blueprintID", gb.State.BlueprintID).Info("run sd_application block")
-
-	runCtx.SetValue(gb.Output[keyOutputBlueprintID], gb.State.BlueprintID)
-	runCtx.SetValue(gb.Output[keyOutputSdApplicationDesc], data.InitialApplication.Description)
-	runCtx.SetValue(gb.Output[keyOutputSdApplication], data.InitialApplication.ApplicationBody)
-
-	gb.State.ApplicationBody = data.InitialApplication.ApplicationBody
-	gb.State.Description = data.InitialApplication.Description
-
-	var stateBytes []byte
-	stateBytes, err = json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	runCtx.ReplaceState(gb.Name, stateBytes)
-
-	return err
+func (gb *GoSdApplicationBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) (err error) {
+	return nil
 }
 
 func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -119,7 +92,28 @@ func (gb *GoSdApplicationBlock) GetState() interface{} {
 	return gb.State
 }
 
-func (gb *GoSdApplicationBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error) {
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't get task run context")
+	}
+
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputBlueprintID], gb.State.BlueprintID)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplicationDesc], data.InitialApplication.Description)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplication], data.InitialApplication.ApplicationBody)
+
+	gb.State.ApplicationBody = data.InitialApplication.ApplicationBody
+	gb.State.Description = data.InitialApplication.Description
+
+	var stateBytes []byte
+	stateBytes, err = json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 	return nil, nil
 }
 

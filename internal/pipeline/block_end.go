@@ -3,8 +3,7 @@ package pipeline
 import (
 	"context"
 
-	"go.opencensus.io/trace"
-
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -21,6 +20,10 @@ type GoEndBlock struct {
 
 func (gb *GoEndBlock) GetStatus() Status {
 	return StatusFinished
+}
+
+func (gb *GoEndBlock) UpdateManual() bool {
+	return false
 }
 
 func (gb *GoEndBlock) GetTaskHumanStatus() TaskHumanStatus {
@@ -45,28 +48,7 @@ func (gb *GoEndBlock) IsScenario() bool {
 }
 
 // nolint:dupl // not dupl?
-func (gb *GoEndBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "run_go_block")
-	defer s.End()
-
-	runCtx.AddStep(gb.Name)
-
-	values := make(map[string]interface{})
-
-	for ikey, gkey := range gb.Input {
-		val, ok := runCtx.GetValue(gkey) // if no value - empty value
-		if ok {
-			values[ikey] = val
-		}
-	}
-
-	for ikey, gkey := range gb.Output {
-		val, ok := values[ikey]
-		if ok {
-			runCtx.SetValue(gkey, val)
-		}
-	}
-
+func (gb *GoEndBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
 	return nil
 }
 
@@ -82,7 +64,14 @@ func (gb *GoEndBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoEndBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoEndBlock) Update(ctx context.Context) (interface{}, error) {
+	gb.RunContext.VarStore.AddStep(gb.Name)
+	if err := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); err != nil {
+		return nil, err
+	}
+	if err := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 

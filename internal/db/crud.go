@@ -2226,3 +2226,53 @@ func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (enti
 	}
 	return runCtx, nil
 }
+
+func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
+	ctx, span := trace.StartSpan(ctx, "get_block_data_from_version")
+	defer span.End()
+
+	q := `
+		SELECT content->'pipeline'->'blocks'->$1 FROM versions
+    	JOIN works w ON versions.id = w.version_id
+		WHERE w.work_number = $2`
+
+	var f *entity.EriusFunc
+
+	if scanErr := db.Pool.QueryRow(ctx, q, blockName, workNumber).Scan(&f); scanErr != nil {
+		return nil, scanErr
+	}
+	return f, nil
+}
+
+func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
+	ctx, span := trace.StartSpan(ctx, "stop_task_blocks")
+	defer span.End()
+
+	q := `
+		UPDATE variable_storage
+		SET status = 'cancel'
+		WHERE work_id = $1 AND status IN ('ready', 'idle', 'running')`
+
+	_, err := db.Pool.Exec(ctx, q, taskID)
+	return err
+}
+
+func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "stop_task_blocks")
+	defer span.End()
+
+	q := `
+		SELECT content
+		FROM variable_storage
+		WHERE work_id = $1 AND step_type = $2`
+
+	var content []byte
+	if err := db.Pool.QueryRow(ctx, q, taskID, stepType).Scan(&content); err != nil {
+		return nil, err
+	}
+	storage := store.NewStore()
+	if err := json.Unmarshal(content, &storage); err != nil {
+		return nil, err
+	}
+	return storage, nil
+}

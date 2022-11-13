@@ -8,6 +8,7 @@ import (
 	"github.com/iancoleman/orderedmap"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type DictionaryStorager interface {
@@ -45,10 +46,14 @@ type TaskStorager interface {
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	ChangeTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error
+	GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error)
+	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error
 	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
+	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
+	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
 }
 
 type SaveStepRequest struct {

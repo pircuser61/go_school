@@ -3,8 +3,6 @@ package pipeline
 import (
 	"context"
 
-	"go.opencensus.io/trace"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -19,6 +17,10 @@ type GoBeginParallelTaskBlock struct {
 	Output     map[string]string
 	Sockets    []script.Socket
 	RunContext *BlockRunContext
+}
+
+func (gb *GoBeginParallelTaskBlock) UpdateManual() bool {
+	return false
 }
 
 func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
@@ -46,28 +48,7 @@ func (gb *GoBeginParallelTaskBlock) IsScenario() bool {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoBeginParallelTaskBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "run_go_block")
-	defer s.End()
-
-	runCtx.AddStep(gb.Name)
-
-	values := make(map[string]interface{})
-
-	for ikey, gkey := range gb.Input {
-		val, ok := runCtx.GetValue(gkey) // if no value - empty value
-		if ok {
-			values[ikey] = val
-		}
-	}
-
-	for ikey, gkey := range gb.Output {
-		val, ok := values[ikey]
-		if ok {
-			runCtx.SetValue(gkey, val)
-		}
-	}
-
+func (gb *GoBeginParallelTaskBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
 	return nil
 }
 
@@ -87,7 +68,8 @@ func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoBeginParallelTaskBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoBeginParallelTaskBlock) Update(_ context.Context) (interface{}, error) {
+	gb.RunContext.VarStore.AddStep(gb.Name)
 	return nil, nil
 }
 
