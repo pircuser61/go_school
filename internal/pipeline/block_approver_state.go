@@ -82,8 +82,6 @@ type ApproverData struct {
 
 	DidSLANotification bool `json:"did_sla_notification"`
 
-	LeftToNotify map[string]struct{} `json:"left_to_notify"`
-
 	IsEditable             bool                     `json:"is_editable"`
 	RepeatPrevDecision     bool                     `json:"repeat_prev_decision"`
 	EditingApp             *ApproverEditingApp      `json:"editing_app,omitempty"`

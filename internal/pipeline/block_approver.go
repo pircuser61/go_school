@@ -2,19 +2,11 @@ package pipeline
 
 import (
 	c "context"
-	"encoding/json"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
-
-	"go.opencensus.io/trace"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -120,94 +112,6 @@ func (gb *GoApproverBlock) IsScenario() bool {
 	return false
 }
 
-// nolint:dupl // other block
-func (gb *GoApproverBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
-	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	step.State[gb.Name], err = json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	content, err := json.Marshal(store.NewFromStep(step))
-	if err != nil {
-		return err
-	}
-
-	return gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          id,
-		Content:     content,
-		BreakPoints: step.BreakPoints,
-		HasError:    false,
-		Status:      string(StatusFinished),
-	})
-}
-
-//nolint:dupl // maybe later
-func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
-	if len(gb.State.LeftToNotify) == 0 {
-		return false, nil
-	}
-	l := logger.GetLogger(ctx)
-
-	emails := make([]string, 0, len(gb.State.Approvers))
-	for approver := range gb.State.Approvers {
-		email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
-		if err != nil {
-			l.WithError(err).Error("couldn't get email")
-		}
-		emails = append(emails, email)
-	}
-	if len(emails) == 0 {
-		return false, nil
-	}
-	data, err := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
-	if err != nil {
-		return false, err
-	}
-	var descr string
-	dataDescr, ok := data.Get("description")
-	if ok {
-		convDescr, convOk := dataDescr.(string)
-		if convOk {
-			descr = convDescr
-		}
-	}
-	additionalDescriptions, err := gb.RunContext.Storage.GetAdditionalForms(gb.RunContext.WorkNumber, gb.Name)
-	if err != nil {
-		return false, err
-	}
-	for _, item := range additionalDescriptions {
-		if item == "" {
-			continue
-		}
-		descr = fmt.Sprintf("%s\n\n%s", descr, item)
-	}
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-		mail.NewApplicationPersonStatusNotification(
-			stepCtx.workNumber,
-			stepCtx.workTitle,
-			statusToTaskAction[StatusApprovement],
-			ComputeDeadline(stepCtx.stepStart, gb.State.SLA),
-			descr,
-			gb.RunContext.Sender.SdAddress))
-	if err != nil {
-		return false, err
-	}
-
-	left := gb.State.LeftToNotify
-	gb.State.LeftToNotify = map[string]struct{}{}
-
-	if err := gb.dumpCurrState(ctx, id); err != nil {
-		gb.State.LeftToNotify = left
-		return false, err
-	}
-	return true, nil
-}
-
 func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
 	const workHoursDay = 8
 
@@ -252,10 +156,10 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 				return false, err
 			}
 		} else {
-			if err := gb.dumpCurrState(ctx, id); err != nil {
-				l.WithError(err).Error("couldn't dump state with id: " + id.String())
-				return false, err
-			}
+			//if err := gb.dumpCurrState(ctx, id); err != nil {
+			//	l.WithError(err).Error("couldn't dump state with id: " + id.String())
+			//	return false, err
+			//}
 		}
 		return true, nil
 	}
@@ -265,147 +169,26 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 
 //nolint:gocyclo //ok
 func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
-	ctx, s := trace.StartSpan(ctx, "run_go_approver_block")
-	defer s.End()
-
-	// TODO: fix
-	// runCtx.AddStep(gb.Name)
-
-	l := logger.GetLogger(ctx)
-
-	val, isOk := runCtx.GetValue(getWorkIdKey(gb.Name))
-	if !isOk {
-		return errors.New("can't get work id from variable store")
-	}
-
-	id, isOk := val.(uuid.UUID)
-	if !isOk {
-		return errors.New("can't assert type of work id")
-	}
-
-	// check state from database
-	var step *entity.Step
-	step, err = gb.RunContext.Storage.GetTaskStepById(ctx, id)
-	if err != nil {
-		return err
-	} else if step == nil {
-		l.Error(err)
-		return nil
-	}
-
-	// get state from step.State
-	data, ok := step.State[gb.Name]
-	if !ok {
-		return nil //TODO: log error?
-	}
-
-	var state ApproverData
-	err = json.Unmarshal(data, &state)
-	if err != nil {
-		return errors.Wrap(err, "invalid format of go-approver-block state")
-	}
-
-	gb.State = &state
-
-	if state.Type == script.ApproverTypeFromSchema {
-		// get approver from application body
-		var allVariables map[string]interface{}
-		allVariables, err = runCtx.GrabStorage()
-		if err != nil {
-			return errors.Wrap(err, "Unable to grab variables storage")
-		}
-
-		approvers := make(map[string]struct{})
-		for approverVariableRef := range gb.State.Approvers {
-			if len(strings.Split(approverVariableRef, dotSeparator)) == 1 {
-				continue
-			}
-			approverVar := getVariable(allVariables, approverVariableRef)
-
-			if approverVar == nil {
-				return errors.Wrap(err, "Unable to find approver by variable reference")
-			}
-
-			if actualApproverUsername, castOK := approverVar.(string); castOK {
-				approvers[actualApproverUsername] = gb.State.Approvers[approverVariableRef]
-			}
-		}
-
-		if len(approvers) != 0 {
-			gb.State.Approvers = approvers
-			gb.State.LeftToNotify = approvers
-		}
-	}
-
-	if step.Status != string(StatusIdle) {
-		handled, errSLA := gb.handleSLA(ctx, id, stepCtx)
-		if errSLA != nil {
-			l.WithError(errSLA).Error("couldn't handle sla")
-		}
-
-		if handled {
-			// go for another loop cause we may have updated the state at db
-			return gb.DebugRun(ctx, stepCtx, runCtx)
-		}
-
-		handled, err = gb.handleNotifications(ctx, id, stepCtx)
-		if err != nil {
-			l.WithError(err).Error("couldn't handle notifications")
-		}
-		if handled {
-			// go for another loop cause we may have updated the state at db
-			return gb.DebugRun(ctx, stepCtx, runCtx)
-		}
-	}
-
-	// check decision
-	decision := gb.State.GetDecision()
-
-	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
-		gb.setEditingAppLogFromPreviousBlock(ctx, &setEditingAppLogDTO{
-			step:     step,
-			id:       id,
-			runCtx:   runCtx,
-			workID:   gb.RunContext.TaskID,
-			stepName: step.Name,
-		})
-	}
-
-	if decision == nil && gb.State.GetRepeatPrevDecision() {
-		if gb.trySetPreviousDecision(ctx, &getPreviousDecisionDTO{
-			id:       id,
-			runCtx:   runCtx,
-			workID:   gb.RunContext.TaskID,
-			stepName: step.Name,
-		}) {
-			return nil
-		}
-	}
-
-	// nolint:dupl // not dupl?
-	if decision != nil {
-		var actualApprover, comment string
-
-		if state.ActualApprover != nil {
-			actualApprover = *state.ActualApprover
-		}
-
-		if state.Comment != nil {
-			comment = *state.Comment
-		}
-
-		runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
-		runCtx.SetValue(gb.Output[keyOutputDecision], decision.String())
-		runCtx.SetValue(gb.Output[keyOutputComment], comment)
-
-		var stateBytes []byte
-		stateBytes, err = json.Marshal(gb.State)
-		if err != nil {
-			return err
-		}
-
-		runCtx.ReplaceState(gb.Name, stateBytes)
-	}
+	//if step.Status != string(StatusIdle) {
+	//	handled, errSLA := gb.handleSLA(ctx, id, stepCtx)
+	//	if errSLA != nil {
+	//		l.WithError(errSLA).Error("couldn't handle sla")
+	//	}
+	//
+	//	if handled {
+	//		// go for another loop cause we may have updated the state at db
+	//		return gb.DebugRun(ctx, stepCtx, runCtx)
+	//	}
+	//
+	//	handled, err = gb.handleNotifications(ctx, id, stepCtx)
+	//	if err != nil {
+	//		l.WithError(err).Error("couldn't handle notifications")
+	//	}
+	//	if handled {
+	//		// go for another loop cause we may have updated the state at db
+	//		return gb.DebugRun(ctx, stepCtx, runCtx)
+	//	}
+	//}
 
 	return nil
 }

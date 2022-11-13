@@ -91,12 +91,11 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		err = initErr
 		return
 	}
-	if block.UpdateManual() && !manual {
-		return
-	}
-	err = updateBlock(ctx, block, name, id, runCtx)
-	if err != nil {
-		return
+	if (block.UpdateManual() && manual) || !block.UpdateManual() {
+		err = updateBlock(ctx, block, name, id, runCtx)
+		if err != nil {
+			return
+		}
 	}
 	if block.GetStatus() == StatusFinished || block.GetStatus() == StatusNoSuccess {
 		activeBlocks, ok := block.Next(runCtx.VarStore)
@@ -214,7 +213,7 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	case BlockExecutableFunctionID:
 		return createExecutableFunctionBlock(name, ef, runCtx)
 	case BlockGoFormID:
-		return createGoFormBlock(name, ef, runCtx)
+		return createGoFormBlock(ctx, name, ef, runCtx)
 	}
 
 	return nil, errors.New("unknown go-block type: " + ef.TypeID)

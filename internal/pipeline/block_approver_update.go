@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
@@ -354,15 +352,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, gb.updateRequestApproverInfo(ctx, data.ByLogin, data)
 
 	case string(entity.TaskUpdateActionCancelApp):
-		step, err := gb.RunContext.Storage.GetTaskStepById(ctx, data.Id)
-		if err != nil {
-			return nil, err
-		}
-
-		if step == nil {
-			return nil, errors.New("can't get step from database")
-		}
-		if errUpdate := gb.cancelPipeline(ctx, data, step); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 		return nil, nil
@@ -371,159 +361,21 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	return nil, errors.New("cant`t update approver block, unknown action: " + data.Action)
 }
 
-type setEditingAppLogDTO struct {
-	step     *entity.Step
-	id       uuid.UUID
-	runCtx   *store.VariableStore
-	workID   uuid.UUID
-	stepName string
-}
-
-//nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto *setEditingAppLogDTO) {
-	const funcName = "setEditingAppLogFromPreviousBlock"
-	l := logger.GetLogger(ctx)
-
-	var parentStep *entity.Step
-	var err error
-
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
-	if err != nil || parentStep == nil {
-		return
-	}
-
-	// get state from step.State
-	data, ok := parentStep.State[dto.stepName]
-	if !ok {
-		l.Error(funcName, "step state is not found: "+dto.stepName)
-		return
-	}
-
-	var parentState ApproverData
-	if err = json.Unmarshal(data, &parentState); err != nil {
-		l.Error(funcName, "invalid format of go-approver-block state")
-		return
-	}
-
-	if len(parentState.EditingAppLog) > 0 {
-		gb.State.EditingAppLog = parentState.EditingAppLog
-
-		if dto.step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
-			l.Error(err)
-			return
-		}
-
-		var stateBytes []byte
-		if stateBytes, err = json.Marshal(store.NewFromStep(dto.step)); err != nil {
-			l.Error(funcName, err)
-			return
-		}
-
-		err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-			Id:          dto.id,
-			Content:     stateBytes,
-			BreakPoints: dto.step.BreakPoints,
-			Status:      dto.step.Status,
-		})
-		if err != nil {
-			l.Error(funcName, err)
-			return
-		}
-
-		dto.runCtx.ReplaceState(gb.Name, stateBytes)
-	}
-}
-
 // nolint:dupl // another action
-func (gb *GoApproverBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 	gb.State.IsRevoked = true
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
+	}
+	if changeErr := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); changeErr != nil {
+		return changeErr
+	}
 
-	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
+	stateBytes, err := json.Marshal(gb.State)
+	if err != nil {
 		return err
 	}
-	var content []byte
-	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
-		return err
-	}
-	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          in.Id,
-		Content:     content,
-		BreakPoints: step.BreakPoints,
-		Status:      string(StatusCancel),
-	})
 
-	return err
-}
-
-func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviousDecisionDTO) (isPrevDecisionAssigned bool) {
-	const funcName = "pipeline.approver.trySetPreviousDecision"
-	l := logger.GetLogger(ctx)
-
-	var parentStep *entity.Step
-	var err error
-
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
-	if err != nil || parentStep == nil {
-		l.Error(err)
-		return false
-	}
-
-	data, ok := parentStep.State[dto.stepName]
-	if !ok {
-		l.Error(funcName, "parent step state is not found: "+dto.stepName)
-		return false
-	}
-
-	var parentState ApproverData
-	if err = json.Unmarshal(data, &parentState); err != nil {
-		l.Error(funcName, "invalid format of go-approver-block state")
-		return false
-	}
-
-	if parentState.Decision != nil {
-		var actualApprover, comment string
-
-		if parentState.ActualApprover != nil {
-			actualApprover = *parentState.ActualApprover
-		}
-
-		if parentState.Comment != nil {
-			comment = *parentState.Comment
-		}
-
-		dto.runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
-		dto.runCtx.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
-		dto.runCtx.SetValue(gb.Output[keyOutputComment], comment)
-
-		gb.State.ActualApprover = &actualApprover
-		gb.State.Comment = &comment
-		gb.State.Decision = parentState.Decision
-
-		var stateBytes []byte
-		stateBytes, err = json.Marshal(gb.State)
-		if err != nil {
-			l.Error(funcName, err)
-			return false
-		}
-
-		if dto.step.State[gb.Name], err = json.Marshal(store.NewFromStep(dto.step)); err != nil {
-			l.Error(funcName, err)
-			return
-		}
-
-		err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-			Id:          dto.id,
-			Content:     stateBytes,
-			BreakPoints: parentStep.BreakPoints,
-			Status:      string(StatusRunning),
-		})
-		if err != nil {
-			l.Error(funcName, err)
-			return
-		}
-
-		dto.runCtx.ReplaceState(gb.Name, stateBytes)
-	}
-
-	return true
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+	return nil
 }

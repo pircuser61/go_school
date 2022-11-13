@@ -40,6 +40,14 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); err != nil {
 			return nil, err
 		}
+
+		var stateBytes []byte
+		stateBytes, err := json.Marshal(gb.State)
+		if err != nil {
+			return nil, err
+		}
+
+		gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 		return nil, nil
 	}
 	var updateParams updateFillFormParams
@@ -84,5 +92,12 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], &data.ByLogin)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
 
+	var stateBytes []byte
+	stateBytes, err = json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 	return nil, nil
 }

@@ -142,7 +142,7 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoFormBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, error) {
+func createGoFormBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, error) {
 	b := &GoFormBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -166,7 +166,7 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContex
 			return nil, err
 		}
 	} else {
-		if err := b.createState(ef, runCtx); err != nil {
+		if err := b.createState(ctx, ef, runCtx); err != nil {
 			return nil, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
@@ -179,7 +179,7 @@ func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-func (gb *GoFormBlock) createState(ef *entity.EriusFunc, runCtx *BlockRunContext) error {
+func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc, runCtx *BlockRunContext) error {
 	var params script.FormParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -218,7 +218,9 @@ func (gb *GoFormBlock) createState(ef *entity.EriusFunc, runCtx *BlockRunContext
 
 		resolvedEntities, resolveErr := resolveValuesFromVariables(
 			variableStorage,
-			map[string]struct{}{params.Executor: {}},
+			map[string]struct{}{
+				params.Executor: {},
+			},
 		)
 		if resolveErr != nil {
 			return err
@@ -227,11 +229,10 @@ func (gb *GoFormBlock) createState(ef *entity.EriusFunc, runCtx *BlockRunContext
 		gb.State.Executors = resolvedEntities
 	}
 
-	return gb.handleNotifications(runCtx)
+	return gb.handleNotifications(ctx, runCtx)
 }
 
-func (gb *GoFormBlock) handleNotifications(runCtx *BlockRunContext) error {
-	ctx := context.Background()
+func (gb *GoFormBlock) handleNotifications(ctx context.Context, runCtx *BlockRunContext) error {
 	executors, executorsErr := gb.resolveExecutors(ctx, runCtx)
 	if executorsErr != nil {
 		return executorsErr
