@@ -22,13 +22,13 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 	stepId := uuid.New()
 
 	type fields struct {
-		Name     string
-		Title    string
-		Input    map[string]string
-		Output   map[string]string
-		NextStep []script.Socket
-		State    *ExecutionData
-		Pipeline *ExecutablePipeline
+		Name       string
+		Title      string
+		Input      map[string]string
+		Output     map[string]string
+		NextStep   []script.Socket
+		State      *ExecutionData
+		RunContext *BlockRunContext
 	}
 	type args struct {
 		ctx    context.Context
@@ -87,7 +87,7 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 				Input:    nil,
 				Output:   nil,
 				NextStep: []script.Socket{},
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -118,12 +118,12 @@ func TestGoExecutionBlock_DebugRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoExecutionBlock{
-				Name:     tt.fields.Name,
-				Title:    tt.fields.Title,
-				Input:    tt.fields.Input,
-				Output:   tt.fields.Output,
-				Sockets:  tt.fields.NextStep,
-				Pipeline: tt.fields.Pipeline,
+				Name:       tt.fields.Name,
+				Title:      tt.fields.Title,
+				Input:      tt.fields.Input,
+				Output:     tt.fields.Output,
+				Sockets:    tt.fields.NextStep,
+				RunContext: tt.fields.RunContext,
 			}
 			if err := gb.DebugRun(tt.args.ctx, nil, tt.args.runCtx); (err != nil) != tt.wantErr {
 				t.Errorf("execution.DebugRun() error = %v, wantErr %v", err, tt.wantErr)

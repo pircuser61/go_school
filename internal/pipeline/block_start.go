@@ -11,11 +11,12 @@ import (
 )
 
 type GoStartBlock struct {
-	Name    string
-	Title   string
-	Input   map[string]string
-	Output  map[string]string
-	Sockets []script.Socket
+	Name       string
+	Title      string
+	Input      map[string]string
+	Output     map[string]string
+	Sockets    []script.Socket
+	RunContext *BlockRunContext
 }
 
 func (gb *GoStartBlock) GetStatus() Status {
@@ -99,13 +100,14 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoStartBlock(name string, ef *entity.EriusFunc) *GoStartBlock {
+func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoStartBlock {
 	b := &GoStartBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {

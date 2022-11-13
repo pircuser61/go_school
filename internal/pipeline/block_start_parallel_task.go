@@ -13,11 +13,12 @@ import (
 type BeginParallelData struct{}
 
 type GoBeginParallelTaskBlock struct {
-	Name    string
-	Title   string
-	Input   map[string]string
-	Output  map[string]string
-	Sockets []script.Socket
+	Name       string
+	Title      string
+	Input      map[string]string
+	Output     map[string]string
+	Sockets    []script.Socket
+	RunContext *BlockRunContext
 }
 
 func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
@@ -103,13 +104,14 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoStartParallelBlock(name string, ef *entity.EriusFunc) *GoBeginParallelTaskBlock {
+func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoBeginParallelTaskBlock {
 	b := &GoBeginParallelTaskBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {

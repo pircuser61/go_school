@@ -294,12 +294,12 @@ func TestGoApproverBlock_Update(t *testing.T) {
 	secondExampleApprover := "example2"
 
 	type fields struct {
-		Name     string
-		Title    string
-		Input    map[string]string
-		Output   map[string]string
-		NextStep []script.Socket
-		Pipeline *ExecutablePipeline
+		Name       string
+		Title      string
+		Input      map[string]string
+		Output     map[string]string
+		NextStep   []script.Socket
+		RunContext *BlockRunContext
 	}
 	type args struct {
 		ctx  context.Context
@@ -340,7 +340,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "error from database on GetTaskStepById",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -369,7 +369,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "can't get step from database",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -398,7 +398,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "can't get step state",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -437,7 +437,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "invalid format of go-approver-block state",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -478,7 +478,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "decision already set",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -537,7 +537,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "error on UpdateStepContext",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -594,7 +594,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "any of approvers",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -655,7 +655,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "any of approvers",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -716,7 +716,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "acceptance test",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -775,13 +775,13 @@ func TestGoApproverBlock_Update(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoApproverBlock{
-				Name:     tt.fields.Name,
-				Title:    tt.fields.Title,
-				Input:    tt.fields.Input,
-				Output:   tt.fields.Output,
-				Sockets:  tt.fields.NextStep,
-				State:    &ApproverData{},
-				Pipeline: tt.fields.Pipeline,
+				Name:       tt.fields.Name,
+				Title:      tt.fields.Title,
+				Input:      tt.fields.Input,
+				Output:     tt.fields.Output,
+				Sockets:    tt.fields.NextStep,
+				State:      &ApproverData{},
+				RunContext: tt.fields.RunContext,
 			}
 			got, err := gb.Update(tt.args.ctx, tt.args.data)
 			assert.Equalf(t, tt.wantErr, err != nil, fmt.Sprintf("Update(%v, %v)", tt.args.ctx, tt.args.data))

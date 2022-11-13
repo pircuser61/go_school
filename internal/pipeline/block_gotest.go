@@ -16,6 +16,8 @@ type GoTestBlock struct {
 	Input   map[string]string
 	Output  map[string]string
 	Sockets []script.Socket
+
+	RunContext *BlockRunContext
 }
 
 func (gb *GoTestBlock) GetStatus() Status {
@@ -88,13 +90,14 @@ func (gb *GoTestBlock) Update(_ context.Context, _ *script.BlockUpdateData) (int
 	return nil, nil
 }
 
-func createGoTestBlock(name string, ef *entity.EriusFunc) *GoTestBlock {
+func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoTestBlock {
 	b := &GoTestBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {

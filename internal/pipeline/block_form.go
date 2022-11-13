@@ -64,7 +64,7 @@ type GoFormBlock struct {
 	Sockets []script.Socket
 	State   *FormData
 
-	Pipeline *ExecutablePipeline
+	RunContext *BlockRunContext
 }
 
 func (gb *GoFormBlock) GetStatus() Status {
@@ -140,7 +140,7 @@ func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.V
 
 	// check state from database
 	var step *entity.Step
-	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	step, err = gb.RunContext.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	} else if step == nil {
@@ -225,14 +225,14 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline) (*GoFormBlock, error) {
+func createGoFormBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, error) {
 	b := &GoFormBlock{
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		Sockets:  entity.ConvertSocket(ef.Sockets),
-		Pipeline: ep,
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {
@@ -272,7 +272,7 @@ func createGoFormBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline
 
 	if b.State.FormExecutorType == script.FormExecutorTypeInitiator {
 		b.State.Executors = map[string]struct{}{
-			ep.PipelineModel.Author: {},
+			runCtx.Initiator: {},
 		}
 	}
 
@@ -320,7 +320,7 @@ func (gb *GoFormBlock) resolveFormExecutors(ctx c.Context, dto *resolveFormExecu
 		return err
 	}
 
-	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	return gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          dto.id,
 		Content:     content,
 		BreakPoints: dto.step.BreakPoints,
@@ -345,7 +345,7 @@ func (gb *GoFormBlock) handleNotifications(
 		var emails = make([]string, 0)
 
 		for _, executor := range executors {
-			email, emailErr := gb.Pipeline.People.GetUserEmail(ctx, executor)
+			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, executor)
 			if emailErr != nil {
 				l.WithError(emailErr).Error("couldn't get email")
 			}
@@ -356,11 +356,11 @@ func (gb *GoFormBlock) handleNotifications(
 			return false, nil
 		}
 
-		err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
+		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 			mail.NewRequestFormExecutionInfoTemplate(
 				stepCtx.workNumber,
 				stepCtx.workTitle,
-				gb.Pipeline.Sender.SdAddress))
+				gb.RunContext.Sender.SdAddress))
 		if err != nil {
 			return false, err
 		}
@@ -402,7 +402,7 @@ func (gb *GoFormBlock) resolveExecutors(
 
 	appendUnique(mapToString(gb.State.Executors))
 
-	executorsWithAccess, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, workNumber, gb.Name)
+	executorsWithAccess, err := gb.RunContext.Storage.GetUsersWithReadWriteFormAccess(ctx, workNumber, gb.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -411,14 +411,14 @@ func (gb *GoFormBlock) resolveExecutors(
 		switch executor.ExecutionType {
 		case entity.GroupExecution:
 			if executor.BlockType == entity.ExecutionBlockType {
-				sdUsers, sdErr := gb.Pipeline.ServiceDesc.GetExecutorsGroup(ctx, executor.GroupId)
+				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, executor.GroupId)
 				if sdErr != nil {
 					return nil, sdErr
 				}
 				appendUnique(executorsToString(sdUsers.People))
 			}
 			if executor.BlockType == entity.ApprovementBlockType {
-				sdUsers, sdErr := gb.Pipeline.ServiceDesc.GetApproversGroup(ctx, executor.GroupId)
+				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetApproversGroup(ctx, executor.GroupId)
 				if sdErr != nil {
 					return nil, sdErr
 				}
@@ -475,7 +475,7 @@ func mapToString(schemaUsers map[string]struct{}) []string {
 
 //nolint:dupl // different block
 func (gb *GoFormBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -490,7 +490,7 @@ func (gb *GoFormBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 		return err
 	}
 
-	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	return gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,

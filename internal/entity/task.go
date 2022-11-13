@@ -161,3 +161,12 @@ type NeededNotif struct {
 	Description interface{}
 	Status      string
 }
+
+type InitialApplication struct {
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+}
+
+type TaskRunContext struct {
+	InitialApplication InitialApplication `json:"initial_application"`
+}

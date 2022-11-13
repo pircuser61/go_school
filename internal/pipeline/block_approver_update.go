@@ -46,7 +46,7 @@ func (a *approverUpdateParams) Validate() error {
 }
 
 func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, login string, u approverUpdateParams) error {
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, sID)
+	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, sID)
 	if err != nil {
 		return err
 	} else if step == nil {
@@ -80,7 +80,7 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, log
 		return err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          sID,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -106,7 +106,7 @@ type setApproverEditAppDTO struct {
 
 //nolint:gocyclo //its ok here
 func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setApproverEditAppDTO) error {
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, dto.stepId)
+	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, dto.stepId)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setApproverEdi
 		return err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          dto.stepId,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -158,13 +158,13 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setApproverEdi
 		return err
 	}
 
-	initiatorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, dto.initiator)
+	initiatorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, dto.initiator)
 	if emailErr != nil {
 		return emailErr
 	}
 
-	tpl := mail.NewAnswerSendToEditTemplate(dto.workNumber, dto.workTitle, gb.Pipeline.Sender.SdAddress)
-	err = gb.Pipeline.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	tpl := mail.NewAnswerSendToEditTemplate(dto.workNumber, dto.workTitle, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setApproverEdi
 
 //nolint:gocyclo //ok
 func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin string, data *script.BlockUpdateData) (err error) {
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return err
 	} else if step == nil {
@@ -217,13 +217,13 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 			return fmt.Errorf("%s not found in approvers", byLogin)
 		}
 
-		authorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, data.Author)
+		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, data.Author)
 		if emailErr != nil {
 			return emailErr
 		}
 
-		tpl = mail.NewRequestApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.Pipeline.Sender.SdAddress)
-		if err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl); err != nil {
+		tpl = mail.NewRequestApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.RunContext.Sender.SdAddress)
+		if err = gb.RunContext.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl); err != nil {
 			return err
 		}
 	}
@@ -253,14 +253,14 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 			gb.State.IncreaseSLA(workHours)
 		}
 
-		tpl = mail.NewAnswerApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.Pipeline.Sender.SdAddress)
+		tpl = mail.NewAnswerApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.RunContext.Sender.SdAddress)
 
-		approverEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, byLogin)
+		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, byLogin)
 		if emailErr != nil {
 			return emailErr
 		}
 
-		err = gb.Pipeline.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl)
+		err = gb.RunContext.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl)
 		if err != nil {
 			return err
 		}
@@ -287,7 +287,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 		return err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -353,7 +353,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		return nil, gb.updateRequestApproverInfo(ctx, data.ByLogin, data)
 
 	case string(entity.TaskUpdateActionCancelApp):
-		step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+		step, err := gb.RunContext.Storage.GetTaskStepById(ctx, data.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -386,7 +386,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
 	if err != nil || parentStep == nil {
 		return
 	}
@@ -418,7 +418,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 			return
 		}
 
-		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 			Id:          dto.id,
 			Content:     stateBytes,
 			BreakPoints: dto.step.BreakPoints,
@@ -444,7 +444,7 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdateD
 	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
 		return err
 	}
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -461,7 +461,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviou
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
 	if err != nil || parentStep == nil {
 		l.Error(err)
 		return false
@@ -510,7 +510,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviou
 			return
 		}
 
-		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 			Id:          dto.id,
 			Content:     stateBytes,
 			BreakPoints: parentStep.BreakPoints,

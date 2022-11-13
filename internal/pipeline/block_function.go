@@ -37,6 +37,8 @@ type ExecutableFunctionBlock struct {
 	Sockets []script.Socket
 	State   *ExecutableFunction
 	RunURL  string
+
+	RunContext *BlockRunContext
 }
 
 func (fb *ExecutableFunctionBlock) GetStatus() Status {
@@ -172,13 +174,14 @@ func (fb *ExecutableFunctionBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createExecutableFunctionBlock(name string, ef *entity.EriusFunc) (*ExecutableFunctionBlock, error) {
+func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*ExecutableFunctionBlock, error) {
 	b := &ExecutableFunctionBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {

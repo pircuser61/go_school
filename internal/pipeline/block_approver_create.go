@@ -11,14 +11,14 @@ import (
 )
 
 // nolint:dupl // another block
-func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, ep *ExecutablePipeline) (*GoApproverBlock, error) {
+func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoApproverBlock, error) {
 	b := &GoApproverBlock{
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		Sockets:  entity.ConvertSocket(ef.Sockets),
-		Pipeline: ep,
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {
@@ -48,7 +48,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, ep 
 	approversGroupName := ""
 
 	if params.Type == script.ApproverTypeGroup {
-		approversGroup, errGroup := ep.ServiceDesc.GetApproversGroup(ctx, params.ApproversGroupID)
+		approversGroup, errGroup := runCtx.ServiceDesc.GetApproversGroup(ctx, params.ApproversGroupID)
 		if errGroup != nil {
 			return nil, errors.Wrap(errGroup, "can`t get approvers group with id: "+params.ApproversGroupID)
 		}

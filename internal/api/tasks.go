@@ -424,14 +424,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		steps = steps[:1]
 	}
 
-	ep := pipeline.ExecutablePipeline{
+	runCtx := &pipeline.BlockRunContext{
 		Storage:     ae.DB,
-		Remedy:      ae.Remedy,
 		FaaS:        ae.FaaS,
-		HTTPClient:  ae.HTTPClient,
-		PipelineID:  scenario.ID,
-		VersionID:   scenario.VersionID,
-		EntryPoint:  scenario.Pipeline.Entrypoint,
 		Sender:      ae.Mail,
 		People:      ae.People,
 		ServiceDesc: ae.ServiceDesc,
@@ -448,7 +443,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			return
 		}
 
-		block, blockErr := ep.CreateBlock(ctx, item.Name, &blockFunc)
+		block, blockErr := pipeline.CreateBlock(ctx, item.Name, &blockFunc, runCtx)
 		if blockErr != nil {
 			e := UpdateBlockError
 			log.Error(e.errorMessage(blockErr))

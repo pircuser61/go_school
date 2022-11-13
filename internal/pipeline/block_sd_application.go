@@ -40,7 +40,7 @@ type GoSdApplicationBlock struct {
 	Sockets []script.Socket
 	State   *ApplicationData
 
-	Pipeline *ExecutablePipeline
+	RunContext *BlockRunContext
 }
 
 func (gb *GoSdApplicationBlock) GetStatus() Status {
@@ -76,7 +76,7 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx
 
 	log := logger.CreateLogger(nil)
 
-	data, err := gb.Pipeline.Storage.GetTaskRunContext(ctx, gb.Pipeline.WorkNumber)
+	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return errors.Wrap(err, "can't get task run context")
 	}
@@ -156,17 +156,17 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline) (*GoSdApplicationBlock, error) {
+func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSdApplicationBlock, error) {
 	log := logger.CreateLogger(nil)
 	log.WithField("params", ef.Params).Info("sd_application parameters")
 
 	b := &GoSdApplicationBlock{
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		Sockets:  entity.ConvertSocket(ef.Sockets),
-		Pipeline: ep,
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {

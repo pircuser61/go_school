@@ -37,7 +37,7 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 		return nil, errors.New("empty data")
 	}
 	if data.Action == string(entity.TaskUpdateActionCancelApp) {
-		step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+		step, err := gb.RunContext.Storage.GetTaskStepById(ctx, data.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +60,7 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 		return nil, fmt.Errorf("wrong form id: %s, gb.Name: %s", updateParams.BlockId, gb.Name)
 	}
 
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return nil, err
 	} else if step == nil {
@@ -82,7 +82,7 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 	gb.State = &state
 
 	if gb.State.IsFilled {
-		isAllowed, checkEditErr := gb.Pipeline.Storage.CheckUserCanEditForm(ctx, data.WorkNumber, gb.Name, data.ByLogin)
+		isAllowed, checkEditErr := gb.RunContext.Storage.CheckUserCanEditForm(ctx, data.WorkNumber, gb.Name, data.ByLogin)
 		if checkEditErr != nil {
 			return nil, err
 		}
@@ -120,7 +120,7 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 		return nil, err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -145,7 +145,7 @@ func (gb *GoFormBlock) formCancelPipeline(ctx c.Context, in *script.BlockUpdateD
 	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
 		return err
 	}
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,

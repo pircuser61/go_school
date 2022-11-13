@@ -25,7 +25,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 		return nil, errors.New("update data is empty")
 	}
 
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, data.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 		return err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          data.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -178,7 +178,7 @@ func (gb *GoExecutionBlock) updateDecision(ctx c.Context, in *script.BlockUpdate
 		return err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -265,7 +265,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, in *script.BlockUpd
 		return err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -276,13 +276,13 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, in *script.BlockUpd
 	}
 
 	if updateParams.ReqType == RequestInfoQuestion {
-		authorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, in.Author)
+		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, in.Author)
 		if emailErr != nil {
 			return emailErr
 		}
 
-		tpl := mail.NewRequestExecutionInfoTemplate(in.WorkNumber, in.WorkTitle, gb.Pipeline.Sender.SdAddress)
-		err = gb.Pipeline.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
+		tpl := mail.NewRequestExecutionInfoTemplate(in.WorkNumber, in.WorkTitle, gb.RunContext.Sender.SdAddress)
+		err = gb.RunContext.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
 		if err != nil {
 			return err
 		}
@@ -291,7 +291,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, in *script.BlockUpd
 	if updateParams.ReqType == RequestInfoAnswer {
 		emails := make([]string, 0, len(gb.State.Executors))
 		for executor := range gb.State.Executors {
-			email, emailErr := gb.Pipeline.People.GetUserEmail(ctx, executor)
+			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, executor)
 			if emailErr != nil {
 				continue
 			}
@@ -299,8 +299,8 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, in *script.BlockUpd
 			emails = append(emails, email)
 		}
 
-		tpl := mail.NewAnswerExecutionInfoTemplate(in.WorkNumber, in.WorkTitle, gb.Pipeline.Sender.SdAddress)
-		err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil, tpl)
+		tpl := mail.NewAnswerExecutionInfoTemplate(in.WorkNumber, in.WorkTitle, gb.RunContext.Sender.SdAddress)
+		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 		if err != nil {
 			return err
 		}
@@ -358,7 +358,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 		return err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          dto.stepId,
 		Content:     content,
 		BreakPoints: dto.step.BreakPoints,
@@ -383,7 +383,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	var notificationEmails []string
 	for login := range logins {
 		if login != dto.byLogin {
-			email, emailErr := gb.Pipeline.People.GetUserEmail(ctx, login)
+			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
 				return emailErr
 			}
@@ -396,7 +396,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		return errUnmarshal
 	}
 
-	additionalDescriptions, err := gb.Pipeline.Storage.GetAdditionalForms(dto.workNumber, "")
+	additionalDescriptions, err := gb.RunContext.Storage.GetAdditionalForms(dto.workNumber, "")
 	if err != nil {
 		return err
 	}
@@ -407,7 +407,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		descr.Value = fmt.Sprintf("%s\n\n%s", descr.Value, item)
 	}
 
-	author, err := gb.Pipeline.People.GetUser(ctx, dto.byLogin)
+	author, err := gb.RunContext.People.GetUser(ctx, dto.byLogin)
 	if err != nil {
 		return err
 	}
@@ -419,13 +419,13 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 
 	tpl := mail.NewExecutionTakenInWork(&mail.ExecutorNotifTemplate{
 		Id:           dto.workNumber,
-		SdUrl:        gb.Pipeline.Sender.SdAddress,
+		SdUrl:        gb.RunContext.Sender.SdAddress,
 		ExecutorName: typedAuthor.GetFullName(),
 		Initiator:    dto.author,
 		Description:  descr.Value,
 	})
 
-	if err := gb.Pipeline.Sender.SendNotification(ctx, notificationEmails, nil, tpl); err != nil {
+	if err := gb.RunContext.Sender.SendNotification(ctx, notificationEmails, nil, tpl); err != nil {
 		return err
 	}
 
@@ -444,7 +444,7 @@ func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdate
 	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
 		return err
 	}
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -488,7 +488,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, dto *setExecutorEdi
 		return err
 	}
 
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          dto.stepId,
 		Content:     content,
 		BreakPoints: dto.step.BreakPoints,
@@ -499,13 +499,13 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, dto *setExecutorEdi
 		return err
 	}
 
-	initiatorEmail, emailErr := gb.Pipeline.People.GetUserEmail(ctx, dto.initiator)
+	initiatorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, dto.initiator)
 	if emailErr != nil {
 		return emailErr
 	}
 
-	tpl := mail.NewAnswerSendToEditTemplate(dto.workNumber, dto.workTitle, gb.Pipeline.Sender.SdAddress)
-	err = gb.Pipeline.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	tpl := mail.NewAnswerSendToEditTemplate(dto.workNumber, dto.workTitle, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -521,7 +521,7 @@ func (gb *GoExecutionBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
 	if err != nil || parentStep == nil {
 		return
 	}
@@ -553,7 +553,7 @@ func (gb *GoExecutionBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto
 			return
 		}
 
-		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 			Id:          dto.id,
 			Content:     stateBytes,
 			BreakPoints: dto.step.BreakPoints,
@@ -576,7 +576,7 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context, dto *getPrevio
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
 	if err != nil || parentStep == nil {
 		l.Error(err)
 		return false
@@ -624,7 +624,7 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context, dto *getPrevio
 			return
 		}
 
-		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 			Id:          dto.id,
 			Content:     stateBytes,
 			BreakPoints: parentStep.BreakPoints,

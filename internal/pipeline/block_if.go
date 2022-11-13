@@ -6,7 +6,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -28,7 +27,7 @@ type IF struct {
 	Sockets       []script.Socket
 	State         *ConditionsData
 
-	Storage db.Database
+	RunContext *BlockRunContext
 }
 
 type ConditionsData struct {
@@ -152,13 +151,14 @@ func (e *IF) Model() script.FunctionModel {
 	}
 }
 
-func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
+func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (block *IF, err error) {
 	b := &IF{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {

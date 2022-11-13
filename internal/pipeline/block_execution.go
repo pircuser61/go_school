@@ -42,7 +42,7 @@ type GoExecutionBlock struct {
 	Sockets []script.Socket
 	State   *ExecutionData
 
-	Pipeline *ExecutablePipeline
+	RunContext *BlockRunContext
 }
 
 // nolint:dupl // another block
@@ -113,7 +113,7 @@ func (gb *GoExecutionBlock) IsScenario() bool {
 
 // nolint:dupl // other block
 func (gb *GoExecutionBlock) dumpCurrState(ctx context.Context, id uuid.UUID) error {
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (gb *GoExecutionBlock) dumpCurrState(ctx context.Context, id uuid.UUID) err
 		return err
 	}
 
-	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	return gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -146,7 +146,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUI
 
 	emails := make([]string, 0, len(gb.State.Executors))
 	for executor := range gb.State.Executors {
-		email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
+		email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
 		if err != nil {
 			l.WithError(err).Error("couldn't get email")
 		}
@@ -155,8 +155,9 @@ func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUI
 	if len(emails) == 0 {
 		return false, nil
 	}
-	descr := gb.Pipeline.currDescription
-	additionalDescriptions, err := gb.Pipeline.Storage.GetAdditionalForms(gb.Pipeline.WorkNumber, gb.Name)
+	//descr := gb.RunContext.currDescription TODO
+	descr := ""
+	additionalDescriptions, err := gb.RunContext.Storage.GetAdditionalForms(gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return false, err
 	}
@@ -166,14 +167,14 @@ func (gb *GoExecutionBlock) handleNotifications(ctx context.Context, id uuid.UUI
 		}
 		descr = fmt.Sprintf("%s\n\n%s", descr, item)
 	}
-	err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 		mail.NewApplicationPersonStatusNotification(
 			stepCtx.workNumber,
 			stepCtx.workTitle,
 			statusToTaskAction[StatusExecution],
 			ComputeDeadline(stepCtx.stepStart, gb.State.SLA),
 			descr,
-			gb.Pipeline.Sender.SdAddress))
+			gb.RunContext.Sender.SdAddress))
 	if err != nil {
 		return false, err
 	}
@@ -199,7 +200,7 @@ func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx
 		if gb.State.SLA > 8 {
 			emails := make([]string, 0, len(gb.State.Executors))
 			for executor := range gb.State.Executors {
-				email, err := gb.Pipeline.People.GetUserEmail(ctx, executor)
+				email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
 				if err != nil {
 					l.WithError(err).Error("couldn't get email")
 				}
@@ -208,8 +209,8 @@ func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx
 			if len(emails) == 0 {
 				return false, nil
 			}
-			err := gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
-				mail.NewExecutionSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress))
+			err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+				mail.NewExecutionSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.RunContext.Sender.SdAddress))
 			if err != nil {
 				return false, err
 			}
@@ -249,7 +250,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 	}
 
 	var step *entity.Step
-	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	step, err = gb.RunContext.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	} else if step == nil {
@@ -303,7 +304,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 			step:     step,
 			id:       id,
 			runCtx:   runCtx,
-			workID:   gb.Pipeline.TaskID,
+			workID:   gb.RunContext.TaskID,
 			stepName: step.Name,
 		})
 	}
@@ -313,7 +314,7 @@ func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runC
 			step:     step,
 			id:       id,
 			runCtx:   runCtx,
-			workID:   gb.Pipeline.TaskID,
+			workID:   gb.RunContext.TaskID,
 			stepName: step.Name,
 		}) {
 			return nil
@@ -428,7 +429,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFunc, p *ExecutablePipeline) (*GoExecutionBlock, error) {
+func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, error) {
 	b := &GoExecutionBlock{
 		Name:    name,
 		Title:   ef.Title,
@@ -436,7 +437,7 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 		Output:  map[string]string{},
 		Sockets: entity.ConvertSocket(ef.Sockets),
 
-		Pipeline: p,
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {
@@ -464,7 +465,7 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 	executorsGroupName := ""
 
 	if params.Type == script.ExecutionTypeGroup {
-		executorsGroup, errGroup := p.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
+		executorsGroup, errGroup := runCtx.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
 		if errGroup != nil {
 			return nil, errors.Wrap(errGroup, "can`t get executors group with id: "+params.ExecutorsGroupID)
 		}
@@ -535,7 +536,7 @@ func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveEx
 		return err
 	}
 
-	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	return gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          dto.id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,

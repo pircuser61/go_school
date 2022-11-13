@@ -29,7 +29,7 @@ type GoWaitForAllInputsBlock struct {
 
 	State *SyncData
 
-	Pipeline *ExecutablePipeline
+	RunContext *BlockRunContext
 }
 
 func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
@@ -71,7 +71,7 @@ func (gb *GoWaitForAllInputsBlock) DebugRun(ctx context.Context, stepCtx *stepCt
 
 	runCtx.AddStep(gb.Name)
 
-	executed, err := gb.Pipeline.Storage.CheckTaskStepsExecuted(ctx, stepCtx.workNumber, gb.State.IncomingBlockIds)
+	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, stepCtx.workNumber, gb.State.IncomingBlockIds)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context, data *script.Bloc
 		return nil, errors.New("empty data")
 	}
 	if data.Action == string(entity.TaskUpdateActionCancelApp) {
-		step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, data.Id)
+		step, err := gb.RunContext.Storage.GetTaskStepById(ctx, data.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -128,32 +128,9 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 	}
 }
 
-func getInputBlocks(pipeline *ExecutablePipeline, name string) (entries []string) {
-	var handleKey func(key string)
-	handleKey = func(key string) {
-		for _, bb := range pipeline.PipelineModel.Pipeline.Blocks[key].Sockets {
-			if bb.Id == editAppSocketID || bb.Id == requestAddInfoSocketID {
-				continue
-			}
-
-			addKey := false
-			for _, nextBlockName := range bb.NextBlockIds {
-				if nextBlockName == name {
-					addKey = true
-					continue
-				}
-				handleKey(nextBlockName)
-			}
-			if addKey {
-				entries = append(entries, key)
-			}
-		}
-	}
-	handleKey(pipeline.EntryPoint)
-
-	entries = removeDuplicateStr(entries)
-
-	return entries
+//TODO
+func getInputBlocks(workNumber, name string) (entries []string) {
+	return nil
 }
 
 func removeDuplicateStr(strSlice []string) []string {
@@ -168,15 +145,15 @@ func removeDuplicateStr(strSlice []string) []string {
 	return list
 }
 
-func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) *GoWaitForAllInputsBlock {
+func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoWaitForAllInputsBlock {
 	b := &GoWaitForAllInputsBlock{
-		Name:     name,
-		Title:    ef.Title,
-		Input:    map[string]string{},
-		Output:   map[string]string{},
-		Sockets:  entity.ConvertSocket(ef.Sockets),
-		State:    &SyncData{IncomingBlockIds: getInputBlocks(pipeline, name)},
-		Pipeline: pipeline,
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		State:      &SyncData{IncomingBlockIds: getInputBlocks(runCtx.WorkNumber, name)},
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {
@@ -201,7 +178,7 @@ func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context, in *s
 	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
 		return err
 	}
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,

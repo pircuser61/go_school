@@ -66,6 +66,8 @@ type ExecutablePipeline struct {
 	currDescription        string
 	notifiedBlocks         map[string][]TaskHumanStatus
 	prevUpdateStatusBlocks map[string]TaskHumanStatus
+
+	RunContext *BlockRunContext
 }
 
 func (ep *ExecutablePipeline) GetStatus() Status {
@@ -583,7 +585,16 @@ func (ep *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 	for k := range source {
 		bl := source[k]
 
-		block, err := ep.CreateBlock(ctx, k, &bl)
+		block, err := CreateBlock(ctx, k, &bl, &BlockRunContext{
+			WorkNumber:  ep.WorkNumber,
+			Initiator:   ep.Initiator,
+			Storage:     ep.Storage,
+			Sender:      ep.Sender,
+			People:      ep.People,
+			ServiceDesc: ep.ServiceDesc,
+			FaaS:        ep.FaaS,
+			TaskID:      ep.TaskID,
+		})
 		if err != nil {
 			return err
 		}
@@ -592,104 +603,6 @@ func (ep *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 	}
 
 	return nil
-}
-
-//nolint:gocyclo //ok
-func (ep *ExecutablePipeline) CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc) (Runner, error) {
-	ctx, s := trace.StartSpan(ctx, "create_block")
-	defer s.End()
-
-	switch bl.BlockType {
-	case script.TypeGo:
-		return ep.CreateGoBlock(ctx, bl, name)
-	case script.TypeExternal:
-		return createExecutableFunctionBlock(name, bl)
-	case script.TypeScenario:
-		p, err := ep.Storage.GetExecutableByName(ctx, bl.Title)
-		if err != nil {
-			return nil, err
-		}
-
-		epi := ExecutablePipeline{}
-		epi.PipelineID = p.ID
-		epi.VersionID = p.VersionID
-		epi.Storage = ep.Storage
-		epi.EntryPoint = p.Pipeline.Entrypoint
-		epi.FaaS = ep.FaaS
-		epi.Input = make(map[string]string)
-		epi.Output = make(map[string]string)
-		epi.Nexts = bl.Next
-		epi.Name = bl.Title
-		epi.PipelineModel = p
-
-		parametersMap := make(map[string]interface{})
-		for _, v := range bl.Input {
-			parametersMap[v.Name] = v.Global
-		}
-
-		parameters, err := json.Marshal(parametersMap)
-		if err != nil {
-			return nil, err
-		}
-
-		err = epi.CreateTask(ctx, &CreateTaskDTO{
-			Author:  "Erius",
-			IsDebug: false,
-			Params:  parameters,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		err = epi.CreateBlocks(ctx, p.Pipeline.Blocks)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, v := range bl.Input {
-			epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
-		}
-
-		for _, v := range bl.Output {
-			epi.Output[v.Name] = v.Global
-		}
-
-		return &epi, nil
-	}
-
-	return nil, errors.Errorf("can't create block with type: %s", bl.BlockType)
-}
-
-//nolint:gocyclo //need bigger cyclomatic
-func (ep *ExecutablePipeline) CreateGoBlock(ctx c.Context, ef *entity.EriusFunc, name string) (Runner, error) {
-	switch ef.TypeID {
-	case BlockGoIfID:
-		return createGoIfBlock(name, ef)
-	case BlockGoTestID:
-		return createGoTestBlock(name, ef), nil
-	case BlockGoApproverID:
-		return createGoApproverBlock(ctx, name, ef, ep)
-	case BlockGoSdApplicationID:
-		return createGoSdApplicationBlock(name, ef, ep)
-	case BlockGoExecutionID:
-		return createGoExecutionBlock(ctx, name, ef, ep)
-	case BlockGoStartId:
-		return createGoStartBlock(name, ef), nil
-	case BlockGoEndId:
-		return createGoEndBlock(name, ef), nil
-	case BlockWaitForAllInputsId:
-		return createGoWaitForAllInputsBlock(name, ef, ep), nil
-	case BlockGoBeginParallelTaskId:
-		return createGoStartParallelBlock(name, ef), nil
-	case BlockGoNotificationID:
-		return createGoNotificationBlock(name, ef, ep)
-	case BlockExecutableFunctionID:
-		return createExecutableFunctionBlock(name, ef)
-	case BlockGoFormID:
-		return createGoFormBlock(name, ef, ep)
-	}
-
-	return nil, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
 func getWorkIdKey(stepName string) string {

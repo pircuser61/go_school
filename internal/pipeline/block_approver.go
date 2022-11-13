@@ -38,7 +38,7 @@ type GoApproverBlock struct {
 	Sockets []script.Socket
 	State   *ApproverData
 
-	Pipeline *ExecutablePipeline
+	RunContext *BlockRunContext
 }
 
 func (gb *GoApproverBlock) GetStatus() Status {
@@ -118,7 +118,7 @@ func (gb *GoApproverBlock) IsScenario() bool {
 
 // nolint:dupl // other block
 func (gb *GoApproverBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
-	step, err := gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (gb *GoApproverBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 		return err
 	}
 
-	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	return gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
@@ -151,7 +151,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, step
 
 	emails := make([]string, 0, len(gb.State.Approvers))
 	for approver := range gb.State.Approvers {
-		email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
+		email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
 		if err != nil {
 			l.WithError(err).Error("couldn't get email")
 		}
@@ -160,8 +160,9 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, step
 	if len(emails) == 0 {
 		return false, nil
 	}
-	descr := gb.Pipeline.currDescription
-	additionalDescriptions, err := gb.Pipeline.Storage.GetAdditionalForms(gb.Pipeline.WorkNumber, gb.Name)
+	//descr := gb.RunContext.currDescription TODO
+	descr := ""
+	additionalDescriptions, err := gb.RunContext.Storage.GetAdditionalForms(gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return false, err
 	}
@@ -171,14 +172,14 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, step
 		}
 		descr = fmt.Sprintf("%s\n\n%s", descr, item)
 	}
-	err = gb.Pipeline.Sender.SendNotification(ctx, emails, nil,
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 		mail.NewApplicationPersonStatusNotification(
 			stepCtx.workNumber,
 			stepCtx.workTitle,
 			statusToTaskAction[StatusApprovement],
 			ComputeDeadline(stepCtx.stepStart, gb.State.SLA),
 			descr,
-			gb.Pipeline.Sender.SdAddress))
+			gb.RunContext.Sender.SdAddress))
 	if err != nil {
 		return false, err
 	}
@@ -206,7 +207,7 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 		if gb.State.SLA > workHoursDay {
 			emails := make([]string, 0, len(gb.State.Approvers))
 			for approver := range gb.State.Approvers {
-				email, err := gb.Pipeline.People.GetUserEmail(ctx, approver)
+				email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
 				if err != nil {
 					l.WithError(err).Error("couldn't get email")
 				}
@@ -216,8 +217,8 @@ func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepC
 				return false, nil
 			}
 
-			tpl := mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.Pipeline.Sender.SdAddress)
-			err := gb.Pipeline.Sender.SendNotification(ctx, emails, nil, tpl)
+			tpl := mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.RunContext.Sender.SdAddress)
+			err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 			if err != nil {
 				return false, err
 			}
@@ -270,7 +271,7 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 
 	// check state from database
 	var step *entity.Step
-	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, id)
+	step, err = gb.RunContext.Storage.GetTaskStepById(ctx, id)
 	if err != nil {
 		return err
 	} else if step == nil {
@@ -351,7 +352,7 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 			step:     step,
 			id:       id,
 			runCtx:   runCtx,
-			workID:   gb.Pipeline.TaskID,
+			workID:   gb.RunContext.TaskID,
 			stepName: step.Name,
 		})
 	}
@@ -360,7 +361,7 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 		if gb.trySetPreviousDecision(ctx, &getPreviousDecisionDTO{
 			id:       id,
 			runCtx:   runCtx,
-			workID:   gb.Pipeline.TaskID,
+			workID:   gb.RunContext.TaskID,
 			stepName: step.Name,
 		}) {
 			return nil
