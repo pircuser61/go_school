@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"net/http"
 	"os"
@@ -170,6 +171,18 @@ func main() {
 	metrics.Pusher = push.New(cfg.Push.URL, cfg.Push.Job).Gatherer(metrics.Registry)
 
 	initSwagger(cfg)
+
+	go func() {
+		log.Info("script manager service started on port", httpServer.Addr)
+
+		if err = httpServer.ListenAndServe(); err != nil {
+			if errors.Is(err, http.ErrServerClosed) {
+				log.Info("graceful shutdown")
+			} else {
+				log.WithError(err).Fatal("script manager service")
+			}
+		}
+	}()
 
 	grpcServer := server.NewGRPC(&server.GRPCConfig{
 		Port: cfg.GRPCPort,
