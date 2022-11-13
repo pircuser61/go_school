@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type BlockRunContext struct {
@@ -26,6 +28,55 @@ type BlockRunContext struct {
 	People      *people.Service
 	ServiceDesc *servicedesc.Service
 	FaaS        string
+	VarStore    *store.VariableStore
+}
+
+func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string) (uuid.UUID, time.Time, error) {
+	storageData, errSerialize := json.Marshal(runCtx.VarStore)
+	if errSerialize != nil {
+		return db.NullUuid, time.Time{}, errSerialize
+	}
+
+	return runCtx.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
+		WorkID:      runCtx.TaskID,
+		StepType:    stepType,
+		StepName:    name,
+		Content:     storageData,
+		BreakPoints: []string{},
+		HasError:    false,
+		Status:      string(StatusNew),
+	})
+}
+
+func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasError bool, status Status) error {
+	storageData, err := json.Marshal(runCtx.VarStore)
+	if err != nil {
+		return err
+	}
+
+	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+		Id:             id,
+		Content:        storageData,
+		BreakPoints:    []string{},
+		HasError:       hasError,
+		Status:         string(status),
+		WithoutContent: status != StatusFinished && status != StatusCancel && status != StatusNoSuccess,
+	})
+}
+
+func CreateAndSaveBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, error) {
+	ctx, s := trace.StartSpan(ctx, "create_and_save_block")
+	defer s.End()
+
+	_, _, err := runCtx.saveStepInDB(ctx, name, bl.BlockType)
+	if err != nil {
+		return nil, err
+	}
+	block, err := CreateBlock(ctx, name, bl, runCtx)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }
 
 func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, error) {
