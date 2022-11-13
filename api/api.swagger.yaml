@@ -250,44 +250,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /modules/{moduleName}:
-    post:
-      tags:
-        - modules
-      summary: Run Module By Name
-      description: Запустить блок
-      operationId: module-run
-      parameters:
-        - name: moduleName
-          in: path
-          description: module name
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/UsageResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /modules/{moduleName}/usage:
     get:
       tags:

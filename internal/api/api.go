@@ -1675,9 +1675,6 @@ type ServerInterface interface {
 	// Get list of modules usage
 	// (GET /modules/usage)
 	AllModulesUsage(w http.ResponseWriter, r *http.Request)
-	// Run Module By Name
-	// (POST /modules/{moduleName})
-	ModuleRun(w http.ResponseWriter, r *http.Request, moduleName string)
 	// Usage of module in pipelines
 	// (GET /modules/{moduleName}/usage)
 	ModuleUsage(w http.ResponseWriter, r *http.Request, moduleName string)
@@ -1992,32 +1989,6 @@ func (siw *ServerInterfaceWrapper) AllModulesUsage(w http.ResponseWriter, r *htt
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AllModulesUsage(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// ModuleRun operation middleware
-func (siw *ServerInterfaceWrapper) ModuleRun(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "moduleName" -------------
-	var moduleName string
-
-	err = runtime.BindStyledParameter("simple", false, "moduleName", chi.URLParam(r, "moduleName"), &moduleName)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "moduleName", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ModuleRun(w, r, moduleName)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3070,9 +3041,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules/usage", wrapper.AllModulesUsage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/modules/{moduleName}", wrapper.ModuleRun)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules/{moduleName}/usage", wrapper.ModuleUsage)

@@ -26,7 +26,6 @@ type Pipeliner struct {
 	ServeAddr             string             `yaml:"serve_addr"`
 	MetricsAddr           string             `yaml:"metrics_addr"`
 	DB                    Database           `yaml:"database"`
-	ScriptManager         string             `yaml:"script_manager"`
 	Remedy                string             `yaml:"remedy"`
 	FaaS                  string             `yaml:"faas"`
 	RunEnv                RunEnv             `yaml:"run_env"`

@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"go.opencensus.io/trace"
@@ -12,7 +10,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 const (
@@ -31,16 +28,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager, ae.HTTPClient)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	eriusFunctions = append(eriusFunctions,
+	eriusFunctions := []script.FunctionModel{
 		(&pipeline.GoApproverBlock{}).Model(),
 		(&pipeline.GoSdApplicationBlock{}).Model(),
 		(&pipeline.GoExecutionBlock{}).Model(),
@@ -52,7 +40,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		(&pipeline.GoBeginParallelTaskBlock{}).Model(),
 		(&pipeline.ExecutableFunctionBlock{}).Model(),
 		(&pipeline.GoFormBlock{}).Model(),
-	)
+	}
 
 	for i := range eriusFunctions {
 		switch eriusFunctions[i].ID {
@@ -192,104 +180,6 @@ func (ae *APIEnv) ModuleUsage(w http.ResponseWriter, req *http.Request, moduleNa
 	}
 
 	err = sendResponse(w, http.StatusOK, entity.UsageResponse{Name: moduleName, Pipelines: usedBy, Used: used})
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
-func (ae *APIEnv) ModuleRun(w http.ResponseWriter, req *http.Request, moduleName string) {
-	ctx, s := trace.StartSpan(req.Context(), "module_run")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	eriusFunctions, err := script.GetReadyFuncs(ctx, ae.ScriptManager, ae.HTTPClient)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	block := script.FunctionModel{}
-
-	for i := range eriusFunctions {
-		if eriusFunctions[i].Title == moduleName {
-			block = eriusFunctions[i]
-
-			break
-		}
-	}
-
-	if block.Title == "" {
-		e := ModuleUsageError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	fb := pipeline.ExecutableFunctionBlock{
-		Name:    block.Title,
-		Input:   make(map[string]string),
-		Output:  make(map[string]string),
-		Sockets: []script.Socket{script.DefaultSocket},
-		RunURL:  ae.FaaS + "function/%s",
-	}
-
-	for _, v := range block.Inputs {
-		fb.Input[v.Name] = v.Name
-	}
-
-	for _, v := range block.Outputs {
-		fb.Output[v.Name] = v.Name
-	}
-
-	vs := store.NewStore()
-
-	b, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
-
-	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	pipelineVars := make(map[string]interface{})
-
-	if len(b) != 0 {
-		err = json.Unmarshal(b, &pipelineVars)
-		if err != nil {
-			e := PipelineRunError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
-
-		for key, value := range pipelineVars {
-			vs.SetValue(key, value)
-		}
-	}
-
-	result, err := fb.RunOnly(ctx, vs)
-	if err != nil {
-		e := PipelineRunError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	err = sendResponse(w, http.StatusOK, result)
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))

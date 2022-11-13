@@ -22,7 +22,6 @@ import (
 
 type APIEnv struct {
 	DB                   db.Database
-	ScriptManager        string
 	Remedy               string
 	FaaS                 string
 	SchedulerClient      scheduler.Client
