@@ -70,7 +70,6 @@ func (gb *GoStartBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.Variabl
 }
 
 func (gb *GoStartBlock) Update(_ context.Context) (interface{}, error) {
-	gb.RunContext.VarStore.AddStep(gb.Name)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputWorkNumber], gb.RunContext.WorkNumber)
 	return nil, nil
 }
@@ -109,6 +108,8 @@ func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunConte
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
 	}
+
+	b.RunContext.VarStore.AddStep(b.Name)
 
 	return b
 }

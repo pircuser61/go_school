@@ -116,7 +116,6 @@ func (gb *GoNotificationBlock) GetState() interface{} {
 }
 
 func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) {
-	gb.RunContext.VarStore.AddStep(gb.Name)
 	emails := make([]string, 0, len(gb.State.People)+len(gb.State.Emails))
 	for _, person := range gb.State.People {
 		emailAddr := ""
@@ -201,6 +200,7 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 		Text:    params.Text,
 		Subject: params.Subject,
 	}
+	b.RunContext.VarStore.AddStep(b.Name)
 
 	return b, nil
 }

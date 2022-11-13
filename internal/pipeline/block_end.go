@@ -65,7 +65,6 @@ func (gb *GoEndBlock) GetState() interface{} {
 }
 
 func (gb *GoEndBlock) Update(ctx context.Context) (interface{}, error) {
-	gb.RunContext.VarStore.AddStep(gb.Name)
 	if err := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); err != nil {
 		return nil, err
 	}
@@ -103,5 +102,7 @@ func createGoEndBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
 	}
+
+	b.RunContext.VarStore.AddStep(b.Name)
 	return b
 }

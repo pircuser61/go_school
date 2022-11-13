@@ -107,7 +107,6 @@ func (e *IF) GetState() interface{} {
 }
 
 func (e *IF) Update(_ context.Context) (interface{}, error) {
-	e.RunContext.VarStore.AddStep(e.Name)
 	var chosenGroup *script.ConditionGroup
 
 	if e.State != nil {
@@ -186,6 +185,7 @@ func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext)
 		b.State.Type = params.Type
 		b.State.ConditionGroups = params.ConditionGroups
 	}
+	b.RunContext.VarStore.AddStep(b.Name)
 
 	return b, nil
 }

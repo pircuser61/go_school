@@ -93,8 +93,6 @@ func (gb *GoSdApplicationBlock) GetState() interface{} {
 }
 
 func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error) {
-	gb.RunContext.VarStore.AddStep(gb.Name)
-
 	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't get task run context")
@@ -184,6 +182,8 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *Block
 	b.State = &ApplicationData{
 		BlueprintID: params.BlueprintID,
 	}
+
+	b.RunContext.VarStore.AddStep(b.Name)
 
 	return b, nil
 }

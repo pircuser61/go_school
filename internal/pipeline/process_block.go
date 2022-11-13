@@ -24,6 +24,7 @@ import (
 type BlockRunContext struct {
 	TaskID      uuid.UUID
 	WorkNumber  string
+	WorkTitle   string
 	Initiator   string
 	Storage     db.Database
 	Sender      *mail.Service
@@ -79,7 +80,6 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 	if status != db.RunStatusRunning && status != db.RunStatusCreated {
 		return nil
 	}
-
 
 	if changeErr := runCtx.changeTaskStatus(ctx, db.RunStatusRunning); changeErr != nil {
 		err = changeErr

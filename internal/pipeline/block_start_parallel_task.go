@@ -69,7 +69,6 @@ func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 }
 
 func (gb *GoBeginParallelTaskBlock) Update(_ context.Context) (interface{}, error) {
-	gb.RunContext.VarStore.AddStep(gb.Name)
 	return nil, nil
 }
 
@@ -104,5 +103,6 @@ func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *Block
 		b.Output[v.Name] = v.Global
 	}
 
+	b.RunContext.VarStore.AddStep(b.Name)
 	return b
 }

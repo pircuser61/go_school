@@ -435,11 +435,16 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			return
 		}
 		runCtx := &pipeline.BlockRunContext{
+			TaskID:      dbTask.ID,
+			WorkNumber:  workNumber,
+			WorkTitle:   dbTask.Name,
+			Initiator:   dbTask.Author,
 			Storage:     ae.DB,
-			FaaS:        ae.FaaS,
 			Sender:      ae.Mail,
 			People:      ae.People,
 			ServiceDesc: ae.ServiceDesc,
+			FaaS:        ae.FaaS,
+			VarStore:    storage,
 			UpdateData: &script.BlockUpdateData{
 				Id:         item.ID,
 				ByLogin:    ui.Username,
@@ -449,7 +454,6 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 				WorkTitle:  dbTask.Name,
 				Author:     dbTask.Author,
 			},
-			VarStore: storage,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]

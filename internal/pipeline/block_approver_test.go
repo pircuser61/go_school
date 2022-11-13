@@ -292,6 +292,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 	stepId := uuid.New()
 	exampleApprover := "example"
 	secondExampleApprover := "example2"
+	stepName := "appr"
 
 	type fields struct {
 		Name       string
@@ -783,7 +784,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				State:      &ApproverData{},
 				RunContext: tt.fields.RunContext,
 			}
-			got, err := gb.Update(tt.args.ctx, tt.args.data)
+			got, err := gb.Update(tt.args.ctx)
 			assert.Equalf(t, tt.wantErr, err != nil, fmt.Sprintf("Update(%v, %v)", tt.args.ctx, tt.args.data))
 			assert.Equalf(t, tt.want, got, "Update(%v, %v)", tt.args.ctx, tt.args.data)
 		})

@@ -590,14 +590,17 @@ func (ep *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 		bl := source[k]
 
 		block, err := CreateBlock(ctx, k, &bl, &BlockRunContext{
+			TaskID:      ep.TaskID,
 			WorkNumber:  ep.WorkNumber,
+			WorkTitle:   ep.Name,
 			Initiator:   ep.Initiator,
 			Storage:     ep.Storage,
 			Sender:      ep.Sender,
 			People:      ep.People,
 			ServiceDesc: ep.ServiceDesc,
 			FaaS:        ep.FaaS,
-			TaskID:      ep.TaskID,
+			VarStore:    ep.VarStore,
+			UpdateData:  nil,
 		})
 		if err != nil {
 			return err
