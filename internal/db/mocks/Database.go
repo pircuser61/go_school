@@ -1055,6 +1055,27 @@ func (_m *MockedDatabase) GetWorkedVersions(ctx context.Context) ([]entity.Erius
 	return r0, r1
 }
 
+// GetTaskRunContext provides a mock function with given fields: ctx, name
+func (_m *MockedDatabase) GetTaskRunContext(ctx context.Context, name string) (entity.TaskRunContext, error) {
+	ret := _m.Called(ctx, name)
+
+	var r0 entity.TaskRunContext
+	if rf, ok := ret.Get(0).(func(context.Context, string) entity.TaskRunContext); ok {
+		r0 = rf(ctx, name)
+	} else {
+		r0 = ret.Get(0).(entity.TaskRunContext)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // PipelineNameCreatable provides a mock function with given fields: ctx, name
 func (_m *MockedDatabase) PipelineNameCreatable(ctx context.Context, name string) (bool, error) {
 	ret := _m.Called(ctx, name)

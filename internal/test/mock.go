@@ -1217,6 +1217,10 @@ func (m *MockDB) CheckUserCanEditForm(ctx context.Context, workNumber string, st
 	return false, errNotImplemented
 }
 
+func (m *MockDB) GetTaskRunContext(ctx context.Context, workNumber string) (entity.TaskRunContext, error) {
+	return entity.TaskRunContext{}, errNotImplemented
+}
+
 func (m *MockDB) GetUsersWithReadWriteFormAccess(
 	ctx context.Context,
 	workNumber string,

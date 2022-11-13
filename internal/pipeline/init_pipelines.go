@@ -232,17 +232,11 @@ func (p *initiation) worker(ctx c.Context, wg *sync.WaitGroup, in chan entity.Er
 			continue
 		}
 
-		ctx = c.WithValue(ctx, SdApplicationDataCtx{}, SdApplicationData{
-			Description:     sdState.Description,
-			ApplicationBody: sdState.ApplicationBody,
-		})
-
 		ep.currDescription = sdState.Description
 		workNumber := task.WorkNumber
 		go func(workNumber string) {
 			//nolint:gocritic
 			routineCtx := c.WithValue(c.Background(), XRequestIDHeader, uuid.New().String())
-			routineCtx = c.WithValue(routineCtx, SdApplicationDataCtx{}, ctx.Value(SdApplicationDataCtx{}))
 			routineCtx = logger.WithLogger(routineCtx, log)
 			errRun := ep.Run(routineCtx, variableStorage)
 			if errRun != nil {

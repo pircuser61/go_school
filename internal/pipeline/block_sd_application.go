@@ -21,8 +21,6 @@ const (
 	keyOutputSdApplication     = "application_body"
 )
 
-type SdApplicationDataCtx struct{}
-
 type ApplicationData struct {
 	BlueprintID     string                 `json:"blueprint_id"`
 	Description     string                 `json:"description"`
@@ -41,6 +39,8 @@ type GoSdApplicationBlock struct {
 	Output  map[string]string
 	Sockets []script.Socket
 	State   *ApplicationData
+
+	Pipeline *ExecutablePipeline
 }
 
 func (gb *GoSdApplicationBlock) GetStatus() Status {
@@ -76,26 +76,21 @@ func (gb *GoSdApplicationBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx
 
 	log := logger.CreateLogger(nil)
 
+	data, err := gb.Pipeline.Storage.GetTaskRunContext(ctx, gb.Pipeline.WorkNumber)
+	if err != nil {
+		return errors.Wrap(err, "can't get task run context")
+	}
+
 	runCtx.AddStep(gb.Name)
-
-	data := ctx.Value(SdApplicationDataCtx{})
-	if data == nil {
-		return errors.New("can't find application data in context")
-	}
-
-	appData, ok := data.(SdApplicationData)
-	if !ok {
-		return errors.New("invalid application data in context")
-	}
 
 	log.WithField("blueprintID", gb.State.BlueprintID).Info("run sd_application block")
 
 	runCtx.SetValue(gb.Output[keyOutputBlueprintID], gb.State.BlueprintID)
-	runCtx.SetValue(gb.Output[keyOutputSdApplicationDesc], appData.Description)
-	runCtx.SetValue(gb.Output[keyOutputSdApplication], appData.ApplicationBody)
+	runCtx.SetValue(gb.Output[keyOutputSdApplicationDesc], data.InitialApplication.Description)
+	runCtx.SetValue(gb.Output[keyOutputSdApplication], data.InitialApplication.ApplicationBody)
 
-	gb.State.ApplicationBody = appData.ApplicationBody
-	gb.State.Description = appData.Description
+	gb.State.ApplicationBody = data.InitialApplication.ApplicationBody
+	gb.State.Description = data.InitialApplication.Description
 
 	var stateBytes []byte
 	stateBytes, err = json.Marshal(gb.State)
@@ -161,16 +156,17 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoSdApplicationBlock(name string, ef *entity.EriusFunc) (*GoSdApplicationBlock, error) {
+func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, ep *ExecutablePipeline) (*GoSdApplicationBlock, error) {
 	log := logger.CreateLogger(nil)
 	log.WithField("params", ef.Params).Info("sd_application parameters")
 
 	b := &GoSdApplicationBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:     name,
+		Title:    ef.Title,
+		Input:    map[string]string{},
+		Output:   map[string]string{},
+		Sockets:  entity.ConvertSocket(ef.Sockets),
+		Pipeline: ep,
 	}
 
 	for _, v := range ef.Input {

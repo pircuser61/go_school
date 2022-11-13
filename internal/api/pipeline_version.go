@@ -205,11 +205,6 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	wg.Add(len(versions))
 	respChan := make(chan *entity.RunResponse, len(versions))
 
-	ctx = c.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
-		Description:     req.Description,
-		ApplicationBody: req.ApplicationBody,
-	})
-
 	for i := range versions {
 		j := i
 		go func(wg *sync.WaitGroup, version entity.EriusScenario, ch chan *entity.RunResponse) {
@@ -220,6 +215,12 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 				withStop: false,
 				w:        w,
 				req:      r,
+				runCtx: entity.TaskRunContext{
+					InitialApplication: entity.InitialApplication{
+						Description:     req.Description,
+						ApplicationBody: req.ApplicationBody,
+					},
+				},
 			})
 			if execErr != nil {
 				log.Error(execErr)
@@ -298,11 +299,6 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	ctx = c.WithValue(ctx, pipeline.SdApplicationDataCtx{}, pipeline.SdApplicationData{
-		Description:     req.Description,
-		ApplicationBody: req.ApplicationBody,
-	})
-
 	started, execErr := ae.execVersion(ctx, &execVersionDTO{
 		version:     version,
 		withStop:    false,
@@ -310,6 +306,12 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		req:         r,
 		makeNewWork: true,
 		workNumber:  req.WorkNumber,
+		runCtx: entity.TaskRunContext{
+			InitialApplication: entity.InitialApplication{
+				Description:     req.Description,
+				ApplicationBody: req.ApplicationBody,
+			},
+		},
 	})
 	if execErr != nil {
 		e := UnknownError
@@ -555,6 +557,7 @@ type execVersionDTO struct {
 
 	makeNewWork bool
 	workNumber  string
+	runCtx      entity.TaskRunContext
 }
 
 // nolint //need big cyclo,need equal string for all usages
@@ -610,6 +613,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		userName:      usr.Username,
 		makeNewWork:   dto.makeNewWork,
 		workNumber:    dto.workNumber,
+		runCtx:        dto.runCtx,
 	}
 
 	executablePipeline, e, err := ae.execVersionInternal(ctx, arg)
@@ -633,6 +637,7 @@ type execVersionInternalDTO struct {
 	userName      string
 	makeNewWork   bool
 	workNumber    string
+	runCtx        entity.TaskRunContext
 }
 
 func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
@@ -684,6 +689,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		IsDebug:    false,
 		Params:     parameters,
 		WorkNumber: dto.workNumber,
+		RunCtx:     dto.runCtx,
 	}); err != nil {
 		e := PipelineRunError
 		return &ep, e, err
@@ -706,7 +712,6 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		go func() {
 			//nolint:staticcheck // поправить потом TODO
 			routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-			routineCtx = c.WithValue(routineCtx, pipeline.SdApplicationDataCtx{}, ctx.Value(pipeline.SdApplicationDataCtx{}))
 			routineCtx = logger.WithLogger(routineCtx, log)
 			err = ep.Run(routineCtx, variableStorage)
 			if err != nil {

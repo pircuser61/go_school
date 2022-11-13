@@ -20,6 +20,7 @@ type CreateTaskDTO struct {
 	WorkNumber string
 	IsDebug    bool
 	Params     []byte
+	RunCtx     entity.TaskRunContext
 }
 
 func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.EriusTask, error) {
@@ -91,7 +92,8 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, tx pgx.Tx, dto *Cre
 			author, 
 			debug, 
 			parameters,
-			work_number
+			work_number,
+			run_context
 		)
 		VALUES (
 			$1, 
@@ -101,7 +103,8 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, tx pgx.Tx, dto *Cre
 			$5, 
 			$6, 
 			$7,
-			$8
+			$8,
+			$9
 		)
 	RETURNING work_number
 `
@@ -117,6 +120,7 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, tx pgx.Tx, dto *Cre
 		dto.IsDebug,
 		dto.Params,
 		dto.WorkNumber,
+		dto.RunCtx,
 	)
 
 	var worksNumber string
@@ -141,7 +145,8 @@ func (db *PGCon) insertTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (w
 			status, 
 			author, 
 			debug, 
-			parameters
+			parameters,
+			run_context		                  
 		)
 		VALUES (
 			$1, 
@@ -150,7 +155,8 @@ func (db *PGCon) insertTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (w
 			$4, 
 			$5, 
 			$6, 
-			$7
+			$7,
+			$8
 		)
 	RETURNING work_number
 `
@@ -165,6 +171,7 @@ func (db *PGCon) insertTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (w
 		dto.Author,
 		dto.IsDebug,
 		dto.Params,
+		dto.RunCtx,
 	)
 
 	var worksNumber string

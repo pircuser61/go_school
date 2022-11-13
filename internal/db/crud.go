@@ -2208,3 +2208,21 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 
 	return count != 0, nil
 }
+
+func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (entity.TaskRunContext, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_run_context")
+	defer span.End()
+
+	var runCtx entity.TaskRunContext
+
+	// language=PostgreSQL
+	q := `
+		SELECT run_context
+		FROM works
+		WHERE work_number = $1`
+
+	if scanErr := db.Pool.QueryRow(ctx, q, workNumber).Scan(&runCtx); scanErr != nil {
+		return runCtx, scanErr
+	}
+	return runCtx, nil
+}

@@ -48,6 +48,7 @@ type TaskStorager interface {
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error
 	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
+	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
 }
 
 type SaveStepRequest struct {

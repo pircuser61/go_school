@@ -44,6 +44,14 @@ type EriusTagInfo struct {
 	IsMarker bool      `json:"isMarker"`
 }
 
+type InitialApplication struct {
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+}
+type TaskRunContext struct {
+	InitialApplication InitialApplication `json:"initial_application"`
+}
+
 type EriusScenario struct {
 	ID        uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
 	VersionID uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`

@@ -139,6 +139,7 @@ type CreateTaskDTO struct {
 	IsDebug    bool
 	Params     []byte
 	WorkNumber string
+	RunCtx     entity.TaskRunContext
 }
 
 func (ep *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
@@ -151,6 +152,7 @@ func (ep *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 		WorkNumber: dto.WorkNumber,
 		IsDebug:    dto.IsDebug,
 		Params:     dto.Params,
+		RunCtx:     dto.RunCtx,
 	})
 	if err != nil {
 		return err
@@ -668,7 +670,7 @@ func (ep *ExecutablePipeline) CreateGoBlock(ctx c.Context, ef *entity.EriusFunc,
 	case BlockGoApproverID:
 		return createGoApproverBlock(ctx, name, ef, ep)
 	case BlockGoSdApplicationID:
-		return createGoSdApplicationBlock(name, ef)
+		return createGoSdApplicationBlock(name, ef, ep)
 	case BlockGoExecutionID:
 		return createGoExecutionBlock(ctx, name, ef, ep)
 	case BlockGoStartId:
