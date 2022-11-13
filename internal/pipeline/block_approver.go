@@ -164,8 +164,18 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context, id uuid.UUID, step
 	if len(emails) == 0 {
 		return false, nil
 	}
-	//descr := gb.RunContext.currDescription TODO
-	descr := ""
+	data, err := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
+	if err != nil {
+		return false, err
+	}
+	var descr string
+	dataDescr, ok := data.Get("description")
+	if ok {
+		convDescr, convOk := dataDescr.(string)
+		if convOk {
+			descr = convDescr
+		}
+	}
 	additionalDescriptions, err := gb.RunContext.Storage.GetAdditionalForms(gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return false, err
