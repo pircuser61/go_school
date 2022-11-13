@@ -4,7 +4,6 @@ tracing:
 
 serve_addr: ':8000'
 timeout: '30s'
-script_manager: 'http://localhost:8001'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
