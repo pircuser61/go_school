@@ -4,25 +4,28 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"golang.org/x/net/context"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 // nolint:dupl // another block
-func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoApproverBlock, error) {
-	b := &GoApproverBlock{
-		Name:       name,
-		Title:      ef.Title,
-		Input:      map[string]string{},
-		Output:     map[string]string{},
-		Sockets:    entity.ConvertSocket(ef.Sockets),
+func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, error) {
+	b := &GoExecutionBlock{
+		Name:    name,
+		Title:   ef.Title,
+		Input:   map[string]string{},
+		Output:  map[string]string{},
+		Sockets: entity.ConvertSocket(ef.Sockets),
+
 		RunContext: runCtx,
 	}
 
@@ -52,59 +55,35 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 	return b, nil
 }
 
-func (gb *GoApproverBlock) loadState(raw json.RawMessage) error {
+func (gb *GoExecutionBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc, runCtx *BlockRunContext) error {
-	var params script.ApproverParams
+func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFunc, runCtx *BlockRunContext) error {
+	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
-		return errors.Wrap(err, "can not get approver parameters")
+		return errors.Wrap(err, "can not get execution parameters")
 	}
 
 	if err = params.Validate(); err != nil {
-		return errors.Wrap(err, "invalid approver parameters")
+		return errors.Wrap(err, "invalid execution parameters, work number")
 	}
 
-	gb.State = &ApproverData{
-		Type:               params.Type,
+	gb.State = &ExecutionData{
+		ExecutionType:      params.Type,
 		SLA:                params.SLA,
-		AutoAction:         params.AutoAction,
+		FormsAccessibility: params.FormsAccessibility,
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,
-		ApproverLog:        make([]ApproverLogEntry, 0),
-		FormsAccessibility: params.FormsAccessibility,
-		ApprovementRule:    params.ApprovementRule,
-	}
-
-	if gb.State.ApprovementRule == "" {
-		gb.State.ApprovementRule = script.AnyOfApprovementRequired
 	}
 
 	switch params.Type {
-	case script.ApproverTypeUser:
-		gb.State.Approvers = map[string]struct{}{
-			params.Approver: {},
+	case script.ExecutionTypeUser:
+		gb.State.Executors = map[string]struct{}{
+			params.Executors: {},
 		}
-	case script.ApproverTypeHead:
-	case script.ApproverTypeGroup:
-		approversGroup, errGroup := runCtx.ServiceDesc.GetApproversGroup(ctx, params.ApproversGroupID)
-		if errGroup != nil {
-			return errors.Wrap(errGroup, "can`t get approvers group with id: "+params.ApproversGroupID)
-		}
-
-		if len(approversGroup.People) == 0 {
-			return errors.Wrap(errGroup, "zero approvers in group: "+params.ApproversGroupID)
-		}
-
-		gb.State.Approvers = make(map[string]struct{})
-		for i := range approversGroup.People {
-			gb.State.Approvers[approversGroup.People[i].Login] = struct{}{}
-		}
-		gb.State.ApproversGroupID = params.ApproversGroupID
-		gb.State.ApproversGroupName = approversGroup.GroupName
-	case script.ApproverTypeFromSchema:
+	case script.ExecutionTypeFromSchema:
 		variableStorage, grabStorageErr := runCtx.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return err
@@ -113,27 +92,40 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		resolvedEntities, resolveErr := resolveValuesFromVariables(
 			variableStorage,
 			map[string]struct{}{
-				params.Approver: {},
+				params.Executors: {},
 			},
 		)
 		if resolveErr != nil {
 			return err
 		}
 
-		gb.State.Approvers = resolvedEntities
+		gb.State.Executors = resolvedEntities
+	case script.ExecutionTypeGroup:
+		executorsGroup, errGroup := runCtx.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
+		if errGroup != nil {
+			return errors.Wrap(errGroup, "can`t get executors group with id: "+params.ExecutorsGroupID)
+		}
+
+		if len(executorsGroup.People) == 0 {
+			return errors.Wrap(errGroup, "zero executors in group: "+params.ExecutorsGroupID)
+		}
+
+		gb.State.Executors = make(map[string]struct{})
+		for i := range executorsGroup.People {
+			gb.State.Executors[executorsGroup.People[i].Login] = struct{}{}
+		}
+		gb.State.ExecutorsGroupID = params.ExecutorsGroupID
+		gb.State.ExecutorsGroupName = executorsGroup.GroupName
 	}
-
-	gb.RunContext.VarStore.AddStep(gb.Name)
-
 	return gb.handleNotifications(ctx)
 }
 
 //nolint:dupl // maybe later
-func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
+func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
-	emails := make([]string, 0, len(gb.State.Approvers))
-	for approver := range gb.State.Approvers {
+	emails := make([]string, 0, len(gb.State.Executors))
+	for approver := range gb.State.Executors {
 		email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
 		if err != nil {
 			l.WithError(err).Error("couldn't get email")
@@ -179,7 +171,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
+func (gb *GoExecutionBlock) setPrevDecision(ctx c.Context) error {
 	decision := gb.State.GetDecision()
 
 	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
@@ -195,7 +187,7 @@ func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
+func (gb *GoExecutionBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	const funcName = "setEditingAppLogFromPreviousBlock"
 	l := logger.GetLogger(ctx)
 
@@ -214,9 +206,9 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 		return
 	}
 
-	var parentState ApproverData
+	var parentState ExecutionData
 	if err = json.Unmarshal(data, &parentState); err != nil {
-		l.Error(funcName, "invalid format of go-approver-block state")
+		l.Error(funcName, "invalid format of go-execution-block state")
 		return
 	}
 
@@ -225,14 +217,15 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	}
 }
 
-func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisionAssigned bool) {
-	const funcName = "pipeline.approver.trySetPreviousDecision"
+// nolint:dupl // not dupl
+func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisionAssigned bool) {
+	const funcName = "pipeline.execution.trySetPreviousDecision"
 	l := logger.GetLogger(ctx)
 
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx,  gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
 		return false
@@ -244,29 +237,29 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 		return false
 	}
 
-	var parentState ApproverData
+	var parentState ExecutionData
 	if err = json.Unmarshal(data, &parentState); err != nil {
-		l.Error(funcName, "invalid format of go-approver-block state")
+		l.Error(funcName, "invalid format of go-execution-block state")
 		return false
 	}
 
 	if parentState.Decision != nil {
-		var actualApprover, comment string
+		var actualExecutor, comment string
 
-		if parentState.ActualApprover != nil {
-			actualApprover = *parentState.ActualApprover
+		if parentState.ActualExecutor != nil {
+			actualExecutor = *parentState.ActualExecutor
 		}
 
-		if parentState.Comment != nil {
-			comment = *parentState.Comment
+		if parentState.DecisionComment != nil {
+			comment = *parentState.DecisionComment
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], actualApprover)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], actualExecutor)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &parentState.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
 
-		gb.State.ActualApprover = &actualApprover
-		gb.State.Comment = &comment
+		gb.State.ActualExecutor = &actualExecutor
+		gb.State.DecisionComment = &comment
 		gb.State.Decision = parentState.Decision
 	}
 

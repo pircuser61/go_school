@@ -2,13 +2,8 @@ package pipeline
 
 import (
 	c "context"
-	"time"
-
 	"github.com/google/uuid"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -113,83 +108,62 @@ func (gb *GoApproverBlock) IsScenario() bool {
 }
 
 func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
-	const workHoursDay = 8
-
-	if gb.State.DidSLANotification {
-		return false, nil
-	}
-	if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
-		l := logger.GetLogger(ctx)
-
-		// nolint:dupl // handle approvers
-		if gb.State.SLA > workHoursDay {
-			emails := make([]string, 0, len(gb.State.Approvers))
-			for approver := range gb.State.Approvers {
-				email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
-				if err != nil {
-					l.WithError(err).Error("couldn't get email")
-				}
-				emails = append(emails, email)
-			}
-			if len(emails) == 0 {
-				return false, nil
-			}
-
-			tpl := mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.RunContext.Sender.SdAddress)
-			err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
-			if err != nil {
-				return false, err
-			}
-		}
-
-		gb.State.DidSLANotification = true
-
-		if gb.State.AutoAction != nil {
-			if err := gb.setApproverDecision(ctx,
-				id,
-				AutoApprover,
-				approverUpdateParams{
-					Decision: decisionFromAutoAction(*gb.State.AutoAction),
-					Comment:  AutoActionComment,
-				}); err != nil {
-				l.WithError(err).Error("couldn't set auto decision")
-				return false, err
-			}
-		} else {
-			//if err := gb.dumpCurrState(ctx, id); err != nil {
-			//	l.WithError(err).Error("couldn't dump state with id: " + id.String())
-			//	return false, err
-			//}
-		}
-		return true, nil
-	}
-
+	//const workHoursDay = 8
+	//
+	//if gb.State.DidSLANotification {
+	//	return false, nil
+	//}
+	//if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
+	//	l := logger.GetLogger(ctx)
+	//
+	//	// nolint:dupl // handle approvers
+	//	if gb.State.SLA > workHoursDay {
+	//		emails := make([]string, 0, len(gb.State.Approvers))
+	//		for approver := range gb.State.Approvers {
+	//			email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
+	//			if err != nil {
+	//				l.WithError(err).Error("couldn't get email")
+	//			}
+	//			emails = append(emails, email)
+	//		}
+	//		if len(emails) == 0 {
+	//			return false, nil
+	//		}
+	//
+	//		tpl := mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.RunContext.Sender.SdAddress)
+	//		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	//		if err != nil {
+	//			return false, err
+	//		}
+	//	}
+	//
+	//	gb.State.DidSLANotification = true
+	//
+	//	if gb.State.AutoAction != nil {
+	//		if err := gb.setApproverDecision(ctx,
+	//			id,
+	//			AutoApprover,
+	//			approverUpdateParams{
+	//				Decision: decisionFromAutoAction(*gb.State.AutoAction),
+	//				Comment:  AutoActionComment,
+	//			}); err != nil {
+	//			l.WithError(err).Error("couldn't set auto decision")
+	//			return false, err
+	//		}
+	//	} else {
+	//		//if err := gb.dumpCurrState(ctx, id); err != nil {
+	//		//	l.WithError(err).Error("couldn't dump state with id: " + id.String())
+	//		//	return false, err
+	//		//}
+	//	}
+	//	return true, nil
+	//}
+	//
 	return false, nil
 }
 
 //nolint:gocyclo //ok
-func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
-	//if step.Status != string(StatusIdle) {
-	//	handled, errSLA := gb.handleSLA(ctx, id, stepCtx)
-	//	if errSLA != nil {
-	//		l.WithError(errSLA).Error("couldn't handle sla")
-	//	}
-	//
-	//	if handled {
-	//		// go for another loop cause we may have updated the state at db
-	//		return gb.DebugRun(ctx, stepCtx, runCtx)
-	//	}
-	//
-	//	handled, err = gb.handleNotifications(ctx, id, stepCtx)
-	//	if err != nil {
-	//		l.WithError(err).Error("couldn't handle notifications")
-	//	}
-	//	if handled {
-	//		// go for another loop cause we may have updated the state at db
-	//		return gb.DebugRun(ctx, stepCtx, runCtx)
-	//	}
-	//}
-
+func (gb *GoApproverBlock) DebugRun(_ c.Context, _ *stepCtx, _ *store.VariableStore) (err error) {
 	return nil
 }
 

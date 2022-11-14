@@ -26,6 +26,25 @@ func (a *updateFillFormParams) Validate() error {
 	return nil
 }
 
+// nolint:dupl // another action
+func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
+	gb.State.IsRevoked = true
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
+	}
+	if changeErr := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); changeErr != nil {
+		return changeErr
+	}
+
+	stateBytes, err := json.Marshal(gb.State)
+	if err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+	return nil
+}
+
 //nolint:gocyclo //ok
 func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 	data := gb.RunContext.UpdateData
@@ -33,21 +52,9 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, errors.New("empty data")
 	}
 	if data.Action == string(entity.TaskUpdateActionCancelApp) {
-		gb.State.IsRevoked = true
-		if err := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); err != nil {
-			return nil, err
+		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
+			return nil, errUpdate
 		}
-		if err := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); err != nil {
-			return nil, err
-		}
-
-		var stateBytes []byte
-		stateBytes, err := json.Marshal(gb.State)
-		if err != nil {
-			return nil, err
-		}
-
-		gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 		return nil, nil
 	}
 	var updateParams updateFillFormParams

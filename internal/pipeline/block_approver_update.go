@@ -13,8 +13,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type approverUpdateEditingParams struct {
@@ -43,125 +41,47 @@ func (a *approverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, login string, u approverUpdateParams) error {
-	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, sID)
-	if err != nil {
-		return err
-	} else if step == nil {
-		return errors.New("can't get step from database")
-	}
-
-	// get state from step.State
-	stepData, ok := step.State[gb.Name]
-	if !ok {
-		return errors.New("can't get step state")
-	}
-
-	var state ApproverData
-	if err = json.Unmarshal(stepData, &state); err != nil {
-		return errors.Wrap(err, "invalid format of go-approver-block state")
-	}
-
-	state.DidSLANotification = gb.State.DidSLANotification
-	gb.State = &state
-
-	if errUpdate := gb.State.SetDecision(login, u.Decision, u.Comment, u.Attachments); errUpdate != nil {
+func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
+	if errUpdate := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.Decision, u.Comment, u.Attachments); errUpdate != nil {
 		return errUpdate
 	}
 
-	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
-		return err
+	if gb.State.Decision != nil {
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], &gb.State.ActualApprover)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
 	}
 
-	content, err := json.Marshal(store.NewFromStep(step))
+	var stateBytes []byte
+	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
 		return err
 	}
 
-	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          sID,
-		Content:     content,
-		BreakPoints: step.BreakPoints,
-		HasError:    false,
-		Status:      step.Status,
-	})
-	if err != nil {
-		return err
-	}
-
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 	return nil
 }
 
-type setApproverEditAppDTO struct {
-	stepId       uuid.UUID
-	approver     string
-	initiator    string
-	workNumber   string
-	workTitle    string
-	updateParams interface{}
-	action       string
-}
-
 //nolint:gocyclo //its ok here
-func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setApproverEditAppDTO) error {
-	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, dto.stepId)
-	if err != nil {
-		return err
-	}
-
-	if step == nil {
-		return errors.New("can't get step from database")
-	}
-
-	// get state from step.State
-	stepData, ok := step.State[gb.Name]
-	if !ok {
-		return errors.New("can't get step state")
-	}
-
-	var state ApproverData
-	if err = json.Unmarshal(stepData, &state); err != nil {
-		return errors.Wrap(err, "invalid format of go-approver-block state")
-	}
-
-	state.DidSLANotification = gb.State.DidSLANotification
-	gb.State = &state
-
-	params, ok := dto.updateParams.(approverUpdateEditingParams)
-	if !ok {
-		return errors.New("can't convert to approverUpdateEditingParams")
-	}
-	errSet := gb.State.setEditApp(dto.approver, params)
+func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approverUpdateEditingParams) error {
+	errSet := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams)
 	if errSet != nil {
 		return errSet
 	}
 
-	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
-		return err
-	}
-
-	content, err := json.Marshal(store.NewFromStep(step))
+	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
 		return err
 	}
 
-	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          dto.stepId,
-		Content:     content,
-		BreakPoints: step.BreakPoints,
-		HasError:    false,
-		Status:      string(StatusIdle),
-	})
-	if err != nil {
-		return err
-	}
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
-	initiatorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, dto.initiator)
+	initiatorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
 	if emailErr != nil {
 		return emailErr
 	}
 
-	tpl := mail.NewAnswerSendToEditTemplate(dto.workNumber, dto.workTitle, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
 	if err != nil {
 		return err
@@ -171,29 +91,9 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setApproverEdi
 }
 
 //nolint:gocyclo //ok
-func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin string, data *script.BlockUpdateData) (err error) {
-	step, err := gb.RunContext.Storage.GetTaskStepById(ctx, data.Id)
-	if err != nil {
-		return err
-	} else if step == nil {
-		return errors.New("can't get step from database")
-	}
-
-	// get state from step.State
-	stepData, ok := step.State[gb.Name]
-	if !ok {
-		return errors.New("can't get step state")
-	}
-
-	var state ApproverData
-	if err = json.Unmarshal(stepData, &state); err != nil {
-		return errors.Wrap(err, "invalid format of go-approver-block state")
-	}
-
-	gb.State = &state
-
+func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) {
 	var updateParams requestInfoParams
-	if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
+	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update requestApproverInfo data")
 	}
 
@@ -206,21 +106,18 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 		linkId *string
 	)
 
-	status := string(StatusIdle)
-	var tpl mail.Template
-
 	if updateParams.Type == RequestAddInfoType {
-		_, ok = gb.State.Approvers[byLogin]
-		if !ok && byLogin != AutoApprover {
-			return fmt.Errorf("%s not found in approvers", byLogin)
+		_, ok := gb.State.Approvers[gb.RunContext.UpdateData.ByLogin]
+		if !ok && gb.RunContext.UpdateData.ByLogin != AutoApprover {
+			return fmt.Errorf("%s not found in approvers", gb.RunContext.UpdateData.ByLogin)
 		}
 
-		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, data.Author)
+		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
 		if emailErr != nil {
 			return emailErr
 		}
 
-		tpl = mail.NewRequestApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.RunContext.Sender.SdAddress)
+		tpl := mail.NewRequestApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 		if err = gb.RunContext.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl); err != nil {
 			return err
 		}
@@ -241,8 +138,6 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 			return linkErr
 		}
 
-		status = string(StatusRunning)
-
 		if len(gb.State.RequestApproverInfoLog) > 0 {
 			workHours := getWorkWorkHoursBetweenDates(
 				gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].CreatedAt,
@@ -251,9 +146,9 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 			gb.State.IncreaseSLA(workHours)
 		}
 
-		tpl = mail.NewAnswerApproverInfoTemplate(data.WorkNumber, data.WorkTitle, gb.RunContext.Sender.SdAddress)
+		tpl := mail.NewAnswerApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 
-		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, byLogin)
+		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.UpdateData.ByLogin)
 		if emailErr != nil {
 			return emailErr
 		}
@@ -270,30 +165,16 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 		Comment:     updateParams.Comment,
 		Attachments: updateParams.Attachments,
 		LinkId:      linkId,
-		Login:       byLogin,
+		Login:       gb.RunContext.UpdateData.ByLogin,
 		CreatedAt:   time.Now(),
 	})
 
-	step.State[gb.Name], err = json.Marshal(gb.State)
+	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
 		return err
 	}
 
-	var content []byte
-	content, err = json.Marshal(store.NewFromStep(step))
-	if err != nil {
-		return err
-	}
-
-	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          data.Id,
-		Content:     content,
-		BreakPoints: step.BreakPoints,
-		Status:      status,
-	})
-	if err != nil {
-		return err
-	}
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	return nil
 }
@@ -323,7 +204,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errors.New("can't assert provided data")
 		}
 
-		return nil, gb.setApproverDecision(ctx, data.Id, data.ByLogin, updateParams)
+		return nil, gb.setApproverDecision(updateParams)
 
 	case string(entity.TaskUpdateActionApproverSendEditApp):
 		var updateParams approverUpdateEditingParams
@@ -332,24 +213,10 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errors.New("can't assert provided data")
 		}
 
-		return nil, gb.setEditApplication(ctx, &setApproverEditAppDTO{
-			stepId:       data.Id,
-			approver:     data.ByLogin,
-			initiator:    data.Author,
-			workNumber:   data.WorkNumber,
-			workTitle:    data.WorkTitle,
-			updateParams: updateParams,
-			action:       data.Action,
-		})
+		return nil, gb.setEditApplication(ctx, updateParams)
 
 	case string(entity.TaskUpdateActionRequestApproveInfo):
-		var updateParams requestInfoParams
-
-		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
-			return nil, errors.New("can't assert provided data")
-		}
-
-		return nil, gb.updateRequestApproverInfo(ctx, data.ByLogin, data)
+		return nil, gb.updateRequestApproverInfo(ctx)
 
 	case string(entity.TaskUpdateActionCancelApp):
 		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {

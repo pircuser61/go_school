@@ -453,6 +453,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 				WorkNumber: dbTask.WorkNumber,
 				WorkTitle:  dbTask.Name,
 				Author:     dbTask.Author,
+				BlockStart: item.Time,
 			},
 		}
 

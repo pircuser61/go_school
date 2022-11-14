@@ -2,6 +2,7 @@ package script
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -131,4 +132,5 @@ type BlockUpdateData struct {
 	WorkNumber string
 	WorkTitle  string
 	Author     string
+	BlockStart time.Time
 }
