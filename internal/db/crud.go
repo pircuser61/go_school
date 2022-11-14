@@ -1515,7 +1515,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		break_points = $2
 		, has_error = $3
 		, status = $4
-		, members = $5
+		--members--
 		--content--
 		--updated_at--
 	WHERE
@@ -1523,9 +1523,11 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 `
 	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, members}
 	if !dto.WithoutContent {
-		q = strings.Replace(q, "--content--", ", content = $6", -1)
+		q = strings.Replace(q, "--content--", ", content = $5", -1)
+		q = strings.Replace(q, "--members--", ", members = $6", -1)
 		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
 		args = append(args, dto.Content)
+		args = append(args, members)
 	}
 
 	_, err := db.Pool.Exec(
