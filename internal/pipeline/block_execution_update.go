@@ -129,6 +129,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, data *script.BlockUpda
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      string(StatusRunning),
+		Members:     gb.State.Executors,
 	})
 
 	return err
@@ -183,6 +184,7 @@ func (gb *GoExecutionBlock) updateDecision(ctx c.Context, in *script.BlockUpdate
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      step.Status,
+		Members:     gb.State.Executors,
 	})
 
 	return err
@@ -270,6 +272,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, in *script.BlockUpd
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      status,
+		Members:     gb.State.Executors,
 	})
 	if err != nil {
 		return err
@@ -363,6 +366,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, dto *executorsStart
 		Content:     content,
 		BreakPoints: dto.step.BreakPoints,
 		Status:      string(StatusRunning),
+		Members:     gb.State.Executors,
 	})
 	if err != nil {
 		return err
@@ -449,6 +453,7 @@ func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdate
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      string(StatusCancel),
+		Members:     gb.State.Executors,
 	})
 	return err
 }
@@ -494,6 +499,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, dto *setExecutorEdi
 		BreakPoints: dto.step.BreakPoints,
 		HasError:    false,
 		Status:      string(StatusIdle),
+		Members:     gb.State.Executors,
 	})
 	if err != nil {
 		return err
@@ -558,6 +564,7 @@ func (gb *GoExecutionBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto
 			Content:     stateBytes,
 			BreakPoints: dto.step.BreakPoints,
 			Status:      dto.step.Status,
+			Members:     gb.State.Executors,
 		})
 		if err != nil {
 			l.Error(funcName, err)
@@ -629,6 +636,7 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context, dto *getPrevio
 			Content:     stateBytes,
 			BreakPoints: parentStep.BreakPoints,
 			Status:      string(StatusRunning),
+			Members:     gb.State.Executors,
 		})
 		if err != nil {
 			l.Error(funcName, err)

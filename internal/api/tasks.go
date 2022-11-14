@@ -173,6 +173,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	if err != nil {
 		return filters, err
 	}
+
 	filters.CurrentUser = ui.Username
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
 

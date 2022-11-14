@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
+
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
@@ -1500,6 +1502,11 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	c, span := trace.StartSpan(ctx, "pg_update_step_context")
 	defer span.End()
 
+	members := make(pq.StringArray, 0, len(dto.Members))
+	for userLogin := range dto.Members {
+		members = append(members, userLogin)
+	}
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
@@ -1508,14 +1515,15 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		break_points = $2
 		, has_error = $3
 		, status = $4
+		, members = $5
 		--content--
 		--updated_at--
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status}
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, members}
 	if !dto.WithoutContent {
-		q = strings.Replace(q, "--content--", ", content = $5", -1)
+		q = strings.Replace(q, "--content--", ", content = $6", -1)
 		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
 		args = append(args, dto.Content)
 	}

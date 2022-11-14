@@ -227,7 +227,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 	}
 
 	total := 0
-	if len(tasks.Tasks) > 0  {
+	if len(tasks.Tasks) > 0 {
 		total = tasks.Tasks[0].Total
 	}
 
