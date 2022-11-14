@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -98,6 +99,10 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 	}
 	if block.GetStatus() == StatusFinished || block.GetStatus() == StatusNoSuccess {
+		err = runCtx.handleInitiatorNotification(ctx, name, block.GetTaskHumanStatus())
+		if err != nil {
+			return err
+		}
 		activeBlocks, ok := block.Next(runCtx.VarStore)
 		if !ok {
 			err = runCtx.updateStepInDB(ctx, id, true, block.GetStatus())
@@ -271,4 +276,58 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasEr
 		Status:         string(status),
 		WithoutContent: status != StatusFinished && status != StatusCancel && status != StatusNoSuccess,
 	})
+}
+
+func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (string, error) {
+	data, err := runCtx.Storage.GetApplicationData(runCtx.WorkNumber)
+	if err != nil {
+		return "", err
+	}
+	var descr string
+	dataDescr, ok := data.Get("description")
+	if ok {
+		convDescr, convOk := dataDescr.(string)
+		if convOk {
+			descr = convDescr
+		}
+	}
+	additionalDescriptions, err := runCtx.Storage.GetAdditionalForms(runCtx.WorkNumber, nodeName)
+	if err != nil {
+		return "", err
+	}
+	for _, item := range additionalDescriptions {
+		if item == "" {
+			continue
+		}
+		descr = fmt.Sprintf("%s\n\n%s", descr, item)
+	}
+	return descr, nil
+}
+
+func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context, step string, status TaskHumanStatus) error {
+	switch status {
+	case StatusNew, StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
+	default:
+		return nil
+	}
+	descr, err := runCtx.makeNotificationDescription(step)
+	if err != nil {
+		return err
+	}
+	tmpl := mail.NewApplicationInitiatorStatusNotification(
+		runCtx.WorkNumber,
+		runCtx.WorkTitle,
+		statusToTaskState[status],
+		descr,
+		runCtx.Sender.SdAddress)
+
+	email, err := runCtx.People.GetUserEmail(ctx, runCtx.Initiator)
+	if err != nil {
+		return err
+	}
+
+	if sendErr := runCtx.Sender.SendNotification(ctx, []string{email}, nil, tmpl); sendErr != nil {
+		return sendErr
+	}
+	return nil
 }

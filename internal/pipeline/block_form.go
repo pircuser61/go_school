@@ -3,8 +3,9 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"golang.org/x/net/context"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/pkg/errors"
 

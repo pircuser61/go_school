@@ -285,27 +285,9 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		}
 	}
 
-	data, err := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
+	descr, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
-	}
-	var descr string
-	dataDescr, ok := data.Get("description")
-	if ok {
-		convDescr, convOk := dataDescr.(string)
-		if convOk {
-			descr = convDescr
-		}
-	}
-	additionalDescriptions, err := gb.RunContext.Storage.GetAdditionalForms(gb.RunContext.WorkNumber, gb.Name)
-	if err != nil {
-		return err
-	}
-	for _, item := range additionalDescriptions {
-		if item == "" {
-			continue
-		}
-		descr = fmt.Sprintf("%s\n\n%s", descr, item)
 	}
 
 	author, err := gb.RunContext.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)

@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -117,6 +116,11 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 		gb.State.ExecutorsGroupID = params.ExecutorsGroupID
 		gb.State.ExecutorsGroupName = executorsGroup.GroupName
 	}
+
+	// maybe we should notify the executor
+	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, gb.Name, gb.GetTaskHumanStatus()); notifErr != nil {
+		return notifErr
+	}
 	return gb.handleNotifications(ctx)
 }
 
@@ -135,27 +139,9 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	if len(emails) == 0 {
 		return nil
 	}
-	data, err := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
+	descr, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
-	}
-	var descr string
-	dataDescr, ok := data.Get("description")
-	if ok {
-		convDescr, convOk := dataDescr.(string)
-		if convOk {
-			descr = convDescr
-		}
-	}
-	additionalDescriptions, err := gb.RunContext.Storage.GetAdditionalForms(gb.RunContext.WorkNumber, gb.Name)
-	if err != nil {
-		return err
-	}
-	for _, item := range additionalDescriptions {
-		if item == "" {
-			continue
-		}
-		descr = fmt.Sprintf("%s\n\n%s", descr, item)
 	}
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 		mail.NewApplicationPersonStatusNotification(
