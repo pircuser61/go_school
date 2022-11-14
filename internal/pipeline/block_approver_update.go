@@ -198,7 +198,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 
 	var updateParams requestInfoParams
 	if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
-		return errors.New("can't assert provided update requestApproverInfo data")
+		return errors.Wrap(err, "can't assert provided update requestApproverInfo data")
 	}
 
 	if gb.State.Decision != nil {

@@ -477,11 +477,11 @@ type setExecutorEditAppDto struct {
 func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, dto *setExecutorEditAppDto) (err error) {
 	var updateParams executorUpdateEditParams
 	if err = json.Unmarshal(dto.data.Parameters, &updateParams); err != nil {
-		return errors.New("can't assert provided update data")
+		return errors.Wrap(err, "can't assert provided update data")
 	}
 
 	if err = gb.State.setEditApp(dto.byLogin, updateParams); err != nil {
-		return err
+		return errors.Wrap(err, "can't set edit app data")
 	}
 
 	if dto.step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
