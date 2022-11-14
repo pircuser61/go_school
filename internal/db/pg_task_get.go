@@ -105,7 +105,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			}
 		}
 	} else {
-		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
+		q = fmt.Sprintf("%s AND w.author = '%s'", q, filters.CurrentUser)
 		q = strings.Replace(q, "--limit--", "LIMIT 1", -1)
 	}
 
