@@ -4,14 +4,16 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
-	"golang.org/x/net/context"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -232,7 +234,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx,  gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
 		return false

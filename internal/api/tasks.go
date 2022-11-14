@@ -426,8 +426,8 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 	couldUpdateOne := false
 	for _, item := range steps {
-		storage, err := ae.DB.GetVariableStorageForStep(ctx, dbTask.ID, item.Name)
-		if err != nil {
+		storage, getErr := ae.DB.GetVariableStorageForStep(ctx, dbTask.ID, item.Name)
+		if getErr != nil {
 			e := BlockNotFoundError
 			log.Error(e.errorMessage(nil))
 			_ = e.sendError(w)
