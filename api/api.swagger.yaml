@@ -1461,6 +1461,11 @@ paths:
           schema:
             type: string
           description: receiver login
+        - name: hasAttachments
+          in: query
+          schema:
+            type: boolean
+          description: filter for attachments
       responses:
         200:
           description: OK

@@ -89,17 +89,18 @@ func (et *EriusTask) IsError() bool {
 }
 
 type GetTaskParams struct {
-	Name        *string     `json:"name"`
-	Created     *TimePeriod `json:"created"`
-	Order       *string     `json:"order"`
-	Limit       *int        `json:"limit"`
-	Offset      *int        `json:"offset"`
-	TaskIDs     *[]string   `json:"task_ids"`
-	SelectAs    *string     `json:"select_as"`
-	Archived    *bool       `json:"archived"`
-	ForCarousel *bool       `json:"forCarousel"`
-	Status      *string     `json:"status"`
-	Receiver    *string     `json:"receiver"`
+	Name          *string     `json:"name"`
+	Created       *TimePeriod `json:"created"`
+	Order         *string     `json:"order"`
+	Limit         *int        `json:"limit"`
+	Offset        *int        `json:"offset"`
+	TaskIDs       *[]string   `json:"task_ids"`
+	SelectAs      *string     `json:"select_as"`
+	Archived      *bool       `json:"archived"`
+	ForCarousel   *bool       `json:"forCarousel"`
+	Status        *string     `json:"status"`
+	Receiver      *string     `json:"receiver"`
+	HasAttacments *bool       `json:"hasAttacments"`
 }
 
 type TimePeriod struct {

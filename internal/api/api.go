@@ -1258,6 +1258,9 @@ type GetTasksParams struct {
 
 	// receiver login
 	Receiver *string `json:"receiver,omitempty"`
+
+	// filter for attachments
+	HasAttachments *bool `json:"hasAttachments,omitempty"`
 }
 
 // UpdateTaskJSONBody defines parameters for UpdateTask.
@@ -2740,6 +2743,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "receiver", r.URL.Query(), &params.Receiver)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiver", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "hasAttachments" -------------
+	if paramValue := r.URL.Query().Get("hasAttachments"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "hasAttachments", r.URL.Query(), &params.HasAttachments)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "hasAttachments", Err: err})
 		return
 	}
 
