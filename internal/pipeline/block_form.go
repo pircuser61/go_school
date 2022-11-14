@@ -166,7 +166,7 @@ func createGoFormBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 			return nil, err
 		}
 	} else {
-		if err := b.createState(ctx, ef, runCtx); err != nil {
+		if err := b.createState(ctx, ef); err != nil {
 			return nil, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
@@ -179,7 +179,7 @@ func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc, runCtx *BlockRunContext) error {
+func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	var params script.FormParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -208,10 +208,10 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc, ru
 		}
 	case script.FormExecutorTypeInitiator:
 		gb.State.Executors = map[string]struct{}{
-			runCtx.Initiator: {},
+			gb.RunContext.Initiator: {},
 		}
 	case script.FormExecutorTypeFromSchema:
-		variableStorage, grabStorageErr := runCtx.VarStore.GrabStorage()
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return err
 		}
@@ -229,11 +229,11 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc, ru
 		gb.State.Executors = resolvedEntities
 	}
 
-	return gb.handleNotifications(ctx, runCtx)
+	return gb.handleNotifications(ctx)
 }
 
-func (gb *GoFormBlock) handleNotifications(ctx context.Context, runCtx *BlockRunContext) error {
-	executors, executorsErr := gb.resolveExecutors(ctx, runCtx)
+func (gb *GoFormBlock) handleNotifications(ctx context.Context) error {
+	executors, executorsErr := gb.resolveExecutors(ctx)
 	if executorsErr != nil {
 		return executorsErr
 	}
@@ -254,13 +254,13 @@ func (gb *GoFormBlock) handleNotifications(ctx context.Context, runCtx *BlockRun
 
 	return gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 		mail.NewRequestFormExecutionInfoTemplate(
-			runCtx.WorkNumber,
-			runCtx.WorkTitle,
+			gb.RunContext.WorkNumber,
+			gb.RunContext.WorkTitle,
 			gb.RunContext.Sender.SdAddress))
 }
 
 //nolint:gocyclo //ok
-func (gb *GoFormBlock) resolveExecutors(ctx c.Context, runCtx *BlockRunContext) (users []string, err error) {
+func (gb *GoFormBlock) resolveExecutors(ctx c.Context) (users []string, err error) {
 	users = make([]string, 0)
 
 	var exists = func(entry string) bool {
@@ -282,7 +282,7 @@ func (gb *GoFormBlock) resolveExecutors(ctx c.Context, runCtx *BlockRunContext) 
 
 	appendUnique(mapToString(gb.State.Executors))
 
-	executorsWithAccess, err := gb.RunContext.Storage.GetUsersWithReadWriteFormAccess(ctx, runCtx.WorkNumber, gb.Name)
+	executorsWithAccess, err := gb.RunContext.Storage.GetUsersWithReadWriteFormAccess(ctx, gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +305,7 @@ func (gb *GoFormBlock) resolveExecutors(ctx c.Context, runCtx *BlockRunContext) 
 				appendUnique(approversToString(sdUsers.People))
 			}
 		case entity.FromSchemaExecution:
-			variables, varErr := runCtx.VarStore.GrabStorage()
+			variables, varErr := gb.RunContext.VarStore.GrabStorage()
 			if varErr != nil {
 				return nil, varErr
 			}

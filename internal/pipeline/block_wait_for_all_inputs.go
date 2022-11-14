@@ -6,8 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"go.opencensus.io/trace"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -69,18 +67,7 @@ func (gb *GoWaitForAllInputsBlock) IsScenario() bool {
 	return false
 }
 
-func (gb *GoWaitForAllInputsBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error {
-	ctx, s := trace.StartSpan(ctx, "run_go_block")
-	defer s.End()
-
-	runCtx.AddStep(gb.Name)
-
-	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, stepCtx.workNumber, gb.State.IncomingBlockIds)
-	if err != nil {
-		return err
-	}
-	gb.State.done = executed
-
+func (gb *GoWaitForAllInputsBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
 	return nil
 }
 
@@ -106,19 +93,14 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 		return nil, errors.New("empty data")
 	}
 	if data.Action == string(entity.TaskUpdateActionCancelApp) {
-		step, err := gb.RunContext.Storage.GetTaskStepById(ctx, data.Id)
-		if err != nil {
-			return nil, err
-		}
-
-		if step == nil {
-			return nil, errors.New("can't get step from database")
-		}
-		if errUpdate := gb.formCancelPipeline(ctx, data, step); errUpdate != nil {
-			return nil, errUpdate
-		}
-		return nil, nil
+		return nil, gb.formCancelPipeline(ctx)
 	}
+	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
+	if err != nil {
+		return nil, err
+	}
+	gb.State.done = executed
+
 	return nil, nil
 }
 
@@ -150,7 +132,7 @@ func removeDuplicateStr(strSlice []string) []string {
 	return list
 }
 
-func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoWaitForAllInputsBlock {
+func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoWaitForAllInputsBlock, error) {
 	b := &GoWaitForAllInputsBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -169,25 +151,46 @@ func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		b.Output[v.Name] = v.Global
 	}
 
-	return b
+	rawState, ok := runCtx.VarStore.State[name]
+	if !ok {
+		if err := b.loadState(rawState); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := b.createState(); err != nil {
+			return nil, err
+		}
+		b.RunContext.VarStore.AddStep(b.Name)
+	}
+
+	return b, nil
+}
+
+func (gb *GoWaitForAllInputsBlock) loadState(raw json.RawMessage) error {
+	return json.Unmarshal(raw, &gb.State)
+}
+
+func (gb *GoWaitForAllInputsBlock) createState() error {
+	gb.State = &SyncData{IncomingBlockIds: getInputBlocks(gb.RunContext.WorkNumber, gb.Name)}
+	gb.RunContext.VarStore.AddStep(gb.Name)
+	return nil
 }
 
 // nolint:dupl // another block
-func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context) (err error) {
 	gb.State.IsRevoked = true
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
+	}
+	if changeErr := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); changeErr != nil {
+		return changeErr
+	}
 
-	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
+	stateBytes, err := json.Marshal(gb.State)
+	if err != nil {
 		return err
 	}
-	var content []byte
-	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
-		return err
-	}
-	err = gb.RunContext.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          in.Id,
-		Content:     content,
-		BreakPoints: step.BreakPoints,
-		Status:      string(StatusCancel),
-	})
-	return err
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+	return nil
 }

@@ -40,7 +40,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 			return nil, err
 		}
 	} else {
-		if err := b.createState(ctx, ef, runCtx); err != nil {
+		if err := b.createState(ctx, ef); err != nil {
 			return nil, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
@@ -56,7 +56,7 @@ func (gb *GoApproverBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc, runCtx *BlockRunContext) error {
+func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	var params script.ApproverParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -89,7 +89,7 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		}
 	case script.ApproverTypeHead:
 	case script.ApproverTypeGroup:
-		approversGroup, errGroup := runCtx.ServiceDesc.GetApproversGroup(ctx, params.ApproversGroupID)
+		approversGroup, errGroup := gb.RunContext.ServiceDesc.GetApproversGroup(ctx, params.ApproversGroupID)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get approvers group with id: "+params.ApproversGroupID)
 		}
@@ -105,7 +105,7 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		gb.State.ApproversGroupID = params.ApproversGroupID
 		gb.State.ApproversGroupName = approversGroup.GroupName
 	case script.ApproverTypeFromSchema:
-		variableStorage, grabStorageErr := runCtx.VarStore.GrabStorage()
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return err
 		}

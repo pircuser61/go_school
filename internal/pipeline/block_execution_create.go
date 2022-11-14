@@ -43,7 +43,7 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 			return nil, err
 		}
 	} else {
-		if err := b.createState(ctx, ef, runCtx); err != nil {
+		if err := b.createState(ctx, ef); err != nil {
 			return nil, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
@@ -59,7 +59,7 @@ func (gb *GoExecutionBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFunc, runCtx *BlockRunContext) error {
+func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -84,7 +84,7 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 			params.Executors: {},
 		}
 	case script.ExecutionTypeFromSchema:
-		variableStorage, grabStorageErr := runCtx.VarStore.GrabStorage()
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return err
 		}
@@ -101,7 +101,7 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 
 		gb.State.Executors = resolvedEntities
 	case script.ExecutionTypeGroup:
-		executorsGroup, errGroup := runCtx.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
+		executorsGroup, errGroup := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get executors group with id: "+params.ExecutorsGroupID)
 		}
