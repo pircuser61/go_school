@@ -86,6 +86,7 @@ func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, sID uuid.UUID, log
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
 		Status:      step.Status,
+		Members:     gb.State.Approvers,
 	})
 	if err != nil {
 		return err
@@ -153,6 +154,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, dto *setApproverEdi
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
 		Status:      string(StatusIdle),
+		Members:     gb.State.Approvers,
 	})
 	if err != nil {
 		return err
@@ -196,7 +198,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 
 	var updateParams requestInfoParams
 	if err = json.Unmarshal(data.Parameters, &updateParams); err != nil {
-		return errors.New("can't assert provided update requestApproverInfo data")
+		return errors.Wrap(err, "can't assert provided update requestApproverInfo data")
 	}
 
 	if gb.State.Decision != nil {
@@ -292,6 +294,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, byLogin stri
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      status,
+		Members:     gb.State.Approvers,
 	})
 	if err != nil {
 		return err
@@ -423,6 +426,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 			Content:     stateBytes,
 			BreakPoints: dto.step.BreakPoints,
 			Status:      dto.step.Status,
+			Members:     gb.State.Approvers,
 		})
 		if err != nil {
 			l.Error(funcName, err)
@@ -449,6 +453,7 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdateD
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      string(StatusCancel),
+		Members:     gb.State.Approvers,
 	})
 
 	return err
@@ -515,6 +520,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviou
 			Content:     stateBytes,
 			BreakPoints: parentStep.BreakPoints,
 			Status:      string(StatusRunning),
+			Members:     gb.State.Approvers,
 		})
 		if err != nil {
 			l.Error(funcName, err)

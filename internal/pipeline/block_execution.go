@@ -134,6 +134,7 @@ func (gb *GoExecutionBlock) dumpCurrState(ctx context.Context, id uuid.UUID) err
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
 		Status:      string(StatusFinished),
+		Members:     gb.State.Executors,
 	})
 }
 
@@ -540,5 +541,6 @@ func (gb *GoExecutionBlock) resolveExecutors(ctx context.Context, dto *resolveEx
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      string(StatusRunning),
+		Members:     gb.State.Executors,
 	})
 }

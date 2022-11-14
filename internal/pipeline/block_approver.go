@@ -139,6 +139,7 @@ func (gb *GoApproverBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
 		Status:      string(StatusFinished),
+		Members:     gb.State.Approvers,
 	})
 }
 

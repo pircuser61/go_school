@@ -65,6 +65,7 @@ type EriusTask struct {
 	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
 	NotifiedBlocks         map[string][]string `json:"notified_blocks"`
 	PrevUpdateStatusBlocks map[string]string   `json:"prev_update_status_blocks"`
+	Total                  int                 `json:"-"`
 }
 
 func (et *EriusTask) IsRun() bool {

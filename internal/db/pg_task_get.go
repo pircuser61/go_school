@@ -42,13 +42,15 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			w.active_blocks,
 			w.skipped_blocks,
 			w.notified_blocks,
-			w.prev_update_status_blocks
+			w.prev_update_status_blocks,
+			count(*) over() as total
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN work_status ws ON w.status = ws.id
 		LEFT JOIN LATERAL (
-			SELECT * FROM variable_storage vs
+			SELECT content, status, step_name, work_id, members, step_type
+				FROM variable_storage vs
 			WHERE vs.work_id = w.id AND vs.status != 'skipped'
 			ORDER BY vs.time DESC
 			--limit--
@@ -74,32 +76,32 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.approvers.' || $%d )::jsonpath "+
+				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'approver'  "+
 					" AND workers.status IN ('running', 'idle', 'ready')", q, len(args))
 			}
 		case "finished_approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.approvers.' || $%d )::jsonpath "+
+				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'approver' "+
 					" AND workers.status IN ('finished', 'no_success')", q, len(args))
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'execution' "+
 					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
 			}
 		case "finished_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'execution' "+
 					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
 			}
 		case "form_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'execution' "+
 					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
 			}
 		case "finished_form_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
+				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'form' "+
 					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
 			}
 		}
@@ -212,22 +214,9 @@ and work_id = (select id from works where work_number = $1)`
 	return data, nil
 }
 
-func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
-	q := `UPDATE variable_storage 
-set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
-where work_id = (select id from works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	q = fmt.Sprintf(q, string(bytes))
-	_, err = db.Pool.Exec(context.Background(), q, workNumber)
-	return err
-}
-
 //nolint:gocritic //filters
 func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
 	q, args := compileGetTasksQuery(filters)
@@ -237,20 +226,14 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 		return nil, err
 	}
 
-	filters.Limit = nil
-	filters.Offset = nil
-	emptyOrder := ""
-	filters.Order = &emptyOrder
-	q, args = compileGetTasksQuery(filters)
-
-	count, err := db.getTasksCount(ctx, q, args)
-	if err != nil {
-		return nil, err
+	total := 0
+	if len(tasks.Tasks) > 0 {
+		total = tasks.Tasks[0].Total
 	}
 
 	return &entity.EriusTasksPage{
 		Tasks: tasks.Tasks,
-		Total: count,
+		Total: total,
 	}, nil
 }
 
@@ -325,22 +308,22 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		return nil, err
 	}
 
-	qApprover := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->'%s' "+
-		"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready') AND workers.step_type = 'approver'", q, userName)
+	qApprover := fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'approver' "+
+		"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready')", q, userName)
 	approver, err := db.getTasksCount(ctx, qApprover, args)
 	if err != nil {
 		return nil, err
 	}
 
-	qExecutor := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->'%s' "+
-		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready')) AND workers.step_type = 'execution'", q, userName)
+	qExecutor := fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
 	executor, err := db.getTasksCount(ctx, qExecutor, args)
 	if err != nil {
 		return nil, err
 	}
 
-	qFormExecutor := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->'%s' "+
-		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready')) AND workers.step_type = 'form'", q, userName)
+	qFormExecutor := fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
+		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
 	form, err := db.getTasksCount(ctx, qFormExecutor, args)
 	if err != nil {
 		return nil, err
@@ -564,7 +547,7 @@ func (db *PGCon) getTasksCount(ctx c.Context, q string, args []interface{}) (int
 
 //nolint:gocyclo //its ok here
 func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.EriusTasks, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
 	ets := entity.EriusTasks{
@@ -611,6 +594,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			&nullJsonSkippedBlocks,
 			&nullJsonNotifiedBlocks,
 			&nullJsonPrevUpdateStatusBlocks,
+			&et.Total,
 		)
 
 		if err != nil {
