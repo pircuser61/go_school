@@ -71,38 +71,37 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		order = *filters.Order
 	}
 
-	args = append(args, filters.CurrentUser)
 	if filters.SelectAs != nil {
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'approver'  "+
-					" AND workers.status IN ('running', 'idle', 'ready')", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'approver'  "+
+					" AND workers.status IN ('running', 'idle', 'ready')", q, filters.CurrentUser)
 			}
 		case "finished_approver":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'approver' "+
-					" AND workers.status IN ('finished', 'no_success')", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'approver' "+
+					" AND workers.status IN ('finished', 'no_success')", q, filters.CurrentUser)
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'execution' "+
-					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
 			}
 		case "finished_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'execution' "+
-					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+					" AND (workers.status IN ('finished', 'no_success'))", q, filters.CurrentUser)
 			}
 		case "form_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'execution' "+
-					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
 			}
 		case "finished_form_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{$%d}' AND workers.step_type = 'form' "+
-					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
+					" AND (workers.status IN ('finished', 'no_success'))", q, filters.CurrentUser)
 			}
 		}
 	} else {
