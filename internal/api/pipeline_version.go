@@ -674,10 +674,17 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	parameters, err := json.Marshal(pipelineVars)
 	if err != nil {
 		e := PipelineRunError
-		return &ep, e, err
+		return nil, e, err
 	}
 
-	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
+	tx, transactionErr := ae.DB.MakeTransaction(ctx)
+	if transactionErr != nil {
+		e := PipelineRunError
+		return nil, e, transactionErr
+	}
+	defer tx.Rollback(ctx)
+
+	if err = ep.CreateTask(ctx, tx, &pipeline.CreateTaskDTO{
 		Author:     dto.userName,
 		IsDebug:    false,
 		Params:     parameters,
@@ -685,31 +692,36 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		RunCtx:     dto.runCtx,
 	}); err != nil {
 		e := PipelineRunError
-		return &ep, e, err
+		return nil, e, err
 	}
 
-	go func() {
-		runCtx := &pipeline.BlockRunContext{
-			TaskID:      ep.TaskID,
-			WorkNumber:  ep.WorkNumber,
-			WorkTitle:   ep.Name,
-			Initiator:   dto.userName,
-			Storage:     ep.Storage,
-			Sender:      ep.Sender,
-			People:      ep.People,
-			ServiceDesc: ep.ServiceDesc,
-			FaaS:        ep.FaaS,
-			VarStore:    variableStorage,
-			UpdateData:  nil,
-		}
-		blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
-		routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-		routineCtx = logger.WithLogger(routineCtx, log)
-		err = pipeline.ProcessBlock(routineCtx, ep.EntryPoint, &blockData, runCtx, false)
-		if err != nil {
-			variableStorage.AddError(err)
-		}
-	}()
+	runCtx := &pipeline.BlockRunContext{
+		TaskID:      ep.TaskID,
+		WorkNumber:  ep.WorkNumber,
+		WorkTitle:   ep.Name,
+		Initiator:   dto.userName,
+		Storage:     ep.Storage,
+		Sender:      ep.Sender,
+		People:      ep.People,
+		ServiceDesc: ep.ServiceDesc,
+		FaaS:        ep.FaaS,
+		VarStore:    variableStorage,
+		UpdateData:  nil,
+		Tx:          tx,
+	}
+	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
+	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+	routineCtx = logger.WithLogger(routineCtx, log)
+	err = pipeline.ProcessBlock(routineCtx, ep.EntryPoint, &blockData, runCtx, false)
+	if err != nil {
+		variableStorage.AddError(err)
+		e := PipelineRunError
+		return nil, e, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		e := PipelineRunError
+		return nil, e, err
+	}
 	return &ep, 0, nil
 }
 

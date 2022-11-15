@@ -295,7 +295,8 @@ func (gb *GoFormBlock) resolveExecutors(ctx c.Context) (users []string, err erro
 
 	appendUnique(mapToString(gb.State.Executors))
 
-	executorsWithAccess, err := gb.RunContext.Storage.GetUsersWithReadWriteFormAccess(ctx, gb.RunContext.WorkNumber, gb.Name)
+	executorsWithAccess, err := gb.RunContext.Storage.GetUsersWithReadWriteFormAccess(ctx, gb.RunContext.Tx,
+		gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, funcName)
 	}

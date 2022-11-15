@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -103,7 +102,9 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	if data.Action == string(entity.TaskUpdateActionCancelApp) {
 		return nil, gb.formCancelPipeline(ctx)
 	}
-	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
+	// TODO
+	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, gb.RunContext.Tx,
+		gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
 	if err != nil {
 		return nil, err
 	}
@@ -187,11 +188,8 @@ func (gb *GoWaitForAllInputsBlock) createState() error {
 // nolint:dupl // another block
 func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context) (err error) {
 	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
-	}
-	if changeErr := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); changeErr != nil {
-		return changeErr
 	}
 
 	stateBytes, err := json.Marshal(gb.State)

@@ -16,17 +16,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func (db *PGCon) ChangeTaskStatus(c context.Context,
-	taskID uuid.UUID, status int) error {
+func (db *PGCon) ChangeTaskStatus(c context.Context, tx pgx.Tx, taskID uuid.UUID, status int) error {
 	c, span := trace.StartSpan(c, "pg_change_task_status")
 	defer span.End()
-
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return err
-	}
-
-	defer conn.Release()
 
 	var q string
 	// nolint:gocritic
@@ -41,7 +33,7 @@ func (db *PGCon) ChangeTaskStatus(c context.Context,
 		WHERE id = $2`
 	}
 
-	_, err = conn.Exec(c, q, status, taskID)
+	_, err := tx.Exec(c, q, status, taskID)
 	if err != nil {
 		return err
 	}
@@ -49,15 +41,9 @@ func (db *PGCon) ChangeTaskStatus(c context.Context,
 	return nil
 }
 
-func (db *PGCon) UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, status string) error {
+func (db *PGCon) UpdateTaskHumanStatus(c context.Context, tx pgx.Tx, taskID uuid.UUID, status string) error {
 	c, span := trace.StartSpan(c, "update_task_human_status")
 	defer span.End()
-
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -65,7 +51,7 @@ func (db *PGCon) UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, stat
 		SET human_status = $1
 		WHERE id = $2`
 
-	_, err = conn.Exec(c, q, status, taskID)
+	_, err := tx.Exec(c, q, status, taskID)
 	return err
 }
 

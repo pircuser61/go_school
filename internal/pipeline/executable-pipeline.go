@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	c "context"
+	"github.com/jackc/pgx/v4"
 	"net/http"
 	"time"
 
@@ -123,10 +124,10 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
-func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
+func (gb *ExecutablePipeline) CreateTask(ctx c.Context, tx pgx.Tx, dto *CreateTaskDTO) error {
 	gb.TaskID = uuid.New()
 
-	task, err := gb.Storage.CreateTask(ctx, &db.CreateTaskDTO{
+	task, err := gb.Storage.CreateTask(ctx, tx, &db.CreateTaskDTO{
 		TaskID:     gb.TaskID,
 		VersionID:  gb.VersionID,
 		Author:     dto.Author,

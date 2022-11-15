@@ -1418,16 +1418,9 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	return tx.Commit(c)
 }
 
-func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
+func (db *PGCon) SaveStepContext(ctx context.Context, tx pgx.Tx, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
-
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return NullUuid, time.Time{}, err
-	}
-
-	defer conn.Release()
 
 	var id uuid.UUID
 	var t time.Time
@@ -1440,7 +1433,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			status IN ('idle', 'ready', 'running', 'cancel')
 `
 
-	if scanErr := conn.QueryRow(ctx, q, dto.WorkID, dto.StepName).
+	if scanErr := tx.QueryRow(ctx, q, dto.WorkID, dto.StepName).
 		Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
 		return NullUuid, time.Time{}, nil
 	}
@@ -1485,7 +1478,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		)
 `
 
-	_, err = conn.Exec(
+	_, err := tx.Exec(
 		ctx,
 		query,
 		id,
@@ -1507,7 +1500,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	return id, timestamp, nil
 }
 
-func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) error {
+func (db *PGCon) UpdateStepContext(ctx context.Context, tx pgx.Tx, dto *UpdateStepRequest) error {
 	c, span := trace.StartSpan(ctx, "pg_update_step_context")
 	defer span.End()
 
@@ -1537,7 +1530,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		args = append(args, dto.Content, members)
 	}
 
-	_, err := db.Pool.Exec(
+	_, err := tx.Exec(
 		c,
 		q,
 		args...,
@@ -1770,7 +1763,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	return el, nil
 }
 
-func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error) {
+func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, tx pgx.Tx, workNumber string, blocks []string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_check_task_steps_executed")
 	defer span.End()
 
@@ -1784,7 +1777,7 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, 
 	// TODO: rewrite to handle edits ?
 
 	var c int
-	if scanErr := db.Pool.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
+	if scanErr := tx.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
 		return false, nil
 	}
 	return c == len(blocks), nil
@@ -1842,7 +1835,8 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 }
 
 //nolint:dupl //its not duplicate
-func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
+func (db *PGCon) GetParentTaskStepByName(ctx context.Context, tx pgx.Tx,
+	workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_parent_task_step_by_name")
 	defer span.End()
 
@@ -1866,7 +1860,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, 
 
 	var s entity.Step
 	var content string
-	err := db.Pool.QueryRow(ctx, query, workID, stepName).Scan(
+	err := tx.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -2191,7 +2185,7 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 	return res, nil
 }
 
-func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName, login string) (bool, error) {
+func (db *PGCon) CheckUserCanEditForm(ctx context.Context, tx pgx.Tx, workNumber, stepName, login string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "check_user_can_edit_form")
 	defer span.End()
 
@@ -2219,14 +2213,14 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 			where accesses.data::jsonb ->> 'node_id' = $2 and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
 `
 	var count int
-	if scanErr := db.Pool.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
+	if scanErr := tx.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
 		return false, scanErr
 	}
 
 	return count != 0, nil
 }
 
-func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (entity.TaskRunContext, error) {
+func (db *PGCon) GetTaskRunContext(ctx context.Context, tx pgx.Tx, workNumber string) (entity.TaskRunContext, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_run_context")
 	defer span.End()
 
@@ -2238,7 +2232,7 @@ func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (enti
 		FROM works
 		WHERE work_number = $1`
 
-	if scanErr := db.Pool.QueryRow(ctx, q, workNumber).Scan(&runCtx); scanErr != nil {
+	if scanErr := tx.QueryRow(ctx, q, workNumber).Scan(&runCtx); scanErr != nil {
 		return runCtx, scanErr
 	}
 	return runCtx, nil
@@ -2261,7 +2255,7 @@ func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockN
 	return f, nil
 }
 
-func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
+func (db *PGCon) StopTaskBlocks(ctx context.Context, tx pgx.Tx, taskID uuid.UUID) error {
 	ctx, span := trace.StartSpan(ctx, "stop_task_blocks")
 	defer span.End()
 
@@ -2270,7 +2264,7 @@ func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
 		SET status = 'cancel'
 		WHERE work_id = $1 AND status IN ('ready', 'idle', 'running')`
 
-	_, err := db.Pool.Exec(ctx, q, taskID)
+	_, err := tx.Exec(ctx, q, taskID)
 	return err
 }
 
@@ -2292,4 +2286,8 @@ func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID
 		return nil, err
 	}
 	return storage, nil
+}
+
+func (db *PGCon) MakeTransaction(ctx context.Context) (pgx.Tx, error) {
+	return db.Pool.Begin(ctx)
 }

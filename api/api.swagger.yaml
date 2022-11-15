@@ -85,51 +85,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /debug/:
-    post:
-      tags:
-        - debug
-      summary: Create debug task
-      description: Создать сессию отладки
-      operationId: create-debug-task
-      requestBody:
-        description: New debug task
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateTaskRequest'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/EriusTask'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: debug
   /debug/{workNumber}:
     get:
       tags:

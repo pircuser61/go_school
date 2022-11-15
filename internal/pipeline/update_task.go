@@ -3,7 +3,7 @@ package pipeline
 import c "context"
 
 func (runCtx *BlockRunContext) changeTaskStatus(ctx c.Context, taskStatus int) error {
-	errChange := runCtx.Storage.ChangeTaskStatus(ctx, runCtx.TaskID, taskStatus)
+	errChange := runCtx.Storage.ChangeTaskStatus(ctx, runCtx.Tx, runCtx.TaskID, taskStatus)
 	if errChange != nil {
 		runCtx.VarStore.AddError(errChange)
 
@@ -17,5 +17,5 @@ func (runCtx *BlockRunContext) updateStatusByStep(ctx c.Context, status TaskHuma
 	if status == "" {
 		return nil
 	}
-	return runCtx.Storage.UpdateTaskHumanStatus(ctx, runCtx.TaskID, string(status))
+	return runCtx.Storage.UpdateTaskHumanStatus(ctx, runCtx.Tx, runCtx.TaskID, string(status))
 }

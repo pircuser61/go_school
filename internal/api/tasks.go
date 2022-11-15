@@ -426,6 +426,16 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		steps = steps[:1]
 	}
 
+	tx, transactionErr := ae.DB.MakeTransaction(ctx)
+	if transactionErr != nil {
+		e := UpdateBlockError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
+	}
+	defer tx.Rollback(ctx)
+
 	couldUpdateOne := false
 	for _, item := range steps {
 		storage, getErr := ae.DB.GetVariableStorageForStep(ctx, dbTask.ID, item.Name)
@@ -457,6 +467,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 				Author:     dbTask.Author,
 				BlockStart: item.Time,
 			},
+			Tx: tx,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
@@ -467,6 +478,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 			return
 		}
+
 		blockErr := pipeline.ProcessBlock(ctx, item.Name, &blockFunc, runCtx, true)
 		if blockErr == nil {
 			couldUpdateOne = true
@@ -476,6 +488,14 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 
 	if !couldUpdateOne {
+		e := UpdateBlockError
+		log.Error(e.errorMessage(errors.New("couldn't update work")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = tx.Commit(ctx); err != nil {
 		e := UpdateBlockError
 		log.Error(e.errorMessage(errors.New("couldn't update work")))
 		_ = e.sendError(w)

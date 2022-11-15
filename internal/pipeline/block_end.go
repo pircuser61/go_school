@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -73,10 +72,7 @@ func (gb *GoEndBlock) GetState() interface{} {
 }
 
 func (gb *GoEndBlock) Update(ctx context.Context) (interface{}, error) {
-	if err := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); err != nil {
-		return nil, err
-	}
-	if err := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); err != nil {
+	if err := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); err != nil {
 		return nil, err
 	}
 	return nil, nil

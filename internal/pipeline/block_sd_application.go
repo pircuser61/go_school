@@ -101,7 +101,7 @@ func (gb *GoSdApplicationBlock) GetState() interface{} {
 }
 
 func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error) {
-	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.Tx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't get task run context")
 	}

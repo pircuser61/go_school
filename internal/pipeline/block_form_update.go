@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
@@ -29,11 +28,8 @@ func (a *updateFillFormParams) Validate() error {
 // nolint:dupl // another action
 func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
 	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
-	}
-	if changeErr := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); changeErr != nil {
-		return changeErr
 	}
 
 	stateBytes, err := json.Marshal(gb.State)
@@ -68,7 +64,8 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	if gb.State.IsFilled {
-		isAllowed, checkEditErr := gb.RunContext.Storage.CheckUserCanEditForm(ctx, data.WorkNumber, gb.Name, data.ByLogin)
+		isAllowed, checkEditErr := gb.RunContext.Storage.CheckUserCanEditForm(ctx, gb.RunContext.Tx,
+			data.WorkNumber, gb.Name, data.ByLogin)
 		if checkEditErr != nil {
 			return nil, err
 		}

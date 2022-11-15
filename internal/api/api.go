@@ -465,12 +465,6 @@ type CountTasks struct {
 	FormExecute int `json:"form_execute"`
 }
 
-// CreateTaskRequest defines model for CreateTaskRequest.
-type CreateTaskRequest struct {
-	Parameters map[string]interface{} `json:"parameters"`
-	VersionId  string                 `json:"version_id"`
-}
-
 // Created defines model for Created.
 type Created struct {
 	End   int `json:"end"`
@@ -1161,9 +1155,6 @@ type VariableOperand struct {
 // SetApplicationJSONBody defines parameters for SetApplication.
 type SetApplicationJSONBody Application
 
-// CreateDebugTaskJSONBody defines parameters for CreateDebugTask.
-type CreateDebugTaskJSONBody CreateTaskRequest
-
 // StartDebugTaskJSONBody defines parameters for StartDebugTask.
 type StartDebugTaskJSONBody DebugRunRequest
 
@@ -1268,9 +1259,6 @@ type UpdateTaskJSONBody TaskUpdate
 
 // SetApplicationJSONRequestBody defines body for SetApplication for application/json ContentType.
 type SetApplicationJSONRequestBody SetApplicationJSONBody
-
-// CreateDebugTaskJSONRequestBody defines body for CreateDebugTask for application/json ContentType.
-type CreateDebugTaskJSONRequestBody CreateDebugTaskJSONBody
 
 // StartDebugTaskJSONRequestBody defines body for StartDebugTask for application/json ContentType.
 type StartDebugTaskJSONRequestBody StartDebugTaskJSONBody
@@ -1654,9 +1642,6 @@ type ServerInterface interface {
 	// set application
 	// (POST /application/{workNumber})
 	SetApplication(w http.ResponseWriter, r *http.Request, workNumber string)
-	// Create debug task
-	// (POST /debug/)
-	CreateDebugTask(w http.ResponseWriter, r *http.Request)
 	// Start debug task
 	// (POST /debug/run)
 	StartDebugTask(w http.ResponseWriter, r *http.Request)
@@ -1828,21 +1813,6 @@ func (siw *ServerInterfaceWrapper) SetApplication(w http.ResponseWriter, r *http
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetApplication(w, r, workNumber)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// CreateDebugTask operation middleware
-func (siw *ServerInterfaceWrapper) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateDebugTask(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3031,9 +3001,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/application/{workNumber}", wrapper.SetApplication)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/debug/", wrapper.CreateDebugTask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/debug/run", wrapper.StartDebugTask)

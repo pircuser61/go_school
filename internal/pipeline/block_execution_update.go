@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 )
@@ -318,11 +317,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 // nolint:dupl // another action
 func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context) (err error) {
 	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
-	}
-	if changeErr := gb.RunContext.changeTaskStatus(ctx, db.RunStatusFinished); changeErr != nil {
-		return changeErr
 	}
 
 	stateBytes, err := json.Marshal(gb.State)

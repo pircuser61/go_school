@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,7 +35,8 @@ type BlockRunContext struct {
 	FaaS            string
 	VarStore        *store.VariableStore
 	UpdateData      *script.BlockUpdateData
-	doNotifications bool
+	doNotifications bool //for tests
+	Tx              pgx.Tx
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
@@ -50,7 +52,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string
 		return db.NullUuid, time.Time{}, errSerialize
 	}
 
-	return runCtx.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
+	return runCtx.Storage.SaveStepContext(ctx, runCtx.Tx, &db.SaveStepRequest{
 		WorkID:      runCtx.TaskID,
 		StepType:    stepType,
 		StepName:    name,
@@ -77,7 +79,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 	}()
 
-	status, getErr := runCtx.Storage.GetTaskStatus(ctx, runCtx.TaskID)
+	status, getErr := runCtx.Storage.GetTaskStatus(ctx, runCtx.Tx, runCtx.TaskID)
 	if err != nil {
 		err = getErr
 		return
@@ -169,7 +171,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 			return nil, err
 		}
 
-		err = epi.CreateTask(ctx, &CreateTaskDTO{
+		err = epi.CreateTask(ctx, runCtx.Tx, &CreateTaskDTO{
 			Author:  "Erius",
 			IsDebug: false,
 			Params:  parameters,
@@ -273,7 +275,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasEr
 		return err
 	}
 
-	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+	return runCtx.Storage.UpdateStepContext(ctx, runCtx.Tx, &db.UpdateStepRequest{
 		Id:             id,
 		Content:        storageData,
 		BreakPoints:    []string{},
