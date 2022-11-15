@@ -795,7 +795,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	return result, nil
 }
 
-func (db *PGCon) GetTaskStatus(ctx context.Context, taskID uuid.UUID) (int, error) {
+func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_status")
 	defer span.End()
 

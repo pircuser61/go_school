@@ -296,14 +296,14 @@ func (gb *GoFormBlock) resolveExecutors(ctx c.Context) (users []string, err erro
 		switch executor.ExecutionType {
 		case entity.GroupExecution:
 			if executor.BlockType == entity.ExecutionBlockType {
-				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, executor.GroupId)
+				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, *executor.GroupId)
 				if sdErr != nil {
 					return nil, errors.Wrap(sdErr, funcName)
 				}
 				appendUnique(executorsToString(sdUsers.People))
 			}
 			if executor.BlockType == entity.ApprovementBlockType {
-				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetApproversGroup(ctx, executor.GroupId)
+				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetApproversGroup(ctx, *executor.GroupId)
 				if sdErr != nil {
 					return nil, errors.Wrap(sdErr, funcName)
 				}

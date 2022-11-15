@@ -95,7 +95,7 @@ type ApproverData struct {
 
 	AddInfo []AdditionalInfo `json:"additional_info,omitempty"`
 
-	IsCanceled bool `json:"is_revoked"`
+	IsRevoked bool `json:"is_revoked"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
