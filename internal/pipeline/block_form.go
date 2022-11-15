@@ -53,6 +53,14 @@ type GoFormBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoFormBlock) Members() map[string]struct{} {
+	return gb.State.Executors
+}
+
+func (gb *GoFormBlock) CheckSLA() bool {
+	return false
+}
+
 func (gb *GoFormBlock) UpdateManual() bool {
 	return true
 }

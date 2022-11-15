@@ -41,6 +41,14 @@ type GoSdApplicationBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoSdApplicationBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoSdApplicationBlock) CheckSLA() bool {
+	return false
+}
+
 func (gb *GoSdApplicationBlock) UpdateManual() bool {
 	return false
 }

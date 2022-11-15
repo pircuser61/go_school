@@ -30,6 +30,14 @@ type GoWaitForAllInputsBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoWaitForAllInputsBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoWaitForAllInputsBlock) CheckSLA() bool {
+	return false
+}
+
 func (gb *GoWaitForAllInputsBlock) UpdateManual() bool {
 	return false
 }

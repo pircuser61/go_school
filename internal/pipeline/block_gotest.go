@@ -20,6 +20,14 @@ type GoTestBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoTestBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoTestBlock) CheckSLA() bool {
+	return false
+}
+
 func (gb *GoTestBlock) UpdateManual() bool {
 	return false
 }

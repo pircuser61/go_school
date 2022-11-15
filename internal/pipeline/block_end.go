@@ -18,6 +18,14 @@ type GoEndBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoEndBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoEndBlock) CheckSLA() bool {
+	return false
+}
+
 func (gb *GoEndBlock) GetStatus() Status {
 	return StatusFinished
 }

@@ -19,6 +19,14 @@ type GoBeginParallelTaskBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoBeginParallelTaskBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoBeginParallelTaskBlock) CheckSLA() bool {
+	return false
+}
+
 func (gb *GoBeginParallelTaskBlock) UpdateManual() bool {
 	return false
 }

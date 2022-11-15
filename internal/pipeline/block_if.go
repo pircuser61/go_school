@@ -28,6 +28,14 @@ type IF struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *IF) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *IF) CheckSLA() bool {
+	return false
+}
+
 type ConditionsData struct {
 	Type            script.ConditionType    `json:"type"`
 	ConditionGroups []script.ConditionGroup `json:"conditionGroups"`
@@ -38,31 +46,31 @@ func (cd *ConditionsData) GetConditionGroups() []script.ConditionGroup {
 	return cd.ConditionGroups
 }
 
-func (e *IF) UpdateManual() bool {
+func (gb *IF) UpdateManual() bool {
 	return false
 }
 
-func (e *IF) GetStatus() Status {
+func (gb *IF) GetStatus() Status {
 	return StatusFinished
 }
 
-func (e *IF) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *IF) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (e *IF) GetType() string {
+func (gb *IF) GetType() string {
 	return BlockGoIfID
 }
 
-func (e *IF) Next(_ *store.VariableStore) ([]string, bool) {
-	if e.State.ChosenGroupID == "" {
-		nexts, ok := script.GetNexts(e.Sockets, DefaultSocketID)
+func (gb *IF) Next(_ *store.VariableStore) ([]string, bool) {
+	if gb.State.ChosenGroupID == "" {
+		nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 		if !ok {
 			return nil, false
 		}
 		return nexts, true
 	} else {
-		nexts, ok := script.GetNexts(e.Sockets, e.State.ChosenGroupID)
+		nexts, ok := script.GetNexts(gb.Sockets, gb.State.ChosenGroupID)
 		if !ok {
 			return nil, false
 		}
@@ -70,15 +78,15 @@ func (e *IF) Next(_ *store.VariableStore) ([]string, bool) {
 	}
 }
 
-func (e *IF) Skipped(_ *store.VariableStore) []string {
-	chosenGroupSocket := script.Socket{Id: e.State.ChosenGroupID}
+func (gb *IF) Skipped(_ *store.VariableStore) []string {
+	chosenGroupSocket := script.Socket{Id: gb.State.ChosenGroupID}
 	if chosenGroupSocket.Id == "" {
 		chosenGroupSocket = script.DefaultSocket
 	}
 
 	skipped := make([]string, 0)
-	for i := range e.Sockets {
-		var socket = e.Sockets[i]
+	for i := range gb.Sockets {
+		var socket = gb.Sockets[i]
 		if socket.Id != chosenGroupSocket.Id {
 			skipped = append(skipped, socket.NextBlockIds...)
 		}
@@ -86,33 +94,33 @@ func (e *IF) Skipped(_ *store.VariableStore) []string {
 	return skipped
 }
 
-func (e *IF) Inputs() map[string]string {
-	return e.FunctionInput
+func (gb *IF) Inputs() map[string]string {
+	return gb.FunctionInput
 }
 
-func (e *IF) Outputs() map[string]string {
+func (gb *IF) Outputs() map[string]string {
 	return make(map[string]string)
 }
 
-func (e *IF) IsScenario() bool {
+func (gb *IF) IsScenario() bool {
 	return false
 }
 
-func (e *IF) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
+func (gb *IF) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
 	return nil
 }
 
-func (e *IF) GetState() interface{} {
+func (gb *IF) GetState() interface{} {
 	return nil
 }
 
-func (e *IF) Update(_ context.Context) (interface{}, error) {
+func (gb *IF) Update(_ context.Context) (interface{}, error) {
 	var chosenGroup *script.ConditionGroup
 
-	if e.State != nil {
-		conditionGroups := e.State.GetConditionGroups()
+	if gb.State != nil {
+		conditionGroups := gb.State.GetConditionGroups()
 
-		variables, err := getVariables(e.RunContext.VarStore)
+		variables, err := getVariables(gb.RunContext.VarStore)
 		if err != nil {
 			return nil, err
 		}
@@ -128,11 +136,11 @@ func (e *IF) Update(_ context.Context) (interface{}, error) {
 		chosenGroupID = ""
 	}
 
-	e.State.ChosenGroupID = chosenGroupID
+	gb.State.ChosenGroupID = chosenGroupID
 	return nil, nil
 }
 
-func (e *IF) Model() script.FunctionModel {
+func (gb *IF) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockGoIfID,
 		BlockType: script.TypeGo,

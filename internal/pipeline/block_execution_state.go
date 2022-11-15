@@ -47,7 +47,6 @@ type ExecutionData struct {
 	DecisionComment     *string              `json:"comment,omitempty"`
 	ActualExecutor      *string              `json:"actual_executor,omitempty"`
 	SLA                 int                  `json:"sla"`
-	DidSLANotification  bool                 `json:"did_sla_notification"`
 
 	EditingApp               *ExecutorEditApp           `json:"editing_app,omitempty"`
 	EditingAppLog            []ExecutorEditApp          `json:"editing_app_log,omitempty"`

@@ -28,6 +28,14 @@ type GoApproverBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoApproverBlock) Members() map[string]struct{} {
+	return gb.State.Approvers
+}
+
+func (gb *GoApproverBlock) CheckSLA() bool {
+	return true
+}
+
 func (gb *GoApproverBlock) UpdateManual() bool {
 	return true
 }

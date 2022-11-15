@@ -64,6 +64,8 @@ type SaveStepRequest struct {
 	BreakPoints []string
 	HasError    bool
 	Status      string
+	Members     map[string]struct{}
+	CheckSLA    bool
 }
 
 type UpdateStepRequest struct {

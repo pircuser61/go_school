@@ -41,31 +41,39 @@ type ExecutableFunctionBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (fb *ExecutableFunctionBlock) GetStatus() Status {
-	return StatusRunning
+func (gb *ExecutableFunctionBlock) Members() map[string]struct{} {
+	return nil
 }
 
-func (fb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
-}
-
-func (fb *ExecutableFunctionBlock) GetType() string {
-	return BlockExecutableFunctionID
-}
-
-func (fb *ExecutableFunctionBlock) Inputs() map[string]string {
-	return fb.Input
-}
-
-func (fb *ExecutableFunctionBlock) Outputs() map[string]string {
-	return fb.Output
-}
-
-func (fb *ExecutableFunctionBlock) IsScenario() bool {
+func (gb *ExecutableFunctionBlock) CheckSLA() bool {
 	return false
 }
 
-func (fb *ExecutableFunctionBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
+func (gb *ExecutableFunctionBlock) GetStatus() Status {
+	return StatusRunning
+}
+
+func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
+	return ""
+}
+
+func (gb *ExecutableFunctionBlock) GetType() string {
+	return BlockExecutableFunctionID
+}
+
+func (gb *ExecutableFunctionBlock) Inputs() map[string]string {
+	return gb.Input
+}
+
+func (gb *ExecutableFunctionBlock) Outputs() map[string]string {
+	return gb.Output
+}
+
+func (gb *ExecutableFunctionBlock) IsScenario() bool {
+	return false
+}
+
+func (gb *ExecutableFunctionBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()
 
@@ -74,32 +82,32 @@ func (fb *ExecutableFunctionBlock) DebugRun(ctx context.Context, _ *stepCtx, run
 	return nil
 }
 
-func (fb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := script.GetNexts(fb.Sockets, DefaultSocketID)
+func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool) {
+	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
 }
 
-func (fb *ExecutableFunctionBlock) Skipped(_ *store.VariableStore) []string {
+func (gb *ExecutableFunctionBlock) Skipped(_ *store.VariableStore) []string {
 	return nil
 }
 
-func (fb *ExecutableFunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStore) (interface{}, error) {
+func (gb *ExecutableFunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStore) (interface{}, error) {
 	_, s := trace.StartSpan(ctx, "run_function_block")
 	defer s.End()
 
 	values := make(map[string]interface{})
 
-	for ikey, gkey := range fb.Input {
+	for ikey, gkey := range gb.Input {
 		val, ok := runCtx.GetValue(gkey) // if no value - empty value
 		if ok {
 			values[ikey] = val
 		}
 	}
 
-	url := fmt.Sprintf(fb.RunURL, fb.Name)
+	url := fmt.Sprintf(gb.RunURL, gb.Name)
 
 	b, err := json.Marshal(values)
 	if err != nil {
@@ -146,15 +154,15 @@ func (fb *ExecutableFunctionBlock) RunOnly(ctx context.Context, runCtx *store.Va
 	return string(body), nil
 }
 
-func (fb *ExecutableFunctionBlock) GetState() interface{} {
+func (gb *ExecutableFunctionBlock) GetState() interface{} {
 	return nil
 }
 
-func (fb *ExecutableFunctionBlock) Update(_ context.Context) (interface{}, error) {
+func (gb *ExecutableFunctionBlock) Update(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (fb *ExecutableFunctionBlock) Model() script.FunctionModel {
+func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockExecutableFunctionID,
 		BlockType: script.TypeExternal,
@@ -173,7 +181,7 @@ func (fb *ExecutableFunctionBlock) Model() script.FunctionModel {
 	}
 }
 
-func (fb *ExecutableFunctionBlock) UpdateManual() bool {
+func (gb *ExecutableFunctionBlock) UpdateManual() bool {
 	return false
 }
 

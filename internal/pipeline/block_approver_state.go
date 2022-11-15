@@ -80,8 +80,6 @@ type ApproverData struct {
 	SLA        int                `json:"sla"`
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
 
-	DidSLANotification bool `json:"did_sla_notification"`
-
 	IsEditable             bool                     `json:"is_editable"`
 	RepeatPrevDecision     bool                     `json:"repeat_prev_decision"`
 	EditingApp             *ApproverEditingApp      `json:"editing_app,omitempty"`

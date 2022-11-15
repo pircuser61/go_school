@@ -30,4 +30,6 @@ type Runner interface {
 	GetTaskHumanStatus() TaskHumanStatus
 	GetStatus() Status
 	UpdateManual() bool
+	Members() map[string]struct{}
+	CheckSLA() bool
 }

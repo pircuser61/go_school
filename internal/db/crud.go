@@ -1449,6 +1449,11 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		return id, t, nil
 	}
 
+	members := make(pq.StringArray, 0, len(dto.Members))
+	for userLogin := range dto.Members {
+		members = append(members, userLogin)
+	}
+
 	id = uuid.New()
 	timestamp := time.Now()
 	// nolint:gocritic
@@ -1463,7 +1468,9 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			time, 
 			break_points, 
 			has_error,
-			status
+			status,
+		    members,
+		    check_sla
 		)
 		VALUES (
 			$1, 
@@ -1490,6 +1497,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
+		members,
+		dto.CheckSLA,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
@@ -1501,11 +1510,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) error {
 	c, span := trace.StartSpan(ctx, "pg_update_step_context")
 	defer span.End()
-
-	members := make(pq.StringArray, 0, len(dto.Members))
-	for userLogin := range dto.Members {
-		members = append(members, userLogin)
-	}
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1521,8 +1525,12 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, members}
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status}
 	if !dto.WithoutContent {
+		members := make(pq.StringArray, 0, len(dto.Members))
+		for userLogin := range dto.Members {
+			members = append(members, userLogin)
+		}
 		q = strings.Replace(q, "--content--", ", content = $5", -1)
 		q = strings.Replace(q, "--members--", ", members = $6", -1)
 		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)

@@ -43,7 +43,8 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	return runCtxCopy
 }
 
-func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string) (uuid.UUID, time.Time, error) {
+func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string,
+	people map[string]struct{}, checkSLA bool) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
@@ -57,6 +58,8 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string
 		BreakPoints: []string{},
 		HasError:    false,
 		Status:      string(StatusNew),
+		Members:     people,
+		CheckSLA:    checkSLA,
 	})
 }
 
@@ -106,7 +109,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 		activeBlocks, ok := block.Next(runCtx.VarStore)
 		if !ok {
-			err = runCtx.updateStepInDB(ctx, id, true, block.GetStatus())
+			err = runCtx.updateStepInDB(ctx, id, true, block.GetStatus(), block.Members())
 			if err != nil {
 				return
 			}
@@ -239,7 +242,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		runCtx.VarStore.ReplaceState(name, state)
 	}
 
-	id, _, err := runCtx.saveStepInDB(ctx, name, bl.TypeID)
+	id, _, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, block.Members(), block.CheckSLA())
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -252,7 +255,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 		key := name + KeyDelimiter + ErrorKey
 		runCtx.VarStore.SetValue(key, err.Error())
 	}
-	err = runCtx.updateStepInDB(ctx, id, err != nil, block.GetStatus())
+	err = runCtx.updateStepInDB(ctx, id, err != nil, block.GetStatus(), block.Members())
 	if err != nil {
 		return err
 	}
@@ -263,7 +266,8 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	return nil
 }
 
-func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasError bool, status Status) error {
+func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasError bool, status Status,
+	people map[string]struct{}) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
@@ -276,6 +280,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasEr
 		HasError:       hasError,
 		Status:         string(status),
 		WithoutContent: status != StatusFinished && status != StatusCancel && status != StatusNoSuccess,
+		Members:        people,
 	})
 }
 

@@ -31,6 +31,14 @@ type GoExecutionBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoExecutionBlock) Members() map[string]struct{} {
+	return gb.State.Executors
+}
+
+func (gb *GoExecutionBlock) CheckSLA() bool {
+	return true
+}
+
 func (gb *GoExecutionBlock) UpdateManual() bool {
 	return true
 }

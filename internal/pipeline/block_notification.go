@@ -33,6 +33,14 @@ type GoNotificationBlock struct {
 	RunContext *BlockRunContext
 }
 
+func (gb *GoNotificationBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoNotificationBlock) CheckSLA() bool {
+	return false
+}
+
 func (gb *GoNotificationBlock) UpdateManual() bool {
 	return false
 }

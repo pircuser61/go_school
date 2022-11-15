@@ -58,52 +58,60 @@ type ExecutablePipeline struct {
 	RunContext *BlockRunContext
 }
 
-func (ep *ExecutablePipeline) GetStatus() Status {
+func (gb *ExecutablePipeline) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *ExecutablePipeline) CheckSLA() bool {
+	return false
+}
+
+func (gb *ExecutablePipeline) GetStatus() Status {
 	switch {
-	case ep.IsOver():
+	case gb.IsOver():
 		return StatusFinished
-	case ep.ReadyToStart():
+	case gb.ReadyToStart():
 		return StatusReady
-	case len(ep.ActiveBlocks) != 0:
+	case len(gb.ActiveBlocks) != 0:
 		return StatusRunning
 	default:
 		return StatusIdle
 	}
 }
 
-func (ep *ExecutablePipeline) UpdateManual() bool {
+func (gb *ExecutablePipeline) UpdateManual() bool {
 	return false
 }
 
-func (ep *ExecutablePipeline) IsOver() bool {
-	return len(ep.ActiveBlocks) == 0
+func (gb *ExecutablePipeline) IsOver() bool {
+	return len(gb.ActiveBlocks) == 0
 }
 
-func (ep *ExecutablePipeline) ReadyToStart() bool {
-	return len(ep.ActiveBlocks) == 0 && ep.EntryPoint == BlockGoFirstStart
+func (gb *ExecutablePipeline) ReadyToStart() bool {
+	return len(gb.ActiveBlocks) == 0 && gb.EntryPoint == BlockGoFirstStart
 }
 
-func (ep *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
 	// TODO: проверять, что нет ошибок (потому что только тогда мы Done)
-	if len(ep.ActiveBlocks) == 0 {
+	if len(gb.ActiveBlocks) == 0 {
 		return StatusDone
 	}
 	return StatusNew
 }
 
-func (ep *ExecutablePipeline) GetType() string {
+func (gb *ExecutablePipeline) GetType() string {
 	return BlockScenario
 }
 
-func (ep *ExecutablePipeline) Inputs() map[string]string {
-	return ep.Input
+func (gb *ExecutablePipeline) Inputs() map[string]string {
+	return gb.Input
 }
 
-func (ep *ExecutablePipeline) Outputs() map[string]string {
-	return ep.Output
+func (gb *ExecutablePipeline) Outputs() map[string]string {
+	return gb.Output
 }
 
-func (ep *ExecutablePipeline) IsScenario() bool {
+func (gb *ExecutablePipeline) IsScenario() bool {
 	return true
 }
 
@@ -115,12 +123,12 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
-func (ep *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
-	ep.TaskID = uuid.New()
+func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
+	gb.TaskID = uuid.New()
 
-	task, err := ep.Storage.CreateTask(ctx, &db.CreateTaskDTO{
-		TaskID:     ep.TaskID,
-		VersionID:  ep.VersionID,
+	task, err := gb.Storage.CreateTask(ctx, &db.CreateTaskDTO{
+		TaskID:     gb.TaskID,
+		VersionID:  gb.VersionID,
 		Author:     dto.Author,
 		WorkNumber: dto.WorkNumber,
 		IsDebug:    dto.IsDebug,
@@ -131,11 +139,11 @@ func (ep *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 		return err
 	}
 
-	ep.WorkNumber = task.WorkNumber
+	gb.WorkNumber = task.WorkNumber
 	return nil
 }
 
-func (ep *ExecutablePipeline) Run(_ c.Context, _ *store.VariableStore) error {
+func (gb *ExecutablePipeline) Run(_ c.Context, _ *store.VariableStore) error {
 	return nil
 }
 
@@ -147,32 +155,32 @@ type stepCtx struct {
 }
 
 //nolint:gocognit,gocyclo //its really complex
-func (ep *ExecutablePipeline) DebugRun(_ c.Context, _ *stepCtx, _ *store.VariableStore) error {
+func (gb *ExecutablePipeline) DebugRun(_ c.Context, _ *stepCtx, _ *store.VariableStore) error {
 	return nil
 }
 
-func (ep *ExecutablePipeline) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := script.GetNexts(ep.Sockets, DefaultSocketID)
+func (gb *ExecutablePipeline) Next(_ *store.VariableStore) ([]string, bool) {
+	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
 }
 
-func (ep *ExecutablePipeline) Skipped(_ *store.VariableStore) []string {
+func (gb *ExecutablePipeline) Skipped(_ *store.VariableStore) []string {
 	return nil
 }
 
-func (ep *ExecutablePipeline) GetState() interface{} {
+func (gb *ExecutablePipeline) GetState() interface{} {
 	return nil
 }
 
-func (ep *ExecutablePipeline) Update(_ c.Context) (interface{}, error) {
+func (gb *ExecutablePipeline) Update(_ c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (ep *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]entity.EriusFunc) error {
-	ep.Blocks = make(map[string]Runner)
+func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]entity.EriusFunc) error {
+	gb.Blocks = make(map[string]Runner)
 
 	ctx, s := trace.StartSpan(ctx, "create_blocks")
 	defer s.End()
@@ -181,23 +189,23 @@ func (ep *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 		bl := source[k]
 
 		block, err := CreateBlock(ctx, k, &bl, &BlockRunContext{
-			TaskID:      ep.TaskID,
-			WorkNumber:  ep.WorkNumber,
-			WorkTitle:   ep.Name,
-			Initiator:   ep.RunContext.Initiator,
-			Storage:     ep.Storage,
-			Sender:      ep.Sender,
-			People:      ep.People,
-			ServiceDesc: ep.ServiceDesc,
-			FaaS:        ep.FaaS,
-			VarStore:    ep.VarStore,
+			TaskID:      gb.TaskID,
+			WorkNumber:  gb.WorkNumber,
+			WorkTitle:   gb.Name,
+			Initiator:   gb.RunContext.Initiator,
+			Storage:     gb.Storage,
+			Sender:      gb.Sender,
+			People:      gb.People,
+			ServiceDesc: gb.ServiceDesc,
+			FaaS:        gb.FaaS,
+			VarStore:    gb.VarStore,
 			UpdateData:  nil,
 		})
 		if err != nil {
 			return err
 		}
 
-		ep.Blocks[k] = block
+		gb.Blocks[k] = block
 	}
 
 	return nil
