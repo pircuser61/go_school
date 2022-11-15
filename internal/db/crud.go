@@ -1521,7 +1521,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, members}
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status}
 	if !dto.WithoutContent {
 		q = strings.Replace(q, "--content--", ", content = $5", -1)
 		q = strings.Replace(q, "--members--", ", members = $6", -1)
