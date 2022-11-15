@@ -661,7 +661,6 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.Sender = ae.Mail
 	ep.People = ae.People
 	ep.Name = dto.p.Name
-	ep.Initiator = dto.userName
 	ep.ServiceDesc = ae.ServiceDesc
 
 	if dto.makeNewWork {
@@ -694,7 +693,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 			TaskID:      ep.TaskID,
 			WorkNumber:  ep.WorkNumber,
 			WorkTitle:   ep.Name,
-			Initiator:   ep.Initiator,
+			Initiator:   dto.userName,
 			Storage:     ep.Storage,
 			Sender:      ep.Sender,
 			People:      ep.People,
