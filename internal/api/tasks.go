@@ -173,21 +173,23 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	if err != nil {
 		return filters, err
 	}
+
 	filters.CurrentUser = ui.Username
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
 
 	filters.GetTaskParams = entity.GetTaskParams{
-		Name:        p.Name,
-		Created:     p.Created.toEntity(),
-		Order:       p.Order,
-		Limit:       &limit,
-		Offset:      &offset,
-		TaskIDs:     p.TaskIDs,
-		SelectAs:    p.SelectAs,
-		Archived:    p.Archived,
-		ForCarousel: p.ForCarousel,
-		Status:      statusToEntity(p.Status),
-		Receiver:    p.Receiver,
+		Name:          p.Name,
+		Created:       p.Created.toEntity(),
+		Order:         p.Order,
+		Limit:         &limit,
+		Offset:        &offset,
+		TaskIDs:       p.TaskIDs,
+		SelectAs:      p.SelectAs,
+		Archived:      p.Archived,
+		ForCarousel:   p.ForCarousel,
+		Status:        statusToEntity(p.Status),
+		Receiver:      p.Receiver,
+		HasAttacments: p.HasAttachments,
 	}
 
 	return filters, nil
@@ -342,8 +344,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 
 	var updateData entity.TaskUpdate
-	err = json.Unmarshal(b, &updateData)
-	if err != nil {
+	if err = json.Unmarshal(b, &updateData); err != nil {
 		e := UpdateTaskParsingError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -359,8 +360,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	err = updateData.Validate()
-	if err != nil {
+	if err = updateData.Validate(); err != nil {
 		e := UpdateTaskValidationError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -427,16 +427,16 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 
 	ep := pipeline.ExecutablePipeline{
-		Storage:     ae.DB,
-		Remedy:      ae.Remedy,
-		FaaS:        ae.FaaS,
-		HTTPClient:  ae.HTTPClient,
-		PipelineID:  scenario.ID,
-		VersionID:   scenario.VersionID,
-		EntryPoint:  scenario.Pipeline.Entrypoint,
-		Sender:      ae.Mail,
-		People:      ae.People,
-		ServiceDesc: ae.ServiceDesc,
+		Storage:       ae.DB,
+		Remedy:        ae.Remedy,
+		FaaS:          ae.FaaS,
+		HTTPClient:    ae.HTTPClient,
+		PipelineID:    scenario.ID,
+		VersionID:     scenario.VersionID,
+		EntryPoint:    scenario.Pipeline.Entrypoint,
+		Sender:        ae.Mail,
+		People:        ae.People,
+		ServiceDesc:   ae.ServiceDesc,
 		PipelineModel: &entity.EriusScenario{Author: dbTask.Author},
 	}
 
@@ -498,7 +498,7 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
-	if action == entity.TaskUpdateActionSendEditApp {
+	if action == entity.TaskUpdateActionApproverSendEditApp {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
@@ -528,6 +528,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 
 	if action == entity.TaskUpdateActionRequestFillForm {
 		return []string{pipeline.BlockGoFormID}
+	}
+
+	if action == entity.TaskUpdateActionExecutorSendEditApp {
+		return []string{pipeline.BlockGoExecutionID}
 	}
 
 	return []string{}

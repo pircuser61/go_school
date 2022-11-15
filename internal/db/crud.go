@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
+
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
@@ -64,13 +66,13 @@ const (
 	// language=PostgreSQL
 	qCheckTagIsAttached string = `
 		SELECT COUNT(pipeline_id) AS count
-		FROM pipeliner.pipeline_tags    
+		FROM pipeline_tags    
 		WHERE 
 			pipeline_id = $1 and tag_id = $2`
 
 	// language=PostgreSQL
 	qWriteHistory = `
-		INSERT INTO pipeliner.pipeline_history (
+		INSERT INTO pipeline_history (
 			id, 
 			pipeline_id, 
 			version_id, 
@@ -181,14 +183,14 @@ SELECT pv.id,
        pws.name,
        pv.comment_rejected,
        pv.comment
-FROM pipeliner.versions pv
-         JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
-         LEFT OUTER JOIN pipeliner.works pw ON pw.id = pv.last_run_id
-         LEFT OUTER JOIN pipeliner.work_status pws ON pws.id = pw.status
+FROM versions pv
+         JOIN pipelines pp ON pv.pipeline_id = pp.id
+         LEFT OUTER JOIN works pw ON pw.id = pv.last_run_id
+         LEFT OUTER JOIN work_status pws ON pws.id = pw.status
 WHERE pp.deleted_at IS NULL
   AND updated_at = (
     SELECT MAX(updated_at)
-    FROM pipeliner.versions pv2
+    FROM versions pv2
     WHERE pv.pipeline_id = pv2.pipeline_id
       AND pv2.status NOT IN (3, 4)
 )
@@ -271,7 +273,7 @@ func (db *PGCon) findApproveDate(c context.Context, id uuid.UUID) (time.Time, er
 	// language=PostgreSQL
 	q := `
 		SELECT date 
-		FROM pipeliner.pipeline_history 
+		FROM pipeline_history 
 		WHERE version_id = $1 
 		ORDER BY date DESC
 		LIMIT 1`
@@ -318,10 +320,10 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author strin
 			pws.name, 
 			pv.comment_rejected, 
 			pv.comment
-		FROM pipeliner.versions pv
-		JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
-		LEFT OUTER JOIN  pipeliner.works pw ON pw.id = pv.last_run_id
-		LEFT OUTER JOIN  pipeliner.work_status pws ON pws.id = pw.status
+		FROM versions pv
+		JOIN pipelines pp ON pv.pipeline_id = pp.id
+		LEFT OUTER JOIN  works pw ON pw.id = pv.last_run_id
+		LEFT OUTER JOIN  work_status pws ON pws.id = pw.status
 		WHERE 
 			pv.status = $1
 			AND pp.deleted_at IS NULL
@@ -388,8 +390,8 @@ func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario,
 		pv.status, 
 		pv.pipeline_id, 
 		pv.content
-	FROM pipeliner.versions pv
-	JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
+	FROM versions pv
+	JOIN pipelines pp ON pv.pipeline_id = pp.id
 	WHERE 
 		pv.status <> $1
 	AND pp.deleted_at IS NULL
@@ -435,13 +437,6 @@ func (db *PGCon) GetAllTags(c context.Context) ([]entity.EriusTagInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_all_tags")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `SELECT 
@@ -449,11 +444,11 @@ func (db *PGCon) GetAllTags(c context.Context) ([]entity.EriusTagInfo, error) {
 		t.name, 
 		t.status, 
 		t.color
-	FROM pipeliner.tags t
+	FROM tags t
     WHERE 
 		t.status <> $1`
 
-	rows, err := conn.Query(c, q, StatusDeleted)
+	rows, err := db.Pool.Query(c, q, StatusDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -480,13 +475,6 @@ func (db *PGCon) GetPipelineTag(c context.Context, pid uuid.UUID) ([]entity.Eriu
 	c, span := trace.StartSpan(c, "pg_get_pipeline_tag")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `SELECT 
@@ -495,14 +483,14 @@ func (db *PGCon) GetPipelineTag(c context.Context, pid uuid.UUID) ([]entity.Eriu
 		t.status, 
 		t.color, 
 		t.is_marker
-	FROM pipeliner.tags t
-	LEFT OUTER JOIN pipeliner.pipeline_tags pt ON pt.tag_id = t.id
+	FROM tags t
+	LEFT OUTER JOIN pipeline_tags pt ON pt.tag_id = t.id
     WHERE 
 		t.status <> $1 
 	AND
 		pt.pipeline_id = $2`
 
-	rows, err := conn.Query(c, q, StatusDeleted, pid)
+	rows, err := db.Pool.Query(c, q, StatusDeleted, pid)
 	if err != nil {
 		return nil, err
 	}
@@ -531,24 +519,18 @@ func (db *PGCon) SwitchApproved(c context.Context, pipelineID, versionID uuid.UU
 
 	date := time.Now()
 
-	conn, err := db.Pool.Acquire(c)
+	tx, err := db.Pool.Begin(c)
 	if err != nil {
 		return err
 	}
-
-	defer conn.Release()
-
-	tx, err := conn.Begin(c)
-	if err != nil {
-		return err
-	}
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	id := uuid.New()
 
 	// nolint:gocritic
 	// language=PostgreSQL
 	qSetApproved := `
-		UPDATE pipeliner.versions 
+		UPDATE versions 
 		SET 
 			status = $1, 
 			approver = $2 
@@ -564,14 +546,7 @@ func (db *PGCon) SwitchApproved(c context.Context, pipelineID, versionID uuid.UU
 		return err
 	}
 
-	err = tx.Commit(c)
-	if err != nil {
-		_ = tx.Rollback(c)
-
-		return err
-	}
-
-	return nil
+	return tx.Commit(c)
 }
 
 func (db *PGCon) RollbackVersion(c context.Context, pipelineID, versionID uuid.UUID) error {
@@ -580,29 +555,10 @@ func (db *PGCon) RollbackVersion(c context.Context, pipelineID, versionID uuid.U
 
 	date := time.Now()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return err
-	}
-
-	defer conn.Release()
-
-	tx, err := conn.Begin(c)
-	if err != nil {
-		return err
-	}
-
 	id := uuid.New()
 
-	_, err = tx.Exec(c, qWriteHistory, id, pipelineID, versionID, date)
+	_, err := db.Pool.Exec(c, qWriteHistory, id, pipelineID, versionID, date)
 	if err != nil {
-		return err
-	}
-
-	err = tx.Commit(c)
-	if err != nil {
-		_ = tx.Rollback(c)
-
 		return err
 	}
 
@@ -613,24 +569,17 @@ func (db *PGCon) SwitchRejected(c context.Context, versionID uuid.UUID, comment,
 	c, span := trace.StartSpan(c, "pg_switch_rejected")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	qSetRejected := `
-		UPDATE pipeliner.versions 
+		UPDATE versions 
 		SET 
 			status = $1, 
 			approver = $2, 
 			comment_rejected = $3 
 		WHERE id = $4`
 
-	_, err = conn.Exec(c, qSetRejected, StatusRejected, author, comment, versionID)
+	_, err := db.Pool.Exec(c, qSetRejected, StatusRejected, author, comment, versionID)
 	if err != nil {
 		return err
 	}
@@ -646,7 +595,7 @@ func (db *PGCon) VersionEditable(c context.Context, versionID uuid.UUID) (bool, 
 	// language=PostgreSQL
 	q := `
 		SELECT COUNT(id) AS count
-		FROM pipeliner.versions 
+		FROM versions 
 		WHERE 
 			id = $1 AND status = $2`
 
@@ -677,25 +626,18 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 	c, span := trace.StartSpan(c, "pg_pipeline_removable")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return false, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
 		SELECT COUNT(id) AS count
-		FROM pipeliner.versions 
+		FROM versions 
 		WHERE pipeline_id = $1`
 
-	row := conn.QueryRow(c, q, id)
+	row := db.Pool.QueryRow(c, q, id)
 
 	count := 0
 
-	err = row.Scan(&count)
+	err := row.Scan(&count)
 	if err != nil {
 		return false, err
 	}
@@ -712,24 +654,12 @@ func (db *PGCon) CreatePipeline(c context.Context,
 	c, span := trace.StartSpan(c, "pg_create_pipeline")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return err
-	}
-
-	defer conn.Release()
-
-	tx, err := conn.Begin(c)
-	if err != nil {
-		return err
-	}
-
 	createdAt := time.Now()
 
 	// nolint:gocritic
 	// language=PostgreSQL
 	qNewPipeline := `
-	INSERT INTO pipeliner.pipelines (
+	INSERT INTO pipelines (
 		id, 
 		name, 
 		created_at, 
@@ -742,15 +672,8 @@ func (db *PGCon) CreatePipeline(c context.Context,
 		$4
 	)`
 
-	_, err = tx.Exec(c, qNewPipeline, p.ID, p.Name, createdAt, author)
+	_, err := db.Pool.Exec(c, qNewPipeline, p.ID, p.Name, createdAt, author)
 	if err != nil {
-		return err
-	}
-
-	err = tx.Commit(c)
-	if err != nil {
-		_ = tx.Rollback(c)
-
 		return err
 	}
 
@@ -765,7 +688,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 	// nolint:gocritic
 	// language=PostgreSQL
 	qNewVersion := `
-	INSERT INTO pipeliner.versions (
+	INSERT INTO versions (
 		id, 
 		status, 
 		pipeline_id, 
@@ -800,25 +723,18 @@ func (db *PGCon) PipelineNameCreatable(c context.Context, name string) (bool, er
 	c, span := trace.StartSpan(c, "pg_pipeline_name_creatable")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return false, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
 	SELECT count(name) AS count
-	FROM pipeliner.pipelines
+	FROM pipelines
 	WHERE name = $1`
 
-	row := conn.QueryRow(c, q, name)
+	row := db.Pool.QueryRow(c, q, name)
 
 	count := 0
 
-	err = row.Scan(&count)
+	err := row.Scan(&count)
 	if err != nil {
 		return false, err
 	}
@@ -843,7 +759,7 @@ func (db *PGCon) CreateTag(c context.Context,
 	defer conn.Release()
 
 	if e.Name == "" {
-		return nil, err
+		return nil, nil
 	}
 
 	// nolint:gocritic
@@ -855,7 +771,7 @@ func (db *PGCon) CreateTag(c context.Context,
 		t.status, 
 		t.color, 
 		t.is_marker
-	FROM pipeliner.tags t
+	FROM tags t
 	WHERE 
 		lower(t.name) = lower($1) AND t.status <> $2 and t.is_marker <> $3
 	LIMIT 1`
@@ -879,7 +795,7 @@ func (db *PGCon) CreateTag(c context.Context,
 	// nolint:gocritic
 	// language=PostgreSQL
 	qNewTag := `
-		INSERT INTO pipeliner.tags (
+		INSERT INTO tags (
 			id, 
 			name, 
 			status,
@@ -921,7 +837,7 @@ func (db *PGCon) DeleteVersion(c context.Context, versionID uuid.UUID) error {
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-		UPDATE pipeliner.versions 
+		UPDATE versions 
 		SET 
 			deleted_at = $1, 
 			status = $2 
@@ -936,21 +852,21 @@ func (db *PGCon) DeleteVersion(c context.Context, versionID uuid.UUID) error {
 	return nil
 }
 
-func (db *PGCon) DeleteAllVersions(c context.Context, id uuid.UUID) error {
+func (db *PGCon) deleteAllVersions(c context.Context, tx pgx.Tx, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_delete_all_versions")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-		UPDATE pipeliner.versions 
+		UPDATE versions 
 		SET 
 			deleted_at = $1, 
 			status = $2 
 		WHERE pipeline_id = $3`
 	t := time.Now()
 
-	_, err := db.Pool.Exec(c, q, t, StatusDeleted, id)
+	_, err := tx.Exec(c, q, t, StatusDeleted, id)
 	if err != nil {
 		return err
 	}
@@ -962,19 +878,25 @@ func (db *PGCon) DeletePipeline(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_delete_pipeline")
 	defer span.End()
 
+	tx, err := db.Pool.Begin(c)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
+
 	t := time.Now()
 
 	// nolint:gocritic
 	// language=PostgreSQL
 	qName := `
 		SELECT name 
-		FROM pipeliner.pipelines 
+		FROM pipelines 
 		WHERE id = $1`
-	row := db.Pool.QueryRow(c, qName, id)
+	row := tx.QueryRow(c, qName, id)
 
 	var n string
 
-	err := row.Scan(&n)
+	err = row.Scan(&n)
 	if err != nil {
 		return err
 	}
@@ -984,32 +906,28 @@ func (db *PGCon) DeletePipeline(c context.Context, id uuid.UUID) error {
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-		UPDATE pipeliner.pipelines 
+		UPDATE pipelines 
 		SET 
 			deleted_at = $1, 
 			name = $2 
 		WHERE id = $3`
 
-	_, err = db.Pool.Exec(c, q, t, n, id)
+	_, err = tx.Exec(c, q, t, n, id)
 	if err != nil {
 		return err
 	}
 
-	return db.DeleteAllVersions(c, id)
+	err = db.deleteAllVersions(c, tx, id)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(c)
 }
 
 func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline")
 	defer span.End()
-
-	pool := db.Pool
-
-	conn, err := pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
 
 	p := entity.EriusScenario{}
 	// nolint:gocritic
@@ -1022,14 +940,14 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		pv.content, 
 		pv.comment,
 		pv.author
-	FROM pipeliner.versions pv
-	JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
+	FROM versions pv
+	JOIN pipeline_history pph ON pph.version_id = pv.id
 	WHERE pv.pipeline_id = $1
 	ORDER BY pph.date DESC 
 	LIMIT 1
 `
 
-	rows, err := conn.Query(c, q, id)
+	rows, err := db.Pool.Query(c, q, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1074,13 +992,6 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 	c, span := trace.StartSpan(c, "pg_get_pipeline_version")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	p := entity.EriusScenario{}
 
 	// nolint:gocritic
@@ -1096,13 +1007,13 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 		pv.comment, 
 		pv.author, 
 		pph.date
-	FROM pipeliner.versions pv
-    LEFT JOIN pipeliner.pipeline_history pph ON pph.version_id = pv.id
+	FROM versions pv
+    LEFT JOIN pipeline_history pph ON pph.version_id = pv.id
 	WHERE pv.id = $1
 	ORDER BY pph.date DESC 
 	LIMIT 1`
 
-	rows, err := conn.Query(c, qVersion, id)
+	rows, err := db.Pool.Query(c, qVersion, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1150,32 +1061,25 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) er
 	c, span := trace.StartSpan(c, "pg_rename_pipeline")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
 	WITH id_values (name) as (
       values ($1)
     ), src AS (
-      UPDATE pipeliner.pipelines
+      UPDATE pipelines
           SET name = (select name from id_values)
       WHERE id = $2
     )
-    UPDATE pipeliner.versions
+    UPDATE versions
        SET content = jsonb_set(content, '{name}', to_jsonb((select name from id_values)) , false)
-    WHERE pipeliner.versions.id = 
+    WHERE versions.id = 
           (SELECT ID 
-           FROM pipeliner.versions ver 
+           FROM versions ver 
            WHERE ver.pipeline_id = $2 ORDER BY created_at DESC LIMIT 1) 
     ;`
 
-	_, err = conn.Exec(c, query, name, id)
+	_, err := db.Pool.Exec(c, query, name, id)
 	if err != nil {
 		return err
 	}
@@ -1187,13 +1091,6 @@ func (db *PGCon) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.Eriu
 	c, span := trace.StartSpan(c, "pg_get_tag")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	qGetTag := `
@@ -1203,12 +1100,12 @@ func (db *PGCon) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.Eriu
 		t.status, 
 		t.color, 
 		t.is_marker
-	FROM pipeliner.tags t
+	FROM tags t
 	WHERE 
 		t.id = $1 AND t.status <> $2
 	LIMIT 1`
 
-	rows, err := conn.Query(c, qGetTag, e.ID, StatusDeleted)
+	rows, err := db.Pool.Query(c, qGetTag, e.ID, StatusDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -1242,7 +1139,7 @@ func (db *PGCon) EditTag(c context.Context, e *entity.EriusTagInfo) error {
 	// language=PostgreSQL
 	qCheckTagIsCreated := `
 		SELECT count(id) AS count
-		FROM pipeliner.tags 
+		FROM tags 
 		WHERE id = $1 AND status = $2`
 
 	row := conn.QueryRow(c, qCheckTagIsCreated, e.ID, StatusDraft)
@@ -1260,7 +1157,7 @@ func (db *PGCon) EditTag(c context.Context, e *entity.EriusTagInfo) error {
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	qEditTag := `UPDATE pipeliner.tags
+	qEditTag := `UPDATE tags
 	SET color = $1
 	WHERE id = $2`
 
@@ -1300,7 +1197,7 @@ func (db *PGCon) AttachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagI
 	// nolint:gocritic
 	// language=PostgreSQL
 	qAttachTag := `
-	INSERT INTO pipeliner.pipeline_tags (
+	INSERT INTO pipeline_tags (
 		pipeline_id, 
 		tag_id
 	)
@@ -1321,12 +1218,11 @@ func (db *PGCon) RemoveTag(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_remove_tag")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
+	tx, err := db.Pool.Begin(c)
 	if err != nil {
 		return err
 	}
-
-	defer conn.Release()
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	t := time.Now()
 
@@ -1334,10 +1230,10 @@ func (db *PGCon) RemoveTag(c context.Context, id uuid.UUID) error {
 	// language=PostgreSQL
 	qName := `SELECT 
 		name 
-	FROM pipeliner.tags 
+	FROM tags 
 	WHERE id = $1`
 
-	row := conn.QueryRow(c, qName, id)
+	row := tx.QueryRow(c, qName, id)
 
 	var n string
 
@@ -1350,13 +1246,13 @@ func (db *PGCon) RemoveTag(c context.Context, id uuid.UUID) error {
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	qSetTagDeleted := `UPDATE pipeliner.tags
+	qSetTagDeleted := `UPDATE tags
 	SET 
 		status = $1, 
 		name = $2  
 	WHERE id = $3`
 
-	_, err = conn.Exec(c, qSetTagDeleted, StatusDeleted, n, id)
+	_, err = tx.Exec(c, qSetTagDeleted, StatusDeleted, n, id)
 	if err != nil {
 		return err
 	}
@@ -1365,10 +1261,10 @@ func (db *PGCon) RemoveTag(c context.Context, id uuid.UUID) error {
 	// language=PostgreSQL
 	qCheckTagAttached := `
 	SELECT COUNT(pipeline_id) AS count
-	FROM pipeliner.pipeline_tags
+	FROM pipeline_tags
 	WHERE tag_id = $1`
 
-	row = conn.QueryRow(c, qCheckTagAttached, id)
+	row = tx.QueryRow(c, qCheckTagAttached, id)
 
 	count := 0
 
@@ -1384,15 +1280,15 @@ func (db *PGCon) RemoveTag(c context.Context, id uuid.UUID) error {
 	// nolint:gocritic
 	// language=PostgreSQL
 	qRemoveAttachedTags := `
-	DELETE FROM pipeliner.pipeline_tags
+	DELETE FROM pipeline_tags
 	WHERE tag_id = $1`
 
-	_, err = conn.Exec(c, qRemoveAttachedTags, id)
+	_, err = tx.Exec(c, qRemoveAttachedTags, id)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit(c)
 }
 
 //nolint:dupl //its different
@@ -1422,7 +1318,7 @@ func (db *PGCon) DetachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagI
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	qDetachTag := `DELETE FROM pipeliner.pipeline_tags
+	qDetachTag := `DELETE FROM pipeline_tags
 	WHERE pipeline_id = $1 
 	AND tag_id = $2`
 
@@ -1449,7 +1345,7 @@ func (db *PGCon) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 	// language=PostgreSQL
 	qCheckTagIsAttached := `
 	SELECT COUNT(pipeline_id) AS count
-	FROM pipeliner.pipeline_tags
+	FROM pipeline_tags
 	WHERE pipeline_id = $1`
 
 	row := conn.QueryRow(c, qCheckTagIsAttached, id)
@@ -1468,7 +1364,7 @@ func (db *PGCon) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 	// nolint:gocritic
 	// language=PostgreSQL
 	qRemovePipelineTags := `
-	DELETE FROM pipeliner.pipeline_tags
+	DELETE FROM pipeline_tags
 	WHERE pipeline_id = $1`
 
 	_, err = conn.Exec(c, qRemovePipelineTags, id)
@@ -1484,15 +1380,16 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	c, span := trace.StartSpan(c, "pg_update_draft")
 	defer span.End()
 
-	tx, err := db.Pool.BeginTx(c, pgx.TxOptions{})
+	tx, err := db.Pool.Begin(c)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-	UPDATE pipeliner.versions 
+	UPDATE versions 
 	SET 
 		status = $1, 
 		content = $2, 
@@ -1503,19 +1400,17 @@ func (db *PGCon) UpdateDraft(c context.Context,
 
 	_, err = tx.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), p.VersionID)
 	if err != nil {
-		_ = tx.Rollback(c)
 		return err
 	}
 
 	if p.Status == StatusApproved {
 		q = `
-	UPDATE pipeliner.versions
+	UPDATE versions
 	SET is_actual = FALSE
 	WHERE id != $1
 	AND pipeline_id = $2`
 		_, err = tx.Exec(c, q, p.VersionID, p.ID)
 		if err != nil {
-			_ = tx.Rollback(c)
 			return err
 		}
 	}
@@ -1539,7 +1434,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 
 	const q = `
 		SELECT id, time
-			FROM pipeliner.variable_storage 
+			FROM variable_storage 
 		WHERE work_id = $1 AND
 			step_name = $2 AND
 			status IN ('idle', 'ready', 'running', 'cancel')
@@ -1559,7 +1454,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		INSERT INTO pipeliner.variable_storage (
+		INSERT INTO variable_storage (
 			id, 
 			work_id, 
 			step_type,
@@ -1607,34 +1502,34 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	c, span := trace.StartSpan(ctx, "pg_update_step_context")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return err
+	members := make(pq.StringArray, 0, len(dto.Members))
+	for userLogin := range dto.Members {
+		members = append(members, userLogin)
 	}
-
-	defer conn.Release()
 
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
-	UPDATE pipeliner.variable_storage
+	UPDATE variable_storage
 	SET
 		break_points = $2
 		, has_error = $3
 		, status = $4
+		--members--
 		--content--
 		--updated_at--
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status}
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, members}
 	if !dto.WithoutContent {
 		q = strings.Replace(q, "--content--", ", content = $5", -1)
+		q = strings.Replace(q, "--members--", ", members = $6", -1)
 		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
-		args = append(args, dto.Content)
+		args = append(args, dto.Content, members)
 	}
 
-	_, err = conn.Exec(
+	_, err := db.Pool.Exec(
 		c,
 		q,
 		args...,
@@ -1660,9 +1555,9 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 		pv.pipeline_id, 
 		pv.content, 
 		ph.date
-	FROM pipeliner.versions pv
-	JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
-	JOIN pipeliner.pipeline_history ph ON ph.version_id = pv.id
+	FROM versions pv
+	JOIN pipelines pp ON pv.pipeline_id = pp.id
+	JOIN pipeline_history ph ON ph.version_id = pv.id
 	WHERE 
 		pv.status = $1
 		AND pp.deleted_at is NULL
@@ -1737,13 +1632,6 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	c, span := trace.StartSpan(c, "pg_get_executable_by_name")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	p := entity.EriusScenario{}
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1753,9 +1641,9 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 		pv.status, 
 		pv.pipeline_id, 
 		pv.content
-	FROM pipeliner.versions pv
-	JOIN pipeliner.pipeline_history pph on pph.version_id = pv.id
-	JOIN pipeliner.pipelines p on p.id = pv.pipeline_id
+	FROM versions pv
+	JOIN pipeline_history pph on pph.version_id = pv.id
+	JOIN pipelines p on p.id = pv.pipeline_id
 	WHERE 
 		p.name = $1 
 		AND p.deleted_at IS NULL
@@ -1763,7 +1651,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	LIMIT 1
 `
 
-	rows, err := conn.Query(c, q, name)
+	rows, err := db.Pool.Query(c, q, name)
 	if err != nil {
 		return nil, err
 	}
@@ -1803,19 +1691,12 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 
 	el := entity.TaskSteps{}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var notInStatuses []string
 	if stepType == "form" {
 		notInStatuses = []string{"skipped"}
 	} else {
 		notInStatuses = []string{"skipped", "finished"}
 	}
-
-	defer conn.Release()
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1829,14 +1710,14 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 		COALESCE(vs.break_points, '{}') AS break_points, 
 		vs.has_error,
 		vs.status
-	FROM pipeliner.variable_storage vs 
+	FROM variable_storage vs 
 	WHERE 
 	    work_id = $1 AND 
 	    step_type = $2
 	    AND NOT status = ANY($3)
 	    ORDER BY vs.time ASC`
 
-	rows, err := conn.Query(ctx, q, id, stepType, notInStatuses)
+	rows, err := db.Pool.Query(ctx, q, id, stepType, notInStatuses)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -1885,25 +1766,18 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, 
 	ctx, span := trace.StartSpan(ctx, "pg_check_task_steps_executed")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
 	SELECT count(*)
-	FROM pipeliner.variable_storage vs 
-	JOIN pipeliner.works w on w.id = vs.work_id
+	FROM variable_storage vs 
+	JOIN works w on w.id = vs.work_id
 	WHERE w.work_number = $1 AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success', 'skipped')`
 	// TODO: rewrite to handle edits ?
 
 	var c int
-	if scanErr := conn.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
-		return false, err
+	if scanErr := db.Pool.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
+		return false, nil
 	}
 	return c == len(blocks), nil
 }
@@ -1911,13 +1785,6 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, 
 func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_id")
 	defer span.End()
-
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1931,13 +1798,13 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		COALESCE(vs.break_points, '{}') AS break_points, 
 		vs.has_error,
 		vs.status
-	FROM pipeliner.variable_storage vs 
+	FROM variable_storage vs 
 	WHERE id = $1
 	LIMIT 1`
 
 	var s entity.Step
 	var content string
-	err = conn.QueryRow(ctx, q, id).Scan(
+	err := db.Pool.QueryRow(ctx, q, id).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -1971,13 +1838,6 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, 
 	ctx, span := trace.StartSpan(ctx, "pg_get_parent_task_step_by_name")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -1990,15 +1850,15 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, 
 			COALESCE(vs.break_points, '{}') AS break_points, 
 			vs.has_error,
 			vs.status
-		FROM pipeliner.variable_storage vs 
-			LEFT JOIN pipeliner.works w ON w.child_id = $1 
+		FROM variable_storage vs 
+			LEFT JOIN works w ON w.child_id = $1 
 		WHERE vs.work_id = w.id AND vs.step_name = $2
 		LIMIT 1
 `
 
 	var s entity.Step
 	var content string
-	err = conn.QueryRow(ctx, query, workID, stepName).Scan(
+	err := db.Pool.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -2014,8 +1874,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, 
 
 	storage := store.NewStore()
 
-	err = json.Unmarshal([]byte(content), storage)
-	if err != nil {
+	if err = json.Unmarshal([]byte(content), storage); err != nil {
 		return nil, err
 	}
 
@@ -2032,13 +1891,6 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_name")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -2051,14 +1903,14 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 			COALESCE(vs.break_points, '{}') AS break_points, 
 			vs.has_error,
 			vs.status
-		FROM pipeliner.variable_storage vs  
+		FROM variable_storage vs  
 			WHERE vs.work_id = $1 AND vs.step_name = $2
 		LIMIT 1
 `
 
 	var s entity.Step
 	var content string
-	err = conn.QueryRow(ctx, query, workID, stepName).Scan(
+	err := db.Pool.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -2091,13 +1943,6 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) 
 	c, span := trace.StartSpan(c, "pg_get_version_history")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
@@ -2109,8 +1954,8 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) 
 	    pv.updated_at,
 		pv.is_actual,
 	    pv.status
-	FROM pipeliner.versions pv
-	JOIN pipeliner.pipelines pp ON pv.pipeline_id = pp.id
+	FROM versions pv
+	JOIN pipelines pp ON pv.pipeline_id = pp.id
 	WHERE 
 		pp.id = $1 
 		--status--
@@ -2121,7 +1966,7 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) 
 		q = strings.Replace(q, "--status--", fmt.Sprintf("AND pv.status=%d", status), 1)
 	}
 
-	rows, err := conn.Query(c, q, id)
+	rows, err := db.Pool.Query(c, q, id)
 	if err != nil {
 		return nil, err
 	}
@@ -2138,13 +1983,6 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 	c, span := trace.StartSpan(c, "pg_get_version_by_work_number")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -2157,15 +1995,15 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 			version.comment_rejected,
 			version.comment,
 			version.author,
-			(SELECT MAX(date) FROM pipeliner.pipeline_history 
+			(SELECT MAX(date) FROM pipeline_history 
 				WHERE pipeline_id = version.pipeline_id
 			) AS last_approve
-		FROM pipeliner.works work
-			LEFT JOIN pipeliner.versions version ON version.id = work.version_id
+		FROM works work
+			LEFT JOIN versions version ON version.id = work.version_id
 		WHERE work.work_number = $1 AND work.child_id IS NULL;
 `
 
-	row := conn.QueryRow(c, query, workNumber)
+	row := db.Pool.QueryRow(c, query, workNumber)
 
 	var (
 		vID, pID uuid.UUID
@@ -2178,7 +2016,7 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 		a        string
 	)
 
-	err = row.Scan(&vID, &s, &pID, &ca, &content, &cr, &cm, &a, &d)
+	err := row.Scan(&vID, &s, &pID, &ca, &content, &cr, &cm, &a, &d)
 	if err != nil {
 		return nil, err
 	}
@@ -2206,13 +2044,6 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 	c, span := trace.StartSpan(c, "pg_get_versions_by_blueprint_id")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -2225,7 +2056,7 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 		pv.comment_rejected,
 		pv.comment,
 		pv.author,
-		(SELECT MAX(date) FROM pipeliner.pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
+		(SELECT MAX(date) FROM pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
 	FROM (
 			 SELECT servicedesk_node.id                                                                 AS pipeline_version_id,
 					servicedesk_node.blocks -> servicedesk_node.nextNode ->> 'type_id'                  AS type_id,
@@ -2240,20 +2071,20 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 										SELECT id,
 											   content -> 'pipeline' #> '{blocks}'    as blocks,
 											   content -> 'pipeline' ->> 'entrypoint' as entrypoint
-										FROM pipeliner.versions
+										FROM versions
 									) as pipeline
 						   ) as next_from_start
 					  WHERE next_from_start.nextNode LIKE 'servicedesk_application%'
 				  ) as servicedesk_node
 	) as servicedesk_node_params
-		LEFT JOIN pipeliner.versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
+		LEFT JOIN versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
 	WHERE pv.status = 2 AND
 			pv.is_actual = TRUE AND
 			pv.pipeline_id = $1 AND
 			servicedesk_node_params.type_id = 'servicedesk_application';
 `
 
-	rows, err := conn.Query(c, query, pID)
+	rows, err := db.Pool.Query(c, query, pID)
 	if err != nil {
 		return nil, err
 	}
@@ -2307,13 +2138,6 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 
 	res := make([]entity.SearchPipeline, 0, dto.Limit)
 
-	conn, err := db.Pool.Acquire(c)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	var q = `
@@ -2321,7 +2145,7 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 			p.id,
 			p.name,
 			count(*) over () as total
-		FROM pipeliner.pipelines p
+		FROM pipelines p
 		WHERE p.deleted_at IS NULL  --pipe--
 		LIMIT $1 OFFSET $2;
 `
@@ -2334,7 +2158,7 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.id='%s'", *dto.PipelineId))
 	}
 
-	rows, err := conn.Query(ctx, q, dto.Limit, dto.Offset)
+	rows, err := db.Pool.Query(c, q, dto.Limit, dto.Offset)
 	if err != nil {
 		return res, err
 	}
@@ -2363,39 +2187,32 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 	ctx, span := trace.StartSpan(ctx, "check_user_can_edit_form")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	var q = `
 			with accesses as (
 				select jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as data
-				from pipeliner.variable_storage
+				from variable_storage
 				where step_type = 'approver'
 				  and content -> 'State' -> step_name -> 'approvers' ? $3
 				  and work_id = (SELECT id
-								 FROM pipeliner.works
+								 FROM works
 								 WHERE work_number = $1
 				      )
 			union
 			select jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as data
-			from pipeliner.variable_storage
+			from variable_storage
 			where step_type = 'execution'
 			  and content -> 'State' -> step_name -> 'executors' ? $3
 			  and work_id = (SELECT id
-							 FROM pipeliner.works
+							 FROM works
 							 WHERE work_number = $1))
 			select count(*) from accesses
 			where accesses.data::jsonb ->> 'node_id' = $2 and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
 `
 	var count int
-	if scanErr := conn.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
-		return false, err
+	if scanErr := db.Pool.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
+		return false, scanErr
 	}
 
 	return count != 0, nil

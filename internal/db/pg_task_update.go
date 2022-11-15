@@ -3,6 +3,9 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+
+	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
 
@@ -29,11 +32,11 @@ func (db *PGCon) ChangeTaskStatus(c context.Context,
 	// nolint:gocritic
 	// language=PostgreSQL
 	if status == RunStatusFinished {
-		q = `UPDATE pipeliner.works 
+		q = `UPDATE works 
 		SET status = $1, finished_at = now()
 		WHERE id = $2`
 	} else {
-		q = `UPDATE pipeliner.works 
+		q = `UPDATE works 
 		SET status = $1
 		WHERE id = $2`
 	}
@@ -58,7 +61,7 @@ func (db *PGCon) UpdateTaskHumanStatus(c context.Context, taskID uuid.UUID, stat
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `UPDATE pipeliner.works
+	q := `UPDATE works
 		SET human_status = $1
 		WHERE id = $2`
 
@@ -73,7 +76,7 @@ func (db *PGCon) setTaskChild(c context.Context, tx pgx.Tx, workNumber string, n
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		UPDATE pipeliner.works
+		UPDATE works
 			SET child_id = $1
 		WHERE child_id IS NULL AND work_number = $2`
 
@@ -118,7 +121,7 @@ func (db *PGCon) UpdateTaskBlocksData(c context.Context, dto *UpdateTaskBlocksDa
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		UPDATE pipeliner.works
+		UPDATE works
 			SET active_blocks = $2,
 				skipped_blocks = $3,
 				notified_blocks = $4,
@@ -126,5 +129,18 @@ func (db *PGCon) UpdateTaskBlocksData(c context.Context, dto *UpdateTaskBlocksDa
 		WHERE id = $1`
 
 	_, err = conn.Exec(c, query, dto.Id, activeBlocks, skippedBlocks, notifiedBlocks, prevUpdateStatusBlocks)
+	return err
+}
+
+func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
+	q := `UPDATE variable_storage 
+set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
+where work_id = (select id from works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	q = fmt.Sprintf(q, string(bytes))
+	_, err = db.Pool.Exec(context.Background(), q, workNumber)
 	return err
 }

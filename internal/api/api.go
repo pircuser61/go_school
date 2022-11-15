@@ -682,6 +682,12 @@ type ExecutionParams struct {
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
+	// Show action edit application in SD
+	IsEditable bool `json:"is_editable"`
+
+	// auto apply prev decision
+	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`
 
@@ -1252,6 +1258,9 @@ type GetTasksParams struct {
 
 	// receiver login
 	Receiver *string `json:"receiver,omitempty"`
+
+	// filter for attachments
+	HasAttachments *bool `json:"hasAttachments,omitempty"`
 }
 
 // UpdateTaskJSONBody defines parameters for UpdateTask.
@@ -1669,9 +1678,6 @@ type ServerInterface interface {
 	// Get list of modules usage
 	// (GET /modules/usage)
 	AllModulesUsage(w http.ResponseWriter, r *http.Request)
-	// Run Module By Name
-	// (POST /modules/{moduleName})
-	ModuleRun(w http.ResponseWriter, r *http.Request, moduleName string)
 	// Usage of module in pipelines
 	// (GET /modules/{moduleName}/usage)
 	ModuleUsage(w http.ResponseWriter, r *http.Request, moduleName string)
@@ -1986,32 +1992,6 @@ func (siw *ServerInterfaceWrapper) AllModulesUsage(w http.ResponseWriter, r *htt
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AllModulesUsage(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// ModuleRun operation middleware
-func (siw *ServerInterfaceWrapper) ModuleRun(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "moduleName" -------------
-	var moduleName string
-
-	err = runtime.BindStyledParameter("simple", false, "moduleName", chi.URLParam(r, "moduleName"), &moduleName)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "moduleName", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ModuleRun(w, r, moduleName)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2766,6 +2746,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// ------------- Optional query parameter "hasAttachments" -------------
+	if paramValue := r.URL.Query().Get("hasAttachments"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "hasAttachments", r.URL.Query(), &params.HasAttachments)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "hasAttachments", Err: err})
+		return
+	}
+
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetTasks(w, r, params)
 	}
@@ -3064,9 +3055,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules/usage", wrapper.AllModulesUsage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/modules/{moduleName}", wrapper.ModuleRun)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules/{moduleName}/usage", wrapper.ModuleUsage)

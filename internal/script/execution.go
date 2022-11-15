@@ -28,6 +28,9 @@ type ExecutionParams struct {
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 
 	SLA int `json:"sla"`
+
+	IsEditable         bool `json:"is_editable"`
+	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 }
 
 func (a *ExecutionParams) Validate() error {

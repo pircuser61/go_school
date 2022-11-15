@@ -139,6 +139,7 @@ func (gb *GoApproverBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
 		Status:      string(StatusFinished),
+		Members:     gb.State.Approvers,
 	})
 }
 
@@ -348,6 +349,7 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 
 	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
 		gb.setEditingAppLogFromPreviousBlock(ctx, &setEditingAppLogDTO{
+			step:     step,
 			id:       id,
 			runCtx:   runCtx,
 			workID:   gb.Pipeline.TaskID,
@@ -395,95 +397,11 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 }
 
 type getPreviousDecisionDTO struct {
+	step     *entity.Step
 	id       uuid.UUID
 	runCtx   *store.VariableStore
 	workID   uuid.UUID
 	stepName string
-}
-
-func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviousDecisionDTO) (isPrevDecisionAssigned bool) {
-	l := logger.GetLogger(ctx)
-
-	var step *entity.Step
-	var parentStep *entity.Step
-	var err error
-
-	step, err = gb.Pipeline.Storage.GetTaskStepById(ctx, dto.id)
-	if err != nil {
-		l.Error(err)
-		return
-	}
-
-	parentStep, err = gb.Pipeline.Storage.GetParentTaskStepByName(ctx, dto.workID, dto.stepName)
-	if err != nil {
-		l.Error(err)
-		return false
-	} else if parentStep == nil {
-		l.Error("trySetPreviousDecision: step is nil")
-		return false
-	}
-
-	// get state from step.State
-	data, ok := parentStep.State[dto.stepName]
-	if !ok {
-		l.Error("trySetPreviousDecision: step state is not found: " + dto.stepName)
-		return false
-	}
-
-	var parentState ApproverData
-	err = json.Unmarshal(data, &parentState)
-	if err != nil {
-		l.Error("trySetPreviousDecision: invalid format of go-approver-block state")
-		return false
-	}
-
-	if parentState.Decision != nil {
-		var actualApprover, comment string
-
-		if parentState.ActualApprover != nil {
-			actualApprover = *parentState.ActualApprover
-		}
-
-		if parentState.Comment != nil {
-			comment = *parentState.Comment
-		}
-
-		dto.runCtx.SetValue(gb.Output[keyOutputApprover], actualApprover)
-		dto.runCtx.SetValue(gb.Output[keyOutputDecision], parentState.Decision.String())
-		dto.runCtx.SetValue(gb.Output[keyOutputComment], comment)
-
-		gb.State.ActualApprover = &actualApprover
-		gb.State.Comment = &comment
-		gb.State.Decision = parentState.Decision
-
-		var stateBytes []byte
-		stateBytes, err = json.Marshal(gb.State)
-		if err != nil {
-			l.Error("trySetPreviousDecision: ", err)
-			return false
-		}
-
-		step.State[gb.Name], err = json.Marshal(store.NewFromStep(step))
-		if err != nil {
-			l.Error("trySetPreviousDecision: ", err)
-			return
-		}
-
-		err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-			Id:          dto.id,
-			Content:     stateBytes,
-			BreakPoints: parentStep.BreakPoints,
-			Status:      string(StatusRunning),
-		})
-		if err != nil {
-			l.Error("trySetPreviousDecision.UpdateStepContext: ", err)
-			return
-		}
-
-		dto.runCtx.ReplaceState(gb.Name, stateBytes)
-	}
-
-	return true
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {

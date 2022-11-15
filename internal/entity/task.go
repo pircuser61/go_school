@@ -65,6 +65,7 @@ type EriusTask struct {
 	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
 	NotifiedBlocks         map[string][]string `json:"notified_blocks"`
 	PrevUpdateStatusBlocks map[string]string   `json:"prev_update_status_blocks"`
+	Total                  int                 `json:"-"`
 }
 
 func (et *EriusTask) IsRun() bool {
@@ -88,17 +89,18 @@ func (et *EriusTask) IsError() bool {
 }
 
 type GetTaskParams struct {
-	Name        *string     `json:"name"`
-	Created     *TimePeriod `json:"created"`
-	Order       *string     `json:"order"`
-	Limit       *int        `json:"limit"`
-	Offset      *int        `json:"offset"`
-	TaskIDs     *[]string   `json:"task_ids"`
-	SelectAs    *string     `json:"select_as"`
-	Archived    *bool       `json:"archived"`
-	ForCarousel *bool       `json:"forCarousel"`
-	Status      *string     `json:"status"`
-	Receiver    *string     `json:"receiver"`
+	Name          *string     `json:"name"`
+	Created       *TimePeriod `json:"created"`
+	Order         *string     `json:"order"`
+	Limit         *int        `json:"limit"`
+	Offset        *int        `json:"offset"`
+	TaskIDs       *[]string   `json:"task_ids"`
+	SelectAs      *string     `json:"select_as"`
+	Archived      *bool       `json:"archived"`
+	ForCarousel   *bool       `json:"forCarousel"`
+	Status        *string     `json:"status"`
+	Receiver      *string     `json:"receiver"`
+	HasAttacments *bool       `json:"hasAttacments"`
 }
 
 type TimePeriod struct {
@@ -119,7 +121,8 @@ const (
 	TaskUpdateActionChangeExecutor       TaskUpdateAction = "change_executor"
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
 	TaskUpdateActionExecutorStartWork    TaskUpdateAction = "executor_start_work"
-	TaskUpdateActionSendEditApp          TaskUpdateAction = "send_edit_app"
+	TaskUpdateActionApproverSendEditApp  TaskUpdateAction = "approver_send_edit_app"
+	TaskUpdateActionExecutorSendEditApp  TaskUpdateAction = "executor_send_edit_app"
 	TaskUpdateActionCancelApp            TaskUpdateAction = "cancel_app"
 	TaskUpdateActionRequestApproveInfo   TaskUpdateAction = "request_add_info"
 	TaskUpdateActionRequestFillForm      TaskUpdateAction = "fill_form"
@@ -132,7 +135,8 @@ var (
 		TaskUpdateActionChangeExecutor:       {},
 		TaskUpdateActionRequestExecutionInfo: {},
 		TaskUpdateActionExecutorStartWork:    {},
-		TaskUpdateActionSendEditApp:          {},
+		TaskUpdateActionApproverSendEditApp:  {},
+		TaskUpdateActionExecutorSendEditApp:  {},
 		TaskUpdateActionCancelApp:            {},
 		TaskUpdateActionRequestApproveInfo:   {},
 		TaskUpdateActionRequestFillForm:      {},

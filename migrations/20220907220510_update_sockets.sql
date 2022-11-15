@@ -1,8 +1,8 @@
 -- +goose Up
 -- +goose StatementBegin
-drop table if exists pipeliner.versions_07092022;
+drop table if exists versions_07092022;
 
-create table pipeliner.versions_07092022
+create table versions_07092022
 (
     id               uuid                     not null
         constraint versions_07092022_pk
@@ -21,19 +21,19 @@ create table pipeliner.versions_07092022
     updated_at       timestamp with time zone
 );
 
-alter table pipeliner.versions_07092022
+alter table versions_07092022
     drop constraint if exists versions_07092022_ok;
 
 drop index if exists versions_07092022_pipeline_id_index;
 
-alter table pipeliner.versions_07092022
+alter table versions_07092022
     owner to jocasta;
 
 create index versions_07092022_pipeline_id_index
-    on pipeliner.versions_07092022 (pipeline_id);
+    on versions_07092022 (pipeline_id);
 
-insert into pipeliner.versions_07092022
-select * from pipeliner.versions;
+insert into versions_07092022
+select * from versions;
 
 create or replace function start_migration()
     returns void
@@ -95,7 +95,7 @@ begin
                                                                      pipeline_id,
                                                                      content -> 'pipeline' #> '{blocks}'                    as cont,
                                                                      jsonb_object_keys(content -> 'pipeline' #> '{blocks}') as keys
-                                                              from pipeliner.versions
+                                                              from versions
                                                           )
                                                               as i)
                                                      as j
@@ -106,7 +106,7 @@ begin
              ) as n
         group by n.id, n.pipeline_id, blockName, currentNext
         loop
-            update pipeliner.versions
+            update versions
             set content = jsonb_set(content, v_cursor.updatePath, v_cursor.newNext, true)
             WHERE id = v_cursor.id;
         end loop;
@@ -118,9 +118,9 @@ select * from start_migration();
 
 -- +goose Down
 -- +goose StatementBegin
-update pipeliner.versions
+update versions
 set
     content = versions_07092022.content
-from pipeliner.versions_07092022
+from versions_07092022
 WHERE versions_07092022.id = versions.id
 -- +goose StatementEnd

@@ -326,6 +326,7 @@ func (gb *GoFormBlock) resolveFormExecutors(ctx c.Context, dto *resolveFormExecu
 		BreakPoints: dto.step.BreakPoints,
 		HasError:    false,
 		Status:      string(StatusFinished),
+		Members:     gb.State.Executors,
 	})
 }
 
@@ -494,5 +495,6 @@ func (gb *GoFormBlock) dumpCurrState(ctx c.Context, id uuid.UUID) error {
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
 		Status:      string(StatusFinished),
+		Members:     gb.State.Executors,
 	})
 }

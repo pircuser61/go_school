@@ -59,7 +59,7 @@ func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.Eriu
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const q = `UPDATE pipeliner.versions 
+	const q = `UPDATE versions 
 		SET last_run_id = $1 
 		WHERE id = $2`
 
@@ -83,7 +83,7 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, tx pgx.Tx, dto *Cre
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		INSERT INTO pipeliner.works(
+		INSERT INTO works(
 			id, 
 			version_id, 
 			started_at, 
@@ -134,7 +134,7 @@ func (db *PGCon) insertTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (w
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-		INSERT INTO pipeliner.works(
+		INSERT INTO works(
 			id, 
 			version_id, 
 			started_at, 

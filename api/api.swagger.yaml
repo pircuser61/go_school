@@ -250,44 +250,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /modules/{moduleName}:
-    post:
-      tags:
-        - modules
-      summary: Run Module By Name
-      description: Запустить блок
-      operationId: module-run
-      parameters:
-        - name: moduleName
-          in: path
-          description: module name
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/UsageResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /modules/{moduleName}/usage:
     get:
       tags:
@@ -1499,6 +1461,11 @@ paths:
           schema:
             type: string
           description: receiver login
+        - name: hasAttachments
+          in: query
+          schema:
+            type: boolean
+          description: filter for attachments
       responses:
         200:
           description: OK
@@ -3202,12 +3169,20 @@ components:
         executors_group_name:
           type: string
           description: Executors group name in SD
+        repeat_prev_decision:
+          type: boolean
+          description: auto apply prev decision
+        is_editable:
+          type: boolean
+          description: Show action edit application in SD
       required:
         - type
         - executors
         - sla
         - executors_group_id
         - executors_group_name
+        - repeat_prev_decision
+        - is_editable
 
     FormParams:
       type: object

@@ -126,6 +126,7 @@ func (gb *GoFormBlock) Update(ctx c.Context, data *script.BlockUpdateData) (inte
 		BreakPoints: step.BreakPoints,
 		HasError:    false,
 		Status:      step.Status,
+		Members:     gb.State.Executors,
 	})
 	if err != nil {
 		return nil, err
@@ -150,6 +151,7 @@ func (gb *GoFormBlock) formCancelPipeline(ctx c.Context, in *script.BlockUpdateD
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      string(StatusCancel),
+		Members:     gb.State.Executors,
 	})
 	return err
 }

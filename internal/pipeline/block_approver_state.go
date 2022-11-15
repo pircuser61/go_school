@@ -27,7 +27,7 @@ func decisionFromAutoAction(action script.AutoAction) ApproverDecision {
 	return ApproverDecisionRejected
 }
 
-type EditingApp struct {
+type ApproverEditingApp struct {
 	Approver    string    `json:"approver"`
 	Comment     string    `json:"comment"`
 	Attachments []string  `json:"attachments"`
@@ -86,8 +86,8 @@ type ApproverData struct {
 
 	IsEditable             bool                     `json:"is_editable"`
 	RepeatPrevDecision     bool                     `json:"repeat_prev_decision"`
-	EditingApp             *EditingApp              `json:"editing_app,omitempty"`
-	EditingAppLog          []EditingApp             `json:"editing_app_log,omitempty"`
+	EditingApp             *ApproverEditingApp      `json:"editing_app,omitempty"`
+	EditingAppLog          []ApproverEditingApp     `json:"editing_app_log,omitempty"`
 	RequestApproverInfoLog []RequestApproverInfoLog `json:"request_approver_info_log,omitempty"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
@@ -183,7 +183,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	return nil
 }
 
-func (a *ApproverData) setEditApp(login string, params updateEditingParams) error {
+func (a *ApproverData) setEditApp(login string, params approverUpdateEditingParams) error {
 	_, ok := a.Approvers[login]
 	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
@@ -193,7 +193,7 @@ func (a *ApproverData) setEditApp(login string, params updateEditingParams) erro
 		return errors.New("decision already set")
 	}
 
-	editing := &EditingApp{
+	editing := &ApproverEditingApp{
 		Approver:    login,
 		Comment:     params.Comment,
 		Attachments: params.Attachments,

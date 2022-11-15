@@ -17,7 +17,7 @@ func (db *PGCon) GetApproveActionNames(ctx context.Context) ([]entity.ApproveAct
 	// language=PostgreSQL
 	const query = `
 		SELECT  id, title
-			FROM pipeliner.dict_approve_action_names 
+			FROM dict_approve_action_names 
 				WHERE deleted_at IS NULL
 			ORDER BY created_at DESC`
 
@@ -38,7 +38,7 @@ func (db *PGCon) GetApproveActionNames(ctx context.Context) ([]entity.ApproveAct
 	for rows.Next() {
 		item := entity.ApproveActionName{}
 
-		if err = rows.Scan(&item.Id, &item.Title); err != nil {
+		if err := rows.Scan(&item.Id, &item.Title); err != nil {
 			return nil, err
 		}
 
@@ -59,7 +59,7 @@ func (db *PGCon) GetApproveStatuses(ctx context.Context) ([]entity.ApproveStatus
 	// language=PostgreSQL
 	const query = `
 		SELECT  id, title
-			FROM pipeliner.dict_approve_statuses 
+			FROM dict_approve_statuses 
 				WHERE deleted_at IS NULL
 			ORDER BY created_at DESC`
 

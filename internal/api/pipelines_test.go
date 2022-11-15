@@ -16,7 +16,6 @@ import (
 func Test_execVersion(t *testing.T) {
 	pipeliner := APIEnv{
 		DB:                   test.NewMockDB(),
-		ScriptManager:        "",
 		Remedy:               "",
 		FaaS:                 "",
 		SchedulerClient:      nil,

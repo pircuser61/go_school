@@ -133,7 +133,6 @@ func main() {
 	httpServer, err := api.NewServer(ctx, api.ServerParam{
 		APIEnv: &api.APIEnv{
 			DB:                   &dbConn,
-			ScriptManager:        cfg.ScriptManager,
 			Remedy:               cfg.Remedy,
 			FaaS:                 cfg.FaaS,
 			SchedulerClient:      schedulerClient,
