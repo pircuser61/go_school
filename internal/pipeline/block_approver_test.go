@@ -268,9 +268,6 @@ func Test_createGoApproverBlock(t *testing.T) {
 					ApprovementRule: script.AnyOfApprovementRequired,
 					ApproverLog:     make([]ApproverLogEntry, 0),
 					SLA:             1,
-					LeftToNotify: map[string]struct{}{
-						login: {},
-					},
 					FormsAccessibility: make([]script.FormAccessibility, 0),
 				},
 				Sockets: entity.ConvertSocket(next),

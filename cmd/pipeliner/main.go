@@ -203,23 +203,6 @@ func main() {
 		}
 	}()
 
-	//go func() {
-	//	init := pipeline.NewInitiation(
-	//		&dbConn,
-	//		cfg.FaaS,
-	//		httpClient,
-	//		cfg.Remedy,
-	//		mailService,
-	//		serviceDescService,
-	//		peopleService,
-	//	)
-	//
-	//	err = init.InitPipelines(ctx)
-	//	if err != nil {
-	//		log.Error(err)
-	//	}
-	//}()
-
 	monitoring.Setup(cfg.Monitoring.Addr, &http.Client{Timeout: cfg.Monitoring.Timeout.Duration})
 
 	sgnl := make(chan os.Signal, 1)
