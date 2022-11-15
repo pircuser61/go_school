@@ -23,17 +23,18 @@ import (
 )
 
 type BlockRunContext struct {
-	TaskID      uuid.UUID
-	WorkNumber  string
-	WorkTitle   string
-	Initiator   string
-	Storage     db.Database
-	Sender      *mail.Service
-	People      *people.Service
-	ServiceDesc *servicedesc.Service
-	FaaS        string
-	VarStore    *store.VariableStore
-	UpdateData  *script.BlockUpdateData
+	TaskID          uuid.UUID
+	WorkNumber      string
+	WorkTitle       string
+	Initiator       string
+	Storage         db.Database
+	Sender          *mail.Service
+	People          *people.Service
+	ServiceDesc     *servicedesc.Service
+	FaaS            string
+	VarStore        *store.VariableStore
+	UpdateData      *script.BlockUpdateData
+	doNotifications bool
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {

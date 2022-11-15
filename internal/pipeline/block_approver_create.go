@@ -36,7 +36,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 	}
 
 	rawState, ok := runCtx.VarStore.State[name]
-	if !ok {
+	if ok {
 		if err := b.loadState(rawState); err != nil {
 			return nil, err
 		}
@@ -131,6 +131,9 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 
 //nolint:dupl // maybe later
 func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
+	if !gb.RunContext.doNotifications {
+		return nil
+	}
 	l := logger.GetLogger(ctx)
 
 	emails := make([]string, 0, len(gb.State.Approvers))

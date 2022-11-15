@@ -37,7 +37,7 @@ func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFu
 	}
 
 	rawState, ok := runCtx.VarStore.State[name]
-	if !ok {
+	if ok {
 		if err := b.loadState(rawState); err != nil {
 			return nil, err
 		}
@@ -126,6 +126,9 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 
 //nolint:dupl // maybe later
 func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
+	if !gb.RunContext.doNotifications {
+		return nil
+	}
 	l := logger.GetLogger(ctx)
 
 	emails := make([]string, 0, len(gb.State.Executors))

@@ -152,7 +152,7 @@ func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 	}
 
 	rawState, ok := runCtx.VarStore.State[name]
-	if !ok {
+	if ok {
 		if err := b.loadState(rawState); err != nil {
 			return nil, err
 		}

@@ -162,7 +162,7 @@ func createGoFormBlock(ctx context.Context, name string, ef *entity.EriusFunc, r
 	}
 
 	rawState, ok := runCtx.VarStore.State[name]
-	if !ok {
+	if ok {
 		if err := b.loadState(rawState); err != nil {
 			return nil, err
 		}
@@ -234,6 +234,9 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 }
 
 func (gb *GoFormBlock) handleNotifications(ctx context.Context) error {
+	if !gb.RunContext.doNotifications {
+		return nil
+	}
 	executors, executorsErr := gb.resolveExecutors(ctx)
 	if executorsErr != nil {
 		return executorsErr
