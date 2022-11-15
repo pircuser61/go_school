@@ -367,6 +367,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context, data *script.BlockUpdateData) (
 		if errUpdate := gb.cancelPipeline(ctx, data, step); errUpdate != nil {
 			return nil, errUpdate
 		}
+
 		return nil, nil
 	}
 
@@ -439,7 +440,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context, dto 
 
 // nolint:dupl // another action
 func (gb *GoApproverBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
-	gb.State.IsRevoked = true
+	gb.State.IsCanceled = true
 
 	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {
 		return err
@@ -448,15 +449,14 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdateD
 	if content, err = json.Marshal(store.NewFromStep(step)); err != nil {
 		return err
 	}
-	err = gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
+
+	return gb.Pipeline.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          in.Id,
 		Content:     content,
 		BreakPoints: step.BreakPoints,
 		Status:      string(StatusCancel),
 		Members:     gb.State.Approvers,
 	})
-
-	return err
 }
 
 func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context, dto *getPreviousDecisionDTO) (isPrevDecisionAssigned bool) {

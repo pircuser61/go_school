@@ -10,7 +10,7 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
-	"golang.org/x/net/context"
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
@@ -162,29 +162,30 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 }
 
 func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
-	q := `WITH content as (
-    SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
-    FROM variable_storage
-    WHERE work_id IN (SELECT id
-                     FROM works
-                     WHERE work_number = $1)
-    LIMIT 1
-)
-SELECT content -> 'State' -> step_name ->> 'description'
-FROM variable_storage
-WHERE step_name in (
-    SELECT rules ->> 'node_id' as rule
-    FROM content
-    WHERE rules ->> 'accessType' != 'None'
-    LIMIT 1
-)
-  AND work_id IN (SELECT id
-                 FROM works
-                 WHERE work_number = $2)
-ORDER BY time`
+	const q = `
+	WITH content as (
+		SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
+		FROM variable_storage
+			WHERE work_id IN (SELECT id  FROM works WHERE work_number = $1)
+		LIMIT 1
+	)
+	SELECT content -> 'State' -> step_name ->> 'description'
+	FROM variable_storage
+		WHERE step_name in (
+			SELECT rules ->> 'node_id' as rule
+			FROM content
+			WHERE rules ->> 'accessType' != 'None'
+			LIMIT 1
+		)
+		AND work_id IN (SELECT id FROM works WHERE work_number = $2)
+	ORDER BY time`
+
 	ff := make([]string, 0)
-	rows, err := db.Pool.Query(context.Background(), q, workNumber, workNumber, nodeName)
+	rows, err := db.Pool.Query(c.Background(), q, workNumber, workNumber, nodeName)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ff, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -202,12 +203,14 @@ ORDER BY time`
 }
 
 func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
-	q := `SELECT content->'State'->'servicedesk_application_0'
-from variable_storage 
-where step_type = 'servicedesk_application' 
-and work_id = (select id from works where work_number = $1)`
+	const q = `
+	SELECT content->'State'->'servicedesk_application_0'
+		from variable_storage 
+	where step_type = 'servicedesk_application' 
+	and work_id = (select id from works where work_number = $1)`
+
 	var data *orderedmap.OrderedMap
-	if err := db.Pool.QueryRow(context.Background(), q, workNumber).Scan(&data); err != nil {
+	if err := db.Pool.QueryRow(c.Background(), q, workNumber).Scan(&data); err != nil {
 		return nil, err
 	}
 	return data, nil
@@ -307,22 +310,22 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		return nil, err
 	}
 
-	qApprover := fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'approver' "+
-		"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready')", q, userName)
+	qApprover := fmt.Sprintf("%s AND workers.members IS NOT NULL AND workers.members @> '{%s}' AND workers.step_type = 'approver' "+
+		" AND workers.status IN ('running', 'idle', 'ready')", q, userName)
 	approver, err := db.getTasksCount(ctx, qApprover, args)
 	if err != nil {
 		return nil, err
 	}
 
 	qExecutor := fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
-		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
+		" AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
 	executor, err := db.getTasksCount(ctx, qExecutor, args)
 	if err != nil {
 		return nil, err
 	}
 
-	qFormExecutor := fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
-		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
+	qFormExecutor := fmt.Sprintf("%s AND workers.members IS NOT NULL AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
+		" AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
 	form, err := db.getTasksCount(ctx, qFormExecutor, args)
 	if err != nil {
 		return nil, err
@@ -712,14 +715,11 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetUsersWithReadWriteFormAccess(
-	ctx c.Context,
-	workNumber string,
-	stepName string) ([]entity.UsersWithFormAccess, error) {
-	q :=
-		// nolint:gocritic
-		// language=PostgreSQL
-		`
+func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
+	const q =
+	// nolint:gocritic
+	// language=PostgreSQL
+	`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
@@ -767,6 +767,9 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(
 	result := make([]entity.UsersWithFormAccess, 0)
 	rows, err := db.Pool.Query(ctx, q, workNumber, stepName)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return result, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -774,16 +777,15 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(
 	for rows.Next() {
 		s := entity.UsersWithFormAccess{}
 
-		err = rows.Scan(
+		if err := rows.Scan(
 			&s.ExecutionType,
 			&s.BlockType,
 			&s.GroupId,
 			&s.Executor,
-		)
-
-		if err != nil {
+		); err != nil {
 			return nil, err
 		}
+
 		result = append(result, s)
 	}
 

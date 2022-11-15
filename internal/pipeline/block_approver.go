@@ -42,7 +42,7 @@ type GoApproverBlock struct {
 }
 
 func (gb *GoApproverBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked {
+	if gb.State != nil && gb.State.IsCanceled {
 		return StatusCancel
 	}
 	if gb.State != nil && gb.State.Decision != nil {
@@ -69,18 +69,11 @@ func (gb *GoApproverBlock) GetStatus() Status {
 }
 
 func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked {
+	if gb.State != nil && gb.State.IsCanceled {
 		return StatusRevoke
 	}
 	if gb.State != nil && gb.State.EditingApp != nil {
 		return StatusWait
-	}
-
-	if gb.State != nil && len(gb.State.AddInfo) != 0 {
-		if gb.State.checkEmptyLinkIdAddInfo() {
-			return StatusWait
-		}
-		return StatusApprovement
 	}
 
 	if gb.State != nil && gb.State.Decision != nil {
@@ -90,6 +83,13 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 		if *gb.State.Decision == ApproverDecisionRejected {
 			return StatusApprovementRejected
 		}
+	}
+
+	if gb.State != nil && len(gb.State.AddInfo) != 0 {
+		if gb.State.checkEmptyLinkIdAddInfo() {
+			return StatusWait
+		}
+		return StatusApprovement
 	}
 
 	var lastIdx = len(gb.State.RequestApproverInfoLog) - 1
@@ -323,7 +323,7 @@ func (gb *GoApproverBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *sto
 		}
 	}
 
-	if step.Status != string(StatusIdle) {
+	if step.Status != string(StatusIdle) && !gb.State.IsCanceled {
 		handled, errSLA := gb.handleSLA(ctx, id, stepCtx)
 		if errSLA != nil {
 			l.WithError(errSLA).Error("couldn't handle sla")

@@ -56,7 +56,7 @@ func (gb *GoExecutionBlock) Update(ctx c.Context, data *script.BlockUpdateData) 
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx, data, step); errUpdate != nil {
+		if errUpdate := gb.executorCancelPipeline(ctx, data, step); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionRequestExecutionInfo):
@@ -436,8 +436,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	return nil
 }
 
-// nolint:dupl // another action
-func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
+//nolint:dupl //its not duplicate
+func (gb *GoExecutionBlock) executorCancelPipeline(ctx c.Context, in *script.BlockUpdateData, step *entity.Step) (err error) {
 	gb.State.IsRevoked = true
 
 	if step.State[gb.Name], err = json.Marshal(gb.State); err != nil {

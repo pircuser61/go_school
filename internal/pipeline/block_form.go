@@ -378,11 +378,9 @@ func (gb *GoFormBlock) handleNotifications(
 }
 
 //nolint:gocyclo //ok
-func (gb *GoFormBlock) resolveExecutors(
-	ctx c.Context,
-	runCtx *store.VariableStore,
-	workNumber string) (users []string, err error) {
-	users = make([]string, 0)
+func (gb *GoFormBlock) resolveExecutors(ctx c.Context, runCtx *store.VariableStore, workNumber string) ([]string, error) {
+	const funcName = "pipeliner.block_form.resolveExecutors"
+	users := make([]string, 0)
 
 	var exists = func(entry string) bool {
 		for _, user := range users {
@@ -405,30 +403,30 @@ func (gb *GoFormBlock) resolveExecutors(
 
 	executorsWithAccess, err := gb.Pipeline.Storage.GetUsersWithReadWriteFormAccess(ctx, workNumber, gb.Name)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, funcName)
 	}
 
 	for _, executor := range executorsWithAccess {
 		switch executor.ExecutionType {
 		case entity.GroupExecution:
-			if executor.BlockType == entity.ExecutionBlockType {
-				sdUsers, sdErr := gb.Pipeline.ServiceDesc.GetExecutorsGroup(ctx, executor.GroupId)
+			if executor.BlockType == entity.ExecutionBlockType && executor.GroupId != nil {
+				sdUsers, sdErr := gb.Pipeline.ServiceDesc.GetExecutorsGroup(ctx, *executor.GroupId)
 				if sdErr != nil {
-					return nil, sdErr
+					return nil, errors.Wrap(sdErr, funcName)
 				}
 				appendUnique(executorsToString(sdUsers.People))
 			}
-			if executor.BlockType == entity.ApprovementBlockType {
-				sdUsers, sdErr := gb.Pipeline.ServiceDesc.GetApproversGroup(ctx, executor.GroupId)
+			if executor.BlockType == entity.ApprovementBlockType && executor.GroupId != nil {
+				sdUsers, sdErr := gb.Pipeline.ServiceDesc.GetApproversGroup(ctx, *executor.GroupId)
 				if sdErr != nil {
-					return nil, sdErr
+					return nil, errors.Wrap(sdErr, funcName)
 				}
 				appendUnique(approversToString(sdUsers.People))
 			}
 		case entity.FromSchemaExecution:
 			variables, varErr := runCtx.GrabStorage()
 			if varErr != nil {
-				return nil, varErr
+				return nil, errors.Wrap(varErr, funcName)
 			}
 
 			var toResolve = map[string]struct{}{
@@ -437,7 +435,7 @@ func (gb *GoFormBlock) resolveExecutors(
 
 			schemaUsers, resolveErr := resolveValuesFromVariables(variables, toResolve)
 			if resolveErr != nil {
-				return nil, resolveErr
+				return nil, errors.Wrap(resolveErr, funcName)
 			}
 			appendUnique(mapToString(schemaUsers))
 		case entity.UserExecution:

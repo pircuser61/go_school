@@ -1526,8 +1526,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		q = strings.Replace(q, "--content--", ", content = $5", -1)
 		q = strings.Replace(q, "--members--", ", members = $6", -1)
 		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
-		args = append(args, dto.Content)
-		args = append(args, members)
+		args = append(args, dto.Content, members)
 	}
 
 	_, err := db.Pool.Exec(
