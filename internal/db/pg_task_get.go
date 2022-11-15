@@ -10,7 +10,7 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
-	"golang.org/x/net/context"
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
@@ -42,13 +42,15 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			w.active_blocks,
 			w.skipped_blocks,
 			w.notified_blocks,
-			w.prev_update_status_blocks
+			w.prev_update_status_blocks,
+			count(*) over() as total
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN work_status ws ON w.status = ws.id
 		LEFT JOIN LATERAL (
-			SELECT * FROM variable_storage vs
+			SELECT content, status, step_name, work_id, members, step_type
+				FROM variable_storage vs
 			WHERE vs.work_id = w.id AND vs.status != 'skipped'
 			ORDER BY vs.time DESC
 			--limit--
@@ -69,42 +71,41 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		order = *filters.Order
 	}
 
-	args = append(args, filters.CurrentUser)
 	if filters.SelectAs != nil {
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.approvers.' || $%d )::jsonpath "+
-					" AND workers.status IN ('running', 'idle', 'ready')", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'approver'  "+
+					" AND workers.status IN ('running', 'idle', 'ready')", q, filters.CurrentUser)
 			}
 		case "finished_approver":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.approvers.' || $%d )::jsonpath "+
-					" AND workers.status IN ('finished', 'no_success')", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'approver' "+
+					" AND workers.status IN ('finished', 'no_success')", q, filters.CurrentUser)
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
-					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
 			}
 		case "finished_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
-					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+					" AND (workers.status IN ('finished', 'no_success'))", q, filters.CurrentUser)
 			}
 		case "form_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
-					" AND (workers.status IN ('running', 'idle', 'ready'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
 			}
 		case "finished_form_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.content @? ('$.State.' || workers.step_name || '.executors.' || $%d )::jsonpath "+
-					" AND (workers.status IN ('finished', 'no_success'))", q, len(args))
+				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
+					" AND (workers.status IN ('finished', 'no_success'))", q, filters.CurrentUser)
 			}
 		}
 	} else {
-		q = fmt.Sprintf("%s AND w.author = $%d", q, len(args))
+		q = fmt.Sprintf("%s AND w.author = '%s'", q, filters.CurrentUser)
 		q = strings.Replace(q, "--limit--", "LIMIT 1", -1)
 	}
 
@@ -161,29 +162,30 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 }
 
 func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
-	q := `WITH content as (
-    SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
-    FROM variable_storage
-    WHERE work_id IN (SELECT id
-                     FROM works
-                     WHERE work_number = $1)
-    LIMIT 1
-)
-SELECT content -> 'State' -> step_name ->> 'description'
-FROM variable_storage
-WHERE step_name in (
-    SELECT rules ->> 'node_id' as rule
-    FROM content
-    WHERE rules ->> 'accessType' != 'None'
-    LIMIT 1
-)
-  AND work_id IN (SELECT id
-                 FROM works
-                 WHERE work_number = $2)
-ORDER BY time`
+	const q = `
+	WITH content as (
+		SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
+		FROM variable_storage
+			WHERE work_id IN (SELECT id  FROM works WHERE work_number = $1)
+		LIMIT 1
+	)
+	SELECT content -> 'State' -> step_name ->> 'description'
+	FROM variable_storage
+		WHERE step_name in (
+			SELECT rules ->> 'node_id' as rule
+			FROM content
+			WHERE rules ->> 'accessType' != 'None'
+			LIMIT 1
+		)
+		AND work_id IN (SELECT id FROM works WHERE work_number = $2)
+	ORDER BY time`
+
 	ff := make([]string, 0)
-	rows, err := db.Pool.Query(context.Background(), q, workNumber, workNumber, nodeName)
+	rows, err := db.Pool.Query(c.Background(), q, workNumber, workNumber, nodeName)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ff, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -201,33 +203,22 @@ ORDER BY time`
 }
 
 func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
-	q := `SELECT content->'State'->'servicedesk_application_0'
-from variable_storage 
-where step_type = 'servicedesk_application' 
-and work_id = (select id from works where work_number = $1)`
+	const q = `
+	SELECT content->'State'->'servicedesk_application_0'
+		from variable_storage 
+	where step_type = 'servicedesk_application' 
+	and work_id = (select id from works where work_number = $1)`
+
 	var data *orderedmap.OrderedMap
-	if err := db.Pool.QueryRow(context.Background(), q, workNumber).Scan(&data); err != nil {
+	if err := db.Pool.QueryRow(c.Background(), q, workNumber).Scan(&data); err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
-func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
-	q := `UPDATE variable_storage 
-set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
-where work_id = (select id from works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	q = fmt.Sprintf(q, string(bytes))
-	_, err = db.Pool.Exec(context.Background(), q, workNumber)
-	return err
-}
-
 //nolint:gocritic //filters
 func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
 	q, args := compileGetTasksQuery(filters)
@@ -237,20 +228,14 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 		return nil, err
 	}
 
-	filters.Limit = nil
-	filters.Offset = nil
-	emptyOrder := ""
-	filters.Order = &emptyOrder
-	q, args = compileGetTasksQuery(filters)
-
-	count, err := db.getTasksCount(ctx, q, args)
-	if err != nil {
-		return nil, err
+	total := 0
+	if len(tasks.Tasks) > 0 {
+		total = tasks.Tasks[0].Total
 	}
 
 	return &entity.EriusTasksPage{
 		Tasks: tasks.Tasks,
-		Total: count,
+		Total: total,
 	}, nil
 }
 
@@ -325,22 +310,22 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		return nil, err
 	}
 
-	qApprover := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'approvers'->'%s' "+
-		"IS NOT NULL AND workers.status IN ('running', 'idle', 'ready') AND workers.step_type = 'approver'", q, userName)
+	qApprover := fmt.Sprintf("%s AND workers.members IS NOT NULL AND workers.members @> '{%s}' AND workers.step_type = 'approver' "+
+		" AND workers.status IN ('running', 'idle', 'ready')", q, userName)
 	approver, err := db.getTasksCount(ctx, qApprover, args)
 	if err != nil {
 		return nil, err
 	}
 
-	qExecutor := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->'%s' "+
-		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready')) AND workers.step_type = 'execution'", q, userName)
+	qExecutor := fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+		" AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
 	executor, err := db.getTasksCount(ctx, qExecutor, args)
 	if err != nil {
 		return nil, err
 	}
 
-	qFormExecutor := fmt.Sprintf("%s AND workers.content::json->'State'->workers.step_name->'executors'->'%s' "+
-		"IS NOT NULL AND (workers.status IN ('running', 'idle', 'ready')) AND workers.step_type = 'form'", q, userName)
+	qFormExecutor := fmt.Sprintf("%s AND workers.members IS NOT NULL AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
+		" AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
 	form, err := db.getTasksCount(ctx, qFormExecutor, args)
 	if err != nil {
 		return nil, err
@@ -564,7 +549,7 @@ func (db *PGCon) getTasksCount(ctx c.Context, q string, args []interface{}) (int
 
 //nolint:gocyclo //its ok here
 func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.EriusTasks, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_tasks")
+	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
 	ets := entity.EriusTasks{
@@ -611,6 +596,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			&nullJsonSkippedBlocks,
 			&nullJsonNotifiedBlocks,
 			&nullJsonPrevUpdateStatusBlocks,
+			&et.Total,
 		)
 
 		if err != nil {
@@ -729,14 +715,11 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetUsersWithReadWriteFormAccess(
-	ctx c.Context,
-	workNumber string,
-	stepName string) ([]entity.UsersWithFormAccess, error) {
-	q :=
-		// nolint:gocritic
-		// language=PostgreSQL
-		`
+func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
+	const q =
+	// nolint:gocritic
+	// language=PostgreSQL
+	`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
@@ -784,6 +767,9 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(
 	result := make([]entity.UsersWithFormAccess, 0)
 	rows, err := db.Pool.Query(ctx, q, workNumber, stepName)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return result, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -791,16 +777,15 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(
 	for rows.Next() {
 		s := entity.UsersWithFormAccess{}
 
-		err = rows.Scan(
+		if err := rows.Scan(
 			&s.ExecutionType,
 			&s.BlockType,
 			&s.GroupId,
 			&s.Executor,
-		)
-
-		if err != nil {
+		); err != nil {
 			return nil, err
 		}
+
 		result = append(result, s)
 	}
 

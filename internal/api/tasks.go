@@ -173,21 +173,23 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	if err != nil {
 		return filters, err
 	}
+
 	filters.CurrentUser = ui.Username
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
 
 	filters.GetTaskParams = entity.GetTaskParams{
-		Name:        p.Name,
-		Created:     p.Created.toEntity(),
-		Order:       p.Order,
-		Limit:       &limit,
-		Offset:      &offset,
-		TaskIDs:     p.TaskIDs,
-		SelectAs:    p.SelectAs,
-		Archived:    p.Archived,
-		ForCarousel: p.ForCarousel,
-		Status:      statusToEntity(p.Status),
-		Receiver:    p.Receiver,
+		Name:          p.Name,
+		Created:       p.Created.toEntity(),
+		Order:         p.Order,
+		Limit:         &limit,
+		Offset:        &offset,
+		TaskIDs:       p.TaskIDs,
+		SelectAs:      p.SelectAs,
+		Archived:      p.Archived,
+		ForCarousel:   p.ForCarousel,
+		Status:        statusToEntity(p.Status),
+		Receiver:      p.Receiver,
+		HasAttacments: p.HasAttachments,
 	}
 
 	return filters, nil

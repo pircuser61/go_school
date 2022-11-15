@@ -73,6 +73,7 @@ type UpdateStepRequest struct {
 	HasError       bool
 	Status         string
 	WithoutContent bool
+	Members        map[string]struct{}
 }
 
 type UpdateTaskBlocksDataRequest struct {

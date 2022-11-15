@@ -28,8 +28,6 @@ const (
 	firstStringName  string = "first_string"
 	secondStringName string = "second_string"
 
-	functionDeployed string = "deployed"
-
 	TypeIF          = "term"
 	TypeInternal    = "internal"
 	TypeScenario    = "scenario"

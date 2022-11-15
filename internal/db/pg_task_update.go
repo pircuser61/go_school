@@ -3,6 +3,9 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+
+	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
 
@@ -126,5 +129,18 @@ func (db *PGCon) UpdateTaskBlocksData(c context.Context, dto *UpdateTaskBlocksDa
 		WHERE id = $1`
 
 	_, err = conn.Exec(c, query, dto.Id, activeBlocks, skippedBlocks, notifiedBlocks, prevUpdateStatusBlocks)
+	return err
+}
+
+func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
+	q := `UPDATE variable_storage 
+set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
+where work_id = (select id from works where work_number = $1) and step_type in ('servicedesk_application', 'execution')`
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	q = fmt.Sprintf(q, string(bytes))
+	_, err = db.Pool.Exec(context.Background(), q, workNumber)
 	return err
 }

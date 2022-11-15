@@ -265,6 +265,7 @@ func (gb *GoFormBlock) handleNotifications(ctx context.Context) error {
 
 //nolint:gocyclo //ok
 func (gb *GoFormBlock) resolveExecutors(ctx c.Context) (users []string, err error) {
+	const funcName = "pipeliner.block_form.resolveExecutors"
 	users = make([]string, 0)
 
 	var exists = func(entry string) bool {
@@ -288,7 +289,7 @@ func (gb *GoFormBlock) resolveExecutors(ctx c.Context) (users []string, err erro
 
 	executorsWithAccess, err := gb.RunContext.Storage.GetUsersWithReadWriteFormAccess(ctx, gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, funcName)
 	}
 
 	for _, executor := range executorsWithAccess {
@@ -297,21 +298,21 @@ func (gb *GoFormBlock) resolveExecutors(ctx c.Context) (users []string, err erro
 			if executor.BlockType == entity.ExecutionBlockType {
 				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, executor.GroupId)
 				if sdErr != nil {
-					return nil, sdErr
+					return nil, errors.Wrap(sdErr, funcName)
 				}
 				appendUnique(executorsToString(sdUsers.People))
 			}
 			if executor.BlockType == entity.ApprovementBlockType {
 				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetApproversGroup(ctx, executor.GroupId)
 				if sdErr != nil {
-					return nil, sdErr
+					return nil, errors.Wrap(sdErr, funcName)
 				}
 				appendUnique(approversToString(sdUsers.People))
 			}
 		case entity.FromSchemaExecution:
 			variables, varErr := gb.RunContext.VarStore.GrabStorage()
 			if varErr != nil {
-				return nil, varErr
+				return nil, errors.Wrap(varErr, funcName)
 			}
 
 			var toResolve = map[string]struct{}{
@@ -320,7 +321,7 @@ func (gb *GoFormBlock) resolveExecutors(ctx c.Context) (users []string, err erro
 
 			schemaUsers, resolveErr := resolveValuesFromVariables(variables, toResolve)
 			if resolveErr != nil {
-				return nil, resolveErr
+				return nil, errors.Wrap(resolveErr, funcName)
 			}
 			appendUnique(mapToString(schemaUsers))
 		case entity.UserExecution:
