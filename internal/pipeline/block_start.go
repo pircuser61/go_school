@@ -41,22 +41,6 @@ func (gb *GoStartBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *GoStartBlock) GetType() string {
-	return BlockGoStartId
-}
-
-func (gb *GoStartBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoStartBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoStartBlock) IsScenario() bool {
-	return false
-}
-
 func (gb *GoStartBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
@@ -65,16 +49,7 @@ func (gb *GoStartBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
-func (gb *GoStartBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
-}
-
 func (gb *GoStartBlock) GetState() interface{} {
-	return nil
-}
-
-// nolint:dupl // not dupl?
-func (gb *GoStartBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
 	return nil
 }
 

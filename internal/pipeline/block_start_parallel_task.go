@@ -40,37 +40,12 @@ func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *GoBeginParallelTaskBlock) GetType() string {
-	return BlockGoBeginParallelTaskId
-}
-
-func (gb *GoBeginParallelTaskBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoBeginParallelTaskBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoBeginParallelTaskBlock) IsScenario() bool {
-	return false
-}
-
-//nolint:dupl //its not duplicate
-func (gb *GoBeginParallelTaskBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
-	return nil
-}
-
 func (gb *GoBeginParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
-}
-
-func (gb *GoBeginParallelTaskBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
 }
 
 func (gb *GoBeginParallelTaskBlock) GetState() interface{} {

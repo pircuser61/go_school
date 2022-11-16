@@ -1,7 +1,6 @@
 package pipeline
 
 import (
-	"context"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -93,27 +92,6 @@ func (gb *GoExecutionBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoExecutionBlock) GetType() string {
-	return BlockGoExecutionID
-}
-
-func (gb *GoExecutionBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoExecutionBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoExecutionBlock) IsScenario() bool {
-	return false
-}
-
-//nolint:gocyclo // later
-func (gb *GoExecutionBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
-	return nil
-}
-
 func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	key := notExecutedSocketID
 	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ExecutionDecisionExecuted {
@@ -129,19 +107,6 @@ func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 		return nil, false
 	}
 	return nexts, true
-}
-
-func (gb *GoExecutionBlock) Skipped(_ *store.VariableStore) []string {
-	key := executedSocketID
-	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ExecutionDecisionExecuted {
-		key = notExecutedSocketID
-	}
-	var next, ok = script.GetNexts(gb.Sockets, key)
-	if !ok {
-		return nil
-	}
-
-	return next
 }
 
 func (gb *GoExecutionBlock) GetState() interface{} {

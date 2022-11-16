@@ -1,15 +1,9 @@
 package pipeline
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
 	"time"
-
-	"go.opencensus.io/trace"
 
 	"github.com/pkg/errors"
 
@@ -57,101 +51,12 @@ func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *ExecutableFunctionBlock) GetType() string {
-	return BlockExecutableFunctionID
-}
-
-func (gb *ExecutableFunctionBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *ExecutableFunctionBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *ExecutableFunctionBlock) IsScenario() bool {
-	return false
-}
-
-func (gb *ExecutableFunctionBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "run_function_block")
-	defer s.End()
-
-	// TODO: call the function
-
-	return nil
-}
-
 func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
-}
-
-func (gb *ExecutableFunctionBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
-}
-
-func (gb *ExecutableFunctionBlock) RunOnly(ctx context.Context, runCtx *store.VariableStore) (interface{}, error) {
-	_, s := trace.StartSpan(ctx, "run_function_block")
-	defer s.End()
-
-	values := make(map[string]interface{})
-
-	for ikey, gkey := range gb.Input {
-		val, ok := runCtx.GetValue(gkey) // if no value - empty value
-		if ok {
-			values[ikey] = val
-		}
-	}
-
-	url := fmt.Sprintf(gb.RunURL, gb.Name)
-
-	b, err := json.Marshal(values)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(b))
-	if err != nil {
-		return nil, err
-	}
-
-	// fixme extract "X-Request-Id" to variable
-	req.Header.Set("Content-Type", "application/json")
-
-	const timeoutMinutes = 15
-
-	client := &http.Client{
-		Timeout: timeoutMinutes * time.Minute,
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(body) != 0 {
-		result := make(map[string]interface{})
-		err = json.Unmarshal(body, &result)
-
-		if err != nil {
-			return string(body), nil
-		}
-
-		return result, nil
-	}
-
-	return string(body), nil
 }
 
 func (gb *ExecutableFunctionBlock) GetState() interface{} {

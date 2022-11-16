@@ -65,36 +65,12 @@ func (gb *GoSdApplicationBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return StatusNew
 }
 
-func (gb *GoSdApplicationBlock) GetType() string {
-	return BlockGoSdApplicationID
-}
-
-func (gb *GoSdApplicationBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoSdApplicationBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoSdApplicationBlock) IsScenario() bool {
-	return false
-}
-
-func (gb *GoSdApplicationBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) (err error) {
-	return nil
-}
-
 func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
-}
-
-func (gb *GoSdApplicationBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
 }
 
 func (gb *GoSdApplicationBlock) GetState() interface{} {

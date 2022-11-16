@@ -39,33 +39,8 @@ func (gb *GoEndBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *GoEndBlock) GetType() string {
-	return BlockGoEndId
-}
-
-func (gb *GoEndBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoEndBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoEndBlock) IsScenario() bool {
-	return false
-}
-
-// nolint:dupl // not dupl?
-func (gb *GoEndBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
-	return nil
-}
-
 func (gb *GoEndBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nil, true
-}
-
-func (gb *GoEndBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
 }
 
 func (gb *GoEndBlock) GetState() interface{} {

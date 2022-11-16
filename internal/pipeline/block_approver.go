@@ -1,9 +1,6 @@
 package pipeline
 
 import (
-	c "context"
-	"github.com/google/uuid"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"time"
@@ -98,35 +95,6 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 	}
 
 	return StatusApprovement
-}
-
-func (gb *GoApproverBlock) GetType() string {
-	return BlockGoApproverID
-}
-
-func (gb *GoApproverBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoApproverBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoApproverBlock) IsScenario() bool {
-	return false
-}
-
-//nolint:gocyclo //ok
-func (gb *GoApproverBlock) DebugRun(_ c.Context, _ *stepCtx, _ *store.VariableStore) (err error) {
-	return nil
-}
-
-type getPreviousDecisionDTO struct {
-	step     *entity.Step
-	id       uuid.UUID
-	runCtx   *store.VariableStore
-	workID   uuid.UUID
-	stepName string
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {

@@ -2,11 +2,12 @@ package pipeline
 
 import (
 	c "context"
-	"github.com/jackc/pgx/v4"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/pkg/errors"
 
@@ -100,22 +101,6 @@ func (gb *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
 	return StatusNew
 }
 
-func (gb *ExecutablePipeline) GetType() string {
-	return BlockScenario
-}
-
-func (gb *ExecutablePipeline) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *ExecutablePipeline) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *ExecutablePipeline) IsScenario() bool {
-	return true
-}
-
 type CreateTaskDTO struct {
 	Author     string
 	IsDebug    bool
@@ -144,20 +129,11 @@ func (gb *ExecutablePipeline) CreateTask(ctx c.Context, tx pgx.Tx, dto *CreateTa
 	return nil
 }
 
-func (gb *ExecutablePipeline) Run(_ c.Context, _ *store.VariableStore) error {
-	return nil
-}
-
 type stepCtx struct {
 	workNumber  string
 	workTitle   string
 	description string
 	stepStart   time.Time
-}
-
-//nolint:gocognit,gocyclo //its really complex
-func (gb *ExecutablePipeline) DebugRun(_ c.Context, _ *stepCtx, _ *store.VariableStore) error {
-	return nil
 }
 
 func (gb *ExecutablePipeline) Next(_ *store.VariableStore) ([]string, bool) {
@@ -166,10 +142,6 @@ func (gb *ExecutablePipeline) Next(_ *store.VariableStore) ([]string, bool) {
 		return nil, false
 	}
 	return nexts, true
-}
-
-func (gb *ExecutablePipeline) Skipped(_ *store.VariableStore) []string {
-	return nil
 }
 
 func (gb *ExecutablePipeline) GetState() interface{} {

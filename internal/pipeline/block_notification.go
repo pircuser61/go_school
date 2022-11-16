@@ -54,22 +54,6 @@ func (gb *GoNotificationBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *GoNotificationBlock) GetType() string {
-	return BlockGoNotificationID
-}
-
-func (gb *GoNotificationBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoNotificationBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoNotificationBlock) IsScenario() bool {
-	return false
-}
-
 func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email.Attachment, error) {
 	author, err := gb.RunContext.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
@@ -104,20 +88,12 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	return text, files, nil
 }
 
-func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *store.VariableStore) (err error) {
-	return nil
-}
-
 func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
-}
-
-func (gb *GoNotificationBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
 }
 
 func (gb *GoNotificationBlock) GetState() interface{} {

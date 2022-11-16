@@ -57,36 +57,12 @@ func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *GoWaitForAllInputsBlock) GetType() string {
-	return BlockWaitForAllInputsId
-}
-
-func (gb *GoWaitForAllInputsBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoWaitForAllInputsBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoWaitForAllInputsBlock) IsScenario() bool {
-	return false
-}
-
-func (gb *GoWaitForAllInputsBlock) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
-	return nil
-}
-
 func (gb *GoWaitForAllInputsBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
 		return nil, false
 	}
 	return nexts, true
-}
-
-func (gb *GoWaitForAllInputsBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
 }
 
 func (gb *GoWaitForAllInputsBlock) GetState() interface{} {

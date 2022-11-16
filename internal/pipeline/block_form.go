@@ -87,28 +87,8 @@ func (gb *GoFormBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return StatusExecution
 }
 
-func (gb *GoFormBlock) GetType() string {
-	return BlockGoFormID
-}
-
-func (gb *GoFormBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoFormBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoFormBlock) IsScenario() bool {
-	return false
-}
-
 func (gb *GoFormBlock) GetState() interface{} {
 	return gb.State
-}
-
-func (gb *GoFormBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
 }
 
 func (gb *GoFormBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -117,11 +97,6 @@ func (gb *GoFormBlock) Next(_ *store.VariableStore) ([]string, bool) {
 		return nil, false
 	}
 	return nexts, true
-}
-
-//nolint:gocyclo //ok
-func (gb *GoFormBlock) DebugRun(ctx c.Context, stepCtx *stepCtx, runCtx *store.VariableStore) (err error) {
-	return nil
 }
 
 func (gb *GoFormBlock) Model() script.FunctionModel {

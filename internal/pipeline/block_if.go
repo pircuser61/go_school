@@ -59,10 +59,6 @@ func (gb *IF) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *IF) GetType() string {
-	return BlockGoIfID
-}
-
 func (gb *IF) Next(_ *store.VariableStore) ([]string, bool) {
 	if gb.State.ChosenGroupID == "" {
 		nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
@@ -77,38 +73,6 @@ func (gb *IF) Next(_ *store.VariableStore) ([]string, bool) {
 		}
 		return nexts, true
 	}
-}
-
-func (gb *IF) Skipped(_ *store.VariableStore) []string {
-	chosenGroupSocket := script.Socket{Id: gb.State.ChosenGroupID}
-	if chosenGroupSocket.Id == "" {
-		chosenGroupSocket = script.DefaultSocket
-	}
-
-	skipped := make([]string, 0)
-	for i := range gb.Sockets {
-		var socket = gb.Sockets[i]
-		if socket.Id != chosenGroupSocket.Id {
-			skipped = append(skipped, socket.NextBlockIds...)
-		}
-	}
-	return skipped
-}
-
-func (gb *IF) Inputs() map[string]string {
-	return gb.FunctionInput
-}
-
-func (gb *IF) Outputs() map[string]string {
-	return make(map[string]string)
-}
-
-func (gb *IF) IsScenario() bool {
-	return false
-}
-
-func (gb *IF) DebugRun(_ context.Context, _ *stepCtx, _ *store.VariableStore) error {
-	return nil
 }
 
 func (gb *IF) GetState() interface{} {

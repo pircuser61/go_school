@@ -16,7 +16,7 @@ people:
 database:
   kind: postgres
   host: localhost
-  port: 5434
+  port: 5432
   user: "jocasta"
   pass: "4V7Debjee4s2KvTg"
   dbname: 'pipeliner'
@@ -33,7 +33,7 @@ sso:
 mail:
   broker: "redis"
   host: "localhost"
-  port: 6380
+  port: 6379
   queue: "mail"
   database: "0"
   from:
