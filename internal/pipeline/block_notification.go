@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -37,8 +38,8 @@ func (gb *GoNotificationBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoNotificationBlock) CheckSLA() bool {
-	return false
+func (gb *GoNotificationBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 func (gb *GoNotificationBlock) UpdateManual() bool {

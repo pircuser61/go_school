@@ -15,6 +15,10 @@ import (
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 	switch gb.RunContext.UpdateData.Action {
+	case string(entity.TaskUpdateActionExecutionSLABreach):
+		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
 	case string(entity.TaskUpdateActionExecution):
 		if errUpdate := gb.updateDecision(); errUpdate != nil {
 			return nil, errUpdate
@@ -113,6 +117,29 @@ type ExecutionUpdateParams struct {
 	Decision    ExecutionDecision `json:"decision"`
 	Comment     string            `json:"comment"`
 	Attachments []string          `json:"attachments"`
+}
+
+func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
+	if gb.State.SLA > 8 {
+		emails := make([]string, 0, len(gb.State.Executors))
+		for executor := range gb.State.Executors {
+			email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
+			if err != nil {
+				continue
+			}
+			emails = append(emails, email)
+		}
+		if len(emails) == 0 {
+			return nil
+		}
+		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+			mail.NewExecutionSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (gb *GoExecutionBlock) updateDecision() error {
@@ -320,13 +347,6 @@ func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context) (err error) {
 	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
-
-	stateBytes, err := json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 	return err
 }
 

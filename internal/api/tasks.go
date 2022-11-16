@@ -482,8 +482,6 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		blockErr := pipeline.ProcessBlock(ctx, item.Name, &blockFunc, runCtx, true)
 		if blockErr == nil {
 			couldUpdateOne = true
-		} else {
-			log.Error("block.Update: ", blockErr, updateData.Parameters)
 		}
 	}
 

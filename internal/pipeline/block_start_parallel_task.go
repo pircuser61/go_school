@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -23,8 +24,8 @@ func (gb *GoBeginParallelTaskBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoBeginParallelTaskBlock) CheckSLA() bool {
-	return false
+func (gb *GoBeginParallelTaskBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 func (gb *GoBeginParallelTaskBlock) UpdateManual() bool {

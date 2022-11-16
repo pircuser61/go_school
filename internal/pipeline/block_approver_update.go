@@ -50,14 +50,39 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
 	}
+	return nil
+}
 
-	var stateBytes []byte
-	stateBytes, err := json.Marshal(gb.State)
-	if err != nil {
-		return err
+func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
+	if gb.State.SLA > 8 {
+		emails := make([]string, 0, len(gb.State.Approvers))
+		for approver := range gb.State.Approvers {
+			email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
+			if err != nil {
+				continue
+			}
+			emails = append(emails, email)
+		}
+		if len(emails) == 0 {
+			return nil
+		}
+		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+			mail.NewApprovementSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress))
+		if err != nil {
+			return err
+		}
+	}
+	if gb.State.AutoAction != nil {
+		gb.RunContext.UpdateData.ByLogin = AutoApprover
+		if setErr := gb.setApproverDecision(
+			approverUpdateParams{
+				Decision: decisionFromAutoAction(*gb.State.AutoAction),
+				Comment:  AutoActionComment,
+			}); setErr != nil {
+			return setErr
+		}
 	}
 
-	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 	return nil
 }
 
@@ -168,13 +193,6 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 		CreatedAt:   time.Now(),
 	})
 
-	stateBytes, err := json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
-
 	return nil
 }
 
@@ -196,6 +214,11 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	switch data.Action {
+	case string(entity.TaskUpdateActionApprovementSLABreach):
+		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+
 	case string(entity.TaskUpdateActionApprovement):
 		var updateParams approverUpdateParams
 
@@ -203,7 +226,9 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errors.New("can't assert provided data")
 		}
 
-		return nil, gb.setApproverDecision(updateParams)
+		if errUpdate := gb.setApproverDecision(updateParams); errUpdate != nil {
+			return nil, errUpdate
+		}
 
 	case string(entity.TaskUpdateActionApproverSendEditApp):
 		var updateParams approverUpdateEditingParams
@@ -211,20 +236,30 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
-
-		return nil, gb.setEditApplication(ctx, updateParams)
+		if errUpdate := gb.setEditApplication(ctx, updateParams); errUpdate != nil {
+			return nil, errUpdate
+		}
 
 	case string(entity.TaskUpdateActionRequestApproveInfo):
-		return nil, gb.updateRequestApproverInfo(ctx)
+		if errUpdate := gb.updateRequestApproverInfo(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
 
 	case string(entity.TaskUpdateActionCancelApp):
 		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-		return nil, nil
 	}
 
-	return nil, errors.New("cant`t update approver block, unknown action: " + data.Action)
+	var stateBytes []byte
+	stateBytes, err := json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
+	return nil, nil
 }
 
 // nolint:dupl // another action
@@ -233,12 +268,5 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
-
-	stateBytes, err := json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 	return nil
 }

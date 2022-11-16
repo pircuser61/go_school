@@ -1463,7 +1463,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, tx pgx.Tx, dto *SaveStepRe
 			has_error,
 			status,
 		    members,
-		    check_sla
+		    check_sla,
+		    sla_deadline
 		)
 		VALUES (
 			$1, 
@@ -1474,7 +1475,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, tx pgx.Tx, dto *SaveStepRe
 			$6, 
 			$7,
 			$8,
-			$9
+			$9,
+			$10
 		)
 `
 
@@ -1492,6 +1494,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, tx pgx.Tx, dto *SaveStepRe
 		dto.Status,
 		members,
 		dto.CheckSLA,
+		dto.SLADeadline,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
@@ -1515,6 +1518,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, tx pgx.Tx, dto *UpdateSt
 		--members--
 		--content--
 		--updated_at--
+		--deadline--
 	WHERE
 		id = $1
 `
@@ -1527,7 +1531,8 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, tx pgx.Tx, dto *UpdateSt
 		q = strings.Replace(q, "--content--", ", content = $5", -1)
 		q = strings.Replace(q, "--members--", ", members = $6", -1)
 		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
-		args = append(args, dto.Content, members)
+		q = strings.Replace(q, "--deadline--", ", sla_deadline = $7", -1)
+		args = append(args, dto.Content, members, dto.SLADeadline)
 	}
 
 	_, err := tx.Exec(

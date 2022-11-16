@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -31,5 +32,5 @@ type Runner interface {
 	GetStatus() Status
 	UpdateManual() bool
 	Members() map[string]struct{}
-	CheckSLA() bool
+	CheckSLA() (bool, time.Time)
 }

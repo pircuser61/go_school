@@ -69,6 +69,7 @@ type SaveStepRequest struct {
 	Status      string
 	Members     map[string]struct{}
 	CheckSLA    bool
+	SLADeadline time.Time
 }
 
 type UpdateStepRequest struct {
@@ -79,6 +80,7 @@ type UpdateStepRequest struct {
 	Status         string
 	WithoutContent bool
 	Members        map[string]struct{}
+	SLADeadline    time.Time
 }
 
 type UpdateTaskBlocksDataRequest struct {

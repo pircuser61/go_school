@@ -6,6 +6,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"time"
 )
 
 const (
@@ -32,8 +33,8 @@ func (gb *GoApproverBlock) Members() map[string]struct{} {
 	return gb.State.Approvers
 }
 
-func (gb *GoApproverBlock) CheckSLA() bool {
-	return true
+func (gb *GoApproverBlock) CheckSLA() (bool, time.Time) {
+	return true, computeMaxDate(gb.RunContext.currBlockStartTime, gb.State.SLA)
 }
 
 func (gb *GoApproverBlock) UpdateManual() bool {
@@ -113,61 +114,6 @@ func (gb *GoApproverBlock) Outputs() map[string]string {
 
 func (gb *GoApproverBlock) IsScenario() bool {
 	return false
-}
-
-func (gb *GoApproverBlock) handleSLA(ctx c.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
-	//const workHoursDay = 8
-	//
-	//if gb.State.DidSLANotification {
-	//	return false, nil
-	//}
-	//if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
-	//	l := logger.GetLogger(ctx)
-	//
-	//	// nolint:dupl // handle approvers
-	//	if gb.State.SLA > workHoursDay {
-	//		emails := make([]string, 0, len(gb.State.Approvers))
-	//		for approver := range gb.State.Approvers {
-	//			email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
-	//			if err != nil {
-	//				l.WithError(err).Error("couldn't get email")
-	//			}
-	//			emails = append(emails, email)
-	//		}
-	//		if len(emails) == 0 {
-	//			return false, nil
-	//		}
-	//
-	//		tpl := mail.NewApprovementSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.RunContext.Sender.SdAddress)
-	//		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
-	//		if err != nil {
-	//			return false, err
-	//		}
-	//	}
-	//
-	//	gb.State.DidSLANotification = true
-	//
-	//	if gb.State.AutoAction != nil {
-	//		if err := gb.setApproverDecision(ctx,
-	//			id,
-	//			AutoApprover,
-	//			approverUpdateParams{
-	//				Decision: decisionFromAutoAction(*gb.State.AutoAction),
-	//				Comment:  AutoActionComment,
-	//			}); err != nil {
-	//			l.WithError(err).Error("couldn't set auto decision")
-	//			return false, err
-	//		}
-	//	} else {
-	//		//if err := gb.dumpCurrState(ctx, id); err != nil {
-	//		//	l.WithError(err).Error("couldn't dump state with id: " + id.String())
-	//		//	return false, err
-	//		//}
-	//	}
-	//	return true, nil
-	//}
-	//
-	return false, nil
 }
 
 //nolint:gocyclo //ok

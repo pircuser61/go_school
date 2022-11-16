@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -45,8 +46,8 @@ func (gb *GoSdApplicationBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoSdApplicationBlock) CheckSLA() bool {
-	return false
+func (gb *GoSdApplicationBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 func (gb *GoSdApplicationBlock) UpdateManual() bool {

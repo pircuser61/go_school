@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
 	"go.opencensus.io/trace"
 
@@ -24,8 +25,8 @@ func (gb *GoTestBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoTestBlock) CheckSLA() bool {
-	return false
+func (gb *GoTestBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 func (gb *GoTestBlock) UpdateManual() bool {

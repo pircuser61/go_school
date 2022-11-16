@@ -117,6 +117,8 @@ type TaskUpdateAction string
 
 const (
 	TaskUpdateActionApprovement          TaskUpdateAction = "approvement"
+	TaskUpdateActionApprovementSLABreach TaskUpdateAction = "approvement_sla_breached"
+	TaskUpdateActionExecutionSLABreach   TaskUpdateAction = "execution_sla_breached"
 	TaskUpdateActionExecution            TaskUpdateAction = "execution"
 	TaskUpdateActionChangeExecutor       TaskUpdateAction = "change_executor"
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"

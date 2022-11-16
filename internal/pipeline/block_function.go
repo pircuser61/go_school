@@ -45,8 +45,8 @@ func (gb *ExecutableFunctionBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) CheckSLA() bool {
-	return false
+func (gb *ExecutableFunctionBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {

@@ -3,8 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-
-	"github.com/pkg/errors"
+	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -33,8 +32,8 @@ func (gb *GoWaitForAllInputsBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoWaitForAllInputsBlock) CheckSLA() bool {
-	return false
+func (gb *GoWaitForAllInputsBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 func (gb *GoWaitForAllInputsBlock) UpdateManual() bool {
@@ -96,10 +95,7 @@ func (gb *GoWaitForAllInputsBlock) GetState() interface{} {
 
 func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, error) {
 	data := gb.RunContext.UpdateData
-	if data == nil {
-		return nil, errors.New("empty data")
-	}
-	if data.Action == string(entity.TaskUpdateActionCancelApp) {
+	if data != nil && data.Action == string(entity.TaskUpdateActionCancelApp) {
 		return nil, gb.formCancelPipeline(ctx)
 	}
 	// TODO

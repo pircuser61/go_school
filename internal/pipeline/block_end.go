@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -21,8 +22,8 @@ func (gb *GoEndBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoEndBlock) CheckSLA() bool {
-	return false
+func (gb *GoEndBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 func (gb *GoEndBlock) GetStatus() Status {

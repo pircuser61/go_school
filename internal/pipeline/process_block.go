@@ -24,19 +24,20 @@ import (
 )
 
 type BlockRunContext struct {
-	TaskID          uuid.UUID
-	WorkNumber      string
-	WorkTitle       string
-	Initiator       string
-	Storage         db.Database
-	Sender          *mail.Service
-	People          *people.Service
-	ServiceDesc     *servicedesc.Service
-	FaaS            string
-	VarStore        *store.VariableStore
-	UpdateData      *script.BlockUpdateData
-	doNotifications bool //for tests
-	Tx              pgx.Tx
+	TaskID             uuid.UUID
+	WorkNumber         string
+	WorkTitle          string
+	Initiator          string
+	Storage            db.Database
+	Sender             *mail.Service
+	People             *people.Service
+	ServiceDesc        *servicedesc.Service
+	FaaS               string
+	VarStore           *store.VariableStore
+	UpdateData         *script.BlockUpdateData
+	doNotifications    bool //for tests
+	Tx                 pgx.Tx
+	currBlockStartTime time.Time
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
@@ -46,7 +47,7 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string,
-	people map[string]struct{}, checkSLA bool) (uuid.UUID, time.Time, error) {
+	people map[string]struct{}, checkSLA bool, deadline time.Time) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
@@ -62,6 +63,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string
 		Status:      string(StatusNew),
 		Members:     people,
 		CheckSLA:    checkSLA,
+		SLADeadline: deadline,
 	})
 }
 
@@ -111,7 +113,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 		activeBlocks, ok := block.Next(runCtx.VarStore)
 		if !ok {
-			err = runCtx.updateStepInDB(ctx, id, true, block.GetStatus(), block.Members())
+			err = runCtx.updateStepInDB(ctx, id, true, block.GetStatus(), block.Members(), time.Time{})
 			if err != nil {
 				return
 			}
@@ -244,10 +246,13 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		runCtx.VarStore.ReplaceState(name, state)
 	}
 
-	id, _, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, block.Members(), block.CheckSLA())
+	runCtx.currBlockStartTime = time.Now() // will be used only for the block creation
+	checkSLA, deadline := block.CheckSLA()
+	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, block.Members(), checkSLA, deadline)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
+	runCtx.currBlockStartTime = startTime
 	return block, id, nil
 }
 
@@ -257,7 +262,8 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 		key := name + KeyDelimiter + ErrorKey
 		runCtx.VarStore.SetValue(key, err.Error())
 	}
-	err = runCtx.updateStepInDB(ctx, id, err != nil, block.GetStatus(), block.Members())
+	_, deadline := block.CheckSLA()
+	err = runCtx.updateStepInDB(ctx, id, err != nil, block.GetStatus(), block.Members(), deadline)
 	if err != nil {
 		return err
 	}
@@ -269,7 +275,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasError bool, status Status,
-	people map[string]struct{}) error {
+	people map[string]struct{}, deadline time.Time) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
@@ -281,8 +287,9 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasEr
 		BreakPoints:    []string{},
 		HasError:       hasError,
 		Status:         string(status),
-		WithoutContent: status != StatusFinished && status != StatusCancel && status != StatusNoSuccess,
+		WithoutContent: status != StatusFinished && status != StatusNoSuccess,
 		Members:        people,
+		SLADeadline:    deadline,
 	})
 }
 

@@ -5,6 +5,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"time"
 )
 
 const (
@@ -24,8 +25,8 @@ func (gb *GoStartBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoStartBlock) CheckSLA() bool {
-	return false
+func (gb *GoStartBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 func (gb *GoStartBlock) UpdateManual() bool {

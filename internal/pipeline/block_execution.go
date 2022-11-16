@@ -2,7 +2,7 @@ package pipeline
 
 import (
 	"context"
-	"github.com/google/uuid"
+	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -35,8 +35,8 @@ func (gb *GoExecutionBlock) Members() map[string]struct{} {
 	return gb.State.Executors
 }
 
-func (gb *GoExecutionBlock) CheckSLA() bool {
-	return true
+func (gb *GoExecutionBlock) CheckSLA() (bool, time.Time) {
+	return true, time.Time{}
 }
 
 func (gb *GoExecutionBlock) UpdateManual() bool {
@@ -107,46 +107,6 @@ func (gb *GoExecutionBlock) Outputs() map[string]string {
 
 func (gb *GoExecutionBlock) IsScenario() bool {
 	return false
-}
-
-func (gb *GoExecutionBlock) handleSLA(ctx context.Context, id uuid.UUID, stepCtx *stepCtx) (bool, error) {
-	//if gb.State.DidSLANotification {
-	//	return false, nil
-	//}
-	//if CheckBreachSLA(stepCtx.stepStart, time.Now(), gb.State.SLA) {
-	//	l := logger.GetLogger(ctx)
-	//
-	//	// nolint:dupl // handle executors
-	//	if gb.State.SLA > 8 {
-	//		emails := make([]string, 0, len(gb.State.Executors))
-	//		for executor := range gb.State.Executors {
-	//			email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
-	//			if err != nil {
-	//				l.WithError(err).Error("couldn't get email")
-	//			}
-	//			emails = append(emails, email)
-	//		}
-	//		if len(emails) == 0 {
-	//			return false, nil
-	//		}
-	//		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-	//			mail.NewExecutionSLATemplate(stepCtx.workNumber, stepCtx.workTitle, gb.RunContext.Sender.SdAddress))
-	//		if err != nil {
-	//			return false, err
-	//		}
-	//	}
-	//
-	//	gb.State.DidSLANotification = true
-	//
-	//	if err := gb.dumpCurrState(ctx, id); err != nil {
-	//		gb.State.DidSLANotification = false
-	//		return false, err
-	//	}
-	//
-	//	return true, nil
-	//}
-
-	return false, nil
 }
 
 //nolint:gocyclo // later
