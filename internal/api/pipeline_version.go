@@ -682,7 +682,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, transactionErr
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
 
 	if err = ep.CreateTask(ctx, tx, &pipeline.CreateTaskDTO{
 		Author:     dto.userName,

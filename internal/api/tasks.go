@@ -434,7 +434,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 		return
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
 
 	couldUpdateOne := false
 	for _, item := range steps {

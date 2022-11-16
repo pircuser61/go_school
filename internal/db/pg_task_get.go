@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	"strings"
 	"time"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/google/uuid"
 
@@ -716,7 +717,8 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, tx pgx.Tx, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
+func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, tx pgx.Tx, workNumber,
+	stepName string) ([]entity.UsersWithFormAccess, error) {
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL

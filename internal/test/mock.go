@@ -1243,7 +1243,7 @@ func (m *MockDB) GetTaskStatus(_ context.Context, _ pgx.Tx, _ uuid.UUID) (int, e
 	return -1, errNotImplemented
 }
 
-func (m *MockDB) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
+func (m *MockDB) GetVariableStorageForStep(_ context.Context, _ uuid.UUID, _ string) (*store.VariableStore, error) {
 	return nil, errNotImplemented
 }
 
