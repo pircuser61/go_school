@@ -297,7 +297,6 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		LEFT JOIN LATERAL (
 			SELECT * FROM variable_storage vs
 			WHERE vs.work_id = w.id AND vs.status != 'skipped'
-			ORDER BY vs.time DESC
 			--limit--
 		) workers ON workers.work_id = w.id
 		WHERE w.child_id IS NULL`
