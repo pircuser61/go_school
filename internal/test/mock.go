@@ -1250,3 +1250,7 @@ func (m *MockDB) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID
 func (m *MockDB) MakeTransaction(_ context.Context) (pgx.Tx, error) {
 	return nil, errNotFound
 }
+
+func (m *MockDB) GetBlocksBreachedSLA(_ context.Context) ([]db.StepBreachedSLA, error) {
+	return nil, errNotFound
+}

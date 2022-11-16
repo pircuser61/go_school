@@ -458,14 +458,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			FaaS:        ae.FaaS,
 			VarStore:    storage,
 			UpdateData: &script.BlockUpdateData{
-				Id:         item.ID,
 				ByLogin:    ui.Username,
 				Action:     string(updateData.Action),
 				Parameters: updateData.Parameters,
-				WorkNumber: dbTask.WorkNumber,
-				WorkTitle:  dbTask.Name,
-				Author:     dbTask.Author,
-				BlockStart: item.Time,
 			},
 			Tx: tx,
 		}
@@ -552,4 +547,62 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	}
 
 	return []string{}
+}
+
+//nolint:gocyclo //its ok here
+func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "update_task")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)
+	if err != nil {
+		e := UpdateBlockError
+		log.Error(e.errorMessage(errors.New("couldn't get steps")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// in goroutine so we can return 202?
+	for _, item := range steps {
+		log = log.WithFields(map[string]interface{}{
+			"taskID": item.TaskID,
+			"stepName": item.StepName,
+		})
+		tx, transactionErr := ae.DB.MakeTransaction(ctx)
+		if transactionErr != nil {
+			log.WithError(transactionErr).Error("couldn't set SLA breach")
+			continue
+		}
+		// goroutines?
+		runCtx := &pipeline.BlockRunContext{
+			TaskID:      item.TaskID,
+			WorkNumber:  item.WorkNumber,
+			WorkTitle:   item.WorkTitle,
+			Initiator:   item.Initiator,
+			Storage:     ae.DB,
+			Sender:      ae.Mail,
+			People:      ae.People,
+			ServiceDesc: ae.ServiceDesc,
+			FaaS:        ae.FaaS,
+			VarStore:    item.VarStore,
+			UpdateData: &script.BlockUpdateData{
+				Action:     string(entity.TaskUpdateActionSLABreach),
+			},
+			Tx: tx,
+		}
+		blockErr := pipeline.ProcessBlock(ctx, item.StepName, item.BlockData, runCtx, true)
+		if blockErr != nil {
+			log.WithError(blockErr).Error("couldn't set SLA breach")
+			if txErr := tx.Rollback(ctx); txErr != nil {
+				log.Error(txErr)
+			}
+			continue
+		}
+		if commitErr := tx.Commit(ctx); commitErr != nil {
+			log.WithError(commitErr).Error("couldn't set SLA breach")
+		}
+	}
 }

@@ -15,7 +15,7 @@ import (
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 	switch gb.RunContext.UpdateData.Action {
-	case string(entity.TaskUpdateActionExecutionSLABreach):
+	case string(entity.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -219,13 +219,13 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	}
 
 	if updateParams.ReqType == RequestInfoQuestion {
-		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.UpdateData.Author)
+		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
 		if emailErr != nil {
 			return emailErr
 		}
 
-		tpl := mail.NewRequestExecutionInfoTemplate(gb.RunContext.UpdateData.WorkNumber,
-			gb.RunContext.UpdateData.WorkTitle, gb.RunContext.Sender.SdAddress)
+		tpl := mail.NewRequestExecutionInfoTemplate(gb.RunContext.WorkNumber,
+			gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 		err = gb.RunContext.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
 		if err != nil {
 			return err
@@ -243,8 +243,8 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 			emails = append(emails, email)
 		}
 
-		tpl := mail.NewAnswerExecutionInfoTemplate(gb.RunContext.UpdateData.WorkNumber,
-			gb.RunContext.UpdateData.WorkTitle, gb.RunContext.Sender.SdAddress)
+		tpl := mail.NewAnswerExecutionInfoTemplate(gb.RunContext.WorkNumber,
+			gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 		if err != nil {
 			return err
@@ -287,7 +287,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 	workHours := getWorkWorkHoursBetweenDates(
-		gb.RunContext.UpdateData.BlockStart,
+		gb.RunContext.currBlockStartTime,
 		time.Now(),
 	)
 	gb.State.IncreaseSLA(workHours)
@@ -327,7 +327,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	}
 
 	tpl := mail.NewExecutionTakenInWork(&mail.ExecutorNotifTemplate{
-		Id:           gb.RunContext.UpdateData.WorkNumber,
+		Id:           gb.RunContext.WorkNumber,
 		SdUrl:        gb.RunContext.Sender.SdAddress,
 		ExecutorName: typedAuthor.GetFullName(),
 		Initiator:    gb.RunContext.Initiator,
@@ -371,8 +371,8 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		return emailErr
 	}
 
-	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.UpdateData.WorkNumber,
-		gb.RunContext.UpdateData.WorkTitle, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber,
+		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
 	if err != nil {
 		return err

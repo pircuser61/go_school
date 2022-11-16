@@ -1407,6 +1407,27 @@ func (_m *MockedDatabase) GetVariableStorageForStep(ctx context.Context, taskID 
 	return r0, r1
 }
 
+// GetBlocksBreachedSLA provides a mock function with given fields: ctx
+func (_m *MockedDatabase) GetBlocksBreachedSLA(ctx context.Context) ([]db.StepBreachedSLA, error) {
+	ret := _m.Called(ctx)
+
+	var r0 []db.StepBreachedSLA
+	if rf, ok := ret.Get(0).(func(context.Context) []db.StepBreachedSLA); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).([]db.StepBreachedSLA)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // MakeTransaction provides a mock function with given fields: ctx
 func (_m *MockedDatabase) MakeTransaction(ctx context.Context) (pgx.Tx, error) {
 	ret := _m.Called(ctx)

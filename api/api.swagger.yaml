@@ -6,6 +6,19 @@ info:
 servers:
   - url: //localhost:8181/api/pipeliner/v1
 paths:
+  /cron/sla:
+    get:
+      summary: Check if any steps breached SLA
+      operationId: checkBreachSLA
+      responses:
+        200:
+          description: OK
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /application/{workNumber}:
     get:
       summary: get application

@@ -1642,6 +1642,9 @@ type ServerInterface interface {
 	// set application
 	// (POST /application/{workNumber})
 	SetApplication(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Check if any steps breached SLA
+	// (GET /cron/sla)
+	CheckBreachSLA(w http.ResponseWriter, r *http.Request)
 	// Start debug task
 	// (POST /debug/run)
 	StartDebugTask(w http.ResponseWriter, r *http.Request)
@@ -1813,6 +1816,21 @@ func (siw *ServerInterfaceWrapper) SetApplication(w http.ResponseWriter, r *http
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetApplication(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// CheckBreachSLA operation middleware
+func (siw *ServerInterfaceWrapper) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckBreachSLA(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3001,6 +3019,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/application/{workNumber}", wrapper.SetApplication)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/cron/sla", wrapper.CheckBreachSLA)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/debug/run", wrapper.StartDebugTask)

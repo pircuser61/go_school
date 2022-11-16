@@ -2,11 +2,12 @@ package db
 
 import (
 	c "context"
-	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/iancoleman/orderedmap"
+
+	"golang.org/x/net/context"
 
 	"github.com/jackc/pgx/v4"
 
@@ -57,6 +58,7 @@ type TaskStorager interface {
 	GetTaskRunContext(ctx c.Context, tx pgx.Tx, workNumber string) (e.TaskRunContext, error)
 	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
+	GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error)
 }
 
 type SaveStepRequest struct {
@@ -96,6 +98,16 @@ type SearchPipelineRequest struct {
 	PipelineName *string
 	Limit        int
 	Offset       int
+}
+
+type StepBreachedSLA struct {
+	TaskID     uuid.UUID
+	WorkNumber string
+	WorkTitle  string
+	Initiator  string
+	VarStore   *store.VariableStore
+	BlockData  *e.EriusFunc
+	StepName   string
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase

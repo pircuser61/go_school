@@ -214,7 +214,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	switch data.Action {
-	case string(entity.TaskUpdateActionApprovementSLABreach):
+	case string(entity.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}

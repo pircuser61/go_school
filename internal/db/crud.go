@@ -2296,3 +2296,55 @@ func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID
 func (db *PGCon) MakeTransaction(ctx context.Context) (pgx.Tx, error) {
 	return db.Pool.Begin(ctx)
 }
+
+func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error) {
+	ctx, span := trace.StartSpan(ctx, "get_blocks_breached_sla")
+	defer span.End()
+
+	// language=PostgreSQL
+	q := `
+		SELECT w.id,
+		       w.work_number,
+		       p.name,	
+		       v.author,
+		       vs.content,
+		       v.content->'pipeline'->'blocks'->vs.step_name,
+		       vs.step_name
+		FROM variable_storage vs 
+		    JOIN works w on vs.work_id = w.id 
+		    JOIN versions v on w.version_id = v.id
+			JOIN pipelines p on v.pipeline_id = p.id
+		WHERE check_sla = True && sla_deadline < NOW() && vs.status = 'running'`
+	rows, err := db.Pool.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	res := make([]StepBreachedSLA, 0)
+	for rows.Next() {
+		var content []byte
+		item := StepBreachedSLA{}
+		if scanErr := rows.Scan(
+			&item.TaskID,
+			&item.WorkNumber,
+			&item.WorkTitle,
+			&item.Initiator,
+			&content,
+			&item.BlockData,
+			&item.StepName,
+		); scanErr != nil {
+			return nil, scanErr
+		}
+		storage := store.NewStore()
+		if unmErr := json.Unmarshal(content, &storage); unmErr != nil {
+			return nil, unmErr
+		}
+		item.VarStore = storage
+
+		res = append(res, item)
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return res, nil
+}
