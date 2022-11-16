@@ -4,13 +4,15 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
+
+	"github.com/jackc/pgx/v4"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
