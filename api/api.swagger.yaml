@@ -2779,6 +2779,8 @@ components:
           type: string
         work_number:
           type: string
+        finished_at:
+          type: string
       required:
         - id
         - version_id
