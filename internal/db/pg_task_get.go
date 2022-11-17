@@ -43,7 +43,9 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			w.skipped_blocks,
 			w.notified_blocks,
 			w.prev_update_status_blocks,
-			count(*) over() as total
+			count(*) over() as total,
+			w.rate,
+			w.rate_comment
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -607,6 +609,8 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			&nullJsonNotifiedBlocks,
 			&nullJsonPrevUpdateStatusBlocks,
 			&et.Total,
+			&et.Rate,
+			&et.RateComment,
 		)
 
 		if err != nil {
