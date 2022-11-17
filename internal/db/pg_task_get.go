@@ -674,7 +674,8 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			vs.content, 
 			COALESCE(vs.break_points, '{}') AS break_points, 
 			vs.has_error,
-			vs.status
+			vs.status,
+			vs.updated_at
 		FROM variable_storage vs 
 			WHERE work_id = $1 AND vs.status != 'skipped'
 		ORDER BY vs.time DESC`
@@ -699,6 +700,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			&s.BreakPoints,
 			&s.HasError,
 			&s.Status,
+			&s.UpdatedAt,
 		)
 		if err != nil {
 			return nil, err

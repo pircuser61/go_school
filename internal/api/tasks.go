@@ -56,8 +56,14 @@ type taskSteps []step
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	for i := range in.Steps {
+		actionTime := in.Steps[i].Time
+
+		if in.Steps[i].UpdatedAt != nil {
+			actionTime = *in.Steps[i].UpdatedAt
+		}
+
 		steps = append(steps, step{
-			Time:     in.Steps[i].Time,
+			Time:     actionTime,
 			Type:     in.Steps[i].Type,
 			Name:     in.Steps[i].Name,
 			State:    in.Steps[i].State,
