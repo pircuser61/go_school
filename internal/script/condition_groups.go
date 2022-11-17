@@ -181,7 +181,7 @@ func unmarshalOperand(operandRaw interface{}) Operand {
 }
 
 type CompareOperator func(leftOperand, rightOperand Operand) bool
-type CastFunction func(source Operand) interface{}
+type CastFunction func(source Operand) (interface{}, bool)
 
 type Condition struct {
 	LeftOperand  Operand `json:"leftOperand"`
@@ -240,14 +240,19 @@ func (valOp *OperandBase) ConvertType(operandType string) bool {
 	var castFunction = getCastFunctionByOperandType(allowedTypeCasts, operandType)
 	if castFunction != nil {
 		valOp.DataType = operandType
-		valOp.ValueToCompare = castFunction(valOp)
+
+		valueToCompare, ok := castFunction(valOp)
+		if !ok {
+			return false
+		}
+		valOp.ValueToCompare = valueToCompare
 
 		allowedOperators, err := getAllowedOperators(operandType)
 		if err != nil {
 			return false
 		}
-
 		valOp.AllowedOperators = allowedOperators
+
 		return true
 	}
 
@@ -309,123 +314,123 @@ func getAllowedOperators(operandDataType string) (map[string]CompareOperator, er
 //nolint:goconst,gocyclo //it's ok
 func getAllowedTypesCast(operandDataType string) (map[TypeCast]CastFunction, error) {
 	var castFunctions = map[TypeCast]CastFunction{
-		{From: stringOperandType, To: stringOperandType}: func(source Operand) interface{} {
-			return source.GetValue()
+		{From: stringOperandType, To: stringOperandType}: func(source Operand) (interface{}, bool) {
+			return source.GetValue(), true
 		},
-		{From: stringOperandType, To: integerOperandType}: func(source Operand) interface{} {
+		{From: stringOperandType, To: integerOperandType}: func(source Operand) (interface{}, bool) {
 			var stringValue = source.GetValue().(string)
 			floatValue, err := strconv.ParseFloat(stringValue, 64)
 			if err != nil {
-				return nil
+				return nil, false
 			}
-			return floatValue
+			return floatValue, true
 		},
-		{From: stringOperandType, To: numberOperandType}: func(source Operand) interface{} {
+		{From: stringOperandType, To: numberOperandType}: func(source Operand) (interface{}, bool) {
 			var stringValue = source.GetValue().(string)
 			floatValue, err := strconv.ParseFloat(stringValue, 64)
 			if err != nil {
-				return nil
+				return nil, false
 			}
-			return floatValue
+			return floatValue, true
 		},
-		{From: stringOperandType, To: booleanOperandType}: func(source Operand) interface{} {
+		{From: stringOperandType, To: booleanOperandType}: func(source Operand) (interface{}, bool) {
 			var stringValue = source.GetValue().(string)
 			switch stringValue {
 			case "0", "false":
-				return false
+				return false, true
 			case "1", "true":
-				return true
+				return true, true
 			default:
-				return nil
+				return nil, false
 			}
 		},
-		{From: stringOperandType, To: dateOperandType}: func(source Operand) interface{} {
-			return source.GetValue()
+		{From: stringOperandType, To: dateOperandType}: func(source Operand) (interface{}, bool) {
+			return source.GetValue(), true
 		},
-		{From: booleanOperandType, To: booleanOperandType}: func(source Operand) interface{} {
-			return source.GetValue()
+		{From: booleanOperandType, To: booleanOperandType}: func(source Operand) (interface{}, bool) {
+			return source.GetValue(), true
 		},
-		{From: booleanOperandType, To: stringOperandType}: func(source Operand) interface{} {
+		{From: booleanOperandType, To: stringOperandType}: func(source Operand) (interface{}, bool) {
 			var boolValue, ok bool
 
 			if boolValue, ok = source.GetValue().(bool); !ok {
-				return fmt.Errorf("can`t cast source to bool")
+				return fmt.Errorf("can`t cast source to bool"), false
 			}
 
 			switch boolValue {
 			case false:
-				return "false"
+				return "false", true
 			case true:
-				return "true"
+				return "true", true
 			default:
-				return nil
+				return nil, false
 			}
 		},
-		{From: booleanOperandType, To: integerOperandType}: func(source Operand) interface{} {
+		{From: booleanOperandType, To: integerOperandType}: func(source Operand) (interface{}, bool) {
 			var boolValue, ok bool
 
 			if boolValue, ok = source.GetValue().(bool); !ok {
-				return fmt.Errorf("can`t cast source to bool")
+				return fmt.Errorf("can`t cast source to bool"), false
 			}
 
 			switch boolValue {
 			case false:
-				return float64(0)
+				return float64(0), true
 			case true:
-				return float64(1)
+				return float64(1), true
 			default:
-				return nil
+				return nil, false
 			}
 		},
-		{From: integerOperandType, To: integerOperandType}: func(source Operand) interface{} {
-			return source.GetValue()
+		{From: integerOperandType, To: integerOperandType}: func(source Operand) (interface{}, bool) {
+			return source.GetValue(), true
 		},
-		{From: integerOperandType, To: stringOperandType}: func(source Operand) interface{} {
+		{From: integerOperandType, To: stringOperandType}: func(source Operand) (interface{}, bool) {
 			if floatVal, ok := source.GetValue().(float64); ok {
-				return strconv.FormatFloat(floatVal, 'f', -1, 64)
+				return strconv.FormatFloat(floatVal, 'f', -1, 64), true
 			}
-			return nil
+			return nil, false
 		},
-		{From: integerOperandType, To: numberOperandType}: func(source Operand) interface{} {
+		{From: integerOperandType, To: numberOperandType}: func(source Operand) (interface{}, bool) {
 			if floatVal, ok := source.GetValue().(float64); ok {
-				return floatVal
+				return floatVal, true
 			}
-			return nil
+			return nil, false
 		},
-		{From: integerOperandType, To: booleanOperandType}: func(source Operand) interface{} {
+		{From: integerOperandType, To: booleanOperandType}: func(source Operand) (interface{}, bool) {
 			var floatValue = source.GetValue().(float64)
 			switch floatValue {
 			case 0:
-				return false
+				return false, true
 			case 1:
-				return true
+				return true, true
 			default:
-				return nil
+				return nil, false
 			}
 		},
-		{From: numberOperandType, To: numberOperandType}: func(source Operand) interface{} {
-			return source.GetValue()
+		{From: numberOperandType, To: numberOperandType}: func(source Operand) (interface{}, bool) {
+			return source.GetValue(), true
 		},
-		{From: numberOperandType, To: stringOperandType}: func(source Operand) interface{} {
+		{From: numberOperandType, To: stringOperandType}: func(source Operand) (interface{}, bool) {
 			if floatVal, ok := source.GetValue().(float64); ok {
-				return strconv.FormatFloat(floatVal, 'f', -1, 64)
+				return strconv.FormatFloat(floatVal, 'f', -1, 64), true
 			}
-			return nil
+			return nil, false
 		},
-		{From: numberOperandType, To: integerOperandType}: func(source Operand) interface{} {
+		{From: numberOperandType, To: integerOperandType}: func(source Operand) (interface{}, bool) {
 			if floatVal, ok := source.GetValue().(float64); ok {
-				return math.Trunc(floatVal)
+				return math.Trunc(floatVal), true
 			}
-			return nil
+			return nil, false
 		},
-		{From: dateOperandType, To: dateOperandType}: func(source Operand) interface{} {
-			return source.GetValue()
+		{From: dateOperandType, To: dateOperandType}: func(source Operand) (interface{}, bool) {
+			return source.GetValue(), true
 		},
-		{From: dateOperandType, To: stringOperandType}: func(source Operand) interface{} {
+		{From: dateOperandType, To: stringOperandType}: func(source Operand) (interface{}, bool) {
 			if stringValue, ok := source.GetValue().(string); ok {
-				return stringValue
+				return stringValue, true
 			}
-			return nil
+			return nil, false
 		},
 	}
 
