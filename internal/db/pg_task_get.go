@@ -104,7 +104,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			}
 		}
 	} else {
-		q = fmt.Sprintf("%s AND w.author = '%s'", q, filters.CurrentUser)
+		q = fmt.Sprintf("%s AND w.status = 1 AND w.author = '%s'", q, filters.CurrentUser)
 		q = strings.Replace(q, "--limit--", "LIMIT 1", -1)
 	}
 
@@ -326,7 +326,7 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		TotalActive:       counter.totalActive,
 		TotalExecutor:     counter.totalExecutor,
 		TotalApprover:     counter.totalApprover,
-		TotalFormExecutor: counter.totalExecutor,
+		TotalFormExecutor: counter.totalFormExecutor,
 	}, nil
 }
 
