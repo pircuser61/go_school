@@ -813,53 +813,6 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
-			name:          "compare with invalid string and integer (string-integer pair)",
-			wantErr:       false,
-			wantedGroupID: "",
-			args: args{
-				name: example,
-				ef: &entity.EriusFunc{
-					BlockType: BlockGoIfID,
-					Title:     title,
-					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
-							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
-								{
-									Id:              "test-group-1",
-									LogicalOperator: "or",
-									Conditions: []script.Condition{
-										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
-													DataType: "string",
-												},
-												Value: "unable to cast to integer string",
-											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
-													DataType: "integer",
-												},
-												Value: 10,
-											},
-											Operator: "Equal",
-										},
-									},
-								},
-							},
-						})
-
-						return r
-					}(),
-				},
-				ctx: context.Background(),
-				runCtx: func() *store.VariableStore {
-					res := store.NewStore()
-					return res
-				}(),
-			},
-		},
-		{
 			name:          "compare with string and number (number-string pair)",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",
