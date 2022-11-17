@@ -452,7 +452,9 @@ func (db *PGCon) GetTask(ctx c.Context, workNumber string) (*entity.EriusTask, e
 			w.work_number,
 			p.name,
 			COALESCE(descr.description, ''),
-			COALESCE(descr.blueprint_id, '')
+			COALESCE(descr.blueprint_id, ''),
+			w.rate,
+			w.rate_comment
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -505,6 +507,8 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 		&et.Name,
 		&et.Description,
 		&et.BlueprintID,
+		&et.Rate,
+		&et.RateComment,
 	)
 	if err != nil {
 		return nil, err
