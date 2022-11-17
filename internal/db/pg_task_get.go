@@ -74,7 +74,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'approver'  "+
+				q = fmt.Sprintf("%s AND w.status = 1 AND workers.members @> '{%s}' AND workers.step_type = 'approver'  "+
 					" AND workers.status IN ('running', 'idle', 'ready')", q, filters.CurrentUser)
 			}
 		case "finished_approver":
@@ -84,7 +84,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+				q = fmt.Sprintf("%s AND w.status = 1 AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
 					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
 			}
 		case "finished_executor":
@@ -94,7 +94,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			}
 		case "form_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
+				q = fmt.Sprintf("%s AND w.status = 1 AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
 					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
 			}
 		case "finished_form_executor":
@@ -291,7 +291,7 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 	q := fmt.Sprintf(`
 		WITH workers as (
 			SELECT id, author FROM works
-		WHERE works.parent_work_id IS NULL AND status = 1
+		WHERE works.child_id IS NULL AND status = 1
 		)
 		SELECT
 		(SELECT count(*) FROM workers WHERE workers.author = '%s'),
