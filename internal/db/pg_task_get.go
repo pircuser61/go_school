@@ -61,7 +61,6 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 				content::json->'State'->step_name->>'blueprint_id' blueprint_id
 			FROM variable_storage vs
 			WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
-			ORDER BY vs.time DESC
 			LIMIT 1
 		) descr ON descr.work_id = w.id
 		WHERE w.child_id IS NULL`
@@ -75,7 +74,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 		switch *filters.SelectAs {
 		case "approver":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'approver'  "+
+				q = fmt.Sprintf("%s AND w.status = 1 AND workers.members @> '{%s}' AND workers.step_type = 'approver'  "+
 					" AND workers.status IN ('running', 'idle', 'ready')", q, filters.CurrentUser)
 			}
 		case "finished_approver":
@@ -85,7 +84,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			}
 		case "executor":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+				q = fmt.Sprintf("%s AND w.status = 1 AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
 					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
 			}
 		case "finished_executor":
@@ -95,7 +94,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			}
 		case "form_executor":
 			{
-				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
+				q = fmt.Sprintf("%s AND w.status = 1 AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
 					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
 			}
 		case "finished_form_executor":
@@ -105,7 +104,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			}
 		}
 	} else {
-		q = fmt.Sprintf("%s AND w.author = '%s'", q, filters.CurrentUser)
+		q = fmt.Sprintf("%s AND w.status = 1 AND w.author = '%s'", q, filters.CurrentUser)
 		q = strings.Replace(q, "--limit--", "LIMIT 1", -1)
 	}
 
@@ -289,53 +288,45 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 	defer span.End()
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
-		SELECT 
-			w.id
-		FROM works w 
-		JOIN work_status ws ON w.status = ws.id
-		LEFT JOIN LATERAL (
-			SELECT * FROM variable_storage vs
-			WHERE vs.work_id = w.id AND vs.status != 'skipped'
-			ORDER BY vs.time DESC
-			--limit--
-		) workers ON workers.work_id = w.id
-		WHERE w.child_id IS NULL`
+	q := fmt.Sprintf(`
+		WITH workers as (
+			SELECT id, author FROM works
+		WHERE works.child_id IS NULL AND status = 1
+		)
+		SELECT
+		(SELECT count(*) FROM workers WHERE workers.author = '%s'),
+		(SELECT count(*)
+			FROM variable_storage vs
+				LEFT JOIN workers w ON w.id = vs.work_id
+			WHERE vs.status IN ('running', 'idle', 'ready') AND
+				vs.members IS NOT NULL AND
+				vs.members @> '{%s}' AND vs.step_type = 'approver'
+		),
+		(SELECT count(*)
+			 FROM variable_storage vs
+				LEFT JOIN workers w ON w.id = vs.work_id
+			 WHERE vs.status IN ('running', 'idle', 'ready') AND
+				vs.members IS NOT NULL AND
+				vs.members @> '{%s}' AND vs.step_type = 'execution'),
+		
+		(SELECT count(*)
+			FROM variable_storage vs
+				LEFT JOIN workers w ON w.id = vs.work_id
+			WHERE vs.status IN ('running', 'idle', 'ready') AND
+				vs.members IS NOT NULL AND
+				vs.members @> '{%s}' AND vs.step_type = 'form'
+		)`, userName, userName, userName, userName)
 
-	var args []interface{}
-	qActive := fmt.Sprintf("%s AND w.author = '%s'", q, userName)
-	qActive = strings.Replace(qActive, "--limit--", "LIMIT 1", -1)
-	active, err := db.getTasksCount(ctx, qActive, args)
-	if err != nil {
-		return nil, err
-	}
-
-	qApprover := fmt.Sprintf("%s AND workers.members IS NOT NULL AND workers.members @> '{%s}' AND workers.step_type = 'approver' "+
-		" AND workers.status IN ('running', 'idle', 'ready')", q, userName)
-	approver, err := db.getTasksCount(ctx, qApprover, args)
-	if err != nil {
-		return nil, err
-	}
-
-	qExecutor := fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
-		" AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
-	executor, err := db.getTasksCount(ctx, qExecutor, args)
-	if err != nil {
-		return nil, err
-	}
-
-	qFormExecutor := fmt.Sprintf("%s AND workers.members IS NOT NULL AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
-		" AND (workers.status IN ('running', 'idle', 'ready'))", q, userName)
-	form, err := db.getTasksCount(ctx, qFormExecutor, args)
+	counter, err := db.getTasksCount(ctx, q)
 	if err != nil {
 		return nil, err
 	}
 
 	return &entity.CountTasks{
-		TotalActive:       active,
-		TotalExecutor:     executor,
-		TotalApprover:     approver,
-		TotalFormExecutor: form,
+		TotalActive:       counter.totalActive,
+		TotalExecutor:     counter.totalExecutor,
+		TotalApprover:     counter.totalApprover,
+		TotalFormExecutor: counter.totalFormExecutor,
 	}, nil
 }
 
@@ -451,6 +442,7 @@ func (db *PGCon) GetTask(ctx c.Context, workNumber string) (*entity.EriusTask, e
 			w.id, 
 			w.started_at, 
 			w.started_at, 
+			w.finished_at,
 			ws.name,
 			w.human_status,
 			w.debug, 
@@ -502,6 +494,7 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 		&et.ID,
 		&et.StartedAt,
 		&et.LastChangedAt,
+		&et.FinishedAt,
 		&et.Status,
 		&et.HumanStatus,
 		&et.IsDebugMode,
@@ -527,24 +520,37 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	return &et, nil
 }
 
-func (db *PGCon) getTasksCount(ctx c.Context, q string, args []interface{}) (int, error) {
+type tasksCounter struct {
+	totalActive       int
+	totalExecutor     int
+	totalApprover     int
+	totalFormExecutor int
+}
+
+func (db *PGCon) getTasksCount(ctx c.Context, q string) (*tasksCounter, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 
+	counter := &tasksCounter{}
+
 	conn, err := db.Pool.Acquire(ctx)
 	if err != nil {
-		return -1, err
+		return counter, err
 	}
 
 	defer conn.Release()
 
-	q = fmt.Sprintf("SELECT COUNT(*) FROM (%s) sub", q)
-
-	var count int
-	if scanErr := conn.QueryRow(ctx, q, args...).Scan(&count); scanErr != nil {
-		return -1, scanErr
+	if scanErr := conn.QueryRow(ctx, q).
+		Scan(
+			&counter.totalActive,
+			&counter.totalApprover,
+			&counter.totalExecutor,
+			&counter.totalFormExecutor,
+		); scanErr != nil {
+		return counter, scanErr
 	}
-	return count, nil
+
+	return counter, nil
 }
 
 //nolint:gocyclo //its ok here

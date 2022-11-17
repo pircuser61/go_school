@@ -26,6 +26,7 @@ type eriusTaskResponse struct {
 	VersionID     uuid.UUID              `json:"version_id"`
 	StartedAt     time.Time              `json:"started_at"`
 	LastChangedAt time.Time              `json:"last_changed_at"`
+	FinishedAt    *time.Time             `json:"finished_at"`
 	Name          string                 `json:"name"`
 	Description   string                 `json:"description"`
 	Status        string                 `json:"status"`
@@ -73,6 +74,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 		VersionID:     in.VersionID,
 		StartedAt:     in.StartedAt,
 		LastChangedAt: in.LastChangedAt,
+		FinishedAt:    in.FinishedAt,
 		Name:          in.Name,
 		Description:   in.Description,
 		Status:        in.Status,
