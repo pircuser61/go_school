@@ -142,7 +142,7 @@ func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 	if err != nil {
 		return err
 	}
-	
+
 	q = fmt.Sprintf(q, string(bytes))
 	_, err = db.Pool.Exec(c.Background(), q, workNumber)
 	return err
