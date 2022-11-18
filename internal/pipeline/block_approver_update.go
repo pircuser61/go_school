@@ -93,20 +93,13 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approv
 		return errSet
 	}
 
-	stateBytes, err := json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
-
 	initiatorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
 	if emailErr != nil {
 		return emailErr
 	}
 
 	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-	err = gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	err := gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
 	if err != nil {
 		return err
 	}

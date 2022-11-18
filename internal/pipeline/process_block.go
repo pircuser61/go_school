@@ -220,7 +220,7 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	case BlockGoEndId:
 		return createGoEndBlock(name, ef, runCtx), nil
 	case BlockWaitForAllInputsId:
-		return createGoWaitForAllInputsBlock(name, ef, runCtx)
+		return createGoWaitForAllInputsBlock(ctx, name, ef, runCtx)
 	case BlockGoBeginParallelTaskId:
 		return createGoStartParallelBlock(name, ef, runCtx), nil
 	case BlockGoNotificationID:

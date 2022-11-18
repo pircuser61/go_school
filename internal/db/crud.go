@@ -1768,6 +1768,39 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	return el, nil
 }
 
+func (db *PGCon) GetTaskStepsToWait(ctx context.Context, tx pgx.Tx, workNumber, blockName string) ([]string, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_steps_to_wait")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `WITH blocks AS (
+    SELECT key(JSONB_EACH(content -> 'pipeline' -> 'blocks'))                                as key,
+           value(jsonb_each(value(jsonb_each(content -> 'pipeline' -> 'blocks')) -> 'next')) as value
+    FROM versions v
+    WHERE v.id = (SELECT version_id FROM works WHERE work_number = $1))
+SELECT key
+FROM blocks
+WHERE value ? $2`
+
+	var blocks []string
+	rows, err := tx.Query(ctx, q, workNumber, blockName)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var b string
+		if scanErr := rows.Scan(&b); scanErr != nil {
+			return nil, scanErr
+		}
+		blocks = append(blocks, b)
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return blocks, nil
+}
+
 func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, tx pgx.Tx, workNumber string, blocks []string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_check_task_steps_executed")
 	defer span.End()
@@ -1777,8 +1810,9 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, tx pgx.Tx, workNumb
 	q := `
 	SELECT count(*)
 	FROM variable_storage vs 
-	JOIN works w on w.id = vs.work_id
-	WHERE w.work_number = $1 AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success', 'skipped')`
+	WHERE vs.work_id = (
+	    SELECT id FROM works WHERE work_number = $1
+	) AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success')`
 	// TODO: rewrite to handle edits ?
 
 	var c int

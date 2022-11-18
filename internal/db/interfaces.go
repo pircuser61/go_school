@@ -54,6 +54,7 @@ type TaskStorager interface {
 	StopTaskBlocks(ctx c.Context, tx pgx.Tx, taskID uuid.UUID) error
 	UpdateTaskHumanStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID, status string) error
 	CheckTaskStepsExecuted(ctx c.Context, tx pgx.Tx, workNumber string, blocks []string) (bool, error)
+	GetTaskStepsToWait(ctx context.Context, tx pgx.Tx, workNumber, blockName string) ([]string, error)
 	CheckUserCanEditForm(ctx c.Context, tx pgx.Tx, workNumber string, stepName string, login string) (bool, error)
 	GetTaskRunContext(ctx c.Context, tx pgx.Tx, workNumber string) (e.TaskRunContext, error)
 	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)

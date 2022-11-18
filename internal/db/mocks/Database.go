@@ -67,6 +67,27 @@ func (_m *MockedDatabase) ChangeTaskStatus(ctx context.Context, tx pgx.Tx, taskI
 	return r0
 }
 
+// GetTaskStepsToWait provides a mock function with given fields: ctx, tx, workNumber, blockName
+func (_m *MockedDatabase) GetTaskStepsToWait(ctx context.Context, tx pgx.Tx, workNumber, blockName string) ([]string, error) {
+	ret := _m.Called(ctx, tx, workNumber, blockName)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, string, string) []string); ok {
+		r0 = rf(ctx, tx, workNumber, blockName)
+	} else {
+		r0 = ret.Get(0).([]string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, pgx.Tx, string, string) error); ok {
+		r1 = rf(ctx, tx, workNumber, blockName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // CheckTaskStepsExecuted provides a mock function with given fields: ctx, tx, workNumber, blocks
 func (_m *MockedDatabase) CheckTaskStepsExecuted(ctx context.Context, tx pgx.Tx, workNumber string, blocks []string) (bool, error) {
 	ret := _m.Called(ctx, tx, workNumber, blocks)

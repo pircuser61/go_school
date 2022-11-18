@@ -96,31 +96,14 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 	}
 }
 
-//TODO
-func getInputBlocks(workNumber, name string) (entries []string) {
-	return nil
-}
-
-func removeDuplicateStr(strSlice []string) []string {
-	allKeys := make(map[string]bool)
-	list := make([]string, 0)
-	for _, item := range strSlice {
-		if _, value := allKeys[item]; !value {
-			allKeys[item] = true
-			list = append(list, item)
-		}
-	}
-	return list
-}
-
-func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoWaitForAllInputsBlock, error) {
+func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.EriusFunc,
+	runCtx *BlockRunContext) (*GoWaitForAllInputsBlock, error) {
 	b := &GoWaitForAllInputsBlock{
 		Name:       name,
 		Title:      ef.Title,
 		Input:      map[string]string{},
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
-		State:      &SyncData{IncomingBlockIds: getInputBlocks(runCtx.WorkNumber, name)},
 		RunContext: runCtx,
 	}
 
@@ -138,7 +121,7 @@ func createGoWaitForAllInputsBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 			return nil, err
 		}
 	} else {
-		if err := b.createState(); err != nil {
+		if err := b.createState(ctx); err != nil {
 			return nil, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
@@ -151,8 +134,12 @@ func (gb *GoWaitForAllInputsBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-func (gb *GoWaitForAllInputsBlock) createState() error {
-	gb.State = &SyncData{IncomingBlockIds: getInputBlocks(gb.RunContext.WorkNumber, gb.Name)}
+func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
+	steps, err := gb.RunContext.Storage.GetTaskStepsToWait(ctx, gb.RunContext.Tx, gb.RunContext.WorkNumber, gb.Name)
+	if err != nil {
+		return err
+	}
+	gb.State = &SyncData{IncomingBlockIds: steps}
 	gb.RunContext.VarStore.AddStep(gb.Name)
 	return nil
 }

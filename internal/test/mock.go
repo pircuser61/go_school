@@ -999,6 +999,10 @@ func (m *MockDB) CheckTaskStepsExecuted(_ context.Context, _ pgx.Tx, _ string, _
 	return false, nil
 }
 
+func (m *MockDB) GetTaskStepsToWait(_ context.Context, _ pgx.Tx, _, _ string) ([]string, error) {
+	return nil, nil
+}
+
 func (m *MockDB) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error) {
 	return nil, errNotImplemented
 }
