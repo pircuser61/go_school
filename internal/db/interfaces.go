@@ -54,7 +54,7 @@ type TaskStorager interface {
 type UpdateTaskRate struct {
 	ByLogin    string
 	WorkNumber string
-	Comment    string
+	Comment    *string
 	Rate       int
 }
 

@@ -506,11 +506,6 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 }
 
-type RateApplication struct {
-	Rate    int    `json:"rate"`
-	Comment string `json:"comment"`
-}
-
 //nolint:gocyclo //its ok here
 func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(r.Context(), "rate_application")
@@ -529,7 +524,7 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 		return
 	}
 
-	req := &RateApplication{}
+	req := &RateApplicationRequest{}
 	if err = json.Unmarshal(b, req); err != nil {
 		e := UpdateTaskParsingError
 		log.Error(e.errorMessage(err))

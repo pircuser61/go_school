@@ -149,6 +149,11 @@ func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 }
 
 func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) {
+	comment := ""
+	if req.Comment != nil {
+		comment = *req.Comment
+	}
+
 	const q = `
 		update works 
 		set 
@@ -156,7 +161,7 @@ func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) 
 			rate_comment = $2
 		where work_number = $3 and author = $4`
 
-	_, err = db.Pool.Exec(ctx, q, req.Rate, req.Comment, req.WorkNumber, req.ByLogin)
+	_, err = db.Pool.Exec(ctx, q, req.Rate, comment, req.WorkNumber, req.ByLogin)
 
 	return err
 }
