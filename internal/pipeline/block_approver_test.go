@@ -559,8 +559,6 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			tt.fields.RunContext.UpdateData = tt.args.data
 			_, err := gb.Update(tt.args.ctx)
 			assert.Equalf(t, tt.wantErr, err != nil, fmt.Sprintf("Update(%v, %v)", tt.args.ctx, tt.args.data))
-			fmt.Println(err)
-			//assert.Equalf(t, tt.want, got, "Update(%v, %v)", tt.args.ctx, tt.args.data)
 		})
 	}
 }

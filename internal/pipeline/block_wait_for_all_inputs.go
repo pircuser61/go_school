@@ -12,7 +12,7 @@ import (
 
 type SyncData struct {
 	IncomingBlockIds []string `json:"incoming_block_ids"`
-	done             bool
+	Done             bool
 	IsRevoked        bool `json:"is_revoked"`
 }
 
@@ -44,7 +44,7 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 	if gb.State != nil && gb.State.IsRevoked {
 		return StatusCancel
 	}
-	if gb.State.done {
+	if gb.State.Done {
 		return StatusFinished
 	}
 	return StatusRunning
@@ -80,7 +80,7 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	if err != nil {
 		return nil, err
 	}
-	gb.State.done = executed
+	gb.State.Done = executed
 
 	return nil, nil
 }

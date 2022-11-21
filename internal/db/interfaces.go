@@ -85,6 +85,7 @@ type SaveStepRequest struct {
 
 type UpdateStepRequest struct {
 	Id             uuid.UUID
+	StepName       string
 	Content        []byte
 	BreakPoints    []string
 	HasError       bool

@@ -48,27 +48,6 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	return runCtxCopy
 }
 
-func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string,
-	people map[string]struct{}, checkSLA bool, deadline time.Time) (uuid.UUID, time.Time, error) {
-	storageData, errSerialize := json.Marshal(runCtx.VarStore)
-	if errSerialize != nil {
-		return db.NullUuid, time.Time{}, errSerialize
-	}
-
-	return runCtx.Storage.SaveStepContext(ctx, runCtx.Tx, &db.SaveStepRequest{
-		WorkID:      runCtx.TaskID,
-		StepType:    stepType,
-		StepName:    name,
-		Content:     storageData,
-		BreakPoints: []string{},
-		HasError:    false,
-		Status:      string(StatusNew),
-		Members:     people,
-		CheckSLA:    checkSLA,
-		SLADeadline: deadline,
-	})
-}
-
 func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
 	ctx, s := trace.StartSpan(ctx, "process_block")
 	defer s.End()
@@ -115,7 +94,8 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 		activeBlocks, ok := block.Next(runCtx.VarStore)
 		if !ok {
-			err = runCtx.updateStepInDB(ctx, id, true, block.GetStatus(), block.Members(), false, time.Time{})
+			err = runCtx.updateStepInDB(ctx, name, id, true, block.GetStatus(), block.Members(),
+				false, time.Time{})
 			if err != nil {
 				return
 			}
@@ -265,7 +245,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 		runCtx.VarStore.SetValue(key, err.Error())
 	}
 	checkSLA, deadline := block.CheckSLA()
-	err = runCtx.updateStepInDB(ctx, id, err != nil, block.GetStatus(), block.Members(), checkSLA, deadline)
+	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), checkSLA, deadline)
 	if err != nil {
 		return err
 	}
@@ -276,7 +256,28 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	return nil
 }
 
-func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasError bool, status Status,
+func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType string,
+	people map[string]struct{}, checkSLA bool, deadline time.Time) (uuid.UUID, time.Time, error) {
+	storageData, errSerialize := json.Marshal(runCtx.VarStore)
+	if errSerialize != nil {
+		return db.NullUuid, time.Time{}, errSerialize
+	}
+
+	return runCtx.Storage.SaveStepContext(ctx, runCtx.Tx, &db.SaveStepRequest{
+		WorkID:      runCtx.TaskID,
+		StepType:    stepType,
+		StepName:    name,
+		Content:     storageData,
+		BreakPoints: []string{},
+		HasError:    false,
+		Status:      string(StatusNew),
+		Members:     people,
+		CheckSLA:    checkSLA,
+		SLADeadline: deadline,
+	})
+}
+
+func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
 	people map[string]struct{}, checkSLA bool, deadline time.Time) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
@@ -285,6 +286,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasEr
 
 	return runCtx.Storage.UpdateStepContext(ctx, runCtx.Tx, &db.UpdateStepRequest{
 		Id:             id,
+		StepName:       name,
 		Content:        storageData,
 		BreakPoints:    []string{},
 		HasError:       hasError,
@@ -323,6 +325,9 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (str
 }
 
 func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context, step string, status TaskHumanStatus) error {
+	if !runCtx.doNotifications {
+		return nil
+	}
 	switch status {
 	case StatusNew, StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
 	default:
