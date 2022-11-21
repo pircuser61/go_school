@@ -32,8 +32,6 @@ const (
 	AutoActionReject  AutoAction = "reject"
 )
 
-// тут нет настроек кнопок
-// у меня !!!
 type ApproverParams struct {
 	Type            ApproverType `json:"type"`
 	ApprovementRule `json:"approvementRule"`
