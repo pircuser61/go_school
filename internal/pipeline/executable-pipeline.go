@@ -202,7 +202,7 @@ func (ep *ExecutablePipeline) updateStep(ctx c.Context, id uuid.UUID, hasError b
 }
 
 func (ep *ExecutablePipeline) changeTaskStatus(ctx c.Context, taskStatus int) error {
-	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, taskStatus)
+	errChange := ep.Storage.UpdateTaskStatus(ctx, ep.TaskID, taskStatus)
 	if errChange != nil {
 		ep.VarStore.AddError(errChange)
 
@@ -386,7 +386,7 @@ func (ep *ExecutablePipeline) DebugRun(ctx c.Context, _ *stepCtx, runCtx *store.
 		ep.ActiveBlocks[ep.EntryPoint] = void{}
 	}
 
-	errChange := ep.Storage.ChangeTaskStatus(ctx, ep.TaskID, db.RunStatusRunning)
+	errChange := ep.Storage.UpdateTaskStatus(ctx, ep.TaskID, db.RunStatusRunning)
 	if errChange != nil {
 		return errChange
 	}

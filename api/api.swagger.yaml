@@ -6,6 +6,45 @@ info:
 servers:
   - url: //localhost:8181/api/pipeliner/v1
 paths:
+  /application/rate/{workNumber}:
+    post:
+      summary: rate application
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
+      operationId: rateApplication
+      requestBody:
+        description: rate application
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateApplicationRequest'
+        required: true
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /application/{workNumber}:
     get:
       summary: get application
@@ -2658,7 +2697,7 @@ components:
       enum:
         - question
         - answer
-        -
+
     ResponsePipelineSearch:
       type: object
       properties:
@@ -2718,6 +2757,16 @@ components:
     Application:
       type: object
       additionalProperties: true
+
+    RateApplicationRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        rate:
+          type: integer
+      required:
+        - rate
 
     CreateTaskRequest:
       type: object
@@ -2804,6 +2853,10 @@ components:
           type: string
         finished_at:
           type: string
+        rate:
+          type: integer
+        rate_comment:
+          type: string
       required:
         - id
         - version_id
@@ -2819,6 +2872,8 @@ components:
         - steps
         - work_number
         - blueprint_id
+        - rate
+        - rate_comment
 
     httpError:
       type: object
