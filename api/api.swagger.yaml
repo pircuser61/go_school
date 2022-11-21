@@ -2455,6 +2455,7 @@ components:
             - fill_form
             - cancel_app
             - send_edit_app
+            - add_approvers
         parameters:
           type: object
           description: Task update params
@@ -2465,6 +2466,7 @@ components:
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
             - $ref: '#/components/schemas/ExecutableFunctionParams'
             - $ref: '#/components/schemas/FillFormUpdateParams'
+            - $ref: '#/components/schemas/AddApproversParams'
       required:
         - action
         - parameters
@@ -2523,6 +2525,27 @@ components:
         - comment
         - attachments
 
+    AddApproversParams:
+      type: object
+      description: Add Approver params
+      properties:
+        additionalApprovers:
+          type: array
+          items:
+            type: string
+          description: logins of additional approvers
+        question:
+          type: string
+          description: Question from approver
+        attachments:
+          type: array
+          items:
+            type: string
+      required:
+        - additionalApprovers
+        - question
+        - attachments
+
     approverDecision:
       type: string
       enum:
@@ -2542,6 +2565,18 @@ components:
         Executor decision:
          * executed - executor executed block
          * rejected - executor rejected block
+
+    additionalApprovers:
+      type: object
+      description: list of additional approvers
+      properties:
+        approvers:
+          type: array
+          items:
+            type: string
+          description: logins of additional approvers
+      required:
+        - approvers
 
     ExecutorChangeParams:
       type: object

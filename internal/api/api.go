@@ -192,6 +192,8 @@ const (
 
 // Defines values for TaskUpdateAction.
 const (
+	TaskUpdateActionAddApprovers TaskUpdateAction = "add_approvers"
+
 	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
 
 	TaskUpdateActionCancelApp TaskUpdateAction = "cancel_app"
@@ -320,6 +322,16 @@ const (
 
 	TaskHumanStatusNew TaskHumanStatus = "new"
 )
+
+// Add Approver params
+type AddApproversParams struct {
+	// logins of additional approvers
+	AdditionalApprovers []string `json:"additionalApprovers"`
+	Attachments         []string `json:"attachments"`
+
+	// Question from approver
+	Question string `json:"question"`
+}
 
 // AllUsageResponse defines model for AllUsageResponse.
 type AllUsageResponse struct {
