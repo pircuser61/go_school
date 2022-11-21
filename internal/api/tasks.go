@@ -576,7 +576,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	// in goroutine so we can return 202?
 	for _, item := range steps {
 		log = log.WithFields(map[string]interface{}{
-			"taskID": item.TaskID,
+			"taskID":   item.TaskID,
 			"stepName": item.StepName,
 		})
 		tx, transactionErr := ae.DB.MakeTransaction(ctx)
@@ -597,7 +597,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			FaaS:        ae.FaaS,
 			VarStore:    item.VarStore,
 			UpdateData: &script.BlockUpdateData{
-				Action:     string(entity.TaskUpdateActionSLABreach),
+				Action: string(entity.TaskUpdateActionSLABreach),
 			},
 			Tx: tx,
 		}
