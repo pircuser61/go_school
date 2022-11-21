@@ -115,7 +115,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 		activeBlocks, ok := block.Next(runCtx.VarStore)
 		if !ok {
-			err = runCtx.updateStepInDB(ctx, id, true, block.GetStatus(), block.Members(), time.Time{})
+			err = runCtx.updateStepInDB(ctx, id, true, block.GetStatus(), block.Members(), false, time.Time{})
 			if err != nil {
 				return
 			}
@@ -264,8 +264,8 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 		key := name + KeyDelimiter + ErrorKey
 		runCtx.VarStore.SetValue(key, err.Error())
 	}
-	_, deadline := block.CheckSLA()
-	err = runCtx.updateStepInDB(ctx, id, err != nil, block.GetStatus(), block.Members(), deadline)
+	checkSLA, deadline := block.CheckSLA()
+	err = runCtx.updateStepInDB(ctx, id, err != nil, block.GetStatus(), block.Members(), checkSLA, deadline)
 	if err != nil {
 		return err
 	}
@@ -277,7 +277,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasError bool, status Status,
-	people map[string]struct{}, deadline time.Time) error {
+	people map[string]struct{}, checkSLA bool, deadline time.Time) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
@@ -291,6 +291,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, id uuid.UUID, hasEr
 		Status:         string(status),
 		WithoutContent: status != StatusFinished && status != StatusNoSuccess,
 		Members:        people,
+		CheckSLA:       checkSLA,
 		SLADeadline:    deadline,
 	})
 }

@@ -91,6 +91,7 @@ type UpdateStepRequest struct {
 	Status         string
 	WithoutContent bool
 	Members        map[string]struct{}
+	CheckSLA       bool
 	SLADeadline    time.Time
 }
 

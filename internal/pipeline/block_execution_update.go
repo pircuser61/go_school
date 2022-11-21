@@ -138,7 +138,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 			return err
 		}
 	}
-
+	gb.State.SLAChecked = true
 	return nil
 }
 

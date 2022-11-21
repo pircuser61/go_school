@@ -63,6 +63,8 @@ type ExecutionData struct {
 	IsRevoked          bool `json:"is_revoked"`
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+
+	SLAChecked bool `json:"sla_checked"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
