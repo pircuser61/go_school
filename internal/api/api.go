@@ -192,6 +192,8 @@ const (
 
 // Defines values for TaskUpdateAction.
 const (
+	TaskUpdateActionAddApprovers TaskUpdateAction = "add_approvers"
+
 	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
 
 	TaskUpdateActionCancelApp TaskUpdateAction = "cancel_app"
@@ -320,6 +322,16 @@ const (
 
 	TaskHumanStatusNew TaskHumanStatus = "new"
 )
+
+// Add Approver params
+type AddApproversParams struct {
+	// logins of additional approvers
+	AdditionalApprovers []string `json:"additionalApprovers"`
+	Attachments         []string `json:"attachments"`
+
+	// Question from approver
+	Question string `json:"question"`
+}
 
 // AllUsageResponse defines model for AllUsageResponse.
 type AllUsageResponse struct {
@@ -1068,10 +1080,11 @@ type CompareStringOperator string
 
 // EriusTaskResponse defines model for eriusTaskResponse.
 type EriusTaskResponse struct {
-	Author      string `json:"author"`
-	BlueprintId string `json:"blueprint_id"`
-	Debug       bool   `json:"debug"`
-	Description string `json:"description"`
+	Author      string  `json:"author"`
+	BlueprintId string  `json:"blueprint_id"`
+	Debug       bool    `json:"debug"`
+	Description string  `json:"description"`
+	FinishedAt  *string `json:"finished_at,omitempty"`
 
 	// Task human readable status
 	HumanStatus   TaskHumanStatus        `json:"human_status"`

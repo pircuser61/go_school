@@ -26,6 +26,7 @@ type eriusTaskResponse struct {
 	VersionID     uuid.UUID              `json:"version_id"`
 	StartedAt     time.Time              `json:"started_at"`
 	LastChangedAt time.Time              `json:"last_changed_at"`
+	FinishedAt    *time.Time             `json:"finished_at"`
 	Name          string                 `json:"name"`
 	Description   string                 `json:"description"`
 	Status        string                 `json:"status"`
@@ -55,8 +56,14 @@ type taskSteps []step
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	for i := range in.Steps {
+		actionTime := in.Steps[i].Time
+
+		if in.Steps[i].UpdatedAt != nil {
+			actionTime = *in.Steps[i].UpdatedAt
+		}
+
 		steps = append(steps, step{
-			Time:     in.Steps[i].Time,
+			Time:     actionTime,
 			Type:     in.Steps[i].Type,
 			Name:     in.Steps[i].Name,
 			State:    in.Steps[i].State,
@@ -73,6 +80,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 		VersionID:     in.VersionID,
 		StartedAt:     in.StartedAt,
 		LastChangedAt: in.LastChangedAt,
+		FinishedAt:    in.FinishedAt,
 		Name:          in.Name,
 		Description:   in.Description,
 		Status:        in.Status,
