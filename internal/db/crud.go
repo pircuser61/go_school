@@ -1430,7 +1430,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, tx pgx.Tx, dto *SaveStepRe
 			FROM variable_storage 
 		WHERE work_id = $1 AND
 			step_name = $2 AND
-			status IN ('idle', 'ready', 'running', 'cancel')
+			status IN ('idle', 'ready', 'running')
 `
 
 	if scanErr := tx.QueryRow(ctx, q, dto.WorkID, dto.StepName).
