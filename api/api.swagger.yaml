@@ -2566,18 +2566,6 @@ components:
          * executed - executor executed block
          * rejected - executor rejected block
 
-    additionalApprovers:
-      type: object
-      description: list of additional approvers
-      properties:
-        approvers:
-          type: array
-          items:
-            type: string
-          description: logins of additional approvers
-      required:
-        - approvers
-
     ExecutorChangeParams:
       type: object
       description: Executor change params
