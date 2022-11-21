@@ -152,11 +152,11 @@ func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) 
 	const q = `
 		update works 
 		set 
-			rate = $3,
-			rate_comment = $4
-		where work_number = $1 and author = $2`
+			rate = $1,
+			rate_comment = $2
+		where work_number = $3 and author = $4`
 
-	_, err = db.Pool.Exec(ctx, q, StatusApproved, req.WorkNumber, req.ByLogin, req.Rate, req.Comment)
+	_, err = db.Pool.Exec(ctx, q, req.Rate, req.Comment, req.WorkNumber, req.ByLogin)
 
 	return err
 }
