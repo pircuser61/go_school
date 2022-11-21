@@ -154,8 +154,6 @@ const (
 const (
 	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
 
-	RequestExecutionInfoTypeNil RequestExecutionInfoType = "<nil>"
-
 	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
 )
 

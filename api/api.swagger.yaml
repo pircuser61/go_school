@@ -2674,7 +2674,7 @@ components:
       enum:
         - question
         - answer
-        -
+
     ResponsePipelineSearch:
       type: object
       properties:
