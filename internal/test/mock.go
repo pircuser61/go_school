@@ -930,7 +930,7 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
-func (_m *MockDB) UpdateTaskStatus(ctx context.Context, taskID uuid.UUID, status int) error {
+func (_m *MockDB) UpdateTaskStatus(_ context.Context, _ pgx.Tx, _ uuid.UUID, _ int) error {
 	return nil
 }
 

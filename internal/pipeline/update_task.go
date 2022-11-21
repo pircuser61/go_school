@@ -2,8 +2,8 @@ package pipeline
 
 import c "context"
 
-func (runCtx *BlockRunContext) changeTaskStatus(ctx c.Context, taskStatus int) error {
-	errChange := runCtx.Storage.ChangeTaskStatus(ctx, runCtx.Tx, runCtx.TaskID, taskStatus)
+func (runCtx *BlockRunContext) updateTaskStatus(ctx c.Context, taskStatus int) error {
+	errChange := runCtx.Storage.UpdateTaskStatus(ctx, runCtx.Tx, runCtx.TaskID, taskStatus)
 	if errChange != nil {
 		runCtx.VarStore.AddError(errChange)
 

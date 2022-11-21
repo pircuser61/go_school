@@ -25,10 +25,6 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
-func (_m *MockedDatabase) UpdateTaskStatus(ctx context.Context, taskID uuid.UUID, status int) error {
-	return nil
-}
-
 func (_m *MockedDatabase) UpdateTaskRate(ctx context.Context, req *db.UpdateTaskRate) error {
 	return nil
 }
@@ -61,8 +57,8 @@ func (_m *MockedDatabase) AttachTag(ctx context.Context, id uuid.UUID, p *entity
 	return r0
 }
 
-// ChangeTaskStatus provides a mock function with given fields: ctx, tx, taskID, status
-func (_m *MockedDatabase) ChangeTaskStatus(ctx context.Context, tx pgx.Tx, taskID uuid.UUID, status int) error {
+// UpdateTaskStatus provides a mock function with given fields: ctx, tx, taskID, status
+func (_m *MockedDatabase) UpdateTaskStatus(ctx context.Context, tx pgx.Tx, taskID uuid.UUID, status int) error {
 	ret := _m.Called(ctx, tx, taskID, status)
 
 	var r0 error
