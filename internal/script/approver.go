@@ -32,6 +32,8 @@ const (
 	AutoActionReject  AutoAction = "reject"
 )
 
+// тут нет настроек кнопок
+// у меня !!!
 type ApproverParams struct {
 	Type            ApproverType `json:"type"`
 	ApprovementRule `json:"approvementRule"`
@@ -46,6 +48,7 @@ type ApproverParams struct {
 
 	ApproversGroupID   string `json:"approvers_group_id"`
 	ApproversGroupName string `json:"approvers_group_name"`
+	ApproveStatusName  string `json:"approve_status_name"`
 }
 
 func (a *ApproverParams) Validate() error {

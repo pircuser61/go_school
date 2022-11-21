@@ -159,6 +159,15 @@ const (
 	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
 )
 
+// Defines values for SocketActionType.
+const (
+	SocketActionTypeExtra SocketActionType = "extra"
+
+	SocketActionTypeMain SocketActionType = "main"
+
+	SocketActionTypeSecondary SocketActionType = "secondary"
+)
+
 // Defines values for StepStatus.
 const (
 	StepStatusFinished StepStatus = "finished"
@@ -981,6 +990,9 @@ type ShapeEntity struct {
 
 // Socket object
 type Socket struct {
+	// action type
+	ActionType *SocketActionType `json:"actionType,omitempty"`
+
 	// Id of socket
 	Id string `json:"id"`
 
@@ -990,6 +1002,9 @@ type Socket struct {
 	// User-friendly title of socket for user
 	Title *string `json:"title,omitempty"`
 }
+
+// action type
+type SocketActionType string
 
 // Step defines model for Step.
 type Step struct {
