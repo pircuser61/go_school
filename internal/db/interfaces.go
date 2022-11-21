@@ -49,7 +49,7 @@ type TaskStorager interface {
 	GetUsersWithReadWriteFormAccess(ctx c.Context, tx pgx.Tx, workNumber, stepName string) ([]e.UsersWithFormAccess, error)
 
 	CreateTask(ctx c.Context, tx pgx.Tx, dto *CreateTaskDTO) (*e.EriusTask, error)
-	ChangeTaskStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID, status int) error
+	UpdateTaskStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID, status int) error
 	GetTaskStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID) (int, error)
 	StopTaskBlocks(ctx c.Context, tx pgx.Tx, taskID uuid.UUID) error
 	UpdateTaskHumanStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID, status string) error
@@ -60,6 +60,14 @@ type TaskStorager interface {
 	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error)
+	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
+}
+
+type UpdateTaskRate struct {
+	ByLogin    string
+	WorkNumber string
+	Comment    *string
+	Rate       int
 }
 
 type SaveStepRequest struct {

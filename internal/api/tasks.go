@@ -15,6 +15,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -37,6 +38,8 @@ type eriusTaskResponse struct {
 	Steps         taskSteps              `json:"steps"`
 	WorkNumber    string                 `json:"work_number"`
 	BlueprintID   string                 `json:"blueprint_id"`
+	Rate          int                    `json:"rate"`
+	RateComment   string                 `json:"rate_comment"`
 }
 
 type step struct {
@@ -91,6 +94,8 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 		Steps:         steps,
 		WorkNumber:    in.WorkNumber,
 		BlueprintID:   in.BlueprintID,
+		Rate:          in.Rate,
+		RateComment:   in.RateComment,
 	}
 
 	return out
@@ -499,6 +504,64 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	if err = tx.Commit(ctx); err != nil {
 		e := UpdateBlockError
 		log.Error(e.errorMessage(errors.New("couldn't update work")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+//nolint:gocyclo //its ok here
+func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNumber string) {
+	ctx, s := trace.StartSpan(r.Context(), "rate_application")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	req := &RateApplicationRequest{}
+	if err = json.Unmarshal(b, req); err != nil {
+		e := UpdateTaskParsingError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	err = ae.DB.UpdateTaskRate(ctx, &db.UpdateTaskRate{
+		ByLogin:    ui.Username,
+		WorkNumber: workNumber,
+		Comment:    req.Comment,
+		Rate:       req.Rate,
+	})
+	if err != nil {
+		e := UpdateTaskRateError
+		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return

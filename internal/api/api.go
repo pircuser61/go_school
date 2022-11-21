@@ -154,9 +154,16 @@ const (
 const (
 	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
 
-	RequestExecutionInfoTypeNil RequestExecutionInfoType = "<nil>"
-
 	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
+)
+
+// Defines values for SocketActionType.
+const (
+	SocketActionTypeExtra SocketActionType = "extra"
+
+	SocketActionTypeMain SocketActionType = "main"
+
+	SocketActionTypeSecondary SocketActionType = "secondary"
 )
 
 // Defines values for StepStatus.
@@ -901,6 +908,12 @@ type NumberOperandOperandType string
 // Block constant params
 type Params interface{}
 
+// RateApplicationRequest defines model for RateApplicationRequest.
+type RateApplicationRequest struct {
+	Comment *string `json:"comment,omitempty"`
+	Rate    int     `json:"rate"`
+}
+
 // Type of execution info
 type RequestExecutionInfoType string
 
@@ -987,6 +1000,9 @@ type ShapeEntity struct {
 
 // Socket object
 type Socket struct {
+	// action type
+	ActionType *SocketActionType `json:"actionType,omitempty"`
+
 	// Id of socket
 	Id string `json:"id"`
 
@@ -996,6 +1012,9 @@ type Socket struct {
 	// User-friendly title of socket for user
 	Title *string `json:"title,omitempty"`
 }
+
+// action type
+type SocketActionType string
 
 // Step defines model for Step.
 type Step struct {
@@ -1092,6 +1111,8 @@ type EriusTaskResponse struct {
 	LastChangedAt string                 `json:"last_changed_at"`
 	Name          string                 `json:"name"`
 	Parameters    map[string]interface{} `json:"parameters"`
+	Rate          int                    `json:"rate"`
+	RateComment   string                 `json:"rate_comment"`
 	StartedAt     string                 `json:"started_at"`
 	Status        string                 `json:"status"`
 	Steps         []Step                 `json:"steps"`
@@ -1164,6 +1185,9 @@ type VariableOperand struct {
 	VariableRef string `json:"variableRef"`
 	// Embedded fields due to inline allOf schema
 }
+
+// RateApplicationJSONBody defines parameters for RateApplication.
+type RateApplicationJSONBody RateApplicationRequest
 
 // SetApplicationJSONBody defines parameters for SetApplication.
 type SetApplicationJSONBody Application
@@ -1269,6 +1293,9 @@ type GetTasksParams struct {
 
 // UpdateTaskJSONBody defines parameters for UpdateTask.
 type UpdateTaskJSONBody TaskUpdate
+
+// RateApplicationJSONRequestBody defines body for RateApplication for application/json ContentType.
+type RateApplicationJSONRequestBody RateApplicationJSONBody
 
 // SetApplicationJSONRequestBody defines body for SetApplication for application/json ContentType.
 type SetApplicationJSONRequestBody SetApplicationJSONBody
@@ -1649,6 +1676,9 @@ func (a Pipeline_Blocks) MarshalJSON() ([]byte, error) {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// rate application
+	// (POST /application/rate/{workNumber})
+	RateApplication(w http.ResponseWriter, r *http.Request, workNumber string)
 	// get application
 	// (GET /application/{workNumber})
 	GetApplication(w http.ResponseWriter, r *http.Request, workNumber string)
@@ -1785,6 +1815,32 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
+
+// RateApplication operation middleware
+func (siw *ServerInterfaceWrapper) RateApplication(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RateApplication(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
 
 // GetApplication operation middleware
 func (siw *ServerInterfaceWrapper) GetApplication(w http.ResponseWriter, r *http.Request) {
@@ -3027,6 +3083,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/application/rate/{workNumber}", wrapper.RateApplication)
+	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/application/{workNumber}", wrapper.GetApplication)
 	})
