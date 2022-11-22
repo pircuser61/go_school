@@ -9,8 +9,6 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/pkg/errors"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -28,8 +26,6 @@ const (
 	// TODO maybe there is a better way to save work id in variable store
 	keyStepWorkId = "work_id"
 )
-
-var errUnknownBlock = errors.New("unknown block")
 
 type ExecutablePipeline struct {
 	TaskID        uuid.UUID

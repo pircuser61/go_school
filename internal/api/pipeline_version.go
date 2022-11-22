@@ -709,6 +709,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		UpdateData:  nil,
 		Tx:          tx,
 	}
+
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 	routineCtx = logger.WithLogger(routineCtx, log)

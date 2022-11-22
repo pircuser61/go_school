@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -148,6 +149,9 @@ func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
 func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context) (err error) {
 	gb.State.IsRevoked = true
 	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
+	}
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
 		return stopErr
 	}
 

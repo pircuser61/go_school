@@ -67,13 +67,15 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		err = getErr
 		return
 	}
-	if status != db.RunStatusRunning && status != db.RunStatusCreated {
+	switch status {
+	case db.RunStatusCreated:
+		if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusRunning); changeErr != nil {
+			err = changeErr
+			return
+		}
+	case db.RunStatusRunning:
+	default:
 		return nil
-	}
-
-	if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusRunning); changeErr != nil {
-		err = changeErr
-		return
 	}
 
 	block, id, initErr := initBlock(ctx, name, bl, runCtx)

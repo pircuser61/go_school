@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
@@ -29,6 +30,9 @@ func (a *updateFillFormParams) Validate() error {
 func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
 	gb.State.IsRevoked = true
 	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
+	}
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
 		return stopErr
 	}
 

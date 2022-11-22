@@ -2,10 +2,11 @@ package pipeline
 
 import (
 	"context"
+	"time"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-	"time"
 )
 
 const (
