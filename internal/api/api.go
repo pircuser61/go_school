@@ -1057,6 +1057,15 @@ type TaskUpdate struct {
 // TaskUpdateAction defines model for TaskUpdate.Action.
 type TaskUpdateAction string
 
+// TaskUpdateWithActionUuid defines model for TaskUpdateWithActionUuid.
+type TaskUpdateWithActionUuid struct {
+	// uuid of action
+	Action string `json:"action"`
+
+	// Task update params
+	Parameters interface{} `json:"parameters"`
+}
+
 // UsageResponse defines model for UsageResponse.
 type UsageResponse struct {
 	// Имя блока
@@ -1291,6 +1300,9 @@ type GetTasksParams struct {
 	HasAttachments *bool `json:"hasAttachments,omitempty"`
 }
 
+// UpdateTaskConfiguredActionsJSONBody defines parameters for UpdateTaskConfiguredActions.
+type UpdateTaskConfiguredActionsJSONBody TaskUpdateWithActionUuid
+
 // UpdateTaskJSONBody defines parameters for UpdateTask.
 type UpdateTaskJSONBody TaskUpdate
 
@@ -1335,6 +1347,9 @@ type CreateTagJSONRequestBody CreateTagJSONBody
 
 // EditTagJSONRequestBody defines body for EditTag for application/json ContentType.
 type EditTagJSONRequestBody EditTagJSONBody
+
+// UpdateTaskConfiguredActionsJSONRequestBody defines body for UpdateTaskConfiguredActions for application/json ContentType.
+type UpdateTaskConfiguredActionsJSONRequestBody UpdateTaskConfiguredActionsJSONBody
 
 // UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
 type UpdateTaskJSONRequestBody UpdateTaskJSONBody
@@ -1787,6 +1802,9 @@ type ServerInterface interface {
 	// Get Tasks
 	// (GET /tasks)
 	GetTasks(w http.ResponseWriter, r *http.Request, params GetTasksParams)
+	// Update Task With Uuid Action
+	// (PUT /tasks/configured-action/{workNumber})
+	UpdateTaskConfiguredActions(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Get amount of tasks
 	// (GET /tasks/count)
 	GetTasksCount(w http.ResponseWriter, r *http.Request)
@@ -2825,6 +2843,32 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	handler(w, r.WithContext(ctx))
 }
 
+// UpdateTaskConfiguredActions operation middleware
+func (siw *ServerInterfaceWrapper) UpdateTaskConfiguredActions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateTaskConfiguredActions(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // GetTasksCount operation middleware
 func (siw *ServerInterfaceWrapper) GetTasksCount(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -3193,6 +3237,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks", wrapper.GetTasks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/tasks/configured-action/{workNumber}", wrapper.UpdateTaskConfiguredActions)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/count", wrapper.GetTasksCount)

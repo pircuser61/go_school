@@ -88,6 +88,7 @@ type Socket struct {
 	Id           string   `json:"id"`
 	Title        string   `json:"title"`
 	NextBlockIds []string `json:"nextBlockIds,omitempty"`
+	ActionType   string   `json:"actionType"`
 }
 
 type EriusFunctionValue struct {
