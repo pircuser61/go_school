@@ -1626,12 +1626,12 @@ paths:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: data
   /tasks/configured-action/{workNumber}:
-    post:
+    put:
       tags:
         - tasks
       summary: Update Task With Uuid Action
       description: Update task with customizable actions
-      operationId: update-task
+      operationId: update-task-configured-actions
       parameters:
         - name: workNumber
           in: path
