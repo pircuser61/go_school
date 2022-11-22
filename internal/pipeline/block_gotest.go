@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
 	"go.opencensus.io/trace"
 
@@ -16,6 +17,20 @@ type GoTestBlock struct {
 	Input   map[string]string
 	Output  map[string]string
 	Sockets []script.Socket
+
+	RunContext *BlockRunContext
+}
+
+func (gb *GoTestBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoTestBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
+}
+
+func (gb *GoTestBlock) UpdateManual() bool {
+	return false
 }
 
 func (gb *GoTestBlock) GetStatus() Status {
@@ -84,17 +99,18 @@ func (gb *GoTestBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoTestBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoTestBlock) Update(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func createGoTestBlock(name string, ef *entity.EriusFunc) *GoTestBlock {
+func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoTestBlock {
 	b := &GoTestBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {

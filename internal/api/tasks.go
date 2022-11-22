@@ -191,18 +191,18 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
 
 	filters.GetTaskParams = entity.GetTaskParams{
-		Name:          p.Name,
-		Created:       p.Created.toEntity(),
-		Order:         p.Order,
-		Limit:         &limit,
-		Offset:        &offset,
-		TaskIDs:       p.TaskIDs,
-		SelectAs:      p.SelectAs,
-		Archived:      p.Archived,
-		ForCarousel:   p.ForCarousel,
-		Status:        statusToEntity(p.Status),
-		Receiver:      p.Receiver,
-		HasAttacments: p.HasAttachments,
+		Name:           p.Name,
+		Created:        p.Created.toEntity(),
+		Order:          p.Order,
+		Limit:          &limit,
+		Offset:         &offset,
+		TaskIDs:        p.TaskIDs,
+		SelectAs:       p.SelectAs,
+		Archived:       p.Archived,
+		ForCarousel:    p.ForCarousel,
+		Status:         statusToEntity(p.Status),
+		Receiver:       p.Receiver,
+		HasAttachments: p.HasAttachments,
 	}
 
 	return filters, nil
@@ -439,22 +439,45 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		steps = steps[:1]
 	}
 
-	ep := pipeline.ExecutablePipeline{
-		Storage:       ae.DB,
-		Remedy:        ae.Remedy,
-		FaaS:          ae.FaaS,
-		HTTPClient:    ae.HTTPClient,
-		PipelineID:    scenario.ID,
-		VersionID:     scenario.VersionID,
-		EntryPoint:    scenario.Pipeline.Entrypoint,
-		Sender:        ae.Mail,
-		People:        ae.People,
-		ServiceDesc:   ae.ServiceDesc,
-		PipelineModel: &entity.EriusScenario{Author: dbTask.Author},
+	tx, transactionErr := ae.DB.MakeTransaction(ctx)
+	if transactionErr != nil {
+		e := UpdateBlockError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
 	}
+	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
 
 	couldUpdateOne := false
 	for _, item := range steps {
+		storage, getErr := ae.DB.GetVariableStorageForStep(ctx, dbTask.ID, item.Name)
+		if getErr != nil {
+			e := BlockNotFoundError
+			log.Error(e.errorMessage(nil))
+			_ = e.sendError(w)
+
+			return
+		}
+		runCtx := &pipeline.BlockRunContext{
+			TaskID:      dbTask.ID,
+			WorkNumber:  workNumber,
+			WorkTitle:   dbTask.Name,
+			Initiator:   dbTask.Author,
+			Storage:     ae.DB,
+			Sender:      ae.Mail,
+			People:      ae.People,
+			ServiceDesc: ae.ServiceDesc,
+			FaaS:        ae.FaaS,
+			VarStore:    storage,
+			UpdateData: &script.BlockUpdateData{
+				ByLogin:    ui.Username,
+				Action:     string(updateData.Action),
+				Parameters: updateData.Parameters,
+			},
+			Tx: tx,
+		}
+
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
 		if !ok {
 			e := BlockNotFoundError
@@ -464,32 +487,21 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			return
 		}
 
-		block, blockErr := ep.CreateBlock(ctx, item.Name, &blockFunc)
-		if blockErr != nil {
-			e := UpdateBlockError
-			log.Error(e.errorMessage(blockErr))
-			_ = e.sendError(w)
-
-			return
-		}
-
-		_, blockErr = block.Update(ctx, &script.BlockUpdateData{
-			Id:         item.ID,
-			ByLogin:    ui.Username,
-			Action:     string(updateData.Action),
-			Parameters: updateData.Parameters,
-			WorkNumber: dbTask.WorkNumber,
-			WorkTitle:  dbTask.Name,
-			Author:     dbTask.Author,
-		})
+		blockErr := pipeline.ProcessBlock(ctx, item.Name, &blockFunc, runCtx, true)
 		if blockErr == nil {
 			couldUpdateOne = true
-		} else {
-			log.Error("block.Update: ", blockErr, updateData.Parameters)
 		}
 	}
 
 	if !couldUpdateOne {
+		e := UpdateBlockError
+		log.Error(e.errorMessage(errors.New("couldn't update work")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = tx.Commit(ctx); err != nil {
 		e := UpdateBlockError
 		log.Error(e.errorMessage(errors.New("couldn't update work")))
 		_ = e.sendError(w)
@@ -606,4 +618,66 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	}
 
 	return []string{}
+}
+
+//nolint:gocyclo //its ok here
+func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "update_task")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)
+	if err != nil {
+		e := UpdateBlockError
+		log.Error(e.errorMessage(errors.New("couldn't get steps")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// in goroutine so we can return 202?
+	for _, item := range steps {
+		log = log.WithFields(map[string]interface{}{
+			"taskID":   item.TaskID,
+			"stepName": item.StepName,
+		})
+		tx, transactionErr := ae.DB.MakeTransaction(ctx)
+		if transactionErr != nil {
+			log.WithError(transactionErr).Error("couldn't set SLA breach")
+			continue
+		}
+		// goroutines?
+		runCtx := &pipeline.BlockRunContext{
+			TaskID:      item.TaskID,
+			WorkNumber:  item.WorkNumber,
+			WorkTitle:   item.WorkTitle,
+			Initiator:   item.Initiator,
+			Storage:     ae.DB,
+			Sender:      ae.Mail,
+			People:      ae.People,
+			ServiceDesc: ae.ServiceDesc,
+			FaaS:        ae.FaaS,
+			VarStore:    item.VarStore,
+			UpdateData: &script.BlockUpdateData{
+				Action: string(entity.TaskUpdateActionSLABreach),
+			},
+			Tx: tx,
+		}
+		blockErr := pipeline.ProcessBlock(ctx, item.StepName, item.BlockData, runCtx, true)
+		if blockErr != nil {
+			log.WithError(blockErr).Error("couldn't set SLA breach")
+			if txErr := tx.Rollback(ctx); txErr != nil {
+				log.Error(txErr)
+			}
+			continue
+		}
+		if commitErr := tx.Commit(ctx); commitErr != nil {
+			log.WithError(commitErr).Error("couldn't set SLA breach")
+		}
+	}
+}
+
+func (ae *APIEnv) UpdateTaskConfiguredActions(_ http.ResponseWriter, _ *http.Request, _ string) {
+
 }

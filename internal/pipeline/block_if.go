@@ -3,10 +3,8 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"time"
 
-	"go.opencensus.io/trace"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -28,7 +26,15 @@ type IF struct {
 	Sockets       []script.Socket
 	State         *ConditionsData
 
-	Storage db.Database
+	RunContext *BlockRunContext
+}
+
+func (gb *IF) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *IF) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 type ConditionsData struct {
@@ -41,27 +47,27 @@ func (cd *ConditionsData) GetConditionGroups() []script.ConditionGroup {
 	return cd.ConditionGroups
 }
 
-func (e *IF) GetStatus() Status {
+func (gb *IF) UpdateManual() bool {
+	return false
+}
+
+func (gb *IF) GetStatus() Status {
 	return StatusFinished
 }
 
-func (e *IF) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *IF) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (e *IF) GetType() string {
-	return BlockGoIfID
-}
-
-func (e *IF) Next(_ *store.VariableStore) ([]string, bool) {
-	if e.State.ChosenGroupID == "" {
-		nexts, ok := script.GetNexts(e.Sockets, DefaultSocketID)
+func (gb *IF) Next(_ *store.VariableStore) ([]string, bool) {
+	if gb.State.ChosenGroupID == "" {
+		nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 		if !ok {
 			return nil, false
 		}
 		return nexts, true
 	} else {
-		nexts, ok := script.GetNexts(e.Sockets, e.State.ChosenGroupID)
+		nexts, ok := script.GetNexts(gb.Sockets, gb.State.ChosenGroupID)
 		if !ok {
 			return nil, false
 		}
@@ -69,47 +75,19 @@ func (e *IF) Next(_ *store.VariableStore) ([]string, bool) {
 	}
 }
 
-func (e *IF) Skipped(_ *store.VariableStore) []string {
-	chosenGroupSocket := script.Socket{Id: e.State.ChosenGroupID}
-	if chosenGroupSocket.Id == "" {
-		chosenGroupSocket = script.DefaultSocket
-	}
-
-	skipped := make([]string, 0)
-	for i := range e.Sockets {
-		var socket = e.Sockets[i]
-		if socket.Id != chosenGroupSocket.Id {
-			skipped = append(skipped, socket.NextBlockIds...)
-		}
-	}
-	return skipped
+func (gb *IF) GetState() interface{} {
+	return nil
 }
 
-func (e *IF) Inputs() map[string]string {
-	return e.FunctionInput
-}
-
-func (e *IF) Outputs() map[string]string {
-	return make(map[string]string)
-}
-
-func (e *IF) IsScenario() bool {
-	return false
-}
-
-func (e *IF) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "run_if_block")
-	defer s.End()
-
-	runCtx.AddStep(e.Name)
+func (gb *IF) Update(_ context.Context) (interface{}, error) {
 	var chosenGroup *script.ConditionGroup
 
-	if e.State != nil {
-		conditionGroups := e.State.GetConditionGroups()
+	if gb.State != nil {
+		conditionGroups := gb.State.GetConditionGroups()
 
-		variables, err := getVariables(runCtx)
+		variables, err := getVariables(gb.RunContext.VarStore)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		chosenGroup = processConditionGroups(conditionGroups, variables)
@@ -123,19 +101,11 @@ func (e *IF) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableSto
 		chosenGroupID = ""
 	}
 
-	e.State.ChosenGroupID = chosenGroupID
-	return nil
-}
-
-func (e *IF) GetState() interface{} {
-	return nil
-}
-
-func (e *IF) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+	gb.State.ChosenGroupID = chosenGroupID
 	return nil, nil
 }
 
-func (e *IF) Model() script.FunctionModel {
+func (gb *IF) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockGoIfID,
 		BlockType: script.TypeGo,
@@ -152,13 +122,14 @@ func (e *IF) Model() script.FunctionModel {
 	}
 }
 
-func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
+func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (block *IF, err error) {
 	b := &IF{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {
@@ -187,6 +158,7 @@ func createGoIfBlock(name string, ef *entity.EriusFunc) (block *IF, err error) {
 		b.State.Type = params.Type
 		b.State.ConditionGroups = params.ConditionGroups
 	}
+	b.RunContext.VarStore.AddStep(b.Name)
 
 	return b, nil
 }

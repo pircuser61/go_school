@@ -2,24 +2,37 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
-	"go.opencensus.io/trace"
-
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type GoEndBlock struct {
-	Name    string
-	Title   string
-	Input   map[string]string
-	Output  map[string]string
-	Sockets []script.Socket
+	Name       string
+	Title      string
+	Input      map[string]string
+	Output     map[string]string
+	Sockets    []script.Socket
+	RunContext *BlockRunContext
+}
+
+func (gb *GoEndBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoEndBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
 }
 
 func (gb *GoEndBlock) GetStatus() Status {
 	return StatusFinished
+}
+
+func (gb *GoEndBlock) UpdateManual() bool {
+	return false
 }
 
 func (gb *GoEndBlock) GetTaskHumanStatus() TaskHumanStatus {
@@ -27,61 +40,21 @@ func (gb *GoEndBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *GoEndBlock) GetType() string {
-	return BlockGoEndId
-}
-
-func (gb *GoEndBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoEndBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoEndBlock) IsScenario() bool {
-	return false
-}
-
-// nolint:dupl // not dupl?
-func (gb *GoEndBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "run_go_block")
-	defer s.End()
-
-	runCtx.AddStep(gb.Name)
-
-	values := make(map[string]interface{})
-
-	for ikey, gkey := range gb.Input {
-		val, ok := runCtx.GetValue(gkey) // if no value - empty value
-		if ok {
-			values[ikey] = val
-		}
-	}
-
-	for ikey, gkey := range gb.Output {
-		val, ok := values[ikey]
-		if ok {
-			runCtx.SetValue(gkey, val)
-		}
-	}
-
-	return nil
-}
-
 func (gb *GoEndBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nil, true
-}
-
-func (gb *GoEndBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
 }
 
 func (gb *GoEndBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoEndBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoEndBlock) Update(ctx context.Context) (interface{}, error) {
+	if err := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); err != nil {
+		return nil, err
+	}
+	if err := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 
@@ -96,13 +69,14 @@ func (gb *GoEndBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoEndBlock(name string, ef *entity.EriusFunc) *GoEndBlock {
+func createGoEndBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoEndBlock {
 	b := &GoEndBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {
@@ -112,5 +86,7 @@ func createGoEndBlock(name string, ef *entity.EriusFunc) *GoEndBlock {
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
 	}
+
+	b.RunContext.VarStore.AddStep(b.Name)
 	return b
 }

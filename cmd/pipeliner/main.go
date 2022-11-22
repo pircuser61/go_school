@@ -33,7 +33,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -201,23 +200,6 @@ func main() {
 			GRPCGWPort: cfg.GRPCGWPort,
 		}); err != nil {
 			os.Exit(-3)
-		}
-	}()
-
-	go func() {
-		init := pipeline.NewInitiation(
-			&dbConn,
-			cfg.FaaS,
-			httpClient,
-			cfg.Remedy,
-			mailService,
-			serviceDescService,
-			peopleService,
-		)
-
-		err = init.InitPipelines(ctx)
-		if err != nil {
-			log.Error(err)
 		}
 	}()
 

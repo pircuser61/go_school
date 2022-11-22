@@ -7,7 +7,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/iancoleman/orderedmap"
 
+	"golang.org/x/net/context"
+
+	"github.com/jackc/pgx/v4"
+
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type DictionaryStorager interface {
@@ -36,18 +41,25 @@ type TaskStorager interface {
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
 	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string) (e.TaskSteps, error)
 	GetTaskStepById(ctx c.Context, id uuid.UUID) (*e.Step, error)
-	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
+	GetParentTaskStepByName(ctx c.Context, tx pgx.Tx, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*e.EriusTasks, error)
 	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
 	GetUnfinishedTasks(ctx c.Context) (*e.EriusTasks, error)
-	GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber string, stepName string) ([]e.UsersWithFormAccess, error)
+	GetUsersWithReadWriteFormAccess(ctx c.Context, tx pgx.Tx, workNumber, stepName string) ([]e.UsersWithFormAccess, error)
 
-	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
-	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error
-	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error
-	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)
-	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
+	CreateTask(ctx c.Context, tx pgx.Tx, dto *CreateTaskDTO) (*e.EriusTask, error)
+	UpdateTaskStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID, status int) error
+	GetTaskStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID) (int, error)
+	StopTaskBlocks(ctx c.Context, tx pgx.Tx, taskID uuid.UUID) error
+	UpdateTaskHumanStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID, status string) error
+	CheckTaskStepsExecuted(ctx c.Context, tx pgx.Tx, workNumber string, blocks []string) (bool, error)
+	GetTaskStepsToWait(ctx context.Context, tx pgx.Tx, workNumber, blockName string) ([]string, error)
+	CheckUserCanEditForm(ctx c.Context, tx pgx.Tx, workNumber string, stepName string, login string) (bool, error)
+	GetTaskRunContext(ctx c.Context, tx pgx.Tx, workNumber string) (e.TaskRunContext, error)
+	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
+	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
+	GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error)
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 }
 
@@ -66,16 +78,22 @@ type SaveStepRequest struct {
 	BreakPoints []string
 	HasError    bool
 	Status      string
+	Members     map[string]struct{}
+	CheckSLA    bool
+	SLADeadline time.Time
 }
 
 type UpdateStepRequest struct {
 	Id             uuid.UUID
+	StepName       string
 	Content        []byte
 	BreakPoints    []string
 	HasError       bool
 	Status         string
 	WithoutContent bool
 	Members        map[string]struct{}
+	CheckSLA       bool
+	SLADeadline    time.Time
 }
 
 type UpdateTaskBlocksDataRequest struct {
@@ -93,11 +111,23 @@ type SearchPipelineRequest struct {
 	Offset       int
 }
 
+type StepBreachedSLA struct {
+	TaskID     uuid.UUID
+	WorkNumber string
+	WorkTitle  string
+	Initiator  string
+	VarStore   *store.VariableStore
+	BlockData  *e.EriusFunc
+	StepName   string
+}
+
 //go:generate mockery --name=Database --structname=MockedDatabase
 type Database interface {
 	PipelineStorager
 	TaskStorager
 	DictionaryStorager
+
+	MakeTransaction(ctx context.Context) (pgx.Tx, error)
 
 	GetPipelinesWithLatestVersion(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
 	GetApprovedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
@@ -111,8 +141,8 @@ type Database interface {
 	GetPipelineVersion(ctx c.Context, id uuid.UUID) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
 	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte) error
-	SaveStepContext(ctx c.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
-	UpdateStepContext(ctx c.Context, dto *UpdateStepRequest) error
+	SaveStepContext(ctx c.Context, tx pgx.Tx, dto *SaveStepRequest) (uuid.UUID, time.Time, error)
+	UpdateStepContext(ctx c.Context, tx pgx.Tx, dto *UpdateStepRequest) error
 	UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error
 
 	GetExecutableScenarios(ctx c.Context) ([]e.EriusScenario, error)

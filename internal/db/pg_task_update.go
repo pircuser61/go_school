@@ -16,16 +16,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error {
+func (db *PGCon) UpdateTaskStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID, status int) error {
 	ctx, span := trace.StartSpan(ctx, "pg_change_task_status")
 	defer span.End()
-
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer conn.Release()
 
 	var q string
 	// nolint:gocritic
@@ -40,7 +33,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) e
 		WHERE id = $2`
 	}
 
-	_, err = conn.Exec(ctx, q, status, taskID)
+	_, err := tx.Exec(ctx, q, status, taskID)
 	if err != nil {
 		return err
 	}
@@ -48,15 +41,9 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) e
 	return nil
 }
 
-func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error {
+func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID, status string) error {
 	ctx, span := trace.StartSpan(ctx, "update_task_human_status")
 	defer span.End()
-
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -64,7 +51,7 @@ func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status s
 		SET human_status = $1
 		WHERE id = $2`
 
-	_, err = conn.Exec(ctx, q, status, taskID)
+	_, err := tx.Exec(ctx, q, status, taskID)
 	return err
 }
 
@@ -133,10 +120,10 @@ func (db *PGCon) UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRe
 
 func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
 	q := `
-		update variable_storage 
-			set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
-		where work_id = (select id from works where work_number = $1) and
-			step_type in ('servicedesk_application', 'execution')`
+		UPDATE variable_storage 
+			SET content = JSONB_SET(content, '{State,servicedesk_application_0}', '%s')
+		WHERE work_id = (SELECT id FROM works WHERE work_number = $1) AND
+			step_type IN ('servicedesk_application', 'execution')`
 
 	bytes, err := json.Marshal(data)
 	if err != nil {

@@ -80,10 +80,6 @@ type ApproverData struct {
 	SLA        int                `json:"sla"`
 	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
 
-	DidSLANotification bool `json:"did_sla_notification"`
-
-	LeftToNotify map[string]struct{} `json:"left_to_notify"`
-
 	IsEditable             bool                     `json:"is_editable"`
 	RepeatPrevDecision     bool                     `json:"repeat_prev_decision"`
 	EditingApp             *ApproverEditingApp      `json:"editing_app,omitempty"`
@@ -97,8 +93,10 @@ type ApproverData struct {
 
 	AddInfo []AdditionalInfo `json:"additional_info,omitempty"`
 
-	IsCanceled        bool   `json:"is_revoked"`
+	IsRevoked         bool   `json:"is_revoked"`
 	ApproveStatusName string `json:"approve_status_name"`
+
+	SLAChecked bool `json:"sla_checked"`
 
 	ActionList []Action `json:"action_list"`
 }

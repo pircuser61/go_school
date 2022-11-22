@@ -14,6 +14,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -731,7 +733,8 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
+func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, tx pgx.Tx, workNumber,
+	stepName string) ([]entity.UsersWithFormAccess, error) {
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -781,7 +784,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	`
 
 	result := make([]entity.UsersWithFormAccess, 0)
-	rows, err := db.Pool.Query(ctx, q, workNumber, stepName)
+	rows, err := tx.Query(ctx, q, workNumber, stepName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return result, nil
@@ -809,4 +812,21 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 		return nil, rowsErr
 	}
 	return result, nil
+}
+
+func (db *PGCon) GetTaskStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID) (int, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_status")
+	defer span.End()
+
+	q := `
+		SELECT status
+		FROM works
+		WHERE id = $1`
+
+	var status int
+
+	if err := tx.QueryRow(ctx, q, taskID).Scan(&status); err != nil {
+		return -1, err
+	}
+	return status, nil
 }

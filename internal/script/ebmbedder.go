@@ -88,12 +88,6 @@ const (
 
 	DefaultSocketID    = "default"
 	DefaultSocketTitle = "Выход по умолчанию"
-
-	trueSocketID    = "true"
-	trueSocketTitle = "Да"
-
-	falseSocketID    = "false"
-	falseSocketTitle = "Нет"
 )
 
 var (
@@ -105,21 +99,6 @@ var (
 
 	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
 	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}
-
-	TrueSocket  = Socket{Id: trueSocketID, Title: trueSocketTitle}
-	FalseSocket = Socket{Id: falseSocketID, Title: falseSocketTitle}
-)
-
-var (
-	AvailableSockets = []Socket{
-		DefaultSocket,
-		ApprovedSocket,
-		RejectedSocket,
-		EditAppSocket,
-		ExecutedSocket,
-		TrueSocket,
-		FalseSocket,
-	}
 )
 
 func NewSocket(id string, nexts []string) Socket {
@@ -127,11 +106,6 @@ func NewSocket(id string, nexts []string) Socket {
 		Id:           id,
 		NextBlockIds: nexts,
 	}
-}
-
-func (s *Socket) WithNexts(nextIds []string) Socket {
-	s.NextBlockIds = nextIds
-	return *s
 }
 
 func GetNexts(from []Socket, socketId string) ([]string, bool) {

@@ -2,8 +2,7 @@ package pipeline
 
 import (
 	"context"
-
-	"go.opencensus.io/trace"
+	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -13,11 +12,24 @@ import (
 type BeginParallelData struct{}
 
 type GoBeginParallelTaskBlock struct {
-	Name    string
-	Title   string
-	Input   map[string]string
-	Output  map[string]string
-	Sockets []script.Socket
+	Name       string
+	Title      string
+	Input      map[string]string
+	Output     map[string]string
+	Sockets    []script.Socket
+	RunContext *BlockRunContext
+}
+
+func (gb *GoBeginParallelTaskBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoBeginParallelTaskBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
+}
+
+func (gb *GoBeginParallelTaskBlock) UpdateManual() bool {
+	return false
 }
 
 func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
@@ -28,48 +40,6 @@ func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *GoBeginParallelTaskBlock) GetType() string {
-	return BlockGoBeginParallelTaskId
-}
-
-func (gb *GoBeginParallelTaskBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoBeginParallelTaskBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoBeginParallelTaskBlock) IsScenario() bool {
-	return false
-}
-
-//nolint:dupl //its not duplicate
-func (gb *GoBeginParallelTaskBlock) DebugRun(ctx context.Context, stepCtx *stepCtx, runCtx *store.VariableStore) error {
-	_, s := trace.StartSpan(ctx, "run_go_block")
-	defer s.End()
-
-	runCtx.AddStep(gb.Name)
-
-	values := make(map[string]interface{})
-
-	for ikey, gkey := range gb.Input {
-		val, ok := runCtx.GetValue(gkey) // if no value - empty value
-		if ok {
-			values[ikey] = val
-		}
-	}
-
-	for ikey, gkey := range gb.Output {
-		val, ok := values[ikey]
-		if ok {
-			runCtx.SetValue(gkey, val)
-		}
-	}
-
-	return nil
-}
-
 func (gb *GoBeginParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {
@@ -78,15 +48,11 @@ func (gb *GoBeginParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool
 	return nexts, true
 }
 
-func (gb *GoBeginParallelTaskBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
-}
-
 func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoBeginParallelTaskBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
+func (gb *GoBeginParallelTaskBlock) Update(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
@@ -103,13 +69,14 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoStartParallelBlock(name string, ef *entity.EriusFunc) *GoBeginParallelTaskBlock {
+func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoBeginParallelTaskBlock {
 	b := &GoBeginParallelTaskBlock{
-		Name:    name,
-		Title:   ef.Title,
-		Input:   map[string]string{},
-		Output:  map[string]string{},
-		Sockets: entity.ConvertSocket(ef.Sockets),
+		Name:       name,
+		Title:      ef.Title,
+		Input:      map[string]string{},
+		Output:     map[string]string{},
+		Sockets:    entity.ConvertSocket(ef.Sockets),
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {
@@ -120,5 +87,6 @@ func createGoStartParallelBlock(name string, ef *entity.EriusFunc) *GoBeginParal
 		b.Output[v.Name] = v.Global
 	}
 
+	b.RunContext.VarStore.AddStep(b.Name)
 	return b
 }

@@ -1418,16 +1418,9 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	return tx.Commit(c)
 }
 
-func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
+func (db *PGCon) SaveStepContext(ctx context.Context, tx pgx.Tx, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
-
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return NullUuid, time.Time{}, err
-	}
-
-	defer conn.Release()
 
 	var id uuid.UUID
 	var t time.Time
@@ -1437,16 +1430,21 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			FROM variable_storage 
 		WHERE work_id = $1 AND
 			step_name = $2 AND
-			status IN ('idle', 'ready', 'running', 'cancel')
+			status IN ('idle', 'ready', 'running')
 `
 
-	if scanErr := conn.QueryRow(ctx, q, dto.WorkID, dto.StepName).
+	if scanErr := tx.QueryRow(ctx, q, dto.WorkID, dto.StepName).
 		Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
 		return NullUuid, time.Time{}, nil
 	}
 
 	if id != NullUuid {
 		return id, t, nil
+	}
+
+	members := make(pq.StringArray, 0, len(dto.Members))
+	for userLogin := range dto.Members {
+		members = append(members, userLogin)
 	}
 
 	id = uuid.New()
@@ -1463,7 +1461,10 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			time, 
 			break_points, 
 			has_error,
-			status
+			status,
+		    members,
+		    check_sla,
+		    sla_deadline
 		)
 		VALUES (
 			$1, 
@@ -1474,11 +1475,12 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$6, 
 			$7,
 			$8,
-			$9
+			$9,
+			$10
 		)
 `
 
-	_, err = conn.Exec(
+	_, err := tx.Exec(
 		ctx,
 		query,
 		id,
@@ -1490,6 +1492,9 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
+		members,
+		dto.CheckSLA,
+		dto.SLADeadline,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
@@ -1498,14 +1503,9 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	return id, timestamp, nil
 }
 
-func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) error {
+func (db *PGCon) UpdateStepContext(ctx context.Context, tx pgx.Tx, dto *UpdateStepRequest) error {
 	c, span := trace.StartSpan(ctx, "pg_update_step_context")
 	defer span.End()
-
-	members := make(pq.StringArray, 0, len(dto.Members))
-	for userLogin := range dto.Members {
-		members = append(members, userLogin)
-	}
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1515,25 +1515,28 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		break_points = $2
 		, has_error = $3
 		, status = $4
+		, check_sla = $5
 		--members--
 		--content--
 		--updated_at--
+		--deadline--
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status}
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA}
 	if !dto.WithoutContent {
-		q = strings.Replace(q, "--content--", ", content = $5", -1)
-		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
-		args = append(args, dto.Content)
-
-		if len(members) > 0 {
-			q = strings.Replace(q, "--members--", ", members = $6", -1)
-			args = append(args, members)
+		members := make(pq.StringArray, 0, len(dto.Members))
+		for userLogin := range dto.Members {
+			members = append(members, userLogin)
 		}
+		q = strings.Replace(q, "--content--", ", content = $6", -1)
+		q = strings.Replace(q, "--members--", ", members = $7", -1)
+		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
+		q = strings.Replace(q, "--deadline--", ", sla_deadline = $7", -1)
+		args = append(args, dto.Content, members, dto.SLADeadline)
 	}
 
-	_, err := db.Pool.Exec(
+	_, err := tx.Exec(
 		c,
 		q,
 		args...,
@@ -1766,7 +1769,40 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	return el, nil
 }
 
-func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error) {
+func (db *PGCon) GetTaskStepsToWait(ctx context.Context, tx pgx.Tx, workNumber, blockName string) ([]string, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_steps_to_wait")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `WITH blocks AS (
+    SELECT key(JSONB_EACH(content -> 'pipeline' -> 'blocks'))                                as key,
+           value(jsonb_each(value(jsonb_each(content -> 'pipeline' -> 'blocks')) -> 'next')) as value
+    FROM versions v
+    WHERE v.id = (SELECT version_id FROM works WHERE work_number = $1))
+SELECT key
+FROM blocks
+WHERE value ? $2`
+
+	var blocks []string
+	rows, err := tx.Query(ctx, q, workNumber, blockName)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var b string
+		if scanErr := rows.Scan(&b); scanErr != nil {
+			return nil, scanErr
+		}
+		blocks = append(blocks, b)
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return blocks, nil
+}
+
+func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, tx pgx.Tx, workNumber string, blocks []string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_check_task_steps_executed")
 	defer span.End()
 
@@ -1775,12 +1811,13 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, 
 	q := `
 	SELECT count(*)
 	FROM variable_storage vs 
-	JOIN works w on w.id = vs.work_id
-	WHERE w.work_number = $1 AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success', 'skipped')`
+	WHERE vs.work_id = (
+	    SELECT id FROM works WHERE work_number = $1
+	) AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success')`
 	// TODO: rewrite to handle edits ?
 
 	var c int
-	if scanErr := db.Pool.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
+	if scanErr := tx.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
 		return false, nil
 	}
 	return c == len(blocks), nil
@@ -1838,7 +1875,8 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 }
 
 //nolint:dupl //its not duplicate
-func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
+func (db *PGCon) GetParentTaskStepByName(ctx context.Context, tx pgx.Tx,
+	workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_parent_task_step_by_name")
 	defer span.End()
 
@@ -1862,7 +1900,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, 
 
 	var s entity.Step
 	var content string
-	err := db.Pool.QueryRow(ctx, query, workID, stepName).Scan(
+	err := tx.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -2187,7 +2225,7 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 	return res, nil
 }
 
-func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName, login string) (bool, error) {
+func (db *PGCon) CheckUserCanEditForm(ctx context.Context, tx pgx.Tx, workNumber, stepName, login string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "check_user_can_edit_form")
 	defer span.End()
 
@@ -2215,9 +2253,133 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 			where accesses.data::jsonb ->> 'node_id' = $2 and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
 `
 	var count int
-	if scanErr := db.Pool.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
+	if scanErr := tx.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
 		return false, scanErr
 	}
 
 	return count != 0, nil
+}
+
+func (db *PGCon) GetTaskRunContext(ctx context.Context, tx pgx.Tx, workNumber string) (entity.TaskRunContext, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_run_context")
+	defer span.End()
+
+	var runCtx entity.TaskRunContext
+
+	// language=PostgreSQL
+	q := `
+		SELECT run_context
+		FROM works
+		WHERE work_number = $1`
+
+	if scanErr := tx.QueryRow(ctx, q, workNumber).Scan(&runCtx); scanErr != nil {
+		return runCtx, scanErr
+	}
+	return runCtx, nil
+}
+
+func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
+	ctx, span := trace.StartSpan(ctx, "get_block_data_from_version")
+	defer span.End()
+
+	q := `
+		SELECT content->'pipeline'->'blocks'->$1 FROM versions
+    	JOIN works w ON versions.id = w.version_id
+		WHERE w.work_number = $2`
+
+	var f *entity.EriusFunc
+
+	if scanErr := db.Pool.QueryRow(ctx, q, blockName, workNumber).Scan(&f); scanErr != nil {
+		return nil, scanErr
+	}
+	return f, nil
+}
+
+func (db *PGCon) StopTaskBlocks(ctx context.Context, tx pgx.Tx, taskID uuid.UUID) error {
+	ctx, span := trace.StartSpan(ctx, "stop_task_blocks")
+	defer span.End()
+
+	q := `
+		UPDATE variable_storage
+		SET status = 'cancel'
+		WHERE work_id = $1 AND status IN ('ready', 'idle', 'running')`
+
+	_, err := tx.Exec(ctx, q, taskID)
+	return err
+}
+
+func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "stop_task_blocks")
+	defer span.End()
+
+	q := `
+		SELECT content
+		FROM variable_storage
+		WHERE work_id = $1 AND step_type = $2`
+
+	var content []byte
+	if err := db.Pool.QueryRow(ctx, q, taskID, stepType).Scan(&content); err != nil {
+		return nil, err
+	}
+	storage := store.NewStore()
+	if err := json.Unmarshal(content, &storage); err != nil {
+		return nil, err
+	}
+	return storage, nil
+}
+
+func (db *PGCon) MakeTransaction(ctx context.Context) (pgx.Tx, error) {
+	return db.Pool.Begin(ctx)
+}
+
+func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error) {
+	ctx, span := trace.StartSpan(ctx, "get_blocks_breached_sla")
+	defer span.End()
+
+	// language=PostgreSQL
+	q := `
+		SELECT w.id,
+		       w.work_number,
+		       p.name,	
+		       v.author,
+		       vs.content,
+		       v.content->'pipeline'->'blocks'->vs.step_name,
+		       vs.step_name
+		FROM variable_storage vs 
+		    JOIN works w on vs.work_id = w.id 
+		    JOIN versions v on w.version_id = v.id
+			JOIN pipelines p on v.pipeline_id = p.id
+		WHERE check_sla = True && sla_deadline < NOW() && vs.status = 'running'`
+	rows, err := db.Pool.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	res := make([]StepBreachedSLA, 0)
+	for rows.Next() {
+		var content []byte
+		item := StepBreachedSLA{}
+		if scanErr := rows.Scan(
+			&item.TaskID,
+			&item.WorkNumber,
+			&item.WorkTitle,
+			&item.Initiator,
+			&content,
+			&item.BlockData,
+			&item.StepName,
+		); scanErr != nil {
+			return nil, scanErr
+		}
+		storage := store.NewStore()
+		if unmErr := json.Unmarshal(content, &storage); unmErr != nil {
+			return nil, unmErr
+		}
+		item.VarStore = storage
+
+		res = append(res, item)
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return res, nil
 }

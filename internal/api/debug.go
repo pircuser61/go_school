@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -13,7 +11,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -92,86 +89,6 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if err := sendResponse(w, http.StatusOK, task); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
-func (ae *APIEnv) CreateDebugTask(w http.ResponseWriter, r *http.Request) {
-	ctx, span := trace.StartSpan(r.Context(), "create debug task")
-	defer span.End()
-
-	log := logger.GetLogger(ctx)
-
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	defer func() {
-		_ = r.Body.Close()
-	}()
-
-	d := CreateTaskRequest{}
-
-	err = json.Unmarshal(b, &d)
-	if err != nil {
-		e := CreateDebugParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	vId, err := uuid.Parse(d.VersionId)
-	if err != nil {
-		e := CreateDebugParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	version, err := ae.DB.GetPipelineVersion(ctx, vId)
-	if err != nil {
-		e := GetVersionError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	parameters, err := json.Marshal(d.Parameters)
-	if err != nil {
-		e := CreateDebugInputsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	task, err := ae.DB.CreateTask(ctx, &db.CreateTaskDTO{
-		TaskID:    uuid.New(),
-		VersionID: version.VersionID,
-		Author:    "",
-		IsDebug:   true,
-		Params:    parameters,
-	})
-	if err != nil {
-		e := CreateWorkError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	err = sendResponse(w, http.StatusOK, task)
-	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
