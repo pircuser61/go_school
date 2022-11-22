@@ -125,6 +125,16 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		gb.State.Approvers = resolvedEntities
 	}
 
+	actions := make([]Action, 0, len(ef.Sockets))
+
+	for _, socket := range ef.Sockets {
+		actions = append(actions, Action{
+			Id:    socket.Id,
+			Title: socket.Title,
+			Type:  socket.ActionType,
+		})
+	}
+
 	gb.RunContext.VarStore.AddStep(gb.Name)
 
 	return gb.handleNotifications(ctx)

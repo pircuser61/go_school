@@ -677,3 +677,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func (ae *APIEnv) UpdateTaskConfiguredActions(_ http.ResponseWriter, _ *http.Request, _ string) {
+
+}

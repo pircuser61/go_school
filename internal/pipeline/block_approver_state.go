@@ -97,6 +97,14 @@ type ApproverData struct {
 	ApproveStatusName string `json:"approve_status_name"`
 
 	SLAChecked bool `json:"sla_checked"`
+
+	ActionList []Action `json:"action_list"`
+}
+
+type Action struct {
+	Id    string `json:"id"`
+	Type  string `json:"type"`
+	Title string `json:"title"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
