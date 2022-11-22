@@ -44,10 +44,18 @@ type TaskStorager interface {
 	GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber string, stepName string) ([]e.UsersWithFormAccess, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
-	ChangeTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error
+	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error
 	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
+	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
+}
+
+type UpdateTaskRate struct {
+	ByLogin    string
+	WorkNumber string
+	Comment    *string
+	Rate       int
 }
 
 type SaveStepRequest struct {

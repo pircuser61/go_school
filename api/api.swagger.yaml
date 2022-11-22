@@ -6,6 +6,45 @@ info:
 servers:
   - url: //localhost:8181/api/pipeliner/v1
 paths:
+  /application/rate/{workNumber}:
+    post:
+      summary: rate application
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
+      operationId: rateApplication
+      requestBody:
+        description: rate application
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateApplicationRequest'
+        required: true
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /application/{workNumber}:
     get:
       summary: get application
@@ -1586,52 +1625,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: data
-  /tasks/update/{work_number}:
-    post:
-      tags:
-        - tasks
-      summary: Update task
-      description: Update task with uuid action
-      operationId: update-task-uuid-action
-      parameters:
-        - name: workNumber
-          in: path
-          description: work number
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: Task update data
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TaskUpdateWithUuidAction'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /tasks/count:
     get:
       tags:
@@ -2485,13 +2478,23 @@ components:
         - has_error
         - status
 
-    TaskUpdateWithUuidAction:
+    TaskUpdate:
       type: object
       properties:
         action:
           type: string
-          example: 82f2324d-cea1-4024-99c1-674380483d39
-          description: uuid of action
+          example: approvement
+          enum:
+            - approvement
+            - execution
+            - change_executor
+            - request_execution_info
+            - executor_start_work
+            - request_add_info
+            - fill_form
+            - cancel_app
+            - send_edit_app
+            - add_approvers
         parameters:
           type: object
           description: Task update params
@@ -2502,38 +2505,10 @@ components:
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
             - $ref: '#/components/schemas/ExecutableFunctionParams'
             - $ref: '#/components/schemas/FillFormUpdateParams'
+            - $ref: '#/components/schemas/AddApproversParams'
       required:
         - action
         - parameters
-        - TaskUpdate:
-            type: object
-            properties:
-              action:
-                type: string
-                example: approvement
-                enum:
-                  - approvement
-                  - execution
-                  - change_executor
-                  - request_execution_info
-                  - executor_start_work
-                  - request_add_info
-                  - fill_form
-                  - cancel_app
-                  - send_edit_app
-              parameters:
-                type: object
-                description: Task update params
-                oneOf:
-                  - $ref: '#/components/schemas/ApproverUpdateParams'
-                  - $ref: '#/components/schemas/ExecutionUpdateParams'
-                  - $ref: '#/components/schemas/ExecutorChangeParams'
-                  - $ref: '#/components/schemas/RequestInfoUpdateParams'
-                  - $ref: '#/components/schemas/ExecutableFunctionParams'
-                  - $ref: '#/components/schemas/FillFormUpdateParams'
-            required:
-              - action
-              - parameters
 
     FillFormUpdateParams:
       type: object
@@ -2587,6 +2562,27 @@ components:
       required:
         - decision
         - comment
+        - attachments
+
+    AddApproversParams:
+      type: object
+      description: Add Approver params
+      properties:
+        additionalApprovers:
+          type: array
+          items:
+            type: string
+          description: logins of additional approvers
+        question:
+          type: string
+          description: Question from approver
+        attachments:
+          type: array
+          items:
+            type: string
+      required:
+        - additionalApprovers
+        - question
         - attachments
 
     approverDecision:
@@ -2701,7 +2697,7 @@ components:
       enum:
         - question
         - answer
-        -
+
     ResponsePipelineSearch:
       type: object
       properties:
@@ -2761,6 +2757,16 @@ components:
     Application:
       type: object
       additionalProperties: true
+
+    RateApplicationRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        rate:
+          type: integer
+      required:
+        - rate
 
     CreateTaskRequest:
       type: object
@@ -2847,6 +2853,10 @@ components:
           type: string
         finished_at:
           type: string
+        rate:
+          type: integer
+        rate_comment:
+          type: string
       required:
         - id
         - version_id
@@ -2862,6 +2872,8 @@ components:
         - steps
         - work_number
         - blueprint_id
+        - rate
+        - rate_comment
 
     httpError:
       type: object
@@ -2957,6 +2969,10 @@ components:
           items:
             type: string
           description: IDs of next blocks
+        actionType:
+          type: string
+          enum: ["main", "secondary", "extra"]
+          description: action type
       required:
         - id
 

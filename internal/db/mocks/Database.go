@@ -22,6 +22,14 @@ type MockedDatabase struct {
 	mock.Mock
 }
 
+func (_m *MockedDatabase) UpdateTaskStatus(ctx context.Context, taskID uuid.UUID, status int) error {
+	return nil
+}
+
+func (_m *MockedDatabase) UpdateTaskRate(ctx context.Context, req *db.UpdateTaskRate) error {
+	return nil
+}
+
 // ActiveAlertNGSA provides a mock function with given fields: ctx, sever, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc
 func (_m *MockedDatabase) ActiveAlertNGSA(ctx context.Context, sever int, state string, source string, eventType string, cause string, addInf string, addTxt string, moID string, specProb string, notID string, usertext string, moi string, moc string) error {
 	ret := _m.Called(ctx, sever, state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc)

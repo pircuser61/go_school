@@ -663,6 +663,8 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		ep.WorkNumber = dto.workNumber
 	}
 
+	ep.PipelineModel.Author = dto.userName
+
 	err := ep.CreateBlocks(ctx, dto.p.Pipeline.Blocks)
 	if err != nil {
 		e := GetPipelineError

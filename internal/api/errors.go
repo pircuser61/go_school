@@ -86,6 +86,7 @@ const (
 	PipelineRenameError
 	GetPipelinesSearchError
 	ValidationPipelineSearchError
+	UpdateTaskRateError
 )
 
 //nolint:dupl //its not duplicate
@@ -158,6 +159,7 @@ var errorText = map[Err]string{
 	GetPipelinesSearchError:       "can't find pipelines by search",
 	ValidationPipelineSearchError: "name and id are empty",
 	GetFormsChangelogError:        "can't get forms history",
+	UpdateTaskRateError:           "can`t update task rate",
 }
 
 // JOKE.
@@ -232,6 +234,7 @@ var errorDescription = map[Err]string{
 	GetPipelinesSearchError:       "Не удалось найти сценарии в базе данных",
 	ValidationPipelineSearchError: "Не заполнены имя и айди сценария",
 	GetFormsChangelogError:        "Не удалось получить историю изменения форм",
+	UpdateTaskRateError:           "Не удалось обновить оценку заявки",
 }
 
 var errorStatus = map[Err]int{
