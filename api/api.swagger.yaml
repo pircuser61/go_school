@@ -2561,6 +2561,7 @@ components:
       properties:
         action:
           type: string
+          format: uuid
           description: uuid of action
         parameters:
           type: object
