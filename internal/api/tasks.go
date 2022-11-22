@@ -506,6 +506,21 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 }
 
+func (ae *APIEnv) UpdateTaskConfiguredActions(w http.ResponseWriter, req *http.Request, workNumber string) {
+	ctx, s := trace.StartSpan(req.Context(), "rate_application")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	if err := sendResponse(w, http.StatusNotImplemented, nil); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 //nolint:gocyclo //its ok here
 func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(r.Context(), "rate_application")
