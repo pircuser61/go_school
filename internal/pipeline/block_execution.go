@@ -35,7 +35,7 @@ func (gb *GoExecutionBlock) Members() map[string]struct{} {
 }
 
 func (gb *GoExecutionBlock) CheckSLA() (bool, time.Time) {
-	return !gb.State.SLAChecked, time.Time{}
+	return !gb.State.SLAChecked, computeMaxDate(gb.RunContext.currBlockStartTime, gb.State.SLA)
 }
 
 func (gb *GoExecutionBlock) UpdateManual() bool {

@@ -60,7 +60,7 @@ func (db *PGCon) CreateTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (*
 		return nil, err
 	}
 
-	return db.GetTask(c, workNumber)
+	return db.GetTask(c, tx, workNumber)
 }
 
 func (db *PGCon) insertTaskWithWorkNumber(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (string, error) {

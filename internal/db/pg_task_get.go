@@ -436,7 +436,7 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 	return &et, nil
 }
 
-func (db *PGCon) GetTask(ctx c.Context, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) GetTask(ctx c.Context, tx pgx.Tx, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task")
 	defer span.End()
 
@@ -476,10 +476,10 @@ func (db *PGCon) GetTask(ctx c.Context, workNumber string) (*entity.EriusTask, e
 			AND w.child_id IS NULL
 `
 
-	return db.getTask(ctx, q, workNumber)
+	return db.getTask(ctx, tx, q, workNumber)
 }
 
-func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) getTask(ctx c.Context, tx pgx.Tx, q, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_private")
 	defer span.End()
 
@@ -487,16 +487,21 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 
 	var nullStringParameters sql.NullString
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
+	var row pgx.Row
+	if tx == nil {
+		conn, err := db.Pool.Acquire(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		defer conn.Release()
+
+		row = conn.QueryRow(ctx, q, workNumber)
+	} else {
+		row = tx.QueryRow(ctx, q, workNumber)
 	}
 
-	defer conn.Release()
-
-	row := conn.QueryRow(ctx, q, workNumber)
-
-	err = row.Scan(
+	err := row.Scan(
 		&et.ID,
 		&et.StartedAt,
 		&et.LastChangedAt,
