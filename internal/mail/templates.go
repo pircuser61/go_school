@@ -159,25 +159,8 @@ func NewApplicationInitiatorStatusNotification(id, name, action, description, sd
 	}
 }
 
-func getActionNameByStatus(status, defaultText string) (res string) {
-	switch status {
-	case "На согласовании":
-		return "согласования"
-	case "На утверждении":
-		return "утверждения"
-	case "На ознакомлении":
-		return "ознакомления"
-	case "На информировании":
-		return "подтверждения об информировании"
-	case "На подписании":
-		return "подписания"
-	default:
-		return defaultText
-	}
-}
-
 func NewApplicationPersonStatusNotification(id, name, status, action, deadline, description, sdUrl string) Template {
-	actionName := getActionNameByStatus(status, action)
+	actionName := getNewStatusActionNameByStatus(status, action)
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
@@ -250,5 +233,22 @@ func NewExecutionTakenInWork(dto *ExecutorNotifTemplate) Template {
 			Initiator:   dto.Initiator,
 			Description: dto.Description,
 		},
+	}
+}
+
+func getNewStatusActionNameByStatus(status, defaultActionName string) (res string) {
+	switch status {
+	case "На согласовании":
+		return "согласования"
+	case "На утверждении":
+		return "утверждения"
+	case "На ознакомлении":
+		return "ознакомления"
+	case "На информировании":
+		return "подтверждения об информировании"
+	case "На подписании":
+		return "подписания"
+	default:
+		return defaultActionName
 	}
 }

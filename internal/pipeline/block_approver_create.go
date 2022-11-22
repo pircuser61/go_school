@@ -156,6 +156,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		mail.NewApplicationPersonStatusNotification(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.WorkTitle,
+			gb.State.ApproveStatusName,
 			statusToTaskAction[StatusApprovement],
 			ComputeDeadline(time.Now(), gb.State.SLA),
 			descr,
