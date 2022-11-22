@@ -1518,10 +1518,10 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, tx pgx.Tx, dto *UpdateSt
 		, has_error = $3
 		, status = $4
 		, check_sla = $5
-	   , members = $6
-		 ,content = $7
-		 ,updated_at = NOW()
-		 ,sla_deadline = $8
+	    , members = $6
+		, content = $7
+		, updated_at = NOW()
+		, sla_deadline = $8
 	WHERE
 		id = $1
 `
