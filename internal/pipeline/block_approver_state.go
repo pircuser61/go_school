@@ -99,6 +99,14 @@ type ApproverData struct {
 
 	IsCanceled        bool   `json:"is_revoked"`
 	ApproveStatusName string `json:"approve_status_name"`
+
+	ActionList []Action `json:"action_list"`
+}
+
+type Action struct {
+	Id    string `json:"id"`
+	Type  string `json:"type"`
+	Title string `json:"title"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
