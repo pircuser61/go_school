@@ -152,6 +152,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"start_0",
 						).Return(
@@ -170,6 +171,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"servicedesk_application_0",
 						).Return(
@@ -189,6 +191,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"end_0",
 						).Return(
@@ -251,6 +254,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"start_0",
 						).Return(
@@ -269,6 +273,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"servicedesk_application_0",
 						).Return(
@@ -288,6 +293,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"start_parallel_0",
 						).Return(
@@ -306,6 +312,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"approver_0",
 						).Return(
@@ -324,6 +331,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"execution_0",
 						).Return(
@@ -342,6 +350,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"end_parallel_0",
 						).Return(
@@ -360,6 +369,7 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"end_0",
 						).Return(
@@ -393,7 +403,7 @@ func TestProcessBlock(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			entrypointData, blockErr := tt.fields.RunContext.Storage.GetBlockDataFromVersion(
-				ctx, "", tt.fields.Entrypoint)
+				ctx, nil, "", tt.fields.Entrypoint)
 			if blockErr != nil {
 				t.Fatal(blockErr)
 			}
@@ -402,7 +412,8 @@ func TestProcessBlock(t *testing.T) {
 				t.Fatal(procErr)
 			}
 			for name, params := range tt.fields.Updates {
-				blockData, updateErr := tt.fields.RunContext.Storage.GetBlockDataFromVersion(ctx, "", name)
+				blockData, updateErr := tt.fields.RunContext.Storage.GetBlockDataFromVersion(ctx,
+					nil, "", name)
 				if updateErr != nil {
 					t.Fatal(updateErr)
 				}

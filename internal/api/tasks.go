@@ -1,6 +1,7 @@
 package api
 
 import (
+	c "context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -115,7 +116,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, nil, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -390,7 +391,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, nil, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -418,10 +419,10 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 	var steps entity.TaskSteps
 	for _, blockType := range blockTypes {
-		stepsByBlock, er := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
-		if er != nil {
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
+		if stepErr != nil {
 			e := GetTaskError
-			log.Error(e.errorMessage(er))
+			log.Error(e.errorMessage(stepErr))
 			_ = e.sendError(w)
 			return
 		}
@@ -439,7 +440,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		steps = steps[:1]
 	}
 
-	tx, transactionErr := ae.DB.MakeTransaction(ctx)
+	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+	routineCtx = logger.WithLogger(routineCtx, log)
+	tx, transactionErr := ae.DB.MakeTransaction(routineCtx)
 	if transactionErr != nil {
 		e := UpdateBlockError
 		log.Error(e.errorMessage(nil))
@@ -447,11 +450,11 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 		return
 	}
-	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
+	defer tx.Rollback(routineCtx) // nolint:errcheck // rollback err
 
 	couldUpdateOne := false
 	for _, item := range steps {
-		storage, getErr := ae.DB.GetVariableStorageForStep(ctx, dbTask.ID, item.Name)
+		storage, getErr := ae.DB.GetVariableStorageForStep(routineCtx, dbTask.ID, item.Name)
 		if getErr != nil {
 			e := BlockNotFoundError
 			log.Error(e.errorMessage(nil))
@@ -487,7 +490,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			return
 		}
 
-		blockErr := pipeline.ProcessBlock(ctx, item.Name, &blockFunc, runCtx, true)
+		blockErr := pipeline.ProcessBlock(routineCtx, item.Name, &blockFunc, runCtx, true)
 		if blockErr == nil {
 			couldUpdateOne = true
 		}
@@ -501,7 +504,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(routineCtx); err != nil {
 		e := UpdateBlockError
 		log.Error(e.errorMessage(errors.New("couldn't update work")))
 		_ = e.sendError(w)
@@ -636,13 +639,15 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+	routineCtx = logger.WithLogger(routineCtx, log)
 	// in goroutine so we can return 202?
 	for _, item := range steps {
 		log = log.WithFields(map[string]interface{}{
 			"taskID":   item.TaskID,
 			"stepName": item.StepName,
 		})
-		tx, transactionErr := ae.DB.MakeTransaction(ctx)
+		tx, transactionErr := ae.DB.MakeTransaction(routineCtx)
 		if transactionErr != nil {
 			log.WithError(transactionErr).Error("couldn't set SLA breach")
 			continue
@@ -664,15 +669,16 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			},
 			Tx: tx,
 		}
-		blockErr := pipeline.ProcessBlock(ctx, item.StepName, item.BlockData, runCtx, true)
+
+		blockErr := pipeline.ProcessBlock(routineCtx, item.StepName, item.BlockData, runCtx, true)
 		if blockErr != nil {
 			log.WithError(blockErr).Error("couldn't set SLA breach")
-			if txErr := tx.Rollback(ctx); txErr != nil {
+			if txErr := tx.Rollback(routineCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			continue
 		}
-		if commitErr := tx.Commit(ctx); commitErr != nil {
+		if commitErr := tx.Commit(routineCtx); commitErr != nil {
 			log.WithError(commitErr).Error("couldn't set SLA breach")
 		}
 	}

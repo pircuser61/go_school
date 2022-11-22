@@ -738,13 +738,14 @@ func (_m *MockedDatabase) GetTaskStatus(ctx context.Context, tx pgx.Tx, taskID u
 	return r0, r1
 }
 
-// GetBlockDataFromVersion provides a mock function with given fields: ctx, workNumber, blockName
-func (_m *MockedDatabase) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
-	ret := _m.Called(ctx, workNumber, blockName)
+// GetBlockDataFromVersion provides a mock function with given fields: ctx, tx, workNumber, blockName
+func (_m *MockedDatabase) GetBlockDataFromVersion(ctx context.Context, tx pgx.Tx,
+	workNumber, blockName string) (*entity.EriusFunc, error) {
+	ret := _m.Called(ctx, tx, workNumber, blockName)
 
 	var r0 *entity.EriusFunc
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *entity.EriusFunc); ok {
-		r0 = rf(ctx, workNumber, blockName)
+	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, string, string) *entity.EriusFunc); ok {
+		r0 = rf(ctx, tx, workNumber, blockName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusFunc)
@@ -752,8 +753,8 @@ func (_m *MockedDatabase) GetBlockDataFromVersion(ctx context.Context, workNumbe
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, workNumber, blockName)
+	if rf, ok := ret.Get(1).(func(context.Context, pgx.Tx, string, string) error); ok {
+		r1 = rf(ctx, tx, workNumber, blockName)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -807,13 +808,13 @@ func (_m *MockedDatabase) GetTag(ctx context.Context, e *entity.EriusTagInfo) (*
 	return r0, r1
 }
 
-// GetTask provides a mock function with given fields: ctx, workNumber
-func (_m *MockedDatabase) GetTask(ctx context.Context, workNumber string) (*entity.EriusTask, error) {
-	ret := _m.Called(ctx, workNumber)
+// GetTask provides a mock function with given fields: ctx, tx, workNumber
+func (_m *MockedDatabase) GetTask(ctx context.Context, tx pgx.Tx, workNumber string) (*entity.EriusTask, error) {
+	ret := _m.Called(ctx, tx, workNumber)
 
 	var r0 *entity.EriusTask
-	if rf, ok := ret.Get(0).(func(context.Context, string) *entity.EriusTask); ok {
-		r0 = rf(ctx, workNumber)
+	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, string) *entity.EriusTask); ok {
+		r0 = rf(ctx, tx, workNumber)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusTask)
@@ -821,8 +822,8 @@ func (_m *MockedDatabase) GetTask(ctx context.Context, workNumber string) (*enti
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, workNumber)
+	if rf, ok := ret.Get(1).(func(context.Context, pgx.Tx, string) error); ok {
+		r1 = rf(ctx, tx, workNumber)
 	} else {
 		r1 = ret.Error(1)
 	}

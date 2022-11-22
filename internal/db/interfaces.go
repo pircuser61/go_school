@@ -37,7 +37,7 @@ type TaskStorager interface {
 	GetTasks(ctx c.Context, filters e.TaskFilter) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, userName string) (*e.CountTasks, error)
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
-	GetTask(ctx c.Context, workNumber string) (*e.EriusTask, error)
+	GetTask(ctx c.Context, tx pgx.Tx, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
 	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string) (e.TaskSteps, error)
 	GetTaskStepById(ctx c.Context, id uuid.UUID) (*e.Step, error)
@@ -57,7 +57,7 @@ type TaskStorager interface {
 	GetTaskStepsToWait(ctx context.Context, tx pgx.Tx, workNumber, blockName string) ([]string, error)
 	CheckUserCanEditForm(ctx c.Context, tx pgx.Tx, workNumber string, stepName string, login string) (bool, error)
 	GetTaskRunContext(ctx c.Context, tx pgx.Tx, workNumber string) (e.TaskRunContext, error)
-	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
+	GetBlockDataFromVersion(ctx c.Context, tx pgx.Tx, workNumber, blockName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error)
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error

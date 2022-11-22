@@ -1476,7 +1476,9 @@ func (db *PGCon) SaveStepContext(ctx context.Context, tx pgx.Tx, dto *SaveStepRe
 			$7,
 			$8,
 			$9,
-			$10
+			$10,
+		    $11,
+			$12
 		)
 `
 
@@ -1532,7 +1534,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, tx pgx.Tx, dto *UpdateSt
 		q = strings.Replace(q, "--content--", ", content = $6", -1)
 		q = strings.Replace(q, "--members--", ", members = $7", -1)
 		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
-		q = strings.Replace(q, "--deadline--", ", sla_deadline = $7", -1)
+		q = strings.Replace(q, "--deadline--", ", sla_deadline = $8", -1)
 		args = append(args, dto.Content, members, dto.SLADeadline)
 	}
 
@@ -2278,7 +2280,7 @@ func (db *PGCon) GetTaskRunContext(ctx context.Context, tx pgx.Tx, workNumber st
 	return runCtx, nil
 }
 
-func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
+func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, tx pgx.Tx, workNumber, blockName string) (*entity.EriusFunc, error) {
 	ctx, span := trace.StartSpan(ctx, "get_block_data_from_version")
 	defer span.End()
 
@@ -2289,7 +2291,7 @@ func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockN
 
 	var f *entity.EriusFunc
 
-	if scanErr := db.Pool.QueryRow(ctx, q, blockName, workNumber).Scan(&f); scanErr != nil {
+	if scanErr := tx.QueryRow(ctx, q, blockName, workNumber).Scan(&f); scanErr != nil {
 		return nil, scanErr
 	}
 	return f, nil
@@ -2315,7 +2317,7 @@ func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID
 	q := `
 		SELECT content
 		FROM variable_storage
-		WHERE work_id = $1 AND step_type = $2`
+		WHERE work_id = $1 AND step_name = $2`
 
 	var content []byte
 	if err := db.Pool.QueryRow(ctx, q, taskID, stepType).Scan(&content); err != nil {

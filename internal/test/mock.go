@@ -1039,7 +1039,7 @@ func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTask(c context.Context, workNumber string) (*entity.EriusTask, error) {
+func (m *MockDB) GetTask(_ context.Context, _ pgx.Tx, _ string) (*entity.EriusTask, error) {
 	return nil, errNotFound
 }
 
@@ -1153,7 +1153,7 @@ func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, errNotFound
 }
 
-func (m *MockDB) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
+func (m *MockDB) GetBlockDataFromVersion(_ context.Context, _ pgx.Tx, _, _ string) (*entity.EriusFunc, error) {
 	return nil, errNotImplemented
 }
 
