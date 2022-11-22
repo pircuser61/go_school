@@ -84,16 +84,15 @@ type SaveStepRequest struct {
 }
 
 type UpdateStepRequest struct {
-	Id             uuid.UUID
-	StepName       string
-	Content        []byte
-	BreakPoints    []string
-	HasError       bool
-	Status         string
-	WithoutContent bool
-	Members        map[string]struct{}
-	CheckSLA       bool
-	SLADeadline    time.Time
+	Id          uuid.UUID
+	StepName    string
+	Content     []byte
+	BreakPoints []string
+	HasError    bool
+	Status      string
+	Members     map[string]struct{}
+	CheckSLA    bool
+	SLADeadline time.Time
 }
 
 type UpdateTaskBlocksDataRequest struct {

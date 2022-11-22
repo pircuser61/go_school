@@ -287,16 +287,15 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 	}
 
 	return runCtx.Storage.UpdateStepContext(ctx, runCtx.Tx, &db.UpdateStepRequest{
-		Id:             id,
-		StepName:       name,
-		Content:        storageData,
-		BreakPoints:    []string{},
-		HasError:       hasError,
-		Status:         string(status),
-		WithoutContent: status != StatusFinished && status != StatusNoSuccess,
-		Members:        people,
-		CheckSLA:       checkSLA,
-		SLADeadline:    deadline,
+		Id:          id,
+		StepName:    name,
+		Content:     storageData,
+		BreakPoints: []string{},
+		HasError:    hasError,
+		Status:      string(status),
+		Members:     people,
+		CheckSLA:    checkSLA,
+		SLADeadline: deadline,
 	})
 }
 
