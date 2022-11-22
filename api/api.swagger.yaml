@@ -1586,6 +1586,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: data
+  /tasks/update/{work_number}:
+    post:
+      tags:
+        - tasks
+      summary: Update task
+      description: Update task with uuid action
+      operationId: update-task-uuid-action
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Task update data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdateWithUuidAction'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /tasks/count:
     get:
       tags:
@@ -2439,22 +2485,13 @@ components:
         - has_error
         - status
 
-    TaskUpdate:
+    TaskUpdateWithUuidAction:
       type: object
       properties:
         action:
           type: string
-          example: approvement
-          enum:
-            - approvement
-            - execution
-            - change_executor
-            - request_execution_info
-            - executor_start_work
-            - request_add_info
-            - fill_form
-            - cancel_app
-            - send_edit_app
+          example: 82f2324d-cea1-4024-99c1-674380483d39
+          description: uuid of action
         parameters:
           type: object
           description: Task update params
@@ -2468,6 +2505,35 @@ components:
       required:
         - action
         - parameters
+        - TaskUpdate:
+            type: object
+            properties:
+              action:
+                type: string
+                example: approvement
+                enum:
+                  - approvement
+                  - execution
+                  - change_executor
+                  - request_execution_info
+                  - executor_start_work
+                  - request_add_info
+                  - fill_form
+                  - cancel_app
+                  - send_edit_app
+              parameters:
+                type: object
+                description: Task update params
+                oneOf:
+                  - $ref: '#/components/schemas/ApproverUpdateParams'
+                  - $ref: '#/components/schemas/ExecutionUpdateParams'
+                  - $ref: '#/components/schemas/ExecutorChangeParams'
+                  - $ref: '#/components/schemas/RequestInfoUpdateParams'
+                  - $ref: '#/components/schemas/ExecutableFunctionParams'
+                  - $ref: '#/components/schemas/FillFormUpdateParams'
+            required:
+              - action
+              - parameters
 
     FillFormUpdateParams:
       type: object
