@@ -1518,25 +1518,19 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, tx pgx.Tx, dto *UpdateSt
 		, has_error = $3
 		, status = $4
 		, check_sla = $5
-		--members--
-		--content--
-		--updated_at--
-		--deadline--
+	    , members = $6
+		, content = $7
+		, updated_at = NOW()
+		, sla_deadline = $8
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA}
-	if !dto.WithoutContent {
-		members := make(pq.StringArray, 0, len(dto.Members))
-		for userLogin := range dto.Members {
-			members = append(members, userLogin)
-		}
-		q = strings.Replace(q, "--content--", ", content = $6", -1)
-		q = strings.Replace(q, "--members--", ", members = $7", -1)
-		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
-		q = strings.Replace(q, "--deadline--", ", sla_deadline = $8", -1)
-		args = append(args, dto.Content, members, dto.SLADeadline)
+	members := make(pq.StringArray, 0, len(dto.Members))
+	for userLogin := range dto.Members {
+		members = append(members, userLogin)
 	}
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA,
+		members, dto.Content, dto.SLADeadline}
 
 	_, err := tx.Exec(
 		c,
