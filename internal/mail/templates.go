@@ -159,9 +159,28 @@ func NewApplicationInitiatorStatusNotification(id, name, action, description, sd
 	}
 }
 
-func NewApplicationPersonStatusNotification(id, name, action, deadline, description, sdUrl string) Template {
+func getActionNameByStatus(status, defaultText string) (res string) {
+	switch status {
+	case "На согласовании":
+		return "согласования"
+	case "На утверждении":
+		return "утверждения"
+	case "На ознакомлении":
+		return "ознакомления"
+	case "На информировании":
+		return "подтверждения об информировании"
+	case "На подписании":
+		return "подписания"
+	default:
+		return defaultText
+	}
+}
+
+func NewApplicationPersonStatusNotification(id, name, status, action, deadline, description, sdUrl string) Template {
+	actionName := getActionNameByStatus(status, action)
+
 	return Template{
-		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, action),
+		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
 				Срок {{.Action}} до {{.Deadline}}<br>
@@ -178,7 +197,7 @@ func NewApplicationPersonStatusNotification(id, name, action, deadline, descript
 			Id:          id,
 			Name:        name,
 			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			Action:      action,
+			Action:      actionName,
 			Deadline:    deadline,
 			Description: description,
 		},
