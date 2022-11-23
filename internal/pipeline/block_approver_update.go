@@ -259,7 +259,6 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.addApprovers(updateParams); errUpdate != nil {
 			return nil, errUpdate
 		}
-
 	}
 
 	var stateBytes []byte
