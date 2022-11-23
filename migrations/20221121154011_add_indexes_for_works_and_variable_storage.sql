@@ -6,7 +6,8 @@ CREATE INDEX IF NOT EXISTS variable_storage_work_id_step_type_status_index ON va
 CREATE INDEX IF NOT EXISTS idxgin_content ON variable_storage USING gin (content);
 CREATE INDEX IF NOT EXISTS works_started_at ON works USING btree (started_at);
 CREATE INDEX IF NOT EXISTS works_work_number_index ON works USING btree (work_number);
-CREATE INDEX IF NOT EXISTS works_exp_index_filter ON works USING btree (work_number) WHERE (child_id IS NULL);-- +goose StatementEnd
+CREATE INDEX IF NOT EXISTS works_exp_index_filter ON works USING btree (work_number) WHERE (child_id IS NULL);
+-- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
