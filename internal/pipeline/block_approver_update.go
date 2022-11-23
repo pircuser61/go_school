@@ -4,13 +4,13 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -290,7 +290,7 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 	//approverEmails := []string{}
 
 	for i := range u.AdditionalApproversLogins {
-		if gb.checkAdditionalApprovers(u.AdditionalApproversLogins[i]) {
+		if gb.checkAdditionalApproverNotAdded(u.AdditionalApproversLogins[i]) {
 			gb.State.AdditionalApprovers = append(gb.State.AdditionalApprovers,
 				AdditionalApprover{
 					ApproverLogin:     u.AdditionalApproversLogins[i],
@@ -310,10 +310,10 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 			Attachments:    u.Attachments,
 			CreatedAt:      time.Now(),
 			AddedApprovers: u.AdditionalApproversLogins,
-			LogType:        AddApproverType,
+			LogType:        ApproverLogAddApprover,
 		}
 		gb.State.ApproverLog = append(gb.State.ApproverLog, approverLogEntry)
-		err := gb.notifAdditionalApprovers(ctx, logApprovers, u.Attachments)
+		err := gb.notificateAdditionalApprovers(ctx, logApprovers, u.Attachments)
 		if err != nil {
 			return err
 		}
@@ -321,7 +321,7 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 	return nil
 }
 
-func (gb *GoApproverBlock) checkAdditionalApprovers(login string) bool {
+func (gb *GoApproverBlock) checkAdditionalApproverNotAdded(login string) bool {
 	for _, added := range gb.State.AdditionalApprovers {
 		if login == added.ApproverLogin &&
 			added.BaseApproverLogin == gb.RunContext.UpdateData.ByLogin {
@@ -331,7 +331,7 @@ func (gb *GoApproverBlock) checkAdditionalApprovers(login string) bool {
 	return true
 }
 
-func (gb *GoApproverBlock) notifAdditionalApprovers(ctx c.Context, logins []string, attachmentsId []string) error {
+func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins []string, attachmentsId []string) error {
 	approverEmails := []string{}
 	for _, approver := range logins {
 		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, approver)
@@ -343,6 +343,9 @@ func (gb *GoApproverBlock) notifAdditionalApprovers(ctx c.Context, logins []stri
 	tpl := mail.NewAddApproversTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 
 	attachmentFiles, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, map[string][]string{"Ids": attachmentsId})
+	if err != nil {
+		return err
+	}
 	files := make([]email.Attachment, 0)
 	for k := range attachmentFiles {
 		files = append(files, attachmentFiles[k]...)
