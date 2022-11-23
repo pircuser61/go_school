@@ -56,7 +56,7 @@ func (db *PGCon) RollbackTransaction(ctx context.Context) error {
 	if !ok {
 		return nil
 	}
-	return tx.Rollback(ctx)
+	return tx.Rollback(ctx) // nolint:errcheck // rollback err
 }
 
 type PGCon struct {
@@ -787,7 +787,7 @@ func (db *PGCon) CreateTag(c context.Context,
 		return nil, err
 	}
 
-	defer tx.Rollback(c)
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	if e.Name == "" {
 		return nil, nil
@@ -1164,7 +1164,10 @@ func (db *PGCon) EditTag(c context.Context, e *entity.EriusTagInfo) error {
 	defer span.End()
 
 	tx, err := db.Connection.Begin(c)
-	defer tx.Rollback(c)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1214,7 +1217,7 @@ func (db *PGCon) AttachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagI
 		return err
 	}
 
-	defer tx.Rollback(c)
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	row := tx.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
 
@@ -1340,7 +1343,7 @@ func (db *PGCon) DetachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagI
 		return err
 	}
 
-	defer tx.Rollback(c)
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	row := tx.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
 
@@ -1382,7 +1385,7 @@ func (db *PGCon) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	defer tx.Rollback(c)
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	// nolint:gocritic
 	// language=PostgreSQL
