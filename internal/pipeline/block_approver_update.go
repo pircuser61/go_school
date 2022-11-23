@@ -33,6 +33,12 @@ type requestInfoParams struct {
 	LinkId      *string            `json:"link_id,omitempty"`
 }
 
+type addApproversParams struct {
+	AdditionalApproversLogins []string `json:"additionalApprovers"`
+	Question                  string   `json:"question"`
+	Attachments               []string `json:"attachments"`
+}
+
 func (a *approverUpdateParams) Validate() error {
 	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
 		return errors.New("unknown decision")
@@ -244,6 +250,16 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
+
+	case string(entity.TaskUpdateActionAddApprovers):
+		var updateParams addApproversParams
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+			return nil, errors.New("can't assert provided data")
+		}
+		if errUpdate := gb.addApprovers(updateParams); errUpdate != nil {
+			return nil, errUpdate
+		}
+
 	}
 
 	var stateBytes []byte
@@ -265,6 +281,40 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 	}
 	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
 		return stopErr
+	}
+	return nil
+}
+
+func (gb *GoApproverBlock) addApprovers(u addApproversParams) error {
+	logApprovers := []string{}
+addingApprovers:
+	for i := range u.AdditionalApproversLogins {
+		for _, added := range gb.State.AdditionalApprovers {
+			if u.AdditionalApproversLogins[i] == added.ApproverLogin &&
+				added.BaseApproverLogin == gb.RunContext.UpdateData.ByLogin {
+				continue addingApprovers
+			}
+		}
+		gb.State.AdditionalApprovers = append(gb.State.AdditionalApprovers,
+			AdditionalApprover{
+				ApproverLogin:     u.AdditionalApproversLogins[i],
+				BaseApproverLogin: gb.RunContext.UpdateData.ByLogin,
+				Question:          u.Question,
+				Attachments:       u.Attachments,
+				Decision:          "",
+			})
+		logApprovers = append(logApprovers, u.AdditionalApproversLogins[i])
+	}
+	if len(logApprovers) > 0 {
+		var approverLogEntry = ApproverLogEntry{
+			Login:          gb.RunContext.UpdateData.ByLogin,
+			Decision:       "",
+			Comment:        u.Question,
+			Attachments:    u.Attachments,
+			CreatedAt:      time.Now(),
+			AddedApprovers: u.AdditionalApproversLogins,
+		}
+		gb.State.ApproverLog = append(gb.State.ApproverLog, approverLogEntry)
 	}
 	return nil
 }
