@@ -217,7 +217,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 }
 
 func (gb *GoFormBlock) handleNotifications(ctx context.Context) error {
-	if !gb.RunContext.doNotifications {
+	if gb.RunContext.skipNotifications {
 		return nil
 	}
 	executors, executorsErr := gb.resolveExecutors(ctx)

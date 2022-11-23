@@ -126,7 +126,7 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 
 //nolint:dupl // maybe later
 func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
-	if !gb.RunContext.doNotifications {
+	if gb.RunContext.skipNotifications {
 		return nil
 	}
 	l := logger.GetLogger(ctx)

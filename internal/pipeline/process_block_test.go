@@ -135,6 +135,7 @@ func TestProcessBlock(t *testing.T) {
 			fields: fields{
 				Entrypoint: "start_0",
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := makeStorage()
@@ -211,6 +212,7 @@ func TestProcessBlock(t *testing.T) {
 			fields: fields{
 				Entrypoint: "start_0",
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := makeStorage()

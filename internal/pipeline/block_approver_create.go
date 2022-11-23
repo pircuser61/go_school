@@ -142,7 +142,7 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 
 //nolint:dupl // maybe later
 func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
-	if !gb.RunContext.doNotifications {
+	if gb.RunContext.skipNotifications {
 		return nil
 	}
 	l := logger.GetLogger(ctx)

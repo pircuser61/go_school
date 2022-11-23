@@ -37,7 +37,7 @@ type BlockRunContext struct {
 	FaaS               string
 	VarStore           *store.VariableStore
 	UpdateData         *script.BlockUpdateData
-	doNotifications    bool //for tests
+	skipNotifications  bool //for tests
 	Tx                 pgx.Tx
 	currBlockStartTime time.Time
 }
@@ -326,7 +326,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (str
 }
 
 func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context, step string, status TaskHumanStatus) error {
-	if !runCtx.doNotifications {
+	if runCtx.skipNotifications {
 		return nil
 	}
 	switch status {
