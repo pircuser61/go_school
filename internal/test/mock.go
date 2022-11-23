@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jackc/pgx/v4"
-
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/google/uuid"
@@ -930,7 +928,7 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
-func (_m *MockDB) UpdateTaskStatus(_ context.Context, _ pgx.Tx, _ uuid.UUID, _ int) error {
+func (_m *MockDB) UpdateTaskStatus(_ context.Context, _ uuid.UUID, _ int) error {
 	return nil
 }
 
@@ -966,7 +964,7 @@ func (_m *MockDB) GetApprovedVersions(c context.Context) ([]entity.EriusScenario
 	return []entity.EriusScenarioInfo{}, nil
 }
 
-func (_m *MockDB) GetParentTaskStepByName(_ context.Context, _ pgx.Tx, _ uuid.UUID, _ string) (*entity.Step, error) {
+func (_m *MockDB) GetParentTaskStepByName(_ context.Context, _ uuid.UUID, _ string) (*entity.Step, error) {
 	return &entity.Step{}, nil
 }
 
@@ -982,7 +980,7 @@ func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ pgx.Tx, _ uuid.UUID, _ string) error {
+func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ uuid.UUID, _ string) error {
 	return nil
 }
 
@@ -1003,11 +1001,11 @@ func (m *MockDB) GetTasksCount(c context.Context, userName string) (*entity.Coun
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) CheckTaskStepsExecuted(_ context.Context, _ pgx.Tx, _ string, _ []string) (bool, error) {
+func (m *MockDB) CheckTaskStepsExecuted(_ context.Context, _ string, _ []string) (bool, error) {
 	return false, nil
 }
 
-func (m *MockDB) GetTaskStepsToWait(_ context.Context, _ pgx.Tx, _, _ string) ([]string, error) {
+func (m *MockDB) GetTaskStepsToWait(_ context.Context, _, _ string) ([]string, error) {
 	return nil, nil
 }
 
@@ -1039,7 +1037,7 @@ func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTask(_ context.Context, _ pgx.Tx, _ string) (*entity.EriusTask, error) {
+func (m *MockDB) GetTask(_ context.Context, _ string) (*entity.EriusTask, error) {
 	return nil, errNotFound
 }
 
@@ -1123,19 +1121,19 @@ func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelin
 	return errNotImplemented
 }
 
-func (m *MockDB) SaveStepContext(_ context.Context, _ pgx.Tx, _ *db.SaveStepRequest) (uuid.UUID, time.Time, error) {
+func (m *MockDB) SaveStepContext(_ context.Context, _ *db.SaveStepRequest) (uuid.UUID, time.Time, error) {
 	return db.NullUuid, time.Time{}, nil
 }
 
-func (m *MockDB) UpdateStepContext(_ context.Context, _ pgx.Tx, _ *db.UpdateStepRequest) error {
+func (m *MockDB) UpdateStepContext(_ context.Context, _ *db.UpdateStepRequest) error {
 	return nil
 }
 
-func (m *MockDB) CreateTask(_ context.Context, _ pgx.Tx, _ *db.CreateTaskDTO) (*entity.EriusTask, error) {
+func (m *MockDB) CreateTask(_ context.Context, _ *db.CreateTaskDTO) (*entity.EriusTask, error) {
 	return &entity.EriusTask{}, nil
 }
 
-func (m *MockDB) ChangeTaskStatus(_ context.Context, _ pgx.Tx, _ uuid.UUID, _ int) error {
+func (m *MockDB) ChangeTaskStatus(_ context.Context, _ uuid.UUID, _ int) error {
 	return nil
 }
 
@@ -1153,7 +1151,7 @@ func (m *MockDB) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, errNotFound
 }
 
-func (m *MockDB) GetBlockDataFromVersion(_ context.Context, _ pgx.Tx, _, _ string) (*entity.EriusFunc, error) {
+func (m *MockDB) GetBlockDataFromVersion(_ context.Context, _, _ string) (*entity.EriusFunc, error) {
 	return nil, errNotImplemented
 }
 
@@ -1231,27 +1229,26 @@ func (m *MockDB) GetPipelinesByNameOrId(c context.Context, dto *db.SearchPipelin
 }
 
 // nolint:gocritic // it's ok
-func (m *MockDB) CheckUserCanEditForm(_ context.Context, _ pgx.Tx, _ string, _ string, _ string) (bool, error) {
+func (m *MockDB) CheckUserCanEditForm(_ context.Context, _ string, _ string, _ string) (bool, error) {
 	return false, errNotImplemented
 }
 
-func (m *MockDB) GetTaskRunContext(_ context.Context, _ pgx.Tx, _ string) (entity.TaskRunContext, error) {
+func (m *MockDB) GetTaskRunContext(_ context.Context, _ string) (entity.TaskRunContext, error) {
 	return entity.TaskRunContext{}, errNotImplemented
 }
 
 func (m *MockDB) GetUsersWithReadWriteFormAccess(
 	_ context.Context,
-	_ pgx.Tx,
 	_ string,
 	_ string) ([]entity.UsersWithFormAccess, error) {
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) StopTaskBlocks(_ context.Context, _ pgx.Tx, _ uuid.UUID) error {
+func (m *MockDB) StopTaskBlocks(_ context.Context, _ uuid.UUID) error {
 	return errNotImplemented
 }
 
-func (m *MockDB) GetTaskStatus(_ context.Context, _ pgx.Tx, _ uuid.UUID) (int, error) {
+func (m *MockDB) GetTaskStatus(_ context.Context, _ uuid.UUID) (int, error) {
 	return -1, errNotImplemented
 }
 
@@ -1259,10 +1256,18 @@ func (m *MockDB) GetVariableStorageForStep(_ context.Context, _ uuid.UUID, _ str
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) MakeTransaction(_ context.Context) (pgx.Tx, error) {
+func (m *MockDB) GetBlocksBreachedSLA(_ context.Context) ([]db.StepBreachedSLA, error) {
 	return nil, errNotFound
 }
 
-func (m *MockDB) GetBlocksBreachedSLA(_ context.Context) ([]db.StepBreachedSLA, error) {
+func (m *MockDB) StartTransaction(_ context.Context) (db.Database, error) {
 	return nil, errNotFound
+}
+
+func (m *MockDB) CommitTransaction(_ context.Context) error {
+	return errNotFound
+}
+
+func (m *MockDB) RollbackTransaction(_ context.Context) error {
+	return errNotFound
 }

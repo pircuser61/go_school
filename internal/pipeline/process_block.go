@@ -12,8 +12,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/jackc/pgx/v4"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -38,7 +36,6 @@ type BlockRunContext struct {
 	VarStore           *store.VariableStore
 	UpdateData         *script.BlockUpdateData
 	skipNotifications  bool //for tests
-	Tx                 pgx.Tx
 	currBlockStartTime time.Time
 }
 
@@ -62,7 +59,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 	}()
 
-	status, getErr := runCtx.Storage.GetTaskStatus(ctx, runCtx.Tx, runCtx.TaskID)
+	status, getErr := runCtx.Storage.GetTaskStatus(ctx, runCtx.TaskID)
 	if err != nil {
 		err = getErr
 		return
@@ -109,7 +106,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 			return
 		}
 		for _, b := range activeBlocks {
-			blockData, blockErr := runCtx.Storage.GetBlockDataFromVersion(ctx, runCtx.Tx, runCtx.WorkNumber, b)
+			blockData, blockErr := runCtx.Storage.GetBlockDataFromVersion(ctx, runCtx.WorkNumber, b)
 			if blockErr != nil {
 				err = blockErr
 				return
@@ -161,7 +158,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 			return nil, err
 		}
 
-		err = epi.CreateTask(ctx, runCtx.Tx, &CreateTaskDTO{
+		err = epi.CreateTask(ctx, &CreateTaskDTO{
 			Author:  "Erius",
 			IsDebug: false,
 			Params:  parameters,
@@ -265,7 +262,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 		return db.NullUuid, time.Time{}, errSerialize
 	}
 
-	return runCtx.Storage.SaveStepContext(ctx, runCtx.Tx, &db.SaveStepRequest{
+	return runCtx.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
 		WorkID:      runCtx.TaskID,
 		StepType:    stepType,
 		StepName:    name,
@@ -286,7 +283,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 		return err
 	}
 
-	return runCtx.Storage.UpdateStepContext(ctx, runCtx.Tx, &db.UpdateStepRequest{
+	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          id,
 		StepName:    name,
 		Content:     storageData,

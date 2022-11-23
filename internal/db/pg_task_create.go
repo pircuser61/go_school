@@ -6,8 +6,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/jackc/pgx/v4"
-
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -23,7 +21,7 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
-func (db *PGCon) CreateTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (*entity.EriusTask, error) {
+func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.EriusTask, error) {
 	c, span := trace.StartSpan(c, "pg_create_task")
 	defer span.End()
 
@@ -31,17 +29,17 @@ func (db *PGCon) CreateTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (*
 	var err error
 
 	if dto.WorkNumber == "" {
-		workNumber, err = db.insertTask(c, tx, dto)
+		workNumber, err = db.insertTask(c, dto)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		err = db.setTaskChild(c, tx, dto.WorkNumber, dto.TaskID)
+		err = db.setTaskChild(c, dto.WorkNumber, dto.TaskID)
 		if err != nil {
 			return nil, err
 		}
 
-		workNumber, err = db.insertTaskWithWorkNumber(c, tx, dto)
+		workNumber, err = db.insertTaskWithWorkNumber(c, dto)
 		if err != nil {
 			return nil, err
 		}
@@ -53,17 +51,15 @@ func (db *PGCon) CreateTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (*
 		SET last_run_id = $1 
 		WHERE id = $2`
 
-	_, err = tx.Exec(c, q, dto.TaskID, dto.VersionID)
+	_, err = db.Connection.Exec(c, q, dto.TaskID, dto.VersionID)
 	if err != nil {
-		_ = tx.Rollback(c)
-
 		return nil, err
 	}
 
-	return db.GetTask(c, tx, workNumber)
+	return db.GetTask(c, workNumber)
 }
 
-func (db *PGCon) insertTaskWithWorkNumber(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (string, error) {
+func (db *PGCon) insertTaskWithWorkNumber(c context.Context, dto *CreateTaskDTO) (string, error) {
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -92,7 +88,7 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, tx pgx.Tx, dto *Cre
 	RETURNING work_number
 `
 
-	row := tx.QueryRow(
+	row := db.Connection.QueryRow(
 		c,
 		query,
 		dto.TaskID,
@@ -109,15 +105,13 @@ func (db *PGCon) insertTaskWithWorkNumber(c context.Context, tx pgx.Tx, dto *Cre
 	var worksNumber string
 
 	if err := row.Scan(&worksNumber); err != nil {
-		_ = tx.Rollback(c)
-
 		return "", err
 	}
 
 	return worksNumber, nil
 }
 
-func (db *PGCon) insertTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (workNumber string, err error) {
+func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber string, err error) {
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -144,7 +138,7 @@ func (db *PGCon) insertTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (w
 	RETURNING work_number
 `
 
-	row := tx.QueryRow(
+	row := db.Connection.QueryRow(
 		c,
 		query,
 		dto.TaskID,
@@ -160,8 +154,6 @@ func (db *PGCon) insertTask(c context.Context, tx pgx.Tx, dto *CreateTaskDTO) (w
 	var worksNumber string
 
 	if err = row.Scan(&worksNumber); err != nil {
-		_ = tx.Rollback(c)
-
 		return "", err
 	}
 

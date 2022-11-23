@@ -7,8 +7,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/jackc/pgx/v4"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -105,10 +103,10 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
-func (gb *ExecutablePipeline) CreateTask(ctx c.Context, tx pgx.Tx, dto *CreateTaskDTO) error {
+func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
 	gb.TaskID = uuid.New()
 
-	task, err := gb.Storage.CreateTask(ctx, tx, &db.CreateTaskDTO{
+	task, err := gb.Storage.CreateTask(ctx, &db.CreateTaskDTO{
 		TaskID:     gb.TaskID,
 		VersionID:  gb.VersionID,
 		Author:     dto.Author,

@@ -14,8 +14,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/jackc/pgx/v4"
-
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -184,7 +182,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 	ORDER BY time`
 
 	ff := make([]string, 0)
-	rows, err := db.Pool.Query(c.Background(), q, workNumber, workNumber, nodeName)
+	rows, err := db.Connection.Query(c.Background(), q, workNumber, workNumber, nodeName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ff, nil
@@ -213,7 +211,7 @@ func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, 
 	and work_id = (select id from works where work_number = $1)`
 
 	var data *orderedmap.OrderedMap
-	if err := db.Pool.QueryRow(c.Background(), q, workNumber).Scan(&data); err != nil {
+	if err := db.Connection.QueryRow(c.Background(), q, workNumber).Scan(&data); err != nil {
 		return nil, err
 	}
 	return data, nil
@@ -413,17 +411,10 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 
 	et := entity.EriusTask{}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
-	row := conn.QueryRow(ctx, q, id, author)
+	row := db.Connection.QueryRow(ctx, q, id, author)
 	parameters := ""
 
-	err = row.Scan(&et.ID, &et.StartedAt, &et.Status, &et.HumanStatus, &et.IsDebugMode, &parameters, &et.Author, &et.VersionID)
+	err := row.Scan(&et.ID, &et.StartedAt, &et.Status, &et.HumanStatus, &et.IsDebugMode, &parameters, &et.Author, &et.VersionID)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +427,7 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 	return &et, nil
 }
 
-func (db *PGCon) GetTask(ctx c.Context, tx pgx.Tx, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) GetTask(ctx c.Context, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task")
 	defer span.End()
 
@@ -476,10 +467,10 @@ func (db *PGCon) GetTask(ctx c.Context, tx pgx.Tx, workNumber string) (*entity.E
 			AND w.child_id IS NULL
 `
 
-	return db.getTask(ctx, tx, q, workNumber)
+	return db.getTask(ctx, q, workNumber)
 }
 
-func (db *PGCon) getTask(ctx c.Context, tx pgx.Tx, q, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_private")
 	defer span.End()
 
@@ -487,19 +478,7 @@ func (db *PGCon) getTask(ctx c.Context, tx pgx.Tx, q, workNumber string) (*entit
 
 	var nullStringParameters sql.NullString
 
-	var row pgx.Row
-	if tx == nil {
-		conn, err := db.Pool.Acquire(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		defer conn.Release()
-
-		row = conn.QueryRow(ctx, q, workNumber)
-	} else {
-		row = tx.QueryRow(ctx, q, workNumber)
-	}
+	row := db.Connection.QueryRow(ctx, q, workNumber)
 
 	err := row.Scan(
 		&et.ID,
@@ -546,14 +525,7 @@ func (db *PGCon) getTasksCount(ctx c.Context, q string) (*tasksCounter, error) {
 
 	counter := &tasksCounter{}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return counter, err
-	}
-
-	defer conn.Release()
-
-	if scanErr := conn.QueryRow(ctx, q).
+	if scanErr := db.Connection.QueryRow(ctx, q).
 		Scan(
 			&counter.totalActive,
 			&counter.totalApprover,
@@ -575,14 +547,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 		Tasks: make([]entity.EriusTask, 0),
 	}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
-	rows, err := conn.Query(ctx, q, args...)
+	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -671,13 +636,6 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 
 	el := entity.TaskSteps{}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -695,7 +653,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			WHERE work_id = $1 AND vs.status != 'skipped'
 		ORDER BY vs.time DESC`
 
-	rows, err := conn.Query(ctx, query, id)
+	rows, err := db.Connection.Query(ctx, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -738,8 +696,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, tx pgx.Tx, workNumber,
-	stepName string) ([]entity.UsersWithFormAccess, error) {
+func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -789,7 +746,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, tx pgx.Tx, workN
 	`
 
 	result := make([]entity.UsersWithFormAccess, 0)
-	rows, err := tx.Query(ctx, q, workNumber, stepName)
+	rows, err := db.Connection.Query(ctx, q, workNumber, stepName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return result, nil
@@ -819,7 +776,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, tx pgx.Tx, workN
 	return result, nil
 }
 
-func (db *PGCon) GetTaskStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID) (int, error) {
+func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_status")
 	defer span.End()
 
@@ -830,7 +787,7 @@ func (db *PGCon) GetTaskStatus(ctx c.Context, tx pgx.Tx, taskID uuid.UUID) (int,
 
 	var status int
 
-	if err := tx.QueryRow(ctx, q, taskID).Scan(&status); err != nil {
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&status); err != nil {
 		return -1, err
 	}
 	return status, nil

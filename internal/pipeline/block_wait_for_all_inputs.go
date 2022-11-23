@@ -76,8 +76,7 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 		return nil, gb.formCancelPipeline(ctx)
 	}
 	// TODO
-	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, gb.RunContext.Tx,
-		gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
+	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +135,7 @@ func (gb *GoWaitForAllInputsBlock) loadState(raw json.RawMessage) error {
 }
 
 func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
-	steps, err := gb.RunContext.Storage.GetTaskStepsToWait(ctx, gb.RunContext.Tx, gb.RunContext.WorkNumber, gb.Name)
+	steps, err := gb.RunContext.Storage.GetTaskStepsToWait(ctx, gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return err
 	}
@@ -148,7 +147,7 @@ func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
 // nolint:dupl // another block
 func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context) (err error) {
 	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {

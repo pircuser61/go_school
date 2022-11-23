@@ -184,7 +184,7 @@ func (gb *GoExecutionBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.Tx, gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		return
 	}
@@ -215,7 +215,7 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.Tx, gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
 		return false

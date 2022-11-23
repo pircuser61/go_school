@@ -49,7 +49,7 @@ func (gb *GoEndBlock) GetState() interface{} {
 }
 
 func (gb *GoEndBlock) Update(ctx context.Context) (interface{}, error) {
-	if err := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); err != nil {
+	if err := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); err != nil {
 		return nil, err
 	}
 	if err := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); err != nil {

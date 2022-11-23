@@ -643,13 +643,20 @@ type execVersionInternalDTO struct {
 func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
 	log := logger.GetLogger(ctx)
 
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		e := PipelineRunError
+		return nil, e, transactionErr
+	}
+	defer txStorage.RollbackTransaction(ctx) // nolint:errcheck // rollback err
+
 	//nolint:staticcheck // поправить потом
 	ctx = c.WithValue(ctx, XRequestIDHeader, dto.reqID)
 
 	ep := pipeline.ExecutablePipeline{}
 	ep.PipelineID = dto.p.ID
 	ep.VersionID = dto.p.VersionID
-	ep.Storage = ae.DB
+	ep.Storage = txStorage
 	ep.EntryPoint = dto.p.Pipeline.Entrypoint
 	ep.FaaS = ae.FaaS
 	ep.PipelineModel = dto.p
@@ -677,14 +684,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		return nil, e, err
 	}
 
-	tx, transactionErr := ae.DB.MakeTransaction(ctx)
-	if transactionErr != nil {
-		e := PipelineRunError
-		return nil, e, transactionErr
-	}
-	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
-
-	if err = ep.CreateTask(ctx, tx, &pipeline.CreateTaskDTO{
+	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
 		Author:     dto.userName,
 		IsDebug:    false,
 		Params:     parameters,
@@ -700,14 +700,13 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		WorkNumber:  ep.WorkNumber,
 		WorkTitle:   ep.Name,
 		Initiator:   dto.userName,
-		Storage:     ep.Storage,
+		Storage:     txStorage,
 		Sender:      ep.Sender,
 		People:      ep.People,
 		ServiceDesc: ep.ServiceDesc,
 		FaaS:        ep.FaaS,
 		VarStore:    variableStorage,
 		UpdateData:  nil,
-		Tx:          tx,
 	}
 
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
@@ -719,7 +718,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = txStorage.CommitTransaction(ctx); err != nil {
 		e := PipelineRunError
 		return nil, e, err
 	}

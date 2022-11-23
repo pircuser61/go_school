@@ -260,7 +260,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 // nolint:dupl // another action
 func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
