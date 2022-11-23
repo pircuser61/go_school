@@ -49,6 +49,13 @@ const (
 	ReplyAddInfoType   AdditionalInfoType = "reply"
 )
 
+type ApproverLogType string
+
+const (
+	ApproverDecisionType ApproverLogType = "decision"
+	AddApproverType      ApproverLogType = "addApprover"
+)
+
 type AdditionalInfo struct {
 	Id          string             `json:"id"`
 	Login       string             `json:"login"`
@@ -66,6 +73,7 @@ type ApproverLogEntry struct {
 	CreatedAt      time.Time        `json:"created_at"`
 	Attachments    []string         `json:"attachments"`
 	AddedApprovers []string         `json:"added_approvers"`
+	LogType        ApproverLogType  `json:"log_type"`
 }
 
 type ApproverData struct {
@@ -160,7 +168,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 	if approvementRule == script.AllOfApprovementRequired {
 		for _, entry := range a.ApproverLog {
-			if entry.Login == login && entry.Decision != "" {
+			if entry.Login == login && entry.LogType == ApproverDecisionType {
 				return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 			}
 		}
@@ -172,6 +180,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 			Attachments:    attach,
 			CreatedAt:      time.Now(),
 			AddedApprovers: []string{},
+			LogType:        ApproverDecisionType,
 		}
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)

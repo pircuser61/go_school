@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/abp/mail/pkg/email"
 	"time"
 
 	"github.com/google/uuid"
@@ -256,7 +257,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
-		if errUpdate := gb.addApprovers(updateParams); errUpdate != nil {
+		if errUpdate := gb.addApprovers(ctx, updateParams); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
@@ -284,25 +285,22 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) addApprovers(u addApproversParams) error {
+func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) error {
 	logApprovers := []string{}
-addingApprovers:
+	//approverEmails := []string{}
+
 	for i := range u.AdditionalApproversLogins {
-		for _, added := range gb.State.AdditionalApprovers {
-			if u.AdditionalApproversLogins[i] == added.ApproverLogin &&
-				added.BaseApproverLogin == gb.RunContext.UpdateData.ByLogin {
-				continue addingApprovers
-			}
+		if gb.checkAdditionalApprovers(u.AdditionalApproversLogins[i]) {
+			gb.State.AdditionalApprovers = append(gb.State.AdditionalApprovers,
+				AdditionalApprover{
+					ApproverLogin:     u.AdditionalApproversLogins[i],
+					BaseApproverLogin: gb.RunContext.UpdateData.ByLogin,
+					Question:          u.Question,
+					Attachments:       u.Attachments,
+					Decision:          "",
+				})
+			logApprovers = append(logApprovers, u.AdditionalApproversLogins[i])
 		}
-		gb.State.AdditionalApprovers = append(gb.State.AdditionalApprovers,
-			AdditionalApprover{
-				ApproverLogin:     u.AdditionalApproversLogins[i],
-				BaseApproverLogin: gb.RunContext.UpdateData.ByLogin,
-				Question:          u.Question,
-				Attachments:       u.Attachments,
-				Decision:          "",
-			})
-		logApprovers = append(logApprovers, u.AdditionalApproversLogins[i])
 	}
 	if len(logApprovers) > 0 {
 		var approverLogEntry = ApproverLogEntry{
@@ -312,8 +310,46 @@ addingApprovers:
 			Attachments:    u.Attachments,
 			CreatedAt:      time.Now(),
 			AddedApprovers: u.AdditionalApproversLogins,
+			LogType:        AddApproverType,
 		}
 		gb.State.ApproverLog = append(gb.State.ApproverLog, approverLogEntry)
+		err := gb.notifAdditionalApprovers(ctx, logApprovers, u.Attachments)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (gb *GoApproverBlock) checkAdditionalApprovers(login string) bool {
+	for _, added := range gb.State.AdditionalApprovers {
+		if login == added.ApproverLogin &&
+			added.BaseApproverLogin == gb.RunContext.UpdateData.ByLogin {
+			return false
+		}
+	}
+	return true
+}
+
+func (gb *GoApproverBlock) notifAdditionalApprovers(ctx c.Context, logins []string, attachmentsId []string) error {
+	approverEmails := []string{}
+	for _, approver := range logins {
+		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, approver)
+		if emailErr != nil {
+			return emailErr
+		}
+		approverEmails = append(approverEmails, approverEmail)
+	}
+	tpl := mail.NewAddApproversTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+
+	attachmentFiles, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, map[string][]string{"Ids": attachmentsId})
+	files := make([]email.Attachment, 0)
+	for k := range attachmentFiles {
+		files = append(files, attachmentFiles[k]...)
+	}
+	err = gb.RunContext.Sender.SendNotification(ctx, approverEmails, files, tpl)
+	if err != nil {
+		return err
 	}
 	return nil
 }
