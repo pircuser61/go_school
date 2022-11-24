@@ -17,6 +17,11 @@ const (
 
 	RequestInfoQuestion RequestInfoType = "question"
 	RequestInfoAnswer   RequestInfoType = "answer"
+
+	executionStartWorkAction            = "executor_start_work"
+	executionChangeExecutorAction       = "change_executor"
+	executionRequestExecutionInfoAction = "request_execution_info"
+	executionExecuteAction              = "execution"
 )
 
 type GoExecutionBlock struct {
@@ -30,8 +35,34 @@ type GoExecutionBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoExecutionBlock) Members() map[string]struct{} {
-	return gb.State.Executors
+func (gb *GoExecutionBlock) Members() []Member {
+	//return gb.State.Executors
+	var members []Member
+	for login := range gb.State.Executors {
+		members = append(members, Member{
+			Login:      login,
+			IsFinished: gb.isExecutionFinished(),
+			Actions:    gb.executionActions(),
+		})
+	}
+	return members
+}
+
+func (gb *GoExecutionBlock) isExecutionFinished() bool {
+	if gb.State.Decision != nil || gb.State.IsRevoked {
+		return true
+	}
+	return false
+}
+
+func (gb *GoExecutionBlock) executionActions() []string {
+	if gb.State.Decision != nil || gb.State.IsRevoked {
+		if gb.State.ExecutionType == script.ExecutionTypeGroup && gb.State.IsTakenInWork == false {
+			return []string{executionStartWorkAction}
+		}
+	}
+	return []string{executionChangeExecutorAction, executionRequestExecutionInfoAction,
+		executionExecuteAction}
 }
 
 func (gb *GoExecutionBlock) CheckSLA() (bool, time.Time) {

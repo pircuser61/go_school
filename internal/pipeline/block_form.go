@@ -21,7 +21,7 @@ const (
 	keyOutputFormBody     = "application_body"
 )
 
-const fillFormAction = "fill_form"
+const formFillFormAction = "fill_form"
 
 type ChangesLogItem struct {
 	Description     string                 `json:"description"`
@@ -79,7 +79,7 @@ func (gb *GoFormBlock) formActions() []string {
 	if gb.State.IsFilled || gb.State.IsRevoked {
 		return []string{}
 	}
-	return []string{fillFormAction}
+	return []string{formFillFormAction}
 }
 
 func (gb *GoFormBlock) CheckSLA() (bool, time.Time) {
