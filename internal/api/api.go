@@ -201,6 +201,8 @@ const (
 const (
 	TaskUpdateActionAddApprovers TaskUpdateAction = "add_approvers"
 
+	TaskUpdateActionAdditionalApprovement TaskUpdateAction = "additional_approvement"
+
 	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
 
 	TaskUpdateActionCancelApp TaskUpdateAction = "cancel_app"
@@ -338,6 +340,22 @@ type AddApproversParams struct {
 
 	// Question from approver
 	Question string `json:"question"`
+}
+
+// Additional approver update params
+type AdditionalApproverUpdateParams struct {
+	Attachments []string `json:"attachments"`
+
+	// Login of the person who requested additional approval
+	BaseApproverLogin string `json:"baseApproverLogin"`
+
+	// Comment from additional approver
+	Comment string `json:"comment"`
+
+	// Approver decision:
+	//  * approved - approver approved block
+	//  * rejected - approver rejected block
+	Decision ApproverDecision `json:"decision"`
 }
 
 // AllUsageResponse defines model for AllUsageResponse.

@@ -27,6 +27,13 @@ type approverUpdateParams struct {
 	Attachments []string         `json:"attachments"`
 }
 
+type additionalApproverUpdateParams struct {
+	BaseApproverLogin string           `json:"baseApproverLogin"`
+	Decision          ApproverDecision `json:"decision"`
+	Comment           string           `json:"comment"`
+	Attachments       []string         `json:"attachments"`
+}
+
 type requestInfoParams struct {
 	Type        AdditionalInfoType `json:"type"`
 	Comment     string             `json:"comment"`
@@ -42,7 +49,19 @@ type addApproversParams struct {
 
 func (a *approverUpdateParams) Validate() error {
 	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
-		return errors.New("unknown decision")
+		return fmt.Errorf("unknown decision %s", a.Decision)
+	}
+
+	return nil
+}
+
+func (a *additionalApproverUpdateParams) Validate() error {
+	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
+		return fmt.Errorf("unknown decision %s", a.Decision)
+	}
+
+	if a.BaseApproverLogin == "" {
+		return errors.New("login of base approver is required")
 	}
 
 	return nil
@@ -228,8 +247,28 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errors.New("can't assert provided data")
 		}
 
+		if err := updateParams.Validate(); err != nil {
+			return nil, err
+		}
+
 		if errUpdate := gb.setApproverDecision(updateParams); errUpdate != nil {
 			return nil, errUpdate
+		}
+
+	case string(entity.TaskUpdateActionAdditionalApprovement):
+		var updateParams additionalApproverUpdateParams
+
+		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
+			return nil, errors.New("can't assert provided data")
+		}
+
+		if err := updateParams.Validate(); err != nil {
+			return nil, err
+		}
+
+		err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin, updateParams)
+		if err != nil {
+			return nil, err
 		}
 
 	case string(entity.TaskUpdateActionApproverSendEditApp):

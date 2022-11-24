@@ -94,24 +94,6 @@ func TestApproverData_SetDecision(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "unknown decision",
-			fields: fields{
-				Type: script.ApproverTypeHead,
-				Approvers: map[string]struct{}{
-					login: {},
-				},
-				Decision:       nil,
-				Comment:        nil,
-				ActualApprover: nil,
-			},
-			args: args{
-				login:    login,
-				decision: ApproverDecision("unknown"),
-				comment:  comment,
-			},
-			wantErr: true,
-		},
-		{
 			name: "valid case",
 			fields: fields{
 				Type: script.ApproverTypeHead,
@@ -148,6 +130,121 @@ func TestApproverData_SetDecision(t *testing.T) {
 					tt.args.comment,
 				)
 			}
+		})
+	}
+}
+
+func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
+	const (
+		login             = "login2"
+		baseApproverLogin = "login1"
+		decision          = ApproverDecisionRejected
+		comment           = "blah blah blah"
+		question          = "need approval"
+	)
+
+	type fields struct {
+		Decision            *ApproverDecision
+		AdditionalApprovers []AdditionalApprover
+	}
+	type args struct {
+		login  string
+		params additionalApproverUpdateParams
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		want    []AdditionalApprover
+	}{
+		{
+			name: "additional approver not found",
+			fields: fields{
+				Decision:            nil,
+				AdditionalApprovers: nil,
+			},
+			args: args{
+				login: login,
+				params: additionalApproverUpdateParams{
+					BaseApproverLogin: baseApproverLogin,
+					Decision:          decision,
+					Comment:           comment,
+				},
+			},
+			wantErr: true,
+			want:    nil,
+		},
+		{
+			name: "decision already set",
+			fields: fields{
+				Decision: func() *ApproverDecision {
+					res := decision
+					return &res
+				}(),
+				AdditionalApprovers: nil,
+			},
+			args: args{
+				login: login,
+				params: additionalApproverUpdateParams{
+					BaseApproverLogin: baseApproverLogin,
+					Decision:          decision,
+					Comment:           comment,
+				},
+			},
+			wantErr: true,
+			want:    nil,
+		},
+		{
+			name: "valid case",
+			fields: fields{
+				Decision: nil,
+				AdditionalApprovers: []AdditionalApprover{
+					{
+						ApproverLogin:     login,
+						BaseApproverLogin: baseApproverLogin,
+						Question:          question,
+						Comment:           comment,
+						Decision:          decision,
+					},
+				},
+			},
+			args: args{
+				login: login,
+				params: additionalApproverUpdateParams{
+					BaseApproverLogin: baseApproverLogin,
+					Decision:          decision,
+					Comment:           comment,
+				},
+			},
+			wantErr: false,
+			want: []AdditionalApprover{
+				{
+					ApproverLogin:     login,
+					BaseApproverLogin: baseApproverLogin,
+					Question:          question,
+					Comment:           comment,
+					Decision:          decision,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &ApproverData{
+				Decision:            tt.fields.Decision,
+				AdditionalApprovers: tt.fields.AdditionalApprovers,
+			}
+
+			if err := a.SetDecisionByAdditionalApprover(tt.args.login, tt.args.params); (err != nil) != tt.wantErr {
+				t.Errorf(
+					"SetDecision(%v, %v)",
+					tt.args.login,
+					tt.args.params,
+				)
+			}
+
+			assert.Equal(t, a.AdditionalApprovers, tt.want)
 		})
 	}
 }
@@ -281,7 +378,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 			ctx := context.Background()
 			got, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, &BlockRunContext{
 				skipNotifications: true,
-				VarStore: store.NewStore(),
+				VarStore:          store.NewStore(),
 			})
 			if got != nil {
 				got.RunContext = nil
@@ -324,7 +421,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				Name: stepName,
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					VarStore: store.NewStore(),
+					VarStore:          store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -359,7 +456,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					VarStore: store.NewStore(),
+					VarStore:          store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -429,7 +526,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					VarStore: store.NewStore(),
+					VarStore:          store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -497,7 +594,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
-					VarStore: store.NewStore(),
+					VarStore:          store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 

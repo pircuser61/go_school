@@ -52,8 +52,9 @@ const (
 type ApproverLogType string
 
 const (
-	ApproverLogDecision    ApproverLogType = "decision"
-	ApproverLogAddApprover ApproverLogType = "addApprover"
+	ApproverLogDecision           ApproverLogType = "decision"
+	AdditionalApproverLogDecision ApproverLogType = "additionalApproverDecision"
+	ApproverLogAddApprover        ApproverLogType = "addApprover"
 )
 
 type AdditionalInfo struct {
@@ -67,13 +68,14 @@ type AdditionalInfo struct {
 }
 
 type ApproverLogEntry struct {
-	Login          string           `json:"login"`
-	Decision       ApproverDecision `json:"decision"`
-	Comment        string           `json:"comment"`
-	CreatedAt      time.Time        `json:"created_at"`
-	Attachments    []string         `json:"attachments"`
-	AddedApprovers []string         `json:"added_approvers"`
-	LogType        ApproverLogType  `json:"log_type"`
+	Login             string           `json:"login"`
+	Decision          ApproverDecision `json:"decision"`
+	Comment           string           `json:"comment"`
+	CreatedAt         time.Time        `json:"created_at"`
+	Attachments       []string         `json:"attachments"`
+	AddedApprovers    []string         `json:"added_approvers"`
+	BaseApproverLogin string           `json:"base_approver_login"`
+	LogType           ApproverLogType  `json:"log_type"`
 }
 
 type ApproverData struct {
@@ -122,6 +124,7 @@ type AdditionalApprover struct {
 	ApproverLogin     string           `json:"approver_login"`
 	BaseApproverLogin string           `json:"base_approver_login"`
 	Question          string           `json:"question"`
+	Comment           string           `json:"comment"`
 	Attachments       []string         `json:"attachments"`
 	Decision          ApproverDecision `json:"decision"`
 }
@@ -147,10 +150,6 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	_, ok := a.Approvers[login]
 	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
-	}
-
-	if decision != ApproverDecisionApproved && decision != ApproverDecisionRejected {
-		return fmt.Errorf("unknown decision %s", decision.String())
 	}
 
 	if a.Decision != nil {
@@ -208,6 +207,41 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 	}
 
 	return nil
+}
+
+//nolint:gocyclo //its ok here
+func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params additionalApproverUpdateParams) error {
+	if a.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	for i := range a.AdditionalApprovers {
+		if login != a.AdditionalApprovers[i].ApproverLogin ||
+			params.BaseApproverLogin != a.AdditionalApprovers[i].BaseApproverLogin {
+			continue
+		}
+
+		a.AdditionalApprovers[i].Decision = params.Decision
+		a.AdditionalApprovers[i].Comment = params.Comment
+		a.AdditionalApprovers[i].Attachments = params.Attachments
+
+		var approverLogEntry = ApproverLogEntry{
+			Login:             login,
+			Decision:          params.Decision,
+			Comment:           params.Comment,
+			Attachments:       params.Attachments,
+			CreatedAt:         time.Now(),
+			BaseApproverLogin: params.BaseApproverLogin,
+			LogType:           AdditionalApproverLogDecision,
+		}
+
+		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+
+		return nil
+	}
+
+	return fmt.Errorf("%s not found in the list of additional approvers added by %s",
+		login, params.BaseApproverLogin)
 }
 
 func (a *ApproverData) setEditApp(login string, params approverUpdateEditingParams) error {
