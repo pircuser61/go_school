@@ -2,6 +2,7 @@ package actions
 
 import (
 	"encoding/json"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
@@ -86,10 +87,19 @@ func (as *Service) GetAvailableActionsFromTask(user *sso.UserInfo, task *entity.
 		switch activeBlock.Type {
 		case FormBlockType:
 			usernames, err = getFormExecutors(activeBlock)
+			if err != nil {
+				return []Action{}, err
+			}
 		case ApproverBlockType:
 			usernames, err = getApprovers(activeBlock)
+			if err != nil {
+				return []Action{}, err
+			}
 		case ExecutionBlockType:
 			usernames, err = getExecutors(activeBlock)
+			if err != nil {
+				return []Action{}, err
+			}
 		default:
 			continue
 		}
