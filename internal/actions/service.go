@@ -2,7 +2,6 @@ package actions
 
 import (
 	"encoding/json"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
@@ -81,24 +80,28 @@ func (as *Service) GetAvailableActionsFromTask(user *sso.UserInfo, task *entity.
 	}
 
 	var currentUsername = user.Username
-	var usernames = make([]string, 0)
 
 	for _, activeBlock := range activeBlocks {
+		var usernames []string
+
 		switch activeBlock.Type {
 		case FormBlockType:
-			usernames, err = getFormExecutors(activeBlock)
-			if err != nil {
-				return []Action{}, err
+			var formExecutorsErr error
+			usernames, formExecutorsErr = getFormExecutors(activeBlock)
+			if formExecutorsErr != nil {
+				return []Action{}, formExecutorsErr
 			}
 		case ApproverBlockType:
-			usernames, err = getApprovers(activeBlock)
-			if err != nil {
-				return []Action{}, err
+			var approversErr error
+			usernames, approversErr = getApprovers(activeBlock)
+			if approversErr != nil {
+				return []Action{}, approversErr
 			}
 		case ExecutionBlockType:
-			usernames, err = getExecutors(activeBlock)
-			if err != nil {
-				return []Action{}, err
+			var executorsErr error
+			usernames, executorsErr = getExecutors(activeBlock)
+			if executorsErr != nil {
+				return []Action{}, executorsErr
 			}
 		default:
 			continue
@@ -114,7 +117,7 @@ func (as *Service) GetAvailableActionsFromTask(user *sso.UserInfo, task *entity.
 	// appending cancel app action if user also an author
 	if checkIfAuthor(user, task) {
 		availableActions = append(availableActions, Action{
-			// добавляем отмену (cancel_app)
+			// tbd
 		})
 	}
 
