@@ -270,33 +270,42 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 	defer span.End()
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := fmt.Sprintf(`
-		WITH workers as (
-			SELECT id, author FROM works
-		WHERE works.child_id IS NULL AND status = 1
+	q := `
+		WITH ids AS (
+		    SELECT w.id
+		    FROM works w
+         	JOIN versions v ON v.id = w.version_id
+         	JOIN pipelines p ON p.id = v.pipeline_id
+         	JOIN work_status ws ON w.status = ws.id
+			WHERE w.child_id IS NULL
 		)
 		SELECT
-		(SELECT count(*) FROM workers WHERE workers.author = '%s'),
+		(SELECT count(*) FROM works w join ids on w.id = ids.id
+		WHERE author = $1 AND
+		      ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)),
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
+				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = '%s' AND vs.step_type = 'approver'
+				m.login = $1 AND vs.step_type = 'approver'
 		),
 		(SELECT count(*)
 			 FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
+				JOIN ids on vs.work_id = ids.id
 			 WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = '%s' AND vs.step_type = 'execution'),
+				m.login = $1 AND vs.step_type = 'execution'),
 		
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
+				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = '%s' AND vs.step_type = 'form'
-		)`, userName, userName, userName, userName)
+				m.login = $1 AND vs.step_type = 'form'
+		)`
 
-	counter, err := db.getTasksCount(ctx, q)
+	counter, err := db.getTasksCount(ctx, q, userName)
 	if err != nil {
 		return nil, err
 	}
@@ -502,13 +511,13 @@ type tasksCounter struct {
 	totalFormExecutor int
 }
 
-func (db *PGCon) getTasksCount(ctx c.Context, q string) (*tasksCounter, error) {
+func (db *PGCon) getTasksCount(ctx c.Context, q, username string) (*tasksCounter, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 
 	counter := &tasksCounter{}
 
-	if scanErr := db.Connection.QueryRow(ctx, q).
+	if scanErr := db.Connection.QueryRow(ctx, q, username).
 		Scan(
 			&counter.totalActive,
 			&counter.totalApprover,
