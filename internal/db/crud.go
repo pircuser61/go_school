@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
-
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
@@ -1491,12 +1489,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	if id != NullUuid {
 		return id, t, nil
 	}
-
-	logins := make(pq.StringArray, 0, len(dto.Members))
-	for i := range dto.Members {
-		logins = append(logins, dto.Members[i].Login)
-	}
-
 	id = uuid.New()
 	timestamp := time.Now()
 	// nolint:gocritic
@@ -1512,7 +1504,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			break_points, 
 			has_error,
 			status,
-		    members,
 		    check_sla,
 		    sla_deadline
 		)
@@ -1527,8 +1518,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$8,
 			$9,
 			$10,
-		    $11,
-			$12
+		    $11
 		)
 `
 
@@ -1544,7 +1534,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
-		logins,
 		dto.CheckSLA,
 		dto.SLADeadline,
 	)
@@ -1573,7 +1562,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		)
 `
 	for _, val := range dto.Members {
-
 		_, err = db.Connection.Exec(
 			ctx,
 			queryMembers,
@@ -1603,19 +1591,14 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		, has_error = $3
 		, status = $4
 		, check_sla = $5
-	    , members = $6
-		, content = $7
+		, content = $6
 		, updated_at = NOW()
-		, sla_deadline = $8
+		, sla_deadline = $7
 	WHERE
 		id = $1
 `
-	members := make(pq.StringArray, 0, len(dto.Members))
-	for i := range dto.Members {
-		members = append(members, dto.Members[i].Login)
-	}
 	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA,
-		members, dto.Content, dto.SLADeadline}
+		dto.Content, dto.SLADeadline}
 
 	_, err := db.Connection.Exec(
 		c,
@@ -1662,7 +1645,6 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		)
 `
 	for _, val := range dto.Members {
-
 		_, err = db.Connection.Exec(
 			ctx,
 			qMembersAdd,
