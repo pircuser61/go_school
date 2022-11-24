@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/lib/pq"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -15,6 +14,8 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
+
+	"github.com/lib/pq"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
