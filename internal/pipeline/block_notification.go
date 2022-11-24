@@ -34,7 +34,7 @@ type GoNotificationBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoNotificationBlock) Members() map[string]struct{} {
+func (gb *GoNotificationBlock) Members() []Member {
 	return nil
 }
 

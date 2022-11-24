@@ -21,7 +21,7 @@ type GoTestBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoTestBlock) Members() map[string]struct{} {
+func (gb *GoTestBlock) Members() []Member {
 	return nil
 }
 

@@ -1492,9 +1492,9 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		return id, t, nil
 	}
 
-	members := make(pq.StringArray, 0, len(dto.Members))
-	for userLogin := range dto.Members {
-		members = append(members, userLogin)
+	logins := make(pq.StringArray, 0, len(dto.Members))
+	for i := range dto.Members {
+		logins = append(logins, dto.Members[i].Login)
 	}
 
 	id = uuid.New()
@@ -1544,7 +1544,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
-		members,
+		logins,
 		dto.CheckSLA,
 		dto.SLADeadline,
 	)
@@ -1552,6 +1552,41 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		return NullUuid, time.Time{}, err
 	}
 
+	membersId := uuid.New()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const queryMembers = `
+		INSERT INTO members (               
+			id,
+		     block_id,
+		    login,
+		    finished,
+		     actions                
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4, 
+			$5
+		)
+`
+	for _, val := range dto.Members {
+
+		_, err = db.Connection.Exec(
+			ctx,
+			queryMembers,
+			membersId,
+			id,
+			val.Login,
+			val.Finished,
+			val.Actions,
+		)
+		if err != nil {
+			return NullUuid, time.Time{}, err
+		}
+	}
 	return id, timestamp, nil
 }
 
@@ -1576,8 +1611,8 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		id = $1
 `
 	members := make(pq.StringArray, 0, len(dto.Members))
-	for userLogin := range dto.Members {
-		members = append(members, userLogin)
+	for i := range dto.Members {
+		members = append(members, dto.Members[i].Login)
 	}
 	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA,
 		members, dto.Content, dto.SLADeadline}
@@ -1589,6 +1624,57 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	)
 	if err != nil {
 		return err
+	}
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const qMembersDelete = `
+		DELETE FROM members 
+		WHERE block_id = $1
+`
+	_, err = db.Connection.Exec(
+		ctx,
+		qMembersDelete,
+		dto.Id,
+	)
+	if err != nil {
+		return err
+	}
+
+	membersId := uuid.New()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const qMembersAdd = `
+		INSERT INTO members (               
+			id,
+		     block_id,
+		    login,
+		    finished,
+		     actions                
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4, 
+			$5
+		)
+`
+	for _, val := range dto.Members {
+
+		_, err = db.Connection.Exec(
+			ctx,
+			qMembersAdd,
+			membersId,
+			dto.Id,
+			val.Login,
+			val.Finished,
+			val.Actions,
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
