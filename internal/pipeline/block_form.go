@@ -61,9 +61,8 @@ func (gb *GoFormBlock) Members() []Member {
 		members = append(members, Member{
 			Login:      login,
 			IsFinished: gb.isFormFinished(),
-			Actions:    []string{fillFormAction},
-		},
-		)
+			Actions:    gb.formActions(),
+		})
 	}
 
 	return members
@@ -74,6 +73,13 @@ func (gb *GoFormBlock) isFormFinished() bool {
 		return true
 	}
 	return false
+}
+
+func (gb *GoFormBlock) formActions() []string {
+	if gb.State.IsFilled || gb.State.IsRevoked {
+		return []string{}
+	}
+	return []string{fillFormAction}
 }
 
 func (gb *GoFormBlock) CheckSLA() (bool, time.Time) {
