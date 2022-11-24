@@ -217,7 +217,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 }
 
 func (gb *GoFormBlock) handleNotifications(ctx context.Context) error {
-	if !gb.RunContext.doNotifications {
+	if gb.RunContext.skipNotifications {
 		return nil
 	}
 	executors, executorsErr := gb.resolveExecutors(ctx)
@@ -270,8 +270,7 @@ func (gb *GoFormBlock) resolveExecutors(ctx c.Context) (users []string, err erro
 
 	appendUnique(mapToString(gb.State.Executors))
 
-	executorsWithAccess, err := gb.RunContext.Storage.GetUsersWithReadWriteFormAccess(ctx, gb.RunContext.Tx,
-		gb.RunContext.WorkNumber, gb.Name)
+	executorsWithAccess, err := gb.RunContext.Storage.GetUsersWithReadWriteFormAccess(ctx, gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, funcName)
 	}

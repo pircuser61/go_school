@@ -142,7 +142,7 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 
 //nolint:dupl // maybe later
 func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
-	if !gb.RunContext.doNotifications {
+	if gb.RunContext.skipNotifications {
 		return nil
 	}
 	l := logger.GetLogger(ctx)
@@ -200,7 +200,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.Tx, gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		return
 	}
@@ -230,7 +230,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.Tx, gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
 		return false

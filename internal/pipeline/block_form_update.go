@@ -29,7 +29,7 @@ func (a *updateFillFormParams) Validate() error {
 // nolint:dupl // another action
 func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
 	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.Tx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
@@ -68,8 +68,8 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	if gb.State.IsFilled {
-		isAllowed, checkEditErr := gb.RunContext.Storage.CheckUserCanEditForm(ctx, gb.RunContext.Tx,
-			gb.RunContext.WorkNumber, gb.Name, data.ByLogin)
+		isAllowed, checkEditErr := gb.RunContext.Storage.CheckUserCanEditForm(ctx, gb.RunContext.WorkNumber,
+			gb.Name, data.ByLogin)
 		if checkEditErr != nil {
 			return nil, err
 		}

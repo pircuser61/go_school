@@ -8,8 +8,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/jackc/pgx/v4"
-
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -24,39 +22,33 @@ func makeStorage() *mocks.MockedDatabase {
 
 	res.On("GetTaskStatus",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
-		mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 		uuid.UUID{},
 	).Return(1, nil)
 
 	res.On("UpdateTaskStatus",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
-		mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 		uuid.UUID{},
 		mock.MatchedBy(func(taskStatus int) bool { return true }),
 	).Return(nil)
 
 	res.On("UpdateTaskHumanStatus",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
-		mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 		uuid.UUID{},
 		mock.MatchedBy(func(status string) bool { return true }),
 	).Return(nil)
 
 	res.On("SaveStepContext",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
-		mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 		mock.MatchedBy(func(data *db.SaveStepRequest) bool { return true }),
 	).Return(uuid.UUID{}, time.Now(), nil)
 
 	res.On("StopTaskBlocks",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
-		mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 		mock.MatchedBy(func(id uuid.UUID) bool { return true }),
 	).Return(nil)
 
 	res.On("GetTaskRunContext",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
-		mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 		mock.MatchedBy(func(workNumber string) bool { return true }),
 	).Return(entity.TaskRunContext{
 		InitialApplication: entity.InitialApplication{
@@ -135,16 +127,16 @@ func TestProcessBlock(t *testing.T) {
 			fields: fields{
 				Entrypoint: "start_0",
 				RunContext: &BlockRunContext{
-					VarStore: store.NewStore(),
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
 					Storage: func() db.Database {
 						res := makeStorage()
 
 						res.On("UpdateStepContext",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
 						).Run(func(args mock.Arguments) {
-							req := args.Get(2).(*db.UpdateStepRequest)
+							req := args.Get(1).(*db.UpdateStepRequest)
 							if req.Status == string(StatusFinished) {
 								latestBlock = req.StepName
 							}
@@ -152,7 +144,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"start_0",
 						).Return(
@@ -171,7 +162,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"servicedesk_application_0",
 						).Return(
@@ -191,7 +181,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"end_0",
 						).Return(
@@ -211,16 +200,16 @@ func TestProcessBlock(t *testing.T) {
 			fields: fields{
 				Entrypoint: "start_0",
 				RunContext: &BlockRunContext{
-					VarStore: store.NewStore(),
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
 					Storage: func() db.Database {
 						res := makeStorage()
 
 						res.On("UpdateStepContext",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
 						).Run(func(args mock.Arguments) {
-							req := args.Get(2).(*db.UpdateStepRequest)
+							req := args.Get(1).(*db.UpdateStepRequest)
 							if req.Status == string(StatusFinished) {
 								latestBlock = req.StepName
 								metBlocks = append(metBlocks, req.StepName)
@@ -229,7 +218,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("CheckTaskStepsExecuted",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							mock.MatchedBy(func(ids []string) bool { return true }),
 						).Return(
@@ -245,7 +233,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetTaskStepsToWait",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							mock.MatchedBy(func(name string) bool { return true }),
 						).Return(
@@ -254,7 +241,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"start_0",
 						).Return(
@@ -273,7 +259,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"servicedesk_application_0",
 						).Return(
@@ -293,7 +278,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"start_parallel_0",
 						).Return(
@@ -312,7 +296,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"approver_0",
 						).Return(
@@ -331,7 +314,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"execution_0",
 						).Return(
@@ -350,7 +332,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"end_parallel_0",
 						).Return(
@@ -369,7 +350,6 @@ func TestProcessBlock(t *testing.T) {
 
 						res.On("GetBlockDataFromVersion",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(tx pgx.Tx) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
 							"end_0",
 						).Return(
@@ -403,7 +383,7 @@ func TestProcessBlock(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			entrypointData, blockErr := tt.fields.RunContext.Storage.GetBlockDataFromVersion(
-				ctx, nil, "", tt.fields.Entrypoint)
+				ctx, "", tt.fields.Entrypoint)
 			if blockErr != nil {
 				t.Fatal(blockErr)
 			}
@@ -412,8 +392,7 @@ func TestProcessBlock(t *testing.T) {
 				t.Fatal(procErr)
 			}
 			for name, params := range tt.fields.Updates {
-				blockData, updateErr := tt.fields.RunContext.Storage.GetBlockDataFromVersion(ctx,
-					nil, "", name)
+				blockData, updateErr := tt.fields.RunContext.Storage.GetBlockDataFromVersion(ctx, "", name)
 				if updateErr != nil {
 					t.Fatal(updateErr)
 				}

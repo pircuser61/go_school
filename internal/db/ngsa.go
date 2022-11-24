@@ -43,7 +43,7 @@ func (db *PGCon) ActiveAlertNGSA(c context.Context, sever int,
 		$13, 
 		$14
 	)`
-	_, err := db.Pool.Exec(c, q, state, sever, source, t, eventType, cause,
+	_, err := db.Connection.Exec(c, q, state, sever, source, t, eventType, cause,
 		addInf, addTxt, moID, specProb, notID, usertext, moi, moc)
 
 	return err
@@ -59,7 +59,7 @@ func (db *PGCon) ClearAlertNGSA(c context.Context, name string) error {
 			cleartime = $1
 		WHERE "notificationIdentifier" = $2
 `
-	_, err := db.Pool.Exec(c, q, t, name)
+	_, err := db.Connection.Exec(c, q, t, name)
 
 	return err
 }

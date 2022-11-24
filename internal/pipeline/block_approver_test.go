@@ -279,7 +279,10 @@ func Test_createGoApproverBlock(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			got, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, &BlockRunContext{VarStore: store.NewStore()})
+			got, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, &BlockRunContext{
+				skipNotifications: true,
+				VarStore: store.NewStore(),
+			})
 			if got != nil {
 				got.RunContext = nil
 			}
@@ -320,6 +323,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
@@ -354,6 +358,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					ApprovementRule: script.AnyOfApprovementRequired,
 				},
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
@@ -423,6 +428,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					ApprovementRule: script.AnyOfApprovementRequired,
 				},
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
@@ -490,6 +496,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					},
 				},
 				RunContext: &BlockRunContext{
+					skipNotifications: true,
 					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}

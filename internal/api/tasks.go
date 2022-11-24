@@ -116,7 +116,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, nil, workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -391,7 +391,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, nil, workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -442,7 +442,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 	routineCtx = logger.WithLogger(routineCtx, log)
-	tx, transactionErr := ae.DB.MakeTransaction(routineCtx)
+	txStorage, transactionErr := ae.DB.StartTransaction(routineCtx)
 	if transactionErr != nil {
 		e := UpdateBlockError
 		log.Error(e.errorMessage(nil))
@@ -450,11 +450,11 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 		return
 	}
-	defer tx.Rollback(routineCtx) // nolint:errcheck // rollback err
+	defer txStorage.RollbackTransaction(routineCtx) // nolint:errcheck // rollback err
 
 	couldUpdateOne := false
 	for _, item := range steps {
-		storage, getErr := ae.DB.GetVariableStorageForStep(routineCtx, dbTask.ID, item.Name)
+		storage, getErr := txStorage.GetVariableStorageForStep(routineCtx, dbTask.ID, item.Name)
 		if getErr != nil {
 			e := BlockNotFoundError
 			log.Error(e.errorMessage(nil))
@@ -467,7 +467,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			WorkNumber:  workNumber,
 			WorkTitle:   dbTask.Name,
 			Initiator:   dbTask.Author,
-			Storage:     ae.DB,
+			Storage:     txStorage,
 			Sender:      ae.Mail,
 			People:      ae.People,
 			ServiceDesc: ae.ServiceDesc,
@@ -478,7 +478,6 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 				Action:     string(updateData.Action),
 				Parameters: updateData.Parameters,
 			},
-			Tx: tx,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
@@ -504,7 +503,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	if err = tx.Commit(routineCtx); err != nil {
+	if err = txStorage.CommitTransaction(routineCtx); err != nil {
 		e := UpdateBlockError
 		log.Error(e.errorMessage(errors.New("couldn't update work")))
 		_ = e.sendError(w)
@@ -647,7 +646,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			"taskID":   item.TaskID,
 			"stepName": item.StepName,
 		})
-		tx, transactionErr := ae.DB.MakeTransaction(routineCtx)
+		txStorage, transactionErr := ae.DB.StartTransaction(routineCtx)
 		if transactionErr != nil {
 			log.WithError(transactionErr).Error("couldn't set SLA breach")
 			continue
@@ -658,7 +657,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			WorkNumber:  item.WorkNumber,
 			WorkTitle:   item.WorkTitle,
 			Initiator:   item.Initiator,
-			Storage:     ae.DB,
+			Storage:     txStorage,
 			Sender:      ae.Mail,
 			People:      ae.People,
 			ServiceDesc: ae.ServiceDesc,
@@ -667,18 +666,17 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			UpdateData: &script.BlockUpdateData{
 				Action: string(entity.TaskUpdateActionSLABreach),
 			},
-			Tx: tx,
 		}
 
 		blockErr := pipeline.ProcessBlock(routineCtx, item.StepName, item.BlockData, runCtx, true)
 		if blockErr != nil {
 			log.WithError(blockErr).Error("couldn't set SLA breach")
-			if txErr := tx.Rollback(routineCtx); txErr != nil {
+			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			continue
 		}
-		if commitErr := tx.Commit(routineCtx); commitErr != nil {
+		if commitErr := txStorage.CommitTransaction(routineCtx); commitErr != nil {
 			log.WithError(commitErr).Error("couldn't set SLA breach")
 		}
 	}
