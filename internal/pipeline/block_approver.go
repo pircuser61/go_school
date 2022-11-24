@@ -19,8 +19,9 @@ const (
 	approverAddApproversAction          = "add_approvers"
 	approverRequestAddInfoAction        = "request_add_info"
 	approverApproveAction               = "approve"
-	approverRejectAction                = "reject"
 	approverAdditionalApprovementAction = "additional_approvement"
+	approverBaseRejectAction            = "reject"
+	approverAdditionalRejectAction      = "additional_reject"
 )
 
 type GoApproverBlock struct {
@@ -35,7 +36,7 @@ type GoApproverBlock struct {
 }
 
 func (gb *GoApproverBlock) Members() []Member {
-	var members []Member
+	members := []Member{}
 	for login := range gb.State.Approvers {
 		members = append(members, Member{
 			Login:      login,
@@ -75,7 +76,7 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []string {
 		}
 	}
 	return []string{approverSendEditAppAction, approverAddApproversAction,
-		approverRequestAddInfoAction, approverApproveAction, approverRejectAction}
+		approverRequestAddInfoAction, approverApproveAction, approverBaseRejectAction}
 }
 
 func (gb *GoApproverBlock) isApprovementAddFinished(a AdditionalApprover) bool {
@@ -90,7 +91,7 @@ func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []string 
 		return []string{}
 	}
 	return []string{approverAddApproversAction, approverRequestAddInfoAction,
-		approverAdditionalApprovementAction, approverRejectAction}
+		approverAdditionalApprovementAction, approverAdditionalRejectAction}
 }
 
 func (gb *GoApproverBlock) CheckSLA() (bool, time.Time) {

@@ -261,7 +261,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
 	}
-	var dbPeople []db.DbMember
+	dbPeople := []db.DbMember{}
 	for i := range people {
 		dbPeople = append(dbPeople, db.DbMember{
 			Login:    people[i].Login,
@@ -289,7 +289,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 	if err != nil {
 		return err
 	}
-	var dbPeople []db.DbMember
+	dbPeople := []db.DbMember{}
 	for i := range people {
 		dbPeople = append(dbPeople, db.DbMember{
 			Login:    people[i].Login,
