@@ -14,6 +14,13 @@ const (
 	keyOutputApprover = "approver"
 	keyOutputDecision = "decision"
 	keyOutputComment  = "comment"
+
+	approverSendEditAppAction           = "send_edit_app"
+	approverAddApproversAction          = "add_approvers"
+	approverRequestAddInfoAction        = "request_add_info"
+	approverApproveAction               = "approve"
+	approverRejectAction                = "reject"
+	approverAdditionalApprovementAction = "additional_approvement"
 )
 
 type GoApproverBlock struct {
@@ -27,8 +34,63 @@ type GoApproverBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoApproverBlock) Members() map[string]struct{} {
-	return gb.State.Approvers
+func (gb *GoApproverBlock) Members() []Member {
+	var members []Member
+	for login := range gb.State.Approvers {
+		members = append(members, Member{
+			Login:      login,
+			IsFinished: gb.isApprovementBaseFinished(login),
+			Actions:    gb.approvementBaseActions(login),
+		})
+	}
+	for _, addApprover := range gb.State.AdditionalApprovers {
+		members = append(members, Member{
+			Login:      addApprover.ApproverLogin,
+			IsFinished: gb.isApprovementAddFinished(addApprover),
+			Actions:    gb.approvementAddActions(addApprover),
+		})
+	}
+	return members
+}
+
+func (gb *GoApproverBlock) isApprovementBaseFinished(login string) bool {
+	if gb.State.Decision != nil || gb.State.IsRevoked {
+		return true
+	}
+	for _, log := range gb.State.ApproverLog {
+		if log.Login == login && log.LogType == ApproverLogDecision {
+			return true
+		}
+	}
+	return false
+}
+
+func (gb *GoApproverBlock) approvementBaseActions(login string) []string {
+	if gb.State.Decision != nil || gb.State.IsRevoked {
+		return []string{}
+	}
+	for _, log := range gb.State.ApproverLog {
+		if log.Login == login && log.LogType == ApproverLogDecision {
+			return []string{}
+		}
+	}
+	return []string{approverSendEditAppAction, approverAddApproversAction,
+		approverRequestAddInfoAction, approverApproveAction, approverRejectAction}
+}
+
+func (gb *GoApproverBlock) isApprovementAddFinished(a AdditionalApprover) bool {
+	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != "" {
+		return true
+	}
+	return false
+}
+
+func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []string {
+	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != "" {
+		return []string{}
+	}
+	return []string{approverSendEditAppAction, approverAddApproversAction,
+		approverRequestAddInfoAction, approverAdditionalApprovementAction, approverRejectAction}
 }
 
 func (gb *GoApproverBlock) CheckSLA() (bool, time.Time) {

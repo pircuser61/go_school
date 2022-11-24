@@ -36,7 +36,6 @@ type GoExecutionBlock struct {
 }
 
 func (gb *GoExecutionBlock) Members() []Member {
-	//return gb.State.Executors
 	var members []Member
 	for login := range gb.State.Executors {
 		members = append(members, Member{
