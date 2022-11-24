@@ -131,6 +131,7 @@ const (
 	TaskUpdateActionCancelApp            TaskUpdateAction = "cancel_app"
 	TaskUpdateActionRequestApproveInfo   TaskUpdateAction = "request_add_info"
 	TaskUpdateActionRequestFillForm      TaskUpdateAction = "fill_form"
+	TaskUpdateActionAddApprovers         TaskUpdateAction = "add_approvers"
 )
 
 var (
@@ -145,6 +146,7 @@ var (
 		TaskUpdateActionCancelApp:            {},
 		TaskUpdateActionRequestApproveInfo:   {},
 		TaskUpdateActionRequestFillForm:      {},
+		TaskUpdateActionAddApprovers:         {},
 	}
 )
 

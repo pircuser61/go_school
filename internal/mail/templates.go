@@ -236,6 +236,23 @@ func NewExecutionTakenInWork(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
+func NewAddApproversTemplate(id, name, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка %s ожидает согласования", id),
+		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает согласования.</b><br>
+				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
+		Variables: struct {
+			Id   string `json:"id"`
+			Name string `json:"name"`
+			Link string `json:"link"`
+		}{
+			Id:   id,
+			Name: name,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
 func getNewStatusActionNameByStatus(status, defaultActionName string) (res string) {
 	switch status {
 	case "На согласовании":

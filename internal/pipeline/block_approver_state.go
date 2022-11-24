@@ -49,6 +49,13 @@ const (
 	ReplyAddInfoType   AdditionalInfoType = "reply"
 )
 
+type ApproverLogType string
+
+const (
+	ApproverLogDecision    ApproverLogType = "decision"
+	ApproverLogAddApprover ApproverLogType = "addApprover"
+)
+
 type AdditionalInfo struct {
 	Id          string             `json:"id"`
 	Login       string             `json:"login"`
@@ -60,11 +67,13 @@ type AdditionalInfo struct {
 }
 
 type ApproverLogEntry struct {
-	Login       string           `json:"login"`
-	Decision    ApproverDecision `json:"decision"`
-	Comment     string           `json:"comment"`
-	CreatedAt   time.Time        `json:"created_at"`
-	Attachments []string         `json:"attachments"`
+	Login          string           `json:"login"`
+	Decision       ApproverDecision `json:"decision"`
+	Comment        string           `json:"comment"`
+	CreatedAt      time.Time        `json:"created_at"`
+	Attachments    []string         `json:"attachments"`
+	AddedApprovers []string         `json:"added_approvers"`
+	LogType        ApproverLogType  `json:"log_type"`
 }
 
 type ApproverData struct {
@@ -99,12 +108,22 @@ type ApproverData struct {
 	SLAChecked bool `json:"sla_checked"`
 
 	ActionList []Action `json:"action_list"`
+
+	AdditionalApprovers []AdditionalApprover `json:"additional_approvers"`
 }
 
 type Action struct {
 	Id    string `json:"id"`
 	Type  string `json:"type"`
 	Title string `json:"title"`
+}
+
+type AdditionalApprover struct {
+	ApproverLogin     string           `json:"approver_login"`
+	BaseApproverLogin string           `json:"base_approver_login"`
+	Question          string           `json:"question"`
+	Attachments       []string         `json:"attachments"`
+	Decision          ApproverDecision `json:"decision"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -149,7 +168,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 
 	if approvementRule == script.AllOfApprovementRequired {
 		for _, entry := range a.ApproverLog {
-			if entry.Login == login {
+			if entry.Login == login && entry.LogType == ApproverLogDecision {
 				return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 			}
 		}
@@ -160,6 +179,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 			Comment:     comment,
 			Attachments: attach,
 			CreatedAt:   time.Now(),
+			LogType:     ApproverLogDecision,
 		}
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
