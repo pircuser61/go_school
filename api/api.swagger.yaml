@@ -2951,12 +2951,6 @@ components:
         title:
           type: string
           description: human action name
-        processing_title:
-          type: string
-          description: text for processing status (i.e. "На согласовании")
-        decision_title:
-          type: string
-          description: title of user decision (i.e. "Согласовано")
 
     blockType:
       type: string
