@@ -2919,6 +2919,12 @@ components:
         title:
           type: string
           description: human action name
+        comment_enable:
+          type: boolean
+          description: enables comment function
+        attachments_enable:
+          type: boolean
+          description: enables attachment function
 
     blockType:
       type: string
