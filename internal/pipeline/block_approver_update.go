@@ -287,7 +287,6 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 
 func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) error {
 	logApprovers := []string{}
-	//approverEmails := []string{}
 
 	for i := range u.AdditionalApproversLogins {
 		if gb.checkAdditionalApproverNotAdded(u.AdditionalApproversLogins[i]) {
