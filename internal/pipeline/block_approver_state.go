@@ -119,11 +119,11 @@ type Action struct {
 }
 
 type AdditionalApprover struct {
-	ApproverLogin     string   `json:"approver_login"`
-	BaseApproverLogin string   `json:"base_approver_login"`
-	Question          string   `json:"question"`
-	Attachments       []string `json:"attachments"`
-	Decision          string   `json:"decision"`
+	ApproverLogin     string           `json:"approver_login"`
+	BaseApproverLogin string           `json:"base_approver_login"`
+	Question          string           `json:"question"`
+	Attachments       []string         `json:"attachments"`
+	Decision          ApproverDecision `json:"decision"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -174,13 +174,12 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		}
 
 		var approverLogEntry = ApproverLogEntry{
-			Login:          login,
-			Decision:       decision,
-			Comment:        comment,
-			Attachments:    attach,
-			CreatedAt:      time.Now(),
-			AddedApprovers: []string{},
-			LogType:        ApproverLogDecision,
+			Login:       login,
+			Decision:    decision,
+			Comment:     comment,
+			Attachments: attach,
+			CreatedAt:   time.Now(),
+			LogType:     ApproverLogDecision,
 		}
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
