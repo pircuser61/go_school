@@ -438,12 +438,12 @@ func (db *PGCon) GetTask(ctx c.Context, username, workNumber string) (*entity.Er
 			COALESCE(descr.blueprint_id, ''),
 			w.rate,
 			w.rate_comment,
-         	CASE WHEN ua.actions <> '{null}' THEN ua.actions ELSE '{}' END
+         	CASE WHEN ua.actions IS NOT NULL AND ua.actions <> '{null}' THEN ua.actions ELSE '{}' END
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN work_status ws ON w.status = ws.id
-		JOIN unique_actions ua ON ua.work_id = w.id
+		LEFT JOIN unique_actions ua ON ua.work_id = w.id
 		LEFT JOIN LATERAL (
 			SELECT work_id, 
 				content::json->'State'->step_name->>'description' description,
