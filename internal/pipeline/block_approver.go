@@ -89,8 +89,8 @@ func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []string 
 	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != "" {
 		return []string{}
 	}
-	return []string{approverSendEditAppAction, approverAddApproversAction,
-		approverRequestAddInfoAction, approverAdditionalApprovementAction, approverRejectAction}
+	return []string{approverAddApproversAction, approverRequestAddInfoAction,
+		approverAdditionalApprovementAction, approverRejectAction}
 }
 
 func (gb *GoApproverBlock) CheckSLA() (bool, time.Time) {
