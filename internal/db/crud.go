@@ -1826,7 +1826,7 @@ func (db *PGCon) GetTaskStepsToWait(ctx context.Context, workNumber, blockName s
            value(jsonb_each(value(jsonb_each(content -> 'pipeline' -> 'blocks')) -> 'next')) as value
     FROM versions v
     WHERE v.id = (SELECT version_id FROM works WHERE work_number = $1))
-SELECT key
+SELECT DISTINCT key
 FROM blocks
 WHERE value ? $2`
 
