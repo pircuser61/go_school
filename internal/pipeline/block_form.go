@@ -66,7 +66,7 @@ func (gb *GoFormBlock) Members() []Member {
 		)
 	}
 
-	return nil
+	return members
 }
 
 func (gb *GoFormBlock) isFormFinished() bool {
