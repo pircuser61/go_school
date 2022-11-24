@@ -95,12 +95,11 @@ type ApproverData struct {
 	ApproversGroupID   string `json:"approvers_group_id"`
 	ApproversGroupName string `json:"approvers_group_name"`
 
-	AddInfo []AdditionalInfo `json:"additional_info,omitempty"`
+	AddInfo    []AdditionalInfo `json:"additional_info,omitempty"`
+	ActionList []Action         `json:"action_list"`
 
 	IsCanceled        bool   `json:"is_revoked"`
 	ApproveStatusName string `json:"approve_status_name"`
-
-	ActionList []Action `json:"action_list"`
 }
 
 type Action struct {

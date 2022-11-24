@@ -23,23 +23,24 @@ import (
 )
 
 type eriusTaskResponse struct {
-	ID            uuid.UUID              `json:"id"`
-	VersionID     uuid.UUID              `json:"version_id"`
-	StartedAt     time.Time              `json:"started_at"`
-	LastChangedAt time.Time              `json:"last_changed_at"`
-	FinishedAt    *time.Time             `json:"finished_at"`
-	Name          string                 `json:"name"`
-	Description   string                 `json:"description"`
-	Status        string                 `json:"status"`
-	HumanStatus   string                 `json:"human_status"`
-	Author        string                 `json:"author"`
-	IsDebugMode   bool                   `json:"debug"`
-	Parameters    map[string]interface{} `json:"parameters"`
-	Steps         taskSteps              `json:"steps"`
-	WorkNumber    string                 `json:"work_number"`
-	BlueprintID   string                 `json:"blueprint_id"`
-	Rate          int                    `json:"rate"`
-	RateComment   string                 `json:"rate_comment"`
+	ID               uuid.UUID              `json:"id"`
+	VersionID        uuid.UUID              `json:"version_id"`
+	StartedAt        time.Time              `json:"started_at"`
+	LastChangedAt    time.Time              `json:"last_changed_at"`
+	FinishedAt       *time.Time             `json:"finished_at"`
+	Name             string                 `json:"name"`
+	Description      string                 `json:"description"`
+	Status           string                 `json:"status"`
+	HumanStatus      string                 `json:"human_status"`
+	Author           string                 `json:"author"`
+	IsDebugMode      bool                   `json:"debug"`
+	Parameters       map[string]interface{} `json:"parameters"`
+	Steps            taskSteps              `json:"steps"`
+	WorkNumber       string                 `json:"work_number"`
+	BlueprintID      string                 `json:"blueprint_id"`
+	Rate             int                    `json:"rate"`
+	RateComment      string                 `json:"rate_comment"`
+	AvailableActions taskActions            `json:"available_actions"`
 }
 
 type step struct {
@@ -54,6 +55,13 @@ type step struct {
 	Status   pipeline.Status            `json:"status"`
 }
 
+type action struct {
+	Id    string `json:"id"`
+	Type  string `json:"type"`
+	Title string `json:"title"`
+}
+
+type taskActions []action
 type taskSteps []step
 
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
@@ -134,6 +142,14 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 
 	dbTask.Steps = steps
+
+	/*ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}*/
 
 	resp := &eriusTaskResponse{}
 	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask)); err != nil {
@@ -511,6 +527,166 @@ func (ae *APIEnv) UpdateTaskConfiguredActions(w http.ResponseWriter, req *http.R
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
+
+	if workNumber == "" {
+		e := WorkNumberParsingError
+		log.Error(e.errorMessage(errors.New("workNumber is empty")))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	b, err := io.ReadAll(req.Body)
+	defer req.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var updateData entity.TaskUpdate
+	if err = json.Unmarshal(b, &updateData); err != nil {
+		e := UpdateTaskParsingError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	if err = updateData.Validate(); err != nil {
+		e := UpdateTaskValidationError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	blockTypes := getTaskStepNameByAction(updateData.Action)
+	if len(blockTypes) == 0 {
+		e := UpdateTaskValidationError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	dbTask, err := ae.DB.GetTask(ctx, workNumber)
+	if err != nil {
+		e := GetTaskError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if !dbTask.IsRun() {
+		e := UpdateNotRunningTaskError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	scenario, err := ae.DB.GetPipelineVersion(ctx, dbTask.VersionID)
+	if err != nil {
+		e := GetVersionError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var steps entity.TaskSteps
+	for _, blockType := range blockTypes {
+		stepsByBlock, er := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
+		if er != nil {
+			e := GetTaskError
+			log.Error(e.errorMessage(er))
+			_ = e.sendError(w)
+			return
+		}
+		steps = append(steps, stepsByBlock...)
+	}
+
+	if len(steps) == 0 {
+		e := GetTaskError
+		log.Error(e.errorMessage(nil))
+		_ = e.sendError(w)
+
+		return
+	}
+	if updateData.Action == entity.TaskUpdateActionCancelApp {
+		steps = steps[:1]
+	}
+
+	ep := pipeline.ExecutablePipeline{
+		Storage:       ae.DB,
+		Remedy:        ae.Remedy,
+		FaaS:          ae.FaaS,
+		HTTPClient:    ae.HTTPClient,
+		PipelineID:    scenario.ID,
+		VersionID:     scenario.VersionID,
+		EntryPoint:    scenario.Pipeline.Entrypoint,
+		Sender:        ae.Mail,
+		People:        ae.People,
+		ServiceDesc:   ae.ServiceDesc,
+		PipelineModel: &entity.EriusScenario{Author: dbTask.Author},
+	}
+
+	couldUpdateOne := false
+	for _, item := range steps {
+		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
+		if !ok {
+			e := BlockNotFoundError
+			log.Error(e.errorMessage(nil))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		block, blockErr := ep.CreateBlock(ctx, item.Name, &blockFunc)
+		if blockErr != nil {
+			e := UpdateBlockError
+			log.Error(e.errorMessage(blockErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		_, blockErr = block.Update(ctx, &script.BlockUpdateData{
+			Id:         item.ID,
+			ByLogin:    ui.Username,
+			Action:     string(updateData.Action),
+			Parameters: updateData.Parameters,
+			WorkNumber: dbTask.WorkNumber,
+			WorkTitle:  dbTask.Name,
+			Author:     dbTask.Author,
+		})
+		if blockErr == nil {
+			couldUpdateOne = true
+		} else {
+			log.Error("block.Update: ", blockErr, updateData.Parameters)
+		}
+	}
+
+	if !couldUpdateOne {
+		e := UpdateBlockError
+		log.Error(e.errorMessage(errors.New("couldn't update work")))
+		_ = e.sendError(w)
+
+		return
+	}
 
 	if err := sendResponse(w, http.StatusNotImplemented, nil); err != nil {
 		e := UnknownError

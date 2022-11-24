@@ -1625,52 +1625,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: data
-  /tasks/configured-action/{workNumber}:
-    put:
-      tags:
-        - tasks
-      summary: Update Task With Uuid Action
-      description: Update task with customizable actions
-      operationId: update-task-configured-actions
-      parameters:
-        - name: workNumber
-          in: path
-          description: work number
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: Task update data
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TaskUpdateWithActionUuid'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /tasks/count:
     get:
       tags:
@@ -2556,13 +2510,13 @@ components:
         - action
         - parameters
 
-    TaskUpdateWithActionUuid:
+    NewTaskUpdate:
       type: object
       properties:
         action:
           type: string
-          format: uuid
-          description: uuid of action
+          description: action id (you can get available actions from "available_actions" objects from GET /tasks
+          example: approve
         parameters:
           type: object
           description: Task update params
@@ -2925,6 +2879,10 @@ components:
           type: integer
         rate_comment:
           type: string
+        available_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/action'
       required:
         - id
         - version_id
@@ -2980,6 +2938,25 @@ components:
           type: string
         type:
           type: string
+
+    action:
+      type: object
+      properties:
+        id:
+          type: string
+          description: id of action
+        button_type:
+          type: string
+          description: type of action (main, secondary, extra, none)
+        title:
+          type: string
+          description: human action name
+        processing_title:
+          type: string
+          description: text for processing status (i.e. "На согласовании")
+        decision_title:
+          type: string
+          description: title of user decision (i.e. "Согласовано")
 
     blockType:
       type: string

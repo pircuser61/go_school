@@ -46,6 +46,12 @@ type CountTasks struct {
 	TotalFormExecutor int `json:"form_execute"`
 }
 
+type TaskAction struct {
+	Id    string `json:"id"`
+	Type  string `json:"type"`
+	Title string `json:"title"`
+}
+
 type EriusTask struct {
 	ID            uuid.UUID              `json:"id"`
 	VersionID     uuid.UUID              `json:"version_id"`
@@ -64,6 +70,7 @@ type EriusTask struct {
 	BlueprintID   string                 `json:"blueprint_id"`
 	Rate          int                    `json:"rate"`
 	RateComment   string                 `json:"rate_comment"`
+	Actions       []TaskAction           `json:"available_actions"`
 
 	ActiveBlocks           map[string]struct{} `json:"active_blocks"`
 	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
