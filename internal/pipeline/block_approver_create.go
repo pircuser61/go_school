@@ -219,10 +219,6 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 		l.Error(funcName, "invalid format of go-approver-block state")
 		return
 	}
-
-	if b.State.ApprovementRule == "" {
-		b.State.ApprovementRule = script.AnyOfApprovementRequired
-	}
 }
 
 func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisionAssigned bool) {
