@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-
-	"go.opencensus.io/trace"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -32,7 +31,19 @@ type GoNotificationBlock struct {
 	Sockets []script.Socket
 	State   *NotificationData
 
-	Pipeline *ExecutablePipeline
+	RunContext *BlockRunContext
+}
+
+func (gb *GoNotificationBlock) Members() map[string]struct{} {
+	return nil
+}
+
+func (gb *GoNotificationBlock) CheckSLA() (bool, time.Time) {
+	return false, time.Time{}
+}
+
+func (gb *GoNotificationBlock) UpdateManual() bool {
+	return false
 }
 
 func (gb *GoNotificationBlock) GetStatus() Status {
@@ -43,24 +54,8 @@ func (gb *GoNotificationBlock) GetTaskHumanStatus() TaskHumanStatus {
 	return ""
 }
 
-func (gb *GoNotificationBlock) GetType() string {
-	return BlockGoNotificationID
-}
-
-func (gb *GoNotificationBlock) Inputs() map[string]string {
-	return gb.Input
-}
-
-func (gb *GoNotificationBlock) Outputs() map[string]string {
-	return gb.Output
-}
-
-func (gb *GoNotificationBlock) IsScenario() bool {
-	return false
-}
-
 func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email.Attachment, error) {
-	author, err := gb.Pipeline.People.GetUser(ctx, gb.Pipeline.Initiator)
+	author, err := gb.RunContext.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return "", nil, err
 	}
@@ -69,9 +64,9 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 		return "", nil, err
 	}
 	text := mail.MakeBodyHeader(typedAuthor.Username, typedAuthor.Attributes.FullName,
-		gb.Pipeline.Sender.GetApplicationLink(gb.Pipeline.WorkNumber), gb.State.Text)
+		gb.RunContext.Sender.GetApplicationLink(gb.RunContext.WorkNumber), gb.State.Text)
 
-	body, err := gb.Pipeline.ServiceDesc.GetSchemaFieldsByApplication(ctx, gb.Pipeline.WorkNumber)
+	body, err := gb.RunContext.ServiceDesc.GetSchemaFieldsByApplication(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return "", nil, err
 	}
@@ -79,7 +74,7 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	text = mail.WrapDescription(text, descr)
 
 	aa := mail.GetAttachmentsFromBody(body.Body, body.AttachmentFields)
-	attachments, err := gb.Pipeline.ServiceDesc.GetAttachments(ctx, aa)
+	attachments, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, aa)
 	if err != nil {
 		return "", nil, err
 	}
@@ -93,14 +88,23 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	return text, files, nil
 }
 
-func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *store.VariableStore) (err error) {
-	ctx, s := trace.StartSpan(ctx, "run_go_notification_block")
-	defer s.End()
+func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
+	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
+	if !ok {
+		return nil, false
+	}
+	return nexts, true
+}
 
+func (gb *GoNotificationBlock) GetState() interface{} {
+	return gb.State
+}
+
+func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) {
 	emails := make([]string, 0, len(gb.State.People)+len(gb.State.Emails))
 	for _, person := range gb.State.People {
 		emailAddr := ""
-		emailAddr, err = gb.Pipeline.People.GetUserEmail(ctx, person)
+		emailAddr, err := gb.RunContext.People.GetUserEmail(ctx, person)
 		if err != nil {
 			log.Println("can't get email of user", person)
 			continue
@@ -110,38 +114,19 @@ func (gb *GoNotificationBlock) DebugRun(ctx context.Context, _ *stepCtx, _ *stor
 	emails = append(emails, gb.State.Emails...)
 
 	if len(emails) == 0 {
-		return errors.New("can't find any working emails from logins")
+		return nil, errors.New("can't find any working emails from logins")
 	}
 
 	text, files, err := gb.compileText(ctx)
 	if err != nil {
-		return errors.New("couldn't compile notification text")
+		return nil, errors.New("couldn't compile notification text")
 	}
-	return gb.Pipeline.Sender.SendNotification(ctx, emails, files, mail.Template{
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, files, mail.Template{
 		Subject:   gb.State.Subject,
 		Text:      text,
 		Variables: nil,
 	})
-}
-
-func (gb *GoNotificationBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
-	if !ok {
-		return nil, false
-	}
-	return nexts, true
-}
-
-func (gb *GoNotificationBlock) Skipped(_ *store.VariableStore) []string {
-	return nil
-}
-
-func (gb *GoNotificationBlock) GetState() interface{} {
-	return gb.State
-}
-
-func (gb *GoNotificationBlock) Update(_ context.Context, _ *script.BlockUpdateData) (interface{}, error) {
-	return nil, nil
+	return nil, err
 }
 
 func (gb *GoNotificationBlock) Model() script.FunctionModel {
@@ -165,7 +150,7 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoNotificationBlock(name string, ef *entity.EriusFunc, pipeline *ExecutablePipeline) (*GoNotificationBlock, error) {
+func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoNotificationBlock, error) {
 	b := &GoNotificationBlock{
 		Name:    name,
 		Title:   ef.Title,
@@ -173,7 +158,7 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, pipeline *Exec
 		Output:  map[string]string{},
 		Sockets: entity.ConvertSocket(ef.Sockets),
 
-		Pipeline: pipeline,
+		RunContext: runCtx,
 	}
 
 	for _, v := range ef.Input {
@@ -200,6 +185,7 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, pipeline *Exec
 		Text:    params.Text,
 		Subject: params.Subject,
 	}
+	b.RunContext.VarStore.AddStep(b.Name)
 
 	return b, nil
 }

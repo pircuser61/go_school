@@ -182,7 +182,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 	ORDER BY time`
 
 	ff := make([]string, 0)
-	rows, err := db.Pool.Query(c.Background(), q, workNumber, workNumber, nodeName)
+	rows, err := db.Connection.Query(c.Background(), q, workNumber, workNumber, nodeName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ff, nil
@@ -211,7 +211,7 @@ func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, 
 	and work_id = (select id from works where work_number = $1)`
 
 	var data *orderedmap.OrderedMap
-	if err := db.Pool.QueryRow(c.Background(), q, workNumber).Scan(&data); err != nil {
+	if err := db.Connection.QueryRow(c.Background(), q, workNumber).Scan(&data); err != nil {
 		return nil, err
 	}
 	return data, nil
@@ -411,17 +411,10 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 
 	et := entity.EriusTask{}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
-	row := conn.QueryRow(ctx, q, id, author)
+	row := db.Connection.QueryRow(ctx, q, id, author)
 	parameters := ""
 
-	err = row.Scan(&et.ID, &et.StartedAt, &et.Status, &et.HumanStatus, &et.IsDebugMode, &parameters, &et.Author, &et.VersionID)
+	err := row.Scan(&et.ID, &et.StartedAt, &et.Status, &et.HumanStatus, &et.IsDebugMode, &parameters, &et.Author, &et.VersionID)
 	if err != nil {
 		return nil, err
 	}
@@ -485,16 +478,9 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 
 	var nullStringParameters sql.NullString
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
+	row := db.Connection.QueryRow(ctx, q, workNumber)
 
-	defer conn.Release()
-
-	row := conn.QueryRow(ctx, q, workNumber)
-
-	err = row.Scan(
+	err := row.Scan(
 		&et.ID,
 		&et.StartedAt,
 		&et.LastChangedAt,
@@ -539,14 +525,7 @@ func (db *PGCon) getTasksCount(ctx c.Context, q string) (*tasksCounter, error) {
 
 	counter := &tasksCounter{}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return counter, err
-	}
-
-	defer conn.Release()
-
-	if scanErr := conn.QueryRow(ctx, q).
+	if scanErr := db.Connection.QueryRow(ctx, q).
 		Scan(
 			&counter.totalActive,
 			&counter.totalApprover,
@@ -568,14 +547,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 		Tasks: make([]entity.EriusTask, 0),
 	}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
-	rows, err := conn.Query(ctx, q, args...)
+	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -664,13 +636,6 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 
 	el := entity.TaskSteps{}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -688,7 +653,7 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			WHERE work_id = $1 AND vs.status != 'skipped'
 		ORDER BY vs.time DESC`
 
-	rows, err := conn.Query(ctx, query, id)
+	rows, err := db.Connection.Query(ctx, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -781,7 +746,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	`
 
 	result := make([]entity.UsersWithFormAccess, 0)
-	rows, err := db.Pool.Query(ctx, q, workNumber, stepName)
+	rows, err := db.Connection.Query(ctx, q, workNumber, stepName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return result, nil
@@ -809,4 +774,21 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 		return nil, rowsErr
 	}
 	return result, nil
+}
+
+func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_status")
+	defer span.End()
+
+	q := `
+		SELECT status
+		FROM works
+		WHERE id = $1`
+
+	var status int
+
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&status); err != nil {
+		return -1, err
+	}
+	return status, nil
 }

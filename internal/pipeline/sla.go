@@ -1,6 +1,8 @@
 package pipeline
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	workingHoursStart = 6

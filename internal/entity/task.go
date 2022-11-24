@@ -100,18 +100,18 @@ func (et *EriusTask) IsError() bool {
 }
 
 type GetTaskParams struct {
-	Name          *string     `json:"name"`
-	Created       *TimePeriod `json:"created"`
-	Order         *string     `json:"order"`
-	Limit         *int        `json:"limit"`
-	Offset        *int        `json:"offset"`
-	TaskIDs       *[]string   `json:"task_ids"`
-	SelectAs      *string     `json:"select_as"`
-	Archived      *bool       `json:"archived"`
-	ForCarousel   *bool       `json:"forCarousel"`
-	Status        *string     `json:"status"`
-	Receiver      *string     `json:"receiver"`
-	HasAttacments *bool       `json:"hasAttacments"`
+	Name           *string     `json:"name"`
+	Created        *TimePeriod `json:"created"`
+	Order          *string     `json:"order"`
+	Limit          *int        `json:"limit"`
+	Offset         *int        `json:"offset"`
+	TaskIDs        *[]string   `json:"task_ids"`
+	SelectAs       *string     `json:"select_as"`
+	Archived       *bool       `json:"archived"`
+	ForCarousel    *bool       `json:"forCarousel"`
+	Status         *string     `json:"status"`
+	Receiver       *string     `json:"receiver"`
+	HasAttachments *bool       `json:"hasAttachments"`
 }
 
 type TimePeriod struct {
@@ -128,6 +128,7 @@ type TaskUpdateAction string
 
 const (
 	TaskUpdateActionApprovement          TaskUpdateAction = "approvement"
+	TaskUpdateActionSLABreach            TaskUpdateAction = "sla_breached"
 	TaskUpdateActionExecution            TaskUpdateAction = "execution"
 	TaskUpdateActionChangeExecutor       TaskUpdateAction = "change_executor"
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
@@ -137,6 +138,7 @@ const (
 	TaskUpdateActionCancelApp            TaskUpdateAction = "cancel_app"
 	TaskUpdateActionRequestApproveInfo   TaskUpdateAction = "request_add_info"
 	TaskUpdateActionRequestFillForm      TaskUpdateAction = "fill_form"
+	TaskUpdateActionAddApprovers         TaskUpdateAction = "add_approvers"
 )
 
 var (
@@ -151,6 +153,7 @@ var (
 		TaskUpdateActionCancelApp:            {},
 		TaskUpdateActionRequestApproveInfo:   {},
 		TaskUpdateActionRequestFillForm:      {},
+		TaskUpdateActionAddApprovers:         {},
 	}
 )
 
@@ -173,4 +176,13 @@ type NeededNotif struct {
 	WorkNum     string
 	Description interface{}
 	Status      string
+}
+
+type InitialApplication struct {
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+}
+
+type TaskRunContext struct {
+	InitialApplication InitialApplication `json:"initial_application"`
 }

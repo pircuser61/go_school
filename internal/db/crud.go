@@ -16,9 +16,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -28,8 +28,39 @@ var (
 	NullUuid = [16]byte{}
 )
 
+type Connector interface {
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, optionsAndArgs ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, optionsAndArgs ...interface{}) pgx.Row
+	Begin(ctx context.Context) (pgx.Tx, error)
+}
+
+func (db *PGCon) StartTransaction(ctx context.Context) (Database, error) {
+	tx, err := db.Connection.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &PGCon{Connection: tx}, nil
+}
+
+func (db *PGCon) CommitTransaction(ctx context.Context) error {
+	tx, ok := db.Connection.(pgx.Tx)
+	if !ok {
+		return nil
+	}
+	return tx.Commit(ctx)
+}
+
+func (db *PGCon) RollbackTransaction(ctx context.Context) error {
+	tx, ok := db.Connection.(pgx.Tx)
+	if !ok {
+		return nil
+	}
+	return tx.Rollback(ctx) // nolint:errcheck // rollback err
+}
+
 type PGCon struct {
-	Pool *pgxpool.Pool
+	Connection Connector
 }
 
 func ConnectPostgres(ctx context.Context, db *configs.Database) (PGCon, error) {
@@ -45,7 +76,7 @@ func ConnectPostgres(ctx context.Context, db *configs.Database) (PGCon, error) {
 		return PGCon{}, err
 	}
 
-	pgc := PGCon{Pool: conn}
+	pgc := PGCon{Connection: conn}
 
 	return pgc, nil
 }
@@ -203,7 +234,7 @@ ORDER BY created_at;`
 		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
 	}
 
-	rows, err := db.Pool.Query(c, q)
+	rows, err := db.Connection.Query(c, q)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +309,7 @@ func (db *PGCon) findApproveDate(c context.Context, id uuid.UUID) (time.Time, er
 		ORDER BY date DESC
 		LIMIT 1`
 
-	rows, err := db.Pool.Query(c, q, id)
+	rows, err := db.Connection.Query(c, q, id)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -334,7 +365,7 @@ func (db *PGCon) GetVersionsByStatus(c context.Context, status int, author strin
 		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
 	}
 
-	rows, err := db.Pool.Query(c, q, status)
+	rows, err := db.Connection.Query(c, q, status)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +428,7 @@ func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario,
 	AND pp.deleted_at IS NULL
 	ORDER BY pv.created_at`
 
-	rows, err := db.Pool.Query(ctx, q, StatusDeleted)
+	rows, err := db.Connection.Query(ctx, q, StatusDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -448,7 +479,7 @@ func (db *PGCon) GetAllTags(c context.Context) ([]entity.EriusTagInfo, error) {
     WHERE 
 		t.status <> $1`
 
-	rows, err := db.Pool.Query(c, q, StatusDeleted)
+	rows, err := db.Connection.Query(c, q, StatusDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -490,7 +521,7 @@ func (db *PGCon) GetPipelineTag(c context.Context, pid uuid.UUID) ([]entity.Eriu
 	AND
 		pt.pipeline_id = $2`
 
-	rows, err := db.Pool.Query(c, q, StatusDeleted, pid)
+	rows, err := db.Connection.Query(c, q, StatusDeleted, pid)
 	if err != nil {
 		return nil, err
 	}
@@ -519,7 +550,7 @@ func (db *PGCon) SwitchApproved(c context.Context, pipelineID, versionID uuid.UU
 
 	date := time.Now()
 
-	tx, err := db.Pool.Begin(c)
+	tx, err := db.Connection.Begin(c)
 	if err != nil {
 		return err
 	}
@@ -557,7 +588,7 @@ func (db *PGCon) RollbackVersion(c context.Context, pipelineID, versionID uuid.U
 
 	id := uuid.New()
 
-	_, err := db.Pool.Exec(c, qWriteHistory, id, pipelineID, versionID, date)
+	_, err := db.Connection.Exec(c, qWriteHistory, id, pipelineID, versionID, date)
 	if err != nil {
 		return err
 	}
@@ -579,7 +610,7 @@ func (db *PGCon) SwitchRejected(c context.Context, versionID uuid.UUID, comment,
 			comment_rejected = $3 
 		WHERE id = $4`
 
-	_, err := db.Pool.Exec(c, qSetRejected, StatusRejected, author, comment, versionID)
+	_, err := db.Connection.Exec(c, qSetRejected, StatusRejected, author, comment, versionID)
 	if err != nil {
 		return err
 	}
@@ -599,7 +630,7 @@ func (db *PGCon) VersionEditable(c context.Context, versionID uuid.UUID) (bool, 
 		WHERE 
 			id = $1 AND status = $2`
 
-	rows, err := db.Pool.Query(c, q, versionID, StatusApproved)
+	rows, err := db.Connection.Query(c, q, versionID, StatusApproved)
 	if err != nil {
 		return false, err
 	}
@@ -633,7 +664,7 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 		FROM versions 
 		WHERE pipeline_id = $1`
 
-	row := db.Pool.QueryRow(c, q, id)
+	row := db.Connection.QueryRow(c, q, id)
 
 	count := 0
 
@@ -672,7 +703,7 @@ func (db *PGCon) CreatePipeline(c context.Context,
 		$4
 	)`
 
-	_, err := db.Pool.Exec(c, qNewPipeline, p.ID, p.Name, createdAt, author)
+	_, err := db.Connection.Exec(c, qNewPipeline, p.ID, p.Name, createdAt, author)
 	if err != nil {
 		return err
 	}
@@ -711,7 +742,7 @@ func (db *PGCon) CreateVersion(c context.Context,
 
 	createdAt := time.Now()
 
-	_, err := db.Pool.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author, p.Comment, createdAt)
+	_, err := db.Connection.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author, p.Comment, createdAt)
 	if err != nil {
 		return err
 	}
@@ -730,7 +761,7 @@ func (db *PGCon) PipelineNameCreatable(c context.Context, name string) (bool, er
 	FROM pipelines
 	WHERE name = $1`
 
-	row := db.Pool.QueryRow(c, q, name)
+	row := db.Connection.QueryRow(c, q, name)
 
 	count := 0
 
@@ -751,12 +782,12 @@ func (db *PGCon) CreateTag(c context.Context,
 	c, span := trace.StartSpan(c, "pg_create_tag")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
+	tx, err := db.Connection.Begin(c)
 	if err != nil {
 		return nil, err
 	}
 
-	defer conn.Release()
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	if e.Name == "" {
 		return nil, nil
@@ -776,7 +807,7 @@ func (db *PGCon) CreateTag(c context.Context,
 		lower(t.name) = lower($1) AND t.status <> $2 and t.is_marker <> $3
 	LIMIT 1`
 
-	rows, err := conn.Query(c, qCheckTagExisted, e.Name, StatusDeleted, e.IsMarker)
+	rows, err := tx.Query(c, qCheckTagExisted, e.Name, StatusDeleted, e.IsMarker)
 	if err != nil {
 		return nil, err
 	}
@@ -818,7 +849,7 @@ func (db *PGCon) CreateTag(c context.Context,
 			color, 
 			is_marker`
 
-	row := conn.QueryRow(c, qNewTag, e.ID, e.Name, StatusDraft, author, e.Color, e.IsMarker)
+	row := tx.QueryRow(c, qNewTag, e.ID, e.Name, StatusDraft, author, e.Color, e.IsMarker)
 
 	etag := &entity.EriusTagInfo{}
 
@@ -827,7 +858,11 @@ func (db *PGCon) CreateTag(c context.Context,
 		return nil, err
 	}
 
-	return etag, err
+	if commitErr := tx.Commit(c); commitErr != nil {
+		return nil, commitErr
+	}
+
+	return etag, nil
 }
 
 func (db *PGCon) DeleteVersion(c context.Context, versionID uuid.UUID) error {
@@ -844,7 +879,7 @@ func (db *PGCon) DeleteVersion(c context.Context, versionID uuid.UUID) error {
 		WHERE id = $3`
 	t := time.Now()
 
-	_, err := db.Pool.Exec(c, q, t, StatusDeleted, versionID)
+	_, err := db.Connection.Exec(c, q, t, StatusDeleted, versionID)
 	if err != nil {
 		return err
 	}
@@ -852,7 +887,7 @@ func (db *PGCon) DeleteVersion(c context.Context, versionID uuid.UUID) error {
 	return nil
 }
 
-func (db *PGCon) deleteAllVersions(c context.Context, tx pgx.Tx, id uuid.UUID) error {
+func (db *PGCon) deleteAllVersions(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_delete_all_versions")
 	defer span.End()
 
@@ -866,7 +901,7 @@ func (db *PGCon) deleteAllVersions(c context.Context, tx pgx.Tx, id uuid.UUID) e
 		WHERE pipeline_id = $3`
 	t := time.Now()
 
-	_, err := tx.Exec(c, q, t, StatusDeleted, id)
+	_, err := db.Connection.Exec(c, q, t, StatusDeleted, id)
 	if err != nil {
 		return err
 	}
@@ -878,7 +913,7 @@ func (db *PGCon) DeletePipeline(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_delete_pipeline")
 	defer span.End()
 
-	tx, err := db.Pool.Begin(c)
+	tx, err := db.Connection.Begin(c)
 	if err != nil {
 		return err
 	}
@@ -917,7 +952,7 @@ func (db *PGCon) DeletePipeline(c context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	err = db.deleteAllVersions(c, tx, id)
+	err = db.deleteAllVersions(c, id)
 	if err != nil {
 		return err
 	}
@@ -947,7 +982,7 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 	LIMIT 1
 `
 
-	rows, err := db.Pool.Query(c, q, id)
+	rows, err := db.Connection.Query(c, q, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1013,7 +1048,7 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 	ORDER BY pph.date DESC 
 	LIMIT 1`
 
-	rows, err := db.Pool.Query(c, qVersion, id)
+	rows, err := db.Connection.Query(c, qVersion, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1079,7 +1114,7 @@ func (db *PGCon) RenamePipeline(c context.Context, id uuid.UUID, name string) er
            WHERE ver.pipeline_id = $2 ORDER BY created_at DESC LIMIT 1) 
     ;`
 
-	_, err := db.Pool.Exec(c, query, name, id)
+	_, err := db.Connection.Exec(c, query, name, id)
 	if err != nil {
 		return err
 	}
@@ -1105,7 +1140,7 @@ func (db *PGCon) GetTag(c context.Context, e *entity.EriusTagInfo) (*entity.Eriu
 		t.id = $1 AND t.status <> $2
 	LIMIT 1`
 
-	rows, err := db.Pool.Query(c, qGetTag, e.ID, StatusDeleted)
+	rows, err := db.Connection.Query(c, qGetTag, e.ID, StatusDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -1128,12 +1163,11 @@ func (db *PGCon) EditTag(c context.Context, e *entity.EriusTagInfo) error {
 	c, span := trace.StartSpan(c, "pg_edit_tag")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
+	tx, err := db.Connection.Begin(c)
 	if err != nil {
 		return err
 	}
-
-	defer conn.Release()
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1142,7 +1176,7 @@ func (db *PGCon) EditTag(c context.Context, e *entity.EriusTagInfo) error {
 		FROM tags 
 		WHERE id = $1 AND status = $2`
 
-	row := conn.QueryRow(c, qCheckTagIsCreated, e.ID, StatusDraft)
+	row := tx.QueryRow(c, qCheckTagIsCreated, e.ID, StatusDraft)
 
 	count := 0
 
@@ -1161,9 +1195,13 @@ func (db *PGCon) EditTag(c context.Context, e *entity.EriusTagInfo) error {
 	SET color = $1
 	WHERE id = $2`
 
-	_, err = conn.Exec(c, qEditTag, e.Color, e.ID)
+	_, err = tx.Exec(c, qEditTag, e.Color, e.ID)
 	if err != nil {
 		return err
+	}
+
+	if commitErr := tx.Commit(c); commitErr != nil {
+		return commitErr
 	}
 
 	return nil
@@ -1174,14 +1212,14 @@ func (db *PGCon) AttachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagI
 	c, span := trace.StartSpan(c, "pg_attach_tag")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
+	tx, err := db.Connection.Begin(c)
 	if err != nil {
 		return err
 	}
 
-	defer conn.Release()
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
-	row := conn.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
+	row := tx.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
 
 	count := 0
 
@@ -1206,9 +1244,13 @@ func (db *PGCon) AttachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagI
 		$2
 	)`
 
-	_, err = conn.Exec(c, qAttachTag, pid, e.ID)
+	_, err = tx.Exec(c, qAttachTag, pid, e.ID)
 	if err != nil {
 		return err
+	}
+
+	if commitErr := tx.Commit(c); commitErr != nil {
+		return commitErr
 	}
 
 	return nil
@@ -1218,7 +1260,7 @@ func (db *PGCon) RemoveTag(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_remove_tag")
 	defer span.End()
 
-	tx, err := db.Pool.Begin(c)
+	tx, err := db.Connection.Begin(c)
 	if err != nil {
 		return err
 	}
@@ -1296,14 +1338,14 @@ func (db *PGCon) DetachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagI
 	c, span := trace.StartSpan(c, "pg_detach_tag")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
+	tx, err := db.Connection.Begin(c)
 	if err != nil {
 		return err
 	}
 
-	defer conn.Release()
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
-	row := conn.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
+	row := tx.QueryRow(c, qCheckTagIsAttached, pid, e.ID)
 
 	count := 0
 
@@ -1322,9 +1364,13 @@ func (db *PGCon) DetachTag(c context.Context, pid uuid.UUID, e *entity.EriusTagI
 	WHERE pipeline_id = $1 
 	AND tag_id = $2`
 
-	_, err = conn.Exec(c, qDetachTag, pid, e.ID)
+	_, err = tx.Exec(c, qDetachTag, pid, e.ID)
 	if err != nil {
 		return err
+	}
+
+	if commitErr := tx.Commit(c); commitErr != nil {
+		return commitErr
 	}
 
 	return nil
@@ -1334,12 +1380,12 @@ func (db *PGCon) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_remove_pipeline_tags")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(c)
+	tx, err := db.Connection.Begin(c)
 	if err != nil {
 		return err
 	}
 
-	defer conn.Release()
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1348,7 +1394,7 @@ func (db *PGCon) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 	FROM pipeline_tags
 	WHERE pipeline_id = $1`
 
-	row := conn.QueryRow(c, qCheckTagIsAttached, id)
+	row := tx.QueryRow(c, qCheckTagIsAttached, id)
 
 	count := 0
 
@@ -1367,9 +1413,13 @@ func (db *PGCon) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 	DELETE FROM pipeline_tags
 	WHERE pipeline_id = $1`
 
-	_, err = conn.Exec(c, qRemovePipelineTags, id)
+	_, err = tx.Exec(c, qRemovePipelineTags, id)
 	if err != nil {
 		return err
+	}
+
+	if commitErr := tx.Commit(c); commitErr != nil {
+		return commitErr
 	}
 
 	return nil
@@ -1380,7 +1430,7 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	c, span := trace.StartSpan(c, "pg_update_draft")
 	defer span.End()
 
-	tx, err := db.Pool.Begin(c)
+	tx, err := db.Connection.Begin(c)
 	if err != nil {
 		return err
 	}
@@ -1422,13 +1472,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return NullUuid, time.Time{}, err
-	}
-
-	defer conn.Release()
-
 	var id uuid.UUID
 	var t time.Time
 
@@ -1437,16 +1480,21 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			FROM variable_storage 
 		WHERE work_id = $1 AND
 			step_name = $2 AND
-			status IN ('idle', 'ready', 'running', 'cancel')
+			status IN ('idle', 'ready', 'running')
 `
 
-	if scanErr := conn.QueryRow(ctx, q, dto.WorkID, dto.StepName).
+	if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).
 		Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
 		return NullUuid, time.Time{}, nil
 	}
 
 	if id != NullUuid {
 		return id, t, nil
+	}
+
+	members := make(pq.StringArray, 0, len(dto.Members))
+	for userLogin := range dto.Members {
+		members = append(members, userLogin)
 	}
 
 	id = uuid.New()
@@ -1463,7 +1511,10 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			time, 
 			break_points, 
 			has_error,
-			status
+			status,
+		    members,
+		    check_sla,
+		    sla_deadline
 		)
 		VALUES (
 			$1, 
@@ -1474,11 +1525,14 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$6, 
 			$7,
 			$8,
-			$9
+			$9,
+			$10,
+		    $11,
+			$12
 		)
 `
 
-	_, err = conn.Exec(
+	_, err := db.Connection.Exec(
 		ctx,
 		query,
 		id,
@@ -1490,6 +1544,9 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
+		members,
+		dto.CheckSLA,
+		dto.SLADeadline,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
@@ -1502,11 +1559,6 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	c, span := trace.StartSpan(ctx, "pg_update_step_context")
 	defer span.End()
 
-	members := make(pq.StringArray, 0, len(dto.Members))
-	for userLogin := range dto.Members {
-		members = append(members, userLogin)
-	}
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `
@@ -1515,25 +1567,22 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		break_points = $2
 		, has_error = $3
 		, status = $4
-		--members--
-		--content--
-		--updated_at--
+		, check_sla = $5
+	    , members = $6
+		, content = $7
+		, updated_at = NOW()
+		, sla_deadline = $8
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status}
-	if !dto.WithoutContent {
-		q = strings.Replace(q, "--content--", ", content = $5", -1)
-		q = strings.Replace(q, "--updated_at--", ", updated_at = NOW()", -1)
-		args = append(args, dto.Content)
-
-		if len(members) > 0 {
-			q = strings.Replace(q, "--members--", ", members = $6", -1)
-			args = append(args, members)
-		}
+	members := make(pq.StringArray, 0, len(dto.Members))
+	for userLogin := range dto.Members {
+		members = append(members, userLogin)
 	}
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA,
+		members, dto.Content, dto.SLADeadline}
 
-	_, err := db.Pool.Exec(
+	_, err := db.Connection.Exec(
 		c,
 		q,
 		args...,
@@ -1567,7 +1616,7 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 		AND pp.deleted_at is NULL
 	ORDER BY pv.created_at`
 
-	rows, err := db.Pool.Query(c, q, StatusApproved)
+	rows, err := db.Connection.Query(c, q, StatusApproved)
 	if err != nil {
 		return nil, err
 	}
@@ -1655,7 +1704,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	LIMIT 1
 `
 
-	rows, err := db.Pool.Query(c, q, name)
+	rows, err := db.Connection.Query(c, q, name)
 	if err != nil {
 		return nil, err
 	}
@@ -1721,7 +1770,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	    AND NOT status = ANY($3)
 	    ORDER BY vs.time ASC`
 
-	rows, err := db.Pool.Query(ctx, q, id, stepType, notInStatuses)
+	rows, err := db.Connection.Query(ctx, q, id, stepType, notInStatuses)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -1766,6 +1815,39 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	return el, nil
 }
 
+func (db *PGCon) GetTaskStepsToWait(ctx context.Context, workNumber, blockName string) ([]string, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_steps_to_wait")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `WITH blocks AS (
+    SELECT key(JSONB_EACH(content -> 'pipeline' -> 'blocks'))                                as key,
+           value(jsonb_each(value(jsonb_each(content -> 'pipeline' -> 'blocks')) -> 'next')) as value
+    FROM versions v
+    WHERE v.id = (SELECT version_id FROM works WHERE work_number = $1))
+SELECT DISTINCT key
+FROM blocks
+WHERE value ? $2`
+
+	var blocks []string
+	rows, err := db.Connection.Query(ctx, q, workNumber, blockName)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var b string
+		if scanErr := rows.Scan(&b); scanErr != nil {
+			return nil, scanErr
+		}
+		blocks = append(blocks, b)
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return blocks, nil
+}
+
 func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_check_task_steps_executed")
 	defer span.End()
@@ -1775,12 +1857,13 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, 
 	q := `
 	SELECT count(*)
 	FROM variable_storage vs 
-	JOIN works w on w.id = vs.work_id
-	WHERE w.work_number = $1 AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success', 'skipped')`
+	WHERE vs.work_id = (
+	    SELECT id FROM works WHERE work_number = $1
+	) AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success')`
 	// TODO: rewrite to handle edits ?
 
 	var c int
-	if scanErr := db.Pool.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
+	if scanErr := db.Connection.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
 		return false, nil
 	}
 	return c == len(blocks), nil
@@ -1808,7 +1891,7 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 
 	var s entity.Step
 	var content string
-	err := db.Pool.QueryRow(ctx, q, id).Scan(
+	err := db.Connection.QueryRow(ctx, q, id).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -1838,7 +1921,8 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 }
 
 //nolint:dupl //its not duplicate
-func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
+func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
+	workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_parent_task_step_by_name")
 	defer span.End()
 
@@ -1862,7 +1946,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context, workID uuid.UUID, 
 
 	var s entity.Step
 	var content string
-	err := db.Pool.QueryRow(ctx, query, workID, stepName).Scan(
+	err := db.Connection.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -1914,7 +1998,7 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 
 	var s entity.Step
 	var content string
-	err := db.Pool.QueryRow(ctx, query, workID, stepName).Scan(
+	err := db.Connection.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -1970,7 +2054,7 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) 
 		q = strings.Replace(q, "--status--", fmt.Sprintf("AND pv.status=%d", status), 1)
 	}
 
-	rows, err := db.Pool.Query(c, q, id)
+	rows, err := db.Connection.Query(c, q, id)
 	if err != nil {
 		return nil, err
 	}
@@ -2007,7 +2091,7 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 		WHERE work.work_number = $1 AND work.child_id IS NULL;
 `
 
-	row := db.Pool.QueryRow(c, query, workNumber)
+	row := db.Connection.QueryRow(c, query, workNumber)
 
 	var (
 		vID, pID uuid.UUID
@@ -2088,7 +2172,7 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 			servicedesk_node_params.type_id = 'servicedesk_application';
 `
 
-	rows, err := db.Pool.Query(c, query, pID)
+	rows, err := db.Connection.Query(c, query, pID)
 	if err != nil {
 		return nil, err
 	}
@@ -2162,7 +2246,7 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.id='%s'", *dto.PipelineId))
 	}
 
-	rows, err := db.Pool.Query(c, q, dto.Limit, dto.Offset)
+	rows, err := db.Connection.Query(c, q, dto.Limit, dto.Offset)
 	if err != nil {
 		return res, err
 	}
@@ -2215,9 +2299,129 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 			where accesses.data::jsonb ->> 'node_id' = $2 and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
 `
 	var count int
-	if scanErr := db.Pool.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
+	if scanErr := db.Connection.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
 		return false, scanErr
 	}
 
 	return count != 0, nil
+}
+
+func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (entity.TaskRunContext, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_run_context")
+	defer span.End()
+
+	var runCtx entity.TaskRunContext
+
+	// language=PostgreSQL
+	q := `
+		SELECT run_context
+		FROM works
+		WHERE work_number = $1`
+
+	if scanErr := db.Connection.QueryRow(ctx, q, workNumber).Scan(&runCtx); scanErr != nil {
+		return runCtx, scanErr
+	}
+	return runCtx, nil
+}
+
+func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockName string) (*entity.EriusFunc, error) {
+	ctx, span := trace.StartSpan(ctx, "get_block_data_from_version")
+	defer span.End()
+
+	q := `
+		SELECT content->'pipeline'->'blocks'->$1 FROM versions
+    	JOIN works w ON versions.id = w.version_id
+		WHERE w.work_number = $2`
+
+	var f *entity.EriusFunc
+
+	if scanErr := db.Connection.QueryRow(ctx, q, blockName, workNumber).Scan(&f); scanErr != nil {
+		return nil, scanErr
+	}
+	return f, nil
+}
+
+func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
+	ctx, span := trace.StartSpan(ctx, "stop_task_blocks")
+	defer span.End()
+
+	q := `
+		UPDATE variable_storage
+		SET status = 'cancel'
+		WHERE work_id = $1 AND status IN ('ready', 'idle', 'running')`
+
+	_, err := db.Connection.Exec(ctx, q, taskID)
+	return err
+}
+
+func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "stop_task_blocks")
+	defer span.End()
+
+	q := `
+		SELECT content
+		FROM variable_storage
+		WHERE work_id = $1 AND step_name = $2`
+
+	var content []byte
+	if err := db.Connection.QueryRow(ctx, q, taskID, stepType).Scan(&content); err != nil {
+		return nil, err
+	}
+	storage := store.NewStore()
+	if err := json.Unmarshal(content, &storage); err != nil {
+		return nil, err
+	}
+	return storage, nil
+}
+
+func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error) {
+	ctx, span := trace.StartSpan(ctx, "get_blocks_breached_sla")
+	defer span.End()
+
+	// language=PostgreSQL
+	q := `
+		SELECT w.id,
+		       w.work_number,
+		       p.name,	
+		       v.author,
+		       vs.content,
+		       v.content->'pipeline'->'blocks'->vs.step_name,
+		       vs.step_name
+		FROM variable_storage vs 
+		    JOIN works w on vs.work_id = w.id 
+		    JOIN versions v on w.version_id = v.id
+			JOIN pipelines p on v.pipeline_id = p.id
+		WHERE check_sla = True AND sla_deadline < NOW() AND vs.status = 'running'`
+	rows, err := db.Connection.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	res := make([]StepBreachedSLA, 0)
+	for rows.Next() {
+		var content []byte
+		item := StepBreachedSLA{}
+		if scanErr := rows.Scan(
+			&item.TaskID,
+			&item.WorkNumber,
+			&item.WorkTitle,
+			&item.Initiator,
+			&content,
+			&item.BlockData,
+			&item.StepName,
+		); scanErr != nil {
+			return nil, scanErr
+		}
+		storage := store.NewStore()
+		if unmErr := json.Unmarshal(content, &storage); unmErr != nil {
+			return nil, unmErr
+		}
+		item.VarStore = storage
+
+		res = append(res, item)
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return res, nil
 }

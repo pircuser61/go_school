@@ -21,31 +21,23 @@ func (db *PGCon) GetApproveActionNames(ctx context.Context) ([]entity.ApproveAct
 				WHERE deleted_at IS NULL
 			ORDER BY created_at DESC`
 
-	conn, err := db.Pool.Acquire(ctx)
+	rows, err := db.Connection.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-
-	defer conn.Release()
-
-	rows, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
+	defer rows.Close()
 
 	items := make([]entity.ApproveActionName, 0)
 
 	for rows.Next() {
 		item := entity.ApproveActionName{}
 
-		if err := rows.Scan(&item.Id, &item.Title); err != nil {
-			return nil, err
+		if scanErr := rows.Scan(&item.Id, &item.Title); scanErr != nil {
+			return nil, scanErr
 		}
 
 		items = append(items, item)
 	}
-
-	defer rows.Close()
 
 	return items, nil
 }
@@ -63,31 +55,23 @@ func (db *PGCon) GetApproveStatuses(ctx context.Context) ([]entity.ApproveStatus
 				WHERE deleted_at IS NULL
 			ORDER BY created_at DESC`
 
-	conn, err := db.Pool.Acquire(ctx)
+	rows, err := db.Connection.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-
-	defer conn.Release()
-
-	rows, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
+	defer rows.Close()
 
 	items := make([]entity.ApproveStatus, 0)
 
 	for rows.Next() {
 		item := entity.ApproveStatus{}
 
-		if err := rows.Scan(&item.Id, &item.Title); err != nil {
-			return nil, err
+		if scanErr := rows.Scan(&item.Id, &item.Title); scanErr != nil {
+			return nil, scanErr
 		}
 
 		items = append(items, item)
 	}
-
-	defer rows.Close()
 
 	return items, nil
 }

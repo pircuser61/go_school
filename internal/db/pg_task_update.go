@@ -9,8 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/jackc/pgx/v4"
-
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
@@ -19,13 +17,6 @@ import (
 func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error {
 	ctx, span := trace.StartSpan(ctx, "pg_change_task_status")
 	defer span.End()
-
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer conn.Release()
 
 	var q string
 	// nolint:gocritic
@@ -40,7 +31,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) e
 		WHERE id = $2`
 	}
 
-	_, err = conn.Exec(ctx, q, status, taskID)
+	_, err := db.Connection.Exec(ctx, q, status, taskID)
 	if err != nil {
 		return err
 	}
@@ -52,23 +43,17 @@ func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status s
 	ctx, span := trace.StartSpan(ctx, "update_task_human_status")
 	defer span.End()
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	q := `UPDATE works
 		SET human_status = $1
 		WHERE id = $2`
 
-	_, err = conn.Exec(ctx, q, status, taskID)
+	_, err := db.Connection.Exec(ctx, q, status, taskID)
 	return err
 }
 
-func (db *PGCon) setTaskChild(ctx c.Context, tx pgx.Tx, workNumber string, newTaskID uuid.UUID) error {
+func (db *PGCon) setTaskChild(ctx c.Context, workNumber string, newTaskID uuid.UUID) error {
 	ctx, span := trace.StartSpan(ctx, "set_task_child")
 	defer span.End()
 
@@ -79,12 +64,12 @@ func (db *PGCon) setTaskChild(ctx c.Context, tx pgx.Tx, workNumber string, newTa
 			SET child_id = $1
 		WHERE child_id IS NULL AND work_number = $2`
 
-	_, err := tx.Exec(ctx, query, newTaskID, workNumber)
+	_, err := db.Connection.Exec(ctx, query, newTaskID, workNumber)
 	if err != nil {
-		_ = tx.Rollback(ctx)
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func (db *PGCon) UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRequest) error {
@@ -111,12 +96,6 @@ func (db *PGCon) UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRe
 		return errors.Wrap(err, "can`t marshal prevUpdateStatusBlocks")
 	}
 
-	conn, err := db.Pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
@@ -127,16 +106,16 @@ func (db *PGCon) UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRe
 				prev_update_status_blocks = $5
 		WHERE id = $1`
 
-	_, err = conn.Exec(ctx, query, dto.Id, activeBlocks, skippedBlocks, notifiedBlocks, prevUpdateStatusBlocks)
+	_, err = db.Connection.Exec(ctx, query, dto.Id, activeBlocks, skippedBlocks, notifiedBlocks, prevUpdateStatusBlocks)
 	return err
 }
 
 func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
 	q := `
-		update variable_storage 
-			set content = jsonb_set(content, '{State,servicedesk_application_0}', '%s')
-		where work_id = (select id from works where work_number = $1) and
-			step_type in ('servicedesk_application', 'execution')`
+		UPDATE variable_storage 
+			SET content = JSONB_SET(content, '{State,servicedesk_application_0}', '%s')
+		WHERE work_id = (SELECT id FROM works WHERE work_number = $1) AND
+			step_type IN ('servicedesk_application', 'execution')`
 
 	bytes, err := json.Marshal(data)
 	if err != nil {
@@ -144,7 +123,7 @@ func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 	}
 
 	q = fmt.Sprintf(q, string(bytes))
-	_, err = db.Pool.Exec(c.Background(), q, workNumber)
+	_, err = db.Connection.Exec(c.Background(), q, workNumber)
 	return err
 }
 
@@ -161,7 +140,7 @@ func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) 
 			rate_comment = $2
 		where work_number = $3 and author = $4`
 
-	_, err = db.Pool.Exec(ctx, q, req.Rate, comment, req.WorkNumber, req.ByLogin)
+	_, err = db.Connection.Exec(ctx, q, req.Rate, comment, req.WorkNumber, req.ByLogin)
 
 	return err
 }

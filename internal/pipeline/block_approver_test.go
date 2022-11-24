@@ -18,6 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 func TestApproverData_SetDecision(t *testing.T) {
@@ -261,16 +262,13 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Approvers: map[string]struct{}{
 						login: {},
 					},
-					Decision:        nil,
-					Comment:         nil,
-					ActualApprover:  nil,
-					AutoAction:      nil,
-					ApprovementRule: script.AnyOfApprovementRequired,
-					ApproverLog:     make([]ApproverLogEntry, 0),
-					SLA:             1,
-					LeftToNotify: map[string]struct{}{
-						login: {},
-					},
+					Decision:           nil,
+					Comment:            nil,
+					ActualApprover:     nil,
+					AutoAction:         nil,
+					ApprovementRule:    script.AnyOfApprovementRequired,
+					ApproverLog:        make([]ApproverLogEntry, 0),
+					SLA:                1,
 					FormsAccessibility: make([]script.FormAccessibility, 0),
 				},
 				Sockets: entity.ConvertSocket(next),
@@ -281,7 +279,13 @@ func Test_createGoApproverBlock(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			got, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, nil)
+			got, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, &BlockRunContext{
+				skipNotifications: true,
+				VarStore: store.NewStore(),
+			})
+			if got != nil {
+				got.RunContext = nil
+			}
 			assert.Equalf(t, tt.wantErr, err != nil, "createGoApproverBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 			assert.Equalf(t, tt.want, got, "createGoApproverBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 		})
@@ -292,14 +296,16 @@ func TestGoApproverBlock_Update(t *testing.T) {
 	stepId := uuid.New()
 	exampleApprover := "example"
 	secondExampleApprover := "example2"
+	stepName := "appr"
 
 	type fields struct {
-		Name     string
-		Title    string
-		Input    map[string]string
-		Output   map[string]string
-		NextStep []script.Socket
-		Pipeline *ExecutablePipeline
+		Name         string
+		Title        string
+		Input        map[string]string
+		Output       map[string]string
+		NextStep     []script.Socket
+		RunContext   *BlockRunContext
+		ApproverData *ApproverData
 	}
 	type args struct {
 		ctx  context.Context
@@ -316,31 +322,9 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "empty data",
 			fields: fields{
 				Name: stepName,
-			},
-			args: args{
-				ctx:  context.Background(),
-				data: nil,
-			},
-			wantErr: true,
-		},
-		{
-			name: "can't assert provided data",
-			fields: fields{
-				Name: stepName,
-			},
-			args: args{
-				ctx: context.Background(),
-				data: &script.BlockUpdateData{
-					Parameters: []byte("[]"),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "error from database on GetTaskStepById",
-			fields: fields{
-				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -356,237 +340,8 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				data: &script.BlockUpdateData{
-					Id:         stepId,
-					ByLogin:    exampleApprover,
-					Parameters: []byte("{}"),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "can't get step from database",
-			fields: fields{
-				Name: stepName,
-				Pipeline: &ExecutablePipeline{
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
-
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							nil, nil,
-						)
-
-						return res
-					}(),
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				data: &script.BlockUpdateData{
-					Id:         stepId,
-					ByLogin:    exampleApprover,
-					Parameters: []byte("{}"),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "can't get step state",
-			fields: fields{
-				Name: stepName,
-				Pipeline: &ExecutablePipeline{
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
-
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							&entity.Step{
-								Time:        time.Time{},
-								Type:        BlockGoApproverID,
-								Name:        stepName,
-								State:       map[string]json.RawMessage{},
-								Errors:      nil,
-								Steps:       nil,
-								BreakPoints: nil,
-								HasError:    false,
-								Status:      "",
-							}, nil,
-						)
-
-						return res
-					}(),
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				data: &script.BlockUpdateData{
-					Id:         stepId,
-					ByLogin:    exampleApprover,
-					Parameters: []byte("{}"),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid format of go-approver-block state",
-			fields: fields{
-				Name: stepName,
-				Pipeline: &ExecutablePipeline{
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
-
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							&entity.Step{
-								Time: time.Time{},
-								Type: BlockGoApproverID,
-								Name: stepName,
-								State: map[string]json.RawMessage{
-									stepName: []byte("invalid"),
-								},
-								Errors:      nil,
-								Steps:       nil,
-								BreakPoints: nil,
-								HasError:    false,
-								Status:      "",
-							}, nil,
-						)
-
-						return res
-					}(),
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				data: &script.BlockUpdateData{
-					Id:         stepId,
-					ByLogin:    exampleApprover,
-					Parameters: []byte("{}"),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "decision already set",
-			fields: fields{
-				Name: stepName,
-				Pipeline: &ExecutablePipeline{
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
-
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							&entity.Step{
-								Time: time.Time{},
-								Type: BlockGoApproverID,
-								Name: stepName,
-								State: map[string]json.RawMessage{
-									stepName: func() []byte {
-										r, _ := json.Marshal(&ApproverData{
-											Type: script.ApproverTypeUser,
-											Approvers: map[string]struct{}{
-												exampleApprover: {},
-											},
-											Decision: func() *ApproverDecision {
-												r := ApproverDecisionApproved
-												return &r
-											}(),
-											Comment: func() *string {
-												r := "blah blah blah"
-												return &r
-											}(),
-											ActualApprover: &exampleApprover,
-										})
-
-										return r
-									}(),
-								},
-								Errors:      nil,
-								Steps:       nil,
-								BreakPoints: nil,
-								HasError:    false,
-								Status:      "",
-							}, nil,
-						)
-
-						return res
-					}(),
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				data: &script.BlockUpdateData{
-					Id:         stepId,
-					ByLogin:    exampleApprover,
-					Parameters: []byte("{}"),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "error on UpdateStepContext",
-			fields: fields{
-				Name: stepName,
-				Pipeline: &ExecutablePipeline{
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
-
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							&entity.Step{
-								Time: time.Time{},
-								Type: BlockGoApproverID,
-								Name: stepName,
-								State: map[string]json.RawMessage{
-									stepName: func() []byte {
-										r, _ := json.Marshal(&ApproverData{
-											Type: script.ApproverTypeUser,
-											Approvers: map[string]struct{}{
-												exampleApprover: {},
-											},
-										})
-
-										return r
-									}(),
-								},
-								Errors:      nil,
-								Steps:       nil,
-								BreakPoints: nil,
-								HasError:    false,
-								Status:      "",
-							}, nil,
-						)
-
-						res.On("UpdateStepContext",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.AnythingOfType("*db.UpdateStepRequest"),
-						).Return(
-							errors.New("unknown error"),
-						)
-
-						return res
-					}(),
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				data: &script.BlockUpdateData{
-					Id:         stepId,
-					ByLogin:    exampleApprover,
-					Parameters: []byte(`{"decision":"` + ApproverDecisionApproved.String() + `"}`),
-				},
+				ctx:  context.Background(),
+				data: nil,
 			},
 			wantErr: true,
 		},
@@ -594,7 +349,17 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "any of approvers",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				ApproverData: &ApproverData{
+					Type: script.ApproverTypeUser,
+					Approvers: map[string]struct{}{
+						exampleApprover:       {},
+						secondExampleApprover: {},
+					},
+					ApprovementRule: script.AnyOfApprovementRequired,
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -643,7 +408,6 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				data: &script.BlockUpdateData{
-					Id:         stepId,
 					ByLogin:    exampleApprover,
 					Action:     string(entity.TaskUpdateActionApprovement),
 					Parameters: []byte(`{"decision":"` + ApproverDecisionApproved.String() + `"}`),
@@ -655,7 +419,17 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "any of approvers",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				ApproverData: &ApproverData{
+					Type: script.ApproverTypeUser,
+					Approvers: map[string]struct{}{
+						exampleApprover:       {},
+						secondExampleApprover: {},
+					},
+					ApprovementRule: script.AnyOfApprovementRequired,
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -704,7 +478,6 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				data: &script.BlockUpdateData{
-					Id:         stepId,
 					ByLogin:    exampleApprover,
 					Action:     string(entity.TaskUpdateActionApprovement),
 					Parameters: []byte(`{"decision":"` + ApproverDecisionApproved.String() + `"}`),
@@ -716,7 +489,15 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			name: "acceptance test",
 			fields: fields{
 				Name: stepName,
-				Pipeline: &ExecutablePipeline{
+				ApproverData: &ApproverData{
+					Type: script.ApproverTypeUser,
+					Approvers: map[string]struct{}{
+						exampleApprover: {},
+					},
+				},
+				RunContext: &BlockRunContext{
+					skipNotifications: true,
+					VarStore: store.NewStore(),
 					Storage: func() db.Database {
 						res := &mocks.MockedDatabase{}
 
@@ -763,7 +544,6 @@ func TestGoApproverBlock_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				data: &script.BlockUpdateData{
-					Id:         stepId,
 					ByLogin:    exampleApprover,
 					Action:     string(entity.TaskUpdateActionApprovement),
 					Parameters: []byte(`{"decision":"` + ApproverDecisionApproved.String() + `"}`),
@@ -775,17 +555,17 @@ func TestGoApproverBlock_Update(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gb := &GoApproverBlock{
-				Name:     tt.fields.Name,
-				Title:    tt.fields.Title,
-				Input:    tt.fields.Input,
-				Output:   tt.fields.Output,
-				Sockets:  tt.fields.NextStep,
-				State:    &ApproverData{},
-				Pipeline: tt.fields.Pipeline,
+				Name:       tt.fields.Name,
+				Title:      tt.fields.Title,
+				Input:      tt.fields.Input,
+				Output:     tt.fields.Output,
+				Sockets:    tt.fields.NextStep,
+				State:      tt.fields.ApproverData,
+				RunContext: tt.fields.RunContext,
 			}
-			got, err := gb.Update(tt.args.ctx, tt.args.data)
+			tt.fields.RunContext.UpdateData = tt.args.data
+			_, err := gb.Update(tt.args.ctx)
 			assert.Equalf(t, tt.wantErr, err != nil, fmt.Sprintf("Update(%v, %v)", tt.args.ctx, tt.args.data))
-			assert.Equalf(t, tt.want, got, "Update(%v, %v)", tt.args.ctx, tt.args.data)
 		})
 	}
 }

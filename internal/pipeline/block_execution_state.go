@@ -47,7 +47,6 @@ type ExecutionData struct {
 	DecisionComment     *string              `json:"comment,omitempty"`
 	ActualExecutor      *string              `json:"actual_executor,omitempty"`
 	SLA                 int                  `json:"sla"`
-	DidSLANotification  bool                 `json:"did_sla_notification"`
 
 	EditingApp               *ExecutorEditApp           `json:"editing_app,omitempty"`
 	EditingAppLog            []ExecutorEditApp          `json:"editing_app_log,omitempty"`
@@ -58,14 +57,14 @@ type ExecutionData struct {
 	ExecutorsGroupID   string `json:"executors_group_id"`
 	ExecutorsGroupName string `json:"executors_group_name"`
 
-	LeftToNotify map[string]struct{} `json:"left_to_notify"`
-
 	IsTakenInWork               bool `json:"is_taken_in_work"`
 	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
 
 	IsRevoked          bool `json:"is_revoked"`
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+
+	SLAChecked bool `json:"sla_checked"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {
