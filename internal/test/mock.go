@@ -952,10 +952,6 @@ func (_m *MockDB) UpdateTaskBlocksData(ctx context.Context, dto *db.UpdateTaskBl
 	return nil
 }
 
-func (_m *MockDB) GetUnfinishedTasks(ctx context.Context) (*entity.EriusTasks, error) {
-	return &entity.EriusTasks{}, nil
-}
-
 func (_m *MockDB) GetOnApproveVersions(c context.Context) ([]entity.EriusScenarioInfo, error) {
 	return []entity.EriusScenarioInfo{}, nil
 }
@@ -1037,7 +1033,7 @@ func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTask(_ context.Context, _ string) (*entity.EriusTask, error) {
+func (m *MockDB) GetTask(_ context.Context, _, _ string) (*entity.EriusTask, error) {
 	return nil, errNotFound
 }
 

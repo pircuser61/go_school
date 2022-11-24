@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"github.com/lib/pq"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -19,6 +19,71 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
+
+func uniqueActionsByRole(login, stepType string, finished bool) string {
+	statuses := "('running', 'idle', 'ready')"
+	if finished {
+		statuses = "('finished', 'no_success')"
+	}
+	return fmt.Sprintf(`WITH actions AS (
+    SELECT vs.work_id                                                                      AS work_id
+         , CASE WHEN vs.status = 'running' AND NOT m.finished THEN m.actions ELSE '{}' END AS action
+    FROM members m
+             JOIN variable_storage vs on vs.id = m.block_id
+             JOIN works w on vs.work_id = w.id
+    WHERE m.login = '%s'
+      AND vs.step_type = '%s'
+      AND vs.status IN %s
+),
+     unique_actions AS (
+         SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
+         FROM actions
+                  LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
+         GROUP BY actions.work_id
+     )`, login, stepType, statuses)
+}
+
+func uniqueActiveActions(login, workNumber string) string {
+	return fmt.Sprintf(`WITH actions AS (
+    SELECT vs.work_id                                                                      AS work_id
+         , CASE WHEN vs.status = 'running' AND NOT m.finished THEN m.actions ELSE '{}' END AS action
+    FROM members m
+             JOIN variable_storage vs on vs.id = m.block_id
+             JOIN works w on vs.work_id = w.id
+    WHERE m.login = '%s'
+      AND w.work_number = '%s'
+      AND vs.status IN ('running', 'idle', 'ready')
+),
+     unique_actions AS (
+         SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
+         FROM actions
+                  LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
+         GROUP BY actions.work_id
+     )`, login, workNumber)
+}
+
+func getUniqueActions(as, login string) string {
+	switch as {
+	case "approver":
+		return uniqueActionsByRole(login, "approver", false)
+	case "finished_approver":
+		return uniqueActionsByRole(login, "approver", true)
+	case "executor":
+		return uniqueActionsByRole(login, "execution", false)
+	case "finished_executor":
+		return uniqueActionsByRole(login, "execution", true)
+	case "form_executor":
+		return uniqueActionsByRole(login, "form", false)
+	case "finished_form_executor":
+		return uniqueActionsByRole(login, "form", true)
+	default:
+		return fmt.Sprintf(`WITH unique_actions AS (
+    SELECT id AS work_id, '{}' AS actions
+    FROM works
+    WHERE author = '%s'
+)`, login)
+	}
+}
 
 //nolint:gocritic,gocyclo //filters
 func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface{}) {
@@ -39,24 +104,15 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			p.name,
 			COALESCE(descr.description, ''),
 			COALESCE(descr.blueprint_id, ''),
-			w.active_blocks,
-			w.skipped_blocks,
-			w.notified_blocks,
-			w.prev_update_status_blocks,
 			count(*) over() as total,
 			w.rate,
-			w.rate_comment
+			w.rate_comment,
+		    CASE WHEN ua.actions <> '{null}' THEN ua.actions ELSE '{}' END
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN work_status ws ON w.status = ws.id
-		LEFT JOIN LATERAL (
-			SELECT content, status, step_name, work_id, members, step_type
-				FROM variable_storage vs
-			WHERE vs.work_id = w.id AND vs.status != 'skipped'
-			ORDER BY vs.time DESC
-			--limit--
-		) workers ON workers.work_id = w.id
+		JOIN unique_actions ua ON ua.work_id = w.id
 		LEFT JOIN LATERAL (
 			SELECT work_id, 
 				content::json->'State'->step_name->>'description' description,
@@ -73,41 +129,9 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	}
 
 	if filters.SelectAs != nil {
-		switch *filters.SelectAs {
-		case "approver":
-			{
-				q = fmt.Sprintf("%s AND w.status = 1 AND workers.members @> '{%s}' AND workers.step_type = 'approver'  "+
-					" AND workers.status IN ('running', 'idle', 'ready')", q, filters.CurrentUser)
-			}
-		case "finished_approver":
-			{
-				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'approver' "+
-					" AND workers.status IN ('finished', 'no_success')", q, filters.CurrentUser)
-			}
-		case "executor":
-			{
-				q = fmt.Sprintf("%s AND w.status = 1 AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
-					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
-			}
-		case "finished_executor":
-			{
-				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'execution' "+
-					" AND (workers.status IN ('finished', 'no_success'))", q, filters.CurrentUser)
-			}
-		case "form_executor":
-			{
-				q = fmt.Sprintf("%s AND w.status = 1 AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
-					" AND (workers.status IN ('running', 'idle', 'ready'))", q, filters.CurrentUser)
-			}
-		case "finished_form_executor":
-			{
-				q = fmt.Sprintf("%s AND workers.members @> '{%s}' AND workers.step_type = 'form' "+
-					" AND (workers.status IN ('finished', 'no_success'))", q, filters.CurrentUser)
-			}
-		}
+		q = fmt.Sprintf("%s %s", getUniqueActions(*filters.SelectAs, filters.CurrentUser), q)
 	} else {
-		q = fmt.Sprintf("%s AND w.status = 1 AND w.author = '%s'", q, filters.CurrentUser)
-		q = strings.Replace(q, "--limit--", "LIMIT 1", -1)
+		q = fmt.Sprintf("%s %s", getUniqueActions("", filters.CurrentUser), q)
 	}
 
 	if filters.TaskIDs != nil {
@@ -240,51 +264,6 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 	}, nil
 }
 
-//nolint:gocritic //filters
-func (db *PGCon) GetUnfinishedTasks(ctx c.Context) (*entity.EriusTasks, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_tasks")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	const query = `SELECT 
-			w.id, 
-			w.started_at, 
-			w.started_at, 
-			ws.name,
-			w.human_status,
-			w.debug, 
-			COALESCE(w.parameters, '{}') AS parameters,
-			w.author,
-			w.version_id,
-			w.work_number,
-			p.name,
-			COALESCE(descr.description, ''),
-			COALESCE(descr.blueprint_id, ''),
-			w.active_blocks,
-			w.skipped_blocks,
-			w.notified_blocks,
-			w.prev_update_status_blocks
-		FROM works w 
-			JOIN versions v ON v.id = w.version_id
-			JOIN pipelines p ON p.id = v.pipeline_id
-			JOIN work_status ws ON w.status = ws.id
-			LEFT JOIN LATERAL (
-				SELECT work_id, 
-					content::json->'State'->step_name->>'description' description,
-					content::json->'State'->step_name->>'blueprint_id' blueprint_id
-				FROM variable_storage vs
-				WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
-				ORDER BY vs.time DESC
-				LIMIT 1
-			) descr ON descr.work_id = w.id
-		WHERE w.status = 1 AND w.child_id IS NULL
-        ORDER BY p.created_at DESC
-		LIMIT 100`
-
-	return db.getTasks(ctx, query, []interface{}{})
-}
-
 func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
@@ -298,25 +277,22 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		SELECT
 		(SELECT count(*) FROM workers WHERE workers.author = '%s'),
 		(SELECT count(*)
-			FROM variable_storage vs
-				LEFT JOIN workers w ON w.id = vs.work_id
+			FROM members m
+				JOIN variable_storage vs on vs.id = m.block_id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				vs.members IS NOT NULL AND
-				vs.members @> '{%s}' AND vs.step_type = 'approver'
+				m.login = '%s' AND vs.step_type = 'approver'
 		),
 		(SELECT count(*)
-			 FROM variable_storage vs
-				LEFT JOIN workers w ON w.id = vs.work_id
+			 FROM members m
+				JOIN variable_storage vs on vs.id = m.block_id
 			 WHERE vs.status IN ('running', 'idle', 'ready') AND
-				vs.members IS NOT NULL AND
-				vs.members @> '{%s}' AND vs.step_type = 'execution'),
+				m.login = '%s' AND vs.step_type = 'execution'),
 		
 		(SELECT count(*)
-			FROM variable_storage vs
-				LEFT JOIN workers w ON w.id = vs.work_id
+			FROM members m
+				JOIN variable_storage vs on vs.id = m.block_id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				vs.members IS NOT NULL AND
-				vs.members @> '{%s}' AND vs.step_type = 'form'
+				m.login = '%s' AND vs.step_type = 'form'
 		)`, userName, userName, userName, userName)
 
 	counter, err := db.getTasksCount(ctx, q)
@@ -427,13 +403,15 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 	return &et, nil
 }
 
-func (db *PGCon) GetTask(ctx c.Context, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) GetTask(ctx c.Context, username, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const q = `SELECT 
+	q := uniqueActiveActions(username, workNumber)
+
+	q += ` SELECT 
 			w.id, 
 			w.started_at, 
 			w.started_at, 
@@ -449,11 +427,13 @@ func (db *PGCon) GetTask(ctx c.Context, workNumber string) (*entity.EriusTask, e
 			COALESCE(descr.description, ''),
 			COALESCE(descr.blueprint_id, ''),
 			w.rate,
-			w.rate_comment
+			w.rate_comment,
+         	CASE WHEN ua.actions <> '{null}' THEN ua.actions ELSE '{}' END
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN work_status ws ON w.status = ws.id
+		JOIN unique_actions ua ON ua.work_id = w.id
 		LEFT JOIN LATERAL (
 			SELECT work_id, 
 				content::json->'State'->step_name->>'description' description,
@@ -477,6 +457,7 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	et := entity.EriusTask{}
 
 	var nullStringParameters sql.NullString
+	var actions pq.StringArray
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -497,6 +478,7 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 		&et.BlueprintID,
 		&et.Rate,
 		&et.RateComment,
+		&actions,
 	)
 	if err != nil {
 		return nil, err
@@ -557,10 +539,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 		et := entity.EriusTask{}
 
 		var nullStringParameters sql.NullString
-		var nullJsonActiveBlocks sql.NullString
-		var nullJsonSkippedBlocks sql.NullString
-		var nullJsonNotifiedBlocks sql.NullString
-		var nullJsonPrevUpdateStatusBlocks sql.NullString
+		var actions pq.StringArray
 
 		err = rows.Scan(
 			&et.ID,
@@ -576,13 +555,10 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			&et.Name,
 			&et.Description,
 			&et.BlueprintID,
-			&nullJsonActiveBlocks,
-			&nullJsonSkippedBlocks,
-			&nullJsonNotifiedBlocks,
-			&nullJsonPrevUpdateStatusBlocks,
 			&et.Total,
 			&et.Rate,
 			&et.RateComment,
+			&actions,
 		)
 
 		if err != nil {
@@ -591,34 +567,6 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 
 		if nullStringParameters.Valid && nullStringParameters.String != "" {
 			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if nullJsonActiveBlocks.Valid {
-			err = json.Unmarshal([]byte(nullJsonActiveBlocks.String), &et.ActiveBlocks)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if nullJsonSkippedBlocks.Valid {
-			err = json.Unmarshal([]byte(nullJsonSkippedBlocks.String), &et.SkippedBlocks)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if nullJsonNotifiedBlocks.Valid {
-			err = json.Unmarshal([]byte(nullJsonNotifiedBlocks.String), &et.NotifiedBlocks)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if nullJsonPrevUpdateStatusBlocks.Valid {
-			err = json.Unmarshal([]byte(nullJsonPrevUpdateStatusBlocks.String), &et.PrevUpdateStatusBlocks)
 			if err != nil {
 				return nil, err
 			}

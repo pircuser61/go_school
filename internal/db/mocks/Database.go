@@ -805,13 +805,13 @@ func (_m *MockedDatabase) GetTag(ctx context.Context, e *entity.EriusTagInfo) (*
 	return r0, r1
 }
 
-// GetTask provides a mock function with given fields: ctx, workNumber
-func (_m *MockedDatabase) GetTask(ctx context.Context, workNumber string) (*entity.EriusTask, error) {
-	ret := _m.Called(ctx, workNumber)
+// GetTask provides a mock function with given fields: ctx, username, workNumber
+func (_m *MockedDatabase) GetTask(ctx context.Context, username, workNumber string) (*entity.EriusTask, error) {
+	ret := _m.Called(ctx, username, workNumber)
 
 	var r0 *entity.EriusTask
-	if rf, ok := ret.Get(0).(func(context.Context, string) *entity.EriusTask); ok {
-		r0 = rf(ctx, workNumber)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *entity.EriusTask); ok {
+		r0 = rf(ctx, username, workNumber)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusTask)
@@ -819,8 +819,8 @@ func (_m *MockedDatabase) GetTask(ctx context.Context, workNumber string) (*enti
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, workNumber)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, username, workNumber)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -959,29 +959,6 @@ func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
 		r1 = rf(ctx, id, stepType)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetUnfinishedTasks provides a mock function with given fields: ctx
-func (_m *MockedDatabase) GetUnfinishedTasks(ctx context.Context) (*entity.EriusTasks, error) {
-	ret := _m.Called(ctx)
-
-	var r0 *entity.EriusTasks
-	if rf, ok := ret.Get(0).(func(context.Context) *entity.EriusTasks); ok {
-		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.EriusTasks)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
