@@ -45,6 +45,7 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	return runCtxCopy
 }
 
+//nolint:gocyclo //todo: need to decompose
 func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
 	ctx, s := trace.StartSpan(ctx, "process_block")
 	defer s.End()

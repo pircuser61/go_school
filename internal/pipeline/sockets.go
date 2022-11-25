@@ -3,7 +3,6 @@ package pipeline
 const (
 	DefaultSocketID = "default"
 
-	approvedSocketID       = "approved"
 	rejectedSocketID       = "rejected"
 	editAppSocketID        = "edit_app"
 	executedSocketID       = "executed"

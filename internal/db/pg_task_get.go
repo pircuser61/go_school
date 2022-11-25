@@ -506,6 +506,8 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 		}
 	}
 
+	var actionsResult = make([]entity.TaskAction, 0)
+
 	for _, actionId := range actions {
 		var compositeActionId = strings.Split(actionId, ":")
 		if len(compositeActionId) > 1 {
@@ -516,15 +518,18 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 			var computedAction = entity.TaskAction{
 				Id:                 id,
 				ButtonType:         priority,
+				Title:              actionWithPreferences.Title,
 				CommentEnabled:     actionWithPreferences.CommentEnabled,
 				AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
 				IsPublic:           actionWithPreferences.IsPublic,
 			}
 
 			if computedAction.IsPublic {
-				et.Actions = append(et.Actions, computedAction)
+				actionsResult = append(actionsResult, computedAction)
 			}
 		}
+
+		et.Actions = actionsResult
 	}
 
 	return &et, nil
@@ -625,6 +630,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 				var computedAction = entity.TaskAction{
 					Id:                 id,
 					ButtonType:         priority,
+					Title:              actionWithPreferences.Title,
 					CommentEnabled:     actionWithPreferences.CommentEnabled,
 					AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
 					IsPublic:           actionWithPreferences.IsPublic,
