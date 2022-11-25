@@ -224,9 +224,17 @@ const (
 
 // Defines values for ApproverDecision.
 const (
-	ApproverDecisionApproved ApproverDecision = "approved"
+	ApproverDecisionAffirmate ApproverDecision = "affirmate"
 
-	ApproverDecisionRejected ApproverDecision = "rejected"
+	ApproverDecisionApprove ApproverDecision = "approve"
+
+	ApproverDecisionInformed ApproverDecision = "informed"
+
+	ApproverDecisionReject ApproverDecision = "reject"
+
+	ApproverDecisionSign ApproverDecision = "sign"
+
+	ApproverDecisionViewed ApproverDecision = "viewed"
 )
 
 // Defines values for BlockType.
@@ -434,8 +442,12 @@ type ApproverUpdateParams struct {
 	Comment string `json:"comment"`
 
 	// Approver decision:
-	//  * approved - approver approved block
-	//  * rejected - approver rejected block
+	//  * approve - Согласовать
+	//  * reject - Отклонить
+	//  * viewed - Ознакомлен
+	//  * informed - Проинформирован
+	//  * sign - Подписать
+	//  * affirmate - Утвердить
 	Decision ApproverDecision `json:"decision"`
 }
 
@@ -942,9 +954,16 @@ type ResponsePipelineSearch struct {
 
 // RunNewVersionByPrevVersionRequest defines model for RunNewVersionByPrevVersionRequest.
 type RunNewVersionByPrevVersionRequest struct {
-	ApplicationBody map[string]interface{} `json:"application_body"`
-	Description     string                 `json:"description"`
-	WorkNumber      string                 `json:"work_number"`
+	ApplicationBody  map[string]interface{}                 `json:"application_body"`
+	AttachmentFields []string                               `json:"attachment_fields"`
+	Description      string                                 `json:"description"`
+	Keys             RunNewVersionByPrevVersionRequest_Keys `json:"keys"`
+	WorkNumber       string                                 `json:"work_number"`
+}
+
+// RunNewVersionByPrevVersionRequest_Keys defines model for RunNewVersionByPrevVersionRequest.Keys.
+type RunNewVersionByPrevVersionRequest_Keys struct {
+	AdditionalProperties map[string]string `json:"-"`
 }
 
 // RunPipelineBody defines model for RunPipelineBody.
@@ -964,9 +983,16 @@ type RunVersionBody map[string]interface{}
 
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
-	ApplicationBody map[string]interface{} `json:"application_body"`
-	Description     string                 `json:"description"`
-	PipelineId      string                 `json:"pipeline_id"`
+	ApplicationBody  map[string]interface{}              `json:"application_body"`
+	AttachmentFields []string                            `json:"attachment_fields"`
+	Description      string                              `json:"description"`
+	Keys             RunVersionsByPipelineIdRequest_Keys `json:"keys"`
+	PipelineId       string                              `json:"pipeline_id"`
+}
+
+// RunVersionsByPipelineIdRequest_Keys defines model for RunVersionsByPipelineIdRequest.Keys.
+type RunVersionsByPipelineIdRequest_Keys struct {
+	AdditionalProperties map[string]string `json:"-"`
 }
 
 // ScenarioVersionInfoList defines model for ScenarioVersionInfoList.
@@ -1086,8 +1112,12 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//  * approved - approver approved block
-//  * rejected - approver rejected block
+//  * approve - Согласовать
+//  * reject - Отклонить
+//  * viewed - Ознакомлен
+//  * informed - Проинформирован
+//  * sign - Подписать
+//  * affirmate - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1626,6 +1656,112 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for MappingParam to handle AdditionalProperties
 func (a MappingParam) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RunNewVersionByPrevVersionRequest_Keys. Returns the specified
+// element and whether it was found
+func (a RunNewVersionByPrevVersionRequest_Keys) Get(fieldName string) (value string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RunNewVersionByPrevVersionRequest_Keys
+func (a *RunNewVersionByPrevVersionRequest_Keys) Set(fieldName string, value string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RunNewVersionByPrevVersionRequest_Keys to handle AdditionalProperties
+func (a *RunNewVersionByPrevVersionRequest_Keys) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RunNewVersionByPrevVersionRequest_Keys to handle AdditionalProperties
+func (a RunNewVersionByPrevVersionRequest_Keys) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RunVersionsByPipelineIdRequest_Keys. Returns the specified
+// element and whether it was found
+func (a RunVersionsByPipelineIdRequest_Keys) Get(fieldName string) (value string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RunVersionsByPipelineIdRequest_Keys
+func (a *RunVersionsByPipelineIdRequest_Keys) Set(fieldName string, value string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RunVersionsByPipelineIdRequest_Keys to handle AdditionalProperties
+func (a *RunVersionsByPipelineIdRequest_Keys) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RunVersionsByPipelineIdRequest_Keys to handle AdditionalProperties
+func (a RunVersionsByPipelineIdRequest_Keys) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 

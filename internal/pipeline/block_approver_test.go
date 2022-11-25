@@ -23,9 +23,9 @@ import (
 
 func TestApproverData_SetDecision(t *testing.T) {
 	const (
-		login    = "example"
-		decision = ApproverDecisionRejected
-		comment  = "blah blah blah"
+		login                   = "example"
+		decision ApproverAction = ApproverActionReject
+		comment                 = "blah blah blah"
 
 		invalidLogin = "foobar"
 	)
@@ -33,13 +33,13 @@ func TestApproverData_SetDecision(t *testing.T) {
 	type fields struct {
 		Type           script.ApproverType
 		Approvers      map[string]struct{}
-		Decision       *ApproverDecision
+		Decision       *ApproverAction
 		Comment        *string
 		ActualApprover *string
 	}
 	type args struct {
 		login    string
-		decision ApproverDecision
+		decision ApproverAction
 		comment  string
 	}
 	tests := []struct {
@@ -51,11 +51,14 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "approver not found",
 			fields: fields{
-				Type: script.ApproverTypeHead,
+				Type: script.ApproverTypeUser,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
-				Decision:       nil,
+				Decision: func() *ApproverAction {
+					res := decision
+					return &res
+				}(),
 				Comment:        nil,
 				ActualApprover: nil,
 			},
@@ -69,11 +72,11 @@ func TestApproverData_SetDecision(t *testing.T) {
 		{
 			name: "decision already set",
 			fields: fields{
-				Type: script.ApproverTypeHead,
+				Type: script.ApproverTypeUser,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
-				Decision: func() *ApproverDecision {
+				Decision: func() *ApproverAction {
 					res := decision
 					return &res
 				}(),
@@ -94,35 +97,39 @@ func TestApproverData_SetDecision(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "valid case",
+			name: "unknown decision",
 			fields: fields{
-				Type: script.ApproverTypeHead,
+				Type: script.ApproverTypeUser,
 				Approvers: map[string]struct{}{
 					login: {},
 				},
-				Decision:       nil,
+				Decision: func() *ApproverAction {
+					res := decision
+					return &res
+				}(),
 				Comment:        nil,
 				ActualApprover: nil,
 			},
 			args: args{
 				login:    login,
-				decision: decision,
+				decision: ApproverAction("unknown"),
 				comment:  comment,
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			d := tt.fields.Decision.ToDecision()
 			a := &ApproverData{
 				Type:           tt.fields.Type,
 				Approvers:      tt.fields.Approvers,
-				Decision:       tt.fields.Decision,
+				Decision:       &d,
 				Comment:        tt.fields.Comment,
 				ActualApprover: tt.fields.ActualApprover,
 			}
 
-			if err := a.SetDecision(tt.args.login, tt.args.decision, tt.args.comment, []string{}); (err != nil) != tt.wantErr {
+			if err := a.SetDecision(tt.args.login, tt.args.decision.ToDecision(), tt.args.comment, []string{}); (err != nil) != tt.wantErr {
 				t.Errorf(
 					"SetDecision(%v, %v, %v)",
 					tt.args.login,
@@ -378,6 +385,16 @@ func Test_createGoApproverBlock(t *testing.T) {
 					ApproverLog:        make([]ApproverLogEntry, 0),
 					SLA:                1,
 					FormsAccessibility: make([]script.FormAccessibility, 0),
+					ActionList: []Action{
+						{
+							Id:    DefaultSocketID,
+							Title: script.DefaultSocketTitle,
+						},
+						{
+							Id:    rejectedSocketID,
+							Title: script.RejectedSocketTitle,
+						},
+					},
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -464,6 +481,11 @@ func TestGoApproverBlock_Update(t *testing.T) {
 						secondExampleApprover: {},
 					},
 					ApprovementRule: script.AnyOfApprovementRequired,
+					ActionList: []Action{
+						{
+							Id: ApproverActionApprove,
+						},
+					},
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
@@ -518,7 +540,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleApprover,
 					Action:     string(entity.TaskUpdateActionApprovement),
-					Parameters: []byte(`{"decision":"` + ApproverDecisionApproved.String() + `"}`),
+					Parameters: []byte(`{"decision":"` + ApproverActionApprove + `"}`),
 				},
 			},
 			wantErr: false,
@@ -534,6 +556,11 @@ func TestGoApproverBlock_Update(t *testing.T) {
 						secondExampleApprover: {},
 					},
 					ApprovementRule: script.AnyOfApprovementRequired,
+					ActionList: []Action{
+						{
+							Id: ApproverActionApprove,
+						},
+					},
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
@@ -588,7 +615,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleApprover,
 					Action:     string(entity.TaskUpdateActionApprovement),
-					Parameters: []byte(`{"decision":"` + ApproverDecisionApproved.String() + `"}`),
+					Parameters: []byte(`{"decision":"` + ApproverActionApprove + `"}`),
 				},
 			},
 			wantErr: false,
@@ -601,6 +628,11 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					Type: script.ApproverTypeUser,
 					Approvers: map[string]struct{}{
 						exampleApprover: {},
+					},
+					ActionList: []Action{
+						{
+							Id: ApproverActionApprove,
+						},
 					},
 				},
 				RunContext: &BlockRunContext{
@@ -654,7 +686,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				data: &script.BlockUpdateData{
 					ByLogin:    exampleApprover,
 					Action:     string(entity.TaskUpdateActionApprovement),
-					Parameters: []byte(`{"decision":"` + ApproverDecisionApproved.String() + `"}`),
+					Parameters: []byte(`{"decision":"` + ApproverActionApprove + `"}`),
 				},
 			},
 			wantErr: false,

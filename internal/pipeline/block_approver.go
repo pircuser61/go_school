@@ -44,13 +44,11 @@ func (gb *GoApproverBlock) GetStatus() Status {
 		return StatusCancel
 	}
 	if gb.State != nil && gb.State.Decision != nil {
-		if *gb.State.Decision == ApproverDecisionApproved {
-			return StatusFinished
-		}
-
 		if *gb.State.Decision == ApproverDecisionRejected {
 			return StatusNoSuccess
 		}
+
+		return StatusFinished
 	}
 
 	if gb.State.EditingApp != nil {
@@ -75,12 +73,11 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 	}
 
 	if gb.State != nil && gb.State.Decision != nil {
-		if *gb.State.Decision == ApproverDecisionApproved {
-			return StatusApproved
-		}
 		if *gb.State.Decision == ApproverDecisionRejected {
 			return StatusApprovementRejected
 		}
+
+		return StatusApproved
 	}
 
 	if gb.State != nil && len(gb.State.AddInfo) != 0 {
@@ -99,9 +96,9 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	key := rejectedSocketID
-	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
-		key = approvedSocketID
+	var key string
+	if gb.State != nil && gb.State.Decision != nil {
+		key = string((*gb.State.Decision).ToAction())
 	}
 
 	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {
@@ -118,19 +115,6 @@ func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	}
 
 	return nexts, true
-}
-
-func (gb *GoApproverBlock) Skipped(_ *store.VariableStore) []string {
-	key := approvedSocketID
-	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
-		key = rejectedSocketID
-	}
-	var nexts, ok = script.GetNexts(gb.Sockets, key)
-	if !ok {
-		return nil
-	}
-
-	return nexts
 }
 
 func (gb *GoApproverBlock) GetState() interface{} {
