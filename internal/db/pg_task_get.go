@@ -11,8 +11,11 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/google/uuid"
+
 	"github.com/iancoleman/orderedmap"
+
 	"github.com/lib/pq"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
@@ -464,7 +467,7 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_private")
 	defer span.End()
 
-	allActions, getActionsErr := db.getActionsMap(ctx)
+	actionsMap, getActionsErr := db.getActionsMap(ctx)
 	if getActionsErr != nil {
 		return &entity.EriusTask{}, getActionsErr
 	}
@@ -472,7 +475,7 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	et := entity.EriusTask{}
 
 	var nullStringParameters sql.NullString
-	var actions pq.StringArray
+	var taskActions pq.StringArray
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -493,11 +496,13 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 		&et.BlueprintID,
 		&et.Rate,
 		&et.RateComment,
-		&actions,
+		&taskActions,
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	et.Actions = db.computeActions(taskActions, actionsMap)
 
 	if nullStringParameters.Valid && nullStringParameters.String != "" {
 		err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
@@ -506,6 +511,10 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 		}
 	}
 
+	return &et, nil
+}
+
+func (db *PGCon) computeActions(actions []string, allActions map[string]entity.TaskAction) []entity.TaskAction {
 	var actionsResult = make([]entity.TaskAction, 0)
 
 	for _, actionId := range actions {
@@ -528,11 +537,9 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 				actionsResult = append(actionsResult, computedAction)
 			}
 		}
-
-		et.Actions = actionsResult
 	}
 
-	return &et, nil
+	return actionsResult
 }
 
 type tasksCounter struct {
@@ -576,7 +583,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 	}
 	defer rows.Close()
 
-	allActions, getActionsErr := db.getActionsMap(ctx)
+	actionsMap, getActionsErr := db.getActionsMap(ctx)
 	if getActionsErr != nil {
 		return &entity.EriusTasks{}, getActionsErr
 	}
@@ -585,7 +592,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 		et := entity.EriusTask{}
 
 		var nullStringParameters sql.NullString
-		var actions pq.StringArray
+		var taskActions pq.StringArray
 
 		err = rows.Scan(
 			&et.ID,
@@ -604,7 +611,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			&et.Total,
 			&et.Rate,
 			&et.RateComment,
-			&actions,
+			&taskActions,
 		)
 
 		if err != nil {
@@ -618,31 +625,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			}
 		}
 
-		var actionsResult = make([]entity.TaskAction, 0)
-
-		for _, actionId := range actions {
-			var compositeActionId = strings.Split(actionId, ":")
-			if len(compositeActionId) > 1 {
-				var id = compositeActionId[0]
-				var priority = compositeActionId[1]
-				var actionWithPreferences = allActions[id]
-
-				var computedAction = entity.TaskAction{
-					Id:                 id,
-					ButtonType:         priority,
-					Title:              actionWithPreferences.Title,
-					CommentEnabled:     actionWithPreferences.CommentEnabled,
-					AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
-					IsPublic:           actionWithPreferences.IsPublic,
-				}
-
-				if computedAction.IsPublic {
-					actionsResult = append(actionsResult, computedAction)
-				}
-			}
-			et.Actions = actionsResult
-		}
-
+		et.Actions = db.computeActions(taskActions, actionsMap)
 		ets.Tasks = append(ets.Tasks, et)
 	}
 

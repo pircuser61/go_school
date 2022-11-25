@@ -231,9 +231,9 @@ const (
 
 // Defines values for ApproverDecision.
 const (
-	ApproverDecisionAffirmate ApproverDecision = "affirmate"
-
 	ApproverDecisionApprove ApproverDecision = "approve"
+
+	ApproverDecisionConfirm ApproverDecision = "confirm"
 
 	ApproverDecisionInformed ApproverDecision = "informed"
 
@@ -467,7 +467,7 @@ type ApproverUpdateParams struct {
 	//  * viewed - Ознакомлен
 	//  * informed - Проинформирован
 	//  * sign - Подписать
-	//  * affirmate - Утвердить
+	//  * confirm - Утвердить
 	Decision ApproverDecision `json:"decision"`
 }
 
@@ -1153,7 +1153,7 @@ type AdditionalApproverDecision string
 //  * viewed - Ознакомлен
 //  * informed - Проинформирован
 //  * sign - Подписать
-//  * affirmate - Утвердить
+//  * confirm - Утвердить
 type ApproverDecision string
 
 // Block type (language)

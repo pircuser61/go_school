@@ -2585,7 +2585,7 @@ components:
         - viewed
         - informed
         - sign
-        - affirmate
+        - confirm
       description: >
         Approver decision:
          * approve - Согласовать
@@ -2593,7 +2593,7 @@ components:
          * viewed - Ознакомлен
          * informed - Проинформирован
          * sign - Подписать
-         * affirmate - Утвердить
+         * confirm - Утвердить
 
     additionalApproverDecision:
       type: string

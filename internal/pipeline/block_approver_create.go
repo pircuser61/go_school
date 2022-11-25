@@ -216,9 +216,14 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	}
 
 	var parentState ApproverData
+
 	if err = json.Unmarshal(data, &parentState); err != nil {
 		l.Error(funcName, "invalid format of go-approver-block state")
 		return
+	}
+
+	if len(parentState.EditingAppLog) > 0 {
+		gb.State.EditingAppLog = parentState.EditingAppLog
 	}
 }
 
