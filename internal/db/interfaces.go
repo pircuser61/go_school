@@ -67,6 +67,17 @@ type UpdateTaskRate struct {
 	Rate       *int
 }
 
+type DbMemberAction struct {
+	Id   string
+	Type string
+}
+
+type DbMember struct {
+	Login    string
+	Finished bool
+	Actions  []DbMemberAction
+}
+
 type SaveStepRequest struct {
 	WorkID      uuid.UUID
 	StepType    string
@@ -75,7 +86,7 @@ type SaveStepRequest struct {
 	BreakPoints []string
 	HasError    bool
 	Status      string
-	Members     map[string]struct{}
+	Members     []DbMember
 	CheckSLA    bool
 	SLADeadline time.Time
 }
@@ -87,7 +98,7 @@ type UpdateStepRequest struct {
 	BreakPoints []string
 	HasError    bool
 	Status      string
-	Members     map[string]struct{}
+	Members     []DbMember
 	CheckSLA    bool
 	SLADeadline time.Time
 }

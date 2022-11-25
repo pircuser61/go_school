@@ -256,12 +256,26 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	people map[string]struct{}, checkSLA bool, deadline time.Time) (uuid.UUID, time.Time, error) {
+	people []Member, checkSLA bool, deadline time.Time) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
 	}
-
+	dbPeople := []db.DbMember{}
+	for i := range people {
+		actions := []db.DbMemberAction{}
+		for _, act := range people[i].Actions {
+			actions = append(actions, db.DbMemberAction{
+				Id:   act.Id,
+				Type: act.Type,
+			})
+		}
+		dbPeople = append(dbPeople, db.DbMember{
+			Login:    people[i].Login,
+			Finished: people[i].IsFinished,
+			Actions:  actions,
+		})
+	}
 	return runCtx.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
 		WorkID:      runCtx.TaskID,
 		StepType:    stepType,
@@ -270,19 +284,33 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 		BreakPoints: []string{},
 		HasError:    false,
 		Status:      status,
-		Members:     people,
+		Members:     dbPeople,
 		CheckSLA:    checkSLA,
 		SLADeadline: deadline,
 	})
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	people map[string]struct{}, checkSLA bool, deadline time.Time) error {
+	people []Member, checkSLA bool, deadline time.Time) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
 	}
-
+	dbPeople := []db.DbMember{}
+	for i := range people {
+		actions := []db.DbMemberAction{}
+		for _, act := range people[i].Actions {
+			actions = append(actions, db.DbMemberAction{
+				Id:   act.Id,
+				Type: act.Type,
+			})
+		}
+		dbPeople = append(dbPeople, db.DbMember{
+			Login:    people[i].Login,
+			Finished: people[i].IsFinished,
+			Actions:  actions,
+		})
+	}
 	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
 		Id:          id,
 		StepName:    name,
@@ -290,7 +318,7 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 		BreakPoints: []string{},
 		HasError:    hasError,
 		Status:      string(status),
-		Members:     people,
+		Members:     dbPeople,
 		CheckSLA:    checkSLA,
 		SLADeadline: deadline,
 	})

@@ -42,7 +42,7 @@ type GoSdApplicationBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoSdApplicationBlock) Members() map[string]struct{} {
+func (gb *GoSdApplicationBlock) Members() []Member {
 	return nil
 }
 

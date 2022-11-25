@@ -9,6 +9,22 @@ import (
 
 type Status string
 
+const (
+	ActionTypePrimary   = "primary"
+	ActionTypeSecondary = "secondary"
+	ActionTypeOther     = "other"
+)
+
+type MemberAction struct {
+	Id   string
+	Type string
+}
+type Member struct {
+	Login      string
+	IsFinished bool
+	Actions    []MemberAction
+}
+
 var (
 	StatusIdle      Status = "idle"
 	StatusReady     Status = "ready"
@@ -25,6 +41,6 @@ type Runner interface {
 	GetTaskHumanStatus() TaskHumanStatus
 	GetStatus() Status
 	UpdateManual() bool
-	Members() map[string]struct{}
+	Members() []Member
 	CheckSLA() (bool, time.Time)
 }

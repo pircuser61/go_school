@@ -17,6 +17,12 @@ const (
 
 	RequestInfoQuestion RequestInfoType = "question"
 	RequestInfoAnswer   RequestInfoType = "answer"
+
+	executionStartWorkAction            = "executor_start_work"
+	executionChangeExecutorAction       = "change_executor"
+	executionRequestExecutionInfoAction = "request_execution_info"
+	executionExecuteAction              = "execution"
+	executionDeclineAction              = "decline"
 )
 
 type GoExecutionBlock struct {
@@ -30,8 +36,52 @@ type GoExecutionBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoExecutionBlock) Members() map[string]struct{} {
-	return gb.State.Executors
+func (gb *GoExecutionBlock) Members() []Member {
+	members := []Member{}
+	for login := range gb.State.Executors {
+		members = append(members, Member{
+			Login:      login,
+			IsFinished: gb.isExecutionFinished(),
+			Actions:    gb.executionActions(),
+		})
+	}
+	return members
+}
+
+func (gb *GoExecutionBlock) isExecutionFinished() bool {
+	if gb.State.Decision != nil || gb.State.IsRevoked {
+		return true
+	}
+	return false
+}
+
+func (gb *GoExecutionBlock) executionActions() []MemberAction {
+	if gb.State.Decision != nil || gb.State.IsRevoked {
+		if gb.State.ExecutionType == script.ExecutionTypeGroup && gb.State.IsTakenInWork == false {
+			action := MemberAction{
+				Id:   executionStartWorkAction,
+				Type: ActionTypePrimary,
+			}
+			return []MemberAction{action}
+		}
+	}
+	return []MemberAction{
+		{
+			Id:   executionExecuteAction,
+			Type: ActionTypePrimary,
+		},
+		{
+			Id:   executionDeclineAction,
+			Type: ActionTypeSecondary,
+		},
+		{
+			Id:   executionChangeExecutorAction,
+			Type: ActionTypeOther,
+		},
+		{
+			Id:   executionRequestExecutionInfoAction,
+			Type: ActionTypeOther,
+		}}
 }
 
 func (gb *GoExecutionBlock) CheckSLA() (bool, time.Time) {
