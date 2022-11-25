@@ -3,7 +3,7 @@
 create table if not exists dict_actions(
     id character varying not null,
     title character varying,
-    default_priority character varying,
+    is_public bool default true not null,
     comment_enabled bool default false not null,
     attachments_enabled bool default false not null,
 
@@ -12,29 +12,34 @@ create table if not exists dict_actions(
 
 insert into dict_actions(id,
                          title,
-                         default_priority,
+                         is_public,
                          comment_enabled,
                          attachments_enabled)
 values
 -- executors
-('execution', 'Решить', 'primary', true, false),
-('executor_start_work', 'Взять в работу', 'primary', false, false),
-('change_executor', 'Переназначить', 'other', true, false),
-('request_execution_info', 'Запросить информацию', 'other', true, true),
+('execution', 'Решить', true, true, false),
+('executor_start_work', 'Взять в работу', true, false, false),
+('change_executor', 'Переназначить', true, true, false),
+('request_execution_info', 'Запросить информацию', true, true, true),
 -- form
 ('fill_form', '', '', false, false), -- "fill_form"
 -- approvers
-('add_approvers', 'Добавить согласующего', 'other', true, false),
-('request_add_info', 'Запросить информацию', 'secondary', true, true),
-('send_edit_app', 'Вернуть на доработку', 'other', true, true),
-('approve', 'Согласовать', 'primary', true, false),
-('reject', 'Отклонить', 'secondary', true, false),
-('viewed', 'Ознакомлен', 'other', true, false),
-('informed', 'Проинформирован', 'other', true, false),
-('sign', 'Подписать', 'other', true, false),
-('affirmate', 'Утвердить', 'other', true, false),
+
+('request_add_info', 'Запросить информацию', true, true, true),
+('send_edit_app', 'Вернуть на доработку', true, true, true),
+('approve', 'Согласовать', true, true, false),
+('reject', 'Отклонить', true, true, false),
+('viewed', 'Ознакомлен', true, true, false),
+('informed', 'Проинформирован', true, true, false),
+('sign', 'Подписать', true, true, false),
+('affirmate', 'Утвердить', true, true, false),
 -- misc
-('cancel_app', 'Отозвать', 'other', true, false);
+('cancel_app', 'Отозвать', true, true, false),
+
+-- non public actions
+('add_approvers', 'Добавить согласующего', false, true, false),
+('additional_approvement', '', false, false, false),
+('additional_reject', '', false, false, false);
 
 -- +goose StatementEnd
 

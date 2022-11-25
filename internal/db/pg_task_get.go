@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"golang.org/x/net/context"
+	"strings"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -465,6 +466,11 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_private")
 	defer span.End()
 
+	allActions, getActionsErr := db.getActionsMap(ctx)
+	if getActionsErr != nil {
+		return &entity.EriusTask{}, getActionsErr
+	}
+
 	et := entity.EriusTask{}
 
 	var nullStringParameters sql.NullString
@@ -499,6 +505,25 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 		err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	for _, actionId := range actions {
+		var compositeActionId = strings.Split(actionId, ":")
+		if len(compositeActionId) > 1 {
+			var id = compositeActionId[0]
+			var priority = compositeActionId[1]
+			var actionWithPreferences = allActions[id]
+
+			var computedAction = entity.TaskAction{
+				Id:                 id,
+				ButtonType:         priority,
+				CommentEnabled:     actionWithPreferences.CommentEnabled,
+				AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
+				IsPublic:           actionWithPreferences.IsPublic,
+			}
+
+			et.Actions = append(et.Actions, computedAction)
 		}
 	}
 
@@ -546,6 +571,11 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 	}
 	defer rows.Close()
 
+	allActions, getActionsErr := db.getActionsMap(ctx)
+	if getActionsErr != nil {
+		return &entity.EriusTasks{}, getActionsErr
+	}
+
 	for rows.Next() {
 		et := entity.EriusTask{}
 
@@ -580,6 +610,25 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
 			if err != nil {
 				return nil, err
+			}
+		}
+
+		for _, actionId := range actions {
+			var compositeActionId = strings.Split(actionId, ":")
+			if len(compositeActionId) > 1 {
+				var id = compositeActionId[0]
+				var priority = compositeActionId[1]
+				var actionWithPreferences = allActions[id]
+
+				var computedAction = entity.TaskAction{
+					Id:                 id,
+					ButtonType:         priority,
+					CommentEnabled:     actionWithPreferences.CommentEnabled,
+					AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
+					IsPublic:           actionWithPreferences.IsPublic,
+				}
+
+				et.Actions = append(et.Actions, computedAction)
 			}
 		}
 
@@ -752,7 +801,7 @@ func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 	return status, nil
 }
 
-func (db *PGCon) GetActionsList(ctx context.Context) (actions []entity.TaskAction, err error) {
+func (db *PGCon) getActionsMap(ctx context.Context) (actions map[string]entity.TaskAction, err error) {
 	q := `
 		SELECT 
 			id,
@@ -762,7 +811,7 @@ func (db *PGCon) GetActionsList(ctx context.Context) (actions []entity.TaskActio
 			attachments_enabled
 		FROM dict_actions`
 
-	result := make([]entity.TaskAction, 0)
+	result := make(map[string]entity.TaskAction, 0)
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -785,7 +834,7 @@ func (db *PGCon) GetActionsList(ctx context.Context) (actions []entity.TaskActio
 			return nil, err
 		}
 
-		result = append(result, ta)
+		result[ta.Id] = ta
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {

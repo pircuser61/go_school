@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/google/uuid"
-
 	"github.com/iancoleman/orderedmap"
+	"github.com/pkg/errors"
 )
 
 type Step struct {
@@ -54,6 +52,7 @@ type TaskAction struct {
 	ButtonType         string `json:"button_type"`
 	CommentEnabled     bool   `json:"comment_enable"`
 	AttachmentsEnabled bool   `json:"attachments_enable"`
+	IsPublic           bool   `json:"is_public"`
 }
 
 type EriusTask struct {
