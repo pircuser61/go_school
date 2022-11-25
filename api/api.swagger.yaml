@@ -2624,12 +2624,21 @@ components:
     approverDecision:
       type: string
       enum:
-        - approved
-        - rejected
+        - approve
+        - reject
+        - viewed
+        - informed
+        - sign
+        - affirmate
       description: >
         Approver decision:
-         * approved - approver approved block
-         * rejected - approver rejected block
+         * approve - Согласовать
+         * reject - Отклонить
+         * viewed - Ознакомлен
+         * informed - Проинформирован
+         * sign - Подписать
+         * affirmate - Утвердить
+
 
     executionDecision:
       type: string

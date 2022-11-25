@@ -22,9 +22,10 @@ type approverUpdateEditingParams struct {
 }
 
 type approverUpdateParams struct {
-	Decision    ApproverDecision `json:"decision"`
-	Comment     string           `json:"comment"`
-	Attachments []string         `json:"attachments"`
+	Decision         ApproverAction `json:"decision"`
+	Comment          string         `json:"comment"`
+	Attachments      []string       `json:"attachments"`
+	internalDecision ApproverDecision
 }
 
 type requestInfoParams struct {
@@ -40,16 +41,9 @@ type addApproversParams struct {
 	Attachments               []string `json:"attachments"`
 }
 
-func (a *approverUpdateParams) Validate() error {
-	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
-		return errors.New("unknown decision")
-	}
-
-	return nil
-}
-
 func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
-	if errUpdate := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.Decision, u.Comment, u.Attachments); errUpdate != nil {
+	if errUpdate := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.internalDecision,
+		u.Comment, u.Attachments); errUpdate != nil {
 		return errUpdate
 	}
 
@@ -65,11 +59,11 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA > 8 {
 		emails := make([]string, 0, len(gb.State.Approvers))
 		for approver := range gb.State.Approvers {
-			email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
+			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, approver)
 			if err != nil {
 				continue
 			}
-			emails = append(emails, email)
+			emails = append(emails, userEmail)
 		}
 		if len(emails) == 0 {
 			return nil
@@ -84,8 +78,8 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		gb.RunContext.UpdateData.ByLogin = AutoApprover
 		if setErr := gb.setApproverDecision(
 			approverUpdateParams{
-				Decision: decisionFromAutoAction(*gb.State.AutoAction),
-				Comment:  AutoActionComment,
+				internalDecision: decisionFromAutoAction(*gb.State.AutoAction),
+				Comment:          AutoActionComment,
 			}); setErr != nil {
 			return setErr
 		}
@@ -209,6 +203,15 @@ func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) error {
 	return errors.New("not found request by linkId")
 }
 
+func (gb *GoApproverBlock) actionAcceptable(action ApproverAction) bool {
+	for _, a := range gb.State.ActionList {
+		if a.Id == string(action) {
+			return true
+		}
+	}
+	return false
+}
+
 func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	data := gb.RunContext.UpdateData
 	if data == nil {
@@ -227,6 +230,12 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
+
+		if !gb.actionAcceptable(updateParams.Decision) {
+			return nil, errors.New("unacceptable action")
+		}
+
+		updateParams.internalDecision = updateParams.Decision.ToDecision()
 
 		if errUpdate := gb.setApproverDecision(updateParams); errUpdate != nil {
 			return nil, errUpdate
