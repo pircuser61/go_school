@@ -57,9 +57,11 @@ type step struct {
 }
 
 type action struct {
-	Id    string `json:"id"`
-	Type  string `json:"type"`
-	Title string `json:"title"`
+	Id                 string `json:"id"`
+	ButtonType         string `json:"button_type"`
+	Title              string `json:"title"`
+	CommentEnabled     bool   `json:"comment_enabled"`
+	AttachmentsEnabled bool   `json:"attachments_enabled"`
 }
 
 type taskActions []action
@@ -67,6 +69,8 @@ type taskSteps []step
 
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
+	actions := make([]action, 0, len(in.Actions))
+
 	for i := range in.Steps {
 		actionTime := in.Steps[i].Time
 
@@ -87,24 +91,35 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 		})
 	}
 
+	for _, a := range in.Actions {
+		actions = append(actions, action{
+			Id:                 a.Id,
+			ButtonType:         a.ButtonType,
+			Title:              a.Title,
+			CommentEnabled:     a.CommentEnabled,
+			AttachmentsEnabled: a.AttachmentsEnabled,
+		})
+	}
+
 	out := &eriusTaskResponse{
-		ID:            in.ID,
-		VersionID:     in.VersionID,
-		StartedAt:     in.StartedAt,
-		LastChangedAt: in.LastChangedAt,
-		FinishedAt:    in.FinishedAt,
-		Name:          in.Name,
-		Description:   in.Description,
-		Status:        in.Status,
-		HumanStatus:   in.HumanStatus,
-		Author:        in.Author,
-		IsDebugMode:   in.IsDebugMode,
-		Parameters:    in.Parameters,
-		Steps:         steps,
-		WorkNumber:    in.WorkNumber,
-		BlueprintID:   in.BlueprintID,
-		Rate:          in.Rate,
-		RateComment:   in.RateComment,
+		ID:               in.ID,
+		VersionID:        in.VersionID,
+		StartedAt:        in.StartedAt,
+		LastChangedAt:    in.LastChangedAt,
+		FinishedAt:       in.FinishedAt,
+		Name:             in.Name,
+		Description:      in.Description,
+		Status:           in.Status,
+		HumanStatus:      in.HumanStatus,
+		Author:           in.Author,
+		IsDebugMode:      in.IsDebugMode,
+		Parameters:       in.Parameters,
+		Steps:            steps,
+		WorkNumber:       in.WorkNumber,
+		BlueprintID:      in.BlueprintID,
+		Rate:             in.Rate,
+		RateComment:      in.RateComment,
+		AvailableActions: actions,
 	}
 
 	return out

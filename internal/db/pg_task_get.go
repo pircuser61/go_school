@@ -523,7 +523,9 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 				IsPublic:           actionWithPreferences.IsPublic,
 			}
 
-			et.Actions = append(et.Actions, computedAction)
+			if computedAction.IsPublic {
+				et.Actions = append(et.Actions, computedAction)
+			}
 		}
 	}
 
@@ -613,6 +615,8 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			}
 		}
 
+		var actionsResult = make([]entity.TaskAction, 0)
+
 		for _, actionId := range actions {
 			var compositeActionId = strings.Split(actionId, ":")
 			if len(compositeActionId) > 1 {
@@ -628,8 +632,11 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 					IsPublic:           actionWithPreferences.IsPublic,
 				}
 
-				et.Actions = append(et.Actions, computedAction)
+				if computedAction.IsPublic {
+					actionsResult = append(actionsResult, computedAction)
+				}
 			}
+			et.Actions = actionsResult
 		}
 
 		ets.Tasks = append(ets.Tasks, et)
@@ -806,8 +813,8 @@ func (db *PGCon) getActionsMap(ctx context.Context) (actions map[string]entity.T
 		SELECT 
 			id,
 			title,
-			default_priority,
-			comments_enabled,
+			is_public,
+			comment_enabled,
 			attachments_enabled
 		FROM dict_actions`
 
@@ -827,7 +834,7 @@ func (db *PGCon) getActionsMap(ctx context.Context) (actions map[string]entity.T
 		if err := rows.Scan(
 			&ta.Id,
 			&ta.Title,
-			&ta.ButtonType,
+			&ta.IsPublic,
 			&ta.CommentEnabled,
 			&ta.AttachmentsEnabled,
 		); err != nil {
