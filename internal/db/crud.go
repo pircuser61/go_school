@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lib/pq"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +13,8 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
+
+	"github.com/lib/pq"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
