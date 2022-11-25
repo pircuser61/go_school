@@ -24,23 +24,24 @@ import (
 )
 
 type eriusTaskResponse struct {
-	ID            uuid.UUID              `json:"id"`
-	VersionID     uuid.UUID              `json:"version_id"`
-	StartedAt     time.Time              `json:"started_at"`
-	LastChangedAt time.Time              `json:"last_changed_at"`
-	FinishedAt    *time.Time             `json:"finished_at"`
-	Name          string                 `json:"name"`
-	Description   string                 `json:"description"`
-	Status        string                 `json:"status"`
-	HumanStatus   string                 `json:"human_status"`
-	Author        string                 `json:"author"`
-	IsDebugMode   bool                   `json:"debug"`
-	Parameters    map[string]interface{} `json:"parameters"`
-	Steps         taskSteps              `json:"steps"`
-	WorkNumber    string                 `json:"work_number"`
-	BlueprintID   string                 `json:"blueprint_id"`
-	Rate          *int                   `json:"rate"`
-	RateComment   *string                `json:"rate_comment"`
+	ID               uuid.UUID              `json:"id"`
+	VersionID        uuid.UUID              `json:"version_id"`
+	StartedAt        time.Time              `json:"started_at"`
+	LastChangedAt    time.Time              `json:"last_changed_at"`
+	FinishedAt       *time.Time             `json:"finished_at"`
+	Name             string                 `json:"name"`
+	Description      string                 `json:"description"`
+	Status           string                 `json:"status"`
+	HumanStatus      string                 `json:"human_status"`
+	Author           string                 `json:"author"`
+	IsDebugMode      bool                   `json:"debug"`
+	Parameters       map[string]interface{} `json:"parameters"`
+	Steps            taskSteps              `json:"steps"`
+	WorkNumber       string                 `json:"work_number"`
+	BlueprintID      string                 `json:"blueprint_id"`
+	Rate             *int                   `json:"rate"`
+	RateComment      *string                `json:"rate_comment"`
+	AvailableActions taskActions            `json:"available_actions"`
 }
 
 type step struct {
@@ -55,10 +56,21 @@ type step struct {
 	Status   pipeline.Status            `json:"status"`
 }
 
+type action struct {
+	Id                 string `json:"id"`
+	ButtonType         string `json:"button_type"`
+	Title              string `json:"title"`
+	CommentEnabled     bool   `json:"comment_enabled"`
+	AttachmentsEnabled bool   `json:"attachments_enabled"`
+}
+
+type taskActions []action
 type taskSteps []step
 
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
+	actions := make([]action, 0, len(in.Actions))
+
 	for i := range in.Steps {
 		actionTime := in.Steps[i].Time
 
@@ -79,24 +91,35 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 		})
 	}
 
+	for _, a := range in.Actions {
+		actions = append(actions, action{
+			Id:                 a.Id,
+			ButtonType:         a.ButtonType,
+			Title:              a.Title,
+			CommentEnabled:     a.CommentEnabled,
+			AttachmentsEnabled: a.AttachmentsEnabled,
+		})
+	}
+
 	out := &eriusTaskResponse{
-		ID:            in.ID,
-		VersionID:     in.VersionID,
-		StartedAt:     in.StartedAt,
-		LastChangedAt: in.LastChangedAt,
-		FinishedAt:    in.FinishedAt,
-		Name:          in.Name,
-		Description:   in.Description,
-		Status:        in.Status,
-		HumanStatus:   in.HumanStatus,
-		Author:        in.Author,
-		IsDebugMode:   in.IsDebugMode,
-		Parameters:    in.Parameters,
-		Steps:         steps,
-		WorkNumber:    in.WorkNumber,
-		BlueprintID:   in.BlueprintID,
-		Rate:          in.Rate,
-		RateComment:   in.RateComment,
+		ID:               in.ID,
+		VersionID:        in.VersionID,
+		StartedAt:        in.StartedAt,
+		LastChangedAt:    in.LastChangedAt,
+		FinishedAt:       in.FinishedAt,
+		Name:             in.Name,
+		Description:      in.Description,
+		Status:           in.Status,
+		HumanStatus:      in.HumanStatus,
+		Author:           in.Author,
+		IsDebugMode:      in.IsDebugMode,
+		Parameters:       in.Parameters,
+		Steps:            steps,
+		WorkNumber:       in.WorkNumber,
+		BlueprintID:      in.BlueprintID,
+		Rate:             in.Rate,
+		RateComment:      in.RateComment,
+		AvailableActions: actions,
 	}
 
 	return out
@@ -217,12 +240,12 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	return filters, nil
 }
 
-func (cd *Created) toEntity() *entity.TimePeriod {
+func (c *Created) toEntity() *entity.TimePeriod {
 	var timePeriod *entity.TimePeriod
-	if cd != nil {
+	if c != nil {
 		timePeriod = &entity.TimePeriod{
-			Start: cd.Start,
-			End:   cd.End,
+			Start: c.Start,
+			End:   c.End,
 		}
 	}
 	return timePeriod
@@ -587,11 +610,11 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 }
 
 func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
-	if action == entity.TaskUpdateActionApprovement {
+	if action == entity.TaskUpdateActionAdditionalApprovement {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
-	if action == entity.TaskUpdateActionAdditionalApprovement {
+	if action == entity.TaskUpdateActionApprovement {
 		return []string{pipeline.BlockGoApproverID}
 	}
 

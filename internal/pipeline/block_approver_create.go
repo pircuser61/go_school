@@ -31,6 +31,8 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		b.Input[v.Name] = v.Global
 	}
 
+	// TODO: check existence of keyApproverDecision in Output
+
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
 	}
@@ -214,6 +216,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	}
 
 	var parentState ApproverData
+
 	if err = json.Unmarshal(data, &parentState); err != nil {
 		l.Error(funcName, "invalid format of go-approver-block state")
 		return

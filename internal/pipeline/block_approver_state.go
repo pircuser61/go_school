@@ -12,12 +12,12 @@ import (
 type ApproverAction string
 
 const (
-	ApproverActionApprove   = "approve"
-	ApproverActionReject    = "reject"
-	ApproverActionViewed    = "viewed"
-	ApproverActionInformed  = "informed"
-	ApproverActionSign      = "sign"
-	ApproverActionAffirmate = "affirmate"
+	ApproverActionApprove  = "approve"
+	ApproverActionReject   = "reject"
+	ApproverActionViewed   = "viewed"
+	ApproverActionInformed = "informed"
+	ApproverActionSign     = "sign"
+	ApproverActionConfirm  = "confirm"
 )
 
 func (a ApproverAction) ToDecision() ApproverDecision {
@@ -32,8 +32,8 @@ func (a ApproverAction) ToDecision() ApproverDecision {
 		return ApproverDecisionInformed
 	case ApproverActionSign:
 		return ApproverDecisionSigned
-	case ApproverActionAffirmate:
-		return ApproverDecisionAffirmated
+	case ApproverActionConfirm:
+		return ApproverDecisionConfirmed
 	default:
 		return ""
 	}
@@ -57,20 +57,20 @@ func (a ApproverDecision) ToAction() ApproverAction {
 		return ApproverActionInformed
 	case ApproverDecisionSigned:
 		return ApproverActionSign
-	case ApproverDecisionAffirmated:
-		return ApproverActionAffirmate
+	case ApproverDecisionConfirmed:
+		return ApproverActionConfirm
 	default:
 		return ""
 	}
 }
 
 const (
-	ApproverDecisionApproved   ApproverDecision = "approved"
-	ApproverDecisionRejected   ApproverDecision = "rejected"
-	ApproverDecisionViewed     ApproverDecision = "viewed"
-	ApproverDecisionInformed   ApproverDecision = "informed"
-	ApproverDecisionSigned     ApproverDecision = "signed"
-	ApproverDecisionAffirmated ApproverDecision = "affirmated"
+	ApproverDecisionApproved  ApproverDecision = "approved"
+	ApproverDecisionRejected  ApproverDecision = "rejected"
+	ApproverDecisionViewed    ApproverDecision = "viewed"
+	ApproverDecisionInformed  ApproverDecision = "informed"
+	ApproverDecisionSigned    ApproverDecision = "signed"
+	ApproverDecisionConfirmed ApproverDecision = "confirmed"
 )
 
 func decisionFromAutoAction(action script.AutoAction) ApproverDecision {

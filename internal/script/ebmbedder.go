@@ -68,10 +68,10 @@ type Socket struct {
 
 const (
 	approvedSocketID    = "approved"
-	approvedSocketTitle = "Согласовано"
+	approvedSocketTitle = "Согласовать"
 
 	rejectedSocketID    = "rejected"
-	RejectedSocketTitle = "Отклонено"
+	RejectedSocketTitle = "Отклонить"
 
 	editAppSocketID    = "edit_app"
 	editAppSocketTitle = "На доработку"

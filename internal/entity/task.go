@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/google/uuid"
 
 	"github.com/iancoleman/orderedmap"
+
+	"github.com/pkg/errors"
 )
 
 type Step struct {
@@ -48,6 +48,15 @@ type CountTasks struct {
 	TotalFormExecutor int `json:"form_execute"`
 }
 
+type TaskAction struct {
+	Id                 string `json:"id"`
+	Title              string `json:"title"`
+	ButtonType         string `json:"button_type"`
+	CommentEnabled     bool   `json:"comment_enable"`
+	AttachmentsEnabled bool   `json:"attachments_enable"`
+	IsPublic           bool   `json:"is_public"`
+}
+
 type EriusTask struct {
 	ID            uuid.UUID              `json:"id"`
 	VersionID     uuid.UUID              `json:"version_id"`
@@ -66,6 +75,7 @@ type EriusTask struct {
 	BlueprintID   string                 `json:"blueprint_id"`
 	Rate          *int                   `json:"rate"`
 	RateComment   *string                `json:"rate_comment"`
+	Actions       []TaskAction           `json:"available_actions"`
 
 	ActiveBlocks           map[string]struct{} `json:"active_blocks"`
 	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
