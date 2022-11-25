@@ -89,14 +89,14 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 }
 
 func (gb *GoApproverBlock) isApprovementAddFinished(a AdditionalApprover) bool {
-	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != "" {
+	if gb.State.Decision != nil || gb.State.IsRevoked || *a.Decision != "" {
 		return true
 	}
 	return false
 }
 
 func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []MemberAction {
-	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != "" {
+	if gb.State.Decision != nil || gb.State.IsRevoked || *a.Decision != "" {
 		return []MemberAction{}
 	}
 	return []MemberAction{{
