@@ -22,7 +22,7 @@ values
 ('change_executor', 'Переназначить', true, true, false),
 ('request_execution_info', 'Запросить информацию', true, true, true),
 -- form
-('fill_form', '', '', false, false), -- "fill_form"
+('fill_form', '', true, false, false), -- "fill_form"
 -- approvers
 
 ('request_add_info', 'Запросить информацию', true, true, true),
