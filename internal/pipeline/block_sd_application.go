@@ -46,8 +46,8 @@ func (gb *GoSdApplicationBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoSdApplicationBlock) CheckSLA() (bool, time.Time) {
-	return false, time.Time{}
+func (gb *GoSdApplicationBlock) CheckSLA() (bool, bool, time.Time) {
+	return false, false, time.Time{}
 }
 
 func (gb *GoSdApplicationBlock) UpdateManual() bool {

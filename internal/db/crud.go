@@ -1572,6 +1572,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		, content = $7
 		, updated_at = NOW()
 		, sla_deadline = $8
+		, check_half_sla = $9
 	WHERE
 		id = $1
 `
@@ -1580,7 +1581,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		members = append(members, userLogin)
 	}
 	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA,
-		members, dto.Content, dto.SLADeadline}
+		members, dto.Content, dto.SLADeadline, dto.CheckHalfSLA}
 
 	_, err := db.Connection.Exec(
 		c,
@@ -2379,6 +2380,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 	defer span.End()
 
 	// language=PostgreSQL
+	// half_sla = (vs.time + (vs.sla_deadline - vs.time)/2)
 	q := `
 		SELECT w.id,
 		       w.work_number,
@@ -2386,12 +2388,17 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		       v.author,
 		       vs.content,
 		       v.content->'pipeline'->'blocks'->vs.step_name,
-		       vs.step_name
+		       vs.step_name,
+		       (case when sla_deadline > NOW() THEN False ELSE True END) already
 		FROM variable_storage vs 
 		    JOIN works w on vs.work_id = w.id 
 		    JOIN versions v on w.version_id = v.id
 			JOIN pipelines p on v.pipeline_id = p.id
-		WHERE check_sla = True AND sla_deadline < NOW() AND vs.status = 'running'`
+		WHERE (
+		    (check_sla = True AND sla_deadline < NOW()) or 
+		    (vs.check_half_sla = True AND (vs.time + (vs.sla_deadline - vs.time)/2) < NOW())
+		) 
+		  AND vs.status = 'running'`
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -2409,6 +2416,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			&content,
 			&item.BlockData,
 			&item.StepName,
+			&item.Already,
 		); scanErr != nil {
 			return nil, scanErr
 		}

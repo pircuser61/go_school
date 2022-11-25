@@ -57,8 +57,8 @@ func (gb *GoFormBlock) Members() map[string]struct{} {
 	return gb.State.Executors
 }
 
-func (gb *GoFormBlock) CheckSLA() (bool, time.Time) {
-	return false, time.Time{}
+func (gb *GoFormBlock) CheckSLA() (bool, bool, time.Time) {
+	return false, false, time.Time{}
 }
 
 func (gb *GoFormBlock) UpdateManual() bool {

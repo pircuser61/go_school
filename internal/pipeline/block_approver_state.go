@@ -105,7 +105,8 @@ type ApproverData struct {
 	IsRevoked         bool   `json:"is_revoked"`
 	ApproveStatusName string `json:"approve_status_name"`
 
-	SLAChecked bool `json:"sla_checked"`
+	SLAChecked     bool `json:"sla_checked"`
+	HalfSLAChecked bool `json:"half_sla_checked"`
 
 	ActionList []Action `json:"action_list"`
 

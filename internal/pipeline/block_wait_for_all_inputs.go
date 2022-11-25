@@ -33,8 +33,8 @@ func (gb *GoWaitForAllInputsBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoWaitForAllInputsBlock) CheckSLA() (bool, time.Time) {
-	return false, time.Time{}
+func (gb *GoWaitForAllInputsBlock) CheckSLA() (bool, bool, time.Time) {
+	return false, false, time.Time{}
 }
 
 func (gb *GoWaitForAllInputsBlock) UpdateManual() bool {

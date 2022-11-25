@@ -37,6 +37,20 @@ func NewApprovementSLATemplate(id, name, sdUrl string) Template {
 	}
 }
 
+func NewApprovementHalfSLATemplate(id, name, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("По заявке %s %s истекает время согласования", id, name),
+		Text:    "Истекает время согласования заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Variables: struct {
+			Name string `json:"name"`
+			Link string `json:"link"`
+		}{
+			Name: name,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
 func NewExecutionSLATemplate(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время исполнения", id, name),

@@ -24,8 +24,8 @@ func (gb *GoBeginParallelTaskBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoBeginParallelTaskBlock) CheckSLA() (bool, time.Time) {
-	return false, time.Time{}
+func (gb *GoBeginParallelTaskBlock) CheckSLA() (bool, bool, time.Time) {
+	return false, false, time.Time{}
 }
 
 func (gb *GoBeginParallelTaskBlock) UpdateManual() bool {

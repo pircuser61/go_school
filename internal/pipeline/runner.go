@@ -26,5 +26,5 @@ type Runner interface {
 	GetStatus() Status
 	UpdateManual() bool
 	Members() map[string]struct{}
-	CheckSLA() (bool, time.Time)
+	CheckSLA() (bool, bool, time.Time)
 }

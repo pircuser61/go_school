@@ -58,8 +58,8 @@ func (gb *ExecutablePipeline) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *ExecutablePipeline) CheckSLA() (bool, time.Time) {
-	return false, time.Time{}
+func (gb *ExecutablePipeline) CheckSLA() (bool, bool, time.Time) {
+	return false, false, time.Time{}
 }
 
 func (gb *ExecutablePipeline) GetStatus() Status {

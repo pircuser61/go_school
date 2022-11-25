@@ -26,8 +26,8 @@ func (gb *GoStartBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoStartBlock) CheckSLA() (bool, time.Time) {
-	return false, time.Time{}
+func (gb *GoStartBlock) CheckSLA() (bool, bool, time.Time) {
+	return false, false, time.Time{}
 }
 
 func (gb *GoStartBlock) UpdateManual() bool {

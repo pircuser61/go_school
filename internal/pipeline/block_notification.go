@@ -38,8 +38,8 @@ func (gb *GoNotificationBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoNotificationBlock) CheckSLA() (bool, time.Time) {
-	return false, time.Time{}
+func (gb *GoNotificationBlock) CheckSLA() (bool, bool, time.Time) {
+	return false, false, time.Time{}
 }
 
 func (gb *GoNotificationBlock) UpdateManual() bool {

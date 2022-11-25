@@ -23,8 +23,8 @@ func (gb *GoEndBlock) Members() map[string]struct{} {
 	return nil
 }
 
-func (gb *GoEndBlock) CheckSLA() (bool, time.Time) {
-	return false, time.Time{}
+func (gb *GoEndBlock) CheckSLA() (bool, bool, time.Time) {
+	return false, false, time.Time{}
 }
 
 func (gb *GoEndBlock) GetStatus() Status {

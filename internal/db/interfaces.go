@@ -82,15 +82,16 @@ type SaveStepRequest struct {
 }
 
 type UpdateStepRequest struct {
-	Id          uuid.UUID
-	StepName    string
-	Content     []byte
-	BreakPoints []string
-	HasError    bool
-	Status      string
-	Members     map[string]struct{}
-	CheckSLA    bool
-	SLADeadline time.Time
+	Id           uuid.UUID
+	StepName     string
+	Content      []byte
+	BreakPoints  []string
+	HasError     bool
+	Status       string
+	Members      map[string]struct{}
+	CheckSLA     bool
+	SLADeadline  time.Time
+	CheckHalfSLA bool
 }
 
 type UpdateTaskBlocksDataRequest struct {
@@ -116,6 +117,7 @@ type StepBreachedSLA struct {
 	VarStore   *store.VariableStore
 	BlockData  *e.EriusFunc
 	StepName   string
+	Already    bool
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase

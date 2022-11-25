@@ -31,8 +31,8 @@ func (gb *GoApproverBlock) Members() map[string]struct{} {
 	return gb.State.Approvers
 }
 
-func (gb *GoApproverBlock) CheckSLA() (bool, time.Time) {
-	return !gb.State.SLAChecked, computeMaxDate(gb.RunContext.currBlockStartTime, gb.State.SLA)
+func (gb *GoApproverBlock) CheckSLA() (bool, bool, time.Time) {
+	return !gb.State.SLAChecked, !gb.State.HalfSLAChecked, computeMaxDate(gb.RunContext.currBlockStartTime, gb.State.SLA)
 }
 
 func (gb *GoApproverBlock) UpdateManual() bool {
