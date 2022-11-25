@@ -2305,6 +2305,10 @@ components:
           type: string
         work_number:
           type: string
+        comment:
+          type: string
+        rate:
+          type: integer
       required:
         - id
         - version_id
@@ -2840,8 +2844,6 @@ components:
           type: string
         rate:
           type: integer
-      required:
-        - rate
 
     CreateTaskRequest:
       type: object

@@ -39,8 +39,8 @@ type eriusTaskResponse struct {
 	Steps         taskSteps              `json:"steps"`
 	WorkNumber    string                 `json:"work_number"`
 	BlueprintID   string                 `json:"blueprint_id"`
-	Rate          int                    `json:"rate"`
-	RateComment   string                 `json:"rate_comment"`
+	Rate          *int                   `json:"rate"`
+	RateComment   *string                `json:"rate_comment"`
 }
 
 type step struct {
@@ -217,12 +217,12 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	return filters, nil
 }
 
-func (c *Created) toEntity() *entity.TimePeriod {
+func (cd *Created) toEntity() *entity.TimePeriod {
 	var timePeriod *entity.TimePeriod
-	if c != nil {
+	if cd != nil {
 		timePeriod = &entity.TimePeriod{
-			Start: c.Start,
-			End:   c.End,
+			Start: cd.Start,
+			End:   cd.End,
 		}
 	}
 	return timePeriod

@@ -448,10 +448,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   - user - Single user
-//   - group - Approver group ID
-//   - head - Receiver's head
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -651,10 +651,11 @@ type EriusTagInfo struct {
 
 // EriusTask defines model for EriusTask.
 type EriusTask struct {
-	Author      string `json:"author"`
-	BlueprintId string `json:"blueprint_id"`
-	Debug       bool   `json:"debug"`
-	Description string `json:"description"`
+	Author      string  `json:"author"`
+	BlueprintId string  `json:"blueprint_id"`
+	Comment     *string `json:"comment,omitempty"`
+	Debug       bool    `json:"debug"`
+	Description string  `json:"description"`
 
 	// Task human readable status
 	HumanStatus   TaskHumanStatus        `json:"human_status"`
@@ -662,6 +663,7 @@ type EriusTask struct {
 	LastChangedAt string                 `json:"last_changed_at"`
 	Name          string                 `json:"name"`
 	Parameters    map[string]interface{} `json:"parameters"`
+	Rate          *int                   `json:"rate,omitempty"`
 	StartedAt     string                 `json:"started_at"`
 	Status        string                 `json:"status"`
 	Steps         []Step                 `json:"steps"`
@@ -746,9 +748,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//   - user - Single user
-//   - group - Execution group ID
-//   - from_schema - Selected by initiator
+//  * user - Single user
+//  * group - Execution group ID
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -808,9 +810,9 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   - User - Single user
-//   - Initiator - Process initiator
-//   - From_schema - Selected by initiator
+//   * User - Single user
+//   * Initiator - Process initiator
+//   * From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -945,7 +947,7 @@ type Params interface{}
 // RateApplicationRequest defines model for RateApplicationRequest.
 type RateApplicationRequest struct {
 	Comment *string `json:"comment,omitempty"`
-	Rate    int     `json:"rate"`
+	Rate    *int    `json:"rate,omitempty"`
 }
 
 // Type of execution info
@@ -1132,17 +1134,17 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//   - approved - Согласовать
-//   - rejected - Отклонить
+//  * approved - Согласовать
+//  * rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//   - approve - Согласовать
-//   - reject - Отклонить
-//   - viewed - Ознакомлен
-//   - informed - Проинформирован
-//   - sign - Подписать
-//   - affirmate - Утвердить
+//  * approve - Согласовать
+//  * reject - Отклонить
+//  * viewed - Ознакомлен
+//  * informed - Проинформирован
+//  * sign - Подписать
+//  * affirmate - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1187,8 +1189,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//   - executed - executor executed block
-//   - rejected - executor rejected block
+//  * executed - executor executed block
+//  * rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1228,11 +1230,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//   - 1 - Draft
-//   - 2 - Approved
-//   - 3 - Deleted
-//   - 4 - Rejected
-//   - 5 - On approve
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
