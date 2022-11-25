@@ -1543,44 +1543,11 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		return NullUuid, time.Time{}, err
 	}
 
-	membersId := uuid.New()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	const queryMembers = `
-		INSERT INTO members (               
-			id,
-		     block_id,
-		    login,
-		    finished,
-		     actions                
-		)
-		VALUES (
-			$1, 
-			$2, 
-			$3, 
-			$4, 
-			$5
-		)
-`
-	for _, val := range dto.Members {
-		actions := make(pq.StringArray, 0, len(val.Actions))
-		for _, act := range val.Actions {
-			actions = append(actions, act.Id+":"+act.Type)
-		}
-		_, err = db.Connection.Exec(
-			ctx,
-			queryMembers,
-			membersId,
-			id,
-			val.Login,
-			val.Finished,
-			actions,
-		)
-		if err != nil {
-			return NullUuid, time.Time{}, err
-		}
+	err = db.insertIntoMembers(ctx, dto.Members, id)
+	if err != nil {
+		return NullUuid, time.Time{}, err
 	}
+
 	return id, timestamp, nil
 }
 
@@ -1630,11 +1597,19 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		return err
 	}
 
+	err = db.insertIntoMembers(ctx, dto.Members, dto.Id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id uuid.UUID) error {
 	membersId := uuid.New()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	const qMembersAdd = `
+	const queryMembers = `
 		INSERT INTO members (               
 			id,
 		     block_id,
@@ -1650,16 +1625,16 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 			$5
 		)
 `
-	for _, val := range dto.Members {
+	for _, val := range members {
 		actions := make(pq.StringArray, 0, len(val.Actions))
 		for _, act := range val.Actions {
 			actions = append(actions, act.Id+":"+act.Type)
 		}
-		_, err = db.Connection.Exec(
+		_, err := db.Connection.Exec(
 			ctx,
-			qMembersAdd,
+			queryMembers,
 			membersId,
-			dto.Id,
+			id,
 			val.Login,
 			val.Finished,
 			actions,
@@ -1668,7 +1643,6 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 			return err
 		}
 	}
-
 	return nil
 }
 
