@@ -3064,7 +3064,7 @@ components:
           description: IDs of next blocks
         actionType:
           type: string
-          enum: [ "main", "secondary", "extra" ]
+          enum: [ "primary", "secondary", "extra" ]
           description: action type
       required:
         - id
