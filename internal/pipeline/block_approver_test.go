@@ -141,6 +141,132 @@ func TestApproverData_SetDecision(t *testing.T) {
 	}
 }
 
+func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
+	var (
+		login            = "example"
+		decisionRejected = ApproverDecisionRejected
+		decisionApproved = ApproverDecisionApproved
+		comment          = "blah blah blah"
+		question         = "need approval"
+	)
+
+	type fields struct {
+		Decision            *ApproverDecision
+		AdditionalApprovers []AdditionalApprover
+	}
+	type args struct {
+		login  string
+		params additionalApproverUpdateParams
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		want    []AdditionalApprover
+	}{
+		{
+			name: "additional approver not found",
+			fields: fields{
+				Decision:            nil,
+				AdditionalApprovers: nil,
+			},
+			args: args{
+				login: login,
+				params: additionalApproverUpdateParams{
+					Decision: decisionRejected,
+					Comment:  comment,
+				},
+			},
+			wantErr: true,
+			want:    nil,
+		},
+		{
+			name: "decision already set",
+			fields: fields{
+				Decision:            &decisionRejected,
+				AdditionalApprovers: nil,
+			},
+			args: args{
+				login: login,
+				params: additionalApproverUpdateParams{
+					Decision: decisionRejected,
+					Comment:  comment,
+				},
+			},
+			wantErr: true,
+			want:    nil,
+		},
+		{
+			name: "valid case",
+			fields: fields{
+				Decision: nil,
+				AdditionalApprovers: []AdditionalApprover{
+					{
+						ApproverLogin: login,
+						Question:      &question,
+					},
+					{
+						ApproverLogin: login,
+					},
+					{
+						ApproverLogin: login,
+						Question:      &question,
+						Comment:       &comment,
+						Decision:      &decisionApproved,
+					},
+				},
+			},
+			args: args{
+				login: login,
+				params: additionalApproverUpdateParams{
+					Decision: decisionRejected,
+					Comment:  comment,
+				},
+			},
+			wantErr: false,
+			want: []AdditionalApprover{
+				{
+					ApproverLogin: login,
+					Question:      &question,
+					Comment:       &comment,
+					Decision:      &decisionRejected,
+				},
+				{
+					ApproverLogin: login,
+					Comment:       &comment,
+					Decision:      &decisionRejected,
+				},
+				{
+					ApproverLogin: login,
+					Question:      &question,
+					Comment:       &comment,
+					Decision:      &decisionApproved,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &ApproverData{
+				Decision:            tt.fields.Decision,
+				AdditionalApprovers: tt.fields.AdditionalApprovers,
+			}
+
+			if err := a.SetDecisionByAdditionalApprover(tt.args.login, tt.args.params); (err != nil) != tt.wantErr {
+				t.Errorf(
+					"SetDecisionByAdditionalApprover(%v, %v)",
+					tt.args.login,
+					tt.args.params,
+				)
+			}
+
+			assert.Equal(t, a.AdditionalApprovers, tt.want)
+		})
+	}
+}
+
 func Test_createGoApproverBlock(t *testing.T) {
 	const (
 		example = "example"
