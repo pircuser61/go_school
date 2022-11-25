@@ -20,11 +20,6 @@ import (
 
 type void = struct{}
 
-const (
-	// TODO maybe there is a better way to save work id in variable store
-	keyStepWorkId = "work_id"
-)
-
 type ExecutablePipeline struct {
 	TaskID        uuid.UUID
 	WorkNumber    string
