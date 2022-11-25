@@ -64,7 +64,7 @@ type UpdateTaskRate struct {
 	ByLogin    string
 	WorkNumber string
 	Comment    *string
-	Rate       int
+	Rate       *int
 }
 
 type SaveStepRequest struct {

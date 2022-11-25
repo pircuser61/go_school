@@ -64,8 +64,8 @@ type EriusTask struct {
 	Steps         TaskSteps              `json:"steps"`
 	WorkNumber    string                 `json:"work_number"`
 	BlueprintID   string                 `json:"blueprint_id"`
-	Rate          int                    `json:"rate"`
-	RateComment   string                 `json:"rate_comment"`
+	Rate          *int                   `json:"rate"`
+	RateComment   *string                `json:"rate_comment"`
 
 	ActiveBlocks           map[string]struct{} `json:"active_blocks"`
 	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
