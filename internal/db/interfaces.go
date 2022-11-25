@@ -69,16 +69,17 @@ type UpdateTaskRate struct {
 }
 
 type SaveStepRequest struct {
-	WorkID      uuid.UUID
-	StepType    string
-	StepName    string
-	Content     []byte
-	BreakPoints []string
-	HasError    bool
-	Status      string
-	Members     map[string]struct{}
-	CheckSLA    bool
-	SLADeadline time.Time
+	WorkID       uuid.UUID
+	StepType     string
+	StepName     string
+	Content      []byte
+	BreakPoints  []string
+	HasError     bool
+	Status       string
+	Members      map[string]struct{}
+	CheckSLA     bool
+	CheckHalfSLA bool
+	SLADeadline  time.Time
 }
 
 type UpdateStepRequest struct {

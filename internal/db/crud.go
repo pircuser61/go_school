@@ -1514,7 +1514,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			status,
 		    members,
 		    check_sla,
-		    sla_deadline
+		    sla_deadline,
+		    check_half_sla
 		)
 		VALUES (
 			$1, 
@@ -1528,7 +1529,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$9,
 			$10,
 		    $11,
-			$12
+			$12,
+		    $13
 		)
 `
 
@@ -1547,6 +1549,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		members,
 		dto.CheckSLA,
 		dto.SLADeadline,
+		dto.CheckHalfSLA,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
