@@ -2484,28 +2484,6 @@ components:
         - action
         - parameters
 
-    NewTaskUpdate:
-      type: object
-      properties:
-        action:
-          type: string
-          description: action id (you can get available actions from "available_actions" objects from GET /tasks
-          example: approve
-        parameters:
-          type: object
-          description: Task update params
-          oneOf:
-            - $ref: '#/components/schemas/ApproverUpdateParams'
-            - $ref: '#/components/schemas/ExecutionUpdateParams'
-            - $ref: '#/components/schemas/ExecutorChangeParams'
-            - $ref: '#/components/schemas/RequestInfoUpdateParams'
-            - $ref: '#/components/schemas/ExecutableFunctionParams'
-            - $ref: '#/components/schemas/FillFormUpdateParams'
-            - $ref: '#/components/schemas/AddApproversParams'
-      required:
-        - action
-        - parameters
-
     FillFormUpdateParams:
       type: object
       description: Fill form
