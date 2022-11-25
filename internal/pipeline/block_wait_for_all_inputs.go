@@ -29,7 +29,7 @@ type GoWaitForAllInputsBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoWaitForAllInputsBlock) Members() map[string]struct{} {
+func (gb *GoWaitForAllInputsBlock) Members() []Member {
 	return nil
 }
 

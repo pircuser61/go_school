@@ -22,7 +22,7 @@ type GoStartBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoStartBlock) Members() map[string]struct{} {
+func (gb *GoStartBlock) Members() []Member {
 	return nil
 }
 

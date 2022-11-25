@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 type Step struct {
@@ -62,8 +64,8 @@ type EriusTask struct {
 	Steps         TaskSteps              `json:"steps"`
 	WorkNumber    string                 `json:"work_number"`
 	BlueprintID   string                 `json:"blueprint_id"`
-	Rate          int                    `json:"rate"`
-	RateComment   string                 `json:"rate_comment"`
+	Rate          *int                   `json:"rate"`
+	RateComment   *string                `json:"rate_comment"`
 
 	ActiveBlocks           map[string]struct{} `json:"active_blocks"`
 	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
@@ -120,34 +122,36 @@ type TaskFilter struct {
 type TaskUpdateAction string
 
 const (
-	TaskUpdateActionApprovement          TaskUpdateAction = "approvement"
-	TaskUpdateActionSLABreach            TaskUpdateAction = "sla_breached"
-	TaskUpdateActionHalfSLABreach        TaskUpdateAction = "half_sla_breached"
-	TaskUpdateActionExecution            TaskUpdateAction = "execution"
-	TaskUpdateActionChangeExecutor       TaskUpdateAction = "change_executor"
-	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
-	TaskUpdateActionExecutorStartWork    TaskUpdateAction = "executor_start_work"
-	TaskUpdateActionApproverSendEditApp  TaskUpdateAction = "approver_send_edit_app"
-	TaskUpdateActionExecutorSendEditApp  TaskUpdateAction = "executor_send_edit_app"
-	TaskUpdateActionCancelApp            TaskUpdateAction = "cancel_app"
-	TaskUpdateActionRequestApproveInfo   TaskUpdateAction = "request_add_info"
-	TaskUpdateActionRequestFillForm      TaskUpdateAction = "fill_form"
-	TaskUpdateActionAddApprovers         TaskUpdateAction = "add_approvers"
+	TaskUpdateActionApprovement           TaskUpdateAction = "approvement"
+	TaskUpdateActionAdditionalApprovement TaskUpdateAction = "additional_approvement"
+	TaskUpdateActionSLABreach             TaskUpdateAction = "sla_breached"
+	TaskUpdateActionHalfSLABreach         TaskUpdateAction = "half_sla_breached"
+	TaskUpdateActionExecution             TaskUpdateAction = "execution"
+	TaskUpdateActionChangeExecutor        TaskUpdateAction = "change_executor"
+	TaskUpdateActionRequestExecutionInfo  TaskUpdateAction = "request_execution_info"
+	TaskUpdateActionExecutorStartWork     TaskUpdateAction = "executor_start_work"
+	TaskUpdateActionApproverSendEditApp   TaskUpdateAction = "approver_send_edit_app"
+	TaskUpdateActionExecutorSendEditApp   TaskUpdateAction = "executor_send_edit_app"
+	TaskUpdateActionCancelApp             TaskUpdateAction = "cancel_app"
+	TaskUpdateActionRequestApproveInfo    TaskUpdateAction = "request_add_info"
+	TaskUpdateActionRequestFillForm       TaskUpdateAction = "fill_form"
+	TaskUpdateActionAddApprovers          TaskUpdateAction = "add_approvers"
 )
 
 var (
 	checkTaskUpdateMap = map[TaskUpdateAction]struct{}{
-		TaskUpdateActionApprovement:          {},
-		TaskUpdateActionExecution:            {},
-		TaskUpdateActionChangeExecutor:       {},
-		TaskUpdateActionRequestExecutionInfo: {},
-		TaskUpdateActionExecutorStartWork:    {},
-		TaskUpdateActionApproverSendEditApp:  {},
-		TaskUpdateActionExecutorSendEditApp:  {},
-		TaskUpdateActionCancelApp:            {},
-		TaskUpdateActionRequestApproveInfo:   {},
-		TaskUpdateActionRequestFillForm:      {},
-		TaskUpdateActionAddApprovers:         {},
+		TaskUpdateActionApprovement:           {},
+		TaskUpdateActionAdditionalApprovement: {},
+		TaskUpdateActionExecution:             {},
+		TaskUpdateActionChangeExecutor:        {},
+		TaskUpdateActionRequestExecutionInfo:  {},
+		TaskUpdateActionExecutorStartWork:     {},
+		TaskUpdateActionApproverSendEditApp:   {},
+		TaskUpdateActionExecutorSendEditApp:   {},
+		TaskUpdateActionCancelApp:             {},
+		TaskUpdateActionRequestApproveInfo:    {},
+		TaskUpdateActionRequestFillForm:       {},
+		TaskUpdateActionAddApprovers:          {},
 	}
 )
 
@@ -173,8 +177,10 @@ type NeededNotif struct {
 }
 
 type InitialApplication struct {
-	Description     string                 `json:"description"`
-	ApplicationBody map[string]interface{} `json:"application_body"`
+	Description      string                `json:"description"`
+	ApplicationBody  orderedmap.OrderedMap `json:"application_body"`
+	AttachmentFields []string              `json:"attachment_fields"`
+	Keys             map[string]string     `json:"keys"`
 }
 
 type TaskRunContext struct {

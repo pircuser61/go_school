@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
+	"github.com/iancoleman/orderedmap"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -53,7 +55,7 @@ func makeStorage() *mocks.MockedDatabase {
 	).Return(entity.TaskRunContext{
 		InitialApplication: entity.InitialApplication{
 			Description:     "",
-			ApplicationBody: map[string]interface{}{},
+			ApplicationBody: orderedmap.OrderedMap{},
 		},
 	}, nil)
 
@@ -103,7 +105,7 @@ func TestProcessBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 	approveUpdParams, err := json.Marshal(approverUpdateParams{
-		Decision: ApproverDecisionApproved,
+		Decision: ApproverActionApprove,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -304,7 +306,7 @@ func TestProcessBlock(t *testing.T) {
 								BlockType: script.TypeGo,
 								Sockets: []entity.Socket{
 									{
-										Id:           approvedSocketID,
+										Id:           "approve",
 										NextBlockIds: []string{"end_parallel_0"},
 									},
 								},

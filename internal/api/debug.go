@@ -14,6 +14,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 func (d DebugRunRequest) Bind(_ *http.Request) error {
@@ -35,7 +36,15 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, debugRequest.WorkNumber)
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	task, err := ae.DB.GetTask(ctx, ui.Username, debugRequest.WorkNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -216,7 +225,15 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request, workNumber
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, workNumber)
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	task, err := ae.DB.GetTask(ctx, ui.Username, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))

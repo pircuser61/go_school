@@ -35,7 +35,7 @@ type TaskStorager interface {
 	GetTasks(ctx c.Context, filters e.TaskFilter) (*e.EriusTasksPage, error)
 	GetTasksCount(ctx c.Context, userName string) (*e.CountTasks, error)
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
-	GetTask(ctx c.Context, workNumber string) (*e.EriusTask, error)
+	GetTask(ctx c.Context, username, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
 	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string) (e.TaskSteps, error)
 	GetTaskStepById(ctx c.Context, id uuid.UUID) (*e.Step, error)
@@ -43,7 +43,6 @@ type TaskStorager interface {
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*e.EriusTasks, error)
 	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
-	GetUnfinishedTasks(ctx c.Context) (*e.EriusTasks, error)
 	GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]e.UsersWithFormAccess, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
@@ -65,7 +64,18 @@ type UpdateTaskRate struct {
 	ByLogin    string
 	WorkNumber string
 	Comment    *string
-	Rate       int
+	Rate       *int
+}
+
+type DbMemberAction struct {
+	Id   string
+	Type string
+}
+
+type DbMember struct {
+	Login    string
+	Finished bool
+	Actions  []DbMemberAction
 }
 
 type SaveStepRequest struct {
@@ -76,7 +86,7 @@ type SaveStepRequest struct {
 	BreakPoints  []string
 	HasError     bool
 	Status       string
-	Members      map[string]struct{}
+	Members      []DbMember
 	CheckSLA     bool
 	CheckHalfSLA bool
 	SLADeadline  time.Time
@@ -89,10 +99,10 @@ type UpdateStepRequest struct {
 	BreakPoints  []string
 	HasError     bool
 	Status       string
-	Members      map[string]struct{}
+	Members      []DbMember
 	CheckSLA     bool
-	SLADeadline  time.Time
 	CheckHalfSLA bool
+	SLADeadline  time.Time
 }
 
 type UpdateTaskBlocksDataRequest struct {

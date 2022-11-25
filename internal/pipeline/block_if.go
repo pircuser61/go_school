@@ -29,7 +29,7 @@ type IF struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *IF) Members() map[string]struct{} {
+func (gb *IF) Members() []Member {
 	return nil
 }
 

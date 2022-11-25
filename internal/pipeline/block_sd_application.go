@@ -42,7 +42,7 @@ type GoSdApplicationBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoSdApplicationBlock) Members() map[string]struct{} {
+func (gb *GoSdApplicationBlock) Members() []Member {
 	return nil
 }
 
@@ -83,11 +83,20 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		return nil, errors.Wrap(err, "can't get task run context")
 	}
 
+	var appBody map[string]interface{}
+	bytes, err := data.InitialApplication.ApplicationBody.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	if unmErr := json.Unmarshal(bytes, &appBody); unmErr != nil {
+		return nil, err
+	}
+
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputBlueprintID], gb.State.BlueprintID)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplicationDesc], data.InitialApplication.Description)
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplication], data.InitialApplication.ApplicationBody)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplication], appBody)
 
-	gb.State.ApplicationBody = data.InitialApplication.ApplicationBody
+	gb.State.ApplicationBody = appBody
 	gb.State.Description = data.InitialApplication.Description
 
 	var stateBytes []byte

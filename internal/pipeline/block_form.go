@@ -21,6 +21,8 @@ const (
 	keyOutputFormBody     = "application_body"
 )
 
+const formFillFormAction = "fill_form"
+
 type ChangesLogItem struct {
 	Description     string                 `json:"description"`
 	ApplicationBody map[string]interface{} `json:"application_body"`
@@ -53,8 +55,35 @@ type GoFormBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoFormBlock) Members() map[string]struct{} {
-	return gb.State.Executors
+func (gb *GoFormBlock) Members() []Member {
+	members := []Member{}
+	for login := range gb.State.Executors {
+		members = append(members, Member{
+			Login:      login,
+			IsFinished: gb.isFormFinished(),
+			Actions:    gb.formActions(),
+		})
+	}
+
+	return members
+}
+
+func (gb *GoFormBlock) isFormFinished() bool {
+	if gb.State.IsFilled || gb.State.IsRevoked {
+		return true
+	}
+	return false
+}
+
+func (gb *GoFormBlock) formActions() []MemberAction {
+	if gb.State.IsFilled || gb.State.IsRevoked {
+		return []MemberAction{}
+	}
+	action := MemberAction{
+		Id:   formFillFormAction,
+		Type: ActionTypePrimary,
+	}
+	return []MemberAction{action}
 }
 
 func (gb *GoFormBlock) CheckSLA() (bool, bool, time.Time) {

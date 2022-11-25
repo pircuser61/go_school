@@ -19,7 +19,7 @@ type GoEndBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoEndBlock) Members() map[string]struct{} {
+func (gb *GoEndBlock) Members() []Member {
 	return nil
 }
 

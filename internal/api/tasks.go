@@ -39,8 +39,8 @@ type eriusTaskResponse struct {
 	Steps         taskSteps              `json:"steps"`
 	WorkNumber    string                 `json:"work_number"`
 	BlueprintID   string                 `json:"blueprint_id"`
-	Rate          int                    `json:"rate"`
-	RateComment   string                 `json:"rate_comment"`
+	Rate          *int                   `json:"rate"`
+	RateComment   *string                `json:"rate_comment"`
 }
 
 type step struct {
@@ -116,7 +116,15 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, workNumber)
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	dbTask, err := ae.DB.GetTask(ctx, ui.Username, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -209,12 +217,12 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	return filters, nil
 }
 
-func (c *Created) toEntity() *entity.TimePeriod {
+func (cd *Created) toEntity() *entity.TimePeriod {
 	var timePeriod *entity.TimePeriod
-	if c != nil {
+	if cd != nil {
 		timePeriod = &entity.TimePeriod{
-			Start: c.Start,
-			End:   c.End,
+			Start: cd.Start,
+			End:   cd.End,
 		}
 	}
 	return timePeriod
@@ -391,7 +399,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, ui.Username, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -580,6 +588,10 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 
 func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	if action == entity.TaskUpdateActionApprovement {
+		return []string{pipeline.BlockGoApproverID}
+	}
+
+	if action == entity.TaskUpdateActionAdditionalApprovement {
 		return []string{pipeline.BlockGoApproverID}
 	}
 

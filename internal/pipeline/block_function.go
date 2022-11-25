@@ -35,7 +35,7 @@ type ExecutableFunctionBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *ExecutableFunctionBlock) Members() map[string]struct{} {
+func (gb *ExecutableFunctionBlock) Members() []Member {
 	return nil
 }
 
