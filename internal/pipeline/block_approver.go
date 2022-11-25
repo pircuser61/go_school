@@ -75,8 +75,12 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []string {
 			return []string{}
 		}
 	}
-	return []string{approverSendEditAppAction, approverAddApproversAction,
-		approverRequestAddInfoAction, approverApproveAction, approverBaseRejectAction}
+	actions := []string{}
+	for i := range gb.State.ActionList {
+		actions = append(actions, gb.State.ActionList[i].Id)
+	}
+	return append(actions, approverAddApproversAction,
+		approverRequestAddInfoAction)
 }
 
 func (gb *GoApproverBlock) isApprovementAddFinished(a AdditionalApprover) bool {
