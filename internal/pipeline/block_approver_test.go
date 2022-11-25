@@ -156,7 +156,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 	}
 	type args struct {
 		login  string
-		params approverUpdateParams
+		params additionalApproverUpdateParams
 	}
 	tests := []struct {
 		name    string
@@ -173,7 +173,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 			},
 			args: args{
 				login: login,
-				params: approverUpdateParams{
+				params: additionalApproverUpdateParams{
 					Decision: decisionRejected,
 					Comment:  comment,
 				},
@@ -189,7 +189,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 			},
 			args: args{
 				login: login,
-				params: approverUpdateParams{
+				params: additionalApproverUpdateParams{
 					Decision: decisionRejected,
 					Comment:  comment,
 				},
@@ -219,7 +219,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 			},
 			args: args{
 				login: login,
-				params: approverUpdateParams{
+				params: additionalApproverUpdateParams{
 					Decision: decisionRejected,
 					Comment:  comment,
 				},

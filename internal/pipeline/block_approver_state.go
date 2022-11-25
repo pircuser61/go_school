@@ -279,7 +279,7 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 }
 
 //nolint:gocyclo //its ok here
-func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params approverUpdateParams) error {
+func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params additionalApproverUpdateParams) error {
 	if a.Decision != nil {
 		return errors.New("decision already set")
 	}

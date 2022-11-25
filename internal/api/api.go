@@ -222,6 +222,13 @@ const (
 	TaskUpdateActionSendEditApp TaskUpdateAction = "send_edit_app"
 )
 
+// Defines values for AdditionalApproverDecision.
+const (
+	AdditionalApproverDecisionApproved AdditionalApproverDecision = "approved"
+
+	AdditionalApproverDecisionRejected AdditionalApproverDecision = "rejected"
+)
+
 // Defines values for ApproverDecision.
 const (
 	ApproverDecisionAffirmate ApproverDecision = "affirmate"
@@ -350,6 +357,19 @@ type AddApproversParams struct {
 	Question string `json:"question"`
 }
 
+// Approver update params
+type AdditionalApproverUpdateParams struct {
+	Attachments []string `json:"attachments"`
+
+	// Comment from approver
+	Comment string `json:"comment"`
+
+	// Approver decision:
+	//  * approved - Согласовать
+	//  * rejected - Отклонить
+	Decision AdditionalApproverDecision `json:"decision"`
+}
+
 // AllUsageResponse defines model for AllUsageResponse.
 type AllUsageResponse struct {
 	Pipelines AllUsageResponse_Pipelines `json:"pipelines"`
@@ -428,10 +448,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -726,9 +746,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
-//  * from_schema - Selected by initiator
+//   - user - Single user
+//   - group - Execution group ID
+//   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -788,9 +808,9 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   * User - Single user
-//   * Initiator - Process initiator
-//   * From_schema - Selected by initiator
+//   - User - Single user
+//   - Initiator - Process initiator
+//   - From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -1112,12 +1132,17 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//  * approve - Согласовать
-//  * reject - Отклонить
-//  * viewed - Ознакомлен
-//  * informed - Проинформирован
-//  * sign - Подписать
-//  * affirmate - Утвердить
+//   - approved - Согласовать
+//   - rejected - Отклонить
+type AdditionalApproverDecision string
+
+// Approver decision:
+//   - approve - Согласовать
+//   - reject - Отклонить
+//   - viewed - Ознакомлен
+//   - informed - Проинформирован
+//   - sign - Подписать
+//   - affirmate - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1162,8 +1187,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1203,11 +1228,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
