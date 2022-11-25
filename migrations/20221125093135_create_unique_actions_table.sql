@@ -32,7 +32,7 @@ values
 ('viewed', 'Ознакомлен', true, true, false),
 ('informed', 'Проинформирован', true, true, false),
 ('sign', 'Подписать', true, true, false),
-('affirmate', 'Утвердить', true, true, false),
+('confirm', 'Утвердить', true, true, false),
 -- misc
 ('cancel_app', 'Отозвать', true, true, false),
 

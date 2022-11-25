@@ -177,7 +177,3 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 
 	return nil
 }
-
-func getWorkIdKey(stepName string) string {
-	return stepName + "." + keyStepWorkId
-}
