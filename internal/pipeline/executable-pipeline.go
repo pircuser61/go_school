@@ -49,7 +49,7 @@ type ExecutablePipeline struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *ExecutablePipeline) Members() map[string]struct{} {
+func (gb *ExecutablePipeline) Members() []Member {
 	return nil
 }
 

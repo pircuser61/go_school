@@ -2259,6 +2259,10 @@ components:
           type: string
         work_number:
           type: string
+        comment:
+          type: string
+        rate:
+          type: integer
       required:
         - id
         - version_id
@@ -2454,6 +2458,7 @@ components:
           example: approvement
           enum:
             - approvement
+            - additional_approvement
             - execution
             - change_executor
             - request_execution_info
@@ -2468,6 +2473,7 @@ components:
           description: Task update params
           oneOf:
             - $ref: '#/components/schemas/ApproverUpdateParams'
+            - $ref: '#/components/schemas/AdditionalApproverUpdateParams'
             - $ref: '#/components/schemas/ExecutionUpdateParams'
             - $ref: '#/components/schemas/ExecutorChangeParams'
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
@@ -2536,6 +2542,24 @@ components:
         - comment
         - attachments
 
+    AdditionalApproverUpdateParams:
+      type: object
+      description: Approver update params
+      properties:
+        decision:
+          $ref: '#/components/schemas/additionalApproverDecision'
+        comment:
+          type: string
+          description: Comment from approver
+        attachments:
+          type: array
+          items:
+            type: string
+      required:
+        - decision
+        - comment
+        - attachments
+
     ExecutionUpdateParams:
       type: object
       description: Executor update params
@@ -2592,6 +2616,16 @@ components:
          * informed - Проинформирован
          * sign - Подписать
          * affirmate - Утвердить
+
+    additionalApproverDecision:
+      type: string
+      enum:
+        - approved
+        - rejected
+      description: >
+        Approver decision:
+         * approved - Согласовать
+         * rejected - Отклонить
 
 
     executionDecision:
@@ -2764,8 +2798,6 @@ components:
           type: string
         rate:
           type: integer
-      required:
-        - rate
 
     CreateTaskRequest:
       type: object

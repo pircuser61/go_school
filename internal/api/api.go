@@ -201,6 +201,8 @@ const (
 const (
 	TaskUpdateActionAddApprovers TaskUpdateAction = "add_approvers"
 
+	TaskUpdateActionAdditionalApprovement TaskUpdateAction = "additional_approvement"
+
 	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
 
 	TaskUpdateActionCancelApp TaskUpdateAction = "cancel_app"
@@ -218,6 +220,13 @@ const (
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
 
 	TaskUpdateActionSendEditApp TaskUpdateAction = "send_edit_app"
+)
+
+// Defines values for AdditionalApproverDecision.
+const (
+	AdditionalApproverDecisionApproved AdditionalApproverDecision = "approved"
+
+	AdditionalApproverDecisionRejected AdditionalApproverDecision = "rejected"
 )
 
 // Defines values for ApproverDecision.
@@ -346,6 +355,19 @@ type AddApproversParams struct {
 
 	// Question from approver
 	Question string `json:"question"`
+}
+
+// Approver update params
+type AdditionalApproverUpdateParams struct {
+	Attachments []string `json:"attachments"`
+
+	// Comment from approver
+	Comment string `json:"comment"`
+
+	// Approver decision:
+	//  * approved - Согласовать
+	//  * rejected - Отклонить
+	Decision AdditionalApproverDecision `json:"decision"`
 }
 
 // AllUsageResponse defines model for AllUsageResponse.
@@ -629,10 +651,11 @@ type EriusTagInfo struct {
 
 // EriusTask defines model for EriusTask.
 type EriusTask struct {
-	Author      string `json:"author"`
-	BlueprintId string `json:"blueprint_id"`
-	Debug       bool   `json:"debug"`
-	Description string `json:"description"`
+	Author      string  `json:"author"`
+	BlueprintId string  `json:"blueprint_id"`
+	Comment     *string `json:"comment,omitempty"`
+	Debug       bool    `json:"debug"`
+	Description string  `json:"description"`
 
 	// Task human readable status
 	HumanStatus   TaskHumanStatus        `json:"human_status"`
@@ -640,6 +663,7 @@ type EriusTask struct {
 	LastChangedAt string                 `json:"last_changed_at"`
 	Name          string                 `json:"name"`
 	Parameters    map[string]interface{} `json:"parameters"`
+	Rate          *int                   `json:"rate,omitempty"`
 	StartedAt     string                 `json:"started_at"`
 	Status        string                 `json:"status"`
 	Steps         []Step                 `json:"steps"`
@@ -923,7 +947,7 @@ type Params interface{}
 // RateApplicationRequest defines model for RateApplicationRequest.
 type RateApplicationRequest struct {
 	Comment *string `json:"comment,omitempty"`
-	Rate    int     `json:"rate"`
+	Rate    *int    `json:"rate,omitempty"`
 }
 
 // Type of execution info
@@ -1117,6 +1141,11 @@ type Action struct {
 	// human action name
 	Title *string `json:"title,omitempty"`
 }
+
+// Approver decision:
+//  * approved - Согласовать
+//  * rejected - Отклонить
+type AdditionalApproverDecision string
 
 // Approver decision:
 //  * approve - Согласовать

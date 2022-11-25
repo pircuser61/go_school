@@ -24,24 +24,24 @@ import (
 )
 
 type eriusTaskResponse struct {
-	ID               uuid.UUID              `json:"id"`
-	VersionID        uuid.UUID              `json:"version_id"`
-	StartedAt        time.Time              `json:"started_at"`
-	LastChangedAt    time.Time              `json:"last_changed_at"`
-	FinishedAt       *time.Time             `json:"finished_at"`
-	Name             string                 `json:"name"`
-	Description      string                 `json:"description"`
-	Status           string                 `json:"status"`
-	HumanStatus      string                 `json:"human_status"`
-	Author           string                 `json:"author"`
-	IsDebugMode      bool                   `json:"debug"`
-	Parameters       map[string]interface{} `json:"parameters"`
-	Steps            taskSteps              `json:"steps"`
-	WorkNumber       string                 `json:"work_number"`
-	BlueprintID      string                 `json:"blueprint_id"`
-	Rate             int                    `json:"rate"`
-	RateComment      string                 `json:"rate_comment"`
-	AvailableActions taskActions            `json:"available_actions"`
+	ID            uuid.UUID              `json:"id"`
+	VersionID     uuid.UUID              `json:"version_id"`
+	StartedAt     time.Time              `json:"started_at"`
+	LastChangedAt time.Time              `json:"last_changed_at"`
+	FinishedAt    *time.Time             `json:"finished_at"`
+	Name          string                 `json:"name"`
+	Description   string                 `json:"description"`
+	Status        string                 `json:"status"`
+	HumanStatus   string                 `json:"human_status"`
+	Author        string                 `json:"author"`
+	IsDebugMode   bool                   `json:"debug"`
+	Parameters    map[string]interface{} `json:"parameters"`
+	Steps         taskSteps              `json:"steps"`
+	WorkNumber    string                 `json:"work_number"`
+	BlueprintID   string                 `json:"blueprint_id"`
+	Rate          *int                   `json:"rate"`
+	RateComment   *string                `json:"rate_comment"`
+	AvailableActions taskActions         `json:"available_actions"`
 }
 
 type step struct {

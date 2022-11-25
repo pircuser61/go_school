@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
-
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
+
+	"github.com/lib/pq"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -1491,12 +1491,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	if id != NullUuid {
 		return id, t, nil
 	}
-
-	members := make(pq.StringArray, 0, len(dto.Members))
-	for userLogin := range dto.Members {
-		members = append(members, userLogin)
-	}
-
 	id = uuid.New()
 	timestamp := time.Now()
 	// nolint:gocritic
@@ -1512,7 +1506,6 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			break_points, 
 			has_error,
 			status,
-		    members,
 		    check_sla,
 		    sla_deadline
 		)
@@ -1527,8 +1520,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$8,
 			$9,
 			$10,
-		    $11,
-			$12
+		    $11
 		)
 `
 
@@ -1544,10 +1536,14 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
-		members,
 		dto.CheckSLA,
 		dto.SLADeadline,
 	)
+	if err != nil {
+		return NullUuid, time.Time{}, err
+	}
+
+	err = db.insertIntoMembers(ctx, dto.Members, id)
 	if err != nil {
 		return NullUuid, time.Time{}, err
 	}
@@ -1568,19 +1564,14 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		, has_error = $3
 		, status = $4
 		, check_sla = $5
-	    , members = $6
-		, content = $7
+		, content = $6
 		, updated_at = NOW()
-		, sla_deadline = $8
+		, sla_deadline = $7
 	WHERE
 		id = $1
 `
-	members := make(pq.StringArray, 0, len(dto.Members))
-	for userLogin := range dto.Members {
-		members = append(members, userLogin)
-	}
 	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA,
-		members, dto.Content, dto.SLADeadline}
+		dto.Content, dto.SLADeadline}
 
 	_, err := db.Connection.Exec(
 		c,
@@ -1591,6 +1582,67 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		return err
 	}
 
+	// nolint:gocritic
+	// language=PostgreSQL
+	const qMembersDelete = `
+		DELETE FROM members 
+		WHERE block_id = $1
+`
+	_, err = db.Connection.Exec(
+		ctx,
+		qMembersDelete,
+		dto.Id,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = db.insertIntoMembers(ctx, dto.Members, dto.Id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id uuid.UUID) error {
+	membersId := uuid.New()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const queryMembers = `
+		INSERT INTO members (               
+			id,
+		     block_id,
+		    login,
+		    finished,
+		     actions                
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4, 
+			$5
+		)
+`
+	for _, val := range members {
+		actions := make(pq.StringArray, 0, len(val.Actions))
+		for _, act := range val.Actions {
+			actions = append(actions, act.Id+":"+act.Type)
+		}
+		_, err := db.Connection.Exec(
+			ctx,
+			queryMembers,
+			membersId,
+			id,
+			val.Login,
+			val.Finished,
+			actions,
+		)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

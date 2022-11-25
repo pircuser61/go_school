@@ -20,7 +20,7 @@ type GoBeginParallelTaskBlock struct {
 	RunContext *BlockRunContext
 }
 
-func (gb *GoBeginParallelTaskBlock) Members() map[string]struct{} {
+func (gb *GoBeginParallelTaskBlock) Members() []Member {
 	return nil
 }
 
