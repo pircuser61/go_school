@@ -222,9 +222,17 @@ const (
 
 // Defines values for ApproverDecision.
 const (
-	ApproverDecisionApproved ApproverDecision = "approved"
+	ApproverDecisionAffirmate ApproverDecision = "affirmate"
 
-	ApproverDecisionRejected ApproverDecision = "rejected"
+	ApproverDecisionApprove ApproverDecision = "approve"
+
+	ApproverDecisionInformed ApproverDecision = "informed"
+
+	ApproverDecisionReject ApproverDecision = "reject"
+
+	ApproverDecisionSign ApproverDecision = "sign"
+
+	ApproverDecisionViewed ApproverDecision = "viewed"
 )
 
 // Defines values for BlockType.
@@ -432,8 +440,12 @@ type ApproverUpdateParams struct {
 	Comment string `json:"comment"`
 
 	// Approver decision:
-	//  * approved - approver approved block
-	//  * rejected - approver rejected block
+	//  * approve - Согласовать
+	//  * reject - Отклонить
+	//  * viewed - Ознакомлен
+	//  * informed - Проинформирован
+	//  * sign - Подписать
+	//  * affirmate - Утвердить
 	Decision ApproverDecision `json:"decision"`
 }
 
@@ -1098,8 +1110,12 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//  * approved - approver approved block
-//  * rejected - approver rejected block
+//  * approve - Согласовать
+//  * reject - Отклонить
+//  * viewed - Ознакомлен
+//  * informed - Проинформирован
+//  * sign - Подписать
+//  * affirmate - Утвердить
 type ApproverDecision string
 
 // Block type (language)
