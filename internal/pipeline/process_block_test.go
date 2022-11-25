@@ -105,7 +105,7 @@ func TestProcessBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 	approveUpdParams, err := json.Marshal(approverUpdateParams{
-		Decision: ApproverDecisionApproved,
+		Decision: ApproverActionApprove,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -306,7 +306,7 @@ func TestProcessBlock(t *testing.T) {
 								BlockType: script.TypeGo,
 								Sockets: []entity.Socket{
 									{
-										Id:           approvedSocketID,
+										Id:           "approve",
 										NextBlockIds: []string{"end_parallel_0"},
 									},
 								},
