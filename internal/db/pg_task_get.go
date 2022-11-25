@@ -5,19 +5,17 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 	"strings"
 	"time"
 
-	"github.com/iancoleman/orderedmap"
+	"golang.org/x/net/context"
 
+	"github.com/google/uuid"
+	"github.com/iancoleman/orderedmap"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
-
-	"github.com/google/uuid"
-
-	"github.com/lib/pq"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
