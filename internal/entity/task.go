@@ -49,9 +49,11 @@ type CountTasks struct {
 }
 
 type TaskAction struct {
-	Id    string `json:"id"`
-	Type  string `json:"type"`
-	Title string `json:"title"`
+	Id                 string `json:"id"`
+	Title              string `json:"title"`
+	ButtonType         string `json:"button_type"`
+	CommentEnabled     bool   `json:"comment_enable"`
+	AttachmentsEnabled bool   `json:"attachments_enable"`
 }
 
 type EriusTask struct {

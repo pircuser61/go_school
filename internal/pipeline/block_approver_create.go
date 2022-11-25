@@ -70,6 +70,16 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		return errors.Wrap(err, "invalid approver parameters")
 	}
 
+	actions := make([]Action, 0, len(ef.Sockets))
+
+	for _, socket := range ef.Sockets {
+		actions = append(actions, Action{
+			Id:    socket.Id,
+			Title: socket.Title,
+			Type:  socket.ActionType,
+		})
+	}
+
 	gb.State = &ApproverData{
 		Type:               params.Type,
 		SLA:                params.SLA,
@@ -80,6 +90,7 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		FormsAccessibility: params.FormsAccessibility,
 		ApprovementRule:    params.ApprovementRule,
 		ApproveStatusName:  params.ApproveStatusName,
+		ActionList:         actions,
 	}
 
 	if gb.State.ApprovementRule == "" {
@@ -125,16 +136,6 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		}
 
 		gb.State.Approvers = resolvedEntities
-	}
-
-	actions := make([]Action, 0, len(ef.Sockets))
-
-	for _, socket := range ef.Sockets {
-		actions = append(actions, Action{
-			Id:    socket.Id,
-			Title: socket.Title,
-			Type:  socket.ActionType,
-		})
 	}
 
 	gb.RunContext.VarStore.AddStep(gb.Name)

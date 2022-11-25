@@ -99,6 +99,11 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
+
+	// Получаем все экшны которые были переданы с фронта и легли в стейт
+
+	// Если rejected
+
 	key := rejectedSocketID
 	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ApproverDecisionApproved {
 		key = approvedSocketID

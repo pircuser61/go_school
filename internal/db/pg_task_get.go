@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -749,4 +750,46 @@ func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 		return -1, err
 	}
 	return status, nil
+}
+
+func (db *PGCon) GetActionsList(ctx context.Context) (actions []entity.TaskAction, err error) {
+	q := `
+		SELECT 
+			id,
+			title,
+			default_priority,
+			comments_enabled,
+			attachments_enabled
+		FROM dict_actions`
+
+	result := make([]entity.TaskAction, 0)
+	rows, err := db.Connection.Query(ctx, q)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return result, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		ta := entity.TaskAction{}
+
+		if err := rows.Scan(
+			&ta.Id,
+			&ta.Title,
+			&ta.ButtonType,
+			&ta.CommentEnabled,
+			&ta.AttachmentsEnabled,
+		); err != nil {
+			return nil, err
+		}
+
+		result = append(result, ta)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return result, nil
 }

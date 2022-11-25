@@ -1093,7 +1093,7 @@ type Action struct {
 	// enables attachment function
 	AttachmentsEnable *bool `json:"attachments_enable,omitempty"`
 
-	// type of action (main, secondary, extra, none)
+	// type of renderable button with action (primary, secondary, other, none)
 	ButtonType *string `json:"button_type,omitempty"`
 
 	// enables comment function

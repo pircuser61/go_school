@@ -2931,7 +2931,7 @@ components:
           description: id of action
         button_type:
           type: string
-          description: type of action (main, secondary, extra, none)
+          description: type of renderable button with action (primary, secondary, other, none)
         title:
           type: string
           description: human action name
