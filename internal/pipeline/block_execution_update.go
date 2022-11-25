@@ -20,6 +20,10 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
+	case string(entity.TaskUpdateActionHalfSLABreach):
+		if errUpdate := gb.handleHalfSLABreached(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
 	case string(entity.TaskUpdateActionExecution):
 		if errUpdate := gb.updateDecision(); errUpdate != nil {
 			return nil, errUpdate
@@ -140,6 +144,29 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		}
 	}
 	gb.State.SLAChecked = true
+	return nil
+}
+
+func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
+	if gb.State.SLA > 8 {
+		emails := make([]string, 0, len(gb.State.Executors))
+		for executor := range gb.State.Executors {
+			email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
+			if err != nil {
+				continue
+			}
+			emails = append(emails, email)
+		}
+		if len(emails) == 0 {
+			return nil
+		}
+		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+			mail.NewExecutiontHalfSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress))
+		if err != nil {
+			return err
+		}
+	}
+	gb.State.HalfSLAChecked = true
 	return nil
 }
 

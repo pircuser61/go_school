@@ -99,7 +99,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		activeBlocks, ok := block.Next(runCtx.VarStore)
 		if !ok {
 			err = runCtx.updateStepInDB(ctx, name, id, true, block.GetStatus(), block.Members(),
-				false, time.Time{})
+				false, time.Time{}, false)
 			if err != nil {
 				return
 			}
@@ -233,9 +233,9 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	}
 
 	runCtx.currBlockStartTime = time.Now() // will be used only for the block creation
-	checkSLA, deadline := block.CheckSLA()
+	checkSLA, checkHalfSLA, deadline := block.CheckSLA()
 	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()),
-		block.Members(), checkSLA, deadline)
+		block.Members(), checkSLA, deadline, checkHalfSLA)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -248,8 +248,8 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	if err != nil {
 		return err
 	}
-	checkSLA, deadline := block.CheckSLA()
-	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), checkSLA, deadline)
+	checkSLA, checkHalfSLA, deadline := block.CheckSLA()
+	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), checkSLA, deadline, checkHalfSLA)
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,8 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	people []Member, checkSLA bool, deadline time.Time) (uuid.UUID, time.Time, error) {
+	people []Member, checkSLA bool, deadline time.Time, checkHalfSLA bool) (uuid.UUID, time.Time, error) {
+
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
@@ -278,21 +279,22 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 		})
 	}
 	return runCtx.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
-		WorkID:      runCtx.TaskID,
-		StepType:    stepType,
-		StepName:    name,
-		Content:     storageData,
-		BreakPoints: []string{},
-		HasError:    false,
-		Status:      status,
-		Members:     dbPeople,
-		CheckSLA:    checkSLA,
-		SLADeadline: deadline,
+		WorkID:       runCtx.TaskID,
+		StepType:     stepType,
+		StepName:     name,
+		Content:      storageData,
+		BreakPoints:  []string{},
+		HasError:     false,
+		Status:       status,
+		Members:      dbPeople,
+		CheckSLA:     checkSLA,
+		CheckHalfSLA: checkHalfSLA,
+		SLADeadline:  deadline,
 	})
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	people []Member, checkSLA bool, deadline time.Time) error {
+	people []Member, checkSLA bool, deadline time.Time, checkHalfSLA bool) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
@@ -313,15 +315,17 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 		})
 	}
 	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:          id,
-		StepName:    name,
-		Content:     storageData,
-		BreakPoints: []string{},
-		HasError:    hasError,
-		Status:      string(status),
-		Members:     dbPeople,
-		CheckSLA:    checkSLA,
-		SLADeadline: deadline,
+
+		Id:           id,
+		StepName:     name,
+		Content:      storageData,
+		BreakPoints:  []string{},
+		HasError:     hasError,
+		Status:       string(status),
+		Members:      dbPeople,
+		CheckSLA:     checkSLA,
+		CheckHalfSLA: checkHalfSLA,
+		SLADeadline:  deadline,
 	})
 }
 

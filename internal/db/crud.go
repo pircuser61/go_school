@@ -1507,7 +1507,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			has_error,
 			status,
 		    check_sla,
-		    sla_deadline
+		    sla_deadline,
+		    check_half_sla
 		)
 		VALUES (
 			$1, 
@@ -1520,7 +1521,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$8,
 			$9,
 			$10,
-		    $11
+		    $11,
+			$12
 		)
 `
 
@@ -1538,6 +1540,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.Status,
 		dto.CheckSLA,
 		dto.SLADeadline,
+		dto.CheckHalfSLA,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
@@ -1567,11 +1570,11 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		, content = $6
 		, updated_at = NOW()
 		, sla_deadline = $7
+		, check_half_sla = $8
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA,
-		dto.Content, dto.SLADeadline}
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA, dto.Content, dto.SLADeadline, dto.CheckHalfSLA}
 
 	_, err := db.Connection.Exec(
 		c,
@@ -2431,6 +2434,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 	defer span.End()
 
 	// language=PostgreSQL
+	// half_sla = (vs.time + (vs.sla_deadline - vs.time)/2)
 	q := `
 		SELECT w.id,
 		       w.work_number,
@@ -2438,12 +2442,17 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		       v.author,
 		       vs.content,
 		       v.content->'pipeline'->'blocks'->vs.step_name,
-		       vs.step_name
+		       vs.step_name,
+		       (case when sla_deadline > NOW() THEN False ELSE True END) already
 		FROM variable_storage vs 
 		    JOIN works w on vs.work_id = w.id 
 		    JOIN versions v on w.version_id = v.id
 			JOIN pipelines p on v.pipeline_id = p.id
-		WHERE check_sla = True AND sla_deadline < NOW() AND vs.status = 'running'`
+		WHERE (
+		    (check_sla = True AND sla_deadline < NOW()) or 
+		    (vs.check_half_sla = True AND (vs.time + (vs.sla_deadline - vs.time)/2) < NOW())
+		) 
+		  AND vs.status = 'running'`
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -2461,6 +2470,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			&content,
 			&item.BlockData,
 			&item.StepName,
+			&item.Already,
 		); scanErr != nil {
 			return nil, scanErr
 		}

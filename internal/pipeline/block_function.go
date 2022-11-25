@@ -39,8 +39,8 @@ func (gb *ExecutableFunctionBlock) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) CheckSLA() (bool, time.Time) {
-	return false, time.Time{}
+func (gb *ExecutableFunctionBlock) CheckSLA() (bool, bool, time.Time) {
+	return false, false, time.Time{}
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {

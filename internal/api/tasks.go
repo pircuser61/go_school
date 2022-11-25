@@ -681,6 +681,8 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	routineCtx = logger.WithLogger(routineCtx, log)
 	// in goroutine so we can return 202?
 	for _, item := range steps {
+		var action entity.TaskUpdateAction
+
 		log = log.WithFields(map[string]interface{}{
 			"taskID":   item.TaskID,
 			"stepName": item.StepName,
@@ -689,6 +691,11 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 		if transactionErr != nil {
 			log.WithError(transactionErr).Error("couldn't set SLA breach")
 			continue
+		}
+		if item.Already {
+			action = entity.TaskUpdateActionSLABreach
+		} else {
+			action = entity.TaskUpdateActionHalfSLABreach
 		}
 		// goroutines?
 		runCtx := &pipeline.BlockRunContext{
@@ -703,7 +710,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			FaaS:        ae.FaaS,
 			VarStore:    item.VarStore,
 			UpdateData: &script.BlockUpdateData{
-				Action: string(entity.TaskUpdateActionSLABreach),
+				Action: string(action),
 			},
 		}
 

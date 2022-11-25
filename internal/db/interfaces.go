@@ -79,28 +79,30 @@ type DbMember struct {
 }
 
 type SaveStepRequest struct {
-	WorkID      uuid.UUID
-	StepType    string
-	StepName    string
-	Content     []byte
-	BreakPoints []string
-	HasError    bool
-	Status      string
-	Members     []DbMember
-	CheckSLA    bool
-	SLADeadline time.Time
+	WorkID       uuid.UUID
+	StepType     string
+	StepName     string
+	Content      []byte
+	BreakPoints  []string
+	HasError     bool
+	Status       string
+	Members      []DbMember
+	CheckSLA     bool
+	CheckHalfSLA bool
+	SLADeadline  time.Time
 }
 
 type UpdateStepRequest struct {
-	Id          uuid.UUID
-	StepName    string
-	Content     []byte
-	BreakPoints []string
-	HasError    bool
-	Status      string
-	Members     []DbMember
-	CheckSLA    bool
-	SLADeadline time.Time
+	Id           uuid.UUID
+	StepName     string
+	Content      []byte
+	BreakPoints  []string
+	HasError     bool
+	Status       string
+	Members      []DbMember
+	CheckSLA     bool
+	CheckHalfSLA bool
+	SLADeadline  time.Time
 }
 
 type UpdateTaskBlocksDataRequest struct {
@@ -126,6 +128,7 @@ type StepBreachedSLA struct {
 	VarStore   *store.VariableStore
 	BlockData  *e.EriusFunc
 	StepName   string
+	Already    bool
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase

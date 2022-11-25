@@ -103,6 +103,30 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	return nil
 }
 
+func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
+	if gb.State.SLA > 8 {
+		emails := make([]string, 0, len(gb.State.Approvers))
+		for approver := range gb.State.Approvers {
+			email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
+			if err != nil {
+				continue
+			}
+			emails = append(emails, email)
+		}
+		if len(emails) == 0 {
+			return nil
+		}
+		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+			mail.NewApprovementHalfSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress))
+		if err != nil {
+			return err
+		}
+	}
+
+	gb.State.HalfSLAChecked = true
+	return nil
+}
+
 //nolint:gocyclo //its ok here
 func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approverUpdateEditingParams) error {
 	errSet := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams)
@@ -235,6 +259,10 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	switch data.Action {
 	case string(entity.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionHalfSLABreach):
+		if errUpdate := gb.handleHalfBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 
