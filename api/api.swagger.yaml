@@ -2960,6 +2960,11 @@ components:
         attachments_enable:
           type: boolean
           description: enables attachment function
+      required:
+        - id
+        - button_type
+        - comment_enable
+        - attachments_enable
 
     blockType:
       type: string
