@@ -259,6 +259,16 @@ func Test_createGoApproverBlock(t *testing.T) {
 					ApproverLog:        make([]ApproverLogEntry, 0),
 					SLA:                1,
 					FormsAccessibility: make([]script.FormAccessibility, 0),
+					ActionList: []Action{
+						{
+							Id:    DefaultSocketID,
+							Title: script.DefaultSocketTitle,
+						},
+						{
+							Id:    rejectedSocketID,
+							Title: script.RejectedSocketTitle,
+						},
+					},
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -345,6 +355,11 @@ func TestGoApproverBlock_Update(t *testing.T) {
 						secondExampleApprover: {},
 					},
 					ApprovementRule: script.AnyOfApprovementRequired,
+					ActionList: []Action{
+						{
+							Id: ApproverActionApprove,
+						},
+					},
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
@@ -415,6 +430,11 @@ func TestGoApproverBlock_Update(t *testing.T) {
 						secondExampleApprover: {},
 					},
 					ApprovementRule: script.AnyOfApprovementRequired,
+					ActionList: []Action{
+						{
+							Id: ApproverActionApprove,
+						},
+					},
 				},
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
@@ -482,6 +502,11 @@ func TestGoApproverBlock_Update(t *testing.T) {
 					Type: script.ApproverTypeUser,
 					Approvers: map[string]struct{}{
 						exampleApprover: {},
+					},
+					ActionList: []Action{
+						{
+							Id: ApproverActionApprove,
+						},
 					},
 				},
 				RunContext: &BlockRunContext{
