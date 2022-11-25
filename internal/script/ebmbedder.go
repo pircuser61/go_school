@@ -25,10 +25,6 @@ const (
 	IconConnector    = "X24connector"
 	IconVariable     = "X24variable"
 
-	firstStringName  string = "first_string"
-	secondStringName string = "second_string"
-
-	TypeIF          = "term"
 	TypeInternal    = "internal"
 	TypeScenario    = "scenario"
 	TypePython3     = "python3"

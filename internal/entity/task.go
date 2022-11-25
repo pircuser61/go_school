@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 type Step struct {
@@ -179,8 +181,10 @@ type NeededNotif struct {
 }
 
 type InitialApplication struct {
-	Description     string                 `json:"description"`
-	ApplicationBody map[string]interface{} `json:"application_body"`
+	Description      string                `json:"description"`
+	ApplicationBody  orderedmap.OrderedMap `json:"application_body"`
+	AttachmentFields []string              `json:"attachment_fields"`
+	Keys             map[string]string     `json:"keys"`
 }
 
 type TaskRunContext struct {

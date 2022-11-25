@@ -2786,7 +2786,7 @@ components:
     RunVersionBody:
       type: object
     RunVersionsByPipelineIdRequest:
-      required: [ application_body,pipeline_id,description ]
+      required: [ application_body,pipeline_id,description,keys,attachment_fields ]
       type: object
       properties:
         application_body:
@@ -2796,8 +2796,16 @@ components:
           type: string
         description:
           type: string
+        keys:
+          type: object
+          additionalProperties:
+            type: string
+        attachment_fields:
+          type: array
+          items:
+            type: string
     RunNewVersionByPrevVersionRequest:
-      required: [ work_number,description,application_body ]
+      required: [ work_number,description,application_body,keys,attachment_fields ]
       type: object
       properties:
         work_number:
@@ -2807,6 +2815,14 @@ components:
         application_body:
           type: object
           properties: { }
+        keys:
+          type: object
+          additionalProperties:
+            type: string
+        attachment_fields:
+          type: array
+          items:
+            type: string
     eriusTaskResponse:
       type: object
       properties:
@@ -2984,7 +3000,7 @@ components:
           description: IDs of next blocks
         actionType:
           type: string
-          enum: ["main", "secondary", "extra"]
+          enum: [ "main", "secondary", "extra" ]
           description: action type
       required:
         - id
@@ -3420,15 +3436,15 @@ components:
     FormAccessType:
       type: string
       enum:
-      - None
-      - Read
-      - ReadWrite
+        - None
+        - Read
+        - ReadWrite
       description: Form accessibility preferences for certain node
 
     FormAccessTypeTranslated:
       type: string
-      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование"]
-      x-enum-varnames: ['None', 'Read', 'ReadWrite']
+      enum: [ "Скрыть", "Только для чтения", "Чтение и редактирование" ]
+      x-enum-varnames: [ 'None', 'Read', 'ReadWrite' ]
       description: Form accessibility preferences for certain node (translated)
 
     ApprovementRule:
@@ -3440,17 +3456,17 @@ components:
 
     ApprovementRuleTranslated:
       type: string
-      enum: [ "Один из согласующих", "Все согласующие"]
+      enum: [ "Один из согласующих", "Все согласующие" ]
       x-enum-varnames: [ 'AnyOf', 'AllOf' ]
       description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions (translated).
 
 
     ApproveAutoAction:
-        type: string
-        description: Action to do automatically in case SLA is breached
-        enum:
-          - approve
-          - reject
+      type: string
+      description: Action to do automatically in case SLA is breached
+      enum:
+        - approve
+        - reject
 
     FunctionParams:
       type: object

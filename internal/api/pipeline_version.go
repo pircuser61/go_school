@@ -13,6 +13,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"github.com/iancoleman/orderedmap"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
@@ -156,6 +158,14 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID
 	})
 }
 
+type runVersionsByPipelineIDRequest struct {
+	ApplicationBody  orderedmap.OrderedMap `json:"application_body"`
+	Description      string                `json:"description"`
+	PipelineId       string                `json:"pipeline_id"`
+	AttachmentFields []string              `json:"attachment_fields"`
+	Keys             map[string]string     `json:"keys"`
+}
+
 func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "run_versions_by_pipeline_id")
 	defer s.End()
@@ -173,7 +183,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	req := &RunVersionsByPipelineIdRequest{}
+	req := &runVersionsByPipelineIDRequest{}
 
 	err = json.Unmarshal(body, req)
 	if err != nil {
@@ -217,8 +227,10 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 				req:      r,
 				runCtx: entity.TaskRunContext{
 					InitialApplication: entity.InitialApplication{
-						Description:     req.Description,
-						ApplicationBody: req.ApplicationBody,
+						Description:      req.Description,
+						ApplicationBody:  req.ApplicationBody,
+						Keys:             req.Keys,
+						AttachmentFields: req.AttachmentFields,
 					},
 				},
 			})
@@ -254,6 +266,14 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 }
 
+type runNewVersionsByPrevVersionRequest struct {
+	ApplicationBody  orderedmap.OrderedMap `json:"application_body"`
+	Description      string                `json:"description"`
+	WorkNumber       string                `json:"work_number"`
+	AttachmentFields []string              `json:"attachment_fields"`
+	Keys             map[string]string     `json:"keys"`
+}
+
 func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "run_new_version_by_prev_version")
 	defer s.End()
@@ -271,7 +291,7 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	req := &RunNewVersionByPrevVersionRequest{}
+	req := &runNewVersionsByPrevVersionRequest{}
 
 	err = json.Unmarshal(body, req)
 	if err != nil {

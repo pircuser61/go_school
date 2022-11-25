@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
+	"github.com/iancoleman/orderedmap"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -53,7 +55,7 @@ func makeStorage() *mocks.MockedDatabase {
 	).Return(entity.TaskRunContext{
 		InitialApplication: entity.InitialApplication{
 			Description:     "",
-			ApplicationBody: map[string]interface{}{},
+			ApplicationBody: orderedmap.OrderedMap{},
 		},
 	}, nil)
 
