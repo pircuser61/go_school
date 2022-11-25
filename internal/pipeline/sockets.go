@@ -3,6 +3,8 @@ package pipeline
 const (
 	DefaultSocketID = "default"
 
+	//nolint:deadcode //used for tests
+	rejectedSocketID       = "rejected"
 	editAppSocketID        = "edit_app"
 	executedSocketID       = "executed"
 	notExecutedSocketID    = "not_executed"
