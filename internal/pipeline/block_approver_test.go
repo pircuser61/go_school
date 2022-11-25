@@ -135,12 +135,12 @@ func TestApproverData_SetDecision(t *testing.T) {
 }
 
 func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
-	const (
-		login             = "login2"
-		baseApproverLogin = "login1"
-		decision          = ApproverDecisionRejected
-		comment           = "blah blah blah"
-		question          = "need approval"
+	var (
+		login            = "example"
+		decisionRejected = ApproverDecisionRejected
+		decisionApproved = ApproverDecisionApproved
+		comment          = "blah blah blah"
+		question         = "need approval"
 	)
 
 	type fields struct {
@@ -149,7 +149,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 	}
 	type args struct {
 		login  string
-		params additionalApproverUpdateParams
+		params approverUpdateParams
 	}
 	tests := []struct {
 		name    string
@@ -166,10 +166,9 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 			},
 			args: args{
 				login: login,
-				params: additionalApproverUpdateParams{
-					BaseApproverLogin: baseApproverLogin,
-					Decision:          decision,
-					Comment:           comment,
+				params: approverUpdateParams{
+					Decision: decisionRejected,
+					Comment:  comment,
 				},
 			},
 			wantErr: true,
@@ -178,18 +177,14 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 		{
 			name: "decision already set",
 			fields: fields{
-				Decision: func() *ApproverDecision {
-					res := decision
-					return &res
-				}(),
+				Decision:            &decisionRejected,
 				AdditionalApprovers: nil,
 			},
 			args: args{
 				login: login,
-				params: additionalApproverUpdateParams{
-					BaseApproverLogin: baseApproverLogin,
-					Decision:          decision,
-					Comment:           comment,
+				params: approverUpdateParams{
+					Decision: decisionRejected,
+					Comment:  comment,
 				},
 			},
 			wantErr: true,
@@ -201,34 +196,50 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 				Decision: nil,
 				AdditionalApprovers: []AdditionalApprover{
 					{
-						ApproverLogin:     login,
-						BaseApproverLogin: baseApproverLogin,
-						Question:          question,
-						Comment:           comment,
-						Decision:          decision,
+						ApproverLogin: login,
+						Question:      &question,
+					},
+					{
+						ApproverLogin: login,
+					},
+					{
+						ApproverLogin: login,
+						Question:      &question,
+						Comment:       &comment,
+						Decision:      &decisionApproved,
 					},
 				},
 			},
 			args: args{
 				login: login,
-				params: additionalApproverUpdateParams{
-					BaseApproverLogin: baseApproverLogin,
-					Decision:          decision,
-					Comment:           comment,
+				params: approverUpdateParams{
+					Decision: decisionRejected,
+					Comment:  comment,
 				},
 			},
 			wantErr: false,
 			want: []AdditionalApprover{
 				{
-					ApproverLogin:     login,
-					BaseApproverLogin: baseApproverLogin,
-					Question:          question,
-					Comment:           comment,
-					Decision:          decision,
+					ApproverLogin: login,
+					Question:      &question,
+					Comment:       &comment,
+					Decision:      &decisionRejected,
+				},
+				{
+					ApproverLogin: login,
+					Comment:       &comment,
+					Decision:      &decisionRejected,
+				},
+				{
+					ApproverLogin: login,
+					Question:      &question,
+					Comment:       &comment,
+					Decision:      &decisionApproved,
 				},
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &ApproverData{
@@ -238,7 +249,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 
 			if err := a.SetDecisionByAdditionalApprover(tt.args.login, tt.args.params); (err != nil) != tt.wantErr {
 				t.Errorf(
-					"SetDecision(%v, %v)",
+					"SetDecisionByAdditionalApprover(%v, %v)",
 					tt.args.login,
 					tt.args.params,
 				)

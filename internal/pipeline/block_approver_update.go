@@ -27,13 +27,6 @@ type approverUpdateParams struct {
 	Attachments []string         `json:"attachments"`
 }
 
-type additionalApproverUpdateParams struct {
-	BaseApproverLogin string           `json:"baseApproverLogin"`
-	Decision          ApproverDecision `json:"decision"`
-	Comment           string           `json:"comment"`
-	Attachments       []string         `json:"attachments"`
-}
-
 type requestInfoParams struct {
 	Type        AdditionalInfoType `json:"type"`
 	Comment     string             `json:"comment"`
@@ -50,18 +43,6 @@ type addApproversParams struct {
 func (a *approverUpdateParams) Validate() error {
 	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
 		return fmt.Errorf("unknown decision %s", a.Decision)
-	}
-
-	return nil
-}
-
-func (a *additionalApproverUpdateParams) Validate() error {
-	if a.Decision != ApproverDecisionApproved && a.Decision != ApproverDecisionRejected {
-		return fmt.Errorf("unknown decision %s", a.Decision)
-	}
-
-	if a.BaseApproverLogin == "" {
-		return errors.New("login of base approver is required")
 	}
 
 	return nil
@@ -256,7 +237,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 
 	case string(entity.TaskUpdateActionAdditionalApprovement):
-		var updateParams additionalApproverUpdateParams
+		var updateParams approverUpdateParams
 
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
@@ -333,9 +314,8 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 				AdditionalApprover{
 					ApproverLogin:     u.AdditionalApproversLogins[i],
 					BaseApproverLogin: gb.RunContext.UpdateData.ByLogin,
-					Question:          u.Question,
+					Question:          &u.Question,
 					Attachments:       u.Attachments,
-					Decision:          "",
 				})
 			logApprovers = append(logApprovers, u.AdditionalApproversLogins[i])
 		}
@@ -362,7 +342,8 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 func (gb *GoApproverBlock) checkAdditionalApproverNotAdded(login string) bool {
 	for _, added := range gb.State.AdditionalApprovers {
 		if login == added.ApproverLogin &&
-			added.BaseApproverLogin == gb.RunContext.UpdateData.ByLogin {
+			added.BaseApproverLogin == gb.RunContext.UpdateData.ByLogin &&
+			added.Decision == nil {
 			return false
 		}
 	}

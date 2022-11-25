@@ -2515,7 +2515,6 @@ components:
           description: Task update params
           oneOf:
             - $ref: '#/components/schemas/ApproverUpdateParams'
-            - $ref: '#/components/schemas/AdditionalApproverUpdateParams'
             - $ref: '#/components/schemas/ExecutionUpdateParams'
             - $ref: '#/components/schemas/ExecutorChangeParams'
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
@@ -2538,7 +2537,6 @@ components:
           description: Task update params
           oneOf:
             - $ref: '#/components/schemas/ApproverUpdateParams'
-            - $ref: '#/components/schemas/AdditionalApproverUpdateParams'
             - $ref: '#/components/schemas/ExecutionUpdateParams'
             - $ref: '#/components/schemas/ExecutorChangeParams'
             - $ref: '#/components/schemas/RequestInfoUpdateParams'
@@ -2581,28 +2579,6 @@ components:
           items:
             type: string
       required:
-        - decision
-        - comment
-        - attachments
-
-    AdditionalApproverUpdateParams:
-      type: object
-      description: Additional approver update params
-      properties:
-        baseApproverLogin:
-          type: string
-          description: Login of the person who requested additional approval
-        decision:
-          $ref: '#/components/schemas/approverDecision'
-        comment:
-          type: string
-          description: Comment from additional approver
-        attachments:
-          type: array
-          items:
-            type: string
-      required:
-        - baseApproverLogin
         - decision
         - comment
         - attachments
