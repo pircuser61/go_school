@@ -9,15 +9,68 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
+type ApproverAction string
+
+const (
+	ApproverActionApprove   = "approve"
+	ApproverActionReject    = "reject"
+	ApproverActionViewed    = "viewed"
+	ApproverActionInformed  = "informed"
+	ApproverActionSign      = "sign"
+	ApproverActionAffirmate = "affirmate"
+)
+
+func (a ApproverAction) ToDecision() ApproverDecision {
+	switch a {
+	case ApproverActionApprove:
+		return ApproverDecisionApproved
+	case ApproverActionReject:
+		return ApproverDecisionRejected
+	case ApproverActionViewed:
+		return ApproverDecisionViewed
+	case ApproverActionInformed:
+		return ApproverDecisionInformed
+	case ApproverActionSign:
+		return ApproverDecisionSigned
+	case ApproverActionAffirmate:
+		return ApproverDecisionAffirmated
+	default:
+		return ""
+	}
+}
+
 type ApproverDecision string
 
 func (a ApproverDecision) String() string {
 	return string(a)
 }
 
+func (a ApproverDecision) ToAction() ApproverAction {
+	switch a {
+	case ApproverDecisionApproved:
+		return ApproverActionApprove
+	case ApproverDecisionRejected:
+		return ApproverActionReject
+	case ApproverDecisionViewed:
+		return ApproverActionViewed
+	case ApproverDecisionInformed:
+		return ApproverActionInformed
+	case ApproverDecisionSigned:
+		return ApproverActionSign
+	case ApproverDecisionAffirmated:
+		return ApproverActionAffirmate
+	default:
+		return ""
+	}
+}
+
 const (
-	ApproverDecisionApproved ApproverDecision = "approved"
-	ApproverDecisionRejected ApproverDecision = "rejected"
+	ApproverDecisionApproved   ApproverDecision = "approved"
+	ApproverDecisionRejected   ApproverDecision = "rejected"
+	ApproverDecisionViewed     ApproverDecision = "viewed"
+	ApproverDecisionInformed   ApproverDecision = "informed"
+	ApproverDecisionSigned     ApproverDecision = "signed"
+	ApproverDecisionAffirmated ApproverDecision = "affirmated"
 )
 
 func decisionFromAutoAction(action script.AutoAction) ApproverDecision {
@@ -52,8 +105,9 @@ const (
 type ApproverLogType string
 
 const (
-	ApproverLogDecision    ApproverLogType = "decision"
-	ApproverLogAddApprover ApproverLogType = "addApprover"
+	ApproverLogDecision           ApproverLogType = "decision"
+	AdditionalApproverLogDecision ApproverLogType = "additionalApproverDecision"
+	ApproverLogAddApprover        ApproverLogType = "addApprover"
 )
 
 type AdditionalInfo struct {
@@ -119,11 +173,12 @@ type Action struct {
 }
 
 type AdditionalApprover struct {
-	ApproverLogin     string           `json:"approver_login"`
-	BaseApproverLogin string           `json:"base_approver_login"`
-	Question          string           `json:"question"`
-	Attachments       []string         `json:"attachments"`
-	Decision          ApproverDecision `json:"decision"`
+	ApproverLogin     string            `json:"approver_login"`
+	BaseApproverLogin string            `json:"base_approver_login"`
+	Question          *string           `json:"question"`
+	Comment           *string           `json:"comment"`
+	Attachments       []string          `json:"attachments"`
+	Decision          *ApproverDecision `json:"decision"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -149,8 +204,8 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		return fmt.Errorf("%s not found in approvers", login)
 	}
 
-	if decision != ApproverDecisionApproved && decision != ApproverDecisionRejected {
-		return fmt.Errorf("unknown decision %s", decision.String())
+	if decision == "" {
+		return errors.New("missing decision")
 	}
 
 	if a.Decision != nil {
@@ -187,24 +242,75 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		var overallDecision ApproverDecision
 		if decision == ApproverDecisionRejected {
 			overallDecision = ApproverDecisionRejected
-		}
+		} else {
+			decisions := make(map[ApproverDecision]int)
+			decisionsCount := 0
+			for _, entry := range a.ApproverLog {
+				if entry.LogType != ApproverLogDecision {
+					continue
+				}
+				decisionsCount += 1
+				if entry.Decision != ApproverDecisionRejected {
+					count, decisionExists := decisions[entry.Decision]
+					if !decisionExists {
+						count = 0
+					}
+					decisions[entry.Decision] = count + 1
+				}
+			}
 
-		var approvedCount = 0
-		for _, entry := range a.ApproverLog {
-			if entry.Decision == ApproverDecisionApproved {
-				approvedCount++
+			if decisionsCount < len(a.Approvers) {
+				return nil
+			}
+
+			maxC := 0
+			for k, v := range decisions {
+				if v > maxC {
+					maxC = v
+					overallDecision = k
+				}
 			}
 		}
 
-		if approvedCount == len(a.Approvers) {
-			overallDecision = ApproverDecisionApproved
-		}
-
 		a.Decision = &overallDecision
+	}
 
-		if overallDecision != ApproverDecisionRejected && overallDecision != ApproverDecisionApproved {
-			a.Decision = nil
+	return nil
+}
+
+//nolint:gocyclo //its ok here
+func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params additionalApproverUpdateParams) error {
+	if a.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	couldUpdateOne := false
+
+	for i := range a.AdditionalApprovers {
+		if login != a.AdditionalApprovers[i].ApproverLogin || a.AdditionalApprovers[i].Decision != nil {
+			continue
 		}
+
+		a.AdditionalApprovers[i].Decision = &params.Decision
+		a.AdditionalApprovers[i].Comment = &params.Comment
+		a.AdditionalApprovers[i].Attachments = params.Attachments
+
+		var approverLogEntry = ApproverLogEntry{
+			Login:       login,
+			Decision:    params.Decision,
+			Comment:     params.Comment,
+			Attachments: params.Attachments,
+			CreatedAt:   time.Now(),
+			LogType:     AdditionalApproverLogDecision,
+		}
+
+		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+
+		couldUpdateOne = true
+	}
+
+	if !couldUpdateOne {
+		return fmt.Errorf("can't approve any request")
 	}
 
 	return nil

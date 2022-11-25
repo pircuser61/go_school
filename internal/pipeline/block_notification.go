@@ -66,14 +66,14 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	text := mail.MakeBodyHeader(typedAuthor.Username, typedAuthor.Attributes.FullName,
 		gb.RunContext.Sender.GetApplicationLink(gb.RunContext.WorkNumber), gb.State.Text)
 
-	body, err := gb.RunContext.ServiceDesc.GetSchemaFieldsByApplication(ctx, gb.RunContext.WorkNumber)
+	body, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return "", nil, err
 	}
-	descr := mail.MakeDescription(body.Body)
+	descr := mail.MakeDescription(body.InitialApplication.ApplicationBody)
 	text = mail.WrapDescription(text, descr)
 
-	aa := mail.GetAttachmentsFromBody(body.Body, body.AttachmentFields)
+	aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody, body.InitialApplication.AttachmentFields)
 	attachments, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, aa)
 	if err != nil {
 		return "", nil, err
@@ -83,7 +83,7 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 		files = append(files, attachments[k]...)
 	}
 	text = mail.CompileAttachments(text, attachments)
-	text = mail.SwapKeys(text, body.Keys)
+	text = mail.SwapKeys(text, body.InitialApplication.Keys)
 	text = mail.AddStyles(text)
 	return text, files, nil
 }

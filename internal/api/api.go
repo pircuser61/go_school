@@ -201,6 +201,8 @@ const (
 const (
 	TaskUpdateActionAddApprovers TaskUpdateAction = "add_approvers"
 
+	TaskUpdateActionAdditionalApprovement TaskUpdateAction = "additional_approvement"
+
 	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
 
 	TaskUpdateActionCancelApp TaskUpdateAction = "cancel_app"
@@ -220,11 +222,26 @@ const (
 	TaskUpdateActionSendEditApp TaskUpdateAction = "send_edit_app"
 )
 
+// Defines values for AdditionalApproverDecision.
+const (
+	AdditionalApproverDecisionApproved AdditionalApproverDecision = "approved"
+
+	AdditionalApproverDecisionRejected AdditionalApproverDecision = "rejected"
+)
+
 // Defines values for ApproverDecision.
 const (
-	ApproverDecisionApproved ApproverDecision = "approved"
+	ApproverDecisionAffirmate ApproverDecision = "affirmate"
 
-	ApproverDecisionRejected ApproverDecision = "rejected"
+	ApproverDecisionApprove ApproverDecision = "approve"
+
+	ApproverDecisionInformed ApproverDecision = "informed"
+
+	ApproverDecisionReject ApproverDecision = "reject"
+
+	ApproverDecisionSign ApproverDecision = "sign"
+
+	ApproverDecisionViewed ApproverDecision = "viewed"
 )
 
 // Defines values for BlockType.
@@ -340,6 +357,19 @@ type AddApproversParams struct {
 	Question string `json:"question"`
 }
 
+// Approver update params
+type AdditionalApproverUpdateParams struct {
+	Attachments []string `json:"attachments"`
+
+	// Comment from approver
+	Comment string `json:"comment"`
+
+	// Approver decision:
+	//  * approved - Согласовать
+	//  * rejected - Отклонить
+	Decision AdditionalApproverDecision `json:"decision"`
+}
+
 // AllUsageResponse defines model for AllUsageResponse.
 type AllUsageResponse struct {
 	Pipelines AllUsageResponse_Pipelines `json:"pipelines"`
@@ -418,10 +448,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -432,8 +462,12 @@ type ApproverUpdateParams struct {
 	Comment string `json:"comment"`
 
 	// Approver decision:
-	//  * approved - approver approved block
-	//  * rejected - approver rejected block
+	//  * approve - Согласовать
+	//  * reject - Отклонить
+	//  * viewed - Ознакомлен
+	//  * informed - Проинформирован
+	//  * sign - Подписать
+	//  * affirmate - Утвердить
 	Decision ApproverDecision `json:"decision"`
 }
 
@@ -712,9 +746,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
-//  * from_schema - Selected by initiator
+//   - user - Single user
+//   - group - Execution group ID
+//   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -774,9 +808,9 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   * User - Single user
-//   * Initiator - Process initiator
-//   * From_schema - Selected by initiator
+//   - User - Single user
+//   - Initiator - Process initiator
+//   - From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -940,9 +974,16 @@ type ResponsePipelineSearch struct {
 
 // RunNewVersionByPrevVersionRequest defines model for RunNewVersionByPrevVersionRequest.
 type RunNewVersionByPrevVersionRequest struct {
-	ApplicationBody map[string]interface{} `json:"application_body"`
-	Description     string                 `json:"description"`
-	WorkNumber      string                 `json:"work_number"`
+	ApplicationBody  map[string]interface{}                 `json:"application_body"`
+	AttachmentFields []string                               `json:"attachment_fields"`
+	Description      string                                 `json:"description"`
+	Keys             RunNewVersionByPrevVersionRequest_Keys `json:"keys"`
+	WorkNumber       string                                 `json:"work_number"`
+}
+
+// RunNewVersionByPrevVersionRequest_Keys defines model for RunNewVersionByPrevVersionRequest.Keys.
+type RunNewVersionByPrevVersionRequest_Keys struct {
+	AdditionalProperties map[string]string `json:"-"`
 }
 
 // RunPipelineBody defines model for RunPipelineBody.
@@ -962,9 +1003,16 @@ type RunVersionBody map[string]interface{}
 
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
-	ApplicationBody map[string]interface{} `json:"application_body"`
-	Description     string                 `json:"description"`
-	PipelineId      string                 `json:"pipeline_id"`
+	ApplicationBody  map[string]interface{}              `json:"application_body"`
+	AttachmentFields []string                            `json:"attachment_fields"`
+	Description      string                              `json:"description"`
+	Keys             RunVersionsByPipelineIdRequest_Keys `json:"keys"`
+	PipelineId       string                              `json:"pipeline_id"`
+}
+
+// RunVersionsByPipelineIdRequest_Keys defines model for RunVersionsByPipelineIdRequest.Keys.
+type RunVersionsByPipelineIdRequest_Keys struct {
+	AdditionalProperties map[string]string `json:"-"`
 }
 
 // ScenarioVersionInfoList defines model for ScenarioVersionInfoList.
@@ -1084,8 +1132,17 @@ type UsedBy struct {
 }
 
 // Approver decision:
-//  * approved - approver approved block
-//  * rejected - approver rejected block
+//   - approved - Согласовать
+//   - rejected - Отклонить
+type AdditionalApproverDecision string
+
+// Approver decision:
+//   - approve - Согласовать
+//   - reject - Отклонить
+//   - viewed - Ознакомлен
+//   - informed - Проинформирован
+//   - sign - Подписать
+//   - affirmate - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1130,8 +1187,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1171,11 +1228,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1624,6 +1681,112 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for MappingParam to handle AdditionalProperties
 func (a MappingParam) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RunNewVersionByPrevVersionRequest_Keys. Returns the specified
+// element and whether it was found
+func (a RunNewVersionByPrevVersionRequest_Keys) Get(fieldName string) (value string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RunNewVersionByPrevVersionRequest_Keys
+func (a *RunNewVersionByPrevVersionRequest_Keys) Set(fieldName string, value string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RunNewVersionByPrevVersionRequest_Keys to handle AdditionalProperties
+func (a *RunNewVersionByPrevVersionRequest_Keys) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RunNewVersionByPrevVersionRequest_Keys to handle AdditionalProperties
+func (a RunNewVersionByPrevVersionRequest_Keys) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for RunVersionsByPipelineIdRequest_Keys. Returns the specified
+// element and whether it was found
+func (a RunVersionsByPipelineIdRequest_Keys) Get(fieldName string) (value string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for RunVersionsByPipelineIdRequest_Keys
+func (a *RunVersionsByPipelineIdRequest_Keys) Set(fieldName string, value string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for RunVersionsByPipelineIdRequest_Keys to handle AdditionalProperties
+func (a *RunVersionsByPipelineIdRequest_Keys) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for RunVersionsByPipelineIdRequest_Keys to handle AdditionalProperties
+func (a RunVersionsByPipelineIdRequest_Keys) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
