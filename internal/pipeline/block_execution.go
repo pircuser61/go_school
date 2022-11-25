@@ -22,6 +22,7 @@ const (
 	executionChangeExecutorAction       = "change_executor"
 	executionRequestExecutionInfoAction = "request_execution_info"
 	executionExecuteAction              = "execution"
+	executionDeclineAction              = "decline"
 )
 
 type GoExecutionBlock struct {
@@ -54,14 +55,33 @@ func (gb *GoExecutionBlock) isExecutionFinished() bool {
 	return false
 }
 
-func (gb *GoExecutionBlock) executionActions() []string {
+func (gb *GoExecutionBlock) executionActions() []MemberAction {
 	if gb.State.Decision != nil || gb.State.IsRevoked {
 		if gb.State.ExecutionType == script.ExecutionTypeGroup && gb.State.IsTakenInWork == false {
-			return []string{executionStartWorkAction}
+			action := MemberAction{
+				Id:   executionStartWorkAction,
+				Type: ActionTypePrimary,
+			}
+			return []MemberAction{action}
 		}
 	}
-	return []string{executionChangeExecutorAction, executionRequestExecutionInfoAction,
-		executionExecuteAction}
+	return []MemberAction{
+		{
+			Id:   executionExecuteAction,
+			Type: ActionTypePrimary,
+		},
+		{
+			Id:   executionDeclineAction,
+			Type: ActionTypeSecondary,
+		},
+		{
+			Id:   executionChangeExecutorAction,
+			Type: ActionTypeOther,
+		},
+		{
+			Id:   executionRequestExecutionInfoAction,
+			Type: ActionTypeOther,
+		}}
 }
 
 func (gb *GoExecutionBlock) CheckSLA() (bool, time.Time) {

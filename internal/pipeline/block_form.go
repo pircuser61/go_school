@@ -75,11 +75,15 @@ func (gb *GoFormBlock) isFormFinished() bool {
 	return false
 }
 
-func (gb *GoFormBlock) formActions() []string {
+func (gb *GoFormBlock) formActions() []MemberAction {
 	if gb.State.IsFilled || gb.State.IsRevoked {
-		return []string{}
+		return []MemberAction{}
 	}
-	return []string{formFillFormAction}
+	action := MemberAction{
+		Id:   formFillFormAction,
+		Type: ActionTypePrimary,
+	}
+	return []MemberAction{action}
 }
 
 func (gb *GoFormBlock) CheckSLA() (bool, time.Time) {

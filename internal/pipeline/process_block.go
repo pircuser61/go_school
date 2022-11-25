@@ -263,10 +263,17 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 	}
 	dbPeople := []db.DbMember{}
 	for i := range people {
+		actions := []db.DbMemberAction{}
+		for _, act := range people[i].Actions {
+			actions = append(actions, db.DbMemberAction{
+				Id:   act.Id,
+				Type: act.Type,
+			})
+		}
 		dbPeople = append(dbPeople, db.DbMember{
 			Login:    people[i].Login,
 			Finished: people[i].IsFinished,
-			Actions:  people[i].Actions,
+			Actions:  actions,
 		})
 	}
 	return runCtx.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
@@ -291,10 +298,17 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 	}
 	dbPeople := []db.DbMember{}
 	for i := range people {
+		actions := []db.DbMemberAction{}
+		for _, act := range people[i].Actions {
+			actions = append(actions, db.DbMemberAction{
+				Id:   act.Id,
+				Type: act.Type,
+			})
+		}
 		dbPeople = append(dbPeople, db.DbMember{
 			Login:    people[i].Login,
 			Finished: people[i].IsFinished,
-			Actions:  people[i].Actions,
+			Actions:  actions,
 		})
 	}
 	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{

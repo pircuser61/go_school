@@ -15,12 +15,9 @@ const (
 	keyOutputDecision = "decision"
 	keyOutputComment  = "comment"
 
-	approverSendEditAppAction           = "send_edit_app"
 	approverAddApproversAction          = "add_approvers"
 	approverRequestAddInfoAction        = "request_add_info"
-	approverApproveAction               = "approve"
 	approverAdditionalApprovementAction = "additional_approvement"
-	approverBaseRejectAction            = "reject"
 	approverAdditionalRejectAction      = "additional_reject"
 )
 
@@ -66,21 +63,29 @@ func (gb *GoApproverBlock) isApprovementBaseFinished(login string) bool {
 	return false
 }
 
-func (gb *GoApproverBlock) approvementBaseActions(login string) []string {
+func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	if gb.State.Decision != nil || gb.State.IsRevoked {
-		return []string{}
+		return []MemberAction{}
 	}
 	for _, log := range gb.State.ApproverLog {
 		if log.Login == login && log.LogType == ApproverLogDecision {
-			return []string{}
+			return []MemberAction{}
 		}
 	}
-	actions := []string{}
+	actions := []MemberAction{}
 	for i := range gb.State.ActionList {
-		actions = append(actions, gb.State.ActionList[i].Id)
+		actions = append(actions, MemberAction{
+			Id:   gb.State.ActionList[i].Id,
+			Type: gb.State.ActionList[i].Type,
+		})
 	}
-	return append(actions, approverAddApproversAction,
-		approverRequestAddInfoAction)
+	return append(actions, MemberAction{
+		Id:   approverAddApproversAction,
+		Type: ActionTypeOther,
+	}, MemberAction{
+		Id:   approverRequestAddInfoAction,
+		Type: ActionTypeOther,
+	})
 }
 
 func (gb *GoApproverBlock) isApprovementAddFinished(a AdditionalApprover) bool {
@@ -90,12 +95,26 @@ func (gb *GoApproverBlock) isApprovementAddFinished(a AdditionalApprover) bool {
 	return false
 }
 
-func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []string {
+func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []MemberAction {
 	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != "" {
-		return []string{}
+		return []MemberAction{}
 	}
-	return []string{approverAddApproversAction, approverRequestAddInfoAction,
-		approverAdditionalApprovementAction, approverAdditionalRejectAction}
+	return []MemberAction{{
+		Id:   approverAdditionalApprovementAction,
+		Type: ActionTypePrimary,
+	},
+		{
+			Id:   approverAdditionalRejectAction,
+			Type: ActionTypeSecondary,
+		},
+		{
+			Id:   approverAddApproversAction,
+			Type: ActionTypeOther,
+		},
+		{
+			Id:   approverRequestAddInfoAction,
+			Type: ActionTypeOther,
+		}}
 }
 
 func (gb *GoApproverBlock) CheckSLA() (bool, time.Time) {

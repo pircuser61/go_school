@@ -67,10 +67,15 @@ type UpdateTaskRate struct {
 	Rate       int
 }
 
+type DbMemberAction struct {
+	Id   string
+	Type string
+}
+
 type DbMember struct {
 	Login    string
 	Finished bool
-	Actions  []string
+	Actions  []DbMemberAction
 }
 
 type SaveStepRequest struct {

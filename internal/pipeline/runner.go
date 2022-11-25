@@ -9,10 +9,20 @@ import (
 
 type Status string
 
+const (
+	ActionTypePrimary   = "primary"
+	ActionTypeSecondary = "secondary"
+	ActionTypeOther     = "other"
+)
+
+type MemberAction struct {
+	Id   string
+	Type string
+}
 type Member struct {
 	Login      string
 	IsFinished bool
-	Actions    []string
+	Actions    []MemberAction
 }
 
 var (

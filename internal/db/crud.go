@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
 	"strconv"
 	"strings"
 	"time"
@@ -1562,6 +1563,10 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		)
 `
 	for _, val := range dto.Members {
+		actions := make(pq.StringArray, 0, len(val.Actions))
+		for _, act := range val.Actions {
+			actions = append(actions, act.Id+":"+act.Type)
+		}
 		_, err = db.Connection.Exec(
 			ctx,
 			queryMembers,
@@ -1569,7 +1574,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			id,
 			val.Login,
 			val.Finished,
-			val.Actions,
+			actions,
 		)
 		if err != nil {
 			return NullUuid, time.Time{}, err
@@ -1645,6 +1650,10 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		)
 `
 	for _, val := range dto.Members {
+		actions := make(pq.StringArray, 0, len(val.Actions))
+		for _, act := range val.Actions {
+			actions = append(actions, act.Id+":"+act.Type)
+		}
 		_, err = db.Connection.Exec(
 			ctx,
 			qMembersAdd,
@@ -1652,7 +1661,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 			dto.Id,
 			val.Login,
 			val.Finished,
-			val.Actions,
+			actions,
 		)
 		if err != nil {
 			return err
