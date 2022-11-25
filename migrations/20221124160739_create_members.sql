@@ -21,13 +21,22 @@ select uuid_generate_v4() ,id, unnest(members),
        case when status in ('finished', 'cancel') then true
             else false
            end,
-       case when step_type = 'approver' then ARRAY ['send_edit_app','add_approvers','request_add_info','approve','reject']
-            when step_type = 'execution' then ARRAY ['executor_start_work','change_executor','request_execution_info']
-            when step_type = 'form' then ARRAY ['fill_form']
+       case when step_type = 'approver' AND status not in ('finished', 'cancel') then ARRAY ['send_edit_app:other','add_approvers:other','request_add_info:other','approve:primary','reject:secondary']
+            when step_type = 'approver' AND status in ('finished', 'cancel') then ARRAY ['']
+            when step_type = 'execution' AND status not in ('finished', 'cancel') AND content->'State'->step_name->>'execution_type' = 'group'  AND
+                 content->'State'->step_name->>'is_taken_in_work' = 'false' then ARRAY ['executor_start_work:primary']
+            when step_type = 'execution' AND status not in ('finished', 'cancel') AND content->'State'->step_name->>'execution_type' = 'group' AND
+                 content->'State'->step_name->>'is_taken_in_work' = 'true' then ARRAY ['execution:primary', 'decline:secondary', 'change_executor:other','request_execution_info:other']
+            when step_type = 'execution' AND status in ('finished', 'cancel') then ARRAY ['']
+            when step_type = 'execution' AND status not in ('finished', 'cancel') AND content->'State'->step_name->>'execution_type' != 'group'
+                then ARRAY ['execution:primary', 'decline:secondary', 'change_executor:other','request_execution_info:other']
+            when step_type = 'form' AND status not in ('finished', 'cancel') then ARRAY ['fill_form:primary']
+            when step_type = 'form' AND status in ('finished', 'cancel') then ARRAY ['']
             else ARRAY ['']
            end
 from variable_storage
 where members is not null;
+
 -- +goose StatementEnd
 
 -- +goose Down
