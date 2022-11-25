@@ -3,7 +3,7 @@ package pipeline
 const (
 	DefaultSocketID = "default"
 
-	approvedSocketID       = "approved"
+	//nolint:varcheck,deadcode //used in tests
 	rejectedSocketID       = "rejected"
 	editAppSocketID        = "edit_app"
 	executedSocketID       = "executed"

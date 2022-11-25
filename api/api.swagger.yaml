@@ -1593,52 +1593,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: data
-  /tasks/configured-action/{workNumber}:
-    put:
-      tags:
-        - tasks
-      summary: Update Task With Uuid Action
-      description: Update task with customizable actions
-      operationId: update-task-configured-actions
-      parameters:
-        - name: workNumber
-          in: path
-          description: work number
-          required: true
-          schema:
-            type: string
-      requestBody:
-        description: Task update data
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TaskUpdateWithActionUuid'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /tasks/count:
     get:
       tags:
@@ -2530,28 +2484,6 @@ components:
         - action
         - parameters
 
-    TaskUpdateWithActionUuid:
-      type: object
-      properties:
-        action:
-          type: string
-          format: uuid
-          description: uuid of action
-        parameters:
-          type: object
-          description: Task update params
-          oneOf:
-            - $ref: '#/components/schemas/ApproverUpdateParams'
-            - $ref: '#/components/schemas/ExecutionUpdateParams'
-            - $ref: '#/components/schemas/ExecutorChangeParams'
-            - $ref: '#/components/schemas/RequestInfoUpdateParams'
-            - $ref: '#/components/schemas/ExecutableFunctionParams'
-            - $ref: '#/components/schemas/FillFormUpdateParams'
-            - $ref: '#/components/schemas/AddApproversParams'
-      required:
-        - action
-        - parameters
-
     FillFormUpdateParams:
       type: object
       description: Fill form
@@ -2653,7 +2585,7 @@ components:
         - viewed
         - informed
         - sign
-        - affirmate
+        - confirm
       description: >
         Approver decision:
          * approve - Согласовать
@@ -2661,7 +2593,7 @@ components:
          * viewed - Ознакомлен
          * informed - Проинформирован
          * sign - Подписать
-         * affirmate - Утвердить
+         * confirm - Утвердить
 
     additionalApproverDecision:
       type: string
@@ -2950,6 +2882,10 @@ components:
           type: integer
         rate_comment:
           type: string
+        available_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/action'
       required:
         - id
         - version_id
@@ -3005,6 +2941,30 @@ components:
           type: string
         type:
           type: string
+
+    action:
+      type: object
+      properties:
+        id:
+          type: string
+          description: id of action
+        button_type:
+          type: string
+          description: type of renderable button with action (primary, secondary, other, none)
+        title:
+          type: string
+          description: human action name
+        comment_enable:
+          type: boolean
+          description: enables comment function
+        attachments_enable:
+          type: boolean
+          description: enables attachment function
+      required:
+        - id
+        - button_type
+        - comment_enable
+        - attachments_enable
 
     blockType:
       type: string

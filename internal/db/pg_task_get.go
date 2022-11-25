@@ -5,17 +5,20 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
+	"golang.org/x/net/context"
+
+	"github.com/google/uuid"
+
 	"github.com/iancoleman/orderedmap"
+
+	"github.com/lib/pq"
 
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
-
-	"github.com/google/uuid"
-
-	"github.com/lib/pq"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -464,10 +467,15 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_private")
 	defer span.End()
 
+	actionsMap, getActionsErr := db.getActionsMap(ctx)
+	if getActionsErr != nil {
+		return &entity.EriusTask{}, getActionsErr
+	}
+
 	et := entity.EriusTask{}
 
 	var nullStringParameters sql.NullString
-	var actions pq.StringArray
+	var taskActions pq.StringArray
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -488,11 +496,13 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 		&et.BlueprintID,
 		&et.Rate,
 		&et.RateComment,
-		&actions,
+		&taskActions,
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	et.Actions = db.computeActions(taskActions, actionsMap)
 
 	if nullStringParameters.Valid && nullStringParameters.String != "" {
 		err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
@@ -502,6 +512,34 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	}
 
 	return &et, nil
+}
+
+func (db *PGCon) computeActions(actions []string, allActions map[string]entity.TaskAction) []entity.TaskAction {
+	var actionsResult = make([]entity.TaskAction, 0)
+
+	for _, actionId := range actions {
+		var compositeActionId = strings.Split(actionId, ":")
+		if len(compositeActionId) > 1 {
+			var id = compositeActionId[0]
+			var priority = compositeActionId[1]
+			var actionWithPreferences = allActions[id]
+
+			var computedAction = entity.TaskAction{
+				Id:                 id,
+				ButtonType:         priority,
+				Title:              actionWithPreferences.Title,
+				CommentEnabled:     actionWithPreferences.CommentEnabled,
+				AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
+				IsPublic:           actionWithPreferences.IsPublic,
+			}
+
+			if computedAction.IsPublic {
+				actionsResult = append(actionsResult, computedAction)
+			}
+		}
+	}
+
+	return actionsResult
 }
 
 type tasksCounter struct {
@@ -545,11 +583,16 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 	}
 	defer rows.Close()
 
+	actionsMap, getActionsErr := db.getActionsMap(ctx)
+	if getActionsErr != nil {
+		return &entity.EriusTasks{}, getActionsErr
+	}
+
 	for rows.Next() {
 		et := entity.EriusTask{}
 
 		var nullStringParameters sql.NullString
-		var actions pq.StringArray
+		var taskActions pq.StringArray
 
 		err = rows.Scan(
 			&et.ID,
@@ -568,7 +611,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			&et.Total,
 			&et.Rate,
 			&et.RateComment,
-			&actions,
+			&taskActions,
 		)
 
 		if err != nil {
@@ -582,6 +625,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			}
 		}
 
+		et.Actions = db.computeActions(taskActions, actionsMap)
 		ets.Tasks = append(ets.Tasks, et)
 	}
 
@@ -749,4 +793,46 @@ func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 		return -1, err
 	}
 	return status, nil
+}
+
+func (db *PGCon) getActionsMap(ctx context.Context) (actions map[string]entity.TaskAction, err error) {
+	q := `
+		SELECT 
+			id,
+			title,
+			is_public,
+			comment_enabled,
+			attachments_enabled
+		FROM dict_actions`
+
+	result := make(map[string]entity.TaskAction, 0)
+	rows, err := db.Connection.Query(ctx, q)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return result, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		ta := entity.TaskAction{}
+
+		if err := rows.Scan(
+			&ta.Id,
+			&ta.Title,
+			&ta.IsPublic,
+			&ta.CommentEnabled,
+			&ta.AttachmentsEnabled,
+		); err != nil {
+			return nil, err
+		}
+
+		result[ta.Id] = ta
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return result, nil
 }

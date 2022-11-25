@@ -20,11 +20,6 @@ import (
 
 type void = struct{}
 
-const (
-	// TODO maybe there is a better way to save work id in variable store
-	keyStepWorkId = "work_id"
-)
-
 type ExecutablePipeline struct {
 	TaskID        uuid.UUID
 	WorkNumber    string
@@ -176,8 +171,4 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 	}
 
 	return nil
-}
-
-func getWorkIdKey(stepName string) string {
-	return stepName + "." + keyStepWorkId
 }
