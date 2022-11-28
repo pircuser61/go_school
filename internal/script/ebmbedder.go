@@ -67,11 +67,11 @@ type Socket struct {
 }
 
 const (
-	approvedSocketID    = "approved"
-	approvedSocketTitle = "Согласовать"
+	approveSocketId    = "approve"
+	approveSocketTitle = "Согласовать"
 
-	rejectedSocketID    = "rejected"
-	RejectedSocketTitle = "Отклонить"
+	rejectSocketId    = "reject"
+	RejectSocketTitle = "Отклонить"
 
 	editAppSocketID    = "edit_app"
 	editAppSocketTitle = "На доработку"
@@ -89,9 +89,9 @@ const (
 var (
 	DefaultSocket = Socket{Id: DefaultSocketID, Title: DefaultSocketTitle}
 
-	ApprovedSocket = Socket{Id: approvedSocketID, Title: approvedSocketTitle}
-	RejectedSocket = Socket{Id: rejectedSocketID, Title: RejectedSocketTitle}
-	EditAppSocket  = Socket{Id: editAppSocketID, Title: editAppSocketTitle}
+	ApproveSocket = Socket{Id: approveSocketId, Title: approveSocketTitle}
+	RejectSocket  = Socket{Id: rejectSocketId, Title: RejectSocketTitle}
+	EditAppSocket = Socket{Id: editAppSocketID, Title: editAppSocketTitle}
 
 	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
 	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}

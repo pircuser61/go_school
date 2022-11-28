@@ -282,7 +282,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 		},
 		{
 			Id:           rejectedSocketID,
-			Title:        script.RejectedSocketTitle,
+			Title:        script.RejectSocketTitle,
 			NextBlockIds: []string{"next_1"},
 		},
 	}
@@ -392,7 +392,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 						},
 						{
 							Id:    rejectedSocketID,
-							Title: script.RejectedSocketTitle,
+							Title: script.RejectSocketTitle,
 						},
 					},
 				},

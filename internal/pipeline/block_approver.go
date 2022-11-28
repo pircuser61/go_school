@@ -244,8 +244,8 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			},
 		},
 		Sockets: []script.Socket{
-			script.ApprovedSocket,
-			script.RejectedSocket,
+			script.ApproveSocket,
+			script.RejectSocket,
 			script.EditAppSocket,
 		},
 	}
