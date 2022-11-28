@@ -1,5 +1,7 @@
 package script
 
+import "gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+
 type Embedder interface {
 	Model() FunctionModel
 }
@@ -67,10 +69,7 @@ type Socket struct {
 }
 
 const (
-	approvedSocketID    = "approved"
 	approvedSocketTitle = "Согласовать"
-
-	rejectedSocketID    = "rejected"
 	RejectedSocketTitle = "Отклонить"
 
 	editAppSocketID    = "edit_app"
@@ -89,8 +88,8 @@ const (
 var (
 	DefaultSocket = Socket{Id: DefaultSocketID, Title: DefaultSocketTitle}
 
-	ApprovedSocket = Socket{Id: approvedSocketID, Title: approvedSocketTitle}
-	RejectedSocket = Socket{Id: rejectedSocketID, Title: RejectedSocketTitle}
+	ApprovedSocket = Socket{Id: pipeline.ApproverActionApprove, Title: approvedSocketTitle}
+	RejectedSocket = Socket{Id: pipeline.ApproverActionReject, Title: RejectedSocketTitle}
 	EditAppSocket  = Socket{Id: editAppSocketID, Title: editAppSocketTitle}
 
 	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
