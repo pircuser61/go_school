@@ -1608,7 +1608,6 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 }
 
 func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id uuid.UUID) error {
-	membersId := uuid.New()
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1629,6 +1628,7 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 		)
 `
 	for _, val := range members {
+		membersId := uuid.New()
 		actions := make(pq.StringArray, 0, len(val.Actions))
 		for _, act := range val.Actions {
 			actions = append(actions, act.Id+":"+act.Type)
