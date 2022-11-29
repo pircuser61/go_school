@@ -471,27 +471,22 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		steps = steps[:1]
 	}
 
-	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-	routineCtx = logger.WithLogger(routineCtx, log)
-	txStorage, transactionErr := ae.DB.StartTransaction(routineCtx)
-	if transactionErr != nil {
-		e := UpdateBlockError
-		log.Error(e.errorMessage(nil))
-		_ = e.sendError(w)
-
-		return
-	}
-	defer txStorage.RollbackTransaction(routineCtx) // nolint:errcheck // rollback err
-
 	couldUpdateOne := false
 	for _, item := range steps {
+		routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+		routineCtx = logger.WithLogger(routineCtx, log)
+		txStorage, transactionErr := ae.DB.StartTransaction(routineCtx)
+		if transactionErr != nil {
+			continue
+		}
+
 		storage, getErr := txStorage.GetVariableStorageForStep(routineCtx, dbTask.ID, item.Name)
 		if getErr != nil {
-			e := BlockNotFoundError
-			log.Error(e.errorMessage(nil))
-			_ = e.sendError(w)
-
-			return
+			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+				log.Error(txErr)
+			}
+			log.WithError(getErr).Error("couldn't get block to update")
+			continue
 		}
 		runCtx := &pipeline.BlockRunContext{
 			TaskID:      dbTask.ID,
@@ -513,28 +508,35 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
 		if !ok {
-			e := BlockNotFoundError
-			log.Error(e.errorMessage(nil))
-			_ = e.sendError(w)
-
-			return
+			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+				log.Error(txErr)
+			}
+			log.WithError(errors.New("couldn't get block from pipeline")).
+				Error("couldn't get block to update")
+			continue
 		}
 
 		blockErr := pipeline.ProcessBlock(routineCtx, item.Name, &blockFunc, runCtx, true)
-		if blockErr == nil {
-			couldUpdateOne = true
+		if blockErr != nil {
+			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+				log.Error(txErr)
+			}
+			log.WithError(blockErr).Error("couldn't update block")
+			continue
 		}
+
+		if err = txStorage.CommitTransaction(routineCtx); err != nil {
+			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+				log.Error(txErr)
+			}
+			log.WithError(err).Error("couldn't update block")
+			continue
+		}
+
+		couldUpdateOne = true
 	}
 
 	if !couldUpdateOne {
-		e := UpdateBlockError
-		log.Error(e.errorMessage(errors.New("couldn't update work")))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if err = txStorage.CommitTransaction(routineCtx); err != nil {
 		e := UpdateBlockError
 		log.Error(e.errorMessage(errors.New("couldn't update work")))
 		_ = e.sendError(w)
@@ -726,8 +728,4 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			log.WithError(commitErr).Error("couldn't set SLA breach")
 		}
 	}
-}
-
-func (ae *APIEnv) UpdateTaskConfiguredActions(_ http.ResponseWriter, _ *http.Request, _ string) {
-
 }
