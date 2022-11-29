@@ -485,6 +485,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
 				log.Error(txErr)
 			}
+			log.WithError(getErr).Error("couldn't get block to update")
 			continue
 		}
 		runCtx := &pipeline.BlockRunContext{
@@ -510,20 +511,29 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
 				log.Error(txErr)
 			}
+			log.WithError(errors.New("couldn't get block from pipeline")).
+				Error("couldn't get block to update")
 			continue
 		}
 
 		blockErr := pipeline.ProcessBlock(routineCtx, item.Name, &blockFunc, runCtx, true)
-		if blockErr == nil {
-			couldUpdateOne = true
+		if blockErr != nil {
+			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+				log.Error(txErr)
+			}
+			log.WithError(blockErr).Error("couldn't update block")
+			continue
 		}
 
 		if err = txStorage.CommitTransaction(routineCtx); err != nil {
 			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
 				log.Error(txErr)
 			}
+			log.WithError(err).Error("couldn't update block")
 			continue
 		}
+
+		couldUpdateOne = true
 	}
 
 	if !couldUpdateOne {
