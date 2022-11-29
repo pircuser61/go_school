@@ -531,6 +531,7 @@ func (ae *APIEnv) RenamePipeline(w http.ResponseWriter, req *http.Request) {
 
 // listPipelines выбирает версии сценария с признаком Draft,
 // разрешенные для данного пользователя
+//
 //nolint:dupl //diff logic
 func (ae *APIEnv) listPipelines(ctx context.Context, myPipelines bool) ([]entity.EriusScenarioInfo, *PipelinerError) {
 	ctx, s := trace.StartSpan(ctx, "list_drafts")
