@@ -144,6 +144,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		}
 	}
 	gb.State.SLAChecked = true
+	gb.State.HalfSLAChecked = true
 	return nil
 }
 

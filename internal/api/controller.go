@@ -58,8 +58,8 @@ func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
 
 	mux.With(middleware.SetHeader("Content-Type", "text/json")).
 		Route(baseURL, func(r chi.Router) {
-			r.Use(WithUserInfo(param.SSOService, logger.GetLogger(ctx)))
-			r.Use(WithAsOtherUserInfo(param.PeopleService, logger.GetLogger(ctx)))
+			//r.Use(WithUserInfo(param.SSOService, logger.GetLogger(ctx)))
+			//r.Use(WithAsOtherUserInfo(param.PeopleService, logger.GetLogger(ctx)))
 			r.Use(StatisticMiddleware(param.APIEnv.Statistic))
 			r.Use(SetAuthTokenInContext(logger.GetLogger(ctx)))
 
