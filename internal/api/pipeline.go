@@ -283,14 +283,14 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipel
 		return
 	}
 
-	//err = ae.SchedulerClient.DeleteTasksByPipelineID(ctx, id)
-	//if err != nil {
-	//	e := SchedulerClientFailed
-	//	log.Error(e.errorMessage(err))
-	//	_ = e.sendError(w)
-	//
-	//	return
-	//}
+	err = ae.SchedulerClient.DeleteTasksByPipelineID(ctx, id)
+	if err != nil {
+		e := SchedulerClientFailed
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 
 	err = ae.DB.RemovePipelineTags(ctx, id)
 	if err != nil {
@@ -301,14 +301,14 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipel
 		return
 	}
 
-	//err = ae.NetworkMonitorClient.UnlinkPipelineByID(ctx, id)
-	//if err != nil {
-	//	e := NetworkMonitorClientFailed
-	//	log.Error(e.errorMessage(err))
-	//	_ = e.sendError(w)
-	//
-	//	return
-	//}
+	err = ae.NetworkMonitorClient.UnlinkPipelineByID(ctx, id)
+	if err != nil {
+		e := NetworkMonitorClientFailed
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 
 	err = ae.DB.DeletePipeline(ctx, id)
 	if err != nil {
