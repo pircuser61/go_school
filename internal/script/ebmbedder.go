@@ -73,7 +73,7 @@ const (
 	rejectSocketId    = "reject"
 	RejectSocketTitle = "Отклонить"
 
-	editAppSocketID    = "edit_app"
+	editAppSocketID    = "send_edit_app"
 	editAppSocketTitle = "На доработку"
 
 	executedSocketID    = "executed"
