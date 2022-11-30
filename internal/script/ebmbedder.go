@@ -73,8 +73,11 @@ const (
 	rejectSocketId    = "reject"
 	RejectSocketTitle = "Отклонить"
 
-	editAppSocketID    = "send_edit_app"
-	editAppSocketTitle = "На доработку"
+	approverEditAppSocketID    = "approver_send_edit_app"
+	approverEditAppSocketTitle = "На доработку"
+
+	executorEditAppSocketID    = "send_edit_app"
+	executorEditAppSocketTitle = "На доработку"
 
 	executedSocketID    = "executed"
 	executedSocketTitle = "Исполнено"
@@ -89,9 +92,10 @@ const (
 var (
 	DefaultSocket = Socket{Id: DefaultSocketID, Title: DefaultSocketTitle}
 
-	ApproveSocket = Socket{Id: approveSocketId, Title: approveSocketTitle}
-	RejectSocket  = Socket{Id: rejectSocketId, Title: RejectSocketTitle}
-	EditAppSocket = Socket{Id: editAppSocketID, Title: editAppSocketTitle}
+	ApproveSocket         = Socket{Id: approveSocketId, Title: approveSocketTitle}
+	RejectSocket          = Socket{Id: rejectSocketId, Title: RejectSocketTitle}
+	ApproverEditAppSocket = Socket{Id: approverEditAppSocketID, Title: approverEditAppSocketTitle}
+	ExecutorEditAppSocket = Socket{Id: executorEditAppSocketID, Title: executorEditAppSocketTitle}
 
 	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
 	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}

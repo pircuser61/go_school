@@ -26,7 +26,7 @@ values
 -- approvers
 
 ('request_add_info', 'Запросить информацию', true, true, true),
-('send_edit_app', 'Вернуть на доработку', true, true, true),
+('approver_send_edit_app', 'Вернуть на доработку', true, true, true),
 ('approve', 'Согласовать', true, true, false),
 ('reject', 'Отклонить', true, true, false),
 ('viewed', 'Ознакомлен', true, true, false),
