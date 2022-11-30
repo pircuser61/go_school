@@ -1668,6 +1668,7 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 	JOIN pipeline_history ph ON ph.version_id = pv.id
 	WHERE 
 		pv.status = $1
+		AND pv.deleted_at is NULL
 		AND pp.deleted_at is NULL
 	ORDER BY pv.created_at`
 
@@ -1755,6 +1756,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	WHERE 
 		p.name = $1 
 		AND p.deleted_at IS NULL
+		AND pv.deleted_at IS NULL
 	ORDER BY pph.date DESC 
 	LIMIT 1
 `
@@ -2103,6 +2105,7 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) 
 		pp.id = $1 
 		--status--
 		AND pp.deleted_at IS NULL
+		AND pv.deleted_at IS NULL
 	ORDER BY created_at DESC`
 
 	if status != -1 {
