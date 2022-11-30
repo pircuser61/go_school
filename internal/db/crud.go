@@ -1755,6 +1755,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	WHERE 
 		p.name = $1 
 		AND p.deleted_at IS NULL
+		AND pv.deleted_at IS NULL
 	ORDER BY pph.date DESC 
 	LIMIT 1
 `
@@ -2103,6 +2104,7 @@ func (db *PGCon) getVersionHistory(c context.Context, id uuid.UUID, status int) 
 		pp.id = $1 
 		--status--
 		AND pp.deleted_at IS NULL
+		AND pv.deleted_at IS NULL
 	ORDER BY created_at DESC`
 
 	if status != -1 {
