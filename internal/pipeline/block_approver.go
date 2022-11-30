@@ -188,7 +188,7 @@ func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	}
 
 	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {
-		key = editAppSocketID
+		key = approverEditAppSocketID
 	}
 
 	if gb.State != nil && gb.State.Decision == nil && len(gb.State.AddInfo) != 0 {
