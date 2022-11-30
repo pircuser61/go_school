@@ -149,7 +149,7 @@ func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	}
 
 	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {
-		key = editAppSocketID
+		key = executionEditAppSocketID
 	}
 
 	nexts, ok := script.GetNexts(gb.Sockets, key)
@@ -198,7 +198,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		Sockets: []script.Socket{
 			script.ExecutedSocket,
 			script.NotExecutedSocket,
-			script.EditAppSocket,
+			script.ExecutorEditAppSocket,
 		},
 	}
 }

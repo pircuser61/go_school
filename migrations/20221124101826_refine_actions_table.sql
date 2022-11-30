@@ -29,6 +29,6 @@ set id = case
      when id = 'sign' then '43d16439-f7e3-4dbb-8431-3bd401f46d9b'
 end;
 
-alter table dict_action_names
-    rename to dict_approve_action_names;
+insert into dict_approve_action_names (id, title, status_processing_title, status_decision_title, created_at)
+values ('approver_send_edit_app', 'На доработку', '', '', now())
 -- +goose StatementEnd

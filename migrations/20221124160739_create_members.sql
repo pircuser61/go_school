@@ -21,7 +21,7 @@ select uuid_generate_v4() ,id, unnest(members),
        case when status in ('finished', 'cancel') then true
             else false
            end,
-       case when step_type = 'approver' AND status not in ('finished', 'cancel') then ARRAY ['send_edit_app:other','add_approvers:other','request_add_info:other','approve:primary','reject:secondary']
+       case when step_type = 'approver' AND status not in ('finished', 'cancel') then ARRAY ['approver_send_edit_app:other','add_approvers:other','request_add_info:other','approve:primary','reject:secondary']
             when step_type = 'approver' AND status in ('finished', 'cancel') then ARRAY ['']
             when step_type = 'execution' AND status not in ('finished', 'cancel') AND content->'State'->step_name->>'execution_type' = 'group'  AND
                  content->'State'->step_name->>'is_taken_in_work' = 'false' then ARRAY ['executor_start_work:primary']
