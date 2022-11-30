@@ -205,11 +205,15 @@ const (
 
 	TaskUpdateActionApprovement TaskUpdateAction = "approvement"
 
+	TaskUpdateActionApproverSendEditApp TaskUpdateAction = "approver_send_edit_app"
+
 	TaskUpdateActionCancelApp TaskUpdateAction = "cancel_app"
 
 	TaskUpdateActionChangeExecutor TaskUpdateAction = "change_executor"
 
 	TaskUpdateActionExecution TaskUpdateAction = "execution"
+
+	TaskUpdateActionExecutorSendEditApp TaskUpdateAction = "executor_send_edit_app"
 
 	TaskUpdateActionExecutorStartWork TaskUpdateAction = "executor_start_work"
 
@@ -218,8 +222,6 @@ const (
 	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
 
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
-
-	TaskUpdateActionSendEditApp TaskUpdateAction = "send_edit_app"
 )
 
 // Defines values for AdditionalApproverDecision.

@@ -76,7 +76,7 @@ const (
 	approverEditAppSocketID    = "approver_send_edit_app"
 	approverEditAppSocketTitle = "На доработку"
 
-	executorEditAppSocketID    = "send_edit_app"
+	executorEditAppSocketID    = "executor_send_edit_app"
 	executorEditAppSocketTitle = "На доработку"
 
 	executedSocketID    = "executed"
