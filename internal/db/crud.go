@@ -1668,7 +1668,6 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 	JOIN pipeline_history ph ON ph.version_id = pv.id
 	WHERE 
 		pv.status = $1
-		AND pv.deleted_at is NULL
 		AND pp.deleted_at is NULL
 	ORDER BY pv.created_at`
 
