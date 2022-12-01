@@ -52,9 +52,9 @@ type TaskAction struct {
 	Id                 string `json:"id"`
 	Title              string `json:"title"`
 	ButtonType         string `json:"button_type"`
-	CommentEnabled     bool   `json:"comment_enable"`
-	AttachmentsEnabled bool   `json:"attachments_enable"`
-	IsPublic           bool   `json:"is_public"`
+	CommentEnabled     bool   `json:"comment_enabled"`
+	AttachmentsEnabled bool   `json:"attachments_enabled"`
+	IsPublic           bool   `json:"-"`
 }
 
 type EriusTask struct {
