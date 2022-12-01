@@ -195,24 +195,21 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
 	const q = `
 	WITH content as (
-		SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
-		FROM variable_storage
-			WHERE work_id IN (SELECT id  FROM works WHERE work_number = $1 AND child_id IS NULL)
-		LIMIT 1
+		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
+		FROM versions
+			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	)
-	SELECT content -> 'State' -> step_name ->> 'description'
+    SELECT content -> 'State' -> step_name ->> 'description'
 	FROM variable_storage
 		WHERE step_name in (
 			SELECT rules ->> 'node_id' as rule
 			FROM content
 			WHERE rules ->> 'accessType' != 'None'
-			LIMIT 1
 		)
-		AND work_id IN (SELECT id FROM works WHERE work_number = $2 AND child_id IS NULL)
+		AND work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	ORDER BY time`
-
 	ff := make([]string, 0)
-	rows, err := db.Connection.Query(c.Background(), q, workNumber, workNumber, nodeName)
+	rows, err := db.Connection.Query(c.Background(), q, workNumber, nodeName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ff, nil
