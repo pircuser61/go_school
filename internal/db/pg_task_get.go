@@ -84,7 +84,7 @@ func getUniqueActions(as, login string) string {
 		return fmt.Sprintf(`WITH unique_actions AS (
     SELECT id AS work_id, '{}' AS actions
     FROM works
-    WHERE author = '%s'
+    WHERE author = '%s' AND child_id IS NULL
 )`, login)
 	}
 }
@@ -195,7 +195,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 	WITH content as (
 		SELECT jsonb_array_elements(content -> 'State' -> $3 -> 'forms_accessibility') as rules
 		FROM variable_storage
-			WHERE work_id IN (SELECT id  FROM works WHERE work_number = $1)
+			WHERE work_id IN (SELECT id  FROM works WHERE work_number = $1 AND child_id IS NULL)
 		LIMIT 1
 	)
 	SELECT content -> 'State' -> step_name ->> 'description'
@@ -206,7 +206,7 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 			WHERE rules ->> 'accessType' != 'None'
 			LIMIT 1
 		)
-		AND work_id IN (SELECT id FROM works WHERE work_number = $2)
+		AND work_id IN (SELECT id FROM works WHERE work_number = $2 AND child_id IS NULL)
 	ORDER BY time`
 
 	ff := make([]string, 0)
@@ -234,9 +234,9 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
 	const q = `
 	SELECT content->'State'->'servicedesk_application_0'
-		from variable_storage 
-	where step_type = 'servicedesk_application' 
-	and work_id = (select id from works where work_number = $1)`
+		FROM variable_storage 
+	WHERE step_type = 'servicedesk_application' 
+	AND work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL) `
 
 	var data *orderedmap.OrderedMap
 	if err := db.Connection.QueryRow(c.Background(), q, workNumber).Scan(&data); err != nil {
@@ -284,7 +284,7 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		)
 		SELECT
 		(SELECT count(*) FROM works w join ids on w.id = ids.id
-		WHERE author = $1 AND
+		WHERE author = $1 AND w.child_id IS NULL AND
 		      ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)),
 		(SELECT count(*)
 			FROM members m
@@ -341,7 +341,7 @@ func (db *PGCon) GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*entity.
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN work_status ws ON w.status = ws.id
-		WHERE p.id = $1
+		WHERE p.id = $1 AND w.child_id IS NULL
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
@@ -367,7 +367,7 @@ func (db *PGCon) GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*entity.Er
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN work_status ws ON w.status = ws.id
-		WHERE v.id = $1
+		WHERE v.id = $1 AND w.child_id IS NULL
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
@@ -395,6 +395,7 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 		WHERE v.id = $1
 		AND w.author = $2
 		AND w.debug = true
+		AND w.child_id IS NULL
 		ORDER BY w.started_at DESC
 		LIMIT 1`
 
