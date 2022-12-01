@@ -38,6 +38,7 @@ func uniqueActionsByRole(login, stepType string, finished bool) string {
     WHERE m.login = '%s'
       AND vs.step_type = '%s'
       AND vs.status IN %s
+      AND w.child_id IS NULL
 ),
      unique_actions AS (
          SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
@@ -57,6 +58,7 @@ func uniqueActiveActions(login, workNumber string) string {
     WHERE m.login = '%s'
       AND w.work_number = '%s'
       AND vs.status IN ('running', 'idle', 'ready')
+	  AND w.child_id IS NULL
 ),
      unique_actions AS (
          SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
@@ -718,7 +720,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 				jsonb_object_keys(content -> 'pipeline' -> 'blocks') as block_name
 			from versions v
 				left join works w on v.id = w.version_id
-			where w.work_number = $1
+			where w.work_number = $1 AND w.child_id IS NULL
 			)
 			select
 				content,
