@@ -1129,13 +1129,13 @@ type UsedBy struct {
 // Action defines model for action.
 type Action struct {
 	// enables attachment function
-	AttachmentsEnable bool `json:"attachments_enable"`
+	AttachmentsEnabled *bool `json:"attachments_enabled,omitempty"`
 
 	// type of renderable button with action (primary, secondary, other, none)
 	ButtonType string `json:"button_type"`
 
 	// enables comment function
-	CommentEnable bool `json:"comment_enable"`
+	CommentEnabled *bool `json:"comment_enabled,omitempty"`
 
 	// id of action
 	Id string `json:"id"`

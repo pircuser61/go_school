@@ -2955,17 +2955,17 @@ components:
         title:
           type: string
           description: human action name
-        comment_enable:
+        comment_enabled:
           type: boolean
           description: enables comment function
-        attachments_enable:
+        attachments_enabled:
           type: boolean
           description: enables attachment function
       required:
         - id
         - button_type
-        - comment_enable
-        - attachments_enable
+        - comment_enabled
+        - attachments_enabled
 
     blockType:
       type: string

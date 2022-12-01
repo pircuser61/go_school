@@ -27,12 +27,12 @@ values
 
 ('request_add_info', 'Запросить информацию', true, true, true),
 ('approver_send_edit_app', 'Вернуть на доработку', true, true, true),
-('approve', 'Согласовать', true, true, false),
+('approve', 'Согласовать', true, true, true),
 ('reject', 'Отклонить', true, true, false),
-('viewed', 'Ознакомлен', true, true, false),
-('informed', 'Проинформирован', true, true, false),
-('sign', 'Подписать', true, true, false),
-('confirm', 'Утвердить', true, true, false),
+('viewed', 'Ознакомлен', true, true, true),
+('informed', 'Проинформирован', true, true, true),
+('sign', 'Подписать', true, true, true),
+('confirm', 'Утвердить', true, true, true),
 -- misc
 ('cancel_app', 'Отозвать', true, true, false),
 
