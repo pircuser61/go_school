@@ -19,7 +19,7 @@ func (db *PGCon) GetApproveActionNames(ctx context.Context) ([]entity.ApproveAct
 		SELECT  id, title
 			FROM dict_approve_action_names 
 				WHERE deleted_at IS NULL
-			ORDER BY created_at ASC`
+			ORDER BY created_at DESC`
 
 	rows, err := db.Connection.Query(ctx, query)
 	if err != nil {
