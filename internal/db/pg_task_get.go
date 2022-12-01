@@ -284,7 +284,7 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		)
 		SELECT
 		(SELECT count(*) FROM works w join ids on w.id = ids.id
-		WHERE author = $1 AND w.child_id IS NULL AND
+		WHERE author = $1 AND
 		      ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)),
 		(SELECT count(*)
 			FROM members m
