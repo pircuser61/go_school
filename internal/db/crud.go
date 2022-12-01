@@ -2388,7 +2388,7 @@ func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockN
 	q := `
 		SELECT content->'pipeline'->'blocks'->$1 FROM versions
     	JOIN works w ON versions.id = w.version_id
-		WHERE w.work_number = $2`
+		WHERE w.work_number = $2 AND w.child_id IS NULL`
 
 	var f *entity.EriusFunc
 
@@ -2451,10 +2451,10 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		    JOIN versions v on w.version_id = v.id
 			JOIN pipelines p on v.pipeline_id = p.id
 		WHERE (
-		    (check_sla = True AND sla_deadline < NOW()) or 
+		    (check_sla = True AND sla_deadline < NOW()) OR 
 		    (vs.check_half_sla = True AND (vs.time + (vs.sla_deadline - vs.time)/2) < NOW())
 		) 
-		  AND vs.status = 'running'`
+		  AND vs.status = 'running' AND w.child_id IS NULL`
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
 		return nil, err
