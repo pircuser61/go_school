@@ -1881,7 +1881,7 @@ func (db *PGCon) GetTaskStepsToWait(ctx context.Context, workNumber, blockName s
     SELECT key(JSONB_EACH(content -> 'pipeline' -> 'blocks'))                                as key,
            value(jsonb_each(value(jsonb_each(content -> 'pipeline' -> 'blocks')) -> 'next')) as value
     FROM versions v
-    WHERE v.id = (SELECT version_id FROM works WHERE work_number = $1))
+    WHERE v.id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL))
 SELECT DISTINCT key
 FROM blocks
 WHERE value ? $2`
@@ -1914,8 +1914,8 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, 
 	SELECT count(*)
 	FROM variable_storage vs 
 	WHERE vs.work_id = (
-	    SELECT id FROM works WHERE work_number = $1
-	) AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success')`
+	    SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL
+	) AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success') `
 	// TODO: rewrite to handle edits ?
 
 	var c int
@@ -2342,7 +2342,7 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 				  and content -> 'State' -> step_name -> 'approvers' ? $3
 				  and work_id = (SELECT id
 								 FROM works
-								 WHERE work_number = $1
+								 WHERE work_number = $1 AND child_id IS NULL
 				      )
 			union
 			select jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as data
@@ -2351,7 +2351,7 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 			  and content -> 'State' -> step_name -> 'executors' ? $3
 			  and work_id = (SELECT id
 							 FROM works
-							 WHERE work_number = $1))
+							 WHERE work_number = $1 AND child_id IS NULL))
 			select count(*) from accesses
 			where accesses.data::jsonb ->> 'node_id' = $2 and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
 `
@@ -2373,7 +2373,7 @@ func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (enti
 	q := `
 		SELECT run_context
 		FROM works
-		WHERE work_number = $1`
+		WHERE work_number = $1 AND child_id IS NULL`
 
 	if scanErr := db.Connection.QueryRow(ctx, q, workNumber).Scan(&runCtx); scanErr != nil {
 		return runCtx, scanErr

@@ -114,7 +114,7 @@ func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 	q := `
 		UPDATE variable_storage 
 			SET content = JSONB_SET(content, '{State,servicedesk_application_0}', '%s')
-		WHERE work_id = (SELECT id FROM works WHERE work_number = $1) AND
+		WHERE work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL) AND
 			step_type IN ('servicedesk_application', 'execution')`
 
 	bytes, err := json.Marshal(data)
