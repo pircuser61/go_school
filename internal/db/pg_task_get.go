@@ -796,14 +796,15 @@ func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 }
 
 func (db *PGCon) getActionsMap(ctx context.Context) (actions map[string]entity.TaskAction, err error) {
-	q := `
+	const q = `
 		SELECT 
 			id,
 			title,
 			is_public,
 			comment_enabled,
 			attachments_enabled
-		FROM dict_actions`
+		FROM dict_actions
+			ORDER BY priority`
 
 	result := make(map[string]entity.TaskAction, 0)
 	rows, err := db.Connection.Query(ctx, q)
