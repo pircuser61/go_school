@@ -29,17 +29,17 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 	log := logger.GetLogger(ctx)
 
 	eriusFunctions := []script.FunctionModel{
-		(&pipeline.GoApproverBlock{}).Model(),
 		(&pipeline.GoSdApplicationBlock{}).Model(),
+		(&pipeline.GoFormBlock{}).Model(),
+		(&pipeline.GoApproverBlock{}).Model(),
 		(&pipeline.GoExecutionBlock{}).Model(),
-		(&pipeline.GoStartBlock{}).Model(),
-		(&pipeline.GoEndBlock{}).Model(),
-		(&pipeline.GoWaitForAllInputsBlock{}).Model(),
-		(&pipeline.GoNotificationBlock{}).Model(),
 		(&pipeline.IF{}).Model(),
 		(&pipeline.GoBeginParallelTaskBlock{}).Model(),
+		(&pipeline.GoWaitForAllInputsBlock{}).Model(),
 		(&pipeline.ExecutableFunctionBlock{}).Model(),
-		(&pipeline.GoFormBlock{}).Model(),
+		(&pipeline.GoNotificationBlock{}).Model(),
+		(&pipeline.GoStartBlock{}).Model(),
+		(&pipeline.GoEndBlock{}).Model(),
 	}
 
 	for i := range eriusFunctions {
