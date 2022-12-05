@@ -803,8 +803,7 @@ func (db *PGCon) getActionsMap(ctx context.Context) (actions map[string]entity.T
 			is_public,
 			comment_enabled,
 			attachments_enabled
-		FROM dict_actions
-			ORDER BY priority`
+		FROM dict_actions`
 
 	result := make(map[string]entity.TaskAction, 0)
 	rows, err := db.Connection.Query(ctx, q)
