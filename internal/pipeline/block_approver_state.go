@@ -18,6 +18,9 @@ const (
 	ApproverActionInformed = "informed"
 	ApproverActionSign     = "sign"
 	ApproverActionConfirm  = "confirm"
+
+	ApproverDecisionApprovedRU = "согласен"
+	ApproverDecisionRejectedRU = "не согласен"
 )
 
 func (a ApproverAction) ToDecision() ApproverDecision {
@@ -61,6 +64,17 @@ func (a ApproverDecision) ToAction() ApproverAction {
 		return ApproverActionConfirm
 	default:
 		return ""
+	}
+}
+
+func (a ApproverDecision) ToRuString() string {
+	switch a {
+	case ApproverDecisionApproved:
+		return ApproverDecisionApprovedRU
+	case ApproverDecisionRejected:
+		return ApproverDecisionRejectedRU
+	default:
+		return string(a)
 	}
 }
 
@@ -280,11 +294,12 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 }
 
 //nolint:gocyclo //its ok here
-func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params additionalApproverUpdateParams) error {
+func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params additionalApproverUpdateParams) ([]string, error) {
 	if a.Decision != nil {
-		return errors.New("decision already set")
+		return nil, errors.New("decision already set")
 	}
 
+	loginsToNotify := make([]string, 0)
 	couldUpdateOne := false
 
 	for i := range a.AdditionalApprovers {
@@ -306,15 +321,15 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params addi
 		}
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
-
+		loginsToNotify = append(loginsToNotify, a.AdditionalApprovers[i].BaseApproverLogin)
 		couldUpdateOne = true
 	}
 
 	if !couldUpdateOne {
-		return fmt.Errorf("can't approve any request")
+		return nil, fmt.Errorf("can't approve any request")
 	}
 
-	return nil
+	return loginsToNotify, nil
 }
 
 func (a *ApproverData) setEditApp(login string, params approverUpdateEditingParams) error {

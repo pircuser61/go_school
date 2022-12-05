@@ -281,6 +281,39 @@ func NewAddApproversTemplate(id, name, sdUrl string) Template {
 	}
 }
 
+func NewDecisionMadeByAdditionalApproverTemplate(id, fullname, decision, comment, sdUrl string) Template {
+	if comment != "" {
+		comment = ": " + comment
+	}
+	return Template{
+		Subject: fmt.Sprintf("Получена рецензия по Заявке №%s", id),
+		Text: `<p>Уважаемый коллега, получена рецензия по заявке №{{.Id}}</p></br>
+				<p>{{.Fullname}} {{.Decision}}{{.Comment}}</p></br>
+				<p>Для просмотра перейдите по <a href={{.Link}}>ссылке</a></p></br>
+				
+				<style>
+					p {
+						font-family: Arial;
+						font-size: 11px;
+						margin-bottom: -20px;
+					}
+				</style>`,
+		Variables: struct {
+			Id       string `json:"id"`
+			Fullname string `json:"fullname"`
+			Decision string `json:"decision"`
+			Comment  string `json:"comment"`
+			Link     string `json:"link"`
+		}{
+			Id:       id,
+			Fullname: fullname,
+			Decision: decision,
+			Comment:  comment,
+			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
 func getNewStatusActionNameByStatus(status, defaultActionName string) (res string) {
 	switch status {
 	case "На согласовании":

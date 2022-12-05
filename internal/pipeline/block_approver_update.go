@@ -251,6 +251,7 @@ func (gb *GoApproverBlock) actionAcceptable(action ApproverAction) bool {
 	return false
 }
 
+//nolint:gocyclo //its ok here
 func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	data := gb.RunContext.UpdateData
 	if data == nil {
@@ -295,7 +296,13 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, err
 		}
 
-		err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin, updateParams)
+		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin, updateParams)
+		if err != nil {
+			return nil, err
+		}
+
+		loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
+		err = gb.notificateDecisionMadeByAdditionalApprover(ctx, loginsToNotify)
 		if err != nil {
 			return nil, err
 		}
@@ -421,5 +428,55 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins [
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// notificateDecisionMadeByAdditionalApprover notifies requesting approvers
+// and the task initiator that an additional approver has left a review
+func (gb *GoApproverBlock) notificateDecisionMadeByAdditionalApprover(ctx c.Context, loginsToNotify []string) error {
+	emailsToNotify := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		emailToNotify, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		if emailErr != nil {
+			return emailErr
+		}
+		emailsToNotify = append(emailsToNotify, emailToNotify)
+	}
+
+	user, err := gb.RunContext.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
+	if err != nil {
+		return err
+	}
+
+	userInfo, err := user.ToUserinfo()
+	if err != nil {
+		return err
+	}
+
+	latestDecisonLog := gb.State.ApproverLog[len(gb.State.ApproverLog)-1]
+
+	tpl := mail.NewDecisionMadeByAdditionalApproverTemplate(
+		gb.RunContext.WorkNumber,
+		userInfo.FullName,
+		latestDecisonLog.Decision.ToRuString(),
+		latestDecisonLog.Comment,
+		gb.RunContext.Sender.SdAddress,
+	)
+
+	attachmentFiles, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, map[string][]string{"Ids": latestDecisonLog.Attachments})
+	if err != nil {
+		return err
+	}
+
+	files := make([]email.Attachment, 0)
+	for k := range attachmentFiles {
+		files = append(files, attachmentFiles[k]...)
+	}
+
+	err = gb.RunContext.Sender.SendNotification(ctx, emailsToNotify, files, tpl)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
