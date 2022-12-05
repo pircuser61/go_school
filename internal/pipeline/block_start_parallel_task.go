@@ -69,6 +69,7 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 	}
 }
 
+//nolint:dupl //its not duplicate
 func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoBeginParallelTaskBlock {
 	b := &GoBeginParallelTaskBlock{
 		Name:       name,

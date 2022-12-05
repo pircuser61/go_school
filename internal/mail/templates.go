@@ -2,9 +2,13 @@ package mail
 
 import (
 	"fmt"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const (
+	defaultApprovementActionName = "согласования"
+
 	TaskUrlTemplate = "%s/applications/details/%s"
 )
 
@@ -23,30 +27,36 @@ type ExecutorNotifTemplate struct {
 	Id, SdUrl, ExecutorName, Initiator, Description string
 }
 
-func NewApprovementSLATemplate(id, name, sdUrl string) Template {
+func NewApprovementSLATemplate(id, name, sdUrl, status string) Template {
+	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 	return Template{
-		Subject: fmt.Sprintf("По заявке %s %s истекло время согласования", id, name),
-		Text:    "Истекло время согласования заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Subject: fmt.Sprintf("По заявке %s %s истекло время %s", id, name, actionName),
+		Text:    "Истекло время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Name       string `json:"name"`
+			Link       string `json:"link"`
+			ActionName string `json:"actionName"`
 		}{
-			Name: name,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Name:       name,
+			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			ActionName: actionName,
 		},
 	}
 }
 
-func NewApprovementHalfSLATemplate(id, name, sdUrl string) Template {
+func NewApprovementHalfSLATemplate(id, name, sdUrl, status string) Template {
+	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 	return Template{
-		Subject: fmt.Sprintf("По заявке %s %s истекает время согласования", id, name),
-		Text:    "Истекает время согласования заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Subject: fmt.Sprintf("По заявке %s %s истекает время %s", id, name, actionName),
+		Text:    "Истекает время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Name       string `json:"name"`
+			Link       string `json:"link"`
+			ActionName string `json:"actionName"`
 		}{
-			Name: name,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Name:       name,
+			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			ActionName: actionName,
 		},
 	}
 }
@@ -165,12 +175,24 @@ func NewAnswerExecutionInfoTemplate(id, name, sdUrl string) Template {
 }
 
 func NewApplicationInitiatorStatusNotification(id, name, action, description, sdUrl string) Template {
+	subject := fmt.Sprintf("Заявка %s %s", id, action)
+	textPart := `Уважаемый коллега, заявка {{.Id}} <b>{{.Action}}</b><br>`
+
+	if action == "ознакомлено" {
+		subject = fmt.Sprintf("Ознакомление по заявке %s", id)
+		textPart = `Уважаемый коллега, заявка {{.Id}} получена виза <b>Ознакомлен</b><br>`
+	}
+
+	if action == "проинформировано" {
+		subject = fmt.Sprintf("Информирование по заявке %s", id)
+		textPart = `Уважаемый коллега, заявка {{.Id}} получена виза <b>Проинформирован</b><br>`
+	}
+
 	return Template{
-		Subject: fmt.Sprintf("Заявка %s %s", id, action),
-		Text: `Уважаемый коллега, заявка {{.Id}} <b>{{.Action}}</b><br>
-				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
-				Текст заявки:<br><br>
-				<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
+		Subject: subject,
+		Text: textPart + `Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
+			Текст заявки:<br><br>
+			<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
 		Variables: struct {
 			Id          string `json:"id"`
 			Name        string `json:"name"`
@@ -188,8 +210,7 @@ func NewApplicationInitiatorStatusNotification(id, name, action, description, sd
 }
 
 func NewApplicationPersonStatusNotification(id, name, status, action, deadline, description, sdUrl string) Template {
-	actionName := getNewStatusActionNameByStatus(status, action)
-
+	actionName := getApprovementActionNameByStatus(status, action)
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br>
@@ -264,19 +285,22 @@ func NewExecutionTakenInWork(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTemplate(id, name, sdUrl string) Template {
+func NewAddApproversTemplate(id, name, sdUrl, status string) Template {
+	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 	return Template{
-		Subject: fmt.Sprintf("Заявка %s ожидает согласования", id),
-		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает согласования.</b><br>
+		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
+		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.ActionName}}.</b><br>
 				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
-			Id   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Id         string `json:"id"`
+			Name       string `json:"name"`
+			Link       string `json:"link"`
+			ActionName string `json:"actionName"`
 		}{
-			Id:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Id:         id,
+			Name:       name,
+			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			ActionName: actionName,
 		},
 	}
 }
@@ -314,17 +338,17 @@ func NewDecisionMadeByAdditionalApproverTemplate(id, fullname, decision, comment
 	}
 }
 
-func getNewStatusActionNameByStatus(status, defaultActionName string) (res string) {
+func getApprovementActionNameByStatus(status, defaultActionName string) (res string) {
 	switch status {
-	case "На согласовании":
+	case script.SettingStatusApprovement:
 		return "согласования"
-	case "На утверждении":
+	case script.SettingStatusApproveConfirm:
 		return "утверждения"
-	case "На ознакомлении":
+	case script.SettingStatusApproveView:
 		return "ознакомления"
-	case "На информировании":
+	case script.SettingStatusApproveInform:
 		return "подтверждения об информировании"
-	case "На подписании":
+	case script.SettingStatusApproveSign:
 		return "подписания"
 	default:
 		return defaultActionName

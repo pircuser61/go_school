@@ -57,7 +57,7 @@ func (gb *GoExecutionBlock) isExecutionFinished() bool {
 
 func (gb *GoExecutionBlock) executionActions() []MemberAction {
 	if gb.State.Decision != nil || gb.State.IsRevoked {
-		if gb.State.ExecutionType == script.ExecutionTypeGroup && gb.State.IsTakenInWork == false {
+		if gb.State.ExecutionType == script.ExecutionTypeGroup && !gb.State.IsTakenInWork {
 			action := MemberAction{
 				Id:   executionStartWorkAction,
 				Type: ActionTypePrimary,
@@ -84,7 +84,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		}}
 }
 
-func (gb *GoExecutionBlock) CheckSLA() (bool, bool, time.Time) {
+func (gb *GoExecutionBlock) CheckSLA() (sla, halfSLA bool, maxDate time.Time) {
 	return !gb.State.SLAChecked, !gb.State.HalfSLAChecked, computeMaxDate(gb.RunContext.currBlockStartTime, gb.State.SLA)
 }
 

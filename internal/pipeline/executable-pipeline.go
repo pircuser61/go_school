@@ -118,13 +118,6 @@ func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 	return nil
 }
 
-type stepCtx struct {
-	workNumber  string
-	workTitle   string
-	description string
-	stepStart   time.Time
-}
-
 func (gb *ExecutablePipeline) Next(_ *store.VariableStore) ([]string, bool) {
 	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
 	if !ok {

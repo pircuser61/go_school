@@ -33,7 +33,7 @@ type GoApproverBlock struct {
 }
 
 func (gb *GoApproverBlock) Members() []Member {
-	members := []Member{}
+	members := make([]Member, 0)
 	for login := range gb.State.Approvers {
 		members = append(members, Member{
 			Login:      login,
@@ -72,7 +72,7 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 			return []MemberAction{}
 		}
 	}
-	actions := []MemberAction{}
+	actions := make([]MemberAction, 0)
 	for i := range gb.State.ActionList {
 		actions = append(actions, MemberAction{
 			Id:   gb.State.ActionList[i].Id,
@@ -163,14 +163,14 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 			return StatusApprovementRejected
 		}
 
-		return StatusApproved
+		return getPositiveFinishStatus(*gb.State.Decision)
 	}
 
 	if gb.State != nil && len(gb.State.AddInfo) != 0 {
 		if gb.State.checkEmptyLinkIdAddInfo() {
 			return StatusWait
 		}
-		return StatusApprovement
+		return getPositiveProcessingStatus(gb.State.ApproveStatusName)
 	}
 
 	var lastIdx = len(gb.State.RequestApproverInfoLog) - 1
@@ -178,7 +178,7 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 		return StatusWait
 	}
 
-	return StatusApprovement
+	return getPositiveProcessingStatus(gb.State.ApproveStatusName)
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -247,5 +247,41 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			script.ApproveSocket,
 			script.RejectSocket,
 		},
+	}
+}
+
+//nolint:gocyclo //its ok here
+func getPositiveProcessingStatus(decision string) (status TaskHumanStatus) {
+	switch decision {
+	case script.SettingStatusApprovement:
+		return StatusApprovement
+	case script.SettingStatusApproveConfirm:
+		return StatusApproveConfirm
+	case script.SettingStatusApproveView:
+		return StatusApproveView
+	case script.SettingStatusApproveInform:
+		return StatusApproveInform
+	case script.SettingStatusApproveSign:
+		return StatusApproveSign
+	default:
+		return StatusApprovement
+	}
+}
+
+//nolint:gocyclo //its ok here
+func getPositiveFinishStatus(decision ApproverDecision) (status TaskHumanStatus) {
+	switch decision {
+	case ApproverDecisionApproved:
+		return StatusApproved
+	case ApproverDecisionViewed:
+		return StatusApproveViewed
+	case ApproverDecisionInformed:
+		return StatusApproveInformed
+	case ApproverDecisionSigned:
+		return StatusApproveSigned
+	case ApproverDecisionConfirmed:
+		return StatusApproveConfirmed
+	default:
+		return StatusApproved
 	}
 }

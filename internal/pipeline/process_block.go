@@ -35,7 +35,7 @@ type BlockRunContext struct {
 	FaaS               string
 	VarStore           *store.VariableStore
 	UpdateData         *script.BlockUpdateData
-	skipNotifications  bool //for tests
+	skipNotifications  bool // for tests
 	currBlockStartTime time.Time
 }
 
@@ -257,24 +257,23 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	people []Member, checkSLA bool, deadline time.Time, checkHalfSLA bool) (uuid.UUID, time.Time, error) {
-
+	pl []Member, checkSLA bool, deadline time.Time, checkHalfSLA bool) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
 	}
-	dbPeople := []db.DbMember{}
-	for i := range people {
-		actions := []db.DbMemberAction{}
-		for _, act := range people[i].Actions {
+	dbPeople := make([]db.DbMember, 0, len(pl))
+	for i := range pl {
+		actions := make([]db.DbMemberAction, 0, len(pl[i].Actions))
+		for _, act := range pl[i].Actions {
 			actions = append(actions, db.DbMemberAction{
 				Id:   act.Id,
 				Type: act.Type,
 			})
 		}
 		dbPeople = append(dbPeople, db.DbMember{
-			Login:    people[i].Login,
-			Finished: people[i].IsFinished,
+			Login:    pl[i].Login,
+			Finished: pl[i].IsFinished,
 			Actions:  actions,
 		})
 	}
@@ -294,28 +293,27 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	people []Member, checkSLA bool, deadline time.Time, checkHalfSLA bool) error {
+	pl []Member, checkSLA bool, deadline time.Time, checkHalfSLA bool) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
 	}
-	dbPeople := []db.DbMember{}
-	for i := range people {
-		actions := []db.DbMemberAction{}
-		for _, act := range people[i].Actions {
+	dbPeople := make([]db.DbMember, 0, len(pl))
+	for i := range pl {
+		actions := make([]db.DbMemberAction, 0, len(pl[i].Actions))
+		for _, act := range pl[i].Actions {
 			actions = append(actions, db.DbMemberAction{
 				Id:   act.Id,
 				Type: act.Type,
 			})
 		}
 		dbPeople = append(dbPeople, db.DbMember{
-			Login:    people[i].Login,
-			Finished: people[i].IsFinished,
+			Login:    pl[i].Login,
+			Finished: pl[i].IsFinished,
 			Actions:  actions,
 		})
 	}
 	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-
 		Id:           id,
 		StepName:     name,
 		Content:      storageData,
@@ -360,7 +358,16 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context, step s
 		return nil
 	}
 	switch status {
-	case StatusNew, StatusApproved, StatusApprovementRejected, StatusExecution, StatusExecutionRejected, StatusDone:
+	case StatusNew,
+		StatusApproved,
+		StatusApproveViewed,
+		StatusApproveInformed,
+		StatusApproveSigned,
+		StatusApproveConfirmed,
+		StatusApprovementRejected,
+		StatusExecution,
+		StatusExecutionRejected,
+		StatusDone:
 	default:
 		return nil
 	}

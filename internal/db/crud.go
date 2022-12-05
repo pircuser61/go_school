@@ -24,6 +24,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+type PGCon struct {
+	Connection Connector
+}
+
 var (
 	NullUuid = [16]byte{}
 )
@@ -57,10 +61,6 @@ func (db *PGCon) RollbackTransaction(ctx context.Context) error {
 		return nil
 	}
 	return tx.Rollback(ctx) // nolint:errcheck // rollback err
-}
-
-type PGCon struct {
-	Connection Connector
 }
 
 func ConnectPostgres(ctx context.Context, db *configs.Database) (PGCon, error) {
@@ -1608,16 +1608,15 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 }
 
 func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id uuid.UUID) error {
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryMembers = `
-		INSERT INTO members (               
+		INSERT INTO members (
 			id,
-		     block_id,
-		    login,
-		    finished,
-		     actions                
+			block_id,
+			login,
+			finished,
+			actions
 		)
 		VALUES (
 			$1, 
@@ -2369,8 +2368,9 @@ func (db *PGCon) GetTaskRunContext(ctx context.Context, workNumber string) (enti
 
 	var runCtx entity.TaskRunContext
 
+	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
+	const q = `
 		SELECT run_context
 		FROM works
 		WHERE work_number = $1 AND child_id IS NULL`
@@ -2435,6 +2435,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 	ctx, span := trace.StartSpan(ctx, "get_blocks_breached_sla")
 	defer span.End()
 
+	// nolint:gocritic
 	// language=PostgreSQL
 	// half_sla = (vs.time + (vs.sla_deadline - vs.time)/2)
 	q := `

@@ -57,6 +57,9 @@ func (gb *GoTestBlock) IsScenario() bool {
 	return false
 }
 
+type stepCtx struct {
+}
+
 // nolint:dupl // not dupl?
 func (gb *GoTestBlock) DebugRun(ctx context.Context, _ *stepCtx, runCtx *store.VariableStore) error {
 	_, s := trace.StartSpan(ctx, "run_go_block")

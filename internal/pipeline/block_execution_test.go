@@ -60,7 +60,7 @@ func TestExecution_Next(t *testing.T) {
 		{
 			name: "test edit app",
 			fields: fields{
-				Nexts: []script.Socket{script.NewSocket("edit_app", []string{"test-next"})},
+				Nexts: []script.Socket{script.NewSocket("executor_send_edit_app", []string{"test-next"})},
 				State: &ExecutionData{
 					EditingApp: &ExecutorEditApp{},
 				},

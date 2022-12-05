@@ -58,6 +58,7 @@ func (gb *GoExecutionBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)

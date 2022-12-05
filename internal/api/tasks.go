@@ -240,12 +240,12 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	return filters, nil
 }
 
-func (c *Created) toEntity() *entity.TimePeriod {
+func (cr *Created) toEntity() *entity.TimePeriod {
 	var timePeriod *entity.TimePeriod
-	if c != nil {
+	if cr != nil {
 		timePeriod = &entity.TimePeriod{
-			Start: c.Start,
-			End:   c.End,
+			Start: cr.Start,
+			End:   cr.End,
 		}
 	}
 	return timePeriod
