@@ -12,6 +12,9 @@ set id = case
      when id = '96cdb5f7-d9af-453d-9292-f9d87339a059' then 'informed'
      when id = '43d16439-f7e3-4dbb-8431-3bd401f46d9b' then 'sign'
 end;
+
+insert into dict_approve_action_names (id, title, status_processing_title, status_decision_title, created_at)
+values ('approver_send_edit_app', 'На доработку', '', '', now())
 -- +goose StatementEnd
 
 -- +goose Down
@@ -28,7 +31,4 @@ set id = case
      when id = 'informed' then '96cdb5f7-d9af-453d-9292-f9d87339a059'
      when id = 'sign' then '43d16439-f7e3-4dbb-8431-3bd401f46d9b'
 end;
-
-insert into dict_approve_action_names (id, title, status_processing_title, status_decision_title, created_at)
-values ('approver_send_edit_app', 'На доработку', '', '', now())
 -- +goose StatementEnd
