@@ -31,4 +31,7 @@ set id = case
      when id = 'informed' then '96cdb5f7-d9af-453d-9292-f9d87339a059'
      when id = 'sign' then '43d16439-f7e3-4dbb-8431-3bd401f46d9b'
 end;
+
+delete from dict_approve_action_names
+where id = 'approver_send_edit_app';
 -- +goose StatementEnd
