@@ -71,7 +71,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		isAllowed, checkEditErr := gb.RunContext.Storage.CheckUserCanEditForm(ctx, gb.RunContext.WorkNumber,
 			gb.Name, data.ByLogin)
 		if checkEditErr != nil {
-			return nil, err
+			return nil, checkEditErr
 		}
 
 		if !isAllowed {
