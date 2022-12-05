@@ -143,7 +143,10 @@ func TestApproverData_SetDecision(t *testing.T) {
 
 func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 	var (
-		login            = "example"
+		login            = "login"
+		login2           = "login2"
+		login3           = "login3"
+		login4           = "login4"
 		decisionRejected = ApproverDecisionRejected
 		decisionApproved = ApproverDecisionApproved
 		comment          = "blah blah blah"
@@ -159,11 +162,12 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 		params additionalApproverUpdateParams
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-		want    []AdditionalApprover
+		name                    string
+		fields                  fields
+		args                    args
+		want                    []string
+		wantErr                 bool
+		wantAdditionalApprovers []AdditionalApprover
 	}{
 		{
 			name: "additional approver not found",
@@ -178,8 +182,9 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Comment:  comment,
 				},
 			},
-			wantErr: true,
-			want:    nil,
+			want:                    nil,
+			wantErr:                 true,
+			wantAdditionalApprovers: nil,
 		},
 		{
 			name: "decision already set",
@@ -194,8 +199,9 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Comment:  comment,
 				},
 			},
-			wantErr: true,
-			want:    nil,
+			want:                    nil,
+			wantErr:                 true,
+			wantAdditionalApprovers: nil,
 		},
 		{
 			name: "valid case",
@@ -203,17 +209,20 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 				Decision: nil,
 				AdditionalApprovers: []AdditionalApprover{
 					{
-						ApproverLogin: login,
-						Question:      &question,
+						ApproverLogin:     login,
+						BaseApproverLogin: login2,
+						Question:          &question,
 					},
 					{
-						ApproverLogin: login,
+						ApproverLogin:     login,
+						BaseApproverLogin: login3,
 					},
 					{
-						ApproverLogin: login,
-						Question:      &question,
-						Comment:       &comment,
-						Decision:      &decisionApproved,
+						ApproverLogin:     login,
+						BaseApproverLogin: login4,
+						Question:          &question,
+						Comment:           &comment,
+						Decision:          &decisionApproved,
 					},
 				},
 			},
@@ -224,24 +233,28 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Comment:  comment,
 				},
 			},
+			want:    []string{"login2", "login3"},
 			wantErr: false,
-			want: []AdditionalApprover{
+			wantAdditionalApprovers: []AdditionalApprover{
 				{
-					ApproverLogin: login,
-					Question:      &question,
-					Comment:       &comment,
-					Decision:      &decisionRejected,
+					ApproverLogin:     login,
+					BaseApproverLogin: login2,
+					Question:          &question,
+					Comment:           &comment,
+					Decision:          &decisionRejected,
 				},
 				{
-					ApproverLogin: login,
-					Comment:       &comment,
-					Decision:      &decisionRejected,
+					ApproverLogin:     login,
+					BaseApproverLogin: login3,
+					Comment:           &comment,
+					Decision:          &decisionRejected,
 				},
 				{
-					ApproverLogin: login,
-					Question:      &question,
-					Comment:       &comment,
-					Decision:      &decisionApproved,
+					ApproverLogin:     login,
+					BaseApproverLogin: login4,
+					Question:          &question,
+					Comment:           &comment,
+					Decision:          &decisionApproved,
 				},
 			},
 		},
@@ -254,7 +267,8 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 				AdditionalApprovers: tt.fields.AdditionalApprovers,
 			}
 
-			if err := a.SetDecisionByAdditionalApprover(tt.args.login, tt.args.params); (err != nil) != tt.wantErr {
+			got, err := a.SetDecisionByAdditionalApprover(tt.args.login, tt.args.params)
+			if (err != nil) != tt.wantErr {
 				t.Errorf(
 					"SetDecisionByAdditionalApprover(%v, %v)",
 					tt.args.login,
@@ -262,7 +276,9 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 				)
 			}
 
-			assert.Equal(t, a.AdditionalApprovers, tt.want)
+			assert.Equal(t, tt.want, got,
+				fmt.Sprintf("Incorrect result. SetDecisionByAdditionalApprover() method. Expect %v, got %v", tt.want, got))
+			assert.Equal(t, a.AdditionalApprovers, tt.wantAdditionalApprovers)
 		})
 	}
 }
