@@ -75,7 +75,7 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	if data != nil && data.Action == string(entity.TaskUpdateActionCancelApp) {
 		return nil, gb.formCancelPipeline(ctx)
 	}
-	// TODO
+	// TODO ???
 	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
 	if err != nil {
 		return nil, err

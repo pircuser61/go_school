@@ -124,6 +124,7 @@ type ExecutionUpdateParams struct {
 	Attachments []string          `json:"attachments"`
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA > 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
@@ -148,6 +149,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 	return nil
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 	if gb.State.SLA > 8 {
 		emails := make([]string, 0, len(gb.State.Executors))

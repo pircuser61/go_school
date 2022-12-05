@@ -23,7 +23,7 @@ func (gb *GoEndBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoEndBlock) CheckSLA() (bool, bool, time.Time) {
+func (gb *GoEndBlock) CheckSLA() (sla, halfSLA bool, maxDate time.Time) {
 	return false, false, time.Time{}
 }
 
@@ -69,6 +69,7 @@ func (gb *GoEndBlock) Model() script.FunctionModel {
 	}
 }
 
+//nolint:dupl //its not duplicate
 func createGoEndBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoEndBlock {
 	b := &GoEndBlock{
 		Name:       name,

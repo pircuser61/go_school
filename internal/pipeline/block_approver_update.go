@@ -69,6 +69,7 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 	return nil
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA > 8 {
 		emails := make([]string, 0, len(gb.State.Approvers))
@@ -83,7 +84,13 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			return nil
 		}
 		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-			mail.NewApprovementSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress))
+			mail.NewApprovementSLATemplate(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Sender.SdAddress,
+				gb.State.ApproveStatusName,
+			),
+		)
 		if err != nil {
 			return err
 		}
@@ -104,21 +111,28 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	return nil
 }
 
+//nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA > 8 {
 		emails := make([]string, 0, len(gb.State.Approvers))
 		for approver := range gb.State.Approvers {
-			email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
+			em, err := gb.RunContext.People.GetUserEmail(ctx, approver)
 			if err != nil {
 				continue
 			}
-			emails = append(emails, email)
+			emails = append(emails, em)
 		}
 		if len(emails) == 0 {
 			return nil
 		}
 		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-			mail.NewApprovementHalfSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress))
+			mail.NewApprovementHalfSLATemplate(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Sender.SdAddress,
+				gb.State.ApproveStatusName,
+			),
+		)
 		if err != nil {
 			return err
 		}
@@ -405,7 +419,7 @@ func (gb *GoApproverBlock) checkAdditionalApproverNotAdded(login string) bool {
 	return true
 }
 
-func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins []string, attachmentsId []string) error {
+func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, attachmentsId []string) error {
 	approverEmails := []string{}
 	for _, approver := range logins {
 		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, approver)
@@ -414,7 +428,12 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins [
 		}
 		approverEmails = append(approverEmails, approverEmail)
 	}
-	tpl := mail.NewAddApproversTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewAddApproversTemplate(
+		gb.RunContext.WorkNumber,
+		gb.RunContext.WorkTitle,
+		gb.RunContext.Sender.SdAddress,
+		gb.State.ApproveStatusName,
+	)
 
 	attachmentFiles, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, map[string][]string{"Ids": attachmentsId})
 	if err != nil {

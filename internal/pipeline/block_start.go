@@ -76,6 +76,7 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 	}
 }
 
+//nolint:dupl //its not duplicate
 func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoStartBlock {
 	b := &GoStartBlock{
 		Name:       name,
