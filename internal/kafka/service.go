@@ -2,8 +2,12 @@ package kafka
 
 import (
 	"fmt"
-	"github.com/Shopify/sarama"
+
 	"golang.org/x/net/context"
+
+	"github.com/Shopify/sarama"
+
+	"github.com/rcrowley/go-metrics"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -13,12 +17,15 @@ import (
 type Service struct {
 	log logger.Logger
 
-	Producer *msgkit.Producer
-	Consumer *msgkit.Consumer
+	producer *msgkit.Producer
+	consumer *msgkit.Consumer
 }
 
-func NewService(log logger.Logger, cfg Config) (*Service, error) { //ctx context.Context, config Config) (*Service, error) {
+func NewService(log logger.Logger, cfg Config) (*Service, error) {
+	m := metrics.DefaultRegistry
+	m.UnregisterAll()
 	saramaCfg := sarama.NewConfig()
+	saramaCfg.MetricRegistry = m
 	saramaCfg.Producer.Return.Successes = true // Producer.Return.Successes must be true to be used in a SyncProducer
 
 	saramaClient, err := sarama.NewClient(cfg.Brokers, saramaCfg)
@@ -39,9 +46,13 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) { //ctx context
 	return &Service{
 		log: log,
 
-		Producer: producer,
-		Consumer: consumer,
+		producer: producer,
+		consumer: consumer,
 	}, nil
+}
+
+func (s *Service) Produce(ctx context.Context, message any) error {
+	return s.producer.Produce(ctx, message)
 }
 
 //func (s *Service) functionReturnHandler(ctx context.Context, message RunnerInMessage) error {

@@ -152,6 +152,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			Initiator:   gb.RunContext.Initiator,
 			Storage:     gb.Storage,
 			Sender:      gb.Sender,
+			Kafka:       gb.Kafka,
 			People:      gb.People,
 			ServiceDesc: gb.ServiceDesc,
 			FaaS:        gb.FaaS,
