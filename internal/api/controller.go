@@ -13,6 +13,7 @@ import (
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -29,6 +30,7 @@ type APIEnv struct {
 	HTTPClient           *http.Client
 	Statistic            *statistic.Statistic
 	Mail                 *mail.Service
+	Kafka                *kafka.Service
 	People               *people.Service
 	ServiceDesc          *servicedesc.Service
 }

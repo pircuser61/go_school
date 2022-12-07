@@ -41,6 +41,16 @@ mail:
     email: "servicedesk_noreply@mts.ru"
   sd_address: "https://dev.servicedesk.mts.ru"
 
+kafka:
+  brokers:
+#    - 10.73.96.102:9094
+#    - 10.73.96.103:9094
+#    - 10.73.96.104:9094
+    - localhost:9092
+  producer_topic: "test.out"
+  consumer_group: "pipeliner"
+  consumer_topic: "test.in"
+
 remedy: "http://remedy"
 
 swagger:
