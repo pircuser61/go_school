@@ -60,7 +60,7 @@ func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool)
 }
 
 func (gb *ExecutableFunctionBlock) GetState() interface{} {
-	return nil
+	return gb.State
 }
 
 func (gb *ExecutableFunctionBlock) Update(_ context.Context) (interface{}, error) {
