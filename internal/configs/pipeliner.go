@@ -2,12 +2,13 @@ package configs
 
 import (
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 
 	monconf "gitlab.services.mts.ru/erius/monitoring/pkg/configs"
@@ -42,6 +43,7 @@ type Pipeliner struct {
 	GRPCGWPort            string             `yaml:"grpc_port"`
 	Mail                  mail.Config        `yaml:"mail"`
 	ServiceDesc           servicedesc.Config `yaml:"servicedesc"`
+	Kafka                 kafka.Config       `yaml:"kafka"`
 }
 
 type RunEnv struct {

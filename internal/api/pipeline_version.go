@@ -685,6 +685,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.ActiveBlocks = map[string]struct{}{}
 	ep.SkippedBlocks = map[string]struct{}{}
 	ep.EntryPoint = pipeline.BlockGoFirstStart
+	ep.Kafka = ae.Kafka
 	ep.Sender = ae.Mail
 	ep.People = ae.People
 	ep.Name = dto.p.Name
@@ -722,6 +723,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		Initiator:   dto.userName,
 		Storage:     txStorage,
 		Sender:      ep.Sender,
+		Kafka:       ep.Kafka,
 		People:      ep.People,
 		ServiceDesc: ep.ServiceDesc,
 		FaaS:        ep.FaaS,

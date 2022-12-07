@@ -11,6 +11,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -41,6 +42,7 @@ type ExecutablePipeline struct {
 	HTTPClient    *http.Client
 	Remedy        string
 	Sender        *mail.Service
+	Kafka         *kafka.Service
 	People        *people.Service
 	ServiceDesc   *servicedesc.Service
 
