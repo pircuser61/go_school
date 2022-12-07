@@ -253,6 +253,14 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	if err != nil {
 		return err
 	}
+	// if UpdateData is nil than block is new
+	if runCtx.UpdateData == nil {
+		switch block.(type) {
+		case *ExecutableFunctionBlock:
+
+		}
+	}
+
 	return nil
 }
 
