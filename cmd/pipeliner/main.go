@@ -30,6 +30,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -47,6 +48,7 @@ const serviceName = "jocasta.pipeliner"
 
 // @host localhost:8181
 // @BasePath /api/pipeliner/v1
+//
 //nolint:gocyclo //its ok here
 func main() {
 	configPath := flag.String("c", "./config.yaml", "path to config")
@@ -117,6 +119,13 @@ func main() {
 		return
 	}
 
+	kafkaService, err := kafka.NewService(log, cfg.Kafka)
+	if err != nil {
+		log.WithError(err).Error("can't create kafka service")
+
+		return
+	}
+
 	stat, err := statistic.InitStatistic()
 	if err != nil {
 		log.WithError(err).Error("can't init statistic")
@@ -139,6 +148,7 @@ func main() {
 			HTTPClient:           httpClient,
 			Statistic:            stat,
 			Mail:                 mailService,
+			Kafka:                kafkaService,
 			People:               peopleService,
 			ServiceDesc:          serviceDescService,
 		},
