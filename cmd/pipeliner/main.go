@@ -126,8 +126,6 @@ func main() {
 		return
 	}
 
-	kafkaService.StartConsumer(ctx)
-
 	stat, err := statistic.InitStatistic()
 	if err != nil {
 		log.WithError(err).Error("can't init statistic")

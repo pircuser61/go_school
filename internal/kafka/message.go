@@ -11,6 +11,6 @@ type RunnerOutMessage struct {
 }
 
 type RunnerInMessage struct {
-	NodeID          uuid.UUID              `json:"node_id"`
+	TaskID          uuid.UUID              `json:"task_id"`
 	FunctionMapping map[string]interface{} `json:"function_mapping"`
 }

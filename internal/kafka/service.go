@@ -51,20 +51,6 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) Produce(ctx context.Context, message any) error {
+func (s *Service) Produce(ctx context.Context, message RunnerOutMessage) error {
 	return s.producer.Produce(ctx, message)
-}
-
-//func (s *Service) functionReturnHandler(ctx context.Context, message RunnerInMessage) error {
-//	return nil
-//}
-
-func (s *Service) StartConsumer(_ context.Context) {
-	//handler := msgkit.NewMessageHandler[RunnerInMessage](s.log, s.functionReturnHandler, "return_from_function")
-	//
-	//go func() {
-	//	if err := s.Consumer.Serve(ctx, handler); err != nil {
-	//		os.Exit(-4)
-	//	}
-	//}()
 }
