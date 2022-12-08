@@ -145,6 +145,11 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 				Type:    "object",
 				Comment: "form body",
 			},
+			{
+				Name:    keyOutputSsoPerson,
+				Type:    "object",
+				Comment: "person object from sso",
+			},
 		},
 		Params: &script.FunctionParams{
 			Type:   BlockGoFormID,
