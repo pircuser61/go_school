@@ -72,7 +72,7 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA > 8 {
-		emails := make([]string, 0, len(gb.State.Approvers))
+		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		for approver := range gb.State.Approvers {
 			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, approver)
 			if err != nil {
@@ -81,8 +81,8 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			emails = append(emails, userEmail)
 		}
 
-		for additional_approver := range gb.State.AdditionalApprovers {
-			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additional_approver.)
+		for _, additionalApprover := range gb.State.AdditionalApprovers {
+			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additionalApprover.ApproverLogin)
 			if err != nil {
 				continue
 			}
@@ -122,13 +122,20 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA > 8 {
-		emails := make([]string, 0, len(gb.State.Approvers))
+		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		for approver := range gb.State.Approvers {
 			em, err := gb.RunContext.People.GetUserEmail(ctx, approver)
 			if err != nil {
 				continue
 			}
 			emails = append(emails, em)
+		}
+		for _, additionalApprover := range gb.State.AdditionalApprovers {
+			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additionalApprover.ApproverLogin)
+			if err != nil {
+				continue
+			}
+			emails = append(emails, userEmail)
 		}
 		if len(emails) == 0 {
 			return nil
