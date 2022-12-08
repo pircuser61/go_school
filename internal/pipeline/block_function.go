@@ -93,7 +93,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			if variable == nil {
 				return nil, fmt.Errorf("cant fill function mapping with value: k: %s, v: %v", k, v)
 			}
-			functionMapping[k] = getVariable(variables, v.Value) // TODO надо будет проверять типы, а также нам нужна будет работа с обьектами
+			functionMapping[k] = getVariable(variables, v.Value) // TODO надо будет проверять типы, а также нам нужна будет работа с обьектами JAP-904
 		}
 
 		err = gb.RunContext.Kafka.Produce(ctx, kafka.RunnerOutMessage{
