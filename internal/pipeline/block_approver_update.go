@@ -80,6 +80,14 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			}
 			emails = append(emails, userEmail)
 		}
+
+		for additional_approver := range gb.State.AdditionalApprovers {
+			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additional_approver.)
+			if err != nil {
+				continue
+			}
+			emails = append(emails, userEmail)
+		}
 		if len(emails) == 0 {
 			return nil
 		}
