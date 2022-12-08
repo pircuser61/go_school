@@ -10,7 +10,13 @@ type GRPCGW struct {
 	config *GRPCGWConfig
 }
 
-func ListenGRPCGW(_ *GRPCGWConfig) error {
+func NewGRPCGW(config *GRPCGWConfig) *GRPCGW {
+	return &GRPCGW{
+		config: config,
+	}
+}
+
+func (s *GRPCGW) ListenGRPCGW() error {
 	// conn, err := grpc.Dial(config.GRPCPort, grpc.WithInsecure())
 	// if err != nil {
 	//	return err

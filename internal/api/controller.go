@@ -68,8 +68,6 @@ func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
 			HandlerFromMux(param.APIEnv, r)
 		})
 
-	param.APIEnv.Kafka.StartConsumer(ctx, param.APIEnv.FunctionReturnHandler)
-
 	return &http.Server{
 		Addr:    param.ServerAddr,
 		Handler: mux,

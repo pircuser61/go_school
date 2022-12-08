@@ -1943,7 +1943,7 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		vs.has_error,
 		vs.status
 	FROM variable_storage vs 
-	LEFT JOIN works w
+	JOIN works w
 	ON vs.work_id = w.id
 	WHERE vs.id = $1
 	LIMIT 1`

@@ -742,6 +742,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx context.Context, message kafka.Runne
 	step, err := ae.DB.GetTaskStepById(ctx, message.TaskID)
 	if err != nil {
 		log.Error(err)
+		return nil
 	}
 
 	storage := &store.VariableStore{
@@ -754,6 +755,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx context.Context, message kafka.Runne
 	mapping, err := json.Marshal(message.FunctionMapping)
 	if err != nil {
 		log.Error(err)
+		return nil
 	}
 
 	runCtx := &pipeline.BlockRunContext{
@@ -761,6 +763,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx context.Context, message kafka.Runne
 		WorkNumber:  step.WorkNumber,
 		Storage:     ae.DB,
 		Sender:      ae.Mail,
+		Kafka:       ae.Kafka,
 		People:      ae.People,
 		ServiceDesc: ae.ServiceDesc,
 		FaaS:        ae.FaaS,
@@ -773,11 +776,13 @@ func (ae *APIEnv) FunctionReturnHandler(ctx context.Context, message kafka.Runne
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)
 	if err != nil {
 		log.WithError(err).Error("couldn't get block to update")
+		return nil
 	}
 
 	blockErr := pipeline.ProcessBlock(ctx, step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		log.WithError(blockErr).Error("couldn't update block")
+		return nil
 	}
 
 	return nil
