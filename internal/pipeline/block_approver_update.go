@@ -72,9 +72,23 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA > 8 {
-		emails := make([]string, 0, len(gb.State.Approvers))
+		seenAdditionalApprovers := map[string]bool{}
+		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		for approver := range gb.State.Approvers {
 			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, approver)
+			if err != nil {
+				continue
+			}
+			emails = append(emails, userEmail)
+		}
+
+		for _, additionalApprover := range gb.State.AdditionalApprovers {
+			// check if approver has not decisioned, and we did not see approver before
+			if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
+				continue
+			}
+			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
+			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additionalApprover.ApproverLogin)
 			if err != nil {
 				continue
 			}
@@ -114,13 +128,26 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA > 8 {
-		emails := make([]string, 0, len(gb.State.Approvers))
+		seenAdditionalApprovers := map[string]bool{}
+		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		for approver := range gb.State.Approvers {
 			em, err := gb.RunContext.People.GetUserEmail(ctx, approver)
 			if err != nil {
 				continue
 			}
 			emails = append(emails, em)
+		}
+		for _, additionalApprover := range gb.State.AdditionalApprovers {
+			// check if approver has not decisioned, and we did not see approver before
+			if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
+				continue
+			}
+			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
+			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additionalApprover.ApproverLogin)
+			if err != nil {
+				continue
+			}
+			emails = append(emails, userEmail)
 		}
 		if len(emails) == 0 {
 			return nil
