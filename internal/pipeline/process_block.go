@@ -63,7 +63,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 	}()
 
 	status, getErr := runCtx.Storage.GetTaskStatus(ctx, runCtx.TaskID)
-	if err != nil {
+	if getErr != nil {
 		err = getErr
 		return
 	}

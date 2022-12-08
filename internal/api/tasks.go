@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
@@ -18,8 +20,10 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
@@ -730,4 +734,51 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			log.WithError(commitErr).Error("couldn't set SLA breach")
 		}
 	}
+}
+
+func (ae *APIEnv) FunctionReturnHandler(ctx context.Context, message kafka.RunnerInMessage) error {
+	log := logger.GetLogger(ctx)
+
+	step, err := ae.DB.GetTaskStepById(ctx, message.TaskID)
+	if err != nil {
+		log.Error(err)
+	}
+
+	storage := &store.VariableStore{
+		State:  step.State,
+		Values: step.Storage,
+		Steps:  step.Steps,
+		Errors: step.Errors,
+	}
+
+	mapping, err := json.Marshal(message.FunctionMapping)
+	if err != nil {
+		log.Error(err)
+	}
+
+	runCtx := &pipeline.BlockRunContext{
+		TaskID:      step.WorkID,
+		WorkNumber:  step.WorkNumber,
+		Storage:     ae.DB,
+		Sender:      ae.Mail,
+		People:      ae.People,
+		ServiceDesc: ae.ServiceDesc,
+		FaaS:        ae.FaaS,
+		VarStore:    storage,
+		UpdateData: &script.BlockUpdateData{
+			Parameters: mapping,
+		},
+	}
+
+	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)
+	if err != nil {
+		log.WithError(err).Error("couldn't get block to update")
+	}
+
+	blockErr := pipeline.ProcessBlock(ctx, step.Name, blockFunc, runCtx, true)
+	if blockErr != nil {
+		log.WithError(blockErr).Error("couldn't update block")
+	}
+
+	return nil
 }
