@@ -18,9 +18,11 @@ const (
 )
 
 type ExecutableFunction struct {
-	Name    string              `json:"name"`
-	Version string              `json:"version"`
-	Mapping script.MappingParam `json:"mapping"`
+	Name             string              `json:"name"`
+	Version          string              `json:"version"`
+	Mapping          script.MappingParam `json:"mapping"`
+	Async            bool                `json:"async"`
+	ResponseReceived bool                `json:"response_received"`
 }
 
 type ExecutableFunctionBlock struct {
@@ -44,6 +46,14 @@ func (gb *ExecutableFunctionBlock) CheckSLA() (bool, bool, time.Time) {
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
+	if gb.State.ResponseReceived {
+		return StatusFinished
+	}
+
+	if !gb.State.ResponseReceived && gb.State.Async {
+		return StatusIdle
+	}
+
 	return StatusRunning
 }
 
@@ -63,7 +73,67 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) Update(_ context.Context) (interface{}, error) {
+func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
+	function, err := gb.RunContext.FunctionStore.GetFunction(ctx, gb.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	var valNotExistsErr error
+	gb.State.Async, valNotExistsErr = function.GetOptionAsBool("async")
+	if valNotExistsErr != nil {
+		return nil, nil
+	}
+
+	// 0.
+	// 1. consume
+	// 2. if async
+	// 2.1 response is intermediate -> responseReceived = false
+	// 2.2. response is final -> responseReceived = true
+	// 3. if sync
+	// 3. response is final -> responseReceived = true
+	// 4. check map from consumer message
+	// 5. compare with expected fields
+	// 6. set outputs if ok
+
+	if gb.State.Async {
+		// check if response is intermediate
+		gb.State.ResponseReceived = false
+		// if not
+		//gb.State.ResponseReceived = true
+	} else {
+		gb.State.ResponseReceived = true
+	}
+
+	var expectedOutput = make(map[string]interface{})
+	var outputFromFunction = make(map[string]interface{})
+
+	var keyExist = func(entry string, m map[string]interface{}) bool {
+		for k := range m {
+			if k == entry {
+				return true
+			}
+		}
+		return false
+	}
+
+	var resultOutput = make(map[string]interface{})
+
+	for k, v := range expectedOutput {
+		if keyExist(k, outputFromFunction) {
+			resultOutput[k] = v
+		}
+	}
+
+	if len(resultOutput) != len(outputFromFunction) {
+		return nil, errors.New("function returned not all of expected results")
+	}
+
+	for k, v := range resultOutput {
+		gb.RunContext.VarStore.SetValue(gb.Output[k], v)
+	}
+
+	// todo: validate for certain type (JAP-903)
 	return nil, nil
 }
 

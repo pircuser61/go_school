@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"net/http"
 	"time"
 
@@ -31,6 +32,7 @@ type APIEnv struct {
 	Mail                 *mail.Service
 	People               *people.Service
 	ServiceDesc          *servicedesc.Service
+	FunctionStore        *functions.Service
 }
 
 type ServerParam struct {
