@@ -3,6 +3,8 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"time"
 
 	"github.com/pkg/errors"
@@ -12,9 +14,13 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
+type FunctionRetryPolicy string
+
 const (
 	ErrorKey     = "error"
 	KeyDelimiter = "."
+
+	SimpleFunctionRetryPolicy FunctionRetryPolicy = "simple"
 )
 
 type ExecutableFunction struct {
@@ -60,10 +66,47 @@ func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool)
 }
 
 func (gb *ExecutableFunctionBlock) GetState() interface{} {
-	return gb.State
+	return nil
 }
 
-func (gb *ExecutableFunctionBlock) Update(_ context.Context) (interface{}, error) {
+func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
+	// if UpdateData is nil than block is new
+	if gb.RunContext.UpdateData == nil {
+		taskStep, err := gb.RunContext.Storage.GetTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+
+		if err != nil {
+			return nil, err
+		}
+
+		executableFunctionMapping := gb.State.Mapping
+
+		variables, err := getVariables(gb.RunContext.VarStore)
+
+		if err != nil {
+			return nil, err
+		}
+
+		functionMapping := make(map[string]interface{})
+
+		for k, v := range executableFunctionMapping {
+			variable := getVariable(variables, v.Value)
+			if variable == nil {
+				return nil, fmt.Errorf("cant fill function mapping with value: k: %s", k)
+			}
+			functionMapping[k] = getVariable(variables, v.Value) // TODO надо будет проверять типы, а также нам нужна будет работа с обьектами
+		}
+
+		err = gb.RunContext.Kafka.Produce(ctx, kafka.RunnerOutMessage{
+			TaskID:          taskStep.ID,
+			FunctionMapping: functionMapping,
+			RetryPolicy:     string(SimpleFunctionRetryPolicy),
+			FunctionName:    gb.State.Name,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+	}
 	return nil, nil
 }
 

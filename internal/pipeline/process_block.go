@@ -255,26 +255,6 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	if err != nil {
 		return err
 	}
-	// if UpdateData is nil than block is new
-	if runCtx.UpdateData == nil {
-		switch block.(type) {
-		case *ExecutableFunctionBlock:
-			taskStep, err := runCtx.Storage.GetTaskStepByName(ctx, runCtx.TaskID, name) // TODO id is always set, ask Sergey
-
-			if err != nil {
-				return err
-			}
-
-			//runCtx.Kafka.Produce(ctx, kafka.RunnerOutMessage{
-			//	TaskID: task_step.ID,
-			//	FunctionMapping: map[string]interface{}{
-			//		"param1": "value1",
-			//		"param2": 8,
-			//	}
-			//})
-
-		}
-	}
 
 	return nil
 }
