@@ -18,7 +18,7 @@ const (
 	keyOutputBlueprintID       = "blueprint_id"
 	keyOutputSdApplicationDesc = "description"
 	keyOutputSdApplication     = "application_body"
-	keyOutputSsoPerson         = "sso_person"
+	keyOutputSsoPerson         = "SsoPerson"
 )
 
 type ApplicationData struct {
