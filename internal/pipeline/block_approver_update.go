@@ -84,7 +84,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
 			// check if approver has not decisioned, and we did not see approver before
-			if additionalApprover.Decision != nil || !seenAdditionalApprovers[additionalApprover.ApproverLogin] {
+			if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
 				continue
 			}
 			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
@@ -139,7 +139,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 		}
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
 			// check if approver has not decisioned, and we did not see approver before
-			if additionalApprover.Decision != nil || !seenAdditionalApprovers[additionalApprover.ApproverLogin] {
+			if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
 				continue
 			}
 			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
