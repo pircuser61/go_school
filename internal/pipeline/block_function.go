@@ -91,7 +91,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 		for k, v := range executableFunctionMapping {
 			variable := getVariable(variables, v.Value)
 			if variable == nil {
-				return nil, fmt.Errorf("cant fill function mapping with value: k: %s", k)
+				return nil, fmt.Errorf("cant fill function mapping with value: k: %s, v: %v", k, v)
 			}
 			functionMapping[k] = getVariable(variables, v.Value) // TODO надо будет проверять типы, а также нам нужна будет работа с обьектами
 		}
