@@ -52,6 +52,14 @@ func (a *additionalApproverUpdateParams) Validate() error {
 		return fmt.Errorf("unknown decision %s", a.Decision)
 	}
 
+	if len(a.Attachments) > 10 {
+		return fmt.Errorf("max attachments length: 10, current: %d", len(a.Attachments))
+	}
+
+	if len([]rune(a.Comment)) > 500 {
+		return fmt.Errorf("max comment length 500 symbols, current: %d", len([]rune(a.Comment)))
+	}
+
 	return nil
 }
 
