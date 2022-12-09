@@ -23,9 +23,9 @@ type Version struct {
 	FunctionId  string
 	Description string
 	Version     string
-	Input       map[string]interface{}
-	Output      map[string]interface{}
-	Options     map[string]interface{}
+	Input       string
+	Output      string
+	Options     string
 	CreatedAt   string
 	UpdatedAt   string
 	DeletedAt   string
