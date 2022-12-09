@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"time"
 
 	"github.com/google/uuid"

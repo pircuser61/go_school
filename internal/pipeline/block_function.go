@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,12 +19,21 @@ const (
 )
 
 type ExecutableFunction struct {
-	Name             string              `json:"name"`
-	Version          string              `json:"version"`
-	Mapping          script.MappingParam `json:"mapping"`
-	Async            bool                `json:"async"`
-	ResponseReceived bool                `json:"response_received"`
+	Name           string               `json:"name"`
+	Version        string               `json:"version"`
+	Mapping        script.MappingParam  `json:"mapping"`
+	Function       script.FunctionParam `json:"function"`
+	Async          bool                 `json:"async"`
+	FunctionStatus FunctionStatus       `json:"function_status"`
 }
+
+type FunctionStatus string
+
+const (
+	WaitingForAnyResponse        FunctionStatus = "waiting_for_any_response"
+	IntermediateResponseReceived FunctionStatus = "intermediate_response_received"
+	FinalResponseReceived        FunctionStatus = "final_response_received"
+)
 
 type ExecutableFunctionBlock struct {
 	Name    string
@@ -46,15 +56,14 @@ func (gb *ExecutableFunctionBlock) CheckSLA() (bool, bool, time.Time) {
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
-	if gb.State.ResponseReceived {
-		return StatusFinished
-	}
-
-	if !gb.State.ResponseReceived && gb.State.Async {
+	switch gb.State.FunctionStatus {
+	case IntermediateResponseReceived:
 		return StatusIdle
+	case FinalResponseReceived:
+		return StatusFinished
+	default:
+		return StatusRunning
 	}
-
-	return StatusRunning
 }
 
 func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
@@ -74,66 +83,53 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 }
 
 func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
-	function, err := gb.RunContext.FunctionStore.GetFunction(ctx, gb.Name)
+	err := gb.computeCurrentFunctionStatus(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var valNotExistsErr error
-	gb.State.Async, valNotExistsErr = function.GetOptionAsBool("async")
-	if valNotExistsErr != nil {
-		return nil, nil
-	}
+	if gb.State.FunctionStatus == FinalResponseReceived {
+		var expectedOutput map[string]script.ParamMetadata
+		unescapedOutputStr, unquoteErr := strconv.Unquote(gb.State.Function.Output)
+		if unquoteErr != nil {
+			return nil, unquoteErr
+		}
+		err = json.Unmarshal([]byte(unescapedOutputStr), &expectedOutput)
 
-	// 0.
-	// 1. consume
-	// 2. if async
-	// 2.1 response is intermediate -> responseReceived = false
-	// 2.2. response is final -> responseReceived = true
-	// 3. if sync
-	// 3. response is final -> responseReceived = true
-	// 4. check map from consumer message
-	// 5. compare with expected fields
-	// 6. set outputs if ok
+		var outputData map[string]interface{}
+		err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &outputData)
+		if err != nil {
+			return nil, err
+		}
 
-	if gb.State.Async {
-		// check if response is intermediate
-		gb.State.ResponseReceived = false
-		// if not
-		//gb.State.ResponseReceived = true
-	} else {
-		gb.State.ResponseReceived = true
-	}
+		var keyExist = func(entry string, m map[string]interface{}) bool {
+			for k := range m {
+				if k == entry {
+					return true
+				}
+			}
+			return false
+		}
 
-	var expectedOutput = make(map[string]interface{})
-	var outputFromFunction = make(map[string]interface{})
+		var resultOutput = make(map[string]interface{})
 
-	var keyExist = func(entry string, m map[string]interface{}) bool {
-		for k := range m {
-			if k == entry {
-				return true
+		for k := range expectedOutput {
+			if keyExist(k, outputData) {
+				var val = outputData[k]
+				// todo: конвертируем в нужный тип на основе метаданных (JAP-903)
+				resultOutput[k] = val
 			}
 		}
-		return false
-	}
 
-	var resultOutput = make(map[string]interface{})
+		if len(resultOutput) != len(expectedOutput) {
+			return nil, errors.New("function returned not all of expected results")
+		}
 
-	for k, v := range expectedOutput {
-		if keyExist(k, outputFromFunction) {
-			resultOutput[k] = v
+		for k, v := range resultOutput {
+			gb.RunContext.VarStore.SetValue(gb.Output[k], v)
 		}
 	}
 
-	if len(resultOutput) != len(outputFromFunction) {
-		return nil, errors.New("function returned not all of expected results")
-	}
-
-	for k, v := range resultOutput {
-		gb.RunContext.VarStore.SetValue(gb.Output[k], v)
-	}
-
-	// todo: validate for certain type (JAP-903)
 	return nil, nil
 }
 
@@ -190,10 +186,39 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 	}
 
 	b.State = &ExecutableFunction{
-		Name:    params.Name,
-		Version: params.Version,
-		Mapping: params.Mapping,
+		Name:           params.Name,
+		Version:        params.Version,
+		Mapping:        params.Mapping,
+		Function:       params.Function,
+		FunctionStatus: WaitingForAnyResponse,
 	}
 
 	return b, nil
+}
+
+func (gb *ExecutableFunctionBlock) computeCurrentFunctionStatus(ctx context.Context) error {
+	function, err := gb.RunContext.FunctionStore.GetFunction(ctx, gb.Name)
+	if err != nil {
+		return err
+	}
+
+	var invalidOptionTypeErr error
+	gb.State.Async, invalidOptionTypeErr = function.IsAsync()
+	if invalidOptionTypeErr != nil {
+		return invalidOptionTypeErr
+	}
+
+	if gb.State.Async {
+		if gb.State.FunctionStatus == IntermediateResponseReceived {
+			gb.State.FunctionStatus = FinalResponseReceived
+		}
+
+		if gb.State.FunctionStatus == WaitingForAnyResponse {
+			gb.State.FunctionStatus = IntermediateResponseReceived
+		}
+	} else {
+		gb.State.FunctionStatus = FinalResponseReceived
+	}
+
+	return nil
 }

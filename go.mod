@@ -10,11 +10,11 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/render v1.0.1
 	github.com/google/uuid v1.3.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/iancoleman/orderedmap v0.2.0
-	github.com/jackc/pgconn v1.11.0
-	github.com/jackc/pgx/v4 v4.15.0
-	github.com/lib/pq v1.10.4
+	github.com/jackc/pgconn v1.13.0
+	github.com/jackc/pgx/v4 v4.17.2
+	github.com/lib/pq v1.10.7
 	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose v2.7.0+incompatible
 	github.com/prometheus/client_golang v1.11.0
@@ -28,7 +28,7 @@ require (
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
 	go.opencensus.io v0.24.0
 	golang.org/x/net v0.0.0-20220927171203-f486391704dc
-	google.golang.org/grpc v1.41.0
+	google.golang.org/grpc v1.49.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -63,10 +63,10 @@ require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.2.0 // indirect
+	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.10.0 // indirect
-	github.com/jackc/puddle v1.2.1 // indirect
+	github.com/jackc/pgtype v1.12.0 // indirect
+	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -88,13 +88,14 @@ require (
 	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
+	gitlab.services.mts.ru/jocasta/functions v1.2.1 // indirect
 	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8 // indirect
 	golang.org/x/sync v0.0.0-20220923202941-7f9b1623fab7 // indirect
 	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.10 // indirect
 	google.golang.org/api v0.51.0 // indirect
-	google.golang.org/genproto v0.0.0-20211013025323-ce878158c4d4 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

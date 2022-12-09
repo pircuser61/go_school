@@ -9,9 +9,9 @@ type Function struct {
 	Description string
 	Version     string
 	Uses        int32
-	Input       map[string]interface{}
-	Output      map[string]interface{}
-	Options     map[string]interface{}
+	Input       map[string]ParamMetadata
+	Output      map[string]ParamMetadata
+	Options     Options
 	CreatedAt   string
 	DeletedAt   string
 	UpdatedAt   string
@@ -31,16 +31,31 @@ type Version struct {
 	DeletedAt   string
 }
 
-type FieldMetadata struct {
+type ParamMetadata struct {
 	Type        string
 	Description string
+	Items       []ParamMetadata
+	Properties  map[string]ParamMetadata
 }
 
-func (f *Function) GetOptionAsBool(key string) (result bool, err error) {
-	if val, ok := f.Options[key]; ok {
-		if boolVal, boolOk := val.(bool); boolOk {
-			return boolVal, nil
-		}
+type Options struct {
+	Type   string
+	Input  map[string]interface{}
+	Output map[string]ParamMetadata
+}
+
+const (
+	AsyncFlag = "async"
+	SyncFlag  = "sync"
+)
+
+func (f *Function) IsAsync() (result bool, err error) {
+	switch f.Options.Type {
+	case AsyncFlag:
+		return true, nil
+	case SyncFlag:
+		return false, nil
+	default:
+		return false, errors.New("invalid option type. Expected 'sync' or 'async'")
 	}
-	return false, errors.New("key not found")
 }

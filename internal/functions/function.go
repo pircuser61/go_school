@@ -17,13 +17,13 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 		return Function{}, err
 	}
 
-	var input map[string]interface{}
+	var input map[string]ParamMetadata
 	inputUnmarshalErr := json.Unmarshal([]byte(res.Function.Input), &input)
 	if err != nil {
 		return Function{}, inputUnmarshalErr
 	}
 
-	var output map[string]interface{}
+	var output map[string]ParamMetadata
 	outputUnmarshalErr := json.Unmarshal([]byte(res.Function.Output), &output)
 	if err != nil {
 		return Function{}, outputUnmarshalErr
