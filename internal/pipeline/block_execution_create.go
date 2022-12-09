@@ -133,8 +133,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
 	emails := make([]string, 0, len(gb.State.Executors))
-	for approver := range gb.State.Executors {
-		email, err := gb.RunContext.People.GetUserEmail(ctx, approver)
+	for executor := range gb.State.Executors {
+		email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
 		if err != nil {
 			l.WithError(err).Error("couldn't get email")
 		}
@@ -151,8 +151,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		mail.NewApplicationPersonStatusNotification(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.WorkTitle,
-			string(StatusApprovement),
-			statusToTaskAction[StatusApprovement],
+			string(StatusExecution),
+			statusToTaskAction[StatusExecution],
 			ComputeDeadline(time.Now(), gb.State.SLA),
 			descr,
 			gb.RunContext.Sender.SdAddress))
