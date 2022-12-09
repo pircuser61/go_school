@@ -255,6 +255,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
