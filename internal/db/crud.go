@@ -1933,6 +1933,8 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 	q := `
 	SELECT 
 	    vs.id,
+	    vs.work_id,
+		w.work_number,
 	    vs.step_type,
 		vs.step_name, 
 		vs.time, 
@@ -1941,13 +1943,17 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		vs.has_error,
 		vs.status
 	FROM variable_storage vs 
-	WHERE id = $1
+	JOIN works w
+	ON vs.work_id = w.id
+	WHERE vs.id = $1
 	LIMIT 1`
 
 	var s entity.Step
 	var content string
 	err := db.Connection.QueryRow(ctx, q, id).Scan(
 		&s.ID,
+		&s.WorkID,
+		&s.WorkNumber,
 		&s.Type,
 		&s.Name,
 		&s.Time,

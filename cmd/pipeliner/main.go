@@ -4,13 +4,11 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
 
@@ -119,13 +117,6 @@ func main() {
 		return
 	}
 
-	kafkaService, err := kafka.NewService(log, cfg.Kafka)
-	if err != nil {
-		log.WithError(err).Error("can't create kafka service")
-
-		return
-	}
-
 	stat, err := statistic.InitStatistic()
 	if err != nil {
 		log.WithError(err).Error("can't init statistic")
@@ -138,28 +129,36 @@ func main() {
 	var _ db.Database = (*mocks.MockedDatabase)(nil)
 	var _ db.Database = (*test.MockDB)(nil)
 
-	httpServer, err := api.NewServer(ctx, api.ServerParam{
-		APIEnv: &api.APIEnv{
-			DB:                   &dbConn,
-			Remedy:               cfg.Remedy,
-			FaaS:                 cfg.FaaS,
-			SchedulerClient:      schedulerClient,
-			NetworkMonitorClient: networkMonitoringClient,
-			HTTPClient:           httpClient,
-			Statistic:            stat,
-			Mail:                 mailService,
-			Kafka:                kafkaService,
-			People:               peopleService,
-			ServiceDesc:          serviceDescService,
-		},
+	kafkaService, err := kafka.NewService(log, cfg.Kafka)
+	if err != nil {
+		log.WithError(err).Error("can't create kafka service")
+
+		return
+	}
+
+	APIEnv := &api.APIEnv{
+		DB:                   &dbConn,
+		Remedy:               cfg.Remedy,
+		FaaS:                 cfg.FaaS,
+		SchedulerClient:      schedulerClient,
+		NetworkMonitorClient: networkMonitoringClient,
+		HTTPClient:           httpClient,
+		Statistic:            stat,
+		Mail:                 mailService,
+		Kafka:                kafkaService,
+		People:               peopleService,
+		ServiceDesc:          serviceDescService,
+	}
+
+	serverParam := api.ServerParam{
+		APIEnv:            APIEnv,
 		SSOService:        ssoService,
 		PeopleService:     peopleService,
 		TimeoutMiddleware: cfg.Timeout.Duration,
 		ServerAddr:        cfg.ServeAddr,
-	})
-	if err != nil {
-		log.Fatal(err)
 	}
+
+	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)
 
 	jr, err := jaeger.NewExporter(jaeger.Options{
 		CollectorEndpoint: cfg.Tracing.URL,
@@ -181,39 +180,20 @@ func main() {
 
 	initSwagger(cfg)
 
-	go func() {
-		log.Info("script manager service started on port", httpServer.Addr)
-
-		if err = httpServer.ListenAndServe(); err != nil {
-			if errors.Is(err, http.ErrServerClosed) {
-				log.Info("graceful shutdown")
-			} else {
-				log.WithError(err).Fatal("script manager service")
-			}
-		}
-	}()
-
-	grpcServer := server.NewGRPC(&server.GRPCConfig{
+	grpcServerParam := &server.GRPCConfig{
 		Port: cfg.GRPCPort,
 		Conn: dbConn,
-	})
-	go func() {
-		if err = grpcServer.Listen(); err != nil {
-			os.Exit(-2)
-		}
-	}()
+	}
 
-	go func() {
-		time.Sleep(time.Second)
-		if err = server.ListenGRPCGW(&server.GRPCGWConfig{
-			GRPCPort:   cfg.GRPCPort,
-			GRPCGWPort: cfg.GRPCGWPort,
-		}); err != nil {
-			os.Exit(-3)
-		}
-	}()
+	grpcGWServerParam := &server.GRPCGWConfig{
+		GRPCPort:   cfg.GRPCPort,
+		GRPCGWPort: cfg.GRPCGWPort,
+	}
 
 	monitoring.Setup(cfg.Monitoring.Addr, &http.Client{Timeout: cfg.Monitoring.Timeout.Duration})
+
+	s := server.NewServer(ctx, log, kafkaService, serverParam, grpcServerParam, grpcGWServerParam)
+	s.Run(ctx)
 
 	sgnl := make(chan os.Signal, 1)
 	signal.Notify(sgnl,
@@ -223,11 +203,7 @@ func main() {
 		syscall.SIGQUIT)
 
 	stop := <-sgnl
-
-	if err = httpServer.Shutdown(ctx); err != nil {
-		log.WithError(err).Error("error on shutdown")
-	}
-
+	s.Stop(ctx)
 	log.WithField("signal", stop).Info("stopping")
 }
 

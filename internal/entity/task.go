@@ -13,6 +13,8 @@ import (
 
 type Step struct {
 	ID          uuid.UUID                  `json:"-"`
+	WorkID      uuid.UUID                  `json:"work_id"`
+	WorkNumber  string                     `json:"work_number"`
 	Time        time.Time                  `json:"time"`
 	Type        string                     `json:"type"`
 	Name        string                     `json:"name"`

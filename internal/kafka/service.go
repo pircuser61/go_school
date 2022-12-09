@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+	"os"
 
 	"golang.org/x/net/context"
 
@@ -19,6 +20,8 @@ type Service struct {
 
 	producer *msgkit.Producer
 	consumer *msgkit.Consumer
+
+	MessageHandler *msgkit.MessageHandler[RunnerInMessage]
 }
 
 func NewService(log logger.Logger, cfg Config) (*Service, error) {
@@ -53,4 +56,21 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 
 func (s *Service) Produce(ctx context.Context, message RunnerOutMessage) error {
 	return s.producer.Produce(ctx, message)
+}
+
+func (s *Service) CloseProducer() error {
+	return s.producer.Close()
+}
+
+func (s *Service) InitMessageHandler(handler func(context.Context, RunnerInMessage) error) {
+	s.MessageHandler = msgkit.NewMessageHandler[RunnerInMessage](s.log, handler, "function_return")
+}
+
+func (s *Service) StartConsumer(ctx context.Context) {
+	go func() {
+		err := s.consumer.Serve(ctx, s.MessageHandler)
+		if err != nil {
+			os.Exit(-4)
+		}
+	}()
 }

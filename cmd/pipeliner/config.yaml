@@ -43,13 +43,10 @@ mail:
 
 kafka:
   brokers:
-#    - 10.73.96.102:9094
-#    - 10.73.96.103:9094
-#    - 10.73.96.104:9094
-    - localhost:9092
-  producer_topic: "test.out"
+    - kafka:9092
+  producer_topic: "from.pipeliner.to.runner"
   consumer_group: "pipeliner"
-  consumer_topic: "test.in"
+  consumer_topic: "from.runner.to.pipeliner"
 
 remedy: "http://remedy"
 
