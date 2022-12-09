@@ -56,7 +56,7 @@ func (a *additionalApproverUpdateParams) Validate() error {
 		return fmt.Errorf("max attachments length: 10, current: %d", len(a.Attachments))
 	}
 
-	if len(a.Comment) > 500 {
+	if len([]rune(a.Comment)) > 500 {
 		return fmt.Errorf("max comment length 500 symbols, current: %d", len(a.Comment))
 	}
 
