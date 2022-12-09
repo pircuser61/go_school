@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	keyOutputBlueprintID       = "blueprint_id"
-	keyOutputSdApplicationDesc = "description"
-	keyOutputSdApplication     = "application_body"
-	keyOutputSsoPerson         = "SsoPerson"
+	keyOutputBlueprintID           = "blueprint_id"
+	keyOutputSdApplicationDesc     = "description"
+	keyOutputSdApplication         = "application_body"
+	keyOutputSdApplicationExecutor = "executor"
 )
 
 type ApplicationData struct {
@@ -98,7 +98,7 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		return nil, err
 	}
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSsoPerson], personData)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplicationExecutor], personData)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputBlueprintID], gb.State.BlueprintID)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplicationDesc], data.InitialApplication.Description)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplication], appBody)
@@ -139,8 +139,8 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 				Comment: "application body",
 			},
 			{
-				Name:    keyOutputSsoPerson,
-				Type:    "object",
+				Name:    keyOutputSdApplicationExecutor,
+				Type:    "SsoPerson",
 				Comment: "person object from sso",
 			},
 		},

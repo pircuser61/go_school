@@ -137,18 +137,13 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 		Outputs: []script.FunctionValueModel{
 			{
 				Name:    keyOutputFormExecutor,
-				Type:    "string",
+				Type:    "SsoPerson",
 				Comment: "form executor login",
 			},
 			{
 				Name:    keyOutputFormBody,
 				Type:    "object",
 				Comment: "form body",
-			},
-			{
-				Name:    keyOutputSsoPerson,
-				Type:    "object",
-				Comment: "person object from sso",
 			},
 		},
 		Params: &script.FunctionParams{
