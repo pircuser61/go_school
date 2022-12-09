@@ -30,16 +30,12 @@ type ExecutableFunction struct {
 	Mapping        script.MappingParam  `json:"mapping"`
 	Function       script.FunctionParam `json:"function"`
 	Async          bool                 `json:"async"`
+	HasAck         bool                 `json:"has_ack"`
+	HasResponse    bool                 `json:"has_response"`
 	FunctionStatus FunctionStatus       `json:"function_status"`
 }
 
 type FunctionStatus string
-
-const (
-	WaitingForAnyResponse        FunctionStatus = "waiting_for_any_response"
-	IntermediateResponseReceived FunctionStatus = "intermediate_response_received"
-	FinalResponseReceived        FunctionStatus = "final_response_received"
-)
 
 type ExecutableFunctionBlock struct {
 	Name    string
@@ -62,14 +58,15 @@ func (gb *ExecutableFunctionBlock) CheckSLA() (bool, bool, time.Time) {
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
-	switch gb.State.FunctionStatus {
-	case IntermediateResponseReceived:
+	if gb.State.Async == true && gb.State.HasAck == true {
 		return StatusIdle
-	case FinalResponseReceived:
-		return StatusFinished
-	default:
-		return StatusRunning
 	}
+
+	if gb.State.HasResponse == true {
+		return StatusFinished
+	}
+
+	return StatusRunning
 }
 
 func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
@@ -89,50 +86,52 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 }
 
 func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
-	err := gb.computeCurrentFunctionStatus(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if gb.State.FunctionStatus == FinalResponseReceived {
-		var expectedOutput map[string]script.ParamMetadata
-		unescapedOutputStr, unquoteErr := strconv.Unquote(gb.State.Function.Output)
-		if unquoteErr != nil {
-			return nil, unquoteErr
-		}
-		err = json.Unmarshal([]byte(unescapedOutputStr), &expectedOutput)
-
-		var outputData map[string]interface{}
-		err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &outputData)
+	if gb.RunContext.UpdateData != nil {
+		err := gb.computeCurrentState()
 		if err != nil {
 			return nil, err
 		}
 
-		var keyExist = func(entry string, m map[string]interface{}) bool {
-			for k := range m {
-				if k == entry {
-					return true
+		if gb.State.HasResponse == true {
+			var expectedOutput map[string]script.ParamMetadata
+			unescapedOutputStr, unquoteErr := strconv.Unquote(gb.State.Function.Output)
+			if unquoteErr != nil {
+				return nil, unquoteErr
+			}
+			err = json.Unmarshal([]byte(unescapedOutputStr), &expectedOutput)
+
+			var outputData map[string]interface{}
+			err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &outputData)
+			if err != nil {
+				return nil, err
+			}
+
+			var keyExist = func(entry string, m map[string]interface{}) bool {
+				for k := range m {
+					if k == entry {
+						return true
+					}
+				}
+				return false
+			}
+
+			var resultOutput = make(map[string]interface{})
+
+			for k := range expectedOutput {
+				if keyExist(k, outputData) {
+					var val = outputData[k]
+					// todo: конвертируем в нужный тип на основе метаданных (JAP-903)
+					resultOutput[k] = val
 				}
 			}
-			return false
-		}
 
-		var resultOutput = make(map[string]interface{})
-
-		for k := range expectedOutput {
-			if keyExist(k, outputData) {
-				var val = outputData[k]
-				// todo: конвертируем в нужный тип на основе метаданных (JAP-903)
-				resultOutput[k] = val
+			if len(resultOutput) != len(expectedOutput) {
+				return nil, errors.New("function returned not all of expected results")
 			}
-		}
 
-		if len(resultOutput) != len(expectedOutput) {
-			return nil, errors.New("function returned not all of expected results")
-		}
-
-		for k, v := range resultOutput {
-			gb.RunContext.VarStore.SetValue(gb.Output[k], v)
+			for k, v := range resultOutput {
+				gb.RunContext.VarStore.SetValue(gb.Output[k], v)
+			}
 		}
 	}
 
@@ -227,39 +226,36 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		return nil, errors.Wrap(err, "invalid executable function parameters")
 	}
 
+	function, err := b.RunContext.FunctionStore.GetFunction(context.Background(), b.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	var isAsync, invalidOptionTypeErr = function.IsAsync()
+	if invalidOptionTypeErr != nil {
+		return nil, invalidOptionTypeErr
+	}
+
 	b.State = &ExecutableFunction{
-		Name:           params.Name,
-		Version:        params.Version,
-		Mapping:        params.Mapping,
-		Function:       params.Function,
-		FunctionStatus: WaitingForAnyResponse,
+		Name:        params.Name,
+		Version:     params.Version,
+		Mapping:     params.Mapping,
+		Function:    params.Function,
+		HasAck:      false,
+		HasResponse: false,
+		Async:       isAsync,
 	}
 
 	return b, nil
 }
 
-func (gb *ExecutableFunctionBlock) computeCurrentFunctionStatus(ctx context.Context) error {
-	function, err := gb.RunContext.FunctionStore.GetFunction(ctx, gb.Name)
-	if err != nil {
-		return err
+func (gb *ExecutableFunctionBlock) computeCurrentState() error {
+	if gb.State.HasResponse == false || gb.State.HasAck == true {
+		gb.State.HasResponse = true
 	}
 
-	var invalidOptionTypeErr error
-	gb.State.Async, invalidOptionTypeErr = function.IsAsync()
-	if invalidOptionTypeErr != nil {
-		return invalidOptionTypeErr
-	}
-
-	if gb.State.Async {
-		if gb.State.FunctionStatus == IntermediateResponseReceived {
-			gb.State.FunctionStatus = FinalResponseReceived
-		}
-
-		if gb.State.FunctionStatus == WaitingForAnyResponse {
-			gb.State.FunctionStatus = IntermediateResponseReceived
-		}
-	} else {
-		gb.State.FunctionStatus = FinalResponseReceived
+	if gb.State.Async == true && gb.State.HasAck == false {
+		gb.State.HasAck = true
 	}
 
 	return nil
