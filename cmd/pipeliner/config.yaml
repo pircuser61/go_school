@@ -41,6 +41,13 @@ mail:
     email: "servicedesk_noreply@mts.ru"
   sd_address: "https://dev.servicedesk.mts.ru"
 
+kafka:
+  brokers:
+    - kafka:9092
+  producer_topic: "from.pipeliner.to.runner"
+  consumer_group: "pipeliner"
+  consumer_topic: "from.runner.to.pipeliner"
+
 remedy: "http://remedy"
 
 swagger:
