@@ -38,7 +38,7 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 		return Function{}, outputUnmarshalErr
 	}
 
-	/*var options map[string]ParamMetadata
+	var options map[string]ParamMetadata
 	unquotedOptions, unquoteOptionsErr := strconv.Unquote(res.Function.Options)
 	if unquoteOptionsErr != nil {
 		return Function{}, unquoteOptionsErr
@@ -46,7 +46,7 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 	optionsUnmarshalErr := json.Unmarshal([]byte(unquotedOptions), &options)
 	if err != nil {
 		return Function{}, optionsUnmarshalErr
-	}*/
+	}
 
 	versions := make([]Version, 0)
 
@@ -58,10 +58,10 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 			Version:     v.Version,
 			Input:       v.Input,
 			Output:      v.Output,
-			//Options:     v.Options, //todo: deploy new functions api
-			CreatedAt: v.CreatedAt,
-			DeletedAt: v.DeletedAt,
-			UpdatedAt: v.UpdatedAt,
+			Options:     v.Options,
+			CreatedAt:   v.CreatedAt,
+			DeletedAt:   v.DeletedAt,
+			UpdatedAt:   v.UpdatedAt,
 		})
 	}
 
@@ -74,10 +74,10 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 		Uses:        res.Function.Uses,
 		Input:       input,
 		Output:      output,
-		//Options:     options, // todo: deploy new functions api
-		CreatedAt: res.Function.CreatedAt,
-		DeletedAt: res.Function.DeletedAt,
-		UpdatedAt: res.Function.UpdatedAt,
-		Versions:  versions,
+		Options:     options,
+		CreatedAt:   res.Function.CreatedAt,
+		DeletedAt:   res.Function.DeletedAt,
+		UpdatedAt:   res.Function.UpdatedAt,
+		Versions:    versions,
 	}, nil
 }
