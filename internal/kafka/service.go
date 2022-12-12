@@ -2,13 +2,10 @@ package kafka
 
 import (
 	"fmt"
-	"os"
-
-	"golang.org/x/net/context"
-
 	"github.com/Shopify/sarama"
-
 	"github.com/rcrowley/go-metrics"
+	"golang.org/x/net/context"
+	"os"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 

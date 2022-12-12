@@ -38,7 +38,7 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 		return Function{}, outputUnmarshalErr
 	}
 
-	var options map[string]ParamMetadata
+	var options Options
 	unquotedOptions, unquoteOptionsErr := strconv.Unquote(res.Function.Options)
 	if unquoteOptionsErr != nil {
 		return Function{}, unquoteOptionsErr

@@ -3,7 +3,6 @@ package functions
 import (
 	"crypto/tls"
 	function_v1 "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -16,11 +15,11 @@ type Service struct {
 	cli function_v1.FunctionServiceClient
 }
 
-func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
+func NewService(cfg Config) (*Service, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12})),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{})}
-	conn, err := grpc.Dial(cfg.FunctionsLibraryURL, opts...)
+	conn, err := grpc.Dial(cfg.URL, opts...)
 	if err != nil {
 		return nil, err
 	}
