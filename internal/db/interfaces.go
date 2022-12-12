@@ -79,30 +79,32 @@ type DbMember struct {
 }
 
 type SaveStepRequest struct {
-	WorkID       uuid.UUID
-	StepType     string
-	StepName     string
-	Content      []byte
-	BreakPoints  []string
-	HasError     bool
-	Status       string
-	Members      []DbMember
-	CheckSLA     bool
-	CheckHalfSLA bool
-	SLADeadline  time.Time
+	WorkID          uuid.UUID
+	StepType        string
+	StepName        string
+	Content         []byte
+	BreakPoints     []string
+	HasError        bool
+	Status          string
+	Members         []DbMember
+	CheckSLA        bool
+	CheckHalfSLA    bool
+	SLADeadline     time.Time
+	HalfSLADeadline time.Time
 }
 
 type UpdateStepRequest struct {
-	Id           uuid.UUID
-	StepName     string
-	Content      []byte
-	BreakPoints  []string
-	HasError     bool
-	Status       string
-	Members      []DbMember
-	CheckSLA     bool
-	CheckHalfSLA bool
-	SLADeadline  time.Time
+	Id              uuid.UUID
+	StepName        string
+	Content         []byte
+	BreakPoints     []string
+	HasError        bool
+	Status          string
+	Members         []DbMember
+	CheckSLA        bool
+	CheckHalfSLA    bool
+	SLADeadline     time.Time
+	HalfSLADeadline time.Time
 }
 
 type UpdateTaskBlocksDataRequest struct {

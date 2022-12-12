@@ -33,8 +33,8 @@ func (gb *IF) Members() []Member {
 	return nil
 }
 
-func (gb *IF) CheckSLA() (bool, bool, time.Time) {
-	return false, false, time.Time{}
+func (gb *IF) CheckSLA() (bool, bool, time.Time, time.Time) {
+	return false, false, time.Time{}, time.Time{}
 }
 
 type ConditionsData struct {

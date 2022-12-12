@@ -1508,7 +1508,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			status,
 		    check_sla,
 		    sla_deadline,
-		    check_half_sla
+		    check_half_sla,
+		    half_sla_deadline
 		)
 		VALUES (
 			$1, 
@@ -1522,7 +1523,8 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$9,
 			$10,
 		    $11,
-			$12
+			$12,
+		    $13
 		)
 `
 
@@ -1541,6 +1543,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.CheckSLA,
 		dto.SLADeadline,
 		dto.CheckHalfSLA,
+		dto.HalfSLADeadline,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
@@ -1571,10 +1574,11 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		, updated_at = NOW()
 		, sla_deadline = $7
 		, check_half_sla = $8
+		, half_sla_deadline = $9
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA, dto.Content, dto.SLADeadline, dto.CheckHalfSLA}
+	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA, dto.Content, dto.SLADeadline, dto.CheckHalfSLA, dto.HalfSLADeadline}
 
 	_, err := db.Connection.Exec(
 		c,
@@ -2459,7 +2463,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			JOIN pipelines p on v.pipeline_id = p.id
 		WHERE (
 		    (check_sla = True AND sla_deadline < NOW()) OR 
-		    (vs.check_half_sla = True AND (vs.time + (vs.sla_deadline - vs.time)/2) < NOW())
+		    (vs.check_half_sla = True AND half_sla_deadline < NOW())
 		) 
 		  AND vs.status = 'running' AND w.child_id IS NULL`
 	rows, err := db.Connection.Query(ctx, q)
