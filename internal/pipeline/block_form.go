@@ -86,8 +86,8 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	return []MemberAction{action}
 }
 
-func (gb *GoFormBlock) CheckSLA() (bool, bool, time.Time) {
-	return false, false, time.Time{}
+func (gb *GoFormBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
+	return false, false, time.Time{}, time.Time{}
 }
 
 func (gb *GoFormBlock) UpdateManual() bool {
@@ -137,7 +137,7 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 		Outputs: []script.FunctionValueModel{
 			{
 				Name:    keyOutputFormExecutor,
-				Type:    "string",
+				Type:    "SsoPerson",
 				Comment: "form executor login",
 			},
 			{

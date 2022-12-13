@@ -1,4 +1,4 @@
-//nolint
+// nolint
 package main
 
 import (
@@ -9,6 +9,8 @@ import (
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pressly/goose"
+
+	_ "gitlab.services.mts.ru/jocasta/pipeliner/migrations"
 )
 
 var (

@@ -47,10 +47,12 @@ func notWorkingHours(t time.Time) bool {
 	return false
 }
 
-func computeMaxDate(start time.Time, sla int) time.Time {
+func ComputeMaxDate(start time.Time, sla float32) time.Time {
+	// SLA in hours
+	// Convert to minutes
 	deadline := start.UTC()
-
-	slaDur := time.Hour * time.Duration(sla)
+	slaInMinutes := sla * 60
+	slaDur := time.Minute * time.Duration(slaInMinutes)
 
 	for slaDur > 0 {
 		if notWorkingHours(deadline) {
@@ -77,11 +79,11 @@ func computeMaxDate(start time.Time, sla int) time.Time {
 }
 
 func CheckBreachSLA(start, current time.Time, sla int) bool {
-	deadline := computeMaxDate(start, sla)
+	deadline := ComputeMaxDate(start, float32(sla))
 
 	return current.UTC().After(deadline)
 }
 
 func ComputeDeadline(start time.Time, sla int) string {
-	return computeMaxDate(start, sla).Format(ddmmyyFormat)
+	return ComputeMaxDate(start, float32(sla)).Format(ddmmyyFormat)
 }

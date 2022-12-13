@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	keyOutputBlueprintID       = "blueprint_id"
-	keyOutputSdApplicationDesc = "description"
-	keyOutputSdApplication     = "application_body"
+	keyOutputBlueprintID           = "blueprint_id"
+	keyOutputSdApplicationDesc     = "description"
+	keyOutputSdApplication         = "application_body"
+	keyOutputSdApplicationExecutor = "executor"
 )
 
 type ApplicationData struct {
@@ -46,8 +47,8 @@ func (gb *GoSdApplicationBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoSdApplicationBlock) CheckSLA() (bool, bool, time.Time) {
-	return false, false, time.Time{}
+func (gb *GoSdApplicationBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
+	return false, false, time.Time{}, time.Time{}
 }
 
 func (gb *GoSdApplicationBlock) UpdateManual() bool {
@@ -92,6 +93,12 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		return nil, err
 	}
 
+	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplicationExecutor], personData)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputBlueprintID], gb.State.BlueprintID)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplicationDesc], data.InitialApplication.Description)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSdApplication], appBody)
@@ -130,6 +137,11 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 				Name:    keyOutputSdApplication,
 				Type:    "object",
 				Comment: "application body",
+			},
+			{
+				Name:    keyOutputSdApplicationExecutor,
+				Type:    "SsoPerson",
+				Comment: "person object from sso",
 			},
 		},
 		Params: &script.FunctionParams{

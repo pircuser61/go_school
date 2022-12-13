@@ -84,8 +84,10 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		}}
 }
 
-func (gb *GoExecutionBlock) CheckSLA() (sla, halfSLA bool, maxDate time.Time) {
-	return !gb.State.SLAChecked, !gb.State.HalfSLAChecked, computeMaxDate(gb.RunContext.currBlockStartTime, gb.State.SLA)
+func (gb *GoExecutionBlock) CheckSLA() (sla, halfSLA bool, maxDate time.Time, maxHalfDate time.Time) {
+	return !gb.State.SLAChecked, !gb.State.HalfSLAChecked,
+		ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
+		ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2)
 }
 
 func (gb *GoExecutionBlock) UpdateManual() bool {

@@ -33,8 +33,8 @@ func (gb *GoWaitForAllInputsBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoWaitForAllInputsBlock) CheckSLA() (bool, bool, time.Time) {
-	return false, false, time.Time{}
+func (gb *GoWaitForAllInputsBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
+	return false, false, time.Time{}, time.Time{}
 }
 
 func (gb *GoWaitForAllInputsBlock) UpdateManual() bool {

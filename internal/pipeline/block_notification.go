@@ -38,8 +38,8 @@ func (gb *GoNotificationBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoNotificationBlock) CheckSLA() (bool, bool, time.Time) {
-	return false, false, time.Time{}
+func (gb *GoNotificationBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
+	return false, false, time.Time{}, time.Time{}
 }
 
 func (gb *GoNotificationBlock) UpdateManual() bool {

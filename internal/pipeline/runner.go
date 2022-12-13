@@ -42,5 +42,5 @@ type Runner interface {
 	GetStatus() Status
 	UpdateManual() bool
 	Members() []Member
-	CheckSLA() (bool, bool, time.Time)
+	CheckSLA() (bool, bool, time.Time, time.Time)
 }
