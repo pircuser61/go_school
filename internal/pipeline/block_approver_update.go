@@ -415,6 +415,8 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 		return fmt.Errorf("%s not found in approvers", gb.RunContext.UpdateData.ByLogin)
 	}
 
+	crTime := time.Now()
+
 	for i := range u.AdditionalApproversLogins {
 		if gb.checkAdditionalApproverNotAdded(u.AdditionalApproversLogins[i]) {
 			gb.State.AdditionalApprovers = append(gb.State.AdditionalApprovers,
@@ -423,6 +425,7 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 					BaseApproverLogin: gb.RunContext.UpdateData.ByLogin,
 					Question:          &u.Question,
 					Attachments:       u.Attachments,
+					CreatedAt:         crTime,
 				})
 			logApprovers = append(logApprovers, u.AdditionalApproversLogins[i])
 		}
@@ -433,7 +436,7 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 			Decision:       "",
 			Comment:        u.Question,
 			Attachments:    u.Attachments,
-			CreatedAt:      time.Now(),
+			CreatedAt:      crTime,
 			AddedApprovers: u.AdditionalApproversLogins,
 			LogType:        ApproverLogAddApprover,
 		}

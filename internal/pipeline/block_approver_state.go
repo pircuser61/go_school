@@ -194,6 +194,7 @@ type AdditionalApprover struct {
 	Comment           *string           `json:"comment"`
 	Attachments       []string          `json:"attachments"`
 	Decision          *ApproverDecision `json:"decision"`
+	CreatedAt         time.Time         `json:"created_at"`
 	DecisionTime      *time.Time        `json:"decision_time"`
 }
 
