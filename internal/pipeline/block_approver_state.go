@@ -194,6 +194,7 @@ type AdditionalApprover struct {
 	Comment           *string           `json:"comment"`
 	Attachments       []string          `json:"attachments"`
 	Decision          *ApproverDecision `json:"decision"`
+	TimeDecision      *time.Time
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -310,6 +311,10 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params addi
 		a.AdditionalApprovers[i].Decision = &params.Decision
 		a.AdditionalApprovers[i].Comment = &params.Comment
 		a.AdditionalApprovers[i].Attachments = params.Attachments
+		if a.AdditionalApprovers[i].TimeDecision == nil {
+			timeNow := time.Now()
+			a.AdditionalApprovers[i].TimeDecision = &timeNow
+		}
 
 		var approverLogEntry = ApproverLogEntry{
 			Login:       login,
