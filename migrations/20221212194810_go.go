@@ -20,43 +20,40 @@ func upGo(tx *sql.Tx) error {
 		TimeStart time.Time
 		SLA       int
 	}
-	rows, err := tx.Query("" +
+	rows, queryErr := tx.Query("" +
 		"select " +
 		"id, " +
 		"time time_start, " +
 		"(content -> 'state' -> vs.step_name -> 'sla') sla " +
 		"from variable_storage vs " +
 		"where vs.status = 'running' and (content -> 'state' -> vs.step_name -> 'sla') is not null")
-	if err != nil {
-		return err
+	if queryErr != nil {
+		return queryErr
 	}
 
 	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
+		closeErr := rows.Close()
+		if closeErr != nil {
 		}
 	}(rows)
 
 	for rows.Next() {
 		var resultRow ResultRowStruct
 		var halfSLADeadline string
-		err := rows.Scan(&resultRow.Id, &resultRow.TimeStart, &resultRow.SLA)
-		if err != nil {
-			return err
+		scanErr := rows.Scan(&resultRow.Id, &resultRow.TimeStart, &resultRow.SLA)
+		if scanErr != nil {
+			return scanErr
 		}
 		halfSLADeadline = pipeline.ComputeDeadline(resultRow.TimeStart, resultRow.SLA/2)
 
-		_, err = tx.Exec("update variable_storage set half_sla_deadline = $1 where id = $2", halfSLADeadline, resultRow.Id)
-		if err != nil {
-			return err
+		_, execErr := tx.Exec("update variable_storage set half_sla_deadline = $1 where id = $2", halfSLADeadline, resultRow.Id)
+		if execErr != nil {
+			return execErr
 		}
 
 		if rowsErr := rows.Err(); rowsErr != nil {
 			return rowsErr
 		}
-	}
-	if err != nil {
-		return err
 	}
 	return nil
 }
