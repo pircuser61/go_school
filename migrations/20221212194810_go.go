@@ -2,9 +2,10 @@ package migrations
 
 import (
 	"database/sql"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/pressly/goose"
-	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )
@@ -19,7 +20,13 @@ func upGo(tx *sql.Tx) error {
 		TimeStart time.Time
 		SLA       int
 	}
-	rows, err := tx.Query("select id, time time_start, (content -> 'state' -> vs.step_name -> 'sla') sla from variable_storage vs where vs.status = 'running' and (content -> 'state' -> vs.step_name -> 'sla') is not null")
+	rows, err := tx.Query("" +
+		"select " +
+		"id, " +
+		"time time_start, " +
+		"(content -> 'state' -> vs.step_name -> 'sla') sla " +
+		"from variable_storage vs " +
+		"where vs.status = 'running' and (content -> 'state' -> vs.step_name -> 'sla') is not null")
 	if err != nil {
 		return err
 	}
@@ -37,6 +44,10 @@ func upGo(tx *sql.Tx) error {
 		if err != nil {
 			return err
 		}
+	}
+	err = rows.Close()
+	if err != nil {
+		return err
 	}
 	return nil
 }

@@ -1578,7 +1578,10 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	WHERE
 		id = $1
 `
-	args := []interface{}{dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.CheckSLA, dto.Content, dto.SLADeadline, dto.CheckHalfSLA, dto.HalfSLADeadline}
+	args := []interface{}{
+		dto.Id, dto.BreakPoints, dto.HasError, dto.Status,
+		dto.CheckSLA, dto.Content, dto.SLADeadline, dto.CheckHalfSLA, dto.HalfSLADeadline,
+	}
 
 	_, err := db.Connection.Exec(
 		c,
