@@ -3,8 +3,9 @@ package server
 import (
 	"context"
 	"errors"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"net/http"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"

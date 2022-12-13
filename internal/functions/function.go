@@ -3,8 +3,9 @@ package functions
 import (
 	"context"
 	"encoding/json"
-	function_v1 "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
 	"strconv"
+
+	function_v1 "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
 )
 
 func (s *Service) GetFunction(ctx context.Context, id string) (result Function, err error) {
@@ -18,24 +19,14 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 		return Function{}, err
 	}
 
-	var input map[string]ParamMetadata
-	unquotedInput, unquoteInputErr := strconv.Unquote(res.Function.Input)
-	if unquoteInputErr != nil {
-		return Function{}, unquoteInputErr
-	}
-	inputUnmarshalErr := json.Unmarshal([]byte(unquotedInput), &input)
-	if err != nil {
-		return Function{}, inputUnmarshalErr
+	input, inputConvertErr := convertToParamMetadata(res.Function.Input)
+	if inputConvertErr != nil {
+		return Function{}, inputConvertErr
 	}
 
-	var output map[string]ParamMetadata
-	unquotedOutput, unquoteOutputErr := strconv.Unquote(res.Function.Output)
-	if unquoteOutputErr != nil {
-		return Function{}, unquoteOutputErr
-	}
-	outputUnmarshalErr := json.Unmarshal([]byte(unquotedOutput), &output)
-	if err != nil {
-		return Function{}, outputUnmarshalErr
+	output, outputConvertErr := convertToParamMetadata(res.Function.Output)
+	if outputConvertErr != nil {
+		return Function{}, outputConvertErr
 	}
 
 	var options Options
@@ -80,4 +71,19 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 		UpdatedAt:   res.Function.UpdatedAt,
 		Versions:    versions,
 	}, nil
+}
+
+func convertToParamMetadata(source string) (result map[string]ParamMetadata, err error) {
+	unquoted, unquoteErr := strconv.Unquote(source)
+	if unquoteErr != nil {
+		err = unquoteErr
+		return nil, err
+	}
+	unmarshalErr := json.Unmarshal([]byte(unquoted), &result)
+	if unmarshalErr != nil {
+		err = unmarshalErr
+		return nil, err
+	}
+
+	return result, nil
 }

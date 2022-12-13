@@ -87,10 +87,7 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 
 func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
 	if gb.RunContext.UpdateData != nil {
-		err := gb.computeCurrentState()
-		if err != nil {
-			return nil, err
-		}
+		gb.changeCurrentState()
 
 		if gb.State.HasResponse == true {
 			var expectedOutput map[string]script.ParamMetadata
@@ -98,7 +95,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			if unquoteErr != nil {
 				return nil, unquoteErr
 			}
-			err = json.Unmarshal([]byte(unescapedOutputStr), &expectedOutput)
+			err := json.Unmarshal([]byte(unescapedOutputStr), &expectedOutput)
 
 			var outputData map[string]interface{}
 			err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &outputData)
@@ -106,23 +103,16 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 				return nil, err
 			}
 
-			var keyExist = func(entry string, m map[string]interface{}) bool {
-				for k := range m {
-					if k == entry {
-						return true
-					}
-				}
-				return false
-			}
-
 			var resultOutput = make(map[string]interface{})
 
 			for k := range expectedOutput {
-				if keyExist(k, outputData) {
-					var val = outputData[k]
-					// todo: конвертируем в нужный тип на основе метаданных (JAP-903)
-					resultOutput[k] = val
+				param, ok := outputData[k]
+				if !ok {
+					return nil, errors.New("function returned not all of expected results")
 				}
+
+				// todo: конвертируем в нужный тип на основе метаданных (JAP-903)
+				resultOutput[k] = param
 			}
 
 			if len(resultOutput) != len(expectedOutput) {
@@ -133,11 +123,8 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 				gb.RunContext.VarStore.SetValue(gb.Output[k], v)
 			}
 		}
-	}
-
-	if gb.RunContext.UpdateData == nil {
+	} else {
 		taskStep, err := gb.RunContext.Storage.GetTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
-
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +132,6 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 		executableFunctionMapping := gb.State.Mapping
 
 		variables, err := getVariables(gb.RunContext.VarStore)
-
 		if err != nil {
 			return nil, err
 		}
@@ -171,6 +157,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			return nil, err
 		}
 	}
+
 	return nil, nil
 }
 
@@ -249,7 +236,7 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 	return b, nil
 }
 
-func (gb *ExecutableFunctionBlock) computeCurrentState() error {
+func (gb *ExecutableFunctionBlock) changeCurrentState() {
 	if gb.State.HasResponse == false || gb.State.HasAck == true {
 		gb.State.HasResponse = true
 	}
@@ -257,6 +244,4 @@ func (gb *ExecutableFunctionBlock) computeCurrentState() error {
 	if gb.State.Async == true && gb.State.HasAck == false {
 		gb.State.HasAck = true
 	}
-
-	return nil
 }

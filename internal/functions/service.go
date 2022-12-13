@@ -2,8 +2,11 @@ package functions
 
 import (
 	"crypto/tls"
+
 	function_v1 "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
+
 	"go.opencensus.io/plugin/ocgrpc"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )

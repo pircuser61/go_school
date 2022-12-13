@@ -5,8 +5,6 @@ package main
 import (
 	"context"
 	"flag"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,7 +27,9 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
