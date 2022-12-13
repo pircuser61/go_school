@@ -25,14 +25,13 @@ const (
 )
 
 type ExecutableFunction struct {
-	Name           string               `json:"name"`
-	Version        string               `json:"version"`
-	Mapping        script.MappingParam  `json:"mapping"`
-	Function       script.FunctionParam `json:"function"`
-	Async          bool                 `json:"async"`
-	HasAck         bool                 `json:"has_ack"`
-	HasResponse    bool                 `json:"has_response"`
-	FunctionStatus FunctionStatus       `json:"function_status"`
+	Name        string               `json:"name"`
+	Version     string               `json:"version"`
+	Mapping     script.MappingParam  `json:"mapping"`
+	Function    script.FunctionParam `json:"function"`
+	Async       bool                 `json:"async"`
+	HasAck      bool                 `json:"has_ack"`
+	HasResponse bool                 `json:"has_response"`
 }
 
 type FunctionStatus string
@@ -147,7 +146,8 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			if variable == nil {
 				return nil, fmt.Errorf("cant fill function mapping with value: k: %s, v: %v", k, v)
 			}
-			functionMapping[k] = getVariable(variables, v.Value) // TODO надо будет проверять типы, а также нам нужна будет работа с обьектами JAP-904
+			functionMapping[k] = getVariable(variables, v.Value)
+			// TODO надо будет проверять типы, а также нам нужна будет работа с обьектами JAP-904
 		}
 
 		err = gb.RunContext.Kafka.Produce(ctx, kafka.RunnerOutMessage{
