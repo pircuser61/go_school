@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +16,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"

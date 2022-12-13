@@ -2,10 +2,10 @@ package configs
 
 import (
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"

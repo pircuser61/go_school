@@ -91,22 +91,26 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 
 		if gb.State.HasResponse == true {
 			var expectedOutput map[string]script.ParamMetadata
-			unescapedOutputStr, unquoteErr := strconv.Unquote(gb.State.Function.Output)
+			unquotedOutputStr, unquoteErr := strconv.Unquote(gb.State.Function.Output)
 			if unquoteErr != nil {
 				return nil, unquoteErr
 			}
-			err := json.Unmarshal([]byte(unescapedOutputStr), &expectedOutput)
 
-			var outputData map[string]interface{}
-			err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &outputData)
-			if err != nil {
-				return nil, err
+			outputUnmarshalErr := json.Unmarshal([]byte(unquotedOutputStr), &expectedOutput)
+			if outputUnmarshalErr != nil {
+				return nil, outputUnmarshalErr
+			}
+
+			var updateDataParams map[string]interface{}
+			updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateDataParams)
+			if updateDataUnmarshalErr != nil {
+				return nil, updateDataUnmarshalErr
 			}
 
 			var resultOutput = make(map[string]interface{})
 
 			for k := range expectedOutput {
-				param, ok := outputData[k]
+				param, ok := updateDataParams[k]
 				if !ok {
 					return nil, errors.New("function returned not all of expected results")
 				}
