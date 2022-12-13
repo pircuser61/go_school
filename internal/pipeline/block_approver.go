@@ -119,8 +119,8 @@ func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []MemberA
 
 func (gb *GoApproverBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
 	return !gb.State.SLAChecked, !gb.State.HalfSLAChecked,
-		computeMaxDate(gb.RunContext.currBlockStartTime, gb.State.SLA),
-		computeMaxDate(gb.RunContext.currBlockStartTime, gb.State.SLA/2)
+		computeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
+		computeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2)
 }
 
 func (gb *GoApproverBlock) UpdateManual() bool {
