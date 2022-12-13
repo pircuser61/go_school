@@ -25,8 +25,8 @@ func (gb *GoTestBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoTestBlock) CheckSLA() (bool, bool, time.Time) {
-	return false, false, time.Time{}
+func (gb *GoTestBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
+	return false, false, time.Time{}, time.Time{}
 }
 
 func (gb *GoTestBlock) UpdateManual() bool {

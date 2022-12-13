@@ -47,8 +47,8 @@ func (gb *GoSdApplicationBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoSdApplicationBlock) CheckSLA() (bool, bool, time.Time) {
-	return false, false, time.Time{}
+func (gb *GoSdApplicationBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
+	return false, false, time.Time{}, time.Time{}
 }
 
 func (gb *GoSdApplicationBlock) UpdateManual() bool {
