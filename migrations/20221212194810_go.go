@@ -48,7 +48,6 @@ func upGo(tx *sql.Tx) error {
 			Id:              resultRow.Id,
 			HalfSLADeadline: halfSLADeadline,
 		})
-
 	}
 	if rowsErr := rows.Err(); rowsErr != nil {
 		rows.Close()
