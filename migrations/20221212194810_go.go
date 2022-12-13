@@ -51,9 +51,9 @@ func upGo(tx *sql.Tx) error {
 			return execErr
 		}
 
-		if rowsErr := rows.Err(); rowsErr != nil {
-			return rowsErr
-		}
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return rowsErr
 	}
 	return nil
 }
