@@ -194,7 +194,7 @@ type AdditionalApprover struct {
 	Comment           *string           `json:"comment"`
 	Attachments       []string          `json:"attachments"`
 	Decision          *ApproverDecision `json:"decision"`
-	TimeDecision      *time.Time
+	TimeDecision      *time.Time        `json:"time_decision"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -302,6 +302,7 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params addi
 
 	loginsToNotify := make([]string, 0)
 	couldUpdateOne := false
+	timeNow := time.Now()
 
 	for i := range a.AdditionalApprovers {
 		if login != a.AdditionalApprovers[i].ApproverLogin || a.AdditionalApprovers[i].Decision != nil {
@@ -312,7 +313,6 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params addi
 		a.AdditionalApprovers[i].Comment = &params.Comment
 		a.AdditionalApprovers[i].Attachments = params.Attachments
 		if a.AdditionalApprovers[i].TimeDecision == nil {
-			timeNow := time.Now()
 			a.AdditionalApprovers[i].TimeDecision = &timeNow
 		}
 
