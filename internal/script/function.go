@@ -1,6 +1,9 @@
 package script
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type MappingParam map[string]MappingValue
 
@@ -16,9 +19,37 @@ type MappingValue struct {
 }
 
 type ExecutableFunctionParams struct {
-	Name    string       `json:"name"`
-	Version string       `json:"version"`
-	Mapping MappingParam `json:"mapping"`
+	Name     string        `json:"name"`
+	Version  string        `json:"version"`
+	Mapping  MappingParam  `json:"mapping"`
+	Function FunctionParam `json:"function"`
+}
+
+type FunctionParam struct {
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	FunctionId  string    `json:"functionId"`
+	VersionId   string    `json:"versionId"`
+	Version     string    `json:"version"`
+	CreatedAt   time.Time `json:"createdAt"`
+	DeletedAt   time.Time `json:"deletedAt"`
+	Uses        int       `json:"uses"`
+	Input       string    `json:"input"`
+	Output      string    `json:"output"`
+	Options     string    `json:"options"`
+}
+
+type ParamMetadata struct {
+	Type        string
+	Description string
+	Items       []ParamMetadata
+	Properties  map[string]ParamMetadata
+}
+
+type Options struct {
+	Type   string
+	Input  map[string]interface{}
+	Output map[string]ParamMetadata
 }
 
 func (a *ExecutableFunctionParams) Validate() error {

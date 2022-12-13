@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
-	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -16,9 +14,7 @@ import (
 type Server struct {
 	logger logger.Logger
 
-	httpServer   *http.Server
-	grpcServer   *GRPC
-	grpcGWServer *GRPCGW
+	httpServer *http.Server
 
 	kafka *kafka.Service
 }
@@ -28,23 +24,16 @@ func NewServer(
 	log logger.Logger,
 	kf *kafka.Service,
 	serverParam api.ServerParam,
-	grpcServerParam *GRPCConfig,
-	grpcGWServerParam *GRPCGWConfig,
 ) *Server {
 	httpServer, err := api.NewServer(ctx, serverParam)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	grpcServer := NewGRPC(grpcServerParam)
-	grpcGWServer := NewGRPCGW(grpcGWServerParam)
-
 	return &Server{
-		logger:       log,
-		httpServer:   httpServer,
-		grpcServer:   grpcServer,
-		grpcGWServer: grpcGWServer,
-		kafka:        kf,
+		logger:     log,
+		httpServer: httpServer,
+		kafka:      kf,
 	}
 }
 
@@ -58,19 +47,6 @@ func (s *Server) Run(ctx context.Context) {
 			} else {
 				s.logger.WithError(err).Fatal("script manager service")
 			}
-		}
-	}()
-
-	go func() {
-		if err := s.grpcServer.Listen(); err != nil {
-			os.Exit(-2)
-		}
-	}()
-
-	go func() {
-		time.Sleep(time.Second)
-		if err := s.grpcGWServer.ListenGRPCGW(); err != nil {
-			os.Exit(-3)
 		}
 	}()
 

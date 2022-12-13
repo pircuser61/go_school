@@ -85,3 +85,6 @@ log:
 servicedesc:
   servicedesk_url: 'https://dev.servicedesk.mts.ru'
   scope: 'servicedesk-develop-aud'
+
+function_store:
+  url: 'functions:9090'

@@ -690,6 +690,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.People = ae.People
 	ep.Name = dto.p.Name
 	ep.ServiceDesc = ae.ServiceDesc
+	ep.FunctionStore = ae.FunctionStore
 
 	if dto.makeNewWork {
 		ep.WorkNumber = dto.workNumber
@@ -726,6 +727,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		Kafka:       ep.Kafka,
 		People:      ep.People,
 		ServiceDesc: ep.ServiceDesc,
+		FunctionStore: ep.FunctionStore,
 		FaaS:        ep.FaaS,
 		VarStore:    variableStorage,
 		UpdateData:  nil,

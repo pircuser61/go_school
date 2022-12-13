@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"golang.org/x/net/context"
-
 	"github.com/Shopify/sarama"
 
 	"github.com/rcrowley/go-metrics"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"golang.org/x/net/context"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
 )
 

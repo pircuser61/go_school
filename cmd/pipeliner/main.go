@@ -27,6 +27,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -136,6 +137,12 @@ func main() {
 		return
 	}
 
+	functionsService, err := functions.NewService(cfg.FunctionStore)
+	if err != nil {
+		log.WithError(err).Error("can't create functions service")
+		return
+	}
+
 	APIEnv := &api.APIEnv{
 		DB:                   &dbConn,
 		Remedy:               cfg.Remedy,
@@ -148,6 +155,7 @@ func main() {
 		Kafka:                kafkaService,
 		People:               peopleService,
 		ServiceDesc:          serviceDescService,
+		FunctionStore:        functionsService,
 	}
 
 	serverParam := api.ServerParam{
@@ -180,19 +188,9 @@ func main() {
 
 	initSwagger(cfg)
 
-	grpcServerParam := &server.GRPCConfig{
-		Port: cfg.GRPCPort,
-		Conn: dbConn,
-	}
-
-	grpcGWServerParam := &server.GRPCGWConfig{
-		GRPCPort:   cfg.GRPCPort,
-		GRPCGWPort: cfg.GRPCGWPort,
-	}
-
 	monitoring.Setup(cfg.Monitoring.Addr, &http.Client{Timeout: cfg.Monitoring.Timeout.Duration})
 
-	s := server.NewServer(ctx, log, kafkaService, serverParam, grpcServerParam, grpcGWServerParam)
+	s := server.NewServer(ctx, log, kafkaService, serverParam)
 	s.Run(ctx)
 
 	sgnl := make(chan os.Signal, 1)

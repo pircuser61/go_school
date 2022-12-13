@@ -5,6 +5,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -44,6 +45,7 @@ type Pipeliner struct {
 	Mail                  mail.Config        `yaml:"mail"`
 	ServiceDesc           servicedesc.Config `yaml:"servicedesc"`
 	Kafka                 kafka.Config       `yaml:"kafka"`
+	FunctionStore         functions.Config   `yaml:"function_store"`
 }
 
 type RunEnv struct {
