@@ -36,10 +36,9 @@ values
 -- misc
 ('cancel_app', 'Отозвать', true, true, false),
 
--- non public actions
-('add_approvers', 'Добавить согласующего', false, true, false),
-('additional_approvement', '', false, false, false),
-('additional_reject', '', false, false, false);
+('add_approvers', 'Добавить согласующего', true, true, true),
+('additional_approvement', 'Согласовать', true, true, true),
+('additional_reject', 'Отклонить', true, true, true);
 
 -- +goose StatementEnd
 
