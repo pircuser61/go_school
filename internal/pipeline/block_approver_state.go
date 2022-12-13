@@ -213,6 +213,22 @@ func (a *ApproverData) GetApproversGroupID() string {
 	return a.ApproversGroupID
 }
 
+func (a *ApproverData) userIsAnyApprover(login string) bool {
+	if login == AutoApprover {
+		return true
+	}
+	_, ok := a.Approvers[login]
+	if ok {
+		return true
+	}
+	for _, approver := range a.AdditionalApprovers {
+		if approver.Decision == nil && approver.ApproverLogin == login {
+			return true
+		}
+	}
+	return false
+}
+
 //nolint:gocyclo //its ok here
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string, attach []string) error {
 	_, ok := a.Approvers[login]

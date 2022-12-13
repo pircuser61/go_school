@@ -215,8 +215,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 	)
 
 	if updateParams.Type == RequestAddInfoType {
-		_, ok := gb.State.Approvers[gb.RunContext.UpdateData.ByLogin]
-		if !ok && gb.RunContext.UpdateData.ByLogin != AutoApprover {
+		if !gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) {
 			return fmt.Errorf("%s not found in approvers", gb.RunContext.UpdateData.ByLogin)
 		}
 
@@ -411,6 +410,10 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 
 func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) error {
 	logApprovers := []string{}
+
+	if !gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) {
+		return fmt.Errorf("%s not found in approvers", gb.RunContext.UpdateData.ByLogin)
+	}
 
 	for i := range u.AdditionalApproversLogins {
 		if gb.checkAdditionalApproverNotAdded(u.AdditionalApproversLogins[i]) {
