@@ -31,6 +31,12 @@ func upGo(tx *sql.Tx) error {
 		return err
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+		}
+	}(rows)
+
 	for rows.Next() {
 		var resultRow ResultRowStruct
 		var halfSLADeadline string
@@ -45,7 +51,6 @@ func upGo(tx *sql.Tx) error {
 			return err
 		}
 	}
-	err = rows.Close()
 	if err != nil {
 		return err
 	}
