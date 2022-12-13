@@ -20,6 +20,10 @@ func upGo(tx *sql.Tx) error {
 		TimeStart time.Time
 		SLA       int
 	}
+	type UpdateStruct struct {
+		Id              uuid.UUID
+		HalfSLADeadline time.Time
+	}
 	rows, queryErr := tx.Query("" +
 		"select " +
 		"id, " +
@@ -30,30 +34,33 @@ func upGo(tx *sql.Tx) error {
 	if queryErr != nil {
 		return queryErr
 	}
-
-	defer func(rows *sql.Rows) {
-		closeErr := rows.Close()
-		if closeErr != nil {
-		}
-	}(rows)
-
+	var resultRows []UpdateStruct
 	for rows.Next() {
 		var resultRow ResultRowStruct
-		var halfSLADeadline string
+		var halfSLADeadline time.Time
 		scanErr := rows.Scan(&resultRow.Id, &resultRow.TimeStart, &resultRow.SLA)
 		if scanErr != nil {
+			rows.Close()
 			return scanErr
 		}
-		halfSLADeadline = pipeline.ComputeDeadline(resultRow.TimeStart, resultRow.SLA/2)
-
-		_, execErr := tx.Exec("update variable_storage set half_sla_deadline = $1 where id = $2", halfSLADeadline, resultRow.Id)
-		if execErr != nil {
-			return execErr
-		}
+		halfSLADeadline = pipeline.ComputeMaxDate(resultRow.TimeStart, float32(resultRow.SLA)/2)
+		resultRows = append(resultRows, UpdateStruct{
+			Id:              resultRow.Id,
+			HalfSLADeadline: halfSLADeadline,
+		})
 
 	}
 	if rowsErr := rows.Err(); rowsErr != nil {
+		rows.Close()
 		return rowsErr
+	}
+	rows.Close()
+
+	for _, row := range resultRows {
+		_, execErr := tx.Exec("update variable_storage set half_sla_deadline = $1 where id = $2", row.HalfSLADeadline, row.Id)
+		if execErr != nil {
+			return execErr
+		}
 	}
 	return nil
 }
