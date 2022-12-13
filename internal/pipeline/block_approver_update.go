@@ -52,6 +52,14 @@ func (a *additionalApproverUpdateParams) Validate() error {
 		return fmt.Errorf("unknown decision %s", a.Decision)
 	}
 
+	if len(a.Attachments) > 10 {
+		return fmt.Errorf("max attachments length: 10, current: %d", len(a.Attachments))
+	}
+
+	if len([]rune(a.Comment)) > 500 {
+		return fmt.Errorf("max comment length 500 symbols, current: %d", len([]rune(a.Comment)))
+	}
+
 	return nil
 }
 
@@ -71,7 +79,7 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
-	if gb.State.SLA > 0 { // TODO return 8
+	if gb.State.SLA > 0 { // TODO change to 8
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		for approver := range gb.State.Approvers {
@@ -127,7 +135,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
-	if gb.State.SLA > 0 { // TODO return 8
+	if gb.State.SLA > 0 { // TODO temp change to 8
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		for approver := range gb.State.Approvers {

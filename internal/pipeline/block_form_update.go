@@ -81,12 +81,12 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if _, ok := gb.State.Executors[data.ByLogin]; !ok {
 			return nil, fmt.Errorf("%s not found in executors", data.ByLogin)
 		}
+		gb.State.ActualExecutor = &data.ByLogin
+		gb.State.IsFilled = true
 	}
 
-	gb.State.ActualExecutor = &data.ByLogin
 	gb.State.ApplicationBody = updateParams.ApplicationBody
 	gb.State.Description = updateParams.Description
-	gb.State.IsFilled = true
 
 	gb.State.ChangesLog = append([]ChangesLogItem{
 		{
@@ -97,7 +97,12 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		},
 	}, gb.State.ChangesLog...)
 
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], &data.ByLogin)
+	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
+	if err != nil {
+		return nil, err
+	}
+	
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
 
 	var stateBytes []byte
