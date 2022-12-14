@@ -11,7 +11,7 @@ grpc_gw_port: ":3000"
 grpc_port: ":3001"
 
 people:
-  url: "https://iga.dev.autobp.mts.ru/api/archivist/v2"
+  url: "https://dev.iga.mts.ru/api/archivist/v2"
 
 database:
   kind: postgres
