@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/mail"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -73,6 +74,9 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 	}
 
 	for _, person := range to {
+		if !regexp.MustCompile(`.+@.+`).MatchString(person) {
+			continue
+		}
 		msg.To = append(msg.To, &mail.Address{Address: person})
 	}
 
