@@ -113,7 +113,7 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 			count(*) over() as total,
 			w.rate,
 			w.rate_comment,
-		    CASE WHEN ua.actions <> '{null}' THEN ua.actions ELSE '{}' END
+		    ua.actions
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -441,7 +441,7 @@ func (db *PGCon) GetTask(ctx c.Context, username, workNumber string) (*entity.Er
 			COALESCE(descr.blueprint_id, ''),
 			w.rate,
 			w.rate_comment,
-         	CASE WHEN ua.actions IS NOT NULL AND ua.actions <> '{null}' THEN ua.actions ELSE '{}' END
+         	ua.actions
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -475,7 +475,7 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	et := entity.EriusTask{}
 
 	var nullStringParameters sql.NullString
-	var taskActions pq.StringArray
+	var nullStringActions []sql.NullString
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -496,13 +496,14 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 		&et.BlueprintID,
 		&et.Rate,
 		&et.RateComment,
-		&taskActions,
+		pq.Array(&nullStringActions),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	et.Actions = db.computeActions(taskActions, actionsMap)
+	actions := db.actionsToStrings(nullStringActions)
+	et.Actions = db.computeActions(actions, actionsMap)
 
 	if nullStringParameters.Valid && nullStringParameters.String != "" {
 		err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
@@ -592,7 +593,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 		et := entity.EriusTask{}
 
 		var nullStringParameters sql.NullString
-		var taskActions pq.StringArray
+		var nullStringActions []sql.NullString
 
 		err = rows.Scan(
 			&et.ID,
@@ -611,7 +612,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			&et.Total,
 			&et.Rate,
 			&et.RateComment,
-			&taskActions,
+			pq.Array(&nullStringActions),
 		)
 
 		if err != nil {
@@ -625,7 +626,8 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 			}
 		}
 
-		et.Actions = db.computeActions(taskActions, actionsMap)
+		actions := db.actionsToStrings(nullStringActions)
+		et.Actions = db.computeActions(actions, actionsMap)
 		ets.Tasks = append(ets.Tasks, et)
 	}
 
@@ -835,4 +837,15 @@ func (db *PGCon) getActionsMap(ctx context.Context) (actions map[string]entity.T
 		return nil, rowsErr
 	}
 	return result, nil
+}
+
+func (db *PGCon) actionsToStrings(nullStringActions []sql.NullString) []string {
+	actions := make([]string, 0, len(nullStringActions))
+	for _, action := range nullStringActions {
+		if action.Valid {
+			actions = append(actions, action.String)
+		}
+	}
+
+	return actions
 }

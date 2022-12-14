@@ -153,6 +153,8 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 		question         = "need approval"
 	)
 
+	timeNow := time.Now()
+
 	type fields struct {
 		Decision            *ApproverDecision
 		AdditionalApprovers []AdditionalApprover
@@ -242,12 +244,14 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Question:          &question,
 					Comment:           &comment,
 					Decision:          &decisionRejected,
+					DecisionTime:      &timeNow,
 				},
 				{
 					ApproverLogin:     login,
 					BaseApproverLogin: login3,
 					Comment:           &comment,
 					Decision:          &decisionRejected,
+					DecisionTime:      &timeNow,
 				},
 				{
 					ApproverLogin:     login,
@@ -255,6 +259,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Question:          &question,
 					Comment:           &comment,
 					Decision:          &decisionApproved,
+					DecisionTime:      &timeNow,
 				},
 			},
 		},
