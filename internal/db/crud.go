@@ -2455,7 +2455,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		SELECT w.id,
 		       w.work_number,
 		       p.name,	
-		       v.author,
+		       w.author,
 		       vs.content,
 		       v.content->'pipeline'->'blocks'->vs.step_name,
 		       vs.step_name,
