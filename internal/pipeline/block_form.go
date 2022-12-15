@@ -41,6 +41,8 @@ type FormData struct {
 	ActualExecutor   *string                 `json:"actual_executor,omitempty"`
 	ChangesLog       []ChangesLogItem        `json:"changes_log"`
 
+	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
+
 	IsRevoked bool `json:"is_revoked"`
 }
 
@@ -207,11 +209,12 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 		Executors: map[string]struct{}{
 			params.Executor: {},
 		},
-		SchemaId:         params.SchemaId,
-		SchemaName:       params.SchemaName,
-		ChangesLog:       make([]ChangesLogItem, 0),
-		FormExecutorType: params.FormExecutorType,
-		ApplicationBody:  map[string]interface{}{},
+		SchemaId:           params.SchemaId,
+		SchemaName:         params.SchemaName,
+		ChangesLog:         make([]ChangesLogItem, 0),
+		FormExecutorType:   params.FormExecutorType,
+		ApplicationBody:    map[string]interface{}{},
+		FormsAccessibility: params.FormsAccessibility,
 	}
 
 	switch gb.State.FormExecutorType {

@@ -15,10 +15,11 @@ const (
 )
 
 type FormParams struct {
-	SchemaId         string           `json:"schema_id"`
-	SchemaName       string           `json:"schema_name"`
-	Executor         string           `json:"executor"`
-	FormExecutorType FormExecutorType `json:"form_executor_type"`
+	SchemaId           string              `json:"schema_id"`
+	SchemaName         string              `json:"schema_name"`
+	Executor           string              `json:"executor"`
+	FormExecutorType   FormExecutorType    `json:"form_executor_type"`
+	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 }
 
 func (a *FormParams) Validate() error {
