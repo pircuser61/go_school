@@ -818,6 +818,9 @@ type FormParams struct {
 	//   * From_schema - Selected by initiator
 	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
 
+	// List of accessibility properties for forms
+	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
+
 	// form template id
 	SchemaId *string `json:"schema_id,omitempty"`
 
