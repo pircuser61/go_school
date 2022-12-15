@@ -121,7 +121,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		gb.RunContext.UpdateData.ByLogin = AutoApprover
 		if setErr := gb.setApproverDecision(
 			approverUpdateParams{
-				internalDecision: decisionFromAutoAction(*gb.State.AutoAction),
+				internalDecision: (*gb.State.AutoAction).ToDecision(),
 				Comment:          AutoActionComment,
 			}); setErr != nil {
 			return setErr

@@ -84,7 +84,7 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 	gb.State = &ApproverData{
 		Type:               params.Type,
 		SLA:                params.SLA,
-		AutoAction:         params.AutoAction,
+		AutoAction:         ApproverActionFromString(params.AutoAction),
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,
 		ApproverLog:        make([]ApproverLogEntry, 0),
@@ -92,6 +92,19 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 		ApprovementRule:    params.ApprovementRule,
 		ApproveStatusName:  params.ApproveStatusName,
 		ActionList:         actions,
+	}
+
+	if gb.State.AutoAction != nil {
+		autoActionValid := false
+		for _, a := range actions {
+			if a.Id == string(*gb.State.AutoAction) {
+				autoActionValid = true
+				break
+			}
+		}
+		if !autoActionValid {
+			return errors.New("bad auto action")
+		}
 	}
 
 	if gb.State.ApprovementRule == "" {

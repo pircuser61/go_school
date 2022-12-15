@@ -33,9 +33,6 @@ const (
 
 	AllOfApprovementRequired ApprovementRule = "AllOf"
 	AnyOfApprovementRequired ApprovementRule = "AnyOf"
-
-	AutoActionApprove AutoAction = "approve"
-	AutoActionReject  AutoAction = "reject"
 )
 
 type ApproverParams struct {
@@ -44,7 +41,7 @@ type ApproverParams struct {
 	Approver        string `json:"approver"`
 
 	SLA                int                 `json:"sla"`
-	AutoAction         *AutoAction         `json:"auto_action,omitempty"`
+	AutoAction         *string             `json:"auto_action,omitempty"`
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 
 	IsEditable         bool `json:"is_editable"`
@@ -75,10 +72,6 @@ func (a *ApproverParams) Validate() error {
 
 	if a.SLA < 1 {
 		return fmt.Errorf("bad SLA value: %d", a.SLA)
-	}
-
-	if a.AutoAction != nil && *a.AutoAction != AutoActionApprove && *a.AutoAction != AutoActionReject {
-		return fmt.Errorf("unknown auto action type: %s", *a.AutoAction)
 	}
 
 	if a.Type == ApproverTypeGroup && a.ApproversGroupID == "" {

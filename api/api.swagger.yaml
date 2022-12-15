@@ -3388,7 +3388,8 @@ components:
           description: Approvement SLA (in working hours)
           minimum: 1
         auto_action:
-          $ref: '#/components/schemas/ApproveAutoAction'
+          type: string
+          description: Auto action to do (from action list)
         repeat_prev_decision:
           type: boolean
         is_editable:
@@ -3484,14 +3485,6 @@ components:
       enum: [ "Один из согласующих", "Все согласующие" ]
       x-enum-varnames: [ 'AnyOf', 'AllOf' ]
       description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions (translated).
-
-
-    ApproveAutoAction:
-      type: string
-      description: Action to do automatically in case SLA is breached
-      enum:
-        - approve
-        - reject
 
     FunctionParams:
       type: object
