@@ -2348,24 +2348,21 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
 	// language=PostgreSQL
 	var q = `
 			with accesses as (
-				select jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as data
-				from variable_storage
-				where step_type = 'approver'
-				  and content -> 'State' -> step_name -> 'approvers' ? $3
-				  and work_id = (SELECT id
-								 FROM works
-								 WHERE work_number = $1 AND child_id IS NULL
-				      )
-			union
-			select jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as data
-			from variable_storage
-			where step_type = 'execution'
-			  and content -> 'State' -> step_name -> 'executors' ? $3
-			  and work_id = (SELECT id
-							 FROM works
-							 WHERE work_number = $1 AND child_id IS NULL))
-			select count(*) from accesses
-			where accesses.data::jsonb ->> 'node_id' = $2 and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
+    select jsonb_array_elements(content -> 'State' -> step_name -> 'forms_accessibility') as data
+    from variable_storage
+    where ((step_type = 'approver' and content -> 'State' -> step_name -> 'approvers' ? $3)
+        or (step_type = 'execution' and content -> 'State' -> step_name -> 'executors' ? $3)
+        or (step_type = 'form' and content -> 'State' -> step_name -> 'executors' ? $3))
+      and work_id = (SELECT id
+                     FROM works
+                     WHERE work_number = $1
+                       AND child_id IS NULL
+    )
+)
+select count(*)
+from accesses
+where accesses.data::jsonb ->> 'node_id' = $2
+  and accesses.data::jsonb ->> 'accessType' = 'ReadWrite'
 `
 	var count int
 	if scanErr := db.Connection.QueryRow(ctx, q, workNumber, stepName, login).Scan(&count); scanErr != nil {
