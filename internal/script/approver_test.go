@@ -1,13 +1,15 @@
 package script
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestApproverParams_Validate(t *testing.T) {
 	type fields struct {
 		Type          ApproverType
 		ApproverLogin string
 		SLA           int
-		AutoAction    AutoAction
+		AutoAction    string
 	}
 	tests := []struct {
 		name    string
@@ -42,22 +44,12 @@ func TestApproverParams_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "bad auto action",
-			fields: fields{
-				Type:          ApproverTypeUser,
-				ApproverLogin: "example",
-				SLA:           1,
-				AutoAction:    "test",
-			},
-			wantErr: true,
-		},
-		{
 			name: "acceptance test",
 			fields: fields{
 				Type:          ApproverTypeUser,
 				ApproverLogin: "example",
 				SLA:           1,
-				AutoAction:    AutoActionApprove,
+				AutoAction:    "approve",
 			},
 			wantErr: false,
 		},

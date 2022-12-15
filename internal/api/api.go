@@ -12,13 +12,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// Defines values for ApproveAutoAction.
-const (
-	ApproveAutoActionApprove ApproveAutoAction = "approve"
-
-	ApproveAutoActionReject ApproveAutoAction = "reject"
-)
-
 // Defines values for ApprovementRule.
 const (
 	ApprovementRuleAllOf ApprovementRule = "AllOf"
@@ -396,9 +389,6 @@ type ApproveActionNamesResponse struct {
 	Title string `json:"title"`
 }
 
-// Action to do automatically in case SLA is breached
-type ApproveAutoAction string
-
 // ApproveStatusesResponse defines model for ApproveStatusesResponse.
 type ApproveStatusesResponse struct {
 	// approve status id
@@ -428,8 +418,8 @@ type ApproverParams struct {
 	// Approvers group name in SD
 	ApproversGroupName string `json:"approvers_group_name"`
 
-	// Action to do automatically in case SLA is breached
-	AutoAction *ApproveAutoAction `json:"auto_action,omitempty"`
+	// Auto action to do (from action list)
+	AutoAction *string `json:"auto_action,omitempty"`
 
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
@@ -1129,13 +1119,13 @@ type UsedBy struct {
 // Action defines model for action.
 type Action struct {
 	// enables attachment function
-	AttachmentsEnabled *bool `json:"attachments_enabled,omitempty"`
+	AttachmentsEnabled bool `json:"attachments_enabled"`
 
 	// type of renderable button with action (primary, secondary, other, none)
 	ButtonType string `json:"button_type"`
 
 	// enables comment function
-	CommentEnabled *bool `json:"comment_enabled,omitempty"`
+	CommentEnabled bool `json:"comment_enabled"`
 
 	// id of action
 	Id string `json:"id"`

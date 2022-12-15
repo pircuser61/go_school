@@ -23,6 +23,14 @@ const (
 	ApproverDecisionRejectedRU = "не согласен"
 )
 
+func ApproverActionFromString(action *string) *ApproverAction {
+	if action == nil {
+		return nil
+	}
+	appAction := ApproverAction(*action)
+	return &appAction
+}
+
 func (a ApproverAction) ToDecision() ApproverDecision {
 	switch a {
 	case ApproverActionApprove:
@@ -87,13 +95,6 @@ const (
 	ApproverDecisionConfirmed ApproverDecision = "confirmed"
 )
 
-func decisionFromAutoAction(action script.AutoAction) ApproverDecision {
-	if action == script.AutoActionApprove {
-		return ApproverDecisionApproved
-	}
-	return ApproverDecisionRejected
-}
-
 type ApproverEditingApp struct {
 	Approver    string    `json:"approver"`
 	Comment     string    `json:"comment"`
@@ -154,8 +155,8 @@ type ApproverData struct {
 	ApprovementRule     script.ApprovementRule `json:"approvementRule,omitempty"`
 	ApproverLog         []ApproverLogEntry     `json:"approver_log,omitempty"`
 
-	SLA        int                `json:"sla"`
-	AutoAction *script.AutoAction `json:"auto_action,omitempty"`
+	SLA        int             `json:"sla"`
+	AutoAction *ApproverAction `json:"auto_action,omitempty"`
 
 	IsEditable             bool                     `json:"is_editable"`
 	RepeatPrevDecision     bool                     `json:"repeat_prev_decision"`
