@@ -139,6 +139,8 @@ type Database interface {
 	TaskStorager
 	DictionaryStorager
 
+	Ping(ctx c.Context) error
+
 	StartTransaction(ctx context.Context) (Database, error)
 	CommitTransaction(ctx context.Context) error
 	RollbackTransaction(ctx context.Context) error

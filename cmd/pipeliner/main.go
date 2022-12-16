@@ -164,6 +164,8 @@ func main() {
 		PeopleService:     peopleService,
 		TimeoutMiddleware: cfg.Timeout.Duration,
 		ServerAddr:        cfg.ServeAddr,
+		ReadinessPath:     cfg.Probes.Readiness,
+		LivenessPath:      cfg.Probes.Liveness,
 	}
 
 	kafkaService.InitMessageHandler(APIEnv.FunctionReturnHandler)

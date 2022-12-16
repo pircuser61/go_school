@@ -3,6 +3,9 @@ tracing:
   sample_fraction: 1.0
 
 serve_addr: ':8000'
+probes:
+  liveness: "/alive"
+  readiness: "/ready"
 timeout: '30s'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"

@@ -39,6 +39,15 @@ type Connector interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
+func (db *PGCon) Ping(ctx context.Context) error {
+	if pingConn, ok := db.Connection.(interface {
+		Ping(ctx context.Context) error
+	}); ok {
+		return pingConn.Ping(ctx)
+	}
+	return errors.New("can't ping dn")
+}
+
 func (db *PGCon) StartTransaction(ctx context.Context) (Database, error) {
 	tx, err := db.Connection.Begin(ctx)
 	if err != nil {
@@ -52,6 +61,7 @@ func (db *PGCon) CommitTransaction(ctx context.Context) error {
 	if !ok {
 		return nil
 	}
+
 	return tx.Commit(ctx)
 }
 
