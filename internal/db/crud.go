@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -75,7 +76,8 @@ func (db *PGCon) RollbackTransaction(ctx context.Context) error {
 
 func ConnectPostgres(ctx context.Context, db *configs.Database) (PGCon, error) {
 	maxConnections := strconv.Itoa(db.MaxConnections)
-	connString := "postgres://" + db.User + ":" + db.Pass + "@" + db.Host + ":" + db.Port + "/" + db.DBName +
+	connString := "postgres://" + os.Getenv(db.UserEnvKey) + ":" + os.Getenv(db.PassEnvKey) +
+		"@" + db.Host + ":" + db.Port + "/" + db.DBName +
 		"?sslmode=disable&pool_max_conns=" + maxConnections
 
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(db.Timeout)*time.Second)

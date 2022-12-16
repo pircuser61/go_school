@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"os"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -73,8 +74,8 @@ type Database struct {
 	Kind           string `yaml:"kind"`
 	Host           string `yaml:"host"`
 	Port           string `yaml:"port"`
-	User           string `yaml:"user"`
-	Pass           string `yaml:"pass"`
+	UserEnvKey     string `yaml:"user_env_key"`
+	PassEnvKey     string `yaml:"pass_env_key"`
 	DBName         string `yaml:"dbname"`
 	MaxConnections int    `yaml:"max_connections"`
 	Timeout        int    `yaml:"timeout"`
@@ -86,14 +87,14 @@ type PushConfig struct {
 }
 
 func (d *Database) String() string {
-	pass := ""
-	for range d.Pass {
-		pass += "*"
+	passPlaceholder := ""
+	for range os.Getenv(d.PassEnvKey) {
+		passPlaceholder += "*"
 	}
 
 	return fmt.Sprintf(
 		"DB: (Kind: %s, Host: %s, Port: %s, User: %s, Pass: %s, DBName: %s, MaxConn: %d, Timeout: %d)",
-		d.Kind, d.Host, d.Port, d.User, pass, d.DBName, d.MaxConnections, d.Timeout)
+		d.Kind, d.Host, d.Port, os.Getenv(d.UserEnvKey), passPlaceholder, d.DBName, d.MaxConnections, d.Timeout)
 }
 
 type HTTPClient struct {
