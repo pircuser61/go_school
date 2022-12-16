@@ -2,7 +2,7 @@ FROM registry.services.mts.ru/docker/alpine/debug:3.11
 
 ARG SERVICE_NAME='app'
 ARG ARTIFACTS_PATH='artifacts'
-ARG CONFIG_PATH='./configs/config.yaml'
+ARG CONFIG_PATH='./cmd/pipeliner/config.yaml'
 
 ENV BINARY_NAME ${SERVICE_NAME}
 ENV BINARY_PATH ${ARTIFACTS_PATH}
