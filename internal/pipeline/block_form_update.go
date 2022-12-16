@@ -101,7 +101,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
 

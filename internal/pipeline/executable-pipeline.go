@@ -11,8 +11,8 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -148,19 +148,19 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 		bl := source[k]
 
 		block, err := CreateBlock(ctx, k, &bl, &BlockRunContext{
-			TaskID:      gb.TaskID,
-			WorkNumber:  gb.WorkNumber,
-			WorkTitle:   gb.Name,
-			Initiator:   gb.RunContext.Initiator,
-			Storage:     gb.Storage,
-			Sender:      gb.Sender,
-			Kafka:       gb.Kafka,
-			People:      gb.People,
-			ServiceDesc: gb.ServiceDesc,
+			TaskID:        gb.TaskID,
+			WorkNumber:    gb.WorkNumber,
+			WorkTitle:     gb.Name,
+			Initiator:     gb.RunContext.Initiator,
+			Storage:       gb.Storage,
+			Sender:        gb.Sender,
+			Kafka:         gb.Kafka,
+			People:        gb.People,
+			ServiceDesc:   gb.ServiceDesc,
 			FunctionStore: gb.FunctionStore,
-			FaaS:        gb.FaaS,
-			VarStore:    gb.VarStore,
-			UpdateData:  nil,
+			FaaS:          gb.FaaS,
+			VarStore:      gb.VarStore,
+			UpdateData:    nil,
 		})
 		if err != nil {
 			return err
