@@ -1491,3 +1491,17 @@ func (_m *MockedDatabase) RollbackTransaction(ctx context.Context) error {
 
 	return r0
 }
+
+// Ping provides a mock function with given fields:
+func (_m *MockedDatabase) Ping(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(ctx context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

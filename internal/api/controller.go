@@ -45,6 +45,9 @@ type ServerParam struct {
 	PeopleService     *people.Service
 	TimeoutMiddleware time.Duration
 	ServerAddr        string
+
+	LivenessPath  string
+	ReadinessPath string
 }
 
 func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
@@ -54,6 +57,9 @@ func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
 	mux.Use(observability.MiddlewareChi())
 	mux.Use(RequestIDMiddleware)
 	mux.Use(middleware.Timeout(param.TimeoutMiddleware))
+
+	mux.Get(param.LivenessPath, param.APIEnv.Alive)
+	mux.Get(param.ReadinessPath, param.APIEnv.Ready)
 
 	const (
 		baseURL = "/api/pipeliner/v1"

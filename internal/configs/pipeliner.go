@@ -20,12 +20,18 @@ const (
 	StrategyKafka = "kafka"
 )
 
+type Probes struct {
+	Readiness string `yaml:"readiness"`
+	Liveness  string `yaml:"liveness"`
+}
+
 type Pipeliner struct {
 	Tracing               TracingConfig      `yaml:"tracing"`
 	Timeout               Duration           `yaml:"timeout"`
 	Proxy                 string             `yaml:"proxy"`
 	Log                   *logger.Config     `yaml:"log"`
 	ServeAddr             string             `yaml:"serve_addr"`
+	Probes                Probes             `yaml:"probes"`
 	MetricsAddr           string             `yaml:"metrics_addr"`
 	DB                    Database           `yaml:"database"`
 	Remedy                string             `yaml:"remedy"`

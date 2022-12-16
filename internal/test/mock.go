@@ -1267,3 +1267,7 @@ func (m *MockDB) CommitTransaction(_ context.Context) error {
 func (m *MockDB) RollbackTransaction(_ context.Context) error {
 	return errNotFound
 }
+
+func (m *MockDB) Ping(_ context.Context) error {
+	return errNotFound
+}
