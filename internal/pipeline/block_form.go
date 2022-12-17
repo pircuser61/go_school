@@ -149,8 +149,10 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 			},
 		},
 		Params: &script.FunctionParams{
-			Type:   BlockGoFormID,
-			Params: &script.FormParams{},
+			Type: BlockGoFormID,
+			Params: &script.FormParams{
+				FormsAccessibility: []script.FormAccessibility{},
+			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
