@@ -988,8 +988,9 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		pv.comment,
 		pv.author
 	FROM versions pv
+	JOIN pipelines p ON p.id = pv.pipeline_id
 	JOIN pipeline_history pph ON pph.version_id = pv.id
-	WHERE pv.pipeline_id = $1
+	WHERE pv.pipeline_id = $1 AND p.deleted_at IS NULL
 	ORDER BY pph.date DESC 
 	LIMIT 1
 `
@@ -1055,8 +1056,9 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 		pv.author, 
 		pph.date
 	FROM versions pv
+	JOIN pipelines p ON pv.pipeline_id = p.id
     LEFT JOIN pipeline_history pph ON pph.version_id = pv.id
-	WHERE pv.id = $1
+	WHERE pv.id = $1 AND p.deleted_at IS NULL
 	ORDER BY pph.date DESC 
 	LIMIT 1`
 
@@ -2247,9 +2249,11 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 				  ) as servicedesk_node
 	) as servicedesk_node_params
 		LEFT JOIN versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
+		LEFT JOIN pipelines p ON pv.pipeline_id = p.id
 	WHERE pv.status = 2 AND
 			pv.is_actual = TRUE AND
 			pv.pipeline_id = $1 AND
+	        p.deleted_at IS NULL AND
 			servicedesk_node_params.type_id = 'servicedesk_application';
 `
 
