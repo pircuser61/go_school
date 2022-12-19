@@ -1,8 +1,14 @@
 package script
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
+)
+
+const (
+	timeLayout  = `"2006-01-02 15:04:05.000000 -0700 MST"`
+	emptyString = `""`
 )
 
 type MappingParam map[string]MappingValue
@@ -26,18 +32,20 @@ type ExecutableFunctionParams struct {
 }
 
 type FunctionParam struct {
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	FunctionId  string    `json:"functionId"`
-	VersionId   string    `json:"versionId"`
-	Version     string    `json:"version"`
-	CreatedAt   time.Time `json:"createdAt"`
-	DeletedAt   time.Time `json:"deletedAt"`
-	Uses        int       `json:"uses"`
-	Input       string    `json:"input"`
-	Output      string    `json:"output"`
-	Options     string    `json:"options"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	FunctionId  string       `json:"functionId"`
+	VersionId   string       `json:"versionId"`
+	Version     string       `json:"version"`
+	CreatedAt   functionTime `json:"createdAt"`
+	DeletedAt   functionTime `json:"deletedAt"`
+	Uses        int          `json:"uses"`
+	Input       string       `json:"input"`
+	Output      string       `json:"output"`
+	Options     string       `json:"options"`
 }
+
+type functionTime time.Time
 
 type ParamMetadata struct {
 	Type        string
@@ -85,4 +93,26 @@ func (m MappingParam) Validate() error {
 	}
 
 	return nil
+}
+
+func (ft *functionTime) UnmarshalJSON(b []byte) error {
+	if len(b) == len(emptyString) {
+		return nil
+	}
+
+	parsedTime, err := time.Parse(timeLayout, string(b))
+	if err != nil {
+		err = json.Unmarshal(b, &parsedTime)
+		if err != nil {
+			return err
+		}
+	}
+
+	*ft = functionTime(parsedTime)
+
+	return nil
+}
+
+func (ft functionTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(ft))
 }

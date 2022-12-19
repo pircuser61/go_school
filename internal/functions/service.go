@@ -1,14 +1,12 @@
 package functions
 
 import (
-	"crypto/tls"
-
 	function_v1 "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
 
 	"go.opencensus.io/plugin/ocgrpc"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Service struct {
@@ -20,7 +18,7 @@ type Service struct {
 
 func NewService(cfg Config) (*Service, error) {
 	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12})),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{})}
 	conn, err := grpc.Dial(cfg.URL, opts...)
 	if err != nil {

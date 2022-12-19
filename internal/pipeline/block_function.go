@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,6 +34,10 @@ type ExecutableFunction struct {
 }
 
 type FunctionStatus string
+
+type FunctionUpdateParams struct {
+	Mapping map[string]interface{} `json:"mapping"`
+}
 
 type ExecutableFunctionBlock struct {
 	Name    string
@@ -85,31 +88,28 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 }
 
 func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
+	var updateDataParams FunctionUpdateParams
 	if gb.RunContext.UpdateData != nil {
+		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateDataParams)
+		if updateDataUnmarshalErr != nil {
+			return nil, updateDataUnmarshalErr
+		}
+	}
+
+	if updateDataParams.Mapping != nil {
 		gb.changeCurrentState()
 
 		if gb.State.HasResponse == true {
 			var expectedOutput map[string]script.ParamMetadata
-			unquotedOutputStr, unquoteErr := strconv.Unquote(gb.State.Function.Output)
-			if unquoteErr != nil {
-				return nil, unquoteErr
-			}
-
-			outputUnmarshalErr := json.Unmarshal([]byte(unquotedOutputStr), &expectedOutput)
+			outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
 			if outputUnmarshalErr != nil {
 				return nil, outputUnmarshalErr
-			}
-
-			var updateDataParams map[string]interface{}
-			updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateDataParams)
-			if updateDataUnmarshalErr != nil {
-				return nil, updateDataUnmarshalErr
 			}
 
 			var resultOutput = make(map[string]interface{})
 
 			for k := range expectedOutput {
-				param, ok := updateDataParams[k]
+				param, ok := updateDataParams.Mapping[k]
 				if !ok {
 					return nil, errors.New("function returned not all of expected results")
 				}
@@ -146,7 +146,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			if variable == nil {
 				return nil, fmt.Errorf("cant fill function mapping with value: k: %s, v: %v", k, v)
 			}
-			functionMapping[k] = getVariable(variables, v.Value)
+			functionMapping[k] = variable
 			// TODO надо будет проверять типы, а также нам нужна будет работа с обьектами JAP-904
 		}
 
@@ -217,7 +217,7 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		return nil, errors.Wrap(err, "invalid executable function parameters")
 	}
 
-	function, err := b.RunContext.FunctionStore.GetFunction(context.Background(), b.Name)
+	function, err := b.RunContext.FunctionStore.GetFunction(context.Background(), params.Function.FunctionId)
 	if err != nil {
 		return nil, err
 	}
