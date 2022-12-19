@@ -493,17 +493,18 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			continue
 		}
 		runCtx := &pipeline.BlockRunContext{
-			TaskID:      dbTask.ID,
-			WorkNumber:  workNumber,
-			WorkTitle:   dbTask.Name,
-			Initiator:   dbTask.Author,
-			Storage:     txStorage,
-			Sender:      ae.Mail,
-			Kafka:       ae.Kafka,
-			People:      ae.People,
-			ServiceDesc: ae.ServiceDesc,
-			FaaS:        ae.FaaS,
-			VarStore:    storage,
+			TaskID:        dbTask.ID,
+			WorkNumber:    workNumber,
+			WorkTitle:     dbTask.Name,
+			Initiator:     dbTask.Author,
+			Storage:       txStorage,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			FaaS:          ae.FaaS,
+			VarStore:      storage,
 			UpdateData: &script.BlockUpdateData{
 				ByLogin:    ui.Username,
 				Action:     string(updateData.Action),
@@ -706,17 +707,18 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 		}
 		// goroutines?
 		runCtx := &pipeline.BlockRunContext{
-			TaskID:      item.TaskID,
-			WorkNumber:  item.WorkNumber,
-			WorkTitle:   item.WorkTitle,
-			Initiator:   item.Initiator,
-			Storage:     txStorage,
-			Sender:      ae.Mail,
-			Kafka:       ae.Kafka,
-			People:      ae.People,
-			ServiceDesc: ae.ServiceDesc,
-			FaaS:        ae.FaaS,
-			VarStore:    item.VarStore,
+			TaskID:        item.TaskID,
+			WorkNumber:    item.WorkNumber,
+			WorkTitle:     item.WorkTitle,
+			Initiator:     item.Initiator,
+			Storage:       txStorage,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			FaaS:          ae.FaaS,
+			VarStore:      item.VarStore,
 			UpdateData: &script.BlockUpdateData{
 				Action: string(action),
 			},
@@ -752,22 +754,25 @@ func (ae *APIEnv) FunctionReturnHandler(ctx context.Context, message kafka.Runne
 		Errors: step.Errors,
 	}
 
-	mapping, err := json.Marshal(message.FunctionMapping)
+	functionMapping := pipeline.FunctionUpdateParams{Mapping: message.FunctionMapping}
+
+	mapping, err := json.Marshal(functionMapping)
 	if err != nil {
 		log.Error(err)
 		return nil
 	}
 
 	runCtx := &pipeline.BlockRunContext{
-		TaskID:      step.WorkID,
-		WorkNumber:  step.WorkNumber,
-		Storage:     ae.DB,
-		Sender:      ae.Mail,
-		Kafka:       ae.Kafka,
-		People:      ae.People,
-		ServiceDesc: ae.ServiceDesc,
-		FaaS:        ae.FaaS,
-		VarStore:    storage,
+		TaskID:        step.WorkID,
+		WorkNumber:    step.WorkNumber,
+		Storage:       ae.DB,
+		Sender:        ae.Mail,
+		Kafka:         ae.Kafka,
+		People:        ae.People,
+		ServiceDesc:   ae.ServiceDesc,
+		FunctionStore: ae.FunctionStore,
+		FaaS:          ae.FaaS,
+		VarStore:      storage,
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
 		},

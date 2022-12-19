@@ -3,8 +3,6 @@ package functions
 import (
 	"context"
 	"encoding/json"
-	"strconv"
-
 	function_v1 "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
 )
 
@@ -30,11 +28,7 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 	}
 
 	var options Options
-	unquotedOptions, unquoteOptionsErr := strconv.Unquote(res.Function.Options)
-	if unquoteOptionsErr != nil {
-		return Function{}, unquoteOptionsErr
-	}
-	optionsUnmarshalErr := json.Unmarshal([]byte(unquotedOptions), &options)
+	optionsUnmarshalErr := json.Unmarshal([]byte(res.Function.Options), &options)
 	if err != nil {
 		return Function{}, optionsUnmarshalErr
 	}
@@ -74,12 +68,7 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 }
 
 func convertToParamMetadata(source string) (result map[string]ParamMetadata, err error) {
-	unquoted, unquoteErr := strconv.Unquote(source)
-	if unquoteErr != nil {
-		err = unquoteErr
-		return nil, err
-	}
-	unmarshalErr := json.Unmarshal([]byte(unquoted), &result)
+	unmarshalErr := json.Unmarshal([]byte(source), &result)
 	if unmarshalErr != nil {
 		err = unmarshalErr
 		return nil, err
