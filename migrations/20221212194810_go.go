@@ -28,9 +28,9 @@ func upGo(tx *sql.Tx) error {
 		"select " +
 		"id, " +
 		"time time_start, " +
-		"(content -> 'state' -> vs.step_name -> 'sla') sla " +
+		"(content -> 'State' -> vs.step_name -> 'sla') sla " +
 		"from variable_storage vs " +
-		"where vs.status = 'running' and (content -> 'state' -> vs.step_name -> 'sla') is not null")
+		"where vs.status = 'running' and (content -> 'State' -> vs.step_name -> 'sla') is not null")
 	if queryErr != nil {
 		return queryErr
 	}
