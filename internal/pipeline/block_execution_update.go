@@ -126,7 +126,7 @@ type ExecutionUpdateParams struct {
 
 //nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
-	if gb.State.SLA <= 0 {
+	if gb.State.CheckSLA != nil && !*gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return nil

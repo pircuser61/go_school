@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -60,7 +58,7 @@ func (gb *GoApproverBlock) loadState(raw json.RawMessage) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
+func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	var params script.ApproverParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -84,6 +82,7 @@ func (gb *GoApproverBlock) createState(ctx context.Context, ef *entity.EriusFunc
 	gb.State = &ApproverData{
 		Type:               params.Type,
 		SLA:                params.SLA,
+		CheckSLA:           params.CheckSLA,
 		AutoAction:         ApproverActionFromString(params.AutoAction),
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,

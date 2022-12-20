@@ -3291,11 +3291,13 @@ components:
         executors:
           type: string
           description: Executor value (depends on type)
-
         sla:
           type: integer
           description: Execution SLA (in working hours)
           minimum: 1
+        check_sla:
+          type: boolean
+          description: Is active SLA
         forms_accessibility:
           type: array
           description: List of accessibility properties for forms
@@ -3392,6 +3394,9 @@ components:
           type: integer
           description: Approvement SLA (in working hours)
           minimum: 1
+        check_sla:
+          type: boolean
+          description: Is active SLA
         auto_action:
           type: string
           description: Auto action to do (from action list)

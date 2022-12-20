@@ -46,7 +46,6 @@ type ExecutionData struct {
 	DecisionAttachments []string             `json:"decision_attachments,omitempty"`
 	DecisionComment     *string              `json:"comment,omitempty"`
 	ActualExecutor      *string              `json:"actual_executor,omitempty"`
-	SLA                 int                  `json:"sla"`
 
 	EditingApp               *ExecutorEditApp           `json:"editing_app,omitempty"`
 	EditingAppLog            []ExecutorEditApp          `json:"editing_app_log,omitempty"`
@@ -64,8 +63,10 @@ type ExecutionData struct {
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 
-	SLAChecked     bool `json:"sla_checked"`
-	HalfSLAChecked bool `json:"half_sla_checked"`
+	SLA            int   `json:"sla"`
+	CheckSLA       *bool `json:"check_sla"`
+	SLAChecked     bool  `json:"sla_checked"`
+	HalfSLAChecked bool  `json:"half_sla_checked"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {

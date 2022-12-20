@@ -41,6 +41,7 @@ type ApproverParams struct {
 	Approver        string `json:"approver"`
 
 	SLA                int                 `json:"sla"`
+	CheckSLA           *bool               `json:"check_sla"`
 	AutoAction         *string             `json:"auto_action,omitempty"`
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 
@@ -68,6 +69,10 @@ func (a *ApproverParams) Validate() error {
 		typeApprove != ApproverTypeHead &&
 		typeApprove != ApproverTypeFromSchema {
 		return fmt.Errorf("unknown approver type: %s", a.Type)
+	}
+
+	if a.SLA < 1 {
+		return fmt.Errorf("bad SLA value: %d", a.SLA)
 	}
 
 	if a.Type == ApproverTypeGroup && a.ApproversGroupID == "" {

@@ -27,7 +27,8 @@ type ExecutionParams struct {
 
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 
-	SLA int `json:"sla"`
+	SLA      int   `json:"sla"`
+	CheckSLA *bool `json:"check_sla"`
 
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
@@ -48,6 +49,10 @@ func (a *ExecutionParams) Validate() error {
 		typeExecution != ExecutionTypeGroup &&
 		typeExecution != ExecutionTypeFromSchema {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
+	}
+
+	if a.SLA < 1 {
+		return fmt.Errorf("bad SLA value: %d", a.SLA)
 	}
 
 	return nil
