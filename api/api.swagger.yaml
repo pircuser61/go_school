@@ -3319,6 +3319,7 @@ components:
         - type
         - executors
         - sla
+        - check_sla
         - executors_group_id
         - executors_group_name
         - repeat_prev_decision
@@ -3418,6 +3419,7 @@ components:
         - type
         - approver
         - sla
+        - check_sla
         - repeat_prev_decision
         - is_editable
         - approvers_group_id

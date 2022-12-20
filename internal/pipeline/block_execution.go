@@ -85,7 +85,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 }
 
 func (gb *GoExecutionBlock) CheckSLA() (sla, halfSLA bool, maxDate time.Time, maxHalfDate time.Time) {
-	if gb.State.CheckSLA != nil && !*gb.State.CheckSLA {
+	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return false, false, time.Time{}, time.Time{}

@@ -118,7 +118,7 @@ func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []MemberA
 }
 
 func (gb *GoApproverBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
-	if gb.State.CheckSLA != nil && !*gb.State.CheckSLA {
+	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return false, false, time.Time{}, time.Time{}

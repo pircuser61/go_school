@@ -41,7 +41,7 @@ type ApproverParams struct {
 	Approver        string `json:"approver"`
 
 	SLA                int                 `json:"sla"`
-	CheckSLA           *bool               `json:"check_sla"`
+	CheckSLA           bool                `json:"check_sla"`
 	AutoAction         *string             `json:"auto_action,omitempty"`
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 

@@ -422,7 +422,7 @@ type ApproverParams struct {
 	AutoAction *string `json:"auto_action,omitempty"`
 
 	// Is active SLA
-	CheckSla *bool `json:"check_sla,omitempty"`
+	CheckSla bool `json:"check_sla"`
 
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
@@ -715,7 +715,7 @@ type ExecutableFunctionParams struct {
 // Execution params
 type ExecutionParams struct {
 	// Is active SLA
-	CheckSla *bool `json:"check_sla,omitempty"`
+	CheckSla bool `json:"check_sla"`
 
 	// Executor value (depends on type)
 	Executors string `json:"executors"`

@@ -64,7 +64,7 @@ type ExecutionData struct {
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 
 	SLA            int   `json:"sla"`
-	CheckSLA       *bool `json:"check_sla"`
+	CheckSLA       bool `json:"check_sla"`
 	SLAChecked     bool  `json:"sla_checked"`
 	HalfSLAChecked bool  `json:"half_sla_checked"`
 }

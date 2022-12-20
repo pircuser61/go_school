@@ -79,7 +79,7 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
-	if gb.State.CheckSLA != nil && !*gb.State.CheckSLA {
+	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return nil
@@ -141,7 +141,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
-	if gb.State.CheckSLA != nil && !*gb.State.CheckSLA {
+	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return nil

@@ -27,8 +27,8 @@ type ExecutionParams struct {
 
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 
-	SLA      int   `json:"sla"`
-	CheckSLA *bool `json:"check_sla"`
+	SLA      int  `json:"sla"`
+	CheckSLA bool `json:"check_sla"`
 
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
