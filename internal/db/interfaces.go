@@ -7,8 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/iancoleman/orderedmap"
 
-	"golang.org/x/net/context"
-
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -51,12 +49,12 @@ type TaskStorager interface {
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error
 	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)
-	GetTaskStepsToWait(ctx context.Context, workNumber, blockName string) ([]string, error)
+	GetTaskStepsToWait(ctx c.Context, workNumber, blockName string) ([]string, error)
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
 	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
-	GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, error)
+	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 }
 
@@ -141,9 +139,9 @@ type Database interface {
 
 	Ping(ctx c.Context) error
 
-	StartTransaction(ctx context.Context) (Database, error)
-	CommitTransaction(ctx context.Context) error
-	RollbackTransaction(ctx context.Context) error
+	StartTransaction(ctx c.Context) (Database, error)
+	CommitTransaction(ctx c.Context) error
+	RollbackTransaction(ctx c.Context) error
 
 	GetPipelinesWithLatestVersion(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
 	GetApprovedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)

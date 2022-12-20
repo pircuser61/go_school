@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
@@ -738,7 +736,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ae *APIEnv) FunctionReturnHandler(ctx context.Context, message kafka.RunnerInMessage) error {
+func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	log := logger.GetLogger(ctx)
 
 	step, err := ae.DB.GetTaskStepById(ctx, message.TaskID)

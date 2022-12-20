@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 
 	"github.com/iancoleman/orderedmap"
@@ -797,7 +795,7 @@ func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 	return status, nil
 }
 
-func (db *PGCon) getActionsMap(ctx context.Context) (actions map[string]entity.TaskAction, err error) {
+func (db *PGCon) getActionsMap(ctx c.Context) (actions map[string]entity.TaskAction, err error) {
 	const q = `
 		SELECT 
 			id,

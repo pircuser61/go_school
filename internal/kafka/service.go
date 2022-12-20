@@ -1,14 +1,13 @@
 package kafka
 
 import (
+	c "context"
 	"fmt"
 	"os"
 
 	"github.com/Shopify/sarama"
 
 	"github.com/rcrowley/go-metrics"
-
-	"golang.org/x/net/context"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
@@ -53,7 +52,7 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) Produce(ctx context.Context, message RunnerOutMessage) error {
+func (s *Service) Produce(ctx c.Context, message RunnerOutMessage) error {
 	return s.producer.Produce(ctx, message)
 }
 
@@ -61,11 +60,11 @@ func (s *Service) CloseProducer() error {
 	return s.producer.Close()
 }
 
-func (s *Service) InitMessageHandler(handler func(context.Context, RunnerInMessage) error) {
+func (s *Service) InitMessageHandler(handler func(c.Context, RunnerInMessage) error) {
 	s.MessageHandler = msgkit.NewMessageHandler[RunnerInMessage](s.log, handler, "function_return")
 }
 
-func (s *Service) StartConsumer(ctx context.Context) {
+func (s *Service) StartConsumer(ctx c.Context) {
 	go func() {
 		err := s.consumer.Serve(ctx, s.MessageHandler)
 		if err != nil {

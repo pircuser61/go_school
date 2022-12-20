@@ -1,12 +1,11 @@
 package pipeline
 
 import (
+	c "context"
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"golang.org/x/net/context"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -247,7 +246,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := c.Background()
 			got, _ := createGoExecutionBlock(ctx, test.args.name, test.args.ef, test.args.runCtx)
 			assert.Equal(t, test.want, got)
 		})
