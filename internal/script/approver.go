@@ -70,10 +70,6 @@ func (a *ApproverParams) Validate() error {
 		return fmt.Errorf("unknown approver type: %s", a.Type)
 	}
 
-	if a.SLA < 1 {
-		return fmt.Errorf("bad SLA value: %d", a.SLA)
-	}
-
 	if a.Type == ApproverTypeGroup && a.ApproversGroupID == "" {
 		return fmt.Errorf("empty ApproversGroupID")
 	}

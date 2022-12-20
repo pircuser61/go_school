@@ -35,15 +35,6 @@ func TestApproverParams_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "bad SLA",
-			fields: fields{
-				Type:          ApproverTypeUser,
-				ApproverLogin: "example",
-				SLA:           0,
-			},
-			wantErr: true,
-		},
-		{
 			name: "acceptance test",
 			fields: fields{
 				Type:          ApproverTypeUser,
