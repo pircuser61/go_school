@@ -57,7 +57,7 @@ func (gb *GoApproverBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocyclo //its not duplicate
 func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	var params script.ApproverParams
 	err := json.Unmarshal(ef.Params, &params)

@@ -3,6 +3,7 @@ package functions
 import (
 	"context"
 	"encoding/json"
+
 	function_v1 "gitlab.services.mts.ru/jocasta/functions/pkg/proto/gen/function/v1"
 )
 
