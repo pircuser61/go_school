@@ -10,8 +10,6 @@ import (
 )
 
 type Service struct {
-	sdURL string
-
 	c   *grpc.ClientConn
 	cli function_v1.FunctionServiceClient
 }

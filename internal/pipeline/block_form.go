@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -159,7 +157,7 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoFormBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, error) {
+func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, error) {
 	b := &GoFormBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -196,7 +194,7 @@ func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
+func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	var params script.FormParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -250,7 +248,7 @@ func (gb *GoFormBlock) createState(ctx context.Context, ef *entity.EriusFunc) er
 	return gb.handleNotifications(ctx)
 }
 
-func (gb *GoFormBlock) handleNotifications(ctx context.Context) error {
+func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	if gb.RunContext.skipNotifications {
 		return nil
 	}

@@ -60,11 +60,11 @@ func (gb *ExecutableFunctionBlock) CheckSLA() (bool, bool, time.Time, time.Time)
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
-	if gb.State.Async == true && gb.State.HasAck == true {
+	if gb.State.Async && gb.State.HasAck {
 		return StatusIdle
 	}
 
-	if gb.State.HasResponse == true {
+	if gb.State.HasResponse {
 		return StatusFinished
 	}
 
@@ -99,7 +99,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 	if updateDataParams.Mapping != nil {
 		gb.changeCurrentState()
 
-		if gb.State.HasResponse == true {
+		if gb.State.HasResponse {
 			var expectedOutput map[string]script.ParamMetadata
 			outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
 			if outputUnmarshalErr != nil {
@@ -241,11 +241,11 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 }
 
 func (gb *ExecutableFunctionBlock) changeCurrentState() {
-	if gb.State.HasResponse == false || gb.State.HasAck == true {
+	if !gb.State.HasResponse || gb.State.HasAck {
 		gb.State.HasResponse = true
 	}
 
-	if gb.State.Async == true && gb.State.HasAck == false {
+	if gb.State.Async && !gb.State.HasAck {
 		gb.State.HasAck = true
 	}
 }

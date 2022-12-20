@@ -7,8 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"golang.org/x/net/context"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -17,7 +15,7 @@ import (
 )
 
 // nolint:dupl // another block
-func createGoExecutionBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, error) {
+func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, error) {
 	b := &GoExecutionBlock{
 		Name:    name,
 		Title:   ef.Title,
@@ -59,7 +57,7 @@ func (gb *GoExecutionBlock) loadState(raw json.RawMessage) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFunc) error {
+func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -73,6 +71,7 @@ func (gb *GoExecutionBlock) createState(ctx context.Context, ef *entity.EriusFun
 	gb.State = &ExecutionData{
 		ExecutionType:      params.Type,
 		SLA:                params.SLA,
+		CheckSLA:           params.CheckSLA,
 		FormsAccessibility: params.FormsAccessibility,
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,

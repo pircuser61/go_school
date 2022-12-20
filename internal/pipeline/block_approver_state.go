@@ -155,9 +155,6 @@ type ApproverData struct {
 	ApprovementRule     script.ApprovementRule `json:"approvementRule,omitempty"`
 	ApproverLog         []ApproverLogEntry     `json:"approver_log,omitempty"`
 
-	SLA        int             `json:"sla"`
-	AutoAction *ApproverAction `json:"auto_action,omitempty"`
-
 	IsEditable             bool                     `json:"is_editable"`
 	RepeatPrevDecision     bool                     `json:"repeat_prev_decision"`
 	EditingApp             *ApproverEditingApp      `json:"editing_app,omitempty"`
@@ -174,8 +171,12 @@ type ApproverData struct {
 	IsRevoked         bool   `json:"is_revoked"`
 	ApproveStatusName string `json:"approve_status_name"`
 
+	SLA            int  `json:"sla"`
+	CheckSLA       bool `json:"check_sla"`
 	SLAChecked     bool `json:"sla_checked"`
 	HalfSLAChecked bool `json:"half_sla_checked"`
+
+	AutoAction *ApproverAction `json:"auto_action,omitempty"`
 
 	ActionList []Action `json:"action_list"`
 

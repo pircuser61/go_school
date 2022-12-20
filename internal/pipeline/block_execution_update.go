@@ -126,6 +126,12 @@ type ExecutionUpdateParams struct {
 
 //nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
+	if !gb.State.CheckSLA {
+		gb.State.SLAChecked = true
+		gb.State.HalfSLAChecked = true
+		return nil
+	}
+
 	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
 		for executor := range gb.State.Executors {
@@ -151,6 +157,12 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 
 //nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
+	if !gb.State.CheckSLA {
+		gb.State.SLAChecked = true
+		gb.State.HalfSLAChecked = true
+		return nil
+	}
+
 	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
 		for executor := range gb.State.Executors {
