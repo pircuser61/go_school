@@ -63,10 +63,10 @@ type ExecutionData struct {
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 
-	SLA            int   `json:"sla"`
+	SLA            int  `json:"sla"`
 	CheckSLA       bool `json:"check_sla"`
-	SLAChecked     bool  `json:"sla_checked"`
-	HalfSLAChecked bool  `json:"half_sla_checked"`
+	SLAChecked     bool `json:"sla_checked"`
+	HalfSLAChecked bool `json:"half_sla_checked"`
 }
 
 func (a *ExecutionData) GetDecision() *ExecutionDecision {

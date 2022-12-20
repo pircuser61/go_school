@@ -6,16 +6,18 @@ returns void
 language plpgsql
 as $function$
 declare
-    ids_array integer;
+    blocks []uuid;
+    execution_keys []varchar;
+    approver_keys []varchar;
     i integer;
 begin
-    select step_name from variable_storage into ids_array;
+    select id from variable_storage into blocks;
 
-    foreach i IN ARRAY ids_array
+    foreach i IN ARRAY blocks
     loop
         update variable_storage
             set content = jsonb_set(content, '{State,execution_0,check_sla}', 'true'::jsonb, true)
-        where id = '3f5443d2-6bfc-46a2-962e-ca4da1f41d0b'
+        where id = blocks[i]
     end loop;
 end;
 as $function$
