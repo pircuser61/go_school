@@ -6,7 +6,7 @@ create or replace function add_check_sla_true()
     language plpgsql
 as $function$
 declare
-    works uuid[] := array(select distinct work_id from variable_storage;
+    works uuid[] := array(select distinct work_id from variable_storage);
     step_names varchar[];
     w_id uuid;
     s_name varchar;
@@ -40,7 +40,7 @@ create or replace function remove_check_sla_true()
     language plpgsql
 as $function$
 declare
-    works uuid[] := array(select distinct work_id from variable_storage;
+    works uuid[] := array(select distinct work_id from variable_storage);
     step_names varchar[];
     w_id uuid;
     s_name varchar;
