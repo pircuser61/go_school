@@ -12,4 +12,5 @@ type RunnerOutMessage struct {
 type RunnerInMessage struct {
 	TaskID          uuid.UUID              `json:"task_id"`
 	FunctionMapping map[string]interface{} `json:"function_mapping"`
+	Err             error                  `json:"err"`
 }
