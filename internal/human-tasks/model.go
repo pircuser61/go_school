@@ -36,7 +36,6 @@ func (delegations *Delegations) FindDelegationsFor(login string, delegationType 
 				loginsAndDates[login] = d.ToDate
 			}
 		}
-
 	}
 
 	return loginsAndDates
