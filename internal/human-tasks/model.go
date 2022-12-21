@@ -21,6 +21,25 @@ const (
 	ExecutionDelegationType   DelegationType = "execution"
 )
 
+func (delegations *Delegations) GetUserInArrayWithDelegations(login string) (result []string) {
+	var uniqueLogins map[string]interface{}
+	uniqueLogins[login] = login
+
+	for _, d := range *delegations {
+		if d.FromLogin == login {
+			if _, ok := uniqueLogins[d.ToLogin]; !ok {
+				uniqueLogins[d.ToLogin] = d.ToLogin
+			}
+		}
+	}
+
+	for k := range uniqueLogins {
+		result = append(result, k)
+	}
+
+	return result
+}
+
 func (delegations *Delegations) FindDelegationsFor(login string, delegationType DelegationType) DelegationLogins {
 	var loginsAndDates DelegationLogins
 
@@ -29,7 +48,7 @@ func (delegations *Delegations) FindDelegationsFor(login string, delegationType 
 
 		if neededDelegationTypeExist {
 			if currDate, ok := loginsAndDates[login]; ok {
-				if currDate.Before(d.ToDate) /* currDate < d.ToDate */ {
+				if currDate.Before(d.ToDate) {
 					loginsAndDates[login] = d.ToDate
 				}
 			} else {
