@@ -51,9 +51,5 @@ func (a *ExecutionParams) Validate() error {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
 	}
 
-	if a.SLA < 1 {
-		return fmt.Errorf("bad SLA value: %d", a.SLA)
-	}
-
 	return nil
 }
