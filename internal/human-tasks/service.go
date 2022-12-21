@@ -70,7 +70,7 @@ func (s *Service) getDelegationsInternal(ctx c.Context, req *delegationht.GetDel
 	return delegations, nil
 }
 
-func (s *Service) GetDelegationsByLogin(ctx c.Context, login string) (r []Delegation, err error) {
+func (s *Service) GetDelegationsByLogin(ctx c.Context, login string) (d Delegations, err error) {
 	var req = &delegationht.GetDelegationsRequest{
 		FilterBy:  FromLoginFilter,
 		FromLogin: login,
@@ -84,7 +84,7 @@ func (s *Service) GetDelegationsByLogin(ctx c.Context, login string) (r []Delega
 	return res, nil
 }
 
-func (s *Service) GetDelegationsByLogins(ctx c.Context, login []string) (r []Delegation, err error) {
+func (s *Service) GetDelegationsByLogins(ctx c.Context, login []string) (d Delegations, err error) {
 	var req = &delegationht.GetDelegationsRequest{
 		FilterBy:  FromLoginFilter,
 		FromLogin: login[0], //todo: rework api for logins array
