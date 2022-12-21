@@ -10,6 +10,7 @@ import (
 )
 
 const FromLoginFilter = "fromLogin"
+const ToLoginFilter = "toLogin"
 
 type Service struct {
 	c   *grpc.ClientConn
@@ -70,10 +71,24 @@ func (s *Service) getDelegationsInternal(ctx c.Context, req *delegationht.GetDel
 	return delegations, nil
 }
 
-func (s *Service) GetDelegationsByLogin(ctx c.Context, login string) (d Delegations, err error) {
+func (s *Service) GetDelegationsFromLogin(ctx c.Context, login string) (d Delegations, err error) {
 	var req = &delegationht.GetDelegationsRequest{
 		FilterBy:  FromLoginFilter,
 		FromLogin: login,
+	}
+
+	res, err := s.getDelegationsInternal(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (d Delegations, err error) {
+	var req = &delegationht.GetDelegationsRequest{
+		FilterBy: FromLoginFilter,
+		ToLogin:  login,
 	}
 
 	res, err := s.getDelegationsInternal(ctx, req)
