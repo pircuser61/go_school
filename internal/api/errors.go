@@ -43,6 +43,7 @@ const (
 	AuthServiceError
 	GetFormsChangelogError
 	GetTasksError
+	GetDelegationsError
 	GetTaskError
 	GetTasksCountError
 	GetAllTagsError
