@@ -739,7 +739,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	log := logger.GetLogger(ctx).WithField("step_id", message.TaskID)
 
-	if message.Err != nil {
+	if message.Err != "" {
 		log.Error(message.Err)
 		return nil
 	}
