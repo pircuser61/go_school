@@ -140,7 +140,6 @@ func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
 		return err
 	}
 	gb.State = &SyncData{IncomingBlockIds: steps}
-	gb.RunContext.VarStore.AddStep(gb.Name)
 	return nil
 }
 
