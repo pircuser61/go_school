@@ -84,7 +84,7 @@ func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool)
 }
 
 func (gb *ExecutableFunctionBlock) GetState() interface{} {
-	return nil
+	return gb.State
 }
 
 func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
@@ -236,6 +236,8 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		HasResponse: false,
 		Async:       isAsync,
 	}
+
+	b.RunContext.VarStore.AddStep(b.Name)
 
 	return b, nil
 }
