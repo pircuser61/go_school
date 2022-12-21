@@ -6,7 +6,7 @@ create or replace function add_check_sla_true_versions()
     language plpgsql
 as $function$
 declare
-    versions uuid[] := array(select id from versions);
+versions uuid[] := array(select distinct id from versions);
     step_names varchar[];
     v_id uuid;
     s_name varchar;
@@ -16,7 +16,8 @@ begin
             step_names = array(
                 select jsonb_object_keys(content -> 'pipeline' -> 'blocks')
                 from versions
-                where id = v_id
+                where id = v_id and deleted_at is null and
+                          jsonb_typeof(content -> 'pipeline' -> 'blocks') = 'object'
             );
 
             foreach s_name IN ARRAY step_names
@@ -51,7 +52,8 @@ begin
             step_names = array(
                 select jsonb_object_keys(content -> 'pipeline' -> 'blocks')
                 from versions
-                where id = v_id
+                where id = v_id and deleted_at is null and
+                          jsonb_typeof(content -> 'pipeline' -> 'blocks') = 'object'
             );
 
             foreach s_name IN ARRAY step_names
