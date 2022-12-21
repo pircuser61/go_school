@@ -149,7 +149,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	delegate, err := ae.HumanTasks.GetDelegationsByLogin(ctx, ui.Username)
+	delegations, err := ae.HumanTasks.GetDelegationsByLogin(ctx, ui.Username)
 	if err != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(err))
@@ -157,7 +157,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, ui.Username, workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, delegations.GetUserInArrayWithDelegations(ui.Username), workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
