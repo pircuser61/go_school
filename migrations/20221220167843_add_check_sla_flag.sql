@@ -68,5 +68,5 @@ $function$;
 
 update variable_storage
     set content = remove_check_sla_true(work_id, content)
-where step_type not in ('start', 'servicedesk_application');
+where status = 'running' and step_type not in ('start', 'servicedesk_application');
 -- +goose StatementEnd
