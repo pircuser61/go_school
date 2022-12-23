@@ -2,6 +2,7 @@ package db
 
 import (
 	c "context"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,10 +31,10 @@ type TaskStorager interface {
 	GetAdditionalForms(workNumber, nodeName string) ([]string, error)
 	GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error)
 	SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error
-	GetTasks(ctx c.Context, filters e.TaskFilter) (*e.EriusTasksPage, error)
-	GetTasksCount(ctx c.Context, userName string) (*e.CountTasks, error)
+	GetTasks(ctx c.Context, filters e.TaskFilter, delegations human_tasks.Delegations) (*e.EriusTasksPage, error)
+	GetTasksCount(ctx c.Context, usernames []string) (*e.CountTasks, error)
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
-	GetTask(ctx c.Context, username []string, workNumber string) (*e.EriusTask, error)
+	GetTask(ctx c.Context, usernames []string, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
 	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string) (e.TaskSteps, error)
 	GetTaskStepById(ctx c.Context, id uuid.UUID) (*e.Step, error)

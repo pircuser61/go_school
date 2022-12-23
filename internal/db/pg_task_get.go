@@ -19,6 +19,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	humantasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -119,7 +120,7 @@ func getUniqueActions(as string, logins []string) string {
 }
 
 //nolint:gocritic,gocyclo //filters
-func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface{}) {
+func compileGetTasksQuery(filters entity.TaskFilter, delegations humantasks.Delegations) (q string, args []interface{}) {
 	// nolint:gocritic
 	// language=PostgreSQL
 	q = `
@@ -162,9 +163,19 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	}
 
 	if filters.SelectAs != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*filters.SelectAs, filters.CurrentUser), q)
+		q = fmt.Sprintf(
+			"%s %s",
+			getUniqueActions(
+				*filters.SelectAs,
+				delegations.GetUserInArrayWithDelegations(filters.CurrentUser)),
+			q)
 	} else {
-		q = fmt.Sprintf("%s %s", getUniqueActions("", filters.CurrentUser), q)
+		q = fmt.Sprintf(
+			"%s %s",
+			getUniqueActions(
+				"",
+				delegations.GetUserInArrayWithDelegations(filters.CurrentUser)),
+			q)
 	}
 
 	if filters.TaskIDs != nil {
@@ -272,11 +283,11 @@ func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, 
 }
 
 //nolint:gocritic //filters
-func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
+func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations humantasks.Delegations) (*entity.EriusTasksPage, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
-	q, args := compileGetTasksQuery(filters)
+	q, args := compileGetTasksQuery(filters, delegations)
 
 	tasks, err := db.getTasks(ctx, q, args)
 	if err != nil {
@@ -294,7 +305,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 	}, nil
 }
 
-func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTasks, error) {
+func (db *PGCon) GetTasksCount(ctx c.Context, usernames []string) (*entity.CountTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 	// nolint:gocritic
@@ -310,31 +321,31 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		)
 		SELECT
 		(SELECT count(*) FROM works w join ids on w.id = ids.id
-		WHERE author = $1 AND
+		WHERE author IN $1 AND
 		      ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)),
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = $1 AND vs.step_type = 'approver'
+				m.login IN $1 AND vs.step_type = 'approver'
 		),
 		(SELECT count(*)
 			 FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			 WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = $1 AND vs.step_type = 'execution'),
+				m.login IN $1 AND vs.step_type = 'execution'),
 		
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = $1 AND vs.step_type = 'form'
+				m.login IN $1 AND vs.step_type = 'form'
 		)`
 
-	counter, err := db.getTasksCount(ctx, q, userName)
+	counter, err := db.getTasksCount(ctx, q, usernames)
 	if err != nil {
 		return nil, err
 	}
@@ -486,6 +497,7 @@ func (db *PGCon) GetTask(ctx c.Context, usernames []string, workNumber string) (
 		WHERE w.work_number = $1 
 			AND w.child_id IS NULL
 `
+	// мы проверяем являемся ли мы делегатом, если да то проводим дополнительную проверку на тип действия
 
 	return db.getTask(ctx, q, workNumber)
 }
@@ -577,13 +589,15 @@ type tasksCounter struct {
 	totalFormExecutor int
 }
 
-func (db *PGCon) getTasksCount(ctx c.Context, q, username string) (*tasksCounter, error) {
+func (db *PGCon) getTasksCount(ctx c.Context, q string, usernames []string) (*tasksCounter, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 
 	counter := &tasksCounter{}
 
-	if scanErr := db.Connection.QueryRow(ctx, q, username).
+	inLogins := buildInExpression(usernames)
+
+	if scanErr := db.Connection.QueryRow(ctx, q, inLogins).
 		Scan(
 			&counter.totalActive,
 			&counter.totalApprover,
