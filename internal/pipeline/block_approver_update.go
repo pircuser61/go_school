@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"time"
 
 	"github.com/google/uuid"
@@ -64,9 +65,9 @@ func (a *additionalApproverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
+func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams, delegations human_tasks.Delegations) error {
 	if errUpdate := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.internalDecision,
-		u.Comment, u.Attachments); errUpdate != nil {
+		u.Comment, u.Attachments, delegations); errUpdate != nil {
 		return errUpdate
 	}
 
@@ -131,7 +132,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			approverUpdateParams{
 				internalDecision: (*gb.State.AutoAction).ToDecision(),
 				Comment:          AutoActionComment,
-			}); setErr != nil {
+			}, []human_tasks.Delegation{}); setErr != nil {
 			return setErr
 		}
 	}
@@ -192,8 +193,8 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 }
 
 //nolint:gocyclo //its ok here
-func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approverUpdateEditingParams) error {
-	errSet := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams)
+func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approverUpdateEditingParams, delegations human_tasks.Delegations) error {
+	errSet := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, delegations)
 	if errSet != nil {
 		return errSet
 	}
@@ -213,7 +214,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approv
 }
 
 //nolint:gocyclo //ok
-func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) {
+func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, delegations human_tasks.Delegations) (err error) {
 	var updateParams requestInfoParams
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update requestApproverInfo data")
@@ -229,8 +230,9 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 	)
 
 	if updateParams.Type == RequestAddInfoType {
-		if !gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) {
-			return fmt.Errorf("%s not found in approvers", gb.RunContext.UpdateData.ByLogin)
+		var delegateFor = delegations.DelegateFor(gb.RunContext.UpdateData.ByLogin)
+		if !gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin, delegateFor) {
+			return fmt.Errorf("%s not found in approvers or delegates", gb.RunContext.UpdateData.ByLogin)
 		}
 
 		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
@@ -320,8 +322,19 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, errors.New("empty data")
 	}
 
-	if delegations, ok := gb.RunContext.VarStore.GetValue("delegations").(human_tasks.Delegations); ok {
-		var delegationsForUpdate = delegations.FindDelegationsFor(gb.RunContext.UpdateData.ByLogin)
+	var delegationsTo human_tasks.Delegations
+	var htErr error
+	if gb.State.Type == script.ApproverTypeFromSchema {
+		delegationsTo, htErr = gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, gb.RunContext.UpdateData.ByLogin)
+		if htErr != nil {
+			return nil, htErr
+		}
+	} else {
+		if delegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
+			if delegationsVal, castOk := delegations.(human_tasks.Delegations); castOk {
+				delegationsTo = delegationsVal.FindDelegationsTo(gb.RunContext.UpdateData.ByLogin)
+			}
+		}
 	}
 
 	switch data.Action {
@@ -347,7 +360,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 
 		updateParams.internalDecision = updateParams.Decision.ToDecision()
 
-		if errUpdate := gb.setApproverDecision(updateParams); errUpdate != nil {
+		if errUpdate := gb.setApproverDecision(updateParams, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 
@@ -362,7 +375,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, err
 		}
 
-		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin, updateParams)
+		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin, updateParams, delegationsTo)
 		if err != nil {
 			return nil, err
 		}
@@ -379,17 +392,17 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
-		if errUpdate := gb.setEditApplication(ctx, updateParams); errUpdate != nil {
+		if errUpdate := gb.setEditApplication(ctx, updateParams, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 
 	case string(entity.TaskUpdateActionRequestApproveInfo):
-		if errUpdate := gb.updateRequestApproverInfo(ctx); errUpdate != nil {
+		if errUpdate := gb.updateRequestApproverInfo(ctx, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 
 	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 
@@ -398,7 +411,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
-		if errUpdate := gb.addApprovers(ctx, updateParams); errUpdate != nil {
+		if errUpdate := gb.addApprovers(ctx, updateParams, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
@@ -415,7 +428,16 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 }
 
 // nolint:dupl // another action
-func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
+func (gb *GoApproverBlock) cancelPipeline(ctx c.Context, delegations human_tasks.Delegations) error {
+	var currentLogin = gb.RunContext.UpdateData.ByLogin
+	var initiator = gb.RunContext.Initiator
+
+	var delegateFor = delegations.DelegateFor(currentLogin)
+
+	if currentLogin != initiator && delegateFor != "" {
+		return fmt.Errorf("%s is not an initiator or delegate", currentLogin)
+	}
+
 	gb.State.IsRevoked = true
 	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
@@ -426,11 +448,12 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) error {
+func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams, delegations human_tasks.Delegations) error {
 	logApprovers := []string{}
 
-	if !gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) {
-		return fmt.Errorf("%s not found in approvers", gb.RunContext.UpdateData.ByLogin)
+	var delegateFor = delegations.DelegateFor(gb.RunContext.UpdateData.ByLogin)
+	if !gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin, delegateFor) {
+		return fmt.Errorf("%s not found in approvers or delegates", gb.RunContext.UpdateData.ByLogin)
 	}
 
 	crTime := time.Now()
@@ -457,6 +480,7 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 			CreatedAt:      crTime,
 			AddedApprovers: u.AdditionalApproversLogins,
 			LogType:        ApproverLogAddApprover,
+			DelegateFor:    delegateFor,
 		}
 		gb.State.ApproverLog = append(gb.State.ApproverLog, approverLogEntry)
 		err := gb.notificateAdditionalApprovers(ctx, logApprovers, u.Attachments)

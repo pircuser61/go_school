@@ -755,7 +755,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	return &ep, 0, nil
 }
 
-func (ae *APIEnv) grabExecutorsFromAllBlocks(blocks map[string]entity.EriusFunc) (executors []string, err error) {
+func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.BlockRunContext, blocks map[string]entity.EriusFunc) (members []string, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
@@ -777,19 +777,19 @@ func (ae *APIEnv) grabExecutorsFromAllBlocks(blocks map[string]entity.EriusFunc)
 		switch block.BlockType {
 		case ApproverBlockType:
 			var grabApproversErr error
-			currentBlockMembers, grabApproversErr = grabApproversFromApproverBlock(&block)
+			currentBlockMembers, grabApproversErr = ae.grabApproversFromApproverBlock(ctx, blockParams)
 			if grabApproversErr != nil {
 				return []string{}, grabApproversErr
 			}
 		case ExecutionBlockType:
 			var grabExecutorsErr error
-			currentBlockMembers, grabExecutorsErr = grabExecutorsFromExecutionBlock(&block)
+			currentBlockMembers, grabExecutorsErr = ae.grabExecutorsFromExecutionBlock(ctx, blockParams)
 			if grabExecutorsErr != nil {
 				return []string{}, grabExecutorsErr
 			}
 		case FormBlockType:
 			var grabFormExecutorsErr error
-			currentBlockMembers, grabFormExecutorsErr = grabExecutorsFromFormsBlock(&block)
+			currentBlockMembers, grabFormExecutorsErr = ae.grabExecutorsFromFormsBlock(runCtx, blockParams)
 			if grabFormExecutorsErr != nil {
 				return []string{}, grabFormExecutorsErr
 			}
@@ -812,36 +812,113 @@ func (ae *APIEnv) grabExecutorsFromAllBlocks(blocks map[string]entity.EriusFunc)
 	return result, nil
 }
 
-func grabApproversFromApproverBlock(block *entity.EriusFunc) (executors []string, err error) {
+func (ae *APIEnv) grabApproversFromApproverBlock(ctx c.Context, blockParams map[string]interface{}) (members []string, err error) {
 	const (
-		ApproverMemberKey     = "approver"
-		ApprovementTypeGroup  = "group"
-		ApprovementTypeUser   = "user"
-		ApprovementTypeSchema = "fromSchema"
+		ApproverMemberKey    = "approver"
+		ApprovementTypeKey   = "type"
+		ApprovementTypeGroup = "group"
+		ApprovementTypeUser  = "user"
+		ApproversGroupIdKey  = "approvers_group_id"
 	)
 
-	if k, ok := blockParams[memberKey]; ok {
-		if m, mok := k.(map[string]interface{}); mok {
-
+	if approvementType, ok := blockParams[ApprovementTypeKey]; ok {
+		switch approvementType {
+		case ApprovementTypeGroup:
+			if approverGroupId, foundGroup := blockParams[ApproversGroupIdKey]; foundGroup {
+				if approverGroupIdVal, castGroupIdOk := approverGroupId.(string); castGroupIdOk {
+					approvers, sdErr := ae.ServiceDesc.GetApproversGroup(ctx, approverGroupIdVal)
+					if sdErr != nil {
+						return []string{}, sdErr
+					}
+					for _, approver := range approvers.People {
+						members = append(members, approver.Login)
+					}
+				}
+			}
+			break
+		case ApprovementTypeUser:
+			if member, foundMember := blockParams[ApproverMemberKey]; foundMember {
+				if memberVal, castMemberOk := member.(string); castMemberOk {
+					members = []string{memberVal}
+				}
+			}
+			break
 		}
 	}
+
+	return members, nil
 }
 
-func grabExecutorsFromExecutionBlock(block *entity.EriusFunc) (executors []string, err error) {
+func (ae *APIEnv) grabExecutorsFromExecutionBlock(ctx c.Context, blockParams map[string]interface{}) (members []string, err error) {
+	const (
+		ExecutorMemberKey   = "executors"
+		ExecutionTypeKey    = "type"
+		ExecutionTypeGroup  = "group"
+		ExecutionTypeUser   = "user"
+		ExecutorsGroupIdKey = "executors_group_id"
+	)
 
+	if executionType, ok := blockParams[ExecutionTypeKey]; ok {
+		switch executionType {
+		case ExecutionTypeGroup:
+			if executorsGroupId, foundGroup := blockParams[ExecutorsGroupIdKey]; foundGroup {
+				if executorsGroupIdVal, castGroupIdOk := executorsGroupId.(string); castGroupIdOk {
+					executors, sdErr := ae.ServiceDesc.GetExecutorsGroup(ctx, executorsGroupIdVal)
+					if sdErr != nil {
+						return []string{}, sdErr
+					}
+					for _, executor := range executors.People {
+						members = append(members, executor.Login)
+					}
+				}
+			}
+			break
+		case ExecutionTypeUser:
+			if member, foundMember := blockParams[ExecutorMemberKey]; foundMember {
+				if memberVal, castMemberOk := member.(string); castMemberOk {
+					members = []string{memberVal}
+				}
+			}
+			break
+		}
+	}
+
+	return members, nil
 }
 
-func grabExecutorsFromFormsBlock(block *entity.EriusFunc) (executors []string, err error) {
+func (ae *APIEnv) grabExecutorsFromFormsBlock(runCtx *pipeline.BlockRunContext, blockParams map[string]interface{}) (members []string, err error) {
+	const (
+		FormExecutorMemberKey     = "executors"
+		FormExecutorTypeInitiator = "initiator"
+		FormExecutorTypeUser      = "user"
+		FormExecutorTypeKey       = "form_executor_type"
+	)
 
+	if formExecutorType, ok := blockParams[FormExecutorTypeKey]; ok {
+		switch formExecutorType {
+		case FormExecutorTypeInitiator:
+			members = []string{runCtx.Initiator}
+			break
+		case FormExecutorTypeUser:
+			if member, foundMember := blockParams[FormExecutorMemberKey]; foundMember {
+				if memberVal, castMemberOk := member.(string); castMemberOk {
+					members = []string{memberVal}
+				}
+			}
+			break
+		}
+	}
+
+	return members, nil
 }
 
 func (ae *APIEnv) tryFindDelegations(ctx c.Context, runCtx *pipeline.BlockRunContext, blocks map[string]entity.EriusFunc) error {
-	executors, executorsErr := ae.grabExecutorsFromAllBlocks(blocks)
-	if executorsErr != nil {
-		return executorsErr
+	members, membersErr := ae.grabMembersFromAllBlocks(ctx, runCtx, blocks)
+	if membersErr != nil {
+		return membersErr
 	}
 
-	delegations, delegationsErr := ae.HumanTasks.GetDelegationsByLogins(ctx, executors)
+	delegations, delegationsErr := ae.HumanTasks.GetDelegationsByLogins(ctx, members)
 	if delegationsErr != nil {
 		return delegationsErr
 	}

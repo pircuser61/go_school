@@ -52,18 +52,12 @@ func (s *Service) getDelegationsInternal(ctx c.Context, req *delegationht.GetDel
 			return nil, parseToDateErr
 		}
 
-		var delegationTypes = make([]DelegationType, 0)
-		for _, dt := range delegation.DelegationTypes {
-			delegationTypes = append(delegationTypes, DelegationType(dt))
-		}
-
 		if time.Now().Before(toDate) {
 			delegations = append(delegations, Delegation{
-				FromDate:        fromDate,
-				ToDate:          toDate,
-				FromLogin:       delegation.FromUser.Username,
-				ToLogin:         delegation.ToUser.Username,
-				DelegationTypes: delegationTypes,
+				FromDate:  fromDate,
+				ToDate:    toDate,
+				FromLogin: delegation.FromUser.Username,
+				ToLogin:   delegation.ToUser.Username,
 			})
 		}
 	}
@@ -87,7 +81,7 @@ func (s *Service) GetDelegationsFromLogin(ctx c.Context, login string) (d Delega
 
 func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (d Delegations, err error) {
 	var req = &delegationht.GetDelegationsRequest{
-		FilterBy: FromLoginFilter,
+		FilterBy: ToLoginFilter,
 		ToLogin:  login,
 	}
 

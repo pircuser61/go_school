@@ -4,6 +4,8 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,6 +17,21 @@ import (
 
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
+	var delegationsTo human_tasks.Delegations
+	var htErr error
+	if gb.State.ExecutionType == script.ExecutionTypeFromSchema {
+		delegationsTo, htErr = gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, gb.RunContext.UpdateData.ByLogin)
+		if htErr != nil {
+			return nil, htErr
+		}
+	} else {
+		if delegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
+			if delegationsVal, castOk := delegations.(human_tasks.Delegations); castOk {
+				delegationsTo = delegationsVal.FindDelegationsTo(gb.RunContext.UpdateData.ByLogin)
+			}
+		}
+	}
+
 	switch gb.RunContext.UpdateData.Action {
 	case string(entity.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
@@ -25,27 +42,27 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecution):
-		if errUpdate := gb.updateDecision(); errUpdate != nil {
+		if errUpdate := gb.updateDecision(delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionChangeExecutor):
-		if errUpdate := gb.changeExecutor(ctx); errUpdate != nil {
+		if errUpdate := gb.changeExecutor(ctx, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionRequestExecutionInfo):
-		if errUpdate := gb.updateRequestInfo(ctx); errUpdate != nil {
+		if errUpdate := gb.updateRequestInfo(ctx, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecutorStartWork):
-		if errUpdate := gb.executorStartWork(ctx); errUpdate != nil {
+		if errUpdate := gb.executorStartWork(ctx, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecutorSendEditApp):
-		if errUpdate := gb.toEditApplication(ctx); errUpdate != nil {
+		if errUpdate := gb.toEditApplication(ctx, delegationsTo); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
@@ -67,7 +84,15 @@ type ExecutorChangeParams struct {
 	Attachments      []string `json:"attachments,omitempty"`
 }
 
-func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
+func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, delegations human_tasks.Delegations) (err error) {
+	var currentLogin = gb.RunContext.UpdateData.ByLogin
+	_, executorFound := gb.State.Executors[currentLogin]
+
+	var delegateFor = delegations.DelegateFor(currentLogin)
+	if !(executorFound || delegateFor != "") && currentLogin != AutoApprover {
+		return fmt.Errorf("%s not found in executors or delegates", currentLogin)
+	}
+
 	if _, isExecutor := gb.State.Executors[gb.RunContext.UpdateData.ByLogin]; !isExecutor {
 		return fmt.Errorf("can't change executor, user %s in not executor", gb.RunContext.UpdateData.ByLogin)
 	}
@@ -185,7 +210,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoExecutionBlock) updateDecision() error {
+func (gb *GoExecutionBlock) updateDecision(delegations human_tasks.Delegations) error {
 	var updateParams ExecutionUpdateParams
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
@@ -193,7 +218,7 @@ func (gb *GoExecutionBlock) updateDecision() error {
 		return errors.New("can't assert provided update data")
 	}
 
-	if errSet := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, &updateParams); errSet != nil {
+	if errSet := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, &updateParams, delegations); errSet != nil {
 		return errSet
 	}
 
@@ -206,10 +231,12 @@ func (gb *GoExecutionBlock) updateDecision() error {
 	return nil
 }
 
-func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams) error {
-	_, ok := a.Executors[login]
-	if !ok {
-		return fmt.Errorf("%s not found in executors", login)
+func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, delegations human_tasks.Delegations) error {
+	_, executorFound := a.Executors[login]
+
+	var delegateFor = delegations.DelegateFor(login)
+	if !(executorFound || delegateFor != "") && login != AutoApprover {
+		return fmt.Errorf("%s not found in executors or delegates", login)
 	}
 
 	if a.Decision != nil {
@@ -236,7 +263,7 @@ type RequestInfoUpdateParams struct {
 }
 
 //nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
+func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, delegations human_tasks.Delegations) (err error) {
 	var updateParams RequestInfoUpdateParams
 
 	err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
@@ -249,9 +276,13 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	}
 
 	if updateParams.ReqType == RequestInfoAnswer {
-		if _, executorExists := gb.State.Executors[updateParams.ExecutorLogin]; !executorExists {
-			return fmt.Errorf("executor: %s is not found in executors", updateParams.ExecutorLogin)
+		_, executorExists := gb.State.Executors[updateParams.ExecutorLogin]
+		var delegateFor = delegations.DelegateFor(updateParams.ExecutorLogin)
+
+		if delegateFor == "" || !executorExists {
+			return fmt.Errorf("executor: %s is not found in executors or delegates", updateParams.ExecutorLogin)
 		}
+
 		if len(gb.State.RequestExecutionInfoLogs) > 0 {
 			workHours := getWorkWorkHoursBetweenDates(
 				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
@@ -318,10 +349,15 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, in *RequestInfoUpd
 	return nil
 }
 
-func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
-	if _, ok := gb.State.Executors[gb.RunContext.UpdateData.ByLogin]; !ok {
-		return fmt.Errorf("login %s is not found in executors", gb.RunContext.UpdateData.ByLogin)
+func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, delegations human_tasks.Delegations) (err error) {
+	var currentLogin = gb.RunContext.UpdateData.ByLogin
+	_, executorFound := gb.State.Executors[currentLogin]
+	var delegateFor = delegations.DelegateFor(currentLogin)
+
+	if !(executorFound || delegateFor != "") && currentLogin != AutoApprover {
+		return fmt.Errorf("%s not found in executors or delegates", currentLogin)
 	}
+
 	executorLogins := gb.State.Executors
 
 	gb.State.Executors = map[string]struct{}{
@@ -385,7 +421,16 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 }
 
 // nolint:dupl // another action
-func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context) error {
+func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context, delegations human_tasks.Delegations) error {
+	var currentLogin = gb.RunContext.UpdateData.ByLogin
+	var initiator = gb.RunContext.Initiator
+
+	var delegateFor = delegations.DelegateFor(currentLogin)
+
+	if currentLogin != initiator && delegateFor != "" {
+		return fmt.Errorf("%s is not an initiator or delegate", currentLogin)
+	}
+
 	gb.State.IsRevoked = true
 	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
@@ -402,13 +447,13 @@ type executorUpdateEditParams struct {
 }
 
 //nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
+func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, delegations human_tasks.Delegations) (err error) {
 	var updateParams executorUpdateEditParams
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update data")
 	}
 
-	if err = gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams); err != nil {
+	if err = gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, delegations); err != nil {
 		return err
 	}
 

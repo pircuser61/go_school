@@ -3,6 +3,7 @@ package pipeline
 import (
 	"errors"
 	"fmt"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -21,6 +22,7 @@ type ExecutorEditApp struct {
 	Comment     string    `json:"comment"`
 	Attachments []string  `json:"attachments"`
 	CreatedAt   time.Time `json:"created_at"`
+	DelegateFor string    `json:"delegate_for"`
 }
 
 type RequestExecutionInfoLog struct {
@@ -81,10 +83,12 @@ func (a *ExecutionData) GetRepeatPrevDecision() bool {
 	return a.RepeatPrevDecision
 }
 
-func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams) error {
-	_, ok := a.Executors[login]
-	if !ok && login != AutoApprover {
-		return fmt.Errorf("%s not found in executors", login)
+func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams, delegations human_tasks.Delegations) error {
+	_, executorFound := a.Executors[login]
+	var delegateFor = delegations.DelegateFor(login)
+
+	if !(executorFound || delegateFor != "") && login != AutoApprover {
+		return fmt.Errorf("%s not found in executors or delegates", login)
 	}
 
 	if a.Decision != nil {
@@ -96,6 +100,7 @@ func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams
 		Comment:     params.Comment,
 		Attachments: params.Attachments,
 		CreatedAt:   time.Now(),
+		DelegateFor: delegateFor,
 	}
 
 	a.EditingAppLog = append(a.EditingAppLog, *editing)
