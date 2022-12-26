@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -29,6 +30,12 @@ type SsoPerson struct {
 func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_user_info")
 	defer span.End()
+
+	if strings.HasPrefix(username, "service-account") {
+		return &SsoPerson{
+			Username: username,
+		}, nil
+	}
 
 	reqURL := fmt.Sprintf("%s%s", s.sdURL, fmt.Sprintf(getUserInfo, username))
 
