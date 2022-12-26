@@ -46,6 +46,7 @@ type BlockRunContext struct {
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy := &(*runCtx)
 	runCtxCopy.VarStore = &(*runCtx.VarStore)
+	runCtxCopy.UpdateData = nil
 	return runCtxCopy
 }
 
@@ -54,7 +55,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 	ctx, s := trace.StartSpan(ctx, "process_block")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("workNumber", runCtx.WorkNumber)
 
 	defer func() {
 		if err != nil {
