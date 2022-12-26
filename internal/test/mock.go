@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -989,11 +990,11 @@ func (m *MockDB) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 }
 
 //nolint:gocritic //filters
-func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
+func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter, delegations human_tasks.Delegations) (*entity.EriusTasksPage, error) {
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTasksCount(c context.Context, userName string) (*entity.CountTasks, error) {
+func (m *MockDB) GetTasksCount(c context.Context, usernames []string) (*entity.CountTasks, error) {
 	return nil, errNotImplemented
 }
 
@@ -1033,7 +1034,7 @@ func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTask(_ context.Context, _, _ string) (*entity.EriusTask, error) {
+func (m *MockDB) GetTask(_ context.Context, _ []string, _ string) (*entity.EriusTask, error) {
 	return nil, errNotFound
 }
 
