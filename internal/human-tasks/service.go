@@ -2,14 +2,19 @@ package human_tasks
 
 import (
 	c "context"
-	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
-	"go.opencensus.io/plugin/ocgrpc"
+	"strings"
+	"time"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"time"
+
+	"go.opencensus.io/plugin/ocgrpc"
+
+	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 )
 
 const FromLoginFilter = "fromLogin"
+const FromLoginsFilter = "fromLogins"
 const ToLoginFilter = "toLogin"
 
 type Service struct {
@@ -52,18 +57,12 @@ func (s *Service) getDelegationsInternal(ctx c.Context, req *delegationht.GetDel
 			return nil, parseToDateErr
 		}
 
-		var delegationTypes = make([]DelegationType, 0)
-		for _, dt := range delegation.DelegationTypes {
-			delegationTypes = append(delegationTypes, DelegationType(dt))
-		}
-
 		if time.Now().Before(toDate) {
 			delegations = append(delegations, Delegation{
-				FromDate:        fromDate,
-				ToDate:          toDate,
-				FromLogin:       delegation.FromUser.Username,
-				ToLogin:         delegation.ToUser.Username,
-				DelegationTypes: delegationTypes,
+				FromDate:  fromDate,
+				ToDate:    toDate,
+				FromLogin: delegation.FromUser.Username,
+				ToLogin:   delegation.ToUser.Username,
 			})
 		}
 	}
@@ -87,7 +86,7 @@ func (s *Service) GetDelegationsFromLogin(ctx c.Context, login string) (d Delega
 
 func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (d Delegations, err error) {
 	var req = &delegationht.GetDelegationsRequest{
-		FilterBy: FromLoginFilter,
+		FilterBy: ToLoginFilter,
 		ToLogin:  login,
 	}
 
@@ -99,10 +98,20 @@ func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (d Delegati
 	return res, nil
 }
 
-func (s *Service) GetDelegationsByLogins(ctx c.Context, login []string) (d Delegations, err error) {
+func (s *Service) GetDelegationsByLogins(ctx c.Context, logins []string) (d Delegations, err error) {
+	var sb strings.Builder
+
+	for i, login := range logins {
+		sb.WriteString(login)
+
+		if i < len(logins)-1 {
+			sb.WriteString(",")
+		}
+	}
+
 	var req = &delegationht.GetDelegationsRequest{
-		FilterBy:  FromLoginFilter,
-		FromLogin: login[0], //todo: rework api for logins array
+		FilterBy:   FromLoginsFilter,
+		FromLogins: sb.String(),
 	}
 
 	res, err := s.getDelegationsInternal(ctx, req)
