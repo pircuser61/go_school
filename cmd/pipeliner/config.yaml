@@ -89,3 +89,6 @@ servicedesc:
 
 function_store:
   url: 'functions:9090'
+
+human_tasks:
+  url: 'human-tasks:9091'

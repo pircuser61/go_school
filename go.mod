@@ -27,7 +27,7 @@ require (
 	gitlab.services.mts.ru/erius/network-monitor-client v1.0.5
 	gitlab.services.mts.ru/erius/scheduler_client v0.0.5
 	gitlab.services.mts.ru/jocasta/functions v1.3.0-alpha.3
-	gitlab.services.mts.ru/jocasta/human-tasks v0.0.0-20221221093714-dabdde710e2d
+	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
 	go.opencensus.io v0.24.0
 	google.golang.org/grpc v1.51.0
@@ -96,7 +96,7 @@ require (
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/tools v0.3.0 // indirect
-	google.golang.org/api v0.51.0 // indirect
+	google.golang.org/api v0.81.0 // indirect
 	google.golang.org/genproto v0.0.0-20221205194025-8222ab48f5fc // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
