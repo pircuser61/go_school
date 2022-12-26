@@ -60,7 +60,7 @@ func (gb *ExecutableFunctionBlock) CheckSLA() (bool, bool, time.Time, time.Time)
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
-	if gb.State.Async && gb.State.HasAck {
+	if gb.State.Async && gb.State.HasAck && !gb.State.HasResponse {
 		return StatusIdle
 	}
 
@@ -161,6 +161,14 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			return nil, err
 		}
 	}
+
+	var stateBytes []byte
+	stateBytes, err := json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	return nil, nil
 }
