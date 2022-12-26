@@ -60,7 +60,7 @@ func (gb *ExecutableFunctionBlock) CheckSLA() (bool, bool, time.Time, time.Time)
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
-	if gb.State.Async && gb.State.HasAck {
+	if gb.State.Async && gb.State.HasAck && !gb.State.HasResponse {
 		return StatusIdle
 	}
 
