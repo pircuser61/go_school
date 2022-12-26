@@ -243,11 +243,9 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 }
 
 func (gb *ExecutableFunctionBlock) changeCurrentState() {
-	if !gb.State.HasResponse || gb.State.HasAck {
-		gb.State.HasResponse = true
-	}
-
 	if gb.State.Async && !gb.State.HasAck {
 		gb.State.HasAck = true
+		return
 	}
+	gb.State.HasResponse = true
 }
