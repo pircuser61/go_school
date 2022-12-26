@@ -755,14 +755,15 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	return &ep, 0, nil
 }
 
-func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.BlockRunContext, blocks map[string]entity.EriusFunc) (members []string, err error) {
+func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.BlockRunContext,
+	blocks map[string]entity.EriusFunc) (members []string, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
 		FormBlockType      = "form"
 	)
 
-	var uniqueLogins map[string]interface{}
+	var uniqueLogins = make(map[string]interface{}, 0)
 
 	for _, block := range blocks {
 		var blockParams map[string]interface{}
@@ -812,6 +813,7 @@ func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.Block
 	return result, nil
 }
 
+//nolint:dupl //different logic
 func (ae *APIEnv) grabApproversFromApproverBlock(ctx c.Context, blockParams map[string]interface{}) (members []string, err error) {
 	const (
 		ApproverMemberKey    = "approver"
@@ -835,20 +837,19 @@ func (ae *APIEnv) grabApproversFromApproverBlock(ctx c.Context, blockParams map[
 					}
 				}
 			}
-			break
 		case ApprovementTypeUser:
 			if member, foundMember := blockParams[ApproverMemberKey]; foundMember {
 				if memberVal, castMemberOk := member.(string); castMemberOk {
 					members = []string{memberVal}
 				}
 			}
-			break
 		}
 	}
 
 	return members, nil
 }
 
+//nolint:dupl //different logic
 func (ae *APIEnv) grabExecutorsFromExecutionBlock(ctx c.Context, blockParams map[string]interface{}) (members []string, err error) {
 	const (
 		ExecutorMemberKey   = "executors"
@@ -872,21 +873,21 @@ func (ae *APIEnv) grabExecutorsFromExecutionBlock(ctx c.Context, blockParams map
 					}
 				}
 			}
-			break
 		case ExecutionTypeUser:
 			if member, foundMember := blockParams[ExecutorMemberKey]; foundMember {
 				if memberVal, castMemberOk := member.(string); castMemberOk {
 					members = []string{memberVal}
 				}
 			}
-			break
 		}
 	}
 
 	return members, nil
 }
 
-func (ae *APIEnv) grabExecutorsFromFormsBlock(runCtx *pipeline.BlockRunContext, blockParams map[string]interface{}) (members []string, err error) {
+//nolint:dupl //different logic
+func (ae *APIEnv) grabExecutorsFromFormsBlock(runCtx *pipeline.BlockRunContext,
+	blockParams map[string]interface{}) (members []string, err error) {
 	const (
 		FormExecutorMemberKey     = "executors"
 		FormExecutorTypeInitiator = "initiator"
@@ -898,14 +899,12 @@ func (ae *APIEnv) grabExecutorsFromFormsBlock(runCtx *pipeline.BlockRunContext, 
 		switch formExecutorType {
 		case FormExecutorTypeInitiator:
 			members = []string{runCtx.Initiator}
-			break
 		case FormExecutorTypeUser:
 			if member, foundMember := blockParams[FormExecutorMemberKey]; foundMember {
 				if memberVal, castMemberOk := member.(string); castMemberOk {
 					members = []string{memberVal}
 				}
 			}
-			break
 		}
 	}
 

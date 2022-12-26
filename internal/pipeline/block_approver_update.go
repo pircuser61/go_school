@@ -4,8 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,9 +11,12 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type approverUpdateEditingParams struct {
@@ -193,7 +194,8 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 }
 
 //nolint:gocyclo //its ok here
-func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approverUpdateEditingParams, delegations human_tasks.Delegations) error {
+func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approverUpdateEditingParams,
+	delegations human_tasks.Delegations) error {
 	errSet := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, delegations)
 	if errSet != nil {
 		return errSet
@@ -241,8 +243,8 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context, delegations 
 		}
 
 		tpl := mail.NewRequestApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-		if err = gb.RunContext.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl); err != nil {
-			return err
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl); sendErr != nil {
+			return sendErr
 		}
 	}
 

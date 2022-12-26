@@ -3,10 +3,11 @@ package pipeline
 import (
 	"errors"
 	"fmt"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 )
 
 type RequestInfoType string

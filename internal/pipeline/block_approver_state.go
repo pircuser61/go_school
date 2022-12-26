@@ -2,12 +2,13 @@ package pipeline
 
 import (
 	"fmt"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 )
 
 type ApproverAction string

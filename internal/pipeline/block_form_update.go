@@ -4,14 +4,14 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type updateFillFormParams struct {

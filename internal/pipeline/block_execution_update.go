@@ -453,8 +453,8 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, delegations human_t
 		return errors.New("can't assert provided update data")
 	}
 
-	if err = gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, delegations); err != nil {
-		return err
+	if editErr := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, delegations); editErr != nil {
+		return editErr
 	}
 
 	initiatorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
