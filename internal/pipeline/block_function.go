@@ -207,27 +207,50 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		b.Output[v.Name] = v.Global
 	}
 
+	rawState, ok := runCtx.VarStore.State[name]
+	if ok {
+		if err := b.loadState(rawState); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := b.createState(ef); err != nil {
+			return nil, err
+		}
+		b.RunContext.VarStore.AddStep(b.Name)
+	}
+
+	b.RunContext.VarStore.AddStep(b.Name)
+
+	return b, nil
+}
+
+func (gb *ExecutableFunctionBlock) loadState(raw json.RawMessage) error {
+	return json.Unmarshal(raw, &gb.State)
+}
+
+//nolint:dupl,gocyclo //its not duplicate
+func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 	var params script.ExecutableFunctionParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
-		return nil, errors.Wrap(err, "can not get executable function parameters")
+		return errors.Wrap(err, "can not get executable function parameters")
 	}
 
 	if err = params.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid executable function parameters")
+		return errors.Wrap(err, "invalid executable function parameters")
 	}
 
-	function, err := b.RunContext.FunctionStore.GetFunction(context.Background(), params.Function.FunctionId)
+	function, err := gb.RunContext.FunctionStore.GetFunction(context.Background(), params.Function.FunctionId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var isAsync, invalidOptionTypeErr = function.IsAsync()
+	isAsync, invalidOptionTypeErr := function.IsAsync()
 	if invalidOptionTypeErr != nil {
-		return nil, invalidOptionTypeErr
+		return invalidOptionTypeErr
 	}
 
-	b.State = &ExecutableFunction{
+	gb.State = &ExecutableFunction{
 		Name:        params.Name,
 		Version:     params.Version,
 		Mapping:     params.Mapping,
@@ -237,9 +260,7 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		Async:       isAsync,
 	}
 
-	b.RunContext.VarStore.AddStep(b.Name)
-
-	return b, nil
+	return nil
 }
 
 func (gb *ExecutableFunctionBlock) changeCurrentState() {
