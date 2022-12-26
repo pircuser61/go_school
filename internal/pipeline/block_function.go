@@ -162,6 +162,14 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 		}
 	}
 
+	var stateBytes []byte
+	stateBytes, err := json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
 	return nil, nil
 }
 
