@@ -733,6 +733,12 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		UpdateData:    nil,
 	}
 
+	findDelegationsErr := ae.tryFindDelegations(ctx, runCtx, dto.p.Pipeline.Blocks)
+	if findDelegationsErr != nil {
+		e := PipelineRunError
+		return nil, e, err
+	}
+
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 	routineCtx = logger.WithLogger(routineCtx, log)
@@ -747,6 +753,101 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		return nil, e, err
 	}
 	return &ep, 0, nil
+}
+
+func (ae *APIEnv) grabExecutorsFromAllBlocks(blocks map[string]entity.EriusFunc) (executors []string, err error) {
+	const (
+		ApproverBlockType  = "approver"
+		ExecutionBlockType = "execution"
+		FormBlockType      = "form"
+	)
+
+	var uniqueLogins map[string]interface{}
+
+	for _, block := range blocks {
+		var blockParams map[string]interface{}
+
+		unmarshalErr := json.Unmarshal(block.Params, &blockParams)
+		if unmarshalErr != nil {
+			return []string{}, unmarshalErr
+		}
+
+		var currentBlockMembers []string
+
+		switch block.BlockType {
+		case ApproverBlockType:
+			var grabApproversErr error
+			currentBlockMembers, grabApproversErr = grabApproversFromApproverBlock(&block)
+			if grabApproversErr != nil {
+				return []string{}, grabApproversErr
+			}
+		case ExecutionBlockType:
+			var grabExecutorsErr error
+			currentBlockMembers, grabExecutorsErr = grabExecutorsFromExecutionBlock(&block)
+			if grabExecutorsErr != nil {
+				return []string{}, grabExecutorsErr
+			}
+		case FormBlockType:
+			var grabFormExecutorsErr error
+			currentBlockMembers, grabFormExecutorsErr = grabExecutorsFromFormsBlock(&block)
+			if grabFormExecutorsErr != nil {
+				return []string{}, grabFormExecutorsErr
+			}
+		default:
+			currentBlockMembers = make([]string, 0)
+		}
+
+		for _, blockMember := range currentBlockMembers {
+			if _, ok := uniqueLogins[blockMember]; !ok {
+				uniqueLogins[blockMember] = blockMember
+			}
+		}
+	}
+
+	var result = make([]string, len(uniqueLogins))
+	for login := range uniqueLogins {
+		result = append(result, login)
+	}
+
+	return result, nil
+}
+
+func grabApproversFromApproverBlock(block *entity.EriusFunc) (executors []string, err error) {
+	const (
+		ApproverMemberKey     = "approver"
+		ApprovementTypeGroup  = "group"
+		ApprovementTypeUser   = "user"
+		ApprovementTypeSchema = "fromSchema"
+	)
+
+	if k, ok := blockParams[memberKey]; ok {
+		if m, mok := k.(map[string]interface{}); mok {
+
+		}
+	}
+}
+
+func grabExecutorsFromExecutionBlock(block *entity.EriusFunc) (executors []string, err error) {
+
+}
+
+func grabExecutorsFromFormsBlock(block *entity.EriusFunc) (executors []string, err error) {
+
+}
+
+func (ae *APIEnv) tryFindDelegations(ctx c.Context, runCtx *pipeline.BlockRunContext, blocks map[string]entity.EriusFunc) error {
+	executors, executorsErr := ae.grabExecutorsFromAllBlocks(blocks)
+	if executorsErr != nil {
+		return executorsErr
+	}
+
+	delegations, delegationsErr := ae.HumanTasks.GetDelegationsByLogins(ctx, executors)
+	if delegationsErr != nil {
+		return delegationsErr
+	}
+
+	runCtx.VarStore.SetValue("delegations", delegations)
+	return nil
 }
 
 func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, params SearchPipelinesParams) {

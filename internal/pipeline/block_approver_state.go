@@ -143,6 +143,7 @@ type ApproverLogEntry struct {
 	Attachments    []string         `json:"attachments"`
 	AddedApprovers []string         `json:"added_approvers"`
 	LogType        ApproverLogType  `json:"log_type"`
+	DelegateFor    string           `json:"delegate_for"`
 }
 
 type ApproverData struct {
@@ -235,6 +236,9 @@ func (a *ApproverData) userIsAnyApprover(login string) bool {
 //nolint:gocyclo //its ok here
 func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string, attach []string) error {
 	_, ok := a.Approvers[login]
+
+	//todo: проверка на делегат
+
 	if !ok && login != AutoApprover {
 		return fmt.Errorf("%s not found in approvers", login)
 	}

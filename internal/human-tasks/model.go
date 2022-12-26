@@ -40,32 +40,18 @@ func (delegations *Delegations) GetUserInArrayWithDelegations(login string) (res
 	return result
 }
 
-func (delegations *Delegations) FindDelegationsFor(login string, delegationType DelegationType) DelegationLogins {
+func (delegations *Delegations) FindDelegationsFor(login string) DelegationLogins {
 	var loginsAndDates DelegationLogins
 
 	for _, d := range *delegations {
-		var neededDelegationTypeExist = d.checkForDelegationType(delegationType)
-
-		if neededDelegationTypeExist {
-			if currDate, ok := loginsAndDates[login]; ok {
-				if currDate.Before(d.ToDate) {
-					loginsAndDates[login] = d.ToDate
-				}
-			} else {
+		if currDate, ok := loginsAndDates[login]; ok {
+			if currDate.Before(d.ToDate) {
 				loginsAndDates[login] = d.ToDate
 			}
+		} else {
+			loginsAndDates[login] = d.ToDate
 		}
-
 	}
 
 	return loginsAndDates
-}
-
-func (d *Delegation) checkForDelegationType(delegationType DelegationType) bool {
-	for _, dt := range d.DelegationTypes {
-		if delegationType == dt {
-			return true
-		}
-	}
-	return false
 }

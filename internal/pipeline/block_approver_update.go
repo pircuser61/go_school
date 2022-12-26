@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"time"
 
 	"github.com/google/uuid"
@@ -74,6 +75,7 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
 	}
+
 	return nil
 }
 
@@ -316,6 +318,10 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
+	}
+
+	if delegations, ok := gb.RunContext.VarStore.GetValue("delegations").(human_tasks.Delegations); ok {
+		var delegationsForUpdate = delegations.FindDelegationsFor(gb.RunContext.UpdateData.ByLogin)
 	}
 
 	switch data.Action {

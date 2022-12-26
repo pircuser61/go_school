@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,6 +37,7 @@ type BlockRunContext struct {
 	People             *people.Service
 	ServiceDesc        *servicedesc.Service
 	FunctionStore      *functions.Service
+	HumanTasks         *human_tasks.Service
 	FaaS               string
 	VarStore           *store.VariableStore
 	UpdateData         *script.BlockUpdateData
