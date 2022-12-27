@@ -72,7 +72,6 @@ type taskSteps []step
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
-
 	for i := range in.Steps {
 		actionTime := in.Steps[i].Time
 
