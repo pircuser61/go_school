@@ -14,7 +14,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -991,7 +990,7 @@ func (m *MockDB) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 
 //nolint:gocritic //filters
 func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter,
-	delegations human_tasks.Delegations) (*entity.EriusTasksPage, error) {
+	delegations []string) (*entity.EriusTasksPage, error) {
 	return nil, errNotImplemented
 }
 

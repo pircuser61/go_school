@@ -8,8 +8,6 @@ import (
 	db "gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	entity "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
-
 	mock "github.com/stretchr/testify/mock"
 
 	orderedmap "github.com/iancoleman/orderedmap"
@@ -941,11 +939,11 @@ func (_m *MockedDatabase) GetTaskStepsToWait(ctx context.Context, workNumber str
 }
 
 // GetTasks provides a mock function with given fields: ctx, filters, delegations
-func (_m *MockedDatabase) GetTasks(ctx context.Context, filters entity.TaskFilter, delegations human_tasks.Delegations) (*entity.EriusTasksPage, error) {
+func (_m *MockedDatabase) GetTasks(ctx context.Context, filters entity.TaskFilter, delegations []string) (*entity.EriusTasksPage, error) {
 	ret := _m.Called(ctx, filters, delegations)
 
 	var r0 *entity.EriusTasksPage
-	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, human_tasks.Delegations) *entity.EriusTasksPage); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TaskFilter, []string) *entity.EriusTasksPage); ok {
 		r0 = rf(ctx, filters, delegations)
 	} else {
 		if ret.Get(0) != nil {
@@ -954,7 +952,7 @@ func (_m *MockedDatabase) GetTasks(ctx context.Context, filters entity.TaskFilte
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, entity.TaskFilter, human_tasks.Delegations) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, entity.TaskFilter, []string) error); ok {
 		r1 = rf(ctx, filters, delegations)
 	} else {
 		r1 = ret.Error(1)
