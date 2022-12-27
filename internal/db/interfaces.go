@@ -27,6 +27,7 @@ type PipelineStorager interface {
 }
 
 type TaskStorager interface {
+	GetTaskFormSchemaID(workNumber, formID string) (string, error)
 	GetAdditionalForms(workNumber, nodeName string) ([]string, error)
 	GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error)
 	SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error

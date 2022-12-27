@@ -88,15 +88,13 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 }
 
 func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
-	var updateDataParams FunctionUpdateParams
 	if gb.RunContext.UpdateData != nil {
+		var updateDataParams FunctionUpdateParams
 		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateDataParams)
 		if updateDataUnmarshalErr != nil {
 			return nil, updateDataUnmarshalErr
 		}
-	}
 
-	if updateDataParams.Mapping != nil {
 		gb.changeCurrentState()
 
 		if gb.State.HasResponse {

@@ -127,6 +127,28 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	return out
 }
 
+func (ae *APIEnv) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workNumber string, formID string) {
+	ctx, s := trace.StartSpan(req.Context(), "get_task_form_schema")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	id, err := ae.DB.GetTaskFormSchemaID(workNumber, formID)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	if err = sendResponse(w, http.StatusOK, id); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
 	defer s.End()

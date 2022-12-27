@@ -276,6 +276,29 @@ func (_m *MockedDatabase) EditTag(ctx context.Context, e *entity.EriusTagInfo) e
 	return r0
 }
 
+// GetTaskFormSchemaID provides a mock function with given fields: workNumber, formID
+func (_m *MockedDatabase) GetTaskFormSchemaID(workNumber string, formID string) (string, error) {
+	ret := _m.Called(workNumber, formID)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, string) string); ok {
+		r0 = rf(workNumber, formID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(workNumber, formID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetAdditionalForms provides a mock function with given fields: workNumber, nodeName
 func (_m *MockedDatabase) GetAdditionalForms(workNumber string, nodeName string) ([]string, error) {
 	ret := _m.Called(workNumber, nodeName)

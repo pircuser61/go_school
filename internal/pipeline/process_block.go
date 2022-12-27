@@ -59,6 +59,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 
 	defer func() {
 		if err != nil {
+			log.WithError(err).Error("couldn't process block")
 			if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusError); changeErr != nil {
 				log.WithError(changeErr).Error("couldn't change task status")
 			}

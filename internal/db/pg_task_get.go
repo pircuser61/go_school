@@ -228,6 +228,18 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 	return ff, nil
 }
 
+func (db *PGCon) GetTaskFormSchemaID(workNumber, formID string) (string, error) {
+	q := `SELECT content #> '{pipeline,blocks}' -> $1 #>> '{params,schema_id}'
+FROM versions
+WHERE id = (SELECT version_id FROM works WHERE work_number = $2)`
+
+	var id string
+	if err := db.Connection.QueryRow(c.Background(), q, formID, workNumber).Scan(&id); err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
 func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
 	const q = `
 	SELECT content->'State'->'servicedesk_application_0'
