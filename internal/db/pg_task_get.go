@@ -497,8 +497,6 @@ func (db *PGCon) GetTask(ctx c.Context, usernames []string, workNumber string) (
 		WHERE w.work_number = $1 
 			AND w.child_id IS NULL
 `
-	// мы проверяем являемся ли мы делегатом, если да то проводим дополнительную проверку на тип действия
-
 	return db.getTask(ctx, q, workNumber)
 }
 
@@ -557,6 +555,10 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 func (db *PGCon) computeActions(actions []string, allActions map[string]entity.TaskAction) []entity.TaskAction {
 	var actionsResult = make([]entity.TaskAction, 0)
 
+	var duplicateActionsMap = map[string]string{
+		"approve": "additional_approvement",
+	}
+
 	for _, actionId := range actions {
 		var compositeActionId = strings.Split(actionId, ":")
 		if len(compositeActionId) > 1 {
@@ -573,7 +575,9 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 				IsPublic:           actionWithPreferences.IsPublic,
 			}
 
-			if computedAction.IsPublic {
+			_, currentActionIsDuplicate := duplicateActionsMap[id]
+
+			if computedAction.IsPublic && currentActionIsDuplicate {
 				actionsResult = append(actionsResult, computedAction)
 			}
 		}
