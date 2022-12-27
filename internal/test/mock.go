@@ -990,7 +990,8 @@ func (m *MockDB) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 }
 
 //nolint:gocritic //filters
-func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter, delegations human_tasks.Delegations) (*entity.EriusTasksPage, error) {
+func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter,
+	delegations human_tasks.Delegations) (*entity.EriusTasksPage, error) {
 	return nil, errNotImplemented
 }
 

@@ -40,7 +40,6 @@ func NewService(cfg Config) (*Service, error) {
 
 func (s *Service) getDelegationsInternal(ctx c.Context, req *delegationht.GetDelegationsRequest) (
 	delegations Delegations, err error) {
-
 	res, reqErr := s.cli.GetDelegations(ctx, req)
 	if reqErr != nil {
 		return nil, reqErr
