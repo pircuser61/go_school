@@ -2,13 +2,13 @@ package db
 
 import (
 	c "context"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/iancoleman/orderedmap"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
