@@ -211,7 +211,9 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		return
 	}
 
-	resp, err := ae.DB.GetTasks(ctx, filters, delegations)
+	currentUserDelegations := delegations.GetUserInArrayWithDelegations(filters.CurrentUser)
+
+	resp, err := ae.DB.GetTasks(ctx, filters, currentUserDelegations)
 	if err != nil {
 		e := GetTasksError
 		log.Error(e.errorMessage(err))

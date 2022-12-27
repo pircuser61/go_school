@@ -19,7 +19,6 @@ import (
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	humantasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -120,7 +119,7 @@ func getUniqueActions(as string, logins []string) string {
 }
 
 //nolint:gocritic,gocyclo //filters
-func compileGetTasksQuery(filters entity.TaskFilter, delegations humantasks.Delegations) (q string, args []interface{}) {
+func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q string, args []interface{}) {
 	// nolint:gocritic
 	// language=PostgreSQL
 	q = `
@@ -167,14 +166,14 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations humantasks.Dele
 			"%s %s",
 			getUniqueActions(
 				*filters.SelectAs,
-				delegations.GetUserInArrayWithDelegations(filters.CurrentUser)),
+				delegations),
 			q)
 	} else {
 		q = fmt.Sprintf(
 			"%s %s",
 			getUniqueActions(
 				"",
-				delegations.GetUserInArrayWithDelegations(filters.CurrentUser)),
+				delegations),
 			q)
 	}
 
@@ -283,7 +282,7 @@ func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, 
 }
 
 //nolint:gocritic //filters
-func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations humantasks.Delegations) (*entity.EriusTasksPage, error) {
+func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations []string) (*entity.EriusTasksPage, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 

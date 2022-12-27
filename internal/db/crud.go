@@ -80,9 +80,6 @@ func ConnectPostgres(ctx context.Context, db *configs.Database) (PGCon, error) {
 		"@" + db.Host + ":" + db.Port + "/" + db.DBName +
 		"?sslmode=disable&pool_max_conns=" + maxConnections
 
-	var t = os.Getenv(db.PassEnvKey)
-	fmt.Println(t)
-
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(db.Timeout)*time.Second)
 	_ = cancel // no needed yet
 
