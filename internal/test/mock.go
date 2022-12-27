@@ -1117,6 +1117,10 @@ func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelin
 	return errNotImplemented
 }
 
+func (m *MockDB) GetTaskFormSchemaID(_, _ string) (string, error) {
+	return "", nil
+}
+
 func (m *MockDB) SaveStepContext(_ context.Context, _ *db.SaveStepRequest) (uuid.UUID, time.Time, error) {
 	return db.NullUuid, time.Time{}, nil
 }

@@ -1990,6 +1990,9 @@ type ServerInterface interface {
 	// Update Task
 	// (POST /tasks/{workNumber})
 	UpdateTask(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Get Task form schema
+	// (GET /tasks/{workNumber}/{formID}/schema)
+	GetTaskFormSchema(w http.ResponseWriter, r *http.Request, workNumber string, formID string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -3155,6 +3158,41 @@ func (siw *ServerInterfaceWrapper) UpdateTask(w http.ResponseWriter, r *http.Req
 	handler(w, r.WithContext(ctx))
 }
 
+// GetTaskFormSchema operation middleware
+func (siw *ServerInterfaceWrapper) GetTaskFormSchema(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "formID" -------------
+	var formID string
+
+	err = runtime.BindStyledParameter("simple", false, "formID", chi.URLParam(r, "formID"), &formID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTaskFormSchema(w, r, workNumber, formID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -3396,6 +3434,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/tasks/{workNumber}", wrapper.UpdateTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/tasks/{workNumber}/{formID}/schema", wrapper.GetTaskFormSchema)
 	})
 
 	return r

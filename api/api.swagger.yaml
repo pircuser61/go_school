@@ -1503,6 +1503,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /tasks/{workNumber}/{formID}/schema:
+    get:
+      tags:
+      - tasks
+      summary: Get Task form schema
+      description: Получить id схемы формы задачи
+      operationId: get-task-form-schema
+      parameters:
+        - name: workNumber
+          in: path
+          description: work number
+          required: true
+          schema:
+            type: string
+        - name: formID
+          in: path
+          description: form id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /tasks/{workNumber}:
     get:
       tags:
