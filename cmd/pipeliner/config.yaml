@@ -88,7 +88,7 @@ servicedesc:
   scope: 'servicedesk-develop-aud'
 
 function_store:
-  url: 'functions:9090'
+  url: 'functions:90'
 
 human_tasks:
-  url: 'human-tasks:9091'
+  url: 'human-tasks:90'
