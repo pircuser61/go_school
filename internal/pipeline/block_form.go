@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -26,6 +27,7 @@ type ChangesLogItem struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
 	CreatedAt       time.Time              `json:"created_at"`
 	Executor        string                 `json:"executor,omitempty"`
+	DelegateFor     string                 `json:"delegate_for"`
 }
 
 type FormData struct {
@@ -194,6 +196,7 @@ func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
+//nolint:dupl //different logic
 func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	var params script.FormParams
 	err := json.Unmarshal(ef.Params, &params)
@@ -243,6 +246,19 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 
 		gb.State.Executors = resolvedEntities
+
+		if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
+			if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
+				for executorLogin := range gb.State.Executors {
+					delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, executorLogin)
+					if htErr != nil {
+						return htErr
+					}
+
+					currentDelegationsArr = append(currentDelegationsArr, delegationsTo...)
+				}
+			}
+		}
 	}
 
 	return gb.handleNotifications(ctx)
