@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"time"
 
 	"github.com/pkg/errors"
@@ -244,6 +245,19 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 
 		gb.State.Executors = resolvedEntities
+
+		for executorLogin := range gb.State.Executors {
+			delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, executorLogin)
+			if htErr != nil {
+				return htErr
+			}
+
+			if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
+				if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
+					currentDelegationsArr = append(currentDelegationsArr, delegationsTo...)
+				}
+			}
+		}
 	}
 
 	return gb.handleNotifications(ctx)

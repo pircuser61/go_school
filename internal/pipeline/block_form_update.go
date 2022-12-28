@@ -59,17 +59,10 @@ func (gb *GoFormBlock) cancelPipeline(ctx c.Context, delegations human_tasks.Del
 //nolint:gocyclo //ok
 func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 	var delegationsTo human_tasks.Delegations
-	var htErr error
-	if gb.State.FormExecutorType == script.FormExecutorTypeFromSchema {
-		delegationsTo, htErr = gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, gb.RunContext.UpdateData.ByLogin)
-		if htErr != nil {
-			return nil, htErr
-		}
-	} else {
-		if delegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-			if delegationsVal, castOk := delegations.(human_tasks.Delegations); castOk {
-				delegationsTo = delegationsVal.FindDelegationsTo(gb.RunContext.UpdateData.ByLogin)
-			}
+
+	if delegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
+		if delegationsVal, castOk := delegations.(human_tasks.Delegations); castOk {
+			delegationsTo = delegationsVal.FindDelegationsTo(gb.RunContext.UpdateData.ByLogin)
 		}
 	}
 
