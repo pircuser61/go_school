@@ -756,7 +756,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 }
 
 func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.BlockRunContext,
-	blocks map[string]entity.EriusFunc) (members []string, err error) {
+	blocks *map[string]entity.EriusFunc) (members []string, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
@@ -765,7 +765,7 @@ func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.Block
 
 	var uniqueLogins = make(map[string]interface{}, 0)
 
-	for _, block := range blocks {
+	for _, block := range *blocks {
 		var blockParams map[string]interface{}
 
 		unmarshalErr := json.Unmarshal(block.Params, &blockParams)
@@ -912,7 +912,7 @@ func (ae *APIEnv) grabExecutorsFromFormsBlock(runCtx *pipeline.BlockRunContext,
 }
 
 func (ae *APIEnv) tryFindDelegations(ctx c.Context, runCtx *pipeline.BlockRunContext, blocks map[string]entity.EriusFunc) error {
-	members, membersErr := ae.grabMembersFromAllBlocks(ctx, runCtx, blocks)
+	members, membersErr := ae.grabMembersFromAllBlocks(ctx, runCtx, &blocks)
 	if membersErr != nil {
 		return membersErr
 	}

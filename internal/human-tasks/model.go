@@ -33,7 +33,7 @@ func (delegations *Delegations) GetUserInArrayWithDelegations(login string) (res
 }
 
 func (delegations *Delegations) FindDelegationsTo(login string) Delegations {
-	var loginsAndDates DelegationLogins
+	var loginsAndDates = make(map[string]Delegation, 0)
 	var result = make([]Delegation, 0)
 
 	for _, dd := range *delegations {
