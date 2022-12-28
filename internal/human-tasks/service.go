@@ -48,12 +48,12 @@ func (s *Service) getDelegationsInternal(ctx c.Context, req *delegationht.GetDel
 	}
 
 	for _, delegation := range res.Delegations {
-		fromDate, parseFromDateErr := time.Parse(time.RFC3339, delegation.FromDate)
+		fromDate, parseFromDateErr := time.Parse("02/01/2006", delegation.FromDate)
 		if parseFromDateErr != nil {
 			return nil, parseFromDateErr
 		}
 
-		toDate, parseToDateErr := time.Parse(time.RFC3339, delegation.ToDate)
+		toDate, parseToDateErr := time.Parse("02/01/2006", delegation.ToDate)
 		if parseToDateErr != nil {
 			return nil, parseToDateErr
 		}
