@@ -29,6 +29,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
@@ -143,6 +144,12 @@ func main() {
 		return
 	}
 
+	humanTasksService, err := human_tasks.NewService(cfg.HumanTasks)
+	if err != nil {
+		log.WithError(err).Error("can't create human tasks service")
+		return
+	}
+
 	APIEnv := &api.APIEnv{
 		DB:                   &dbConn,
 		Remedy:               cfg.Remedy,
@@ -156,6 +163,7 @@ func main() {
 		People:               peopleService,
 		ServiceDesc:          serviceDescService,
 		FunctionStore:        functionsService,
+		HumanTasks:           humanTasksService,
 	}
 
 	serverParam := api.ServerParam{

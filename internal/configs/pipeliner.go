@@ -7,6 +7,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -53,6 +54,7 @@ type Pipeliner struct {
 	ServiceDesc           servicedesc.Config `yaml:"servicedesc"`
 	Kafka                 kafka.Config       `yaml:"kafka"`
 	FunctionStore         functions.Config   `yaml:"function_store"`
+	HumanTasks            human_tasks.Config `yaml:"human_tasks"`
 }
 
 type RunEnv struct {

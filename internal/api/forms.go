@@ -27,7 +27,7 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, ui.Username, params.WorkNumber)
+	dbTask, err := ae.DB.GetTask(ctx, []string{ui.Username}, params.WorkNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))

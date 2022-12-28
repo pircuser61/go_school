@@ -56,7 +56,7 @@ func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.Eriu
 		return nil, err
 	}
 
-	return db.GetTask(c, dto.Author, workNumber)
+	return db.GetTask(c, []string{dto.Author}, workNumber)
 }
 
 func (db *PGCon) insertTaskWithWorkNumber(c context.Context, dto *CreateTaskDTO) (string, error) {
