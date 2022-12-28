@@ -565,6 +565,7 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 
 func (db *PGCon) computeActions(actions []string, allActions map[string]entity.TaskAction) []entity.TaskAction {
 	var actionsResult = make([]entity.TaskAction, 0)
+	var actionsMap = make(map[string]interface{}, 0)
 
 	var duplicateActionsMap = map[string]string{
 		"approve": "additional_approvement",
@@ -586,10 +587,21 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 				IsPublic:           actionWithPreferences.IsPublic,
 			}
 
-			_, currentActionIsDuplicate := duplicateActionsMap[id]
+			if computedAction.IsPublic {
+				var ignoreAction = false
+				for k, v := range duplicateActionsMap {
+					if _, b := actionsMap[k]; b {
+						if id == v {
+							ignoreAction = true
+						}
+					}
+				}
 
-			if computedAction.IsPublic && currentActionIsDuplicate {
-				actionsResult = append(actionsResult, computedAction)
+				if !ignoreAction {
+					actionsMap[id] = id
+					actionsResult = append(actionsResult, computedAction)
+				}
+
 			}
 		}
 	}
