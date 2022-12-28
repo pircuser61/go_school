@@ -601,7 +601,6 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 					actionsMap[id] = id
 					actionsResult = append(actionsResult, computedAction)
 				}
-
 			}
 		}
 	}
