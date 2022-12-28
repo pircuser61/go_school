@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 
 	"net/http"
 	"time"
@@ -37,6 +38,7 @@ type APIEnv struct {
 	People               *people.Service
 	ServiceDesc          *servicedesc.Service
 	FunctionStore        *functions.Service
+	HumanTasks           *human_tasks.Service
 }
 
 type ServerParam struct {
