@@ -18,9 +18,9 @@ DECLARE
     msg_detail text;
 BEGIN
     -- get current json
-    SELECT v.content::jsonb
+    SELECT v.content::jsonb, to_json(updated_at)
     FROM variable_storage v
-    WHERE v.id = $1 INTO val;
+    WHERE v.id = $1 INTO val, decision_time;
 
     -- approver bocks list
     SELECT array_agg(key(data))
@@ -40,8 +40,6 @@ BEGIN
                 answer := val #>> ('{State,' || block || ',comment}')::text[];
                 decision := val #>> ('{State,' || block || ',decision}')::text[];
                 attachments := val #>> ('{State,' || block || ',decision_attachments}')::text[];
-
-                SELECT to_json(updated_at) FROM variable_storage v WHERE v.id = $1 INTO decision_time;
 
                 log_entry := ('[{
  							  "login": "' || approver || '",
@@ -75,10 +73,79 @@ END
 $BODY$
     LANGUAGE plpgsql;
 
-UPDATE variable_storage SET content = add_anyof_decisions_to_approver_log(id);
+UPDATE variable_storage
+SET content = add_anyof_decisions_to_approver_log(id)
+WHERE id IN (SELECT id
+             FROM (SELECT id, jsonb_each(v.content #> '{State}') AS data
+                   FROM variable_storage v) a
+             WHERE key(data) LIKE 'approver%'
+               AND value(data) ->> 'approvementRule' = 'AnyOf'
+               AND value(data) ->> 'actual_approver' IS NOT NULL
+               AND value(data) ->> 'decision' IS NOT NULL);
+
+DROP FUNCTION add_anyof_decisions_to_approver_log;
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-drop function add_anyof_decisions_to_approver_log;
+CREATE OR REPLACE FUNCTION add_anyof_decisions_to_approver_log_rollback(id uuid) RETURNS jsonb AS
+$BODY$
+DECLARE
+    val jsonb;
+
+    block_list text[];
+    block text; --iterator
+
+    msg_detail text;
+BEGIN
+    -- get current json
+    SELECT v.content::jsonb
+    FROM variable_storage v
+    WHERE v.id = $1 INTO val;
+
+    -- approver bocks list
+    SELECT array_agg(key(data))
+    FROM (SELECT jsonb_each(v.content #> '{State}') AS data
+          FROM variable_storage v
+          WHERE v.id = $1) a
+    WHERE key(data) LIKE 'approver%'
+      AND value(data) ->> 'approvementRule' = 'AnyOf'
+      AND value(data) ->> 'actual_approver' IS NOT NULL
+      AND value(data) ->> 'decision' IS NOT NULL
+    INTO block_list;
+
+    IF block_list IS NOT NULL THEN
+        FOREACH block IN ARRAY block_list
+            LOOP
+                IF val #> ('{State,' || block || ',approver_log}')::text[] IS NOT NULL THEN
+                    val := jsonb_set(
+                            val,
+                            ('{State,' || block || ',approver_log}')::text[],
+                            (val #> ('{State,' || block || ',approver_log}')::text[]) - (-1)
+                        );
+                END IF;
+            END LOOP;
+    END IF;
+
+    RETURN val;
+
+EXCEPTION WHEN OTHERS THEN
+    GET STACKED DIAGNOSTICS msg_detail = PG_EXCEPTION_DETAIL;
+    RAISE NOTICE 'ID: %, %, %, %', id, SQLERRM, SQLSTATE, msg_detail;
+    RETURN val;
+END
+$BODY$
+    LANGUAGE plpgsql;
+
+UPDATE variable_storage
+SET content = add_anyof_decisions_to_approver_log_rollback(id)
+WHERE id IN (SELECT id
+             FROM (SELECT id, jsonb_each(v.content #> '{State}') AS data
+                   FROM variable_storage v) a
+             WHERE key(data) LIKE 'approver%'
+               AND value(data) ->> 'approvementRule' = 'AnyOf'
+               AND value(data) ->> 'actual_approver' IS NOT NULL
+               AND value(data) ->> 'decision' IS NOT NULL);
+
+DROP FUNCTION add_anyof_decisions_to_approver_log_rollback;
 -- +goose StatementEnd
