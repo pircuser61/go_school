@@ -691,6 +691,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.Name = dto.p.Name
 	ep.ServiceDesc = ae.ServiceDesc
 	ep.FunctionStore = ae.FunctionStore
+	ep.HumanTasks = ae.HumanTasks
 
 	if dto.makeNewWork {
 		ep.WorkNumber = dto.workNumber
@@ -768,14 +769,18 @@ func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.Block
 	for _, block := range *blocks {
 		var blockParams map[string]interface{}
 
-		unmarshalErr := json.Unmarshal(block.Params, &blockParams)
-		if unmarshalErr != nil {
-			return []string{}, unmarshalErr
+		if block.Params != nil {
+			unmarshalErr := json.Unmarshal(block.Params, &blockParams)
+			if unmarshalErr != nil {
+				return []string{}, unmarshalErr
+			}
+		} else {
+			continue
 		}
 
 		var currentBlockMembers []string
 
-		switch block.BlockType {
+		switch block.TypeID {
 		case ApproverBlockType:
 			var grabApproversErr error
 			currentBlockMembers, grabApproversErr = ae.grabApproversFromApproverBlock(ctx, blockParams)
