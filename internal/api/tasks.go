@@ -93,7 +93,6 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	}
 
 	for _, a := range in.Actions {
-
 		actions = append(actions, action{
 			Id:                 a.Id,
 			ButtonType:         a.ButtonType,
