@@ -88,12 +88,25 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA >= 1 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
-		for approver := range gb.State.Approvers {
-			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, approver)
+		for approverLogin := range gb.State.Approvers {
+			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, approverLogin)
 			if err != nil {
 				continue
 			}
 			emails = append(emails, userEmail)
+
+			delegations, err := gb.RunContext.HumanTask.GetDelegationsFromLogin(ctx, approverLogin)
+			if err != nil {
+				continue
+			}
+
+			for i := range delegations {
+				userEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
+				if err != nil {
+					continue
+				}
+				emails = append(emails, userEmail)
+			}
 		}
 
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
@@ -150,12 +163,25 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 	if gb.State.SLA >= 1 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
-		for approver := range gb.State.Approvers {
-			em, err := gb.RunContext.People.GetUserEmail(ctx, approver)
+		for approverLogin := range gb.State.Approvers {
+			em, err := gb.RunContext.People.GetUserEmail(ctx, approverLogin)
 			if err != nil {
 				continue
 			}
 			emails = append(emails, em)
+
+			delegations, err := gb.RunContext.HumanTask.GetDelegationsFromLogin(ctx, approverLogin)
+			if err != nil {
+				continue
+			}
+
+			for i := range delegations {
+				userEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
+				if err != nil {
+					continue
+				}
+				emails = append(emails, userEmail)
+			}
 		}
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
 			// check if approver has not decisioned, and we did not see approver before

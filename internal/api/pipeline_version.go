@@ -731,6 +731,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		FaaS:          ep.FaaS,
 		VarStore:      variableStorage,
 		UpdateData:    nil,
+		HumanTask:     ep.HumanTask,
 	}
 
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]

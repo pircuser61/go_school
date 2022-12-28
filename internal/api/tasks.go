@@ -530,6 +530,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 				Action:     string(updateData.Action),
 				Parameters: updateData.Parameters,
 			},
+			HumanTask: ae.HumanTasks,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
@@ -742,6 +743,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			UpdateData: &script.BlockUpdateData{
 				Action: string(action),
 			},
+			HumanTask: ae.HumanTasks,
 		}
 
 		blockErr := pipeline.ProcessBlock(routineCtx, item.StepName, item.BlockData, runCtx, true)
@@ -801,6 +803,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
 		},
+		HumanTask: ae.HumanTasks,
 	}
 
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)

@@ -134,12 +134,25 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 
 	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
-		for executor := range gb.State.Executors {
-			email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
+		for executorLogin := range gb.State.Executors {
+			email, err := gb.RunContext.People.GetUserEmail(ctx, executorLogin)
 			if err != nil {
 				continue
 			}
 			emails = append(emails, email)
+
+			delegations, err := gb.RunContext.HumanTask.GetDelegationsFromLogin(ctx, executorLogin)
+			if err != nil {
+				continue
+			}
+
+			for i := range delegations {
+				userEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
+				if err != nil {
+					continue
+				}
+				emails = append(emails, userEmail)
+			}
 		}
 		if len(emails) == 0 {
 			return nil
@@ -165,12 +178,25 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 
 	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
-		for executor := range gb.State.Executors {
-			email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
+		for executorLogin := range gb.State.Executors {
+			email, err := gb.RunContext.People.GetUserEmail(ctx, executorLogin)
 			if err != nil {
 				continue
 			}
 			emails = append(emails, email)
+
+			delegations, err := gb.RunContext.HumanTask.GetDelegationsFromLogin(ctx, executorLogin)
+			if err != nil {
+				continue
+			}
+
+			for i := range delegations {
+				userEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
+				if err != nil {
+					continue
+				}
+				emails = append(emails, userEmail)
+			}
 		}
 		if len(emails) == 0 {
 			return nil

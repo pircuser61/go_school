@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -47,6 +48,7 @@ type ExecutablePipeline struct {
 	People        *people.Service
 	ServiceDesc   *servicedesc.Service
 	FunctionStore *functions.Service
+	HumanTask     *human_tasks.Service
 
 	FaaS string
 
@@ -161,6 +163,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			FaaS:          gb.FaaS,
 			VarStore:      gb.VarStore,
 			UpdateData:    nil,
+			HumanTask:     gb.HumanTask,
 		})
 		if err != nil {
 			return err

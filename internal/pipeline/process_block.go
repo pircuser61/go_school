@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"time"
 
 	"github.com/google/uuid"
@@ -41,6 +42,7 @@ type BlockRunContext struct {
 	UpdateData         *script.BlockUpdateData
 	skipNotifications  bool // for tests
 	currBlockStartTime time.Time
+	HumanTask          *human_tasks.Service
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
