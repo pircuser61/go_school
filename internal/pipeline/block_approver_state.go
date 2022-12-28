@@ -258,23 +258,23 @@ func (a *ApproverData) SetDecision(login string,
 
 	var approvementRule = a.ApprovementRule
 
-	var approverLogEntry = ApproverLogEntry{
-		Login:       login,
-		Decision:    decision,
-		Comment:     comment,
-		Attachments: attach,
-		CreatedAt:   time.Now(),
-		LogType:     ApproverLogDecision,
-		DelegateFor: delegateFor,
-	}
-
-	a.ApproverLog = append(a.ApproverLog, approverLogEntry)
-
 	if approvementRule == script.AnyOfApprovementRequired {
 		a.Decision = &decision
 		a.Comment = &comment
 		a.ActualApprover = &login
 		a.DecisionAttachments = attach
+
+		var approverLogEntry = ApproverLogEntry{
+			Login:       login,
+			Decision:    decision,
+			Comment:     comment,
+			Attachments: attach,
+			CreatedAt:   time.Now(),
+			LogType:     ApproverLogDecision,
+			DelegateFor: delegateFor,
+		}
+
+		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
 	}
 
 	if approvementRule == script.AllOfApprovementRequired {
