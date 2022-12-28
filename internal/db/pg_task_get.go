@@ -332,28 +332,28 @@ func (db *PGCon) GetTasksCount(ctx c.Context, usernames []string) (*entity.Count
 		)
 		SELECT
 		(SELECT count(*) FROM works w join ids on w.id = ids.id
-		WHERE author IN $1 AND
+		WHERE author = ANY($1) AND
 		      ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)),
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login IN $1 AND vs.step_type = 'approver'
+				m.login = ANY($1) AND vs.step_type = 'approver'
 		),
 		(SELECT count(*)
 			 FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			 WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login IN $1 AND vs.step_type = 'execution'),
+				m.login = ANY($1) AND vs.step_type = 'execution'),
 		
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login IN $1 AND vs.step_type = 'form'
+				m.login = ANY($1) AND vs.step_type = 'form'
 		)`
 
 	counter, err := db.getTasksCount(ctx, q, usernames)
@@ -610,9 +610,7 @@ func (db *PGCon) getTasksCount(ctx c.Context, q string, usernames []string) (*ta
 
 	counter := &tasksCounter{}
 
-	inLogins := buildInExpression(usernames)
-
-	if scanErr := db.Connection.QueryRow(ctx, q, inLogins).
+	if scanErr := db.Connection.QueryRow(ctx, q, usernames).
 		Scan(
 			&counter.totalActive,
 			&counter.totalApprover,

@@ -50,7 +50,7 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}()
 
-	s.kafka.StartConsumer(ctx)
+	//s.kafka.StartConsumer(ctx)
 }
 
 func (s *Server) Stop(ctx context.Context) {

@@ -2,12 +2,7 @@ package kafka
 
 import (
 	c "context"
-	"fmt"
 	"os"
-
-	"github.com/Shopify/sarama"
-
-	"github.com/rcrowley/go-metrics"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
@@ -23,7 +18,7 @@ type Service struct {
 }
 
 func NewService(log logger.Logger, cfg Config) (*Service, error) {
-	m := metrics.DefaultRegistry
+	/*m := metrics.DefaultRegistry
 	m.UnregisterAll()
 	saramaCfg := sarama.NewConfig()
 	saramaCfg.MetricRegistry = m
@@ -42,13 +37,13 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 	consumer, err := msgkit.NewConsumer(saramaClient, cfg.ConsumerGroup, cfg.ConsumerTopic)
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	return &Service{
 		log: log,
 
-		producer: producer,
-		consumer: consumer,
+		//producer: producer,
+		//consumer: consumer,
 	}, nil
 }
 
