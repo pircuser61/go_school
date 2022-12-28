@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 
 	"net/http"
 	"time"
