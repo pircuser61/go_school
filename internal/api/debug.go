@@ -44,7 +44,7 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, ui.Username, debugRequest.WorkNumber)
+	task, err := ae.DB.GetTask(ctx, []string{ui.Username}, debugRequest.WorkNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -233,7 +233,7 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request, workNumber
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, ui.Username, workNumber)
+	task, err := ae.DB.GetTask(ctx, []string{ui.Username}, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))

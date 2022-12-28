@@ -72,7 +72,6 @@ type taskSteps []step
 func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
-
 	for i := range in.Steps {
 		actionTime := in.Steps[i].Time
 
@@ -127,6 +126,28 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	return out
 }
 
+func (ae *APIEnv) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workNumber string, formID string) {
+	ctx, s := trace.StartSpan(req.Context(), "get_task_form_schema")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	id, err := ae.DB.GetTaskFormSchemaID(workNumber, formID)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	if err = sendResponse(w, http.StatusOK, id); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task")
 	defer s.End()
@@ -149,7 +170,15 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, ui.Username, workNumber)
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
+	if err != nil {
+		e := GetDelegationsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	dbTask, err := ae.DB.GetTask(ctx, delegations.GetUserInArrayWithDelegations(ui.Username), workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -195,7 +224,17 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		return
 	}
 
-	resp, err := ae.DB.GetTasks(ctx, filters)
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
+	if err != nil {
+		e := GetDelegationsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	currentUserDelegations := delegations.GetUserInArrayWithDelegations(filters.CurrentUser)
+
+	resp, err := ae.DB.GetTasks(ctx, filters, currentUserDelegations)
 	if err != nil {
 		e := GetTasksError
 		log.Error(e.errorMessage(err))
@@ -278,7 +317,15 @@ func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp, err := ae.DB.GetTasksCount(ctx, ui.Username)
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
+	if err != nil {
+		e := GetDelegationsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	resp, err := ae.DB.GetTasksCount(ctx, delegations.GetUserInArrayWithDelegations(ui.Username))
 	if err != nil {
 		e := GetTasksCountError
 		log.Error(e.errorMessage(err))
@@ -424,7 +471,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, ui.Username, workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, []string{ui.Username}, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))

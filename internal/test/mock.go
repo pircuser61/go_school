@@ -989,11 +989,12 @@ func (m *MockDB) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 }
 
 //nolint:gocritic //filters
-func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
+func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter,
+	delegations []string) (*entity.EriusTasksPage, error) {
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTasksCount(c context.Context, userName string) (*entity.CountTasks, error) {
+func (m *MockDB) GetTasksCount(c context.Context, usernames []string) (*entity.CountTasks, error) {
 	return nil, errNotImplemented
 }
 
@@ -1033,7 +1034,7 @@ func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTask(_ context.Context, _, _ string) (*entity.EriusTask, error) {
+func (m *MockDB) GetTask(_ context.Context, _ []string, _ string) (*entity.EriusTask, error) {
 	return nil, errNotFound
 }
 
@@ -1115,6 +1116,10 @@ func (m *MockDB) RenamePipeline(c context.Context, id uuid.UUID, name string) er
 
 func (m *MockDB) UpdateDraft(c context.Context, p *entity.EriusScenario, pipelineData []byte) error {
 	return errNotImplemented
+}
+
+func (m *MockDB) GetTaskFormSchemaID(_, _ string) (string, error) {
+	return "", nil
 }
 
 func (m *MockDB) SaveStepContext(_ context.Context, _ *db.SaveStepRequest) (uuid.UUID, time.Time, error) {

@@ -60,7 +60,7 @@ func (gb *ExecutableFunctionBlock) CheckSLA() (bool, bool, time.Time, time.Time)
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
-	if gb.State.Async && gb.State.HasAck {
+	if gb.State.Async && gb.State.HasAck && !gb.State.HasResponse {
 		return StatusIdle
 	}
 
@@ -88,15 +88,13 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 }
 
 func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
-	var updateDataParams FunctionUpdateParams
 	if gb.RunContext.UpdateData != nil {
+		var updateDataParams FunctionUpdateParams
 		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateDataParams)
 		if updateDataUnmarshalErr != nil {
 			return nil, updateDataUnmarshalErr
 		}
-	}
 
-	if updateDataParams.Mapping != nil {
 		gb.changeCurrentState()
 
 		if gb.State.HasResponse {
@@ -162,6 +160,14 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 		}
 	}
 
+	var stateBytes []byte
+	stateBytes, err := json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
 	return nil, nil
 }
 
@@ -207,27 +213,50 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		b.Output[v.Name] = v.Global
 	}
 
+	rawState, ok := runCtx.VarStore.State[name]
+	if ok {
+		if err := b.loadState(rawState); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := b.createState(ef); err != nil {
+			return nil, err
+		}
+		b.RunContext.VarStore.AddStep(b.Name)
+	}
+
+	b.RunContext.VarStore.AddStep(b.Name)
+
+	return b, nil
+}
+
+func (gb *ExecutableFunctionBlock) loadState(raw json.RawMessage) error {
+	return json.Unmarshal(raw, &gb.State)
+}
+
+//nolint:dupl,gocyclo //its not duplicate
+func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 	var params script.ExecutableFunctionParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
-		return nil, errors.Wrap(err, "can not get executable function parameters")
+		return errors.Wrap(err, "can not get executable function parameters")
 	}
 
 	if err = params.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid executable function parameters")
+		return errors.Wrap(err, "invalid executable function parameters")
 	}
 
-	function, err := b.RunContext.FunctionStore.GetFunction(context.Background(), params.Function.FunctionId)
+	function, err := gb.RunContext.FunctionStore.GetFunction(context.Background(), params.Function.FunctionId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var isAsync, invalidOptionTypeErr = function.IsAsync()
+	isAsync, invalidOptionTypeErr := function.IsAsync()
 	if invalidOptionTypeErr != nil {
-		return nil, invalidOptionTypeErr
+		return invalidOptionTypeErr
 	}
 
-	b.State = &ExecutableFunction{
+	gb.State = &ExecutableFunction{
 		Name:        params.Name,
 		Version:     params.Version,
 		Mapping:     params.Mapping,
@@ -237,17 +266,13 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		Async:       isAsync,
 	}
 
-	b.RunContext.VarStore.AddStep(b.Name)
-
-	return b, nil
+	return nil
 }
 
 func (gb *ExecutableFunctionBlock) changeCurrentState() {
-	if !gb.State.HasResponse || gb.State.HasAck {
-		gb.State.HasResponse = true
-	}
-
 	if gb.State.Async && !gb.State.HasAck {
 		gb.State.HasAck = true
+		return
 	}
+	gb.State.HasResponse = true
 }

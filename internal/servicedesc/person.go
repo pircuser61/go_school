@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 )
 
 const (
-	getUserInfo = "/api/herald/v1/externalData/single?search=%s"
+	getUserInfo = "/api/herald/v1/externalData/user/single?search=%s"
 )
 
 type SsoPerson struct {
@@ -28,6 +31,12 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 	ctxLocal, span := trace.StartSpan(ctx, "get_user_info")
 	defer span.End()
 
+	if strings.HasPrefix(username, "service-account") {
+		return &SsoPerson{
+			Username: username,
+		}, nil
+	}
+
 	reqURL := fmt.Sprintf("%s%s", s.sdURL, fmt.Sprintf(getUserInfo, username))
 
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
@@ -41,11 +50,11 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, err
+		return nil, errors.New("bad status code")
 	}
 
 	res := &SsoPerson{}
-	if unmErr := json.NewDecoder(resp.Body).Decode(res); unmErr != nil {
+	if unmErr := json.NewDecoder(resp.Body).Decode(&res); unmErr != nil {
 		return nil, unmErr
 	}
 

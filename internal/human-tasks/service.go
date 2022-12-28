@@ -13,9 +13,11 @@ import (
 	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 )
 
-const FromLoginFilter = "fromLogin"
-const FromLoginsFilter = "fromLogins"
-const ToLoginFilter = "toLogin"
+const (
+	FromLoginFilter  = "fromLogin"
+	FromLoginsFilter = "fromLogins"
+	ToLoginFilter    = "toLogin"
+)
 
 type Service struct {
 	c   *grpc.ClientConn

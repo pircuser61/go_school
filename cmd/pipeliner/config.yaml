@@ -44,7 +44,7 @@ mail:
 
 kafka:
   brokers:
-    - kafka:9092
+    - 10.73.138.117:9094
   producer_topic: "from.pipeliner.to.runner"
   consumer_group: "pipeliner"
   consumer_topic: "from.runner.to.pipeliner"

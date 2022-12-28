@@ -89,7 +89,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		return nil
 	}
 
-	if gb.State.SLA >= 8 {
+	if gb.State.SLA >= 1 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		for approver := range gb.State.Approvers {
@@ -151,7 +151,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 		return nil
 	}
 
-	if gb.State.SLA >= 8 {
+	if gb.State.SLA >= 1 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		for approver := range gb.State.Approvers {
