@@ -3,9 +3,10 @@ package kafka
 import (
 	c "context"
 	"fmt"
+	"os"
+
 	"github.com/Shopify/sarama"
 	"github.com/rcrowley/go-metrics"
-	"os"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	msgkit "gitlab.services.mts.ru/jocasta/msg-kit"
