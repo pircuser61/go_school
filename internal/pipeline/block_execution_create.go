@@ -57,7 +57,7 @@ func (gb *GoExecutionBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocyclo //its not duplicate
 func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
@@ -101,14 +101,14 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 
 		gb.State.Executors = resolvedEntities
 
-		for executorLogin := range gb.State.Executors {
-			delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, executorLogin)
-			if htErr != nil {
-				return htErr
-			}
+		if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
+			if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
+				for executorLogin := range gb.State.Executors {
+					delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, executorLogin)
+					if htErr != nil {
+						return htErr
+					}
 
-			if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-				if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
 					currentDelegationsArr = append(currentDelegationsArr, delegationsTo...)
 				}
 			}

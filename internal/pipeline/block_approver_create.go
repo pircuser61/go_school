@@ -151,14 +151,14 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 		gb.State.Approvers = resolvedEntities
 
-		for executorLogin := range gb.State.Approvers {
-			delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, executorLogin)
-			if htErr != nil {
-				return htErr
-			}
+		if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
+			if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
+				for approverLogin := range gb.State.Approvers {
+					delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, approverLogin)
+					if htErr != nil {
+						return htErr
+					}
 
-			if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-				if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
 					currentDelegationsArr = append(currentDelegationsArr, delegationsTo...)
 				}
 			}
