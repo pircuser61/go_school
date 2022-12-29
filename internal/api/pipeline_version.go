@@ -737,7 +737,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	findDelegationsErr := ae.tryFindDelegations(ctx, runCtx, dto.p.Pipeline.Blocks)
 	if findDelegationsErr != nil {
 		e := PipelineRunError
-		return nil, e, err
+		return nil, e, findDelegationsErr
 	}
 
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
