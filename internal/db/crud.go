@@ -1488,14 +1488,14 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 
 	var id uuid.UUID
 	var t time.Time
-
 	const q = `
 		SELECT id, time
-			FROM variable_storage 
-		WHERE work_id = $1 AND
-			step_name = $2 AND
-			status IN ('idle', 'ready', 'running')
-`
+			FROM variable_storage
+			WHERE work_id = $1 AND
+                step_name = $2 AND
+                (status IN ('idle', 'ready', 'running') OR
+                (step_type = 'form' AND status IN ('idle', 'ready', 'running', 'finished')))
+	`
 
 	if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).
 		Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {

@@ -14,7 +14,7 @@ type Delegation struct {
 type DelegationLogins map[string]Delegation
 
 func (delegations *Delegations) GetUserInArrayWithDelegations(login string) (result []string) {
-	var uniqueLogins map[string]interface{}
+	var uniqueLogins = make(map[string]interface{}, 0)
 	uniqueLogins[login] = login
 
 	for _, d := range *delegations {
@@ -33,7 +33,7 @@ func (delegations *Delegations) GetUserInArrayWithDelegations(login string) (res
 }
 
 func (delegations *Delegations) FindDelegationsTo(login string) Delegations {
-	var loginsAndDates DelegationLogins
+	var loginsAndDates = make(map[string]Delegation, 0)
 	var result = make([]Delegation, 0)
 
 	for _, dd := range *delegations {

@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 )
 
 type ApproverAction string
@@ -143,6 +145,7 @@ type ApproverLogEntry struct {
 	Attachments    []string         `json:"attachments"`
 	AddedApprovers []string         `json:"added_approvers"`
 	LogType        ApproverLogType  `json:"log_type"`
+	DelegateFor    string           `json:"delegate_for"`
 }
 
 type ApproverData struct {
@@ -216,12 +219,15 @@ func (a *ApproverData) GetApproversGroupID() string {
 	return a.ApproversGroupID
 }
 
-func (a *ApproverData) userIsAnyApprover(login string) bool {
+func (a *ApproverData) userIsAnyApprover(login, delegateFor string) bool {
 	if login == AutoApprover {
 		return true
 	}
 	_, ok := a.Approvers[login]
 	if ok {
+		return true
+	}
+	if delegateFor != "" {
 		return true
 	}
 	for _, approver := range a.AdditionalApprovers {
@@ -233,10 +239,13 @@ func (a *ApproverData) userIsAnyApprover(login string) bool {
 }
 
 //nolint:gocyclo //its ok here
-func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comment string, attach []string) error {
-	_, ok := a.Approvers[login]
-	if !ok && login != AutoApprover {
-		return fmt.Errorf("%s not found in approvers", login)
+func (a *ApproverData) SetDecision(login string,
+	decision ApproverDecision, comment string, attach []string, delegations human_tasks.Delegations) error {
+	_, approverFound := a.Approvers[login]
+
+	var delegateFor = delegations.DelegateFor(login)
+	if !(approverFound || delegateFor != "") && login != AutoApprover {
+		return fmt.Errorf("%s not found in approvers or delegates", login)
 	}
 
 	if decision == "" {
@@ -254,14 +263,6 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 		a.Comment = &comment
 		a.ActualApprover = &login
 		a.DecisionAttachments = attach
-	}
-
-	if approvementRule == script.AllOfApprovementRequired {
-		for _, entry := range a.ApproverLog {
-			if entry.Login == login && entry.LogType == ApproverLogDecision {
-				return errors.New(fmt.Sprintf("decision of user %s is already set", login))
-			}
-		}
 
 		var approverLogEntry = ApproverLogEntry{
 			Login:       login,
@@ -270,9 +271,18 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 			Attachments: attach,
 			CreatedAt:   time.Now(),
 			LogType:     ApproverLogDecision,
+			DelegateFor: delegateFor,
 		}
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+	}
+
+	if approvementRule == script.AllOfApprovementRequired {
+		for _, entry := range a.ApproverLog {
+			if entry.Login == login && entry.LogType == ApproverLogDecision {
+				return errors.New(fmt.Sprintf("decision of user %s is already set", login))
+			}
+		}
 
 		var overallDecision ApproverDecision
 		if decision == ApproverDecisionRejected {
@@ -314,7 +324,23 @@ func (a *ApproverData) SetDecision(login string, decision ApproverDecision, comm
 }
 
 //nolint:gocyclo //its ok here
-func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params additionalApproverUpdateParams) ([]string, error) {
+func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
+	params additionalApproverUpdateParams, delegations human_tasks.Delegations) ([]string, error) {
+	var checkForAdditionalApprover = func(login string) bool {
+		for _, approver := range a.AdditionalApprovers {
+			if login == approver.ApproverLogin {
+				return true
+			}
+		}
+		return false
+	}
+
+	approverFound := checkForAdditionalApprover(login)
+	var delegateFor = delegations.DelegateFor(login)
+	if !(approverFound || delegateFor != "") {
+		return nil, fmt.Errorf("%s not found in additional approvers or delegates", login)
+	}
+
 	if a.Decision != nil {
 		return nil, errors.New("decision already set")
 	}
@@ -342,6 +368,7 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params addi
 			Attachments: params.Attachments,
 			CreatedAt:   time.Now(),
 			LogType:     AdditionalApproverLogDecision,
+			DelegateFor: delegations.DelegateFor(login),
 		}
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
@@ -356,10 +383,11 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string, params addi
 	return loginsToNotify, nil
 }
 
-func (a *ApproverData) setEditApp(login string, params approverUpdateEditingParams) error {
-	_, ok := a.Approvers[login]
-	if !ok && login != AutoApprover {
-		return fmt.Errorf("%s not found in approvers", login)
+func (a *ApproverData) setEditApp(login string, params approverUpdateEditingParams, delegations human_tasks.Delegations) error {
+	_, approverFound := a.Approvers[login]
+	var delegateFor = delegations.DelegateFor(login)
+	if !(approverFound || delegateFor != "") && login != AutoApprover {
+		return fmt.Errorf("%s not found in approvers or delegates", login)
 	}
 
 	if a.Decision != nil {

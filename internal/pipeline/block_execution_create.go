@@ -10,6 +10,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -56,7 +57,7 @@ func (gb *GoExecutionBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocyclo //its not duplicate
 func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
@@ -99,6 +100,19 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 
 		gb.State.Executors = resolvedEntities
+
+		if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
+			if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
+				for executorLogin := range gb.State.Executors {
+					delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, executorLogin)
+					if htErr != nil {
+						return htErr
+					}
+
+					currentDelegationsArr = append(currentDelegationsArr, delegationsTo...)
+				}
+			}
+		}
 	case script.ExecutionTypeGroup:
 		executorsGroup, errGroup := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
 		if errGroup != nil {

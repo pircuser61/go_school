@@ -13,9 +13,11 @@ import (
 	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 )
 
-const FromLoginFilter = "fromLogin"
-const FromLoginsFilter = "fromLogins"
-const ToLoginFilter = "toLogin"
+const (
+	FromLoginFilter  = "fromLogin"
+	FromLoginsFilter = "fromLogins"
+	ToLoginFilter    = "toLogin"
+)
 
 type Service struct {
 	c   *grpc.ClientConn
@@ -40,19 +42,18 @@ func NewService(cfg Config) (*Service, error) {
 
 func (s *Service) getDelegationsInternal(ctx c.Context, req *delegationht.GetDelegationsRequest) (
 	delegations Delegations, err error) {
-
 	res, reqErr := s.cli.GetDelegations(ctx, req)
 	if reqErr != nil {
 		return nil, reqErr
 	}
 
 	for _, delegation := range res.Delegations {
-		fromDate, parseFromDateErr := time.Parse(time.RFC3339, delegation.FromDate)
+		fromDate, parseFromDateErr := time.Parse("02/01/2006", delegation.FromDate)
 		if parseFromDateErr != nil {
 			return nil, parseFromDateErr
 		}
 
-		toDate, parseToDateErr := time.Parse(time.RFC3339, delegation.ToDate)
+		toDate, parseToDateErr := time.Parse("02/01/2006", delegation.ToDate)
 		if parseToDateErr != nil {
 			return nil, parseToDateErr
 		}

@@ -22,7 +22,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-func uniqueActionsByRole(login, stepType string, finished bool) string {
+func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {
 		statuses = "('finished', 'no_success')"
@@ -33,7 +33,7 @@ func uniqueActionsByRole(login, stepType string, finished bool) string {
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
-    WHERE m.login = '%s'
+    WHERE m.login IN %s
       AND vs.step_type = '%s'
       AND vs.status IN %s
       AND w.child_id IS NULL
@@ -43,17 +43,19 @@ func uniqueActionsByRole(login, stepType string, finished bool) string {
          FROM actions
                   LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
          GROUP BY actions.work_id
-     )`, login, stepType, statuses)
+     )`, loginsIn, stepType, statuses)
 }
 
-func uniqueActiveActions(login, workNumber string) string {
+func uniqueActiveActions(logins []string, workNumber string) string {
+	var loginsIn = buildInExpression(logins)
+
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                      AS work_id
          , CASE WHEN vs.status = 'running' AND NOT m.finished THEN m.actions ELSE '{}' END AS action
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
-    WHERE m.login = '%s'
+    WHERE m.login IN %s
       AND w.work_number = '%s'
       AND vs.status IN ('running', 'idle', 'ready')
 	  AND w.child_id IS NULL
@@ -63,34 +65,61 @@ func uniqueActiveActions(login, workNumber string) string {
          FROM actions
                   LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
          GROUP BY actions.work_id
-     )`, login, workNumber)
+     )`, loginsIn, workNumber)
 }
 
-func getUniqueActions(as, login string) string {
+func buildInExpression(items []string) string {
+	const (
+		OpenParentheses   = "("
+		ClosedParentheses = ")"
+		Separator         = ","
+		SingleQuote       = "'"
+	)
+
+	var sb strings.Builder
+
+	sb.WriteString(OpenParentheses)
+	for idx, item := range items {
+		sb.WriteString(SingleQuote)
+		sb.WriteString(item)
+		sb.WriteString(SingleQuote)
+
+		if idx < len(items)-1 {
+			sb.WriteString(Separator)
+		}
+	}
+	sb.WriteString(ClosedParentheses)
+
+	return sb.String()
+}
+
+func getUniqueActions(as string, logins []string) string {
+	var loginsIn = buildInExpression(logins)
+
 	switch as {
 	case "approver":
-		return uniqueActionsByRole(login, "approver", false)
+		return uniqueActionsByRole(loginsIn, "approver", false)
 	case "finished_approver":
-		return uniqueActionsByRole(login, "approver", true)
+		return uniqueActionsByRole(loginsIn, "approver", true)
 	case "executor":
-		return uniqueActionsByRole(login, "execution", false)
+		return uniqueActionsByRole(loginsIn, "execution", false)
 	case "finished_executor":
-		return uniqueActionsByRole(login, "execution", true)
+		return uniqueActionsByRole(loginsIn, "execution", true)
 	case "form_executor":
-		return uniqueActionsByRole(login, "form", false)
+		return uniqueActionsByRole(loginsIn, "form", false)
 	case "finished_form_executor":
-		return uniqueActionsByRole(login, "form", true)
+		return uniqueActionsByRole(loginsIn, "form", true)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
     SELECT id AS work_id, '{}' AS actions
     FROM works
-    WHERE author = '%s' AND child_id IS NULL
-)`, login)
+    WHERE author IN %s AND child_id IS NULL
+)`, loginsIn)
 	}
 }
 
 //nolint:gocritic,gocyclo //filters
-func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface{}) {
+func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q string, args []interface{}) {
 	// nolint:gocritic
 	// language=PostgreSQL
 	q = `
@@ -133,9 +162,19 @@ func compileGetTasksQuery(filters entity.TaskFilter) (q string, args []interface
 	}
 
 	if filters.SelectAs != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*filters.SelectAs, filters.CurrentUser), q)
+		q = fmt.Sprintf(
+			"%s %s",
+			getUniqueActions(
+				*filters.SelectAs,
+				delegations),
+			q)
 	} else {
-		q = fmt.Sprintf("%s %s", getUniqueActions("", filters.CurrentUser), q)
+		q = fmt.Sprintf(
+			"%s %s",
+			getUniqueActions(
+				"",
+				delegations),
+			q)
 	}
 
 	if filters.TaskIDs != nil {
@@ -255,11 +294,11 @@ func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, 
 }
 
 //nolint:gocritic //filters
-func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.EriusTasksPage, error) {
+func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations []string) (*entity.EriusTasksPage, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
-	q, args := compileGetTasksQuery(filters)
+	q, args := compileGetTasksQuery(filters, delegations)
 
 	tasks, err := db.getTasks(ctx, q, args)
 	if err != nil {
@@ -277,7 +316,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter) (*entity.Eri
 	}, nil
 }
 
-func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTasks, error) {
+func (db *PGCon) GetTasksCount(ctx c.Context, usernames []string) (*entity.CountTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 	// nolint:gocritic
@@ -293,31 +332,31 @@ func (db *PGCon) GetTasksCount(ctx c.Context, userName string) (*entity.CountTas
 		)
 		SELECT
 		(SELECT count(*) FROM works w join ids on w.id = ids.id
-		WHERE author = $1 AND
+		WHERE author = ANY($1) AND
 		      ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)),
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = $1 AND vs.step_type = 'approver'
+				m.login = ANY($1) AND vs.step_type = 'approver'
 		),
 		(SELECT count(*)
 			 FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			 WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = $1 AND vs.step_type = 'execution'),
+				m.login = ANY($1) AND vs.step_type = 'execution'),
 		
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = $1 AND vs.step_type = 'form'
+				m.login = ANY($1) AND vs.step_type = 'form'
 		)`
 
-	counter, err := db.getTasksCount(ctx, q, userName)
+	counter, err := db.getTasksCount(ctx, q, usernames)
 	if err != nil {
 		return nil, err
 	}
@@ -426,13 +465,13 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 	return &et, nil
 }
 
-func (db *PGCon) GetTask(ctx c.Context, username, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) GetTask(ctx c.Context, usernames []string, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := uniqueActiveActions(username, workNumber)
+	q := uniqueActiveActions(usernames, workNumber)
 
 	q += ` SELECT 
 			w.id, 
@@ -469,7 +508,6 @@ func (db *PGCon) GetTask(ctx c.Context, username, workNumber string) (*entity.Er
 		WHERE w.work_number = $1 
 			AND w.child_id IS NULL
 `
-
 	return db.getTask(ctx, q, workNumber)
 }
 
@@ -527,6 +565,11 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 
 func (db *PGCon) computeActions(actions []string, allActions map[string]entity.TaskAction) []entity.TaskAction {
 	var actionsResult = make([]entity.TaskAction, 0)
+	var actionsMap = make(map[string]interface{}, 0)
+
+	var duplicateActionsMap = map[string]string{
+		"approve": "additional_approvement",
+	}
 
 	for _, actionId := range actions {
 		var compositeActionId = strings.Split(actionId, ":")
@@ -545,7 +588,19 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 			}
 
 			if computedAction.IsPublic {
-				actionsResult = append(actionsResult, computedAction)
+				var ignoreAction = false
+				for k, v := range duplicateActionsMap {
+					if _, b := actionsMap[k]; b {
+						if id == v {
+							ignoreAction = true
+						}
+					}
+				}
+
+				if !ignoreAction {
+					actionsMap[id] = id
+					actionsResult = append(actionsResult, computedAction)
+				}
 			}
 		}
 	}
@@ -560,13 +615,13 @@ type tasksCounter struct {
 	totalFormExecutor int
 }
 
-func (db *PGCon) getTasksCount(ctx c.Context, q, username string) (*tasksCounter, error) {
+func (db *PGCon) getTasksCount(ctx c.Context, q string, usernames []string) (*tasksCounter, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 
 	counter := &tasksCounter{}
 
-	if scanErr := db.Connection.QueryRow(ctx, q, username).
+	if scanErr := db.Connection.QueryRow(ctx, q, usernames).
 		Scan(
 			&counter.totalActive,
 			&counter.totalApprover,

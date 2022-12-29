@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 
 	"net/http"
 	"time"
@@ -17,6 +16,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"

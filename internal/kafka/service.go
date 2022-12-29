@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/Shopify/sarama"
-
 	"github.com/rcrowley/go-metrics"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
