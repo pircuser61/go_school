@@ -18,9 +18,9 @@ func (delegations *Delegations) GetUserInArrayWithDelegations(login string) (res
 	uniqueLogins[login] = login
 
 	for _, d := range *delegations {
-		if d.FromLogin == login {
-			if _, ok := uniqueLogins[d.ToLogin]; !ok {
-				uniqueLogins[d.ToLogin] = d.ToLogin
+		if d.ToLogin == login {
+			if _, ok := uniqueLogins[d.FromLogin]; !ok {
+				uniqueLogins[d.FromLogin] = d.FromLogin
 			}
 		}
 	}
