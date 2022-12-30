@@ -44,6 +44,7 @@ type eriusTaskResponse struct {
 	Rate             *int                   `json:"rate"`
 	RateComment      *string                `json:"rate_comment"`
 	AvailableActions taskActions            `json:"available_actions"`
+	IsDelegate       bool                   `json:"is_delegate"`
 }
 
 type step struct {
@@ -69,7 +70,7 @@ type action struct {
 type taskActions []action
 type taskSteps []step
 
-func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
+func (eriusTaskResponse) toResponse(in *entity.EriusTask, isDelegate bool) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
 	for i := range in.Steps {
@@ -121,6 +122,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 		Rate:             in.Rate,
 		RateComment:      in.RateComment,
 		AvailableActions: actions,
+		IsDelegate:       isDelegate,
 	}
 
 	return out
@@ -198,8 +200,10 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	dbTask.Steps = steps
 
+	var isDelegate = dbTask.Author != ui.Username && len(delegations) > 0
+
 	resp := &eriusTaskResponse{}
-	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask)); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask, isDelegate)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -232,9 +236,9 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		return
 	}
 
-	currentUserDelegations := delegations.GetUserInArrayWithDelegations(filters.CurrentUser)
+	currentUserAndDelegates := delegations.GetUserInArrayWithDelegations(filters.CurrentUser)
 
-	resp, err := ae.DB.GetTasks(ctx, filters, currentUserDelegations)
+	resp, err := ae.DB.GetTasks(ctx, filters, currentUserAndDelegates)
 	if err != nil {
 		e := GetTasksError
 		log.Error(e.errorMessage(err))
