@@ -284,6 +284,18 @@ func (a *ApproverData) SetDecision(login string,
 			}
 		}
 
+		var approverLogEntry = ApproverLogEntry{
+			Login:       login,
+			Decision:    decision,
+			Comment:     comment,
+			Attachments: attach,
+			CreatedAt:   time.Now(),
+			LogType:     ApproverLogDecision,
+			DelegateFor: delegateFor,
+		}
+
+		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+
 		var overallDecision ApproverDecision
 		if decision == ApproverDecisionRejected {
 			overallDecision = ApproverDecisionRejected
