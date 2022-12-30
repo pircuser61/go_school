@@ -79,3 +79,17 @@ func (delegations *Delegations) DelegateFor(login string) string {
 
 	return ""
 }
+
+func (delegations *Delegations) DelegateTo(login string) string {
+	if len(*delegations) == 0 {
+		return ""
+	}
+
+	for _, delegation := range *delegations {
+		if login == delegation.FromLogin {
+			return delegation.ToLogin
+		}
+	}
+
+	return ""
+}
