@@ -204,7 +204,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	dbTask.Steps = steps
 
-	isAuthorDelegate := delegations.DelegateTo(ui.Username) != ""
+	isAuthorDelegate := delegations.DelegateTo(dbTask.Author) != ""
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(&steps, &delegations)
 	if tErr != nil {
 		e := GetDelegationsError
