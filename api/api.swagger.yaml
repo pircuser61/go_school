@@ -2899,6 +2899,8 @@ components:
       properties:
         author:
           type: string
+        is_delegate_of_author:
+          type: boolean
         blueprint_id:
           type: string
         debug:
@@ -2974,6 +2976,8 @@ components:
           items:
             type: string
         has_error:
+          type: boolean
+        is_delegate_of_any_step_member:
           type: boolean
         name:
           type: string

@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"io"
 	"net/http"
 	"strings"
@@ -26,37 +27,38 @@ import (
 )
 
 type eriusTaskResponse struct {
-	ID               uuid.UUID              `json:"id"`
-	VersionID        uuid.UUID              `json:"version_id"`
-	StartedAt        time.Time              `json:"started_at"`
-	LastChangedAt    time.Time              `json:"last_changed_at"`
-	FinishedAt       *time.Time             `json:"finished_at"`
-	Name             string                 `json:"name"`
-	Description      string                 `json:"description"`
-	Status           string                 `json:"status"`
-	HumanStatus      string                 `json:"human_status"`
-	Author           string                 `json:"author"`
-	IsDebugMode      bool                   `json:"debug"`
-	Parameters       map[string]interface{} `json:"parameters"`
-	Steps            taskSteps              `json:"steps"`
-	WorkNumber       string                 `json:"work_number"`
-	BlueprintID      string                 `json:"blueprint_id"`
-	Rate             *int                   `json:"rate"`
-	RateComment      *string                `json:"rate_comment"`
-	AvailableActions taskActions            `json:"available_actions"`
-	IsDelegate       bool                   `json:"is_delegate"`
+	ID                 uuid.UUID              `json:"id"`
+	VersionID          uuid.UUID              `json:"version_id"`
+	StartedAt          time.Time              `json:"started_at"`
+	LastChangedAt      time.Time              `json:"last_changed_at"`
+	FinishedAt         *time.Time             `json:"finished_at"`
+	Name               string                 `json:"name"`
+	Description        string                 `json:"description"`
+	Status             string                 `json:"status"`
+	HumanStatus        string                 `json:"human_status"`
+	Author             string                 `json:"author"`
+	IsDelegateOfAuthor bool                   `json:"is_delegate_of_author"`
+	IsDebugMode        bool                   `json:"debug"`
+	Parameters         map[string]interface{} `json:"parameters"`
+	Steps              taskSteps              `json:"steps"`
+	WorkNumber         string                 `json:"work_number"`
+	BlueprintID        string                 `json:"blueprint_id"`
+	Rate               *int                   `json:"rate"`
+	RateComment        *string                `json:"rate_comment"`
+	AvailableActions   taskActions            `json:"available_actions"`
 }
 
 type step struct {
-	Time     time.Time                  `json:"time"`
-	Type     string                     `json:"type"`
-	Name     string                     `json:"name"`
-	State    map[string]json.RawMessage `json:"state" swaggertype:"object"`
-	Storage  map[string]interface{}     `json:"storage"`
-	Errors   []string                   `json:"errors"`
-	Steps    []string                   `json:"steps"`
-	HasError bool                       `json:"has_error"`
-	Status   pipeline.Status            `json:"status"`
+	Time                      time.Time                  `json:"time"`
+	Type                      string                     `json:"type"`
+	Name                      string                     `json:"name"`
+	IsDelegateOfAnyStepMember bool                       `json:"is_delegate_of_any_step_member"`
+	State                     map[string]json.RawMessage `json:"state" swaggertype:"object"`
+	Storage                   map[string]interface{}     `json:"storage"`
+	Errors                    []string                   `json:"errors"`
+	Steps                     []string                   `json:"steps"`
+	HasError                  bool                       `json:"has_error"`
+	Status                    pipeline.Status            `json:"status"`
 }
 
 type action struct {
@@ -70,7 +72,8 @@ type action struct {
 type taskActions []action
 type taskSteps []step
 
-func (eriusTaskResponse) toResponse(in *entity.EriusTask, isDelegate bool) *eriusTaskResponse {
+func (eriusTaskResponse) toResponse(in *entity.EriusTask,
+	currentUserDelegateSteps map[string]bool, isAuthorDelegate bool) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
 	for i := range in.Steps {
@@ -81,15 +84,16 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask, isDelegate bool) *eriu
 		}
 
 		steps = append(steps, step{
-			Time:     actionTime,
-			Type:     in.Steps[i].Type,
-			Name:     in.Steps[i].Name,
-			State:    in.Steps[i].State,
-			Storage:  in.Steps[i].Storage,
-			Errors:   in.Steps[i].Errors,
-			Steps:    in.Steps[i].Steps,
-			HasError: in.Steps[i].HasError,
-			Status:   pipeline.Status(in.Steps[i].Status),
+			Time:                      actionTime,
+			Type:                      in.Steps[i].Type,
+			Name:                      in.Steps[i].Name,
+			State:                     in.Steps[i].State,
+			Storage:                   in.Steps[i].Storage,
+			Errors:                    in.Steps[i].Errors,
+			Steps:                     in.Steps[i].Steps,
+			HasError:                  in.Steps[i].HasError,
+			Status:                    pipeline.Status(in.Steps[i].Status),
+			IsDelegateOfAnyStepMember: currentUserDelegateSteps[in.Steps[i].Name],
 		})
 	}
 
@@ -104,25 +108,25 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask, isDelegate bool) *eriu
 	}
 
 	out := &eriusTaskResponse{
-		ID:               in.ID,
-		VersionID:        in.VersionID,
-		StartedAt:        in.StartedAt,
-		LastChangedAt:    in.LastChangedAt,
-		FinishedAt:       in.FinishedAt,
-		Name:             in.Name,
-		Description:      in.Description,
-		Status:           in.Status,
-		HumanStatus:      in.HumanStatus,
-		Author:           in.Author,
-		IsDebugMode:      in.IsDebugMode,
-		Parameters:       in.Parameters,
-		Steps:            steps,
-		WorkNumber:       in.WorkNumber,
-		BlueprintID:      in.BlueprintID,
-		Rate:             in.Rate,
-		RateComment:      in.RateComment,
-		AvailableActions: actions,
-		IsDelegate:       isDelegate,
+		ID:                 in.ID,
+		VersionID:          in.VersionID,
+		StartedAt:          in.StartedAt,
+		LastChangedAt:      in.LastChangedAt,
+		FinishedAt:         in.FinishedAt,
+		Name:               in.Name,
+		Description:        in.Description,
+		Status:             in.Status,
+		HumanStatus:        in.HumanStatus,
+		Author:             in.Author,
+		IsDebugMode:        in.IsDebugMode,
+		Parameters:         in.Parameters,
+		Steps:              steps,
+		WorkNumber:         in.WorkNumber,
+		BlueprintID:        in.BlueprintID,
+		Rate:               in.Rate,
+		RateComment:        in.RateComment,
+		AvailableActions:   actions,
+		IsDelegateOfAuthor: isAuthorDelegate,
 	}
 
 	return out
@@ -200,16 +204,70 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	dbTask.Steps = steps
 
-	var isDelegate = dbTask.Author != ui.Username && len(delegations) > 0
+	isAuthorDelegate := delegations.DelegateTo(ui.Username) != ""
+	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(&steps, &delegations)
+	if tErr != nil {
+		e := GetDelegationsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
+		return
+	}
 	resp := &eriusTaskResponse{}
-	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask, isDelegate)); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask, currentUserDelegateSteps, isAuthorDelegate)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
 	}
+}
+
+func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, delegates *human_tasks.Delegations) (res map[string]bool, err error) {
+	const (
+		ApproversMapKey = "approvers"
+		ExecutorsMapKey = "executors"
+	)
+
+	res = make(map[string]bool, 0)
+	for _, s := range *steps {
+		var isDelegateAnyOfStep = false
+		var state map[string]interface{}
+		if s.State != nil {
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &state)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			if approvers, foundApprovers := state[ApproversMapKey]; foundApprovers {
+				if approversVal, castOk := approvers.(map[string]interface{}); castOk {
+					for member := range approversVal {
+						var delegateTo = delegates.DelegateTo(member)
+						isDelegateAnyOfStep = delegateTo != ""
+						if delegateTo != "" {
+							break
+						}
+					}
+				}
+			}
+
+			if executors, foundExecutors := state[ExecutorsMapKey]; foundExecutors {
+				if executorsVal, castOk := executors.(map[string]interface{}); castOk {
+					for member := range executorsVal {
+						var delegateTo = delegates.DelegateTo(member)
+						isDelegateAnyOfStep = delegateTo != ""
+						if delegateTo != "" {
+							break
+						}
+					}
+				}
+			}
+
+			res[s.Name] = isDelegateAnyOfStep
+		}
+	}
+
+	return res, nil
 }
 
 //nolint:dupl //its not duplicate
