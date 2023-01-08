@@ -2,13 +2,14 @@ package pipeline
 
 import (
 	"encoding/json"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type UpdateData struct {
