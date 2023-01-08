@@ -93,3 +93,7 @@ func (delegations *Delegations) DelegateTo(login string) string {
 
 	return ""
 }
+
+func (delegations *Delegations) Append(delegationsToAppend Delegations) {
+	*delegations = append(*delegations, delegationsToAppend...)
+}

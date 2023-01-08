@@ -223,51 +223,81 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 }
 
+type approverBlock struct {
+	Approvers           map[string]struct{}  `json:"approvers"`
+	AdditionalApprovers []additionalApprover `json:"additional_approvers"`
+}
+
+type executionBlock struct {
+	Executors map[string]struct{}
+}
+
+type additionalApprover struct {
+	ApproverLogin string `json:"approver_login"`
+}
+
 func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, delegates *human_tasks.Delegations) (res map[string]bool, err error) {
 	const (
-		ApproversMapKey = "approvers"
-		ExecutorsMapKey = "executors"
+		ApproverBlockType  = "approver"
+		ExecutionBlockType = "execution"
+		FormBlockType      = "form"
 	)
 
 	res = make(map[string]bool, 0)
 	for _, s := range *steps {
-		var isDelegateAnyOfStep = false
-		var state map[string]interface{}
-		if s.State != nil {
-			unmarshalErr := json.Unmarshal(s.State[s.Name], &state)
+		var isDelegateAnyPersonOfStep = false
+
+		if s.State == nil {
+			continue
+		}
+
+		switch s.Type {
+		case ApproverBlockType:
+			var approver approverBlock
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &approver)
 			if unmarshalErr != nil {
 				return nil, unmarshalErr
 			}
 
-			if approvers, foundApprovers := state[ApproversMapKey]; foundApprovers {
-				if approversVal, castOk := approvers.(map[string]interface{}); castOk {
-					for member := range approversVal {
-						var delegateTo = delegates.DelegateTo(member)
-						isDelegateAnyOfStep = delegateTo != ""
-						if delegateTo != "" {
-							break
-						}
-					}
+			for member := range approver.Approvers {
+				if isDelegate(member, delegates) {
+					isDelegateAnyPersonOfStep = true
+					break
 				}
 			}
 
-			if executors, foundExecutors := state[ExecutorsMapKey]; foundExecutors {
-				if executorsVal, castOk := executors.(map[string]interface{}); castOk {
-					for member := range executorsVal {
-						var delegateTo = delegates.DelegateTo(member)
-						isDelegateAnyOfStep = delegateTo != ""
-						if delegateTo != "" {
-							break
-						}
-					}
+			for _, member := range approver.AdditionalApprovers {
+				if isDelegate(member.ApproverLogin, delegates) {
+					isDelegateAnyPersonOfStep = true
+					break
 				}
 			}
 
-			res[s.Name] = isDelegateAnyOfStep
+			break
+		case ExecutionBlockType, FormBlockType:
+			var execution executionBlock
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			for member := range execution.Executors {
+				if isDelegate(member, delegates) {
+					isDelegateAnyPersonOfStep = true
+					break
+				}
+			}
 		}
+
+		res[s.Name] = isDelegateAnyPersonOfStep
 	}
 
 	return res, nil
+}
+
+func isDelegate(login string, delegates *human_tasks.Delegations) bool {
+	var delegateTo = delegates.DelegateTo(login)
+	return delegateTo != ""
 }
 
 //nolint:dupl //its not duplicate
