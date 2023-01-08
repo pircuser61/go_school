@@ -24,6 +24,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -925,7 +926,7 @@ func (ae *APIEnv) tryFindDelegations(ctx c.Context, runCtx *pipeline.BlockRunCon
 		return delegationsErr
 	}
 
-	runCtx.VarStore.SetValue("delegations", delegations)
+	runCtx.VarStore.SetValue(script.DelegationsCollection, delegations)
 	return nil
 }
 

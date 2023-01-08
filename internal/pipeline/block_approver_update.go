@@ -324,13 +324,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, errors.New("empty data")
 	}
 
-	var delegationsTo human_tasks.Delegations
-
-	if delegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-		if delegationsVal, castOk := delegations.(human_tasks.Delegations); castOk {
-			delegationsTo = delegationsVal.FindDelegationsTo(gb.RunContext.UpdateData.ByLogin)
-		}
-	}
+	delegates := getDelegates(gb.RunContext.VarStore)
 
 	switch data.Action {
 	case string(entity.TaskUpdateActionSLABreach):
@@ -355,7 +349,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 
 		updateParams.internalDecision = updateParams.Decision.ToDecision()
 
-		if errUpdate := gb.setApproverDecision(updateParams, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.setApproverDecision(updateParams, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 
@@ -370,7 +364,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, err
 		}
 
-		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin, updateParams, delegationsTo)
+		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin, updateParams, delegates)
 		if err != nil {
 			return nil, err
 		}
@@ -387,17 +381,17 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
-		if errUpdate := gb.setEditApplication(ctx, updateParams, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.setEditApplication(ctx, updateParams, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 
 	case string(entity.TaskUpdateActionRequestApproveInfo):
-		if errUpdate := gb.updateRequestApproverInfo(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.updateRequestApproverInfo(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 
 	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 
@@ -406,7 +400,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
-		if errUpdate := gb.addApprovers(ctx, updateParams, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.addApprovers(ctx, updateParams, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
