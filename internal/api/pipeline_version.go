@@ -821,7 +821,7 @@ func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.Block
 		}
 	}
 
-	var result = make([]string, len(uniqueLogins))
+	var result = make([]string, 0)
 	for login := range uniqueLogins {
 		result = append(result, login)
 	}
