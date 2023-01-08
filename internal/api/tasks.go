@@ -260,15 +260,15 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, del
 			}
 
 			for member := range approver.Approvers {
-				isDelegateAnyPersonOfStep = isDelegate(member, delegates)
-				if isDelegateAnyPersonOfStep {
+				if isDelegate(member, delegates) {
+					isDelegateAnyPersonOfStep = true
 					break
 				}
 			}
 
 			for _, member := range approver.AdditionalApprovers {
-				isDelegateAnyPersonOfStep = isDelegate(member.ApproverLogin, delegates)
-				if isDelegateAnyPersonOfStep {
+				if isDelegate(member.ApproverLogin, delegates) {
+					isDelegateAnyPersonOfStep = true
 					break
 				}
 			}
@@ -282,8 +282,8 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, del
 			}
 
 			for member := range execution.Executors {
-				isDelegateAnyPersonOfStep = isDelegate(member, delegates)
-				if isDelegateAnyPersonOfStep {
+				if isDelegate(member, delegates) {
+					isDelegateAnyPersonOfStep = true
 					break
 				}
 			}
