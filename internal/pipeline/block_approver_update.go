@@ -453,6 +453,14 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams, del
 
 	crTime := time.Now()
 
+	delegatesLogins, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, u.AdditionalApproversLogins)
+	if err != nil {
+		return err
+	}
+
+	delegations.Append(delegatesLogins)
+	gb.RunContext.VarStore.SetValue(script.DelegationsCollection, delegations)
+
 	for i := range u.AdditionalApproversLogins {
 		if gb.checkAdditionalApproverNotAdded(u.AdditionalApproversLogins[i]) {
 			gb.State.AdditionalApprovers = append(gb.State.AdditionalApprovers,
