@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"encoding/json"
+
 	"strings"
 
 	"github.com/google/uuid"
