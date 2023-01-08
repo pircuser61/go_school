@@ -11,7 +11,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type updateFillFormParams struct {
@@ -58,20 +57,14 @@ func (gb *GoFormBlock) cancelPipeline(ctx c.Context, delegations human_tasks.Del
 
 //nolint:gocyclo //ok
 func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
-	var delegationsTo human_tasks.Delegations
-
-	if delegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-		if delegationsVal, castOk := delegations.(human_tasks.Delegations); castOk {
-			delegationsTo = delegationsVal.FindDelegationsTo(gb.RunContext.UpdateData.ByLogin)
-		}
-	}
+	delegates := getDelegates(gb.RunContext.VarStore)
 
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
 	}
 	if data.Action == string(entity.TaskUpdateActionCancelApp) {
-		if errUpdate := gb.cancelPipeline(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 		return nil, nil
@@ -97,9 +90,13 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, fmt.Errorf("%s have not permission to edit form", data.ByLogin)
 		}
 	} else {
-		if _, ok := gb.State.Executors[data.ByLogin]; !ok {
-			return nil, fmt.Errorf("%s not found in executors", data.ByLogin)
+		_, executorFound := gb.State.Executors[data.ByLogin]
+
+		var delegateFor = delegates.DelegateFor(data.ByLogin)
+		if !(executorFound || delegateFor != "") {
+			return nil, fmt.Errorf("%s not found in approvers or delegates", data.ByLogin)
 		}
+
 		gb.State.ActualExecutor = &data.ByLogin
 		gb.State.IsFilled = true
 	}
@@ -113,7 +110,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			ApplicationBody: updateParams.ApplicationBody,
 			CreatedAt:       time.Now(),
 			Executor:        data.ByLogin,
-			DelegateFor:     delegationsTo.DelegateFor(data.ByLogin),
+			DelegateFor:     delegates.DelegateFor(data.ByLogin),
 		},
 	}, gb.State.ChangesLog...)
 

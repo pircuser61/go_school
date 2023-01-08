@@ -1820,6 +1820,9 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 
 	el := entity.TaskSteps{}
 
+	var t = id.String()
+	fmt.Println(t)
+
 	var notInStatuses []string
 	if stepType == "form" {
 		notInStatuses = []string{"skipped"}

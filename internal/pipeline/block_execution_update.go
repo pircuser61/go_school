@@ -12,18 +12,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
-	var delegationsTo human_tasks.Delegations
-
-	if delegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-		if delegationsVal, castOk := delegations.(human_tasks.Delegations); castOk {
-			delegationsTo = delegationsVal.FindDelegationsTo(gb.RunContext.UpdateData.ByLogin)
-		}
-	}
+	delegates := getDelegates(gb.RunContext.VarStore)
 
 	switch gb.RunContext.UpdateData.Action {
 	case string(entity.TaskUpdateActionSLABreach):
@@ -35,27 +28,27 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecution):
-		if errUpdate := gb.updateDecision(delegationsTo); errUpdate != nil {
+		if errUpdate := gb.updateDecision(delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionChangeExecutor):
-		if errUpdate := gb.changeExecutor(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.changeExecutor(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionRequestExecutionInfo):
-		if errUpdate := gb.updateRequestInfo(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.updateRequestInfo(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecutorStartWork):
-		if errUpdate := gb.executorStartWork(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.executorStartWork(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecutorSendEditApp):
-		if errUpdate := gb.toEditApplication(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.toEditApplication(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}

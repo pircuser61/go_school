@@ -1,6 +1,9 @@
 package pipeline
 
 import (
+	"encoding/json"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"strings"
 
 	"github.com/google/uuid"
@@ -62,4 +65,22 @@ func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolv
 	}
 
 	return nil, errors.Wrap(err, "Unexpected behavior")
+}
+
+func getDelegates(store *store.VariableStore) human_tasks.Delegations {
+	var delegations = make(human_tasks.Delegations, 0)
+
+	if delegationsArr, ok := store.GetArray("delegations"); ok {
+		t, err := json.Marshal(delegationsArr)
+		if err != nil {
+			return nil
+		}
+
+		unmarshalErr := json.Unmarshal(t, &delegations)
+		if unmarshalErr != nil {
+			return nil
+		}
+	}
+
+	return delegations
 }

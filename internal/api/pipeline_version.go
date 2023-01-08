@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"io"
 	"net/http"
 	"sync"
@@ -925,7 +926,7 @@ func (ae *APIEnv) tryFindDelegations(ctx c.Context, runCtx *pipeline.BlockRunCon
 		return delegationsErr
 	}
 
-	runCtx.VarStore.SetValue("delegations", delegations)
+	runCtx.VarStore.SetValue(script.DelegationsCollection, delegations)
 	return nil
 }
 
