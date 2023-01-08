@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"io"
 	"net/http"
 	"sync"
@@ -25,6 +24,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )

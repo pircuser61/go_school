@@ -3,6 +3,7 @@ package pipeline
 import (
 	"encoding/json"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"strings"
 
@@ -70,7 +71,7 @@ func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolv
 func getDelegates(store *store.VariableStore) human_tasks.Delegations {
 	var delegations = make(human_tasks.Delegations, 0)
 
-	if delegationsArr, ok := store.GetArray("delegations"); ok {
+	if delegationsArr, ok := store.GetArray(script.DelegationsCollection); ok {
 		t, err := json.Marshal(delegationsArr)
 		if err != nil {
 			return nil
