@@ -730,6 +730,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		People:        ep.People,
 		ServiceDesc:   ep.ServiceDesc,
 		FunctionStore: ep.FunctionStore,
+		HumanTasks:    ep.HumanTasks,
 		FaaS:          ep.FaaS,
 		VarStore:      variableStorage,
 		UpdateData:    nil,
