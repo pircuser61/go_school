@@ -362,7 +362,8 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 	timeNow := time.Now()
 
 	for i := range a.AdditionalApprovers {
-		if login != a.AdditionalApprovers[i].ApproverLogin || a.AdditionalApprovers[i].Decision != nil {
+		if (login != a.AdditionalApprovers[i].ApproverLogin && delegateFor == "") ||
+			a.AdditionalApprovers[i].Decision != nil {
 			continue
 		}
 
