@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"golang.org/x/exp/slices"
 	"io"
 	"net/http"
 	"strings"
@@ -12,6 +11,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
+
+	"golang.org/x/exp/slices"
 
 	"go.opencensus.io/trace"
 
