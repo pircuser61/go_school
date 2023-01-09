@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"golang.org/x/exp/slices"
 	"io"
 	"net/http"
 	"strings"
@@ -204,7 +205,9 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	dbTask.Steps = steps
 
-	isAuthorDelegate := delegations.DelegateTo(dbTask.Author) != ""
+	var delegates = delegations.GetDelegators(dbTask.Author)
+	isAuthorDelegate := slices.Contains(delegates, dbTask.Author)
+
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(&steps, &delegations)
 	if tErr != nil {
 		e := GetDelegationsError
@@ -236,7 +239,8 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
-func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, delegates *human_tasks.Delegations) (res map[string]bool, err error) {
+func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, delegates *human_tasks.Delegations) (
+	res map[string]bool, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
@@ -296,8 +300,8 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, del
 }
 
 func isDelegate(login string, delegates *human_tasks.Delegations) bool {
-	var delegateTo = delegates.DelegateTo(login)
-	return delegateTo != ""
+	var delegators = delegates.GetDelegators(login)
+	return slices.Contains(delegators, login)
 }
 
 //nolint:dupl //its not duplicate

@@ -10,7 +10,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -151,18 +150,12 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 		gb.State.Approvers = resolvedEntities
 
-		if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-			if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
-				for approverLogin := range gb.State.Approvers {
-					delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, approverLogin)
-					if htErr != nil {
-						return htErr
-					}
-
-					currentDelegationsArr = append(currentDelegationsArr, delegationsTo...)
-				}
-			}
+		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Approvers))
+		if htErr != nil {
+			return htErr
 		}
+
+		gb.RunContext.Delegations = delegations
 	}
 
 	gb.RunContext.VarStore.AddStep(gb.Name)

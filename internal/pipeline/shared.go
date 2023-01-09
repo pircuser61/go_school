@@ -87,3 +87,13 @@ func getDelegates(store *store.VariableStore) human_tasks.Delegations {
 
 	return delegations
 }
+
+func getSliceFromMapOfStrings(source map[string]struct{}) []string {
+	var result = make([]string, 0)
+
+	for key := range source {
+		result = append(result, key)
+	}
+
+	return result
+}

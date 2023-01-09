@@ -43,6 +43,7 @@ type BlockRunContext struct {
 	UpdateData         *script.BlockUpdateData
 	skipNotifications  bool // for tests
 	currBlockStartTime time.Time
+	Delegations        human_tasks.Delegations
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
