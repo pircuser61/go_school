@@ -640,6 +640,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			People:        ae.People,
 			ServiceDesc:   ae.ServiceDesc,
 			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
 			FaaS:          ae.FaaS,
 			VarStore:      storage,
 			UpdateData: &script.BlockUpdateData{
