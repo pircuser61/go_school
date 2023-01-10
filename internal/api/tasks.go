@@ -206,10 +206,10 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	dbTask.Steps = steps
 
-	var delegates = delegations.GetDelegators(dbTask.Author)
+	var delegates = delegations.GetDelegators(ui.Username)
 	isAuthorDelegate := slices.Contains(delegates, dbTask.Author)
 
-	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(&steps, &delegations)
+	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
 	if tErr != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(err))
@@ -240,7 +240,7 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
-func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, delegates *human_tasks.Delegations) (
+func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *entity.TaskSteps, delegates *human_tasks.Delegations) (
 	res map[string]bool, err error) {
 	const (
 		ApproverBlockType  = "approver"
@@ -265,14 +265,14 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, del
 			}
 
 			for member := range approver.Approvers {
-				if isDelegate(member, delegates) {
+				if isDelegate(currentUser, member, delegates) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
 			}
 
 			for _, member := range approver.AdditionalApprovers {
-				if isDelegate(member.ApproverLogin, delegates) {
+				if isDelegate(currentUser, member.ApproverLogin, delegates) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
@@ -287,7 +287,7 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, del
 			}
 
 			for member := range execution.Executors {
-				if isDelegate(member, delegates) {
+				if isDelegate(currentUser, member, delegates) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
@@ -300,9 +300,9 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, del
 	return res, nil
 }
 
-func isDelegate(login string, delegates *human_tasks.Delegations) bool {
-	var delegators = delegates.GetDelegators(login)
-	return slices.Contains(delegators, login)
+func isDelegate(currentUser, login string, delegations *human_tasks.Delegations) bool {
+	var delegates = delegations.GetDelegates(login)
+	return slices.Contains(delegates, currentUser)
 }
 
 //nolint:dupl //its not duplicate
@@ -329,7 +329,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		return
 	}
 
-	currentUserAndDelegates := delegations.GetUserInArrayWithDelegations([]string{filters.CurrentUser})
+	currentUserAndDelegates := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
 
 	resp, err := ae.DB.GetTasks(ctx, filters, currentUserAndDelegates)
 	if err != nil {

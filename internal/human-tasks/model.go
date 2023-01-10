@@ -35,6 +35,28 @@ func (delegations *Delegations) GetUserInArrayWithDelegations(logins []string) (
 	return result
 }
 
+func (delegations *Delegations) GetUserInArrayWithDelegators(logins []string) (result []string) {
+	var uniqueLogins = make(map[string]struct{}, 0)
+
+	for _, login := range logins {
+		uniqueLogins[login] = struct{}{}
+
+		for _, d := range *delegations {
+			if d.ToLogin == login {
+				if _, ok := uniqueLogins[d.FromLogin]; !ok {
+					uniqueLogins[d.FromLogin] = struct{}{}
+				}
+			}
+		}
+
+		for k := range uniqueLogins {
+			result = append(result, k)
+		}
+	}
+
+	return result
+}
+
 func (delegations *Delegations) FindDelegationsTo(login string) Delegations {
 	var loginsAndDates = make(map[string]Delegation, 0)
 	var result = make([]Delegation, 0)
