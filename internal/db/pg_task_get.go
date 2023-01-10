@@ -593,7 +593,7 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 	}
 
 	for _, a := range computedActions {
-		var c = ActionSliceContainsId(Approve, computedActions)
+		var c = actionSliceContainsId(Approve, computedActions)
 		if !(a.Id == AdditionalApprover && c) {
 			result = append(result, a)
 		}
