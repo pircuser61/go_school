@@ -872,6 +872,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			People:        ae.People,
 			ServiceDesc:   ae.ServiceDesc,
 			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
 			FaaS:          ae.FaaS,
 
 			UpdateData: &script.BlockUpdateData{
