@@ -892,6 +892,17 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	log := logger.GetLogger(ctx).WithField("step_id", message.TaskID)
 
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		return transactionErr
+	}
+	defer func(txStorage db.Database, ctx c.Context) {
+		txErr := txStorage.RollbackTransaction(ctx)
+		if txErr != nil {
+			log.Error(txErr)
+		}
+	}(txStorage, ctx)
+
 	if message.Err != "" {
 		log.Error(message.Err)
 		return nil
@@ -921,7 +932,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:        step.WorkID,
 		WorkNumber:    step.WorkNumber,
-		Storage:       ae.DB,
+		Storage:       txStorage,
 		Sender:        ae.Mail,
 		Kafka:         ae.Kafka,
 		People:        ae.People,
@@ -944,6 +955,10 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 	if blockErr != nil {
 		log.WithError(blockErr).Error("couldn't update block")
 		return nil
+	}
+
+	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
+		return commitErr
 	}
 
 	return nil
