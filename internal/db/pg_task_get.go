@@ -563,12 +563,14 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	return &et, nil
 }
 
-func (db *PGCon) computeActions(actions []string, allActions map[string]entity.TaskAction) []entity.TaskAction {
-	var actionsResult = make([]entity.TaskAction, 0)
+func (db *PGCon) computeActions(actions []string, allActions map[string]entity.TaskAction) (result []entity.TaskAction) {
+	var computedActions = make([]entity.TaskAction, 0)
+	result = make([]entity.TaskAction, 0)
 
-	var duplicateActionsMap = map[string]string{
-		"approve": "additional_approvement",
-	}
+	const (
+		Approve            = "approve"
+		AdditionalApprover = "additional_approvement"
+	)
 
 	for _, actionId := range actions {
 		var compositeActionId = strings.Split(actionId, ":")
@@ -586,22 +588,27 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 				IsPublic:           actionWithPreferences.IsPublic,
 			}
 
-			if computedAction.IsPublic {
-				var ignoreAction = false
-				for _, v := range duplicateActionsMap {
-					if id == v {
-						ignoreAction = true
-					}
-				}
-
-				if !ignoreAction {
-					actionsResult = append(actionsResult, computedAction)
-				}
-			}
+			computedActions = append(computedActions, computedAction)
 		}
 	}
 
-	return actionsResult
+	var containsId = func(id string, entries []entity.TaskAction) bool {
+		for _, e := range entries {
+			if e.Id == id {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, a := range computedActions {
+		var c = containsId(Approve, computedActions)
+		if !(a.Id == AdditionalApprover && c) {
+			result = append(result, a)
+		}
+	}
+
+	return result
 }
 
 type tasksCounter struct {
