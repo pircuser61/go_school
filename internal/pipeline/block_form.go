@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -247,18 +246,12 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 
 		gb.State.Executors = resolvedEntities
 
-		if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-			if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
-				for executorLogin := range gb.State.Executors {
-					delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, executorLogin)
-					if htErr != nil {
-						return htErr
-					}
-
-					currentDelegationsArr = append(currentDelegationsArr, delegationsTo...)
-				}
-			}
+		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+		if htErr != nil {
+			return htErr
 		}
+
+		gb.RunContext.Delegations = delegations
 	}
 
 	return gb.handleNotifications(ctx)
@@ -268,15 +261,22 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	if gb.RunContext.skipNotifications {
 		return nil
 	}
+
 	executors, executorsErr := gb.resolveExecutors(ctx)
 	if executorsErr != nil {
 		return executorsErr
 	}
 
-	var emails = make([]string, 0)
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
+	if err != nil {
+		return err
+	}
 
-	for _, executor := range executors {
-		email, emailErr := gb.RunContext.People.GetUserEmail(ctx, executor)
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
+
+	var emails = make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			continue
 		}

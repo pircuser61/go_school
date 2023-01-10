@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 )
 
 type updateFillFormParams struct {
@@ -28,13 +29,14 @@ func (a *updateFillFormParams) Validate() error {
 }
 
 // nolint:dupl // another action
-func (gb *GoFormBlock) cancelPipeline(ctx c.Context, delegations human_tasks.Delegations) error {
+func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	var initiator = gb.RunContext.Initiator
 
-	var delegateFor = delegations.DelegateFor(currentLogin)
+	var initiatorDelegates = gb.RunContext.Delegations.GetDelegates(initiator)
+	var loginIsInitiatorDelegate = slices.Contains(initiatorDelegates, currentLogin)
 
-	if currentLogin != initiator && delegateFor != "" {
+	if currentLogin != initiator || loginIsInitiatorDelegate {
 		return fmt.Errorf("%s is not an initiator or delegate", currentLogin)
 	}
 
@@ -57,14 +59,12 @@ func (gb *GoFormBlock) cancelPipeline(ctx c.Context, delegations human_tasks.Del
 
 //nolint:gocyclo //ok
 func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
-	delegates := getDelegates(gb.RunContext.VarStore)
-
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
 	}
 	if data.Action == string(entity.TaskUpdateActionCancelApp) {
-		if errUpdate := gb.cancelPipeline(ctx, delegates); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 		return nil, nil
@@ -75,10 +75,11 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, errors.New("can't assert provided data")
 	}
 
+	var delegateFor = ""
+
 	if updateParams.BlockId != gb.Name {
 		return nil, fmt.Errorf("wrong form id: %s, gb.Name: %s", updateParams.BlockId, gb.Name)
 	}
-
 	if gb.State.IsFilled {
 		isAllowed, checkEditErr := gb.RunContext.Storage.CheckUserCanEditForm(ctx, gb.RunContext.WorkNumber,
 			gb.Name, data.ByLogin)
@@ -91,9 +92,11 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 	} else {
 		_, executorFound := gb.State.Executors[data.ByLogin]
+		var isDelegate bool
+		delegateFor, isDelegate = gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin,
+			getSliceFromMapOfStrings(gb.State.Executors))
 
-		var delegateFor = delegates.DelegateFor(data.ByLogin)
-		if !(executorFound || delegateFor != "") {
+		if !(executorFound || isDelegate) {
 			return nil, fmt.Errorf("%s not found in approvers or delegates", data.ByLogin)
 		}
 
@@ -110,7 +113,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			ApplicationBody: updateParams.ApplicationBody,
 			CreatedAt:       time.Now(),
 			Executor:        data.ByLogin,
-			DelegateFor:     delegates.DelegateFor(data.ByLogin),
+			DelegateFor:     delegateFor,
 		},
 	}, gb.State.ChangesLog...)
 

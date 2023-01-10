@@ -30,6 +30,7 @@ require (
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
 	go.opencensus.io v0.24.0
+	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
 	google.golang.org/grpc v1.51.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
