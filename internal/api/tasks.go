@@ -642,11 +642,13 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			continue
 		}
 		runCtx := &pipeline.BlockRunContext{
-			TaskID:        dbTask.ID,
-			WorkNumber:    workNumber,
-			WorkTitle:     dbTask.Name,
-			Initiator:     dbTask.Author,
-			Storage:       txStorage,
+			TaskID:     dbTask.ID,
+			WorkNumber: workNumber,
+			WorkTitle:  dbTask.Name,
+			Initiator:  dbTask.Author,
+			Storage:    txStorage,
+			VarStore:   storage,
+
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
 			People:        ae.People,
@@ -654,7 +656,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			FunctionStore: ae.FunctionStore,
 			HumanTasks:    ae.HumanTasks,
 			FaaS:          ae.FaaS,
-			VarStore:      storage,
+
 			UpdateData: &script.BlockUpdateData{
 				ByLogin:    ui.Username,
 				Action:     string(updateData.Action),
@@ -858,18 +860,20 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 		}
 		// goroutines?
 		runCtx := &pipeline.BlockRunContext{
-			TaskID:        item.TaskID,
-			WorkNumber:    item.WorkNumber,
-			WorkTitle:     item.WorkTitle,
-			Initiator:     item.Initiator,
-			Storage:       txStorage,
+			TaskID:     item.TaskID,
+			WorkNumber: item.WorkNumber,
+			WorkTitle:  item.WorkTitle,
+			Initiator:  item.Initiator,
+			Storage:    txStorage,
+			VarStore:   item.VarStore,
+
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
 			People:        ae.People,
 			ServiceDesc:   ae.ServiceDesc,
 			FunctionStore: ae.FunctionStore,
 			FaaS:          ae.FaaS,
-			VarStore:      item.VarStore,
+
 			UpdateData: &script.BlockUpdateData{
 				Action: string(action),
 			},
