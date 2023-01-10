@@ -150,20 +150,22 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 		bl := source[k]
 
 		block, err := CreateBlock(ctx, k, &bl, &BlockRunContext{
-			TaskID:        gb.TaskID,
-			WorkNumber:    gb.WorkNumber,
-			WorkTitle:     gb.Name,
-			Initiator:     gb.RunContext.Initiator,
-			Storage:       gb.Storage,
+			TaskID:     gb.TaskID,
+			WorkNumber: gb.WorkNumber,
+			WorkTitle:  gb.Name,
+			Initiator:  gb.RunContext.Initiator,
+			Storage:    gb.Storage,
+			VarStore:   gb.VarStore,
+
 			Sender:        gb.Sender,
 			Kafka:         gb.Kafka,
 			People:        gb.People,
 			ServiceDesc:   gb.ServiceDesc,
 			FunctionStore: gb.FunctionStore,
-			FaaS:          gb.FaaS,
-			VarStore:      gb.VarStore,
-			UpdateData:    nil,
 			HumanTasks:    gb.HumanTasks,
+			FaaS:          gb.FaaS,
+
+			UpdateData: nil,
 		})
 		if err != nil {
 			return err
