@@ -48,7 +48,7 @@ type ExecutablePipeline struct {
 	People        *people.Service
 	ServiceDesc   *servicedesc.Service
 	FunctionStore *functions.Service
-	HumanTask     *human_tasks.Service
+	HumanTasks    *human_tasks.Service
 
 	FaaS string
 
@@ -163,7 +163,6 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			FaaS:          gb.FaaS,
 			VarStore:      gb.VarStore,
 			UpdateData:    nil,
-			HumanTask:     gb.HumanTask,
 		})
 		if err != nil {
 			return err

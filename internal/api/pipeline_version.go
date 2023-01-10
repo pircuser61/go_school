@@ -24,6 +24,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -691,7 +692,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.Name = dto.p.Name
 	ep.ServiceDesc = ae.ServiceDesc
 	ep.FunctionStore = ae.FunctionStore
-	ep.HumanTask = ae.HumanTasks
+	ep.HumanTasks = ae.HumanTasks
 
 	if dto.makeNewWork {
 		ep.WorkNumber = dto.workNumber
@@ -729,16 +730,16 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		People:        ep.People,
 		ServiceDesc:   ep.ServiceDesc,
 		FunctionStore: ep.FunctionStore,
+		HumanTasks:    ep.HumanTasks,
 		FaaS:          ep.FaaS,
 		VarStore:      variableStorage,
 		UpdateData:    nil,
-		HumanTask:     ep.HumanTask,
 	}
 
 	findDelegationsErr := ae.tryFindDelegations(ctx, runCtx, dto.p.Pipeline.Blocks)
 	if findDelegationsErr != nil {
 		e := PipelineRunError
-		return nil, e, err
+		return nil, e, findDelegationsErr
 	}
 
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
@@ -768,14 +769,7 @@ func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.Block
 	var uniqueLogins = make(map[string]interface{}, 0)
 
 	for _, block := range *blocks {
-		var blockParams map[string]interface{}
-
-		if block.Params != nil {
-			unmarshalErr := json.Unmarshal(block.Params, &blockParams)
-			if unmarshalErr != nil {
-				return []string{}, unmarshalErr
-			}
-		} else {
+		if block.Params == nil {
 			continue
 		}
 
@@ -783,20 +777,38 @@ func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.Block
 
 		switch block.TypeID {
 		case ApproverBlockType:
+			var approver approverBlockParams
+			unmarshalErr := json.Unmarshal(block.Params, &approver)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
 			var grabApproversErr error
-			currentBlockMembers, grabApproversErr = ae.grabApproversFromApproverBlock(ctx, blockParams)
+			currentBlockMembers, grabApproversErr = ae.grabApproversFromApproverBlock(ctx, &approver)
 			if grabApproversErr != nil {
 				return []string{}, grabApproversErr
 			}
 		case ExecutionBlockType:
+			var execution executionBlockParams
+			unmarshalErr := json.Unmarshal(block.Params, &execution)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
 			var grabExecutorsErr error
-			currentBlockMembers, grabExecutorsErr = ae.grabExecutorsFromExecutionBlock(ctx, blockParams)
+			currentBlockMembers, grabExecutorsErr = ae.grabExecutorsFromExecutionBlock(ctx, &execution)
 			if grabExecutorsErr != nil {
 				return []string{}, grabExecutorsErr
 			}
 		case FormBlockType:
+			var form formBlockParams
+			unmarshalErr := json.Unmarshal(block.Params, &form)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
 			var grabFormExecutorsErr error
-			currentBlockMembers, grabFormExecutorsErr = ae.grabExecutorsFromFormsBlock(runCtx, blockParams)
+			currentBlockMembers, grabFormExecutorsErr = ae.grabExecutorsFromFormsBlock(runCtx, &form)
 			if grabFormExecutorsErr != nil {
 				return []string{}, grabFormExecutorsErr
 			}
@@ -811,7 +823,7 @@ func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.Block
 		}
 	}
 
-	var result = make([]string, len(uniqueLogins))
+	var result = make([]string, 0)
 	for login := range uniqueLogins {
 		result = append(result, login)
 	}
@@ -819,99 +831,86 @@ func (ae *APIEnv) grabMembersFromAllBlocks(ctx c.Context, runCtx *pipeline.Block
 	return result, nil
 }
 
+type approverBlockParams struct {
+	Approver         string `json:"approver"`
+	ApproversGroupId string `json:"approvers_group_id"`
+	Type             string `json:"type"`
+}
+
 //nolint:dupl //different logic
-func (ae *APIEnv) grabApproversFromApproverBlock(ctx c.Context, blockParams map[string]interface{}) (members []string, err error) {
+func (ae *APIEnv) grabApproversFromApproverBlock(ctx c.Context, approvement *approverBlockParams) (members []string, err error) {
 	const (
-		ApproverMemberKey    = "approver"
-		ApprovementTypeKey   = "type"
 		ApprovementTypeGroup = "group"
 		ApprovementTypeUser  = "user"
-		ApproversGroupIdKey  = "approvers_group_id"
 	)
 
-	if approvementType, ok := blockParams[ApprovementTypeKey]; ok {
-		switch approvementType {
-		case ApprovementTypeGroup:
-			if approverGroupId, foundGroup := blockParams[ApproversGroupIdKey]; foundGroup {
-				if approverGroupIdVal, castGroupIdOk := approverGroupId.(string); castGroupIdOk {
-					approvers, sdErr := ae.ServiceDesc.GetApproversGroup(ctx, approverGroupIdVal)
-					if sdErr != nil {
-						return []string{}, sdErr
-					}
-					for _, approver := range approvers.People {
-						members = append(members, approver.Login)
-					}
-				}
-			}
-		case ApprovementTypeUser:
-			if member, foundMember := blockParams[ApproverMemberKey]; foundMember {
-				if memberVal, castMemberOk := member.(string); castMemberOk {
-					members = []string{memberVal}
-				}
-			}
+	switch approvement.Type {
+	case ApprovementTypeGroup:
+		approvers, sdErr := ae.ServiceDesc.GetApproversGroup(ctx, approvement.ApproversGroupId)
+		if sdErr != nil {
+			return []string{}, sdErr
 		}
+		for _, approver := range approvers.People {
+			members = append(members, approver.Login)
+		}
+		break
+	case ApprovementTypeUser:
+		members = []string{approvement.Approver}
+		break
 	}
 
 	return members, nil
 }
 
+type executionBlockParams struct {
+	Executor         string `json:"executors"`
+	ExecutorsGroupId string `json:"executors_group_id"`
+	Type             string `json:"type"`
+}
+
 //nolint:dupl //different logic
-func (ae *APIEnv) grabExecutorsFromExecutionBlock(ctx c.Context, blockParams map[string]interface{}) (members []string, err error) {
+func (ae *APIEnv) grabExecutorsFromExecutionBlock(ctx c.Context, execution *executionBlockParams) (members []string, err error) {
 	const (
-		ExecutorMemberKey   = "executors"
-		ExecutionTypeKey    = "type"
-		ExecutionTypeGroup  = "group"
-		ExecutionTypeUser   = "user"
-		ExecutorsGroupIdKey = "executors_group_id"
+		ExecutionTypeGroup = "group"
+		ExecutionTypeUser  = "user"
 	)
 
-	if executionType, ok := blockParams[ExecutionTypeKey]; ok {
-		switch executionType {
-		case ExecutionTypeGroup:
-			if executorsGroupId, foundGroup := blockParams[ExecutorsGroupIdKey]; foundGroup {
-				if executorsGroupIdVal, castGroupIdOk := executorsGroupId.(string); castGroupIdOk {
-					executors, sdErr := ae.ServiceDesc.GetExecutorsGroup(ctx, executorsGroupIdVal)
-					if sdErr != nil {
-						return []string{}, sdErr
-					}
-					for _, executor := range executors.People {
-						members = append(members, executor.Login)
-					}
-				}
-			}
-		case ExecutionTypeUser:
-			if member, foundMember := blockParams[ExecutorMemberKey]; foundMember {
-				if memberVal, castMemberOk := member.(string); castMemberOk {
-					members = []string{memberVal}
-				}
-			}
+	switch execution.Type {
+	case ExecutionTypeGroup:
+		executors, sdErr := ae.ServiceDesc.GetExecutorsGroup(ctx, execution.ExecutorsGroupId)
+		if sdErr != nil {
+			return []string{}, sdErr
 		}
+		for _, executor := range executors.People {
+			members = append(members, executor.Login)
+		}
+		break
+	case ExecutionTypeUser:
+		members = []string{execution.Executor}
+		break
 	}
 
 	return members, nil
+}
+
+type formBlockParams struct {
+	Executor     string `json:"executor"`
+	ExecutorType string `json:"form_executor_type"`
 }
 
 //nolint:dupl //different logic
 func (ae *APIEnv) grabExecutorsFromFormsBlock(runCtx *pipeline.BlockRunContext,
-	blockParams map[string]interface{}) (members []string, err error) {
+	form *formBlockParams) (members []string, err error) {
 	const (
-		FormExecutorMemberKey     = "executors"
 		FormExecutorTypeInitiator = "initiator"
 		FormExecutorTypeUser      = "user"
-		FormExecutorTypeKey       = "form_executor_type"
 	)
 
-	if formExecutorType, ok := blockParams[FormExecutorTypeKey]; ok {
-		switch formExecutorType {
-		case FormExecutorTypeInitiator:
-			members = []string{runCtx.Initiator}
-		case FormExecutorTypeUser:
-			if member, foundMember := blockParams[FormExecutorMemberKey]; foundMember {
-				if memberVal, castMemberOk := member.(string); castMemberOk {
-					members = []string{memberVal}
-				}
-			}
-		}
+	switch form.ExecutorType {
+	case FormExecutorTypeInitiator:
+		members = []string{runCtx.Initiator}
+	case FormExecutorTypeUser:
+		members = []string{form.Executor}
 	}
 
 	return members, nil
@@ -928,7 +927,7 @@ func (ae *APIEnv) tryFindDelegations(ctx c.Context, runCtx *pipeline.BlockRunCon
 		return delegationsErr
 	}
 
-	runCtx.VarStore.SetValue("delegations", delegations)
+	runCtx.VarStore.SetValue(script.DelegationsCollection, delegations)
 	return nil
 }
 

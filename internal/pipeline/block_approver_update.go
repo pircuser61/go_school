@@ -12,6 +12,8 @@ import (
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -83,34 +85,43 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams, delegatio
 
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
+	const funcName = "pipeline.approver.handleBreachedSLA"
+
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return nil
 	}
 
+	log := logger.GetLogger(ctx)
+
 	if gb.State.SLA >= 1 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
+		approversLogins := make([]string, 0, len(gb.State.Approvers))
+
 		for approverLogin := range gb.State.Approvers {
-			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, approverLogin)
+			approverEmail, err := gb.RunContext.People.GetUserEmail(ctx, approverLogin)
 			if err != nil {
+				log.Warning(funcName, fmt.Sprintf("approver login %s not found", approverLogin))
 				continue
 			}
-			emails = append(emails, userEmail)
+			emails = append(emails, approverEmail)
+			approversLogins = append(approversLogins, approverLogin)
+		}
 
-			delegations, err := gb.RunContext.HumanTask.GetDelegationsFromLogin(ctx, approverLogin)
+		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, approversLogins)
+		if err != nil {
+			log.Info(funcName, fmt.Sprintf("approvers %v have no delegates", approversLogins))
+		}
+
+		for i := range delegations {
+			delegationEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
+				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue
 			}
-
-			for i := range delegations {
-				userEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
-				if err != nil {
-					continue
-				}
-				emails = append(emails, userEmail)
-			}
+			emails = append(emails, delegationEmail)
 		}
 
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
@@ -121,6 +132,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
 			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additionalApprover.ApproverLogin)
 			if err != nil {
+				log.Warning(funcName, fmt.Sprintf("additionalApprover login %s not found", additionalApprover.ApproverLogin))
 				continue
 			}
 			emails = append(emails, userEmail)
@@ -128,7 +140,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementSLATemplate(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
@@ -158,35 +170,44 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
+	const funcName = "pipeline.approver.handleHalfBreachedSLA"
+
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return nil
 	}
 
+	log := logger.GetLogger(ctx)
+
 	if gb.State.SLA >= 1 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
+		approversLogins := make([]string, 0, len(gb.State.Approvers))
+
 		for approverLogin := range gb.State.Approvers {
 			em, err := gb.RunContext.People.GetUserEmail(ctx, approverLogin)
 			if err != nil {
 				continue
 			}
 			emails = append(emails, em)
+			approversLogins = append(approversLogins, approverLogin)
+		}
 
-			delegations, err := gb.RunContext.HumanTask.GetDelegationsFromLogin(ctx, approverLogin)
+		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, approversLogins)
+		if err != nil {
+			log.Info(funcName, fmt.Sprintf("approvers %v have no delegates", approversLogins))
+		}
+
+		for i := range delegations {
+			delegationEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
+				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue
 			}
-
-			for i := range delegations {
-				userEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
-				if err != nil {
-					continue
-				}
-				emails = append(emails, userEmail)
-			}
+			emails = append(emails, delegationEmail)
 		}
+
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
 			// check if approver has not decisioned, and we did not see approver before
 			if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
@@ -202,7 +223,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementHalfSLATemplate(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
@@ -350,13 +371,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, errors.New("empty data")
 	}
 
-	var delegationsTo human_tasks.Delegations
-
-	if delegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-		if delegationsVal, castOk := delegations.(human_tasks.Delegations); castOk {
-			delegationsTo = delegationsVal.FindDelegationsTo(gb.RunContext.UpdateData.ByLogin)
-		}
-	}
+	delegates := getDelegates(gb.RunContext.VarStore)
 
 	switch data.Action {
 	case string(entity.TaskUpdateActionSLABreach):
@@ -381,7 +396,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 
 		updateParams.internalDecision = updateParams.Decision.ToDecision()
 
-		if errUpdate := gb.setApproverDecision(updateParams, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.setApproverDecision(updateParams, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 
@@ -396,7 +411,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, err
 		}
 
-		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin, updateParams, delegationsTo)
+		loginsToNotify, err := gb.State.SetDecisionByAdditionalApprover(gb.RunContext.UpdateData.ByLogin, updateParams, delegates)
 		if err != nil {
 			return nil, err
 		}
@@ -413,17 +428,17 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
-		if errUpdate := gb.setEditApplication(ctx, updateParams, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.setEditApplication(ctx, updateParams, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 
 	case string(entity.TaskUpdateActionRequestApproveInfo):
-		if errUpdate := gb.updateRequestApproverInfo(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.updateRequestApproverInfo(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 
 	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 
@@ -432,7 +447,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
 			return nil, errors.New("can't assert provided data")
 		}
-		if errUpdate := gb.addApprovers(ctx, updateParams, delegationsTo); errUpdate != nil {
+		if errUpdate := gb.addApprovers(ctx, updateParams, delegates); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
@@ -478,6 +493,14 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams, del
 	}
 
 	crTime := time.Now()
+
+	delegatesLogins, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, u.AdditionalApproversLogins)
+	if err != nil {
+		return err
+	}
+
+	delegations.Append(delegatesLogins)
+	gb.RunContext.VarStore.SetValue(script.DelegationsCollection, delegations)
 
 	for i := range u.AdditionalApproversLogins {
 		if gb.checkAdditionalApproverNotAdded(u.AdditionalApproversLogins[i]) {

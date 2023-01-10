@@ -101,7 +101,6 @@ var (
 	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}
 
 	DelegationsCollection = "delegations_collection"
-	DelegationsForBlock   = "delegations_for_block"
 )
 
 func NewSocket(id string, nexts []string) Socket {

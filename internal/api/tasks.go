@@ -18,6 +18,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -26,36 +27,38 @@ import (
 )
 
 type eriusTaskResponse struct {
-	ID               uuid.UUID              `json:"id"`
-	VersionID        uuid.UUID              `json:"version_id"`
-	StartedAt        time.Time              `json:"started_at"`
-	LastChangedAt    time.Time              `json:"last_changed_at"`
-	FinishedAt       *time.Time             `json:"finished_at"`
-	Name             string                 `json:"name"`
-	Description      string                 `json:"description"`
-	Status           string                 `json:"status"`
-	HumanStatus      string                 `json:"human_status"`
-	Author           string                 `json:"author"`
-	IsDebugMode      bool                   `json:"debug"`
-	Parameters       map[string]interface{} `json:"parameters"`
-	Steps            taskSteps              `json:"steps"`
-	WorkNumber       string                 `json:"work_number"`
-	BlueprintID      string                 `json:"blueprint_id"`
-	Rate             *int                   `json:"rate"`
-	RateComment      *string                `json:"rate_comment"`
-	AvailableActions taskActions            `json:"available_actions"`
+	ID                 uuid.UUID              `json:"id"`
+	VersionID          uuid.UUID              `json:"version_id"`
+	StartedAt          time.Time              `json:"started_at"`
+	LastChangedAt      time.Time              `json:"last_changed_at"`
+	FinishedAt         *time.Time             `json:"finished_at"`
+	Name               string                 `json:"name"`
+	Description        string                 `json:"description"`
+	Status             string                 `json:"status"`
+	HumanStatus        string                 `json:"human_status"`
+	Author             string                 `json:"author"`
+	IsDelegateOfAuthor bool                   `json:"is_delegate_of_author"`
+	IsDebugMode        bool                   `json:"debug"`
+	Parameters         map[string]interface{} `json:"parameters"`
+	Steps              taskSteps              `json:"steps"`
+	WorkNumber         string                 `json:"work_number"`
+	BlueprintID        string                 `json:"blueprint_id"`
+	Rate               *int                   `json:"rate"`
+	RateComment        *string                `json:"rate_comment"`
+	AvailableActions   taskActions            `json:"available_actions"`
 }
 
 type step struct {
-	Time     time.Time                  `json:"time"`
-	Type     string                     `json:"type"`
-	Name     string                     `json:"name"`
-	State    map[string]json.RawMessage `json:"state" swaggertype:"object"`
-	Storage  map[string]interface{}     `json:"storage"`
-	Errors   []string                   `json:"errors"`
-	Steps    []string                   `json:"steps"`
-	HasError bool                       `json:"has_error"`
-	Status   pipeline.Status            `json:"status"`
+	Time                      time.Time                  `json:"time"`
+	Type                      string                     `json:"type"`
+	Name                      string                     `json:"name"`
+	IsDelegateOfAnyStepMember bool                       `json:"is_delegate_of_any_step_member"`
+	State                     map[string]json.RawMessage `json:"state" swaggertype:"object"`
+	Storage                   map[string]interface{}     `json:"storage"`
+	Errors                    []string                   `json:"errors"`
+	Steps                     []string                   `json:"steps"`
+	HasError                  bool                       `json:"has_error"`
+	Status                    pipeline.Status            `json:"status"`
 }
 
 type action struct {
@@ -69,7 +72,8 @@ type action struct {
 type taskActions []action
 type taskSteps []step
 
-func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
+func (eriusTaskResponse) toResponse(in *entity.EriusTask,
+	currentUserDelegateSteps map[string]bool, isAuthorDelegate bool) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
 	for i := range in.Steps {
@@ -80,15 +84,16 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 		}
 
 		steps = append(steps, step{
-			Time:     actionTime,
-			Type:     in.Steps[i].Type,
-			Name:     in.Steps[i].Name,
-			State:    in.Steps[i].State,
-			Storage:  in.Steps[i].Storage,
-			Errors:   in.Steps[i].Errors,
-			Steps:    in.Steps[i].Steps,
-			HasError: in.Steps[i].HasError,
-			Status:   pipeline.Status(in.Steps[i].Status),
+			Time:                      actionTime,
+			Type:                      in.Steps[i].Type,
+			Name:                      in.Steps[i].Name,
+			State:                     in.Steps[i].State,
+			Storage:                   in.Steps[i].Storage,
+			Errors:                    in.Steps[i].Errors,
+			Steps:                     in.Steps[i].Steps,
+			HasError:                  in.Steps[i].HasError,
+			Status:                    pipeline.Status(in.Steps[i].Status),
+			IsDelegateOfAnyStepMember: currentUserDelegateSteps[in.Steps[i].Name],
 		})
 	}
 
@@ -103,24 +108,25 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask) *eriusTaskResponse {
 	}
 
 	out := &eriusTaskResponse{
-		ID:               in.ID,
-		VersionID:        in.VersionID,
-		StartedAt:        in.StartedAt,
-		LastChangedAt:    in.LastChangedAt,
-		FinishedAt:       in.FinishedAt,
-		Name:             in.Name,
-		Description:      in.Description,
-		Status:           in.Status,
-		HumanStatus:      in.HumanStatus,
-		Author:           in.Author,
-		IsDebugMode:      in.IsDebugMode,
-		Parameters:       in.Parameters,
-		Steps:            steps,
-		WorkNumber:       in.WorkNumber,
-		BlueprintID:      in.BlueprintID,
-		Rate:             in.Rate,
-		RateComment:      in.RateComment,
-		AvailableActions: actions,
+		ID:                 in.ID,
+		VersionID:          in.VersionID,
+		StartedAt:          in.StartedAt,
+		LastChangedAt:      in.LastChangedAt,
+		FinishedAt:         in.FinishedAt,
+		Name:               in.Name,
+		Description:        in.Description,
+		Status:             in.Status,
+		HumanStatus:        in.HumanStatus,
+		Author:             in.Author,
+		IsDebugMode:        in.IsDebugMode,
+		Parameters:         in.Parameters,
+		Steps:              steps,
+		WorkNumber:         in.WorkNumber,
+		BlueprintID:        in.BlueprintID,
+		Rate:               in.Rate,
+		RateComment:        in.RateComment,
+		AvailableActions:   actions,
+		IsDelegateOfAuthor: isAuthorDelegate,
 	}
 
 	return out
@@ -198,14 +204,100 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	dbTask.Steps = steps
 
+	isAuthorDelegate := delegations.DelegateTo(dbTask.Author) != ""
+	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(&steps, &delegations)
+	if tErr != nil {
+		e := GetDelegationsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 	resp := &eriusTaskResponse{}
-	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask)); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask, currentUserDelegateSteps, isAuthorDelegate)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
 	}
+}
+
+type approverBlock struct {
+	Approvers           map[string]struct{}  `json:"approvers"`
+	AdditionalApprovers []additionalApprover `json:"additional_approvers"`
+}
+
+type executionBlock struct {
+	Executors map[string]struct{}
+}
+
+type additionalApprover struct {
+	ApproverLogin string `json:"approver_login"`
+}
+
+func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, delegates *human_tasks.Delegations) (res map[string]bool, err error) {
+	const (
+		ApproverBlockType  = "approver"
+		ExecutionBlockType = "execution"
+		FormBlockType      = "form"
+	)
+
+	res = make(map[string]bool, 0)
+	for _, s := range *steps {
+		var isDelegateAnyPersonOfStep = false
+
+		if s.State == nil {
+			continue
+		}
+
+		switch s.Type {
+		case ApproverBlockType:
+			var approver approverBlock
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &approver)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			for member := range approver.Approvers {
+				if isDelegate(member, delegates) {
+					isDelegateAnyPersonOfStep = true
+					break
+				}
+			}
+
+			for _, member := range approver.AdditionalApprovers {
+				if isDelegate(member.ApproverLogin, delegates) {
+					isDelegateAnyPersonOfStep = true
+					break
+				}
+			}
+
+			break
+		case ExecutionBlockType, FormBlockType:
+			var execution executionBlock
+			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
+			if unmarshalErr != nil {
+				return nil, unmarshalErr
+			}
+
+			for member := range execution.Executors {
+				if isDelegate(member, delegates) {
+					isDelegateAnyPersonOfStep = true
+					break
+				}
+			}
+		}
+
+		res[s.Name] = isDelegateAnyPersonOfStep
+	}
+
+	return res, nil
+}
+
+func isDelegate(login string, delegates *human_tasks.Delegations) bool {
+	var delegateTo = delegates.DelegateTo(login)
+	return delegateTo != ""
 }
 
 //nolint:dupl //its not duplicate
@@ -232,9 +324,9 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		return
 	}
 
-	currentUserDelegations := delegations.GetUserInArrayWithDelegations(filters.CurrentUser)
+	currentUserAndDelegates := delegations.GetUserInArrayWithDelegations(filters.CurrentUser)
 
-	resp, err := ae.DB.GetTasks(ctx, filters, currentUserDelegations)
+	resp, err := ae.DB.GetTasks(ctx, filters, currentUserAndDelegates)
 	if err != nil {
 		e := GetTasksError
 		log.Error(e.errorMessage(err))
@@ -548,6 +640,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			People:        ae.People,
 			ServiceDesc:   ae.ServiceDesc,
 			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
 			FaaS:          ae.FaaS,
 			VarStore:      storage,
 			UpdateData: &script.BlockUpdateData{
@@ -555,7 +648,6 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 				Action:     string(updateData.Action),
 				Parameters: updateData.Parameters,
 			},
-			HumanTask: ae.HumanTasks,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
@@ -768,7 +860,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			UpdateData: &script.BlockUpdateData{
 				Action: string(action),
 			},
-			HumanTask: ae.HumanTasks,
+			HumanTasks: ae.HumanTasks,
 		}
 
 		blockErr := pipeline.ProcessBlock(routineCtx, item.StepName, item.BlockData, runCtx, true)
@@ -828,7 +920,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
 		},
-		HumanTask: ae.HumanTasks,
+		HumanTasks: ae.HumanTasks,
 	}
 
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)

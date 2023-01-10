@@ -43,7 +43,6 @@ type BlockRunContext struct {
 	UpdateData         *script.BlockUpdateData
 	skipNotifications  bool // for tests
 	currBlockStartTime time.Time
-	HumanTask          *human_tasks.Service
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
@@ -345,11 +344,13 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (str
 		return "", err
 	}
 	var descr string
-	dataDescr, ok := data.Get("description")
-	if ok {
-		convDescr, convOk := dataDescr.(string)
-		if convOk {
-			descr = convDescr
+	if data != nil {
+		dataDescr, ok := data.Get("description")
+		if ok {
+			convDescr, convOk := dataDescr.(string)
+			if convOk {
+				descr = convDescr
+			}
 		}
 	}
 	additionalDescriptions, err := runCtx.Storage.GetAdditionalForms(runCtx.WorkNumber, nodeName)

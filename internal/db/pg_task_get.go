@@ -300,7 +300,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 
 	q, args := compileGetTasksQuery(filters, delegations)
 
-	tasks, err := db.getTasks(ctx, q, args)
+	tasks, err := db.getTasks(ctx, filters, q, args)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +393,7 @@ func (db *PGCon) GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*entity.
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
-	return db.getTasks(ctx, q, []interface{}{pipelineID})
+	return db.getTasks(ctx, entity.TaskFilter{}, q, []interface{}{pipelineID})
 }
 
 func (db *PGCon) GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
@@ -419,7 +419,7 @@ func (db *PGCon) GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*entity.Er
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
-	return db.getTasks(ctx, q, []interface{}{versionID})
+	return db.getTasks(ctx, entity.TaskFilter{}, q, []interface{}{versionID})
 }
 
 func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
@@ -635,7 +635,7 @@ func (db *PGCon) getTasksCount(ctx c.Context, q string, usernames []string) (*ta
 }
 
 //nolint:gocyclo //its ok here
-func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.EriusTasks, error) {
+func (db *PGCon) getTasks(ctx c.Context, filters entity.TaskFilter, q string, args []interface{}) (*entity.EriusTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
@@ -693,6 +693,7 @@ func (db *PGCon) getTasks(ctx c.Context, q string, args []interface{}) (*entity.
 
 		actions := db.actionsToStrings(nullStringActions)
 		et.Actions = db.computeActions(actions, actionsMap)
+		et.IsDelegate = filters.CurrentUser != et.Author
 		ets.Tasks = append(ets.Tasks, et)
 	}
 
