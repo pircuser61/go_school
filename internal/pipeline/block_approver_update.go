@@ -115,7 +115,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		}
 
 		if delegations != nil {
-			logins = append(logins, delegations.GetUserInArrayWithDelegations(logins)...)
+			logins = delegations.GetUserInArrayWithDelegations(logins)
 		}
 
 		var approverEmail string
@@ -191,7 +191,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 		}
 
 		if delegations != nil {
-			logins = append(logins, delegations.GetUserInArrayWithDelegations(logins)...)
+			logins = delegations.GetUserInArrayWithDelegations(logins)
 		}
 
 		var approverEmail string

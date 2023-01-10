@@ -160,7 +160,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		}
 
 		if delegations != nil {
-			logins = append(logins, delegations.GetUserInArrayWithDelegations(logins)...)
+			logins = delegations.GetUserInArrayWithDelegations(logins)
 		}
 
 		var executorEmail string
@@ -216,7 +216,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 		}
 
 		if delegations != nil {
-			logins = append(logins, delegations.GetUserInArrayWithDelegations(logins)...)
+			logins = delegations.GetUserInArrayWithDelegations(logins)
 		}
 
 		var executorEmail string
