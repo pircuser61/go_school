@@ -114,9 +114,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
 		}
 
-		if delegations != nil {
-			logins = delegations.GetUserInArrayWithDelegations(logins)
-		}
+		logins = delegations.GetUserInArrayWithDelegations(logins)
 
 		var approverEmail string
 		for i := range logins {
@@ -190,9 +188,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
 		}
 
-		if delegations != nil {
-			logins = delegations.GetUserInArrayWithDelegations(logins)
-		}
+		logins = delegations.GetUserInArrayWithDelegations(logins)
 
 		var approverEmail string
 		for i := range logins {
