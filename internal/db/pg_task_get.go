@@ -602,7 +602,7 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 	return result
 }
 
-func ActionSliceContainsId(id string, entries []entity.TaskAction) bool {
+func actionSliceContainsId(id string, entries []entity.TaskAction) bool {
 	for _, e := range entries {
 		if e.Id == id {
 			return true
