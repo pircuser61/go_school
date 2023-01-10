@@ -422,7 +422,7 @@ func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp, err := ae.DB.GetTasksCount(ctx, delegations.GetUserInArrayWithDelegations([]string{ui.Username}))
+	resp, err := ae.DB.GetTasksCount(ctx, delegations.GetUserInArrayWithDelegators([]string{ui.Username}))
 	if err != nil {
 		e := GetTasksCountError
 		log.Error(e.errorMessage(err))
