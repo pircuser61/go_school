@@ -446,6 +446,7 @@ func (a *ApproverData) getAdditionalApproversSlice() []string {
 	return result
 }
 
+//nolint:dupl //its not duplicate
 func (a *ApproverData) setEditApp(login string, params approverUpdateEditingParams, delegations human_tasks.Delegations) error {
 	_, approverFound := a.Approvers[login]
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Approvers))

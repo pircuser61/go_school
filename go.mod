@@ -31,6 +31,7 @@ require (
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
 	go.opencensus.io v0.24.0
 	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
+	golang.org/x/net v0.2.0
 	google.golang.org/grpc v1.51.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -92,7 +93,6 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8 // indirect
-	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect

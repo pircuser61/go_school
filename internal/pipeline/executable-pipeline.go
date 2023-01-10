@@ -160,10 +160,10 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			People:        gb.People,
 			ServiceDesc:   gb.ServiceDesc,
 			FunctionStore: gb.FunctionStore,
-			HumanTasks:    gb.HumanTasks,
 			FaaS:          gb.FaaS,
 			VarStore:      gb.VarStore,
 			UpdateData:    nil,
+			HumanTasks:    gb.HumanTasks,
 		})
 		if err != nil {
 			return err

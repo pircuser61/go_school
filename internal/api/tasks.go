@@ -20,7 +20,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -240,7 +240,7 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
-func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *entity.TaskSteps, delegates *human_tasks.Delegations) (
+func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
 	res map[string]bool, err error) {
 	const (
 		ApproverBlockType  = "approver"
@@ -277,8 +277,6 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *e
 					break
 				}
 			}
-
-			break
 		case ExecutionBlockType, FormBlockType:
 			var execution executionBlock
 			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
@@ -300,7 +298,7 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *e
 	return res, nil
 }
 
-func isDelegate(currentUser, login string, delegations *human_tasks.Delegations) bool {
+func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
 	var delegates = delegations.GetDelegates(login)
 	return slices.Contains(delegates, currentUser)
 }
