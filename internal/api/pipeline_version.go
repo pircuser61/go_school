@@ -719,11 +719,13 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	}
 
 	runCtx := &pipeline.BlockRunContext{
-		TaskID:        ep.TaskID,
-		WorkNumber:    ep.WorkNumber,
-		WorkTitle:     ep.Name,
-		Initiator:     dto.userName,
-		Storage:       txStorage,
+		TaskID:     ep.TaskID,
+		WorkNumber: ep.WorkNumber,
+		WorkTitle:  ep.Name,
+		Initiator:  dto.userName,
+		Storage:    txStorage,
+		VarStore:   variableStorage,
+
 		Sender:        ep.Sender,
 		Kafka:         ep.Kafka,
 		People:        ep.People,
@@ -731,8 +733,8 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		FunctionStore: ep.FunctionStore,
 		HumanTasks:    ep.HumanTasks,
 		FaaS:          ep.FaaS,
-		VarStore:      variableStorage,
-		UpdateData:    nil,
+
+		UpdateData: nil,
 	}
 
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
