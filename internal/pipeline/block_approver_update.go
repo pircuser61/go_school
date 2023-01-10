@@ -85,7 +85,7 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams, delegatio
 
 //nolint:dupl,gocyclo //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
-	const funcName = "pipeline.approver.handleBreachedSLA"
+	const fn = "pipeline.approver.handleBreachedSLA"
 
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
@@ -103,7 +103,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		for approverLogin := range gb.State.Approvers {
 			approverEmail, err := gb.RunContext.People.GetUserEmail(ctx, approverLogin)
 			if err != nil {
-				log.Warning(funcName, fmt.Sprintf("approver login %s not found", approverLogin))
+				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", approverLogin))
 				continue
 			}
 			emails = append(emails, approverEmail)
@@ -112,14 +112,14 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, approversLogins)
 		if err != nil {
-			log.Info(funcName, fmt.Sprintf("approvers %v have no delegates", approversLogins))
+			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", approversLogins))
 		}
 
 		var delegationEmail string
 		for i := range delegations {
 			delegationEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
-				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
+				log.WithError(err).Warning(fn, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue
 			}
 			emails = append(emails, delegationEmail)
@@ -133,7 +133,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
 			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additionalApprover.ApproverLogin)
 			if err != nil {
-				log.Warning(funcName, fmt.Sprintf("additionalApprover login %s not found", additionalApprover.ApproverLogin))
+				log.Warning(fn, fmt.Sprintf("additionalApprover login %s not found", additionalApprover.ApproverLogin))
 				continue
 			}
 			emails = append(emails, userEmail)
@@ -171,7 +171,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 //nolint:dupl //its not duplicate
 func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
-	const funcName = "pipeline.approver.handleHalfBreachedSLA"
+	const fn = "pipeline.approver.handleHalfBreachedSLA"
 
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
@@ -189,6 +189,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 		for approverLogin := range gb.State.Approvers {
 			em, err := gb.RunContext.People.GetUserEmail(ctx, approverLogin)
 			if err != nil {
+				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", approverLogin))
 				continue
 			}
 			emails = append(emails, em)
@@ -197,14 +198,14 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 
 		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, approversLogins)
 		if err != nil {
-			log.Info(funcName, fmt.Sprintf("approvers %v have no delegates", approversLogins))
+			log.Info(fn, fmt.Sprintf("approvers %v have no delegates", approversLogins))
 		}
 
 		var delegationEmail string
 		for i := range delegations {
 			delegationEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
-				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
+				log.WithError(err).Warning(fn, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue
 			}
 			emails = append(emails, delegationEmail)

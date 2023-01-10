@@ -139,7 +139,7 @@ type ExecutionUpdateParams struct {
 
 //nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
-	const funcName = "pipeline.execution.handleBreachedSLA"
+	const fn = "pipeline.execution.handleBreachedSLA"
 
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
@@ -156,7 +156,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		for executorLogin := range gb.State.Executors {
 			email, err := gb.RunContext.People.GetUserEmail(ctx, executorLogin)
 			if err != nil {
-				log.Warning(funcName, fmt.Sprintf("executor login %s not found", executorLogin))
+				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", executorLogin))
 				continue
 			}
 
@@ -166,14 +166,14 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 
 		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executorsLogins)
 		if err != nil {
-			log.Info(funcName, fmt.Sprintf("executors %v have no delegates", executorsLogins))
+			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", executorsLogins))
 		}
 
 		var delegationEmail string
 		for i := range delegations {
 			delegationEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
-				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
+				log.WithError(err).Warning(fn, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue
 			}
 			emails = append(emails, delegationEmail)
@@ -202,7 +202,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 
 //nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
-	const funcName = "pipeline.execution.handleHalfSLABreached"
+	const fn = "pipeline.execution.handleHalfSLABreached"
 
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
@@ -219,7 +219,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 		for executorLogin := range gb.State.Executors {
 			email, err := gb.RunContext.People.GetUserEmail(ctx, executorLogin)
 			if err != nil {
-				log.Warning(funcName, fmt.Sprintf("executor login %s not found", executorLogin))
+				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", executorLogin))
 				continue
 			}
 
@@ -229,14 +229,14 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 
 		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executorsLogins)
 		if err != nil {
-			log.Info(funcName, fmt.Sprintf("executors %v have no delegates", executorsLogins))
+			log.Info(fn, fmt.Sprintf("executors %v have no delegates", executorsLogins))
 		}
 
 		var delegationEmail string
 		for i := range delegations {
 			delegationEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
-				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
+				log.WithError(err).Warning(fn, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue
 			}
 			emails = append(emails, delegationEmail)
