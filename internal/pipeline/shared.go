@@ -70,10 +70,10 @@ func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolv
 	return nil, errors.Wrap(err, "Unexpected behavior")
 }
 
-func getDelegates(store *store.VariableStore) human_tasks.Delegations {
+func getDelegates(st *store.VariableStore) human_tasks.Delegations {
 	var delegations = make(human_tasks.Delegations, 0)
 
-	if delegationsArr, ok := store.GetArray(script.DelegationsCollection); ok {
+	if delegationsArr, ok := st.GetArray(script.DelegationsCollection); ok {
 		t, err := json.Marshal(delegationsArr)
 		if err != nil {
 			return nil

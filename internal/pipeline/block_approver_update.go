@@ -83,7 +83,7 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams, delegatio
 	return nil
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocyclo //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	const funcName = "pipeline.approver.handleBreachedSLA"
 
@@ -115,8 +115,9 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			log.Info(funcName, fmt.Sprintf("approvers %v have no delegates", approversLogins))
 		}
 
+		var delegationEmail string
 		for i := range delegations {
-			delegationEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
+			delegationEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
 				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue
@@ -199,8 +200,9 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
 			log.Info(funcName, fmt.Sprintf("approvers %v have no delegates", approversLogins))
 		}
 
+		var delegationEmail string
 		for i := range delegations {
-			delegationEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
+			delegationEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
 				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue

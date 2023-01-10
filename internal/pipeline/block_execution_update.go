@@ -169,8 +169,9 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 			log.Info(funcName, fmt.Sprintf("executors %v have no delegates", executorsLogins))
 		}
 
+		var delegationEmail string
 		for i := range delegations {
-			delegationEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
+			delegationEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
 				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue
@@ -231,13 +232,14 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			log.Info(funcName, fmt.Sprintf("executors %v have no delegates", executorsLogins))
 		}
 
+		var delegationEmail string
 		for i := range delegations {
-			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
+			delegationEmail, err = gb.RunContext.People.GetUserEmail(ctx, delegations[i].ToLogin)
 			if err != nil {
 				log.Warning(funcName, fmt.Sprintf("delegation login %s not found", delegations[i].ToLogin))
 				continue
 			}
-			emails = append(emails, userEmail)
+			emails = append(emails, delegationEmail)
 		}
 
 		if len(emails) == 0 {

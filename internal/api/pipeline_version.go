@@ -853,10 +853,8 @@ func (ae *APIEnv) grabApproversFromApproverBlock(ctx c.Context, approvement *app
 		for _, approver := range approvers.People {
 			members = append(members, approver.Login)
 		}
-		break
 	case ApprovementTypeUser:
 		members = []string{approvement.Approver}
-		break
 	}
 
 	return members, nil
@@ -884,10 +882,8 @@ func (ae *APIEnv) grabExecutorsFromExecutionBlock(ctx c.Context, execution *exec
 		for _, executor := range executors.People {
 			members = append(members, executor.Login)
 		}
-		break
 	case ExecutionTypeUser:
 		members = []string{execution.Executor}
-		break
 	}
 
 	return members, nil

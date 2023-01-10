@@ -18,7 +18,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -236,14 +236,14 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
-func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, delegates *human_tasks.Delegations) (res map[string]bool, err error) {
+func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, ds *ht.Delegations) (map[string]bool, error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
 		FormBlockType      = "form"
 	)
 
-	res = make(map[string]bool, 0)
+	res := make(map[string]bool, 0)
 	for _, s := range *steps {
 		var isDelegateAnyPersonOfStep = false
 
@@ -260,20 +260,18 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, del
 			}
 
 			for member := range approver.Approvers {
-				if isDelegate(member, delegates) {
+				if isDelegate(member, ds) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
 			}
 
 			for _, member := range approver.AdditionalApprovers {
-				if isDelegate(member.ApproverLogin, delegates) {
+				if isDelegate(member.ApproverLogin, ds) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
 			}
-
-			break
 		case ExecutionBlockType, FormBlockType:
 			var execution executionBlock
 			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
@@ -282,7 +280,7 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, del
 			}
 
 			for member := range execution.Executors {
-				if isDelegate(member, delegates) {
+				if isDelegate(member, ds) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
@@ -295,7 +293,7 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, del
 	return res, nil
 }
 
-func isDelegate(login string, delegates *human_tasks.Delegations) bool {
+func isDelegate(login string, delegates *ht.Delegations) bool {
 	var delegateTo = delegates.DelegateTo(login)
 	return delegateTo != ""
 }
