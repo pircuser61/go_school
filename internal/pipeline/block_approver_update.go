@@ -512,10 +512,7 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 		return err
 	}
 
-	loginsToNotify := make([]string, 0, len(logins))
-	for _, login := range logins {
-		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations([]string{login})...)
-	}
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(logins)
 
 	approverEmails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
@@ -560,10 +557,7 @@ func (gb *GoApproverBlock) notificateDecisionMadeByAdditionalApprover(ctx c.Cont
 		return err
 	}
 
-	loginsWithDelegates := make([]string, 0, len(loginsToNotify))
-	for _, login := range loginsToNotify {
-		loginsWithDelegates = append(loginsWithDelegates, delegates.GetUserInArrayWithDelegations([]string{login})...)
-	}
+	loginsWithDelegates := delegates.GetUserInArrayWithDelegations(loginsToNotify)
 
 	emailsToNotify := make([]string, 0, len(loginsWithDelegates))
 	for _, login := range loginsWithDelegates {

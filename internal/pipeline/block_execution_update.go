@@ -354,10 +354,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		return err
 	}
 
-	loginsToNotify := make([]string, 0, len(gb.State.Executors))
-	for executor := range gb.State.Executors {
-		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations([]string{executor})...)
-	}
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
 
 	emails := make([]string, 0, len(loginsToNotify))
 	for login := range logins {
@@ -490,10 +487,7 @@ func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx context.Context) error
 		return err
 	}
 
-	loginsToNotify := make([]string, 0, len(gb.State.Executors))
-	for executor := range gb.State.Executors {
-		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations([]string{executor})...)
-	}
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
 
 	var email string
 	emails := make([]string, 0, len(loginsToNotify))

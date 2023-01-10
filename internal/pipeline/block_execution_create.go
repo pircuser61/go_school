@@ -143,17 +143,15 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		return err
 	}
 
-	loginsToNotify := make([]string, 0, len(gb.State.Executors))
-	for executor := range gb.State.Executors {
-		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations([]string{executor})...)
-	}
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
 
 	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
 		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
-			l.WithError(err).Error("couldn't get email")
+			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+			continue
 		}
 
 		emails = append(emails, email)
