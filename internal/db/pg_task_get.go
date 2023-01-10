@@ -592,23 +592,23 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 		}
 	}
 
-	var containsId = func(id string, entries []entity.TaskAction) bool {
-		for _, e := range entries {
-			if e.Id == id {
-				return true
-			}
-		}
-		return false
-	}
-
 	for _, a := range computedActions {
-		var c = containsId(Approve, computedActions)
+		var c = ActionSliceContainsId(Approve, computedActions)
 		if !(a.Id == AdditionalApprover && c) {
 			result = append(result, a)
 		}
 	}
 
 	return result
+}
+
+func ActionSliceContainsId(id string, entries []entity.TaskAction) bool {
+	for _, e := range entries {
+		if e.Id == id {
+			return true
+		}
+	}
+	return false
 }
 
 type tasksCounter struct {
