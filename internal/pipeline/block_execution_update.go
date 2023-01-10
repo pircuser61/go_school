@@ -159,9 +159,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
 		}
 
-		if delegations != nil {
-			logins = delegations.GetUserInArrayWithDelegations(logins)
-		}
+		logins = delegations.GetUserInArrayWithDelegations(logins)
 
 		var executorEmail string
 		for i := range logins {
@@ -215,9 +213,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
 		}
 
-		if delegations != nil {
-			logins = delegations.GetUserInArrayWithDelegations(logins)
-		}
+		logins = delegations.GetUserInArrayWithDelegations(logins)
 
 		var executorEmail string
 		for i := range logins {
