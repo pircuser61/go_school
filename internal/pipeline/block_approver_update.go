@@ -14,6 +14,8 @@ import (
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -81,24 +83,22 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 	return nil
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocyclo //its not duplicate
 func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
+	const fn = "pipeline.approver.handleBreachedSLA"
+
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return nil
 	}
 
+	log := logger.GetLogger(ctx)
+
 	if gb.State.SLA >= 1 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
-		for approver := range gb.State.Approvers {
-			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, approver)
-			if err != nil {
-				continue
-			}
-			emails = append(emails, userEmail)
-		}
+		logins := getSliceFromMapOfStrings(gb.State.Approvers)
 
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
 			// check if approver has not decisioned, and we did not see approver before
@@ -106,16 +106,30 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 				continue
 			}
 			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
-			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additionalApprover.ApproverLogin)
+			logins = append(logins, additionalApprover.ApproverLogin)
+		}
+
+		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
+		if err != nil {
+			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
+		}
+
+		logins = delegations.GetUserInArrayWithDelegations(logins)
+
+		var approverEmail string
+		for i := range logins {
+			approverEmail, err = gb.RunContext.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
+				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
 				continue
 			}
-			emails = append(emails, userEmail)
+			emails = append(emails, approverEmail)
 		}
+
 		if len(emails) == 0 {
 			return nil
 		}
-		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementSLATemplate(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
@@ -144,39 +158,52 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) error {
+func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
+	const fn = "pipeline.approver.handleHalfBreachedSLA"
+
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return nil
 	}
 
+	log := logger.GetLogger(ctx)
+
 	if gb.State.SLA >= 1 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
-		for approver := range gb.State.Approvers {
-			em, err := gb.RunContext.People.GetUserEmail(ctx, approver)
-			if err != nil {
-				continue
-			}
-			emails = append(emails, em)
-		}
+		logins := getSliceFromMapOfStrings(gb.State.Approvers)
+
 		for _, additionalApprover := range gb.State.AdditionalApprovers {
 			// check if approver has not decisioned, and we did not see approver before
 			if additionalApprover.Decision != nil || seenAdditionalApprovers[additionalApprover.ApproverLogin] {
 				continue
 			}
 			seenAdditionalApprovers[additionalApprover.ApproverLogin] = true
-			userEmail, err := gb.RunContext.People.GetUserEmail(ctx, additionalApprover.ApproverLogin)
+			logins = append(logins, additionalApprover.ApproverLogin)
+		}
+
+		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
+		if err != nil {
+			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
+		}
+
+		logins = delegations.GetUserInArrayWithDelegations(logins)
+
+		var approverEmail string
+		for i := range logins {
+			approverEmail, err = gb.RunContext.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
+				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
 				continue
 			}
-			emails = append(emails, userEmail)
+			emails = append(emails, approverEmail)
 		}
+
 		if len(emails) == 0 {
 			return nil
 		}
-		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementHalfSLATemplate(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,

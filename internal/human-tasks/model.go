@@ -14,6 +14,10 @@ type Delegation struct {
 type DelegationLogins map[string]Delegation
 
 func (delegations *Delegations) GetUserInArrayWithDelegations(logins []string) (result []string) {
+	if delegations == nil {
+		return logins
+	}
+
 	var uniqueLogins = make(map[string]struct{}, 0)
 
 	for _, login := range logins {

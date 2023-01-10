@@ -11,6 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -138,26 +140,49 @@ type ExecutionUpdateParams struct {
 
 //nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
+	const fn = "pipeline.execution.handleBreachedSLA"
+
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return nil
 	}
 
-	if gb.State.SLA >= 8 {
+	log := logger.GetLogger(ctx)
+
+	if gb.State.SLA >= 1 {
 		emails := make([]string, 0, len(gb.State.Executors))
-		for executor := range gb.State.Executors {
-			email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
+		logins := getSliceFromMapOfStrings(gb.State.Executors)
+
+		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
+		if err != nil {
+			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
+		}
+
+		logins = delegations.GetUserInArrayWithDelegations(logins)
+
+		var executorEmail string
+		for i := range logins {
+			executorEmail, err = gb.RunContext.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
+				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
 				continue
 			}
-			emails = append(emails, email)
+			emails = append(emails, executorEmail)
 		}
+
 		if len(emails) == 0 {
 			return nil
 		}
-		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-			mail.NewExecutionSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress))
+		err = gb.RunContext.Sender.SendNotification(
+			ctx,
+			emails,
+			nil,
+			mail.NewExecutionSLATemplate(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Sender.SdAddress,
+			))
 		if err != nil {
 			return err
 		}
@@ -169,26 +194,50 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 
 //nolint:dupl //its not duplicate
 func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
+	const fn = "pipeline.execution.handleHalfSLABreached"
+
 	if !gb.State.CheckSLA {
 		gb.State.SLAChecked = true
 		gb.State.HalfSLAChecked = true
 		return nil
 	}
 
-	if gb.State.SLA >= 8 {
+	log := logger.GetLogger(ctx)
+
+	if gb.State.SLA >= 1 {
 		emails := make([]string, 0, len(gb.State.Executors))
-		for executor := range gb.State.Executors {
-			email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
+		logins := getSliceFromMapOfStrings(gb.State.Executors)
+
+		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
+		if err != nil {
+			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
+		}
+
+		logins = delegations.GetUserInArrayWithDelegations(logins)
+
+		var executorEmail string
+		for i := range logins {
+			executorEmail, err = gb.RunContext.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
+				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
 				continue
 			}
-			emails = append(emails, email)
+			emails = append(emails, executorEmail)
 		}
+
 		if len(emails) == 0 {
 			return nil
 		}
-		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-			mail.NewExecutiontHalfSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress))
+
+		err = gb.RunContext.Sender.SendNotification(
+			ctx,
+			emails,
+			nil,
+			mail.NewExecutiontHalfSLATemplate(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Sender.SdAddress,
+			))
 		if err != nil {
 			return err
 		}

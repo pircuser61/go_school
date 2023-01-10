@@ -20,7 +20,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -240,7 +240,7 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
-func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *entity.TaskSteps, delegates *human_tasks.Delegations) (
+func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
 	res map[string]bool, err error) {
 	const (
 		ApproverBlockType  = "approver"
@@ -277,8 +277,6 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *e
 					break
 				}
 			}
-
-			break
 		case ExecutionBlockType, FormBlockType:
 			var execution executionBlock
 			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
@@ -300,7 +298,7 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *e
 	return res, nil
 }
 
-func isDelegate(currentUser, login string, delegations *human_tasks.Delegations) bool {
+func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
 	var delegates = delegations.GetDelegates(login)
 	return slices.Contains(delegates, currentUser)
 }
@@ -644,14 +642,11 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			continue
 		}
 		runCtx := &pipeline.BlockRunContext{
-			TaskID:      dbTask.ID,
-			WorkNumber:  workNumber,
-			WorkTitle:   dbTask.Name,
-			Initiator:   dbTask.Author,
-			Storage:     txStorage,
-			VarStore:    storage,
-			Delegations: delegations,
-
+			TaskID:        dbTask.ID,
+			WorkNumber:    workNumber,
+			WorkTitle:     dbTask.Name,
+			Initiator:     dbTask.Author,
+			Storage:       txStorage,
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
 			People:        ae.People,
@@ -659,12 +654,13 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			FunctionStore: ae.FunctionStore,
 			HumanTasks:    ae.HumanTasks,
 			FaaS:          ae.FaaS,
-
+			VarStore:      storage,
 			UpdateData: &script.BlockUpdateData{
 				ByLogin:    ui.Username,
 				Action:     string(updateData.Action),
 				Parameters: updateData.Parameters,
 			},
+			Delegations: delegations,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
@@ -862,21 +858,18 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 		}
 		// goroutines?
 		runCtx := &pipeline.BlockRunContext{
-			TaskID:     item.TaskID,
-			WorkNumber: item.WorkNumber,
-			WorkTitle:  item.WorkTitle,
-			Initiator:  item.Initiator,
-			Storage:    txStorage,
-			VarStore:   item.VarStore,
-
+			TaskID:        item.TaskID,
+			WorkNumber:    item.WorkNumber,
+			WorkTitle:     item.WorkTitle,
+			Initiator:     item.Initiator,
+			Storage:       txStorage,
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
 			People:        ae.People,
 			ServiceDesc:   ae.ServiceDesc,
 			FunctionStore: ae.FunctionStore,
-			HumanTasks:    ae.HumanTasks,
 			FaaS:          ae.FaaS,
-
+			VarStore:      item.VarStore,
 			UpdateData: &script.BlockUpdateData{
 				Action: string(action),
 			},
@@ -898,6 +891,17 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 
 func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
 	log := logger.GetLogger(ctx).WithField("step_id", message.TaskID)
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		return transactionErr
+	}
+	defer func(txStorage db.Database, ctx c.Context) {
+		txErr := txStorage.RollbackTransaction(ctx)
+		if txErr != nil {
+			log.Error(txErr)
+		}
+	}(txStorage, ctx)
 
 	if message.Err != "" {
 		log.Error(message.Err)
@@ -954,6 +958,10 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 	if blockErr != nil {
 		log.WithError(blockErr).Error("couldn't update block")
 		return nil
+	}
+
+	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
+		return commitErr
 	}
 
 	return nil
