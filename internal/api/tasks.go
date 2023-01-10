@@ -186,7 +186,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, delegations.GetUserInArrayWithDelegations([]string{ui.Username}), workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, delegations.GetUserInArrayWithDelegators([]string{ui.Username}), workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
