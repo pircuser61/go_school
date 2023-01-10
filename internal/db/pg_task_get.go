@@ -589,11 +589,9 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 
 			if computedAction.IsPublic {
 				var ignoreAction = false
-				for k, v := range duplicateActionsMap {
-					if _, b := actionsMap[k]; b {
-						if id == v {
-							ignoreAction = true
-						}
+				for _, v := range duplicateActionsMap {
+					if id == v {
+						ignoreAction = true
 					}
 				}
 
