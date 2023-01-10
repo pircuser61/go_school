@@ -870,6 +870,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			People:        ae.People,
 			ServiceDesc:   ae.ServiceDesc,
 			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
 			FaaS:          ae.FaaS,
 			VarStore:      item.VarStore,
 			UpdateData: &script.BlockUpdateData{
@@ -929,6 +930,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		People:        ae.People,
 		ServiceDesc:   ae.ServiceDesc,
 		FunctionStore: ae.FunctionStore,
+		HumanTasks:    ae.HumanTasks,
 		FaaS:          ae.FaaS,
 		VarStore:      storage,
 		UpdateData: &script.BlockUpdateData{
