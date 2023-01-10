@@ -145,7 +145,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := make([]string, 0, len(gb.State.Executors))
 	for executor := range gb.State.Executors {
-		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations(executor)...)
+		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations([]string{executor})...)
 	}
 
 	emails := make([]string, 0, len(loginsToNotify))

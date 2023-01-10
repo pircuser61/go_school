@@ -178,7 +178,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := make([]string, 0, len(gb.State.Approvers))
 	for approver := range gb.State.Approvers {
-		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations(approver)...)
+		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations([]string{approver})...)
 	}
 
 	emails := make([]string, 0, len(loginsToNotify))

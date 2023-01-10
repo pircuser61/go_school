@@ -274,7 +274,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := make([]string, 0, len(executors))
 	for _, executor := range executors {
-		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations(executor)...)
+		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations([]string{executor})...)
 	}
 
 	var emails = make([]string, 0, len(loginsToNotify))
