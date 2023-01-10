@@ -12,6 +12,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"golang.org/x/exp/slices"
+
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -184,7 +186,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, delegations.GetUserInArrayWithDelegations(ui.Username), workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, delegations.GetUserInArrayWithDelegations([]string{ui.Username}), workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -204,8 +206,10 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	dbTask.Steps = steps
 
-	isAuthorDelegate := delegations.DelegateTo(dbTask.Author) != ""
-	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(&steps, &delegations)
+	var delegates = delegations.GetDelegators(ui.Username)
+	isAuthorDelegate := slices.Contains(delegates, dbTask.Author)
+
+	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
 	if tErr != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(err))
@@ -236,14 +240,15 @@ type additionalApprover struct {
 	ApproverLogin string `json:"approver_login"`
 }
 
-func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, ds *ht.Delegations) (map[string]bool, error) {
+func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *entity.TaskSteps, delegates *ht.Delegations) (
+	res map[string]bool, err error) {
 	const (
 		ApproverBlockType  = "approver"
 		ExecutionBlockType = "execution"
 		FormBlockType      = "form"
 	)
 
-	res := make(map[string]bool, 0)
+	res = make(map[string]bool, 0)
 	for _, s := range *steps {
 		var isDelegateAnyPersonOfStep = false
 
@@ -260,18 +265,20 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, ds 
 			}
 
 			for member := range approver.Approvers {
-				if isDelegate(member, ds) {
+				if isDelegate(currentUser, member, delegates) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
 			}
 
 			for _, member := range approver.AdditionalApprovers {
-				if isDelegate(member.ApproverLogin, ds) {
+				if isDelegate(currentUser, member.ApproverLogin, delegates) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
 			}
+
+			break
 		case ExecutionBlockType, FormBlockType:
 			var execution executionBlock
 			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
@@ -280,7 +287,7 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, ds 
 			}
 
 			for member := range execution.Executors {
-				if isDelegate(member, ds) {
+				if isDelegate(currentUser, member, delegates) {
 					isDelegateAnyPersonOfStep = true
 					break
 				}
@@ -293,9 +300,9 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(steps *entity.TaskSteps, ds 
 	return res, nil
 }
 
-func isDelegate(login string, delegates *ht.Delegations) bool {
-	var delegateTo = delegates.DelegateTo(login)
-	return delegateTo != ""
+func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
+	var delegates = delegations.GetDelegates(login)
+	return slices.Contains(delegates, currentUser)
 }
 
 //nolint:dupl //its not duplicate
@@ -322,7 +329,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		return
 	}
 
-	currentUserAndDelegates := delegations.GetUserInArrayWithDelegations(filters.CurrentUser)
+	currentUserAndDelegates := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
 
 	resp, err := ae.DB.GetTasks(ctx, filters, currentUserAndDelegates)
 	if err != nil {
@@ -415,7 +422,7 @@ func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp, err := ae.DB.GetTasksCount(ctx, delegations.GetUserInArrayWithDelegations(ui.Username))
+	resp, err := ae.DB.GetTasksCount(ctx, delegations.GetUserInArrayWithDelegators([]string{ui.Username}))
 	if err != nil {
 		e := GetTasksCountError
 		log.Error(e.errorMessage(err))
@@ -544,6 +551,15 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
+	if err != nil {
+		e := GetDelegationsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	if err = updateData.Validate(); err != nil {
 		e := UpdateTaskValidationError
 		log.Error(e.errorMessage(err))
@@ -646,6 +662,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 				Action:     string(updateData.Action),
 				Parameters: updateData.Parameters,
 			},
+			Delegations: delegations,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
@@ -858,7 +875,6 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			UpdateData: &script.BlockUpdateData{
 				Action: string(action),
 			},
-			HumanTasks: ae.HumanTasks,
 		}
 
 		blockErr := pipeline.ProcessBlock(routineCtx, item.StepName, item.BlockData, runCtx, true)
@@ -918,7 +934,6 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
 		},
-		HumanTasks: ae.HumanTasks,
 	}
 
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)

@@ -10,7 +10,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -101,18 +100,12 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 
 		gb.State.Executors = resolvedEntities
 
-		if currentDelegations, ok := gb.RunContext.VarStore.GetValue(script.DelegationsCollection); ok {
-			if currentDelegationsArr, castOk := currentDelegations.(human_tasks.Delegations); castOk {
-				for executorLogin := range gb.State.Executors {
-					delegationsTo, htErr := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, executorLogin)
-					if htErr != nil {
-						return htErr
-					}
-
-					currentDelegationsArr = append(currentDelegationsArr, delegationsTo...)
-				}
-			}
+		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+		if htErr != nil {
+			return htErr
 		}
+
+		gb.RunContext.Delegations = delegations
 	case script.ExecutionTypeGroup:
 		executorsGroup, errGroup := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
 		if errGroup != nil {
@@ -143,23 +136,36 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	if gb.RunContext.skipNotifications {
 		return nil
 	}
-	l := logger.GetLogger(ctx)
 
-	emails := make([]string, 0, len(gb.State.Executors))
-	for executor := range gb.State.Executors {
-		email, err := gb.RunContext.People.GetUserEmail(ctx, executor)
+	l := logger.GetLogger(ctx)
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
-			l.WithError(err).Error("couldn't get email")
+			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+			continue
 		}
+
 		emails = append(emails, email)
 	}
+
 	if len(emails) == 0 {
 		return nil
 	}
+
 	descr, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
 	}
+
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 		mail.NewApplicationPersonStatusNotification(
 			gb.RunContext.WorkNumber,
@@ -172,6 +178,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

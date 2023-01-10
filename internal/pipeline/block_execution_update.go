@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/exp/slices"
+	"golang.org/x/net/context"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -18,8 +21,6 @@ import (
 
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
-	delegates := getDelegates(gb.RunContext.VarStore)
-
 	switch gb.RunContext.UpdateData.Action {
 	case string(entity.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
@@ -30,27 +31,27 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecution):
-		if errUpdate := gb.updateDecision(delegates); errUpdate != nil {
+		if errUpdate := gb.updateDecision(); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionChangeExecutor):
-		if errUpdate := gb.changeExecutor(ctx, delegates); errUpdate != nil {
+		if errUpdate := gb.changeExecutor(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx, delegates); errUpdate != nil {
+		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionRequestExecutionInfo):
-		if errUpdate := gb.updateRequestInfo(ctx, delegates); errUpdate != nil {
+		if errUpdate := gb.updateRequestInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecutorStartWork):
-		if errUpdate := gb.executorStartWork(ctx, delegates); errUpdate != nil {
+		if errUpdate := gb.executorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecutorSendEditApp):
-		if errUpdate := gb.toEditApplication(ctx, delegates); errUpdate != nil {
+		if errUpdate := gb.toEditApplication(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
@@ -72,12 +73,12 @@ type ExecutorChangeParams struct {
 	Attachments      []string `json:"attachments,omitempty"`
 }
 
-func (gb *GoExecutionBlock) changeExecutor(ctx c.Context, delegations human_tasks.Delegations) (err error) {
+func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
-	var delegateFor = delegations.DelegateFor(currentLogin)
-	if !(executorFound || delegateFor != "") && currentLogin != AutoApprover {
+	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
+	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
 		return fmt.Errorf("%s not found in executors or delegates", currentLogin)
 	}
 
@@ -263,7 +264,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoExecutionBlock) updateDecision(delegations human_tasks.Delegations) error {
+func (gb *GoExecutionBlock) updateDecision() error {
 	var updateParams ExecutionUpdateParams
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
@@ -271,7 +272,7 @@ func (gb *GoExecutionBlock) updateDecision(delegations human_tasks.Delegations) 
 		return errors.New("can't assert provided update data")
 	}
 
-	if errSet := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, &updateParams, delegations); errSet != nil {
+	if errSet := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, &updateParams, gb.RunContext.Delegations); errSet != nil {
 		return errSet
 	}
 
@@ -287,8 +288,8 @@ func (gb *GoExecutionBlock) updateDecision(delegations human_tasks.Delegations) 
 func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, delegations human_tasks.Delegations) error {
 	_, executorFound := a.Executors[login]
 
-	var delegateFor = delegations.DelegateFor(login)
-	if !(executorFound || delegateFor != "") && login != AutoApprover {
+	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
+	if !(executorFound || isDelegate) && login != AutoApprover {
 		return fmt.Errorf("%s not found in executors or delegates", login)
 	}
 
@@ -304,6 +305,7 @@ func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, del
 	a.DecisionComment = &in.Comment
 	a.DecisionAttachments = in.Attachments
 	a.ActualExecutor = &login
+	a.DelegateFor = delegateFor
 
 	return nil
 }
@@ -316,7 +318,7 @@ type RequestInfoUpdateParams struct {
 }
 
 //nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, delegations human_tasks.Delegations) (err error) {
+func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	var updateParams RequestInfoUpdateParams
 
 	err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
@@ -330,9 +332,10 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, delegations human_t
 
 	if updateParams.ReqType == RequestInfoAnswer {
 		_, executorExists := gb.State.Executors[updateParams.ExecutorLogin]
-		var delegateFor = delegations.DelegateFor(updateParams.ExecutorLogin)
+		_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
+			gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Executors))
 
-		if delegateFor == "" || !executorExists {
+		if isDelegate || !executorExists {
 			return fmt.Errorf("executor: %s is not found in executors or delegates", updateParams.ExecutorLogin)
 		}
 
@@ -346,33 +349,14 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, delegations human_t
 	}
 
 	if updateParams.ReqType == RequestInfoQuestion {
-		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
-		if emailErr != nil {
-			return emailErr
-		}
-
-		tpl := mail.NewRequestExecutionInfoTemplate(gb.RunContext.WorkNumber,
-			gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-		err = gb.RunContext.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
+		err = gb.notificateNeedMoreInfo(ctx)
 		if err != nil {
 			return err
 		}
 	}
 
 	if updateParams.ReqType == RequestInfoAnswer {
-		emails := make([]string, 0, len(gb.State.Executors))
-		for executor := range gb.State.Executors {
-			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, executor)
-			if emailErr != nil {
-				continue
-			}
-
-			emails = append(emails, email)
-		}
-
-		tpl := mail.NewAnswerExecutionInfoTemplate(gb.RunContext.WorkNumber,
-			gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+		err = gb.notificateNewInfoRecieved(ctx)
 		if err != nil {
 			return err
 		}
@@ -402,12 +386,12 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, in *RequestInfoUpd
 	return nil
 }
 
-func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, delegations human_tasks.Delegations) (err error) {
+func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
-	var delegateFor = delegations.DelegateFor(currentLogin)
+	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
 
-	if !(executorFound || delegateFor != "") && currentLogin != AutoApprover {
+	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
 		return fmt.Errorf("%s not found in executors or delegates", currentLogin)
 	}
 
@@ -432,14 +416,22 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, delegations human_t
 }
 
 func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string]struct{}) (err error) {
-	var notificationEmails []string
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
+
+	emails := make([]string, 0, len(loginsToNotify))
 	for login := range logins {
 		if login != gb.RunContext.UpdateData.ByLogin {
 			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
 				return emailErr
 			}
-			notificationEmails = append(notificationEmails, email)
+
+			emails = append(emails, email)
 		}
 	}
 
@@ -466,7 +458,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		Description:  descr,
 	})
 
-	if err := gb.RunContext.Sender.SendNotification(ctx, notificationEmails, nil, tpl); err != nil {
+	if err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
 		return err
 	}
 
@@ -474,13 +466,14 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 }
 
 // nolint:dupl // another action
-func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context, delegations human_tasks.Delegations) error {
+func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context) error {
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	var initiator = gb.RunContext.Initiator
 
-	var delegateFor = delegations.DelegateFor(currentLogin)
+	var initiatorDelegates = gb.RunContext.Delegations.GetDelegates(initiator)
+	var loginIsInitiatorDelegate = slices.Contains(initiatorDelegates, currentLogin)
 
-	if currentLogin != initiator && delegateFor != "" {
+	if currentLogin != initiator || loginIsInitiatorDelegate {
 		return fmt.Errorf("%s is not an initiator or delegate", currentLogin)
 	}
 
@@ -500,13 +493,13 @@ type executorUpdateEditParams struct {
 }
 
 //nolint:gocyclo //its ok here
-func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, delegations human_tasks.Delegations) (err error) {
+func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 	var updateParams executorUpdateEditParams
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update data")
 	}
 
-	if editErr := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, delegations); editErr != nil {
+	if editErr := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, gb.RunContext.Delegations); editErr != nil {
 		return editErr
 	}
 
@@ -518,6 +511,65 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, delegations human_t
 	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx context.Context) error {
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			return err
+		}
+
+		emails = append(emails, email)
+	}
+
+	tpl := mail.NewRequestExecutionInfoTemplate(gb.RunContext.WorkNumber,
+		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx context.Context) error {
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			continue
+		}
+
+		emails = append(emails, email)
+	}
+
+	tpl := mail.NewAnswerExecutionInfoTemplate(gb.RunContext.WorkNumber,
+		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}

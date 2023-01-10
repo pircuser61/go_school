@@ -24,7 +24,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -736,12 +735,6 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		UpdateData:    nil,
 	}
 
-	findDelegationsErr := ae.tryFindDelegations(ctx, runCtx, dto.p.Pipeline.Blocks)
-	if findDelegationsErr != nil {
-		e := PipelineRunError
-		return nil, e, findDelegationsErr
-	}
-
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 	routineCtx = logger.WithLogger(routineCtx, log)
@@ -910,21 +903,6 @@ func (ae *APIEnv) grabExecutorsFromFormsBlock(runCtx *pipeline.BlockRunContext,
 	}
 
 	return members, nil
-}
-
-func (ae *APIEnv) tryFindDelegations(ctx c.Context, runCtx *pipeline.BlockRunContext, blocks map[string]entity.EriusFunc) error {
-	members, membersErr := ae.grabMembersFromAllBlocks(ctx, runCtx, &blocks)
-	if membersErr != nil {
-		return membersErr
-	}
-
-	delegations, delegationsErr := ae.HumanTasks.GetDelegationsByLogins(ctx, members)
-	if delegationsErr != nil {
-		return delegationsErr
-	}
-
-	runCtx.VarStore.SetValue(script.DelegationsCollection, delegations)
-	return nil
 }
 
 func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, params SearchPipelinesParams) {
