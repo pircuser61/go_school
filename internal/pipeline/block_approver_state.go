@@ -386,16 +386,8 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 		return false
 	}
 
-	var getAdditionalApproversSlice = func() []string {
-		var result = make([]string, 0)
-		for _, approver := range a.AdditionalApprovers {
-			result = append(result, approver.ApproverLogin)
-		}
-		return result
-	}
-
 	approverFound := checkForAdditionalApprover(login)
-	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getAdditionalApproversSlice())
+	delegateFor, isDelegate := delegations.FindDelegatorFor(login, a.getAdditionalApproversSlice())
 	if !(approverFound || isDelegate) {
 		return nil, fmt.Errorf("%s not found in additional approvers or delegates", login)
 	}
@@ -444,6 +436,14 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 	}
 
 	return loginsToNotify, nil
+}
+
+func (a *ApproverData) getAdditionalApproversSlice() []string {
+	var result = make([]string, 0)
+	for _, approver := range a.AdditionalApprovers {
+		result = append(result, approver.ApproverLogin)
+	}
+	return result
 }
 
 func (a *ApproverData) setEditApp(login string, params approverUpdateEditingParams, delegations human_tasks.Delegations) error {

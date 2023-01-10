@@ -13,20 +13,23 @@ type Delegation struct {
 
 type DelegationLogins map[string]Delegation
 
-func (delegations *Delegations) GetUserInArrayWithDelegations(login string) (result []string) {
+func (delegations *Delegations) GetUserInArrayWithDelegations(logins []string) (result []string) {
 	var uniqueLogins = make(map[string]struct{}, 0)
-	uniqueLogins[login] = struct{}{}
 
-	for _, d := range *delegations {
-		if d.FromLogin == login {
-			if _, ok := uniqueLogins[d.ToLogin]; !ok {
-				uniqueLogins[d.ToLogin] = struct{}{}
+	for _, login := range logins {
+		uniqueLogins[login] = struct{}{}
+
+		for _, d := range *delegations {
+			if d.FromLogin == login {
+				if _, ok := uniqueLogins[d.ToLogin]; !ok {
+					uniqueLogins[d.ToLogin] = struct{}{}
+				}
 			}
 		}
-	}
 
-	for k := range uniqueLogins {
-		result = append(result, k)
+		for k := range uniqueLogins {
+			result = append(result, k)
+		}
 	}
 
 	return result
@@ -118,7 +121,4 @@ func (delegations *Delegations) IsLoginDelegateFor(delegate string, sourceMember
 		}
 	}
 	return false
-}
-func (delegations *Delegations) Append(delegationsToAppend Delegations) {
-	*delegations = append(*delegations, delegationsToAppend...)
 }
