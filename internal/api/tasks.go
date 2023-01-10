@@ -546,6 +546,15 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
+	if err != nil {
+		e := GetDelegationsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	if err = updateData.Validate(); err != nil {
 		e := UpdateTaskValidationError
 		log.Error(e.errorMessage(err))
@@ -648,6 +657,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 				Action:     string(updateData.Action),
 				Parameters: updateData.Parameters,
 			},
+			Delegations: delegations,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]

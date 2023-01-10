@@ -16,7 +16,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type approverUpdateEditingParams struct {
@@ -324,7 +323,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, errors.New("empty data")
 	}
 
-	delegates := getDelegates(gb.RunContext.VarStore)
+	delegates := gb.RunContext.Delegations
 
 	switch data.Action {
 	case string(entity.TaskUpdateActionSLABreach):
@@ -447,14 +446,6 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams, del
 
 	crTime := time.Now()
 
-	delegatesLogins, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, u.AdditionalApproversLogins)
-	if err != nil {
-		return err
-	}
-
-	delegations.Append(delegatesLogins)
-	gb.RunContext.VarStore.SetValue(script.DelegationsCollection, delegations)
-
 	for i := range u.AdditionalApproversLogins {
 		if gb.checkAdditionalApproverNotAdded(u.AdditionalApproversLogins[i]) {
 			gb.State.AdditionalApprovers = append(gb.State.AdditionalApprovers,
@@ -500,14 +491,26 @@ func (gb *GoApproverBlock) checkAdditionalApproverNotAdded(login string) bool {
 }
 
 func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, attachmentsId []string) error {
-	approverEmails := []string{}
-	for _, approver := range logins {
-		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, approver)
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := make([]string, 0, len(logins))
+	for _, login := range logins {
+		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations(login)...)
+	}
+
+	approverEmails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			return emailErr
 		}
+
 		approverEmails = append(approverEmails, approverEmail)
 	}
+
 	tpl := mail.NewAddApproversTemplate(
 		gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle,
@@ -519,26 +522,40 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 	if err != nil {
 		return err
 	}
+
 	files := make([]email.Attachment, 0)
 	for k := range attachmentFiles {
 		files = append(files, attachmentFiles[k]...)
 	}
+
 	err = gb.RunContext.Sender.SendNotification(ctx, approverEmails, files, tpl)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 // notificateDecisionMadeByAdditionalApprover notifies requesting approvers
 // and the task initiator that an additional approver has left a review
 func (gb *GoApproverBlock) notificateDecisionMadeByAdditionalApprover(ctx c.Context, loginsToNotify []string) error {
-	emailsToNotify := make([]string, 0, len(loginsToNotify))
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, loginsToNotify)
+	if err != nil {
+		return err
+	}
+
+	loginsWithDelegates := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
+		loginsWithDelegates = append(loginsWithDelegates, delegates.GetUserInArrayWithDelegations(login)...)
+	}
+
+	emailsToNotify := make([]string, 0, len(loginsWithDelegates))
+	for _, login := range loginsWithDelegates {
 		emailToNotify, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			return emailErr
 		}
+
 		emailsToNotify = append(emailsToNotify, emailToNotify)
 	}
 

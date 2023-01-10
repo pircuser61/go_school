@@ -57,7 +57,7 @@ func (gb *GoFormBlock) cancelPipeline(ctx c.Context, delegations human_tasks.Del
 
 //nolint:gocyclo //ok
 func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
-	delegates := getDelegates(gb.RunContext.VarStore)
+	delegates := gb.RunContext.Delegations
 
 	data := gb.RunContext.UpdateData
 	if data == nil {

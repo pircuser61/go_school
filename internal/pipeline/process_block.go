@@ -43,6 +43,7 @@ type BlockRunContext struct {
 	UpdateData         *script.BlockUpdateData
 	skipNotifications  bool // for tests
 	currBlockStartTime time.Time
+	Delegations        human_tasks.Delegations
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
@@ -384,10 +385,29 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context, step s
 	default:
 		return nil
 	}
+
 	descr, err := runCtx.makeNotificationDescription(step)
 	if err != nil {
 		return err
 	}
+
+	delegates, err := runCtx.HumanTasks.GetDelegationsToLogin(ctx, runCtx.Initiator)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(runCtx.Initiator)
+
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err := runCtx.People.GetUserEmail(ctx, login)
+		if err != nil {
+			return err
+		}
+
+		emails = append(emails, email)
+	}
+
 	tmpl := mail.NewApplicationInitiatorStatusNotification(
 		runCtx.WorkNumber,
 		runCtx.WorkTitle,
@@ -395,13 +415,9 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context, step s
 		descr,
 		runCtx.Sender.SdAddress)
 
-	email, err := runCtx.People.GetUserEmail(ctx, runCtx.Initiator)
-	if err != nil {
-		return err
-	}
-
-	if sendErr := runCtx.Sender.SendNotification(ctx, []string{email}, nil, tmpl); sendErr != nil {
+	if sendErr := runCtx.Sender.SendNotification(ctx, emails, nil, tmpl); sendErr != nil {
 		return sendErr
 	}
+
 	return nil
 }

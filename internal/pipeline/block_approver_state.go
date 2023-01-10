@@ -219,6 +219,15 @@ func (a *ApproverData) GetApproversGroupID() string {
 	return a.ApproversGroupID
 }
 
+func (a *ApproverData) GetApprovers() []string {
+	approvers := make([]string, 0, len(a.Approvers))
+	for approver := range a.Approvers {
+		approvers = append(approvers, approver)
+	}
+
+	return approvers
+}
+
 func (a *ApproverData) userIsAnyApprover(login, delegateFor string) bool {
 	if login == AutoApprover {
 		return true

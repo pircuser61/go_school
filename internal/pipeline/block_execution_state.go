@@ -84,6 +84,15 @@ func (a *ExecutionData) GetRepeatPrevDecision() bool {
 	return a.RepeatPrevDecision
 }
 
+func (a *ExecutionData) GetExecutors() []string {
+	executors := make([]string, 0, len(a.Executors))
+	for executor := range a.Executors {
+		executors = append(executors, executor)
+	}
+
+	return executors
+}
+
 func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams, delegations human_tasks.Delegations) error {
 	_, executorFound := a.Executors[login]
 	var delegateFor = delegations.DelegateFor(login)

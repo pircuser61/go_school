@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"golang.org/x/net/context"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -16,7 +18,7 @@ import (
 
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
-	delegates := getDelegates(gb.RunContext.VarStore)
+	delegates := gb.RunContext.Delegations
 
 	switch gb.RunContext.UpdateData.Action {
 	case string(entity.TaskUpdateActionSLABreach):
@@ -279,33 +281,14 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context, delegations human_t
 	}
 
 	if updateParams.ReqType == RequestInfoQuestion {
-		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
-		if emailErr != nil {
-			return emailErr
-		}
-
-		tpl := mail.NewRequestExecutionInfoTemplate(gb.RunContext.WorkNumber,
-			gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-		err = gb.RunContext.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl)
+		err := gb.notificateNeedMoreInfo(ctx)
 		if err != nil {
 			return err
 		}
 	}
 
 	if updateParams.ReqType == RequestInfoAnswer {
-		emails := make([]string, 0, len(gb.State.Executors))
-		for executor := range gb.State.Executors {
-			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, executor)
-			if emailErr != nil {
-				continue
-			}
-
-			emails = append(emails, email)
-		}
-
-		tpl := mail.NewAnswerExecutionInfoTemplate(gb.RunContext.WorkNumber,
-			gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+		err := gb.notificateNewInfoRecieved(ctx)
 		if err != nil {
 			return err
 		}
@@ -365,14 +348,25 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context, delegations human_t
 }
 
 func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string]struct{}) (err error) {
-	var notificationEmails []string
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, gb.State.GetExecutors())
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := make([]string, 0, len(gb.State.Executors))
+	for executor := range gb.State.Executors {
+		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations(executor)...)
+	}
+
+	emails := make([]string, 0, len(loginsToNotify))
 	for login := range logins {
 		if login != gb.RunContext.UpdateData.ByLogin {
 			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
 				return emailErr
 			}
-			notificationEmails = append(notificationEmails, email)
+
+			emails = append(emails, email)
 		}
 	}
 
@@ -399,7 +393,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		Description:  descr,
 	})
 
-	if err := gb.RunContext.Sender.SendNotification(ctx, notificationEmails, nil, tpl); err != nil {
+	if err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
 		return err
 	}
 
@@ -451,6 +445,66 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context, delegations human_t
 	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx context.Context) error {
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(gb.RunContext.Initiator)
+
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			return err
+		}
+
+		emails = append(emails, email)
+	}
+
+	tpl := mail.NewRequestExecutionInfoTemplate(gb.RunContext.WorkNumber,
+		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx context.Context) error {
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, gb.State.GetExecutors())
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := make([]string, 0, len(gb.State.Executors))
+	for executor := range gb.State.Executors {
+		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations(executor)...)
+	}
+
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			continue
+		}
+
+		emails = append(emails, email)
+	}
+
+	tpl := mail.NewAnswerExecutionInfoTemplate(gb.RunContext.WorkNumber,
+		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}

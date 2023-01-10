@@ -7,20 +7,20 @@ type Delegations []Delegation
 type Delegation struct {
 	FromDate  time.Time
 	ToDate    time.Time
-	FromLogin string
-	ToLogin   string
+	FromLogin string // Delegator
+	ToLogin   string // Delegate
 }
 
 type DelegationLogins map[string]Delegation
 
 func (delegations *Delegations) GetUserInArrayWithDelegations(login string) (result []string) {
-	var uniqueLogins = make(map[string]interface{}, 0)
-	uniqueLogins[login] = login
+	var uniqueLogins = make(map[string]struct{}, 0)
+	uniqueLogins[login] = struct{}{}
 
 	for _, d := range *delegations {
-		if d.ToLogin == login {
-			if _, ok := uniqueLogins[d.FromLogin]; !ok {
-				uniqueLogins[d.FromLogin] = d.FromLogin
+		if d.FromLogin == login {
+			if _, ok := uniqueLogins[d.ToLogin]; !ok {
+				uniqueLogins[d.ToLogin] = struct{}{}
 			}
 		}
 	}

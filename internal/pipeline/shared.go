@@ -1,16 +1,10 @@
 package pipeline
 
 import (
-	"encoding/json"
-
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 type UpdateData struct {
@@ -68,22 +62,4 @@ func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolv
 	}
 
 	return nil, errors.Wrap(err, "Unexpected behavior")
-}
-
-func getDelegates(store *store.VariableStore) human_tasks.Delegations {
-	var delegations = make(human_tasks.Delegations, 0)
-
-	if delegationsArr, ok := store.GetArray(script.DelegationsCollection); ok {
-		t, err := json.Marshal(delegationsArr)
-		if err != nil {
-			return nil
-		}
-
-		unmarshalErr := json.Unmarshal(t, &delegations)
-		if unmarshalErr != nil {
-			return nil
-		}
-	}
-
-	return delegations
 }
