@@ -192,7 +192,7 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	var key string
 	if gb.State != nil && gb.State.Decision != nil {
-		key = string((*gb.State.Decision).ToAction())
+		key = string(gb.State.Decision.ToAction())
 	}
 
 	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {

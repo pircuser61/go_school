@@ -85,6 +85,7 @@ func (a *ExecutionData) GetRepeatPrevDecision() bool {
 	return a.RepeatPrevDecision
 }
 
+//nolint:dupl //its not duplicate
 func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams, delegations human_tasks.Delegations) error {
 	_, executorFound := a.Executors[login]
 

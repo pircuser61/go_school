@@ -277,8 +277,6 @@ func (ae *APIEnv) getCurrentUserInDelegatesForSteps(currentUser string, steps *e
 					break
 				}
 			}
-
-			break
 		case ExecutionBlockType, FormBlockType:
 			var execution executionBlock
 			unmarshalErr := json.Unmarshal(s.State[s.Name], &execution)
