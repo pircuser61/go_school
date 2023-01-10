@@ -49,6 +49,7 @@ type ExecutionData struct {
 	DecisionAttachments []string             `json:"decision_attachments,omitempty"`
 	DecisionComment     *string              `json:"comment,omitempty"`
 	ActualExecutor      *string              `json:"actual_executor,omitempty"`
+	DelegateFor         string               `json:"delegate_for"`
 
 	EditingApp               *ExecutorEditApp           `json:"editing_app,omitempty"`
 	EditingAppLog            []ExecutorEditApp          `json:"editing_app_log,omitempty"`
@@ -95,9 +96,9 @@ func (a *ExecutionData) GetExecutors() []string {
 
 func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams, delegations human_tasks.Delegations) error {
 	_, executorFound := a.Executors[login]
-	var delegateFor = delegations.DelegateFor(login)
 
-	if !(executorFound || delegateFor != "") && login != AutoApprover {
+	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
+	if !(executorFound || isDelegate) && login != AutoApprover {
 		return fmt.Errorf("%s not found in executors or delegates", login)
 	}
 
@@ -114,7 +115,6 @@ func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams
 	}
 
 	a.EditingAppLog = append(a.EditingAppLog, *editing)
-
 	a.EditingApp = editing
 
 	return nil

@@ -149,6 +149,13 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		}
 
 		gb.State.Approvers = resolvedEntities
+
+		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Approvers))
+		if htErr != nil {
+			return htErr
+		}
+
+		gb.RunContext.Delegations = delegations
 	}
 
 	gb.RunContext.VarStore.AddStep(gb.Name)

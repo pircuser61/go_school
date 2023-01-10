@@ -99,6 +99,13 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 
 		gb.State.Executors = resolvedEntities
+
+		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+		if htErr != nil {
+			return htErr
+		}
+
+		gb.RunContext.Delegations = delegations
 	case script.ExecutionTypeGroup:
 		executorsGroup, errGroup := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
 		if errGroup != nil {

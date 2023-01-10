@@ -63,3 +63,13 @@ func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolv
 
 	return nil, errors.Wrap(err, "Unexpected behavior")
 }
+
+func getSliceFromMapOfStrings(source map[string]struct{}) []string {
+	var result = make([]string, 0)
+
+	for key := range source {
+		result = append(result, key)
+	}
+
+	return result
+}
