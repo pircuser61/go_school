@@ -171,7 +171,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	l := logger.GetLogger(ctx)
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, gb.State.GetApprovers())
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Approvers))
 	if err != nil {
 		return err
 	}
@@ -181,9 +181,10 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations(approver)...)
 	}
 
+	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithError(err).Error("couldn't get email")
 		}

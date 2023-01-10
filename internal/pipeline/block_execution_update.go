@@ -282,14 +282,14 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	}
 
 	if updateParams.ReqType == RequestInfoQuestion {
-		err := gb.notificateNeedMoreInfo(ctx)
+		err = gb.notificateNeedMoreInfo(ctx)
 		if err != nil {
 			return err
 		}
 	}
 
 	if updateParams.ReqType == RequestInfoAnswer {
-		err := gb.notificateNewInfoRecieved(ctx)
+		err = gb.notificateNewInfoRecieved(ctx)
 		if err != nil {
 			return err
 		}
@@ -349,7 +349,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 }
 
 func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string]struct{}) (err error) {
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, gb.State.GetExecutors())
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
 	if err != nil {
 		return err
 	}
@@ -462,9 +462,10 @@ func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx context.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(gb.RunContext.Initiator)
 
+	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			return err
 		}
@@ -484,7 +485,7 @@ func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx context.Context) error {
 }
 
 func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx context.Context) error {
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, gb.State.GetExecutors())
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
 	if err != nil {
 		return err
 	}
@@ -494,9 +495,10 @@ func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx context.Context) error
 		loginsToNotify = append(loginsToNotify, delegates.GetUserInArrayWithDelegations(executor)...)
 	}
 
+	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			continue
 		}
