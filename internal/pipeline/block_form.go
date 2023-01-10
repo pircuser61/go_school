@@ -245,6 +245,13 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 
 		gb.State.Executors = resolvedEntities
+
+		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+		if htErr != nil {
+			return htErr
+		}
+
+		gb.RunContext.Delegations = delegations
 	}
 
 	return gb.handleNotifications(ctx)
