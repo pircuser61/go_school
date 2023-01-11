@@ -671,7 +671,8 @@ func (db *PGCon) getTasksCount(ctx c.Context, q string, usernames []string) (*ta
 }
 
 //nolint:gocyclo //its ok here
-func (db *PGCon) getTasks(ctx c.Context, filters entity.TaskFilter, delegatorsWithUser []string, q string, args []interface{}) (*entity.EriusTasks, error) {
+func (db *PGCon) getTasks(ctx c.Context, filters entity.TaskFilter,
+	delegatorsWithUser []string, q string, args []interface{}) (*entity.EriusTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
@@ -811,7 +812,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-	`
+		`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
