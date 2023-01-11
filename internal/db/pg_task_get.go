@@ -570,8 +570,7 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	return &et, nil
 }
 
-func (db *PGCon) computeActions(ctx c.Context, actions []string, allActions map[string]entity.TaskAction,
-	author string) (
+func (db *PGCon) computeActions(ctx c.Context, actions []string, allActions map[string]entity.TaskAction, author string) (
 	result []entity.TaskAction, err error) {
 	const (
 		CancelAppId       = "cancel_app"
