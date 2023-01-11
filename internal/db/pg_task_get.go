@@ -570,8 +570,8 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	return &et, nil
 }
 
-func (db *PGCon) computeActions(ctx c.Context, actions []string, allActions map[string]entity.TaskAction, author string) (
-	result []entity.TaskAction, err error) {
+func (db *PGCon) computeActions(ctx c.Context, actions []string,
+	allActions map[string]entity.TaskAction, author string) (result []entity.TaskAction, err error) {
 	const (
 		CancelAppId       = "cancel_app"
 		CancelAppPriority = "other"
@@ -817,7 +817,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-	`
+		`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
