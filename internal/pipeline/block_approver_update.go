@@ -288,7 +288,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return errors.New("don't answer after request")
 		}
 
-		if currentLogin != initiator || !loginIsInitiatorDelegate {
+		if !(currentLogin == initiator || loginIsInitiatorDelegate) {
 			return errors.New("you need to be an initiator or his delegate to process request")
 		}
 
