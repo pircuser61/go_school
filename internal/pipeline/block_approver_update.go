@@ -278,18 +278,8 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 	}
 
 	if updateParams.Type == ReplyAddInfoType {
-		var initiator = gb.RunContext.Initiator
-		var initiatorDelegates = delegations.GetDelegates(initiator)
-
-		var currentLogin = gb.RunContext.UpdateData.ByLogin
-		var loginIsInitiatorDelegate = slices.Contains(initiatorDelegates, currentLogin)
-
 		if len(gb.State.AddInfo) == 0 {
 			return errors.New("don't answer after request")
-		}
-
-		if currentLogin != initiator || !loginIsInitiatorDelegate {
-			return errors.New("you need to be an initiator or his delegate to process request")
 		}
 
 		if updateParams.LinkId == nil {
