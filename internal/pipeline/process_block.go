@@ -391,7 +391,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context, step s
 		return err
 	}
 
-	delegates, err := runCtx.HumanTasks.GetDelegationsToLogin(ctx, runCtx.Initiator)
+	delegates, err := runCtx.HumanTasks.GetDelegationsFromLogin(ctx, runCtx.Initiator)
 	if err != nil {
 		return err
 	}
