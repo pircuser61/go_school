@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"strings"
 	"time"
 
@@ -16,6 +15,8 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/pkg/errors"
+
+	"golang.org/x/exp/slices"
 
 	"go.opencensus.io/trace"
 
@@ -467,13 +468,13 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 	return &et, nil
 }
 
-func (db *PGCon) GetTask(ctx c.Context, usernames []string, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) GetTask(ctx c.Context, delegatorsWithUser []string, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := uniqueActiveActions(usernames, workNumber)
+	q := uniqueActiveActions(delegatorsWithUser, workNumber)
 
 	q += ` SELECT 
 			w.id, 
@@ -510,10 +511,10 @@ func (db *PGCon) GetTask(ctx c.Context, usernames []string, workNumber string) (
 		WHERE w.work_number = $1 
 			AND w.child_id IS NULL
 `
-	return db.getTask(ctx, usernames, q, workNumber)
+	return db.getTask(ctx, delegatorsWithUser, q, workNumber)
 }
 
-func (db *PGCon) getTask(ctx c.Context, delegations []string, q, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_private")
 	defer span.End()
 
@@ -554,7 +555,7 @@ func (db *PGCon) getTask(ctx c.Context, delegations []string, q, workNumber stri
 
 	actions := db.actionsToStrings(nullStringActions)
 
-	computedActions, actionsErr := db.computeActions(ctx, delegations, actions, actionsMap, et.Author)
+	computedActions, actionsErr := db.computeActions(ctx, delegators, actions, actionsMap, et.Author)
 	if actionsErr != nil {
 		return nil, err
 	}
@@ -670,7 +671,7 @@ func (db *PGCon) getTasksCount(ctx c.Context, q string, usernames []string) (*ta
 }
 
 //nolint:gocyclo //its ok here
-func (db *PGCon) getTasks(ctx c.Context, filters entity.TaskFilter, delegations []string, q string, args []interface{}) (*entity.EriusTasks, error) {
+func (db *PGCon) getTasks(ctx c.Context, filters entity.TaskFilter, delegatorsWithUser []string, q string, args []interface{}) (*entity.EriusTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
@@ -727,7 +728,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		}
 
 		actions := db.actionsToStrings(nullStringActions)
-		computedActions, actionsErr := db.computeActions(ctx, delegations, actions, actionsMap, et.Author)
+		computedActions, actionsErr := db.computeActions(ctx, delegatorsWithUser, actions, actionsMap, et.Author)
 		if actionsErr != nil {
 			return nil, err
 		}
