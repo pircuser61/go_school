@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"strings"
 	"time"
 
@@ -16,6 +15,8 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/pkg/errors"
+
+	"golang.org/x/exp/slices"
 
 	"go.opencensus.io/trace"
 
