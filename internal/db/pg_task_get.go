@@ -20,6 +20,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
@@ -551,7 +552,13 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	}
 
 	actions := db.actionsToStrings(nullStringActions)
-	et.Actions = db.computeActions(actions, actionsMap)
+
+	computedActions, actionsErr := db.computeActions(ctx, actions, actionsMap, et.Author)
+	if actionsErr != nil {
+		return nil, err
+	}
+
+	et.Actions = computedActions
 
 	if nullStringParameters.Valid && nullStringParameters.String != "" {
 		err = json.Unmarshal([]byte(nullStringParameters.String), &et.Parameters)
@@ -563,7 +570,14 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 	return &et, nil
 }
 
-func (db *PGCon) computeActions(actions []string, allActions map[string]entity.TaskAction) (result []entity.TaskAction) {
+func (db *PGCon) computeActions(ctx c.Context, actions []string,
+	allActions map[string]entity.TaskAction, author string) (result []entity.TaskAction, err error) {
+	const (
+		CancelAppId       = "cancel_app"
+		CancelAppPriority = "other"
+		CancelAppTitle    = "Отозвать"
+	)
+
 	var computedActions = make([]entity.TaskAction, 0)
 
 	var ignoreActionIfOtherExistsMap = map[string]string{
@@ -606,7 +620,24 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 		}
 	}
 
-	return result
+	ui, err := user.GetEffectiveUserInfoFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if ui.Username == author {
+		var cancelAppAction = entity.TaskAction{
+			Id:                 CancelAppId,
+			ButtonType:         CancelAppPriority,
+			Title:              CancelAppTitle,
+			CommentEnabled:     true,
+			AttachmentsEnabled: false,
+		}
+
+		result = append(result, cancelAppAction)
+	}
+
+	return result, nil
 }
 
 func actionSliceContainsId(id string, entries []entity.TaskAction) bool {
@@ -702,7 +733,13 @@ func (db *PGCon) getTasks(ctx c.Context, filters entity.TaskFilter, q string, ar
 		}
 
 		actions := db.actionsToStrings(nullStringActions)
-		et.Actions = db.computeActions(actions, actionsMap)
+
+		computedActions, actionsErr := db.computeActions(ctx, actions, actionsMap, et.Author)
+		if actionsErr != nil {
+			return nil, err
+		}
+
+		et.Actions = computedActions
 		et.IsDelegate = filters.CurrentUser != et.Author
 		ets.Tasks = append(ets.Tasks, et)
 	}
@@ -780,7 +817,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-	`
+		`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,

@@ -34,9 +34,8 @@ func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
 	var initiator = gb.RunContext.Initiator
 
 	var initiatorDelegates = gb.RunContext.Delegations.GetDelegates(initiator)
-	var loginIsInitiatorDelegate = slices.Contains(initiatorDelegates, currentLogin)
 
-	if currentLogin != initiator || loginIsInitiatorDelegate {
+	if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
 		return fmt.Errorf("%s is not an initiator or delegate", currentLogin)
 	}
 
