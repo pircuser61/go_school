@@ -565,12 +565,13 @@ func (db *PGCon) getTask(ctx c.Context, q, workNumber string) (*entity.EriusTask
 
 func (db *PGCon) computeActions(actions []string, allActions map[string]entity.TaskAction) (result []entity.TaskAction) {
 	var computedActions = make([]entity.TaskAction, 0)
-	result = make([]entity.TaskAction, 0)
 
-	const (
-		Approve            = "approve"
-		AdditionalApprover = "additional_approvement"
-	)
+	var ignoreActionIfOtherExistsMap = map[string]string{
+		"additional_approvement": "approve",
+		"additional_reject":      "reject",
+	}
+
+	result = make([]entity.TaskAction, 0)
 
 	for _, actionId := range actions {
 		var compositeActionId = strings.Split(actionId, ":")
@@ -593,8 +594,14 @@ func (db *PGCon) computeActions(actions []string, allActions map[string]entity.T
 	}
 
 	for _, a := range computedActions {
-		var c = actionSliceContainsId(Approve, computedActions)
-		if !(a.Id == AdditionalApprover && c) {
+		var ignoreAction = false
+		if v, found := ignoreActionIfOtherExistsMap[a.Id]; found {
+			if a.Id != v {
+				ignoreAction = true
+			}
+		}
+
+		if !ignoreAction {
 			result = append(result, a)
 		}
 	}
