@@ -500,7 +500,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 }
 
 func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx context.Context) error {
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, gb.RunContext.Initiator)
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return err
 	}
