@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -91,7 +90,7 @@ func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams
 
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
 	if !(executorFound || isDelegate) && login != AutoApprover {
-		return fmt.Errorf("%s not found in executors or delegates", login)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	if a.Decision != nil {

@@ -79,11 +79,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
 
 	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
 	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
-		return fmt.Errorf("%s not found in executors or delegates", currentLogin)
-	}
-
-	if _, isExecutor := gb.State.Executors[gb.RunContext.UpdateData.ByLogin]; !isExecutor {
-		return fmt.Errorf("can't change executor, user %s in not executor", gb.RunContext.UpdateData.ByLogin)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	var updateParams ExecutorChangeParams
@@ -272,7 +268,7 @@ func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, del
 
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
 	if !(executorFound || isDelegate) && login != AutoApprover {
-		return fmt.Errorf("%s not found in executors or delegates", login)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	if a.Decision != nil {
@@ -318,7 +314,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 			gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Executors))
 
 		if isDelegate || !executorExists {
-			return fmt.Errorf("executor: %s is not found in executors or delegates", updateParams.ExecutorLogin)
+			return NewUserIsNotPartOfProcessErr()
 		}
 
 		if len(gb.State.RequestExecutionInfoLogs) > 0 {
@@ -350,7 +346,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 func (a *ExecutionData) SetRequestExecutionInfo(login string, in *RequestInfoUpdateParams) error {
 	_, ok := a.Executors[login]
 	if !ok && in.ReqType == RequestInfoQuestion {
-		return fmt.Errorf("%s not found in executors", login)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	if in.ReqType != RequestInfoAnswer && in.ReqType != RequestInfoQuestion {
@@ -374,7 +370,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
 
 	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
-		return fmt.Errorf("%s not found in executors or delegates", currentLogin)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	executorLogins := gb.State.Executors
@@ -454,8 +450,8 @@ func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context) error {
 
 	var initiatorDelegates = gb.RunContext.Delegations.GetDelegates(initiator)
 
-	if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
-		return fmt.Errorf("%s is not an initiator or delegate", currentLogin)
+	if currentLogin != initiator || loginIsInitiatorDelegate {
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	gb.State.IsRevoked = true
