@@ -267,11 +267,15 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 	}
 
 	if updateParams.Type == ReplyAddInfoType {
+		var initiator = gb.RunContext.Initiator
+		var currentLogin = gb.RunContext.UpdateData.ByLogin
+		var initiatorDelegates = delegations.GetDelegates(initiator)
+
 		if len(gb.State.AddInfo) == 0 {
 			return errors.New("don't answer after request")
 		}
 
-		if currentLogin != initiator || !loginIsInitiatorDelegate {
+		if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
 			return NewUserIsNotPartOfProcessErr()
 		}
 
@@ -440,7 +444,7 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 
 	var initiatorDelegates = delegations.GetDelegates(initiator)
 
-	if currentLogin != initiator || loginIsInitiatorDelegate {
+	if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
