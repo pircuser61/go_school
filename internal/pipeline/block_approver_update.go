@@ -227,13 +227,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approv
 		return errSet
 	}
 
-	initiatorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
-	if emailErr != nil {
-		return emailErr
-	}
-
-	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-	err := gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	err := gb.notificateNeedRework(ctx)
 	if err != nil {
 		return err
 	}
@@ -266,14 +260,9 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return NewUserIsNotPartOfProcessErr()
 		}
 
-		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
-		if emailErr != nil {
-			return emailErr
-		}
-
-		tpl := mail.NewRequestApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{authorEmail}, nil, tpl); sendErr != nil {
-			return sendErr
+		err := gb.notificateNeedMoreInfo(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -304,14 +293,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			gb.State.IncreaseSLA(workHours)
 		}
 
-		tpl := mail.NewAnswerApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-
-		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.UpdateData.ByLogin)
-		if emailErr != nil {
-			return emailErr
-		}
-
-		err = gb.RunContext.Sender.SendNotification(ctx, []string{approverEmail}, nil, tpl)
+		err := gb.notificateNewInfoRecieved(ctx)
 		if err != nil {
 			return err
 		}
@@ -620,6 +602,99 @@ func (gb *GoApproverBlock) notificateDecisionMadeByAdditionalApprover(ctx c.Cont
 	}
 
 	err = gb.RunContext.Sender.SendNotification(ctx, emailsToNotify, files, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) notificateNeedRework(ctx c.Context) error {
+	l := logger.GetLogger(ctx)
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+			continue
+		}
+
+		emails = append(emails, email)
+	}
+
+	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) notificateNewInfoRecieved(ctx c.Context) error {
+	l := logger.GetLogger(ctx)
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.UpdateData.ByLogin)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.UpdateData.ByLogin})
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+			return err
+		}
+
+		emails = append(emails, email)
+	}
+
+	tpl := mail.NewAnswerApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
+	l := logger.GetLogger(ctx)
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+			return err
+		}
+
+		emails = append(emails, email)
+	}
+
+	tpl := mail.NewRequestApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
