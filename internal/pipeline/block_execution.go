@@ -19,6 +19,7 @@ const (
 	RequestInfoAnswer   RequestInfoType = "answer"
 
 	executionStartWorkAction            = "executor_start_work"
+	executionSendEditAppAction          = "executor_send_edit_app"
 	executionChangeExecutorAction       = "change_executor"
 	executionRequestExecutionInfoAction = "request_execution_info"
 	executionExecuteAction              = "execution"
@@ -69,6 +70,10 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		{
 			Id:   executionExecuteAction,
 			Type: ActionTypePrimary,
+		},
+		{
+			Id:   executionSendEditAppAction,
+			Type: ActionTypeOther,
 		},
 		{
 			Id:   executionDeclineAction,
