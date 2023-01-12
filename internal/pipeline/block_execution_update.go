@@ -150,7 +150,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 
 	log := logger.GetLogger(ctx)
 
-	if gb.State.SLA >= 1 {
+	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
 		logins := getSliceFromMapOfStrings(gb.State.Executors)
 
@@ -204,7 +204,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 
 	log := logger.GetLogger(ctx)
 
-	if gb.State.SLA >= 1 {
+	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
 		logins := getSliceFromMapOfStrings(gb.State.Executors)
 

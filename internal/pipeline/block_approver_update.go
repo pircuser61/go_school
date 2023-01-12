@@ -95,7 +95,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 	log := logger.GetLogger(ctx)
 
-	if gb.State.SLA >= 1 {
+	if gb.State.SLA >= 8 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		logins := getSliceFromMapOfStrings(gb.State.Approvers)
@@ -169,7 +169,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 
 	log := logger.GetLogger(ctx)
 
-	if gb.State.SLA >= 1 {
+	if gb.State.SLA >= 8 {
 		seenAdditionalApprovers := map[string]bool{}
 		emails := make([]string, 0, len(gb.State.Approvers)+len(gb.State.AdditionalApprovers))
 		logins := getSliceFromMapOfStrings(gb.State.Approvers)
