@@ -645,8 +645,7 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators, actions []
 		var ignoreAction = false
 
 		for _, actionRule := range actionsToIgnore {
-			var exist = slices.Contains(computedActionIds, actionRule.ExistingActionId)
-			if exist && a.Id == actionRule.IgnoreActionId {
+			if a.Id == actionRule.IgnoreActionId && slices.Contains(computedActionIds, actionRule.ExistingActionId) {
 				ignoreAction = true
 				break
 			}
