@@ -450,7 +450,7 @@ func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context) error {
 
 	var initiatorDelegates = gb.RunContext.Delegations.GetDelegates(initiator)
 
-	if currentLogin != initiator || loginIsInitiatorDelegate {
+	if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
