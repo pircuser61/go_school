@@ -35,8 +35,8 @@ func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
 
 	var initiatorDelegates = gb.RunContext.Delegations.GetDelegates(initiator)
 
-	if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
-		return fmt.Errorf("%s is not an initiator or delegate", currentLogin)
+	if currentLogin != initiator || loginIsInitiatorDelegate {
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	gb.State.IsRevoked = true
@@ -85,9 +85,8 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if checkEditErr != nil {
 			return nil, checkEditErr
 		}
-
 		if !isAllowed {
-			return nil, fmt.Errorf("%s have not permission to edit form", data.ByLogin)
+			return nil, NewUserIsNotPartOfProcessErr()
 		}
 	} else {
 		_, executorFound := gb.State.Executors[data.ByLogin]
@@ -96,7 +95,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			getSliceFromMapOfStrings(gb.State.Executors))
 
 		if !(executorFound || isDelegate) {
-			return nil, fmt.Errorf("%s not found in approvers or delegates", data.ByLogin)
+			return nil, NewUserIsNotPartOfProcessErr()
 		}
 
 		gb.State.ActualExecutor = &data.ByLogin

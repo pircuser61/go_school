@@ -263,7 +263,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 
 	if updateParams.Type == RequestAddInfoType {
 		if !(gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) || isDelegate) {
-			return fmt.Errorf("%s not found in approvers or delegates", gb.RunContext.UpdateData.ByLogin)
+			return NewUserIsNotPartOfProcessErr()
 		}
 
 		authorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
@@ -280,6 +280,10 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 	if updateParams.Type == ReplyAddInfoType {
 		if len(gb.State.AddInfo) == 0 {
 			return errors.New("don't answer after request")
+		}
+
+		if currentLogin != initiator || !loginIsInitiatorDelegate {
+			return NewUserIsNotPartOfProcessErr()
 		}
 
 		if updateParams.LinkId == nil {
@@ -454,8 +458,8 @@ func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
 
 	var initiatorDelegates = delegations.GetDelegates(initiator)
 
-	if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
-		return fmt.Errorf("%s is not an initiator or delegate", currentLogin)
+	if currentLogin != initiator || loginIsInitiatorDelegate {
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	gb.State.IsRevoked = true
@@ -473,7 +477,7 @@ func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) err
 	delegateFor, isDelegate := gb.State.userIsDelegate(gb.RunContext.UpdateData.ByLogin, gb.RunContext.Delegations)
 
 	if !(gb.State.userIsAnyApprover(gb.RunContext.UpdateData.ByLogin) || isDelegate) {
-		return fmt.Errorf("%s not found in approvers or delegates", gb.RunContext.UpdateData.ByLogin)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	crTime := time.Now()

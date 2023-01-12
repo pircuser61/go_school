@@ -275,7 +275,7 @@ func (a *ApproverData) SetDecision(login string,
 	}
 
 	if !(approverFound || delegateFor != "") && login != AutoApprover {
-		return fmt.Errorf("%s not found in approvers or delegates", login)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	if decision == "" {
@@ -389,7 +389,7 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 	approverFound := checkForAdditionalApprover(login)
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, a.getAdditionalApproversSlice())
 	if !(approverFound || isDelegate) {
-		return nil, fmt.Errorf("%s not found in additional approvers or delegates", login)
+		return nil, NewUserIsNotPartOfProcessErr()
 	}
 
 	if a.Decision != nil {
@@ -452,7 +452,7 @@ func (a *ApproverData) setEditApp(login string, params approverUpdateEditingPara
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Approvers))
 
 	if !(approverFound || isDelegate) && login != AutoApprover {
-		return fmt.Errorf("%s not found in approvers or delegates", login)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	if a.Decision != nil {
