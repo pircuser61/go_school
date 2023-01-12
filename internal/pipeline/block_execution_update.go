@@ -484,14 +484,27 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		return editErr
 	}
 
-	initiatorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
-	if emailErr != nil {
-		return emailErr
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			return err
+		}
+
+		emails = append(emails, email)
 	}
 
 	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-	err = gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
