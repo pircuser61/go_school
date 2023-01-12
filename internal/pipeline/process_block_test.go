@@ -1,8 +1,13 @@
 package pipeline
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
+	"io"
+	"net/http"
 	"testing"
 	"time"
 
@@ -194,6 +199,29 @@ func TestProcessBlock(t *testing.T) {
 						)
 						return res
 					}(),
+					ServiceDesc: func() *servicedesc.Service {
+						sdMock := servicedesc.Service{
+							SdURL: "",
+						}
+						httpClient := http.DefaultClient
+						mockTransport := serviceDeskMocks.RoundTripper{}
+						mockTransport.On("RoundTrip", mock.Anything).Return(func() *http.Response {
+							b, _ := json.Marshal(servicedesc.SsoPerson{})
+							body := io.NopCloser(bytes.NewReader(b))
+							defer body.Close()
+							return &http.Response{
+								Status:     http.StatusText(http.StatusOK),
+								StatusCode: http.StatusOK,
+								Body:       body,
+							}
+						}, func() error {
+							return nil
+						})
+						httpClient.Transport = &mockTransport
+						sdMock.Cli = httpClient
+
+						return &sdMock
+					}(),
 				},
 			},
 		},
@@ -362,6 +390,29 @@ func TestProcessBlock(t *testing.T) {
 							}, nil,
 						)
 						return res
+					}(),
+					ServiceDesc: func() *servicedesc.Service {
+						sdMock := servicedesc.Service{
+							SdURL: "",
+						}
+						httpClient := http.DefaultClient
+						mockTransport := serviceDeskMocks.RoundTripper{}
+						mockTransport.On("RoundTrip", mock.Anything).Return(func() *http.Response {
+							b, _ := json.Marshal(servicedesc.SsoPerson{})
+							body := io.NopCloser(bytes.NewReader(b))
+							defer body.Close()
+							return &http.Response{
+								Status:     http.StatusText(http.StatusOK),
+								StatusCode: http.StatusOK,
+								Body:       body,
+							}
+						}, func() error {
+							return nil
+						})
+						httpClient.Transport = &mockTransport
+						sdMock.Cli = httpClient
+
+						return &sdMock
 					}(),
 				},
 				Updates: map[string]script.BlockUpdateData{

@@ -37,14 +37,14 @@ func (s *Service) GetSsoPerson(ctx context.Context, username string) (*SsoPerson
 		}, nil
 	}
 
-	reqURL := fmt.Sprintf("%s%s", s.sdURL, fmt.Sprintf(getUserInfo, username))
+	reqURL := fmt.Sprintf("%s%s", s.SdURL, fmt.Sprintf(getUserInfo, username))
 
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := s.cli.Do(req)
+	resp, err := s.Cli.Do(req)
 	if err != nil {
 		return nil, err
 	}

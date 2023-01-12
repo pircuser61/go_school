@@ -11,9 +11,9 @@ import (
 )
 
 type Service struct {
-	sdURL string
+	SdURL string
 
-	cli *http.Client
+	Cli *http.Client
 }
 
 func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
@@ -30,8 +30,8 @@ func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 	newCli.Transport = &tr
 
 	s := &Service{
-		cli:   newCli,
-		sdURL: cfg.ServicedeskURL,
+		Cli:   newCli,
+		SdURL: cfg.ServicedeskURL,
 	}
 
 	return s, nil

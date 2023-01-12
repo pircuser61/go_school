@@ -26,14 +26,14 @@ func (s *Service) getAttachment(ctx context.Context, id string) (email.Attachmen
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachment")
 	defer span.End()
 
-	reqURL := fmt.Sprintf("%s%s", s.sdURL, fmt.Sprintf(getFileByID, id))
+	reqURL := fmt.Sprintf("%s%s", s.SdURL, fmt.Sprintf(getFileByID, id))
 
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return email.Attachment{}, err
 	}
 
-	resp, err := s.cli.Do(req)
+	resp, err := s.Cli.Do(req)
 	if err != nil {
 		return email.Attachment{}, err
 	}
@@ -86,14 +86,14 @@ func (s *Service) GetSchemaFieldsByApplication(ctx context.Context, applicationI
 	ctxLocal, span := trace.StartSpan(ctx, "get_schema_fields_by_application")
 	defer span.End()
 
-	reqURL := fmt.Sprintf("%s%s", s.sdURL, fmt.Sprintf(getApplicationBody, applicationID))
+	reqURL := fmt.Sprintf("%s%s", s.SdURL, fmt.Sprintf(getApplicationBody, applicationID))
 
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := s.cli.Do(req)
+	resp, err := s.Cli.Do(req)
 	if err != nil {
 		return nil, err
 	}
