@@ -73,3 +73,7 @@ func getSliceFromMapOfStrings(source map[string]struct{}) []string {
 
 	return result
 }
+
+func getStringAddress(s string) *string {
+	return &s
+}

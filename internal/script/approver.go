@@ -72,7 +72,11 @@ func (a *ApproverParams) Validate() error {
 	}
 
 	if a.Type == ApproverTypeGroup && a.ApproversGroupID == "" {
-		return fmt.Errorf("empty ApproversGroupID")
+		return errors.New("empty ApproversGroupID")
+	}
+
+	if !(a.SLA > 0) {
+		return fmt.Errorf("invalid SLA: %d", a.SLA)
 	}
 
 	return nil

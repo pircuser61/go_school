@@ -17,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -38,9 +39,10 @@ func TestApproverData_SetDecision(t *testing.T) {
 		ActualApprover *string
 	}
 	type args struct {
-		login    string
-		decision ApproverAction
-		comment  string
+		login       string
+		decision    ApproverAction
+		comment     string
+		delegations humanTasks.Delegations
 	}
 	tests := []struct {
 		name    string
@@ -63,9 +65,10 @@ func TestApproverData_SetDecision(t *testing.T) {
 				ActualApprover: nil,
 			},
 			args: args{
-				login:    invalidLogin,
-				decision: decision,
-				comment:  comment,
+				login:       invalidLogin,
+				decision:    decision,
+				comment:     comment,
+				delegations: []humanTasks.Delegation{},
 			},
 			wantErr: true,
 		},
@@ -90,9 +93,10 @@ func TestApproverData_SetDecision(t *testing.T) {
 				}(),
 			},
 			args: args{
-				login:    login,
-				decision: decision,
-				comment:  comment,
+				login:       login,
+				decision:    decision,
+				comment:     comment,
+				delegations: []humanTasks.Delegation{},
 			},
 			wantErr: true,
 		},
@@ -111,9 +115,10 @@ func TestApproverData_SetDecision(t *testing.T) {
 				ActualApprover: nil,
 			},
 			args: args{
-				login:    login,
-				decision: ApproverAction("unknown"),
-				comment:  comment,
+				login:       login,
+				decision:    ApproverAction("unknown"),
+				comment:     comment,
+				delegations: []humanTasks.Delegation{},
 			},
 			wantErr: true,
 		},
@@ -129,7 +134,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 				ActualApprover: tt.fields.ActualApprover,
 			}
 
-			if err := a.SetDecision(tt.args.login, tt.args.decision.ToDecision(), tt.args.comment, []string{}); (err != nil) != tt.wantErr {
+			if err := a.SetDecision(tt.args.login, tt.args.decision.ToDecision(), tt.args.comment, []string{}, tt.args.delegations); (err != nil) != tt.wantErr {
 				t.Errorf(
 					"SetDecision(%v, %v, %v)",
 					tt.args.login,
@@ -160,8 +165,9 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 		AdditionalApprovers []AdditionalApprover
 	}
 	type args struct {
-		login  string
-		params additionalApproverUpdateParams
+		login       string
+		params      additionalApproverUpdateParams
+		delegations humanTasks.Delegations
 	}
 	tests := []struct {
 		name                    string
@@ -183,6 +189,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Decision: decisionRejected,
 					Comment:  comment,
 				},
+				delegations: []humanTasks.Delegation{},
 			},
 			want:                    nil,
 			wantErr:                 true,
@@ -200,6 +207,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Decision: decisionRejected,
 					Comment:  comment,
 				},
+				delegations: []humanTasks.Delegation{},
 			},
 			want:                    nil,
 			wantErr:                 true,
@@ -234,6 +242,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Decision: decisionRejected,
 					Comment:  comment,
 				},
+				delegations: []humanTasks.Delegation{},
 			},
 			want:    []string{"login2", "login3"},
 			wantErr: false,
@@ -259,7 +268,6 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Question:          &question,
 					Comment:           &comment,
 					Decision:          &decisionApproved,
-					DecisionTime:      &timeNow,
 				},
 			},
 		},
@@ -271,8 +279,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 				Decision:            tt.fields.Decision,
 				AdditionalApprovers: tt.fields.AdditionalApprovers,
 			}
-
-			got, err := a.SetDecisionByAdditionalApprover(tt.args.login, tt.args.params)
+			got, err := a.SetDecisionByAdditionalApprover(tt.args.login, tt.args.params, tt.args.delegations)
 			if (err != nil) != tt.wantErr {
 				t.Errorf(
 					"SetDecisionByAdditionalApprover(%v, %v)",
@@ -283,7 +290,13 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 
 			assert.Equal(t, tt.want, got,
 				fmt.Sprintf("Incorrect result. SetDecisionByAdditionalApprover() method. Expect %v, got %v", tt.want, got))
-			assert.Equal(t, a.AdditionalApprovers, tt.wantAdditionalApprovers)
+			assert.Equal(t, len(a.AdditionalApprovers), len(tt.wantAdditionalApprovers))
+			for i := range tt.wantAdditionalApprovers {
+				wantA := tt.wantAdditionalApprovers[i]
+				gotA := a.AdditionalApprovers[i]
+				check := wantA.ApproverLogin == gotA.ApproverLogin && wantA.BaseApproverLogin == gotA.BaseApproverLogin && *wantA.Decision == *gotA.Decision && *wantA.Comment == *gotA.Comment
+				assert.Equal(t, check, true)
+			}
 		})
 	}
 }

@@ -20,8 +20,8 @@ const (
 )
 
 type Service struct {
-	c   *grpc.ClientConn
-	cli delegationht.DelegationServiceClient
+	C   *grpc.ClientConn
+	Cli delegationht.DelegationServiceClient
 }
 
 func NewService(cfg Config) (*Service, error) {
@@ -35,14 +35,14 @@ func NewService(cfg Config) (*Service, error) {
 	client := delegationht.NewDelegationServiceClient(conn)
 
 	return &Service{
-		c:   conn,
-		cli: client,
+		C:   conn,
+		Cli: client,
 	}, nil
 }
 
 func (s *Service) getDelegationsInternal(ctx c.Context, req *delegationht.GetDelegationsRequest) (
 	delegations Delegations, err error) {
-	res, reqErr := s.cli.GetDelegations(ctx, req)
+	res, reqErr := s.Cli.GetDelegations(ctx, req)
 	if reqErr != nil {
 		return nil, reqErr
 	}

@@ -1,9 +1,15 @@
 package pipeline
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"io"
+	"net/http"
 	"testing"
 	"time"
 
@@ -12,10 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
+	dbMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -211,6 +220,15 @@ func Test_createGoFormBlock(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
+			cli := mocks.DelegationServiceClient{}
+			cli.On("GetDelegations", mock.Anything, mock.Anything).Return(&delegationht.GetDelegationsResponse{
+				Delegations: []*delegationht.Delegation{},
+			}, nil)
+			tt.args.runCtx.HumanTasks = &humanTasks.Service{
+				C:   nil,
+				Cli: &cli,
+			}
+
 			got, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
 			if got != nil {
 				got.RunContext = nil
@@ -257,7 +275,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	databaseMock := mocks.NewMockedDatabase(t)
+	databaseMock := dbMocks.NewMockedDatabase(t)
 
 	databaseMock.On("StopTaskBlocks", ctx, mock.Anything).Return(error(nil))
 
@@ -277,10 +295,19 @@ func TestGoFormBlock_Update(t *testing.T) {
 		State      *FormData
 		RunContext *BlockRunContext
 	}
+	type ServiceDeskHttpTransportMockDataStruct struct {
+		Status     string
+		StatusCode int
+		Body       any
+	}
+	type mockDataStruct struct {
+		ServiceDeskHttpTransportMockData *ServiceDeskHttpTransportMockDataStruct
+	}
 
 	tests := []struct {
 		name      string
 		args      args
+		mockData  *mockDataStruct
 		want      interface{}
 		wantErr   assert.ErrorAssertionFunc
 		wantState *FormData
@@ -412,6 +439,32 @@ func TestGoFormBlock_Update(t *testing.T) {
 						),
 					},
 					VarStore: store.NewStore(),
+					ServiceDesc: func() *servicedesc.Service {
+						sdMock := servicedesc.Service{
+							SdURL: "",
+						}
+						httpClient := http.DefaultClient
+						mockTransport := serviceDeskMocks.RoundTripper{}
+						fResponse := func(*http.Request) *http.Response {
+							b, _ := json.Marshal(servicedesc.SsoPerson{})
+							body := io.NopCloser(bytes.NewReader(b))
+							defer body.Close()
+							return &http.Response{
+								Status:     http.StatusText(http.StatusOK),
+								StatusCode: http.StatusOK,
+								Body:       body,
+								Close:      true,
+							}
+						}
+						f_error := func(*http.Request) error {
+							return nil
+						}
+						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+						httpClient.Transport = &mockTransport
+						sdMock.Cli = httpClient
+
+						return &sdMock
+					}(),
 				},
 			},
 			want:    nil,
@@ -463,7 +516,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 						fieldName: fieldValue,
 					},
 					IsFilled:       true,
-					ActualExecutor: nil,
+					ActualExecutor: getStringAddress(login),
 					ChangesLog:     []ChangesLogItem{},
 					IsRevoked:      false,
 				},
@@ -486,6 +539,31 @@ func TestGoFormBlock_Update(t *testing.T) {
 						),
 					},
 					VarStore: store.NewStore(),
+					ServiceDesc: func() *servicedesc.Service {
+						sdMock := servicedesc.Service{
+							SdURL: "",
+						}
+						httpClient := http.DefaultClient
+						mockTransport := serviceDeskMocks.RoundTripper{}
+						fResponse := func(*http.Request) *http.Response {
+							b, _ := json.Marshal(servicedesc.SsoPerson{})
+							body := io.NopCloser(bytes.NewReader(b))
+							return &http.Response{
+								Status:     http.StatusText(http.StatusOK),
+								StatusCode: http.StatusOK,
+								Body:       body,
+								Close:      true,
+							}
+						}
+						f_error := func(*http.Request) error {
+							return nil
+						}
+						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+						httpClient.Transport = &mockTransport
+						sdMock.Cli = httpClient
+
+						return &sdMock
+					}(),
 				},
 			},
 			want:    nil,
