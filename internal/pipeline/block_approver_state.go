@@ -404,7 +404,7 @@ func (a *ApproverData) SetDecisionByAdditionalApprover(login string,
 		var additionalApprover = a.AdditionalApprovers[i].ApproverLogin
 		var isDelegateForAdditionalApprover = delegations.IsLoginDelegateFor(login, additionalApprover)
 
-		if (login != additionalApprover || !isDelegateForAdditionalApprover) ||
+		if (login != additionalApprover && !isDelegateForAdditionalApprover) ||
 			a.AdditionalApprovers[i].Decision != nil {
 			continue
 		}

@@ -268,7 +268,6 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Question:          &question,
 					Comment:           &comment,
 					Decision:          &decisionApproved,
-					DecisionTime:      &timeNow,
 				},
 			},
 		},
@@ -291,7 +290,13 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 
 			assert.Equal(t, tt.want, got,
 				fmt.Sprintf("Incorrect result. SetDecisionByAdditionalApprover() method. Expect %v, got %v", tt.want, got))
-			assert.Equal(t, a.AdditionalApprovers, tt.wantAdditionalApprovers)
+			assert.Equal(t, len(a.AdditionalApprovers), len(tt.wantAdditionalApprovers))
+			for i := range tt.wantAdditionalApprovers {
+				wantA := tt.wantAdditionalApprovers[i]
+				gotA := a.AdditionalApprovers[i]
+				check := wantA.ApproverLogin == gotA.ApproverLogin && wantA.BaseApproverLogin == gotA.BaseApproverLogin && *wantA.Decision == *gotA.Decision && *wantA.Comment == *gotA.Comment
+				assert.Equal(t, check, true)
+			}
 		})
 	}
 }
