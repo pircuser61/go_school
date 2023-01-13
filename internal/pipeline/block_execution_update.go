@@ -298,13 +298,13 @@ type RequestInfoUpdateParams struct {
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	var updateParams RequestInfoUpdateParams
-
+	var delegations = gb.RunContext.Delegations
 	err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update requestExecutionInfo data")
 	}
 
-	if errSet := gb.State.SetRequestExecutionInfo(gb.RunContext.UpdateData.ByLogin, &updateParams); errSet != nil {
+	if errSet := gb.State.SetRequestExecutionInfo(gb.RunContext.UpdateData.ByLogin, delegations, &updateParams); errSet != nil {
 		return errSet
 	}
 
@@ -313,7 +313,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 		_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
 			gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Executors))
 
-		if isDelegate || !executorExists {
+		if !(isDelegate || executorExists) {
 			return NewUserIsNotPartOfProcessErr()
 		}
 
@@ -343,9 +343,13 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	return err
 }
 
-func (a *ExecutionData) SetRequestExecutionInfo(login string, in *RequestInfoUpdateParams) error {
-	_, ok := a.Executors[login]
-	if !ok && in.ReqType == RequestInfoQuestion {
+func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations human_tasks.Delegations,
+	in *RequestInfoUpdateParams) error {
+	_, executorFound := a.Executors[login]
+	delegateFor, isDelegate := delegations.FindDelegatorFor(
+		login, getSliceFromMapOfStrings(a.Executors))
+
+	if !(executorFound || isDelegate) && in.ReqType == RequestInfoQuestion {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
@@ -359,6 +363,7 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, in *RequestInfoUpd
 		CreatedAt:   time.Now(),
 		ReqType:     in.ReqType,
 		Attachments: in.Attachments,
+		DelegateFor: delegateFor,
 	})
 
 	return nil
