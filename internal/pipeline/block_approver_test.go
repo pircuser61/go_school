@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"testing"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -42,7 +42,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 		login       string
 		decision    ApproverAction
 		comment     string
-		delegations human_tasks.Delegations
+		delegations humanTasks.Delegations
 	}
 	tests := []struct {
 		name    string
@@ -68,7 +68,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 				login:       invalidLogin,
 				decision:    decision,
 				comment:     comment,
-				delegations: []human_tasks.Delegation{},
+				delegations: []humanTasks.Delegation{},
 			},
 			wantErr: true,
 		},
@@ -96,7 +96,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 				login:       login,
 				decision:    decision,
 				comment:     comment,
-				delegations: []human_tasks.Delegation{},
+				delegations: []humanTasks.Delegation{},
 			},
 			wantErr: true,
 		},
@@ -118,7 +118,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 				login:       login,
 				decision:    ApproverAction("unknown"),
 				comment:     comment,
-				delegations: []human_tasks.Delegation{},
+				delegations: []humanTasks.Delegation{},
 			},
 			wantErr: true,
 		},
@@ -167,7 +167,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 	type args struct {
 		login       string
 		params      additionalApproverUpdateParams
-		delegations human_tasks.Delegations
+		delegations humanTasks.Delegations
 	}
 	tests := []struct {
 		name                    string
@@ -189,7 +189,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Decision: decisionRejected,
 					Comment:  comment,
 				},
-				delegations: []human_tasks.Delegation{},
+				delegations: []humanTasks.Delegation{},
 			},
 			want:                    nil,
 			wantErr:                 true,
@@ -207,7 +207,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Decision: decisionRejected,
 					Comment:  comment,
 				},
-				delegations: []human_tasks.Delegation{},
+				delegations: []humanTasks.Delegation{},
 			},
 			want:                    nil,
 			wantErr:                 true,
@@ -242,7 +242,7 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 					Decision: decisionRejected,
 					Comment:  comment,
 				},
-				delegations: []human_tasks.Delegation{},
+				delegations: []humanTasks.Delegation{},
 			},
 			want:    []string{"login2", "login3"},
 			wantErr: false,

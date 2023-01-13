@@ -5,8 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"io"
@@ -19,9 +18,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	dbMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -223,7 +224,7 @@ func Test_createGoFormBlock(t *testing.T) {
 			cli.On("GetDelegations", mock.Anything, mock.Anything).Return(&delegationht.GetDelegationsResponse{
 				Delegations: []*delegationht.Delegation{},
 			}, nil)
-			tt.args.runCtx.HumanTasks = &human_tasks.Service{
+			tt.args.runCtx.HumanTasks = &humanTasks.Service{
 				C:   nil,
 				Cli: &cli,
 			}
@@ -444,7 +445,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 						}
 						httpClient := http.DefaultClient
 						mockTransport := serviceDeskMocks.RoundTripper{}
-						f_response := func(*http.Request) *http.Response {
+						fResponse := func(*http.Request) *http.Response {
 							b, _ := json.Marshal(servicedesc.SsoPerson{})
 							body := io.NopCloser(bytes.NewReader(b))
 							defer body.Close()
@@ -458,7 +459,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 						f_error := func(*http.Request) error {
 							return nil
 						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(f_response, f_error)
+						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
 						httpClient.Transport = &mockTransport
 						sdMock.Cli = httpClient
 
@@ -544,7 +545,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 						}
 						httpClient := http.DefaultClient
 						mockTransport := serviceDeskMocks.RoundTripper{}
-						f_response := func(*http.Request) *http.Response {
+						fResponse := func(*http.Request) *http.Response {
 							b, _ := json.Marshal(servicedesc.SsoPerson{})
 							body := io.NopCloser(bytes.NewReader(b))
 							return &http.Response{
@@ -557,7 +558,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 						f_error := func(*http.Request) error {
 							return nil
 						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(f_response, f_error)
+						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
 						httpClient.Transport = &mockTransport
 						sdMock.Cli = httpClient
 

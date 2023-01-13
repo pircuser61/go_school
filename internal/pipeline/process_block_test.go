@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
-	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"io"
 	"net/http"
 	"testing"
@@ -21,6 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -205,7 +205,7 @@ func TestProcessBlock(t *testing.T) {
 						}
 						httpClient := http.DefaultClient
 						mockTransport := serviceDeskMocks.RoundTripper{}
-						f_response := func(*http.Request) *http.Response {
+						fResponse := func(*http.Request) *http.Response {
 							b, _ := json.Marshal(servicedesc.SsoPerson{})
 							body := io.NopCloser(bytes.NewReader(b))
 							defer body.Close()
@@ -218,7 +218,7 @@ func TestProcessBlock(t *testing.T) {
 						f_error := func(*http.Request) error {
 							return nil
 						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(f_response, f_error)
+						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
 						httpClient.Transport = &mockTransport
 						sdMock.Cli = httpClient
 
@@ -399,7 +399,7 @@ func TestProcessBlock(t *testing.T) {
 						}
 						httpClient := http.DefaultClient
 						mockTransport := serviceDeskMocks.RoundTripper{}
-						f_response := func(*http.Request) *http.Response {
+						fResponse := func(*http.Request) *http.Response {
 							b, _ := json.Marshal(servicedesc.SsoPerson{})
 							body := io.NopCloser(bytes.NewReader(b))
 							defer body.Close()
@@ -412,7 +412,7 @@ func TestProcessBlock(t *testing.T) {
 						f_error := func(*http.Request) error {
 							return nil
 						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(f_response, f_error)
+						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
 						httpClient.Transport = &mockTransport
 						sdMock.Cli = httpClient
 
