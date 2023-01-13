@@ -572,6 +572,40 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 	return &et, nil
 }
 
+type IgnoreActionRule struct {
+	IgnoreActionId   string
+	ExistingActionId string
+}
+
+func getActionsToIgnoreIfOtherExist() []IgnoreActionRule {
+	return []IgnoreActionRule{
+		{
+			IgnoreActionId:   "additional_approvement",
+			ExistingActionId: "approve",
+		},
+		{
+			IgnoreActionId:   "additional_approvement",
+			ExistingActionId: "informed",
+		},
+		{
+			IgnoreActionId:   "additional_approvement",
+			ExistingActionId: "confirm",
+		},
+		{
+			IgnoreActionId:   "additional_approvement",
+			ExistingActionId: "sign",
+		},
+		{
+			IgnoreActionId:   "additional_approvement",
+			ExistingActionId: "viewed",
+		},
+		{
+			IgnoreActionId:   "additional_reject",
+			ExistingActionId: "reject",
+		},
+	}
+}
+
 func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators, actions []string,
 	allActions map[string]entity.TaskAction, author string) (result []entity.TaskAction, err error) {
 	const (
@@ -581,11 +615,8 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators, actions []
 	)
 
 	var computedActions = make([]entity.TaskAction, 0)
-
-	var ignoreActionIfOtherExistsMap = map[string]string{
-		"additional_approvement": "approve",
-		"additional_reject":      "reject",
-	}
+	var computedActionIds = make([]string, 0)
+	var actionsToIgnore = getActionsToIgnoreIfOtherExist()
 
 	result = make([]entity.TaskAction, 0)
 
@@ -606,14 +637,17 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators, actions []
 			}
 
 			computedActions = append(computedActions, computedAction)
+			computedActionIds = append(computedActionIds, computedAction.Id)
 		}
 	}
 
 	for _, a := range computedActions {
 		var ignoreAction = false
-		if v, found := ignoreActionIfOtherExistsMap[a.Id]; found {
-			if a.Id != v {
+
+		for _, actionRule := range actionsToIgnore {
+			if a.Id == actionRule.IgnoreActionId && slices.Contains(computedActionIds, actionRule.ExistingActionId) {
 				ignoreAction = true
+				break
 			}
 		}
 
@@ -812,7 +846,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-		`
+	`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,

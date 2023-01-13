@@ -79,11 +79,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
 
 	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
 	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
-		return fmt.Errorf("%s not found in executors or delegates", currentLogin)
-	}
-
-	if _, isExecutor := gb.State.Executors[gb.RunContext.UpdateData.ByLogin]; !isExecutor {
-		return fmt.Errorf("can't change executor, user %s in not executor", gb.RunContext.UpdateData.ByLogin)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	var updateParams ExecutorChangeParams
@@ -150,7 +146,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 
 	log := logger.GetLogger(ctx)
 
-	if gb.State.SLA >= 1 {
+	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
 		logins := getSliceFromMapOfStrings(gb.State.Executors)
 
@@ -204,7 +200,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 
 	log := logger.GetLogger(ctx)
 
-	if gb.State.SLA >= 1 {
+	if gb.State.SLA >= 8 {
 		emails := make([]string, 0, len(gb.State.Executors))
 		logins := getSliceFromMapOfStrings(gb.State.Executors)
 
@@ -272,7 +268,7 @@ func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, del
 
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
 	if !(executorFound || isDelegate) && login != AutoApprover {
-		return fmt.Errorf("%s not found in executors or delegates", login)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	if a.Decision != nil {
@@ -318,7 +314,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 			gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Executors))
 
 		if isDelegate || !executorExists {
-			return fmt.Errorf("executor: %s is not found in executors or delegates", updateParams.ExecutorLogin)
+			return NewUserIsNotPartOfProcessErr()
 		}
 
 		if len(gb.State.RequestExecutionInfoLogs) > 0 {
@@ -350,7 +346,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 func (a *ExecutionData) SetRequestExecutionInfo(login string, in *RequestInfoUpdateParams) error {
 	_, ok := a.Executors[login]
 	if !ok && in.ReqType == RequestInfoQuestion {
-		return fmt.Errorf("%s not found in executors", login)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	if in.ReqType != RequestInfoAnswer && in.ReqType != RequestInfoQuestion {
@@ -374,7 +370,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
 
 	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
-		return fmt.Errorf("%s not found in executors or delegates", currentLogin)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	executorLogins := gb.State.Executors
@@ -455,7 +451,7 @@ func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context) error {
 	var initiatorDelegates = gb.RunContext.Delegations.GetDelegates(initiator)
 
 	if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
-		return fmt.Errorf("%s is not an initiator or delegate", currentLogin)
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	gb.State.IsRevoked = true
@@ -484,14 +480,27 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		return editErr
 	}
 
-	initiatorEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
-	if emailErr != nil {
-		return emailErr
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			return err
+		}
+
+		emails = append(emails, email)
 	}
 
 	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-	err = gb.RunContext.Sender.SendNotification(ctx, []string{initiatorEmail}, nil, tpl)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -500,7 +509,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 }
 
 func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx context.Context) error {
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsToLogin(ctx, gb.RunContext.Initiator)
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return err
 	}
