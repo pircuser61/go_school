@@ -110,9 +110,6 @@ comment on constraint variable_storage_pk on variable_storage is 'Первичн
 comment on index variable_storage_pk is 'Индекс по первичному ключу - идентификатору записи перехода блока.';
 
 comment on column variable_storage.work_id is 'Уникальный идентификатор заявки.';
-comment on constraint works_id on variable_storage is 'Внешний ключ по идентификатору заявки.';
-comment on constraint variable_storage_works_work_id_fk on variable_storage is 'Внешний ключ по идентификатору заявки.';
-comment on index index_name is 'Индекс по идентификатору заявки.';
 comment on index idx_variable_storage_work_id is 'Индекс по идентификатору заявки.';
 
 comment on column variable_storage.status is 'Статус блока';
@@ -347,9 +344,6 @@ comment on constraint variable_storage_pk on variable_storage is null;
 comment on index variable_storage_pk is null;
 
 comment on column variable_storage.work_id is null;
-comment on constraint works_id on variable_storage is null;
-comment on constraint variable_storage_works_work_id_fk on variable_storage is null;
-comment on index index_name is null;
 comment on index idx_variable_storage_work_id is null;
 
 comment on column variable_storage.status is null;
