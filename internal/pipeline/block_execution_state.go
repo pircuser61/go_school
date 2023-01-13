@@ -31,6 +31,7 @@ type RequestExecutionInfoLog struct {
 	CreatedAt   time.Time       `json:"created_at"`
 	ReqType     RequestInfoType `json:"req_type"`
 	Attachments []string        `json:"attachments"`
+	DelegateFor string          `json:"delegate_for"`
 }
 
 type ChangeExecutorLog struct {
