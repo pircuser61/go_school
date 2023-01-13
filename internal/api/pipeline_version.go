@@ -582,10 +582,10 @@ type execVersionDTO struct {
 
 // nolint //need big cyclo,need equal string for all usages
 func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunResponse, error) {
-	_, s := trace.StartSpan(ctx, "exec_version")
+	ctxLocal, s := trace.StartSpan(ctx, "exec_version")
 	defer s.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctxLocal)
 
 	reqID := dto.req.Header.Get(XRequestIDHeader)
 
@@ -608,7 +608,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		err = json.Unmarshal(b, &pipelineVars)
 		if err != nil {
 			e := PipelineRunError
-			if monErr := mon.RunError(ctx); monErr != nil {
+			if monErr := mon.RunError(ctxLocal); monErr != nil {
 				log.WithError(monErr).Error("can't send data to monitoring")
 			}
 			log.Error(e.errorMessage(err))
@@ -618,7 +618,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 
 	log.Info("--- running pipeline:", dto.version.Name)
 
-	usr, err := user.GetUserInfoFromCtx(ctx)
+	usr, err := user.GetUserInfoFromCtx(ctxLocal)
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
@@ -636,7 +636,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		runCtx:        dto.runCtx,
 	}
 
-	executablePipeline, e, err := ae.execVersionInternal(ctx, arg)
+	executablePipeline, e, err := ae.execVersionInternal(ctxLocal, arg)
 	if err != nil {
 		log.Error(e.errorMessage(err))
 		return nil, errors.Wrap(err, e.error())
@@ -661,17 +661,20 @@ type execVersionInternalDTO struct {
 }
 
 func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
-	log := logger.GetLogger(ctx)
+	ctxLocal, span := trace.StartSpan(ctx, "exec_version_internal")
+	defer span.End()
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	log := logger.GetLogger(ctxLocal)
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctxLocal)
 	if transactionErr != nil {
 		e := PipelineRunError
 		return nil, e, transactionErr
 	}
-	defer txStorage.RollbackTransaction(ctx) // nolint:errcheck // rollback err
+	defer txStorage.RollbackTransaction(ctxLocal) // nolint:errcheck // rollback err
 
 	//nolint:staticcheck // поправить потом
-	ctx = c.WithValue(ctx, XRequestIDHeader, dto.reqID)
+	ctx = c.WithValue(ctxLocal, XRequestIDHeader, dto.reqID)
 
 	ep := pipeline.ExecutablePipeline{}
 	ep.PipelineID = dto.p.ID

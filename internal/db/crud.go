@@ -50,6 +50,9 @@ func (db *PGCon) Ping(ctx context.Context) error {
 }
 
 func (db *PGCon) StartTransaction(ctx context.Context) (Database, error) {
+	_, span := trace.StartSpan(ctx, "start_transaction")
+	defer span.End()
+
 	tx, err := db.Connection.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -67,6 +70,9 @@ func (db *PGCon) CommitTransaction(ctx context.Context) error {
 }
 
 func (db *PGCon) RollbackTransaction(ctx context.Context) error {
+	_, span := trace.StartSpan(ctx, "rollback_transaction")
+	defer span.End()
+
 	tx, ok := db.Connection.(pgx.Tx)
 	if !ok {
 		return nil
