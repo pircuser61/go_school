@@ -444,7 +444,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 						}
 						httpClient := http.DefaultClient
 						mockTransport := serviceDeskMocks.RoundTripper{}
-						f_response := func() *http.Response {
+						f_response := func(*http.Request) *http.Response {
 							b, _ := json.Marshal(servicedesc.SsoPerson{})
 							body := io.NopCloser(bytes.NewReader(b))
 							defer body.Close()
@@ -452,9 +452,10 @@ func TestGoFormBlock_Update(t *testing.T) {
 								Status:     http.StatusText(http.StatusOK),
 								StatusCode: http.StatusOK,
 								Body:       body,
+								Close:      true,
 							}
 						}
-						f_error := func() error {
+						f_error := func(*http.Request) error {
 							return nil
 						}
 						mockTransport.On("RoundTrip", mock.Anything).Return(f_response, f_error)
@@ -543,17 +544,17 @@ func TestGoFormBlock_Update(t *testing.T) {
 						}
 						httpClient := http.DefaultClient
 						mockTransport := serviceDeskMocks.RoundTripper{}
-						f_response := func() *http.Response {
+						f_response := func(*http.Request) *http.Response {
 							b, _ := json.Marshal(servicedesc.SsoPerson{})
 							body := io.NopCloser(bytes.NewReader(b))
-							defer body.Close()
 							return &http.Response{
 								Status:     http.StatusText(http.StatusOK),
 								StatusCode: http.StatusOK,
 								Body:       body,
+								Close:      true,
 							}
 						}
-						f_error := func() error {
+						f_error := func(*http.Request) error {
 							return nil
 						}
 						mockTransport.On("RoundTrip", mock.Anything).Return(f_response, f_error)

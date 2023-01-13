@@ -205,7 +205,7 @@ func TestProcessBlock(t *testing.T) {
 						}
 						httpClient := http.DefaultClient
 						mockTransport := serviceDeskMocks.RoundTripper{}
-						mockTransport.On("RoundTrip", mock.Anything).Return(func() *http.Response {
+						f_response := func(*http.Request) *http.Response {
 							b, _ := json.Marshal(servicedesc.SsoPerson{})
 							body := io.NopCloser(bytes.NewReader(b))
 							defer body.Close()
@@ -214,9 +214,11 @@ func TestProcessBlock(t *testing.T) {
 								StatusCode: http.StatusOK,
 								Body:       body,
 							}
-						}, func() error {
+						}
+						f_error := func(*http.Request) error {
 							return nil
-						})
+						}
+						mockTransport.On("RoundTrip", mock.Anything).Return(f_response, f_error)
 						httpClient.Transport = &mockTransport
 						sdMock.Cli = httpClient
 
@@ -397,7 +399,7 @@ func TestProcessBlock(t *testing.T) {
 						}
 						httpClient := http.DefaultClient
 						mockTransport := serviceDeskMocks.RoundTripper{}
-						mockTransport.On("RoundTrip", mock.Anything).Return(func() *http.Response {
+						f_response := func(*http.Request) *http.Response {
 							b, _ := json.Marshal(servicedesc.SsoPerson{})
 							body := io.NopCloser(bytes.NewReader(b))
 							defer body.Close()
@@ -406,9 +408,11 @@ func TestProcessBlock(t *testing.T) {
 								StatusCode: http.StatusOK,
 								Body:       body,
 							}
-						}, func() error {
+						}
+						f_error := func(*http.Request) error {
 							return nil
-						})
+						}
+						mockTransport.On("RoundTrip", mock.Anything).Return(f_response, f_error)
 						httpClient.Transport = &mockTransport
 						sdMock.Cli = httpClient
 
