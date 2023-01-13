@@ -596,25 +596,8 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 
 	defer dto.req.Body.Close()
 
-	mon := monitoring.New()
-	mon.Set(reqID, monitor.PipelinerData{
-		PipelineUUID: dto.version.ID.String(),
-		VersionUUID:  dto.version.VersionID.String(),
-		Name:         dto.version.Name,
-	})
 
 	var pipelineVars map[string]interface{}
-	if len(b) != 0 {
-		err = json.Unmarshal(b, &pipelineVars)
-		if err != nil {
-			e := PipelineRunError
-			if monErr := mon.RunError(ctxLocal); monErr != nil {
-				log.WithError(monErr).Error("can't send data to monitoring")
-			}
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(dto.w)
-		}
-	}
 
 	log.Info("--- running pipeline:", dto.version.Name)
 
@@ -701,7 +684,6 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	}
 
 	variableStorage := store.NewStore()
-
 	pipelineVars := dto.vars
 
 	parameters, err := json.Marshal(pipelineVars)
@@ -741,9 +723,13 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	}
 
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
+
+	spCtx := span.SpanContext()
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 	routineCtx = logger.WithLogger(routineCtx, log)
-	err = pipeline.ProcessBlock(routineCtx, ep.EntryPoint, &blockData, runCtx, false)
+	processCtx, _ := trace.StartSpanWithRemoteParent(routineCtx, "start_processing", spCtx)
+
+	err = pipeline.ProcessBlock(processCtx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
 		variableStorage.AddError(err)
 		e := PipelineRunError
