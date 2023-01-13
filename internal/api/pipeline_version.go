@@ -17,10 +17,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/erius/monitoring/pkg/monitor"
-
-	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
@@ -596,7 +592,6 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 
 	defer dto.req.Body.Close()
 
-
 	var pipelineVars map[string]interface{}
 
 	log.Info("--- running pipeline:", dto.version.Name)
@@ -727,7 +722,8 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	spCtx := span.SpanContext()
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 	routineCtx = logger.WithLogger(routineCtx, log)
-	processCtx, _ := trace.StartSpanWithRemoteParent(routineCtx, "start_processing", spCtx)
+	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_processing", spCtx)
+	fakeSpan.End()
 
 	err = pipeline.ProcessBlock(processCtx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
