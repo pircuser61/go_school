@@ -61,6 +61,7 @@ func TestApproverParams_Validate(t *testing.T) {
 				Approver:   tt.fields.ApproverLogin,
 				SLA:        tt.fields.SLA,
 				AutoAction: &tt.fields.AutoAction,
+				CheckSLA:   true,
 			}
 			if err := a.Validate(); (err != nil) != tt.wantErr {
 				t.Errorf("%v Validate()", a)
