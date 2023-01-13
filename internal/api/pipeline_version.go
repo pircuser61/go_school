@@ -585,11 +585,6 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 
 	reqID := dto.req.Header.Get(XRequestIDHeader)
 
-	b, err := io.ReadAll(dto.req.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	defer dto.req.Body.Close()
 
 	var pipelineVars map[string]interface{}
