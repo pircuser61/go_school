@@ -421,6 +421,9 @@ type ApproverParams struct {
 	// Auto action to do (from action list)
 	AutoAction *string `json:"auto_action,omitempty"`
 
+	// Is rework SLA active
+	CheckReworkSla bool `json:"check_rework_sla"`
+
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
 
@@ -430,6 +433,9 @@ type ApproverParams struct {
 	// Show action edit application in SD
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+
+	// Execution rework SLA (in working hours)
+	ReworkSla int `json:"rework_sla"`
 
 	// Approvement SLA (in working hours)
 	Sla int `json:"sla"`
@@ -714,6 +720,9 @@ type ExecutableFunctionParams struct {
 
 // Execution params
 type ExecutionParams struct {
+	// Is rework SLA active
+	CheckReworkSla bool `json:"check_rework_sla"`
+
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
 
@@ -734,6 +743,9 @@ type ExecutionParams struct {
 
 	// auto apply prev decision
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+
+	// Execution rework SLA (in working hours)
+	ReworkSla int `json:"rework_sla"`
 
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`

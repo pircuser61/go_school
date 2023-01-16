@@ -3353,6 +3353,13 @@ components:
         check_sla:
           type: boolean
           description: Is active SLA
+        rework_sla:
+          type: integer
+          description: Execution rework SLA (in working hours)
+          minimum: 16
+        check_rework_sla:
+          type: boolean
+          description: Is rework SLA active
         forms_accessibility:
           type: array
           description: List of accessibility properties for forms
@@ -3375,6 +3382,8 @@ components:
         - executors
         - sla
         - check_sla
+        - rework_sla
+        - check_rework_sla
         - executors_group_id
         - executors_group_name
         - repeat_prev_decision
@@ -3453,6 +3462,13 @@ components:
         check_sla:
           type: boolean
           description: Is active SLA
+        rework_sla:
+          type: integer
+          description: Approvement rework SLA (in working hours)
+          minimum: 16
+        check_rework_sla:
+          type: boolean
+          description: Is rework SLA active
         auto_action:
           type: string
           description: Auto action to do (from action list)
@@ -3475,6 +3491,8 @@ components:
         - approver
         - sla
         - check_sla
+        - rework_sla
+        - check_rework_sla
         - repeat_prev_decision
         - is_editable
         - approvers_group_id
