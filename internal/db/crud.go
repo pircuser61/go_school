@@ -2478,16 +2478,13 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		       vs.content,
 		       v.content->'pipeline'->'blocks'->vs.step_name,
 		       vs.step_name,
-		       (case when sla_deadline > NOW() THEN False ELSE True END) already
+		       d.action
 		FROM variable_storage vs 
 		    JOIN works w on vs.work_id = w.id 
 		    JOIN versions v on w.version_id = v.id
 			JOIN pipelines p on v.pipeline_id = p.id
-		WHERE (
-		    (check_sla = True AND sla_deadline < NOW()) OR 
-		    (vs.check_half_sla = True AND half_sla_deadline < NOW())
-		) 
-		  AND vs.status = 'running' AND w.child_id IS NULL`
+		    JOIN deadlines d on vs.id = d.block_id
+		WHERE d.deadline < NOW() AND vs.status = 'running' AND w.child_id IS NULL`
 	rows, err := db.Connection.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -2505,7 +2502,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			&content,
 			&item.BlockData,
 			&item.StepName,
-			&item.Already,
+			&item.Action,
 		); scanErr != nil {
 			return nil, scanErr
 		}

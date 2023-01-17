@@ -129,7 +129,7 @@ type StepBreachedSLA struct {
 	VarStore   *store.VariableStore
 	BlockData  *e.EriusFunc
 	StepName   string
-	Already    bool
+	Action     e.TaskUpdateAction
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase
