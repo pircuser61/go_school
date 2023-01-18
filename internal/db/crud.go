@@ -1525,11 +1525,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			time, 
 			break_points, 
 			has_error,
-			status,
-		    check_sla,
-		    sla_deadline,
-		    check_half_sla,
-		    half_sla_deadline
+			status
 		)
 		VALUES (
 			$1, 
@@ -1540,11 +1536,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$6, 
 			$7,
 			$8,
-			$9,
-			$10,
-		    $11,
-			$12,
-		    $13
+			$9
 		)
 `
 
