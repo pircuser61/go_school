@@ -3,8 +3,9 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"github.com/pkg/errors"
 	"log"
+
+	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 

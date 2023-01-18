@@ -2,9 +2,10 @@ package pipeline
 
 import (
 	"context"
+	"time"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-	"time"
 )
 
 type Status string

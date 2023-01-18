@@ -1570,8 +1570,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		return NullUuid, time.Time{}, err
 	}
 
-	err = db.insertIntoDeadlines(ctx, dto.Deadlines, id)
-
+	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, id)
 	if err != nil {
 		return NullUuid, time.Time{}, err
 	}
@@ -1598,7 +1597,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		id = $1
 `
 	args := []interface{}{
-		dto.Id, dto.BreakPoints, dto.HasError, dto.Status,
+		dto.Id, dto.BreakPoints, dto.HasError, dto.Status, dto.Content,
 	}
 
 	_, err := db.Connection.Exec(
@@ -1630,16 +1629,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		return err
 	}
 
-	err = db.deleteDeadlines(ctx, dto.Id)
-	if err != nil {
-		return err
-	}
-
-	err = db.insertIntoDeadlines(ctx, dto.Deadlines, dto.Id)
-
-	if err != nil {
-		return nil
-	}
+	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.Id)
 
 	return nil
 }
@@ -1732,6 +1722,21 @@ func (db *PGCon) deleteDeadlines(ctx context.Context, id uuid.UUID) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) deleteAndInsertIntoDeadlines(ctx context.Context, deadlines []DbDeadline, id uuid.UUID) error {
+	deleteErr := db.deleteDeadlines(ctx, id)
+	if deleteErr != nil {
+		return deleteErr
+	}
+
+	insertErr := db.insertIntoDeadlines(ctx, deadlines, id)
+
+	if insertErr != nil {
+		return insertErr
 	}
 
 	return nil
