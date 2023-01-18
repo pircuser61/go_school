@@ -1590,7 +1590,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		break_points = $2
 		, has_error = $3
 		, status = $4
-		, content = $6
+		, content = $5
 		, updated_at = NOW()
 	WHERE
 		id = $1
