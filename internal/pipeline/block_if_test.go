@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gitlab.services.mts.ru/jocasta/conditions-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -126,29 +127,29 @@ func TestIF_DebugRun(t *testing.T) {
 		{
 			name:          "compare string values - not equal",
 			wantErr:       false,
-			wantedGroupID: "",
+			wantedGroupID: "test-group-1",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "test",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "test2",
@@ -180,22 +181,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable2",
@@ -223,28 +224,28 @@ func TestIF_DebugRun(t *testing.T) {
 		{
 			name:          "compare string variables - not equal",
 			wantErr:       false,
-			wantedGroupID: "",
+			wantedGroupID: "test-group-1",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id: "test-group-1",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable2",
@@ -279,21 +280,21 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id: "test-group-1",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "testStringVariable",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
 												VariableRef: "testBoolVariable",
@@ -328,22 +329,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.test",
@@ -379,22 +380,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "test1",
@@ -429,22 +430,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2.level3",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "test",
@@ -484,22 +485,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2.level3.level4",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "test",
@@ -541,22 +542,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2.level3",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "level1.level2.level3,1",
@@ -596,22 +597,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "test",
@@ -645,22 +646,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "and",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "test",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "test2",
@@ -668,14 +669,14 @@ func TestIF_DebugRun(t *testing.T) {
 											Operator: "Equal",
 										},
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "test",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "test2",
@@ -687,16 +688,16 @@ func TestIF_DebugRun(t *testing.T) {
 								{
 									Id:              "test-group-2",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "testAbc",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "testAbc",
@@ -728,22 +729,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "and",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "10",
@@ -775,22 +776,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "10",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
@@ -822,22 +823,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "unable to cast to integer string",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
@@ -869,22 +870,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "10.05",
@@ -916,22 +917,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "10.05",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
@@ -963,22 +964,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10,
@@ -1010,22 +1011,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
@@ -1057,22 +1058,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "false",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
 												Value: false,
@@ -1104,22 +1105,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
 												Value: false,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "false",
@@ -1151,22 +1152,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 1,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
 												Value: true,
@@ -1198,22 +1199,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "boolean",
 												},
 												Value: true,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 1,
@@ -1245,22 +1246,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable2",
@@ -1295,22 +1296,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												VariableRef: "data.testStringVariable2",
@@ -1345,22 +1346,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 100,
@@ -1393,22 +1394,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 100,
@@ -1441,22 +1442,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 100,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
@@ -1489,22 +1490,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 100,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "integer",
 												},
 												Value: 10,
@@ -1537,22 +1538,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 100,
@@ -1585,22 +1586,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 100,
@@ -1633,22 +1634,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 100,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
@@ -1681,22 +1682,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 100,
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "number",
 												},
 												Value: 10.05,
@@ -1722,29 +1723,29 @@ func TestIF_DebugRun(t *testing.T) {
 		{
 			name:          "compare date values - not equal",
 			wantErr:       false,
-			wantedGroupID: "",
+			wantedGroupID: "test-group-1",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.09.2022",
@@ -1776,22 +1777,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												VariableRef: "data.testStringVariable1",
 											},
-											RightOperand: &script.VariableOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												VariableRef: "data.testStringVariable2",
@@ -1826,22 +1827,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2023",
@@ -1874,22 +1875,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2032",
@@ -1922,22 +1923,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2012",
@@ -1970,22 +1971,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2012",
@@ -2018,22 +2019,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
@@ -2065,22 +2066,22 @@ func TestIF_DebugRun(t *testing.T) {
 					BlockType: BlockGoIfID,
 					Title:     title,
 					Params: func() []byte {
-						r, _ := json.Marshal(&script.ConditionParams{
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
 							Type: "conditions",
-							ConditionGroups: []script.ConditionGroup{
+							ConditionGroups: []conditions_kit.ConditionGroup{
 								{
 									Id:              "test-group-1",
 									LogicalOperator: "or",
-									Conditions: []script.Condition{
+									Conditions: []conditions_kit.Condition{
 										{
-											LeftOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "date",
 												},
 												Value: "11.08.2022",
 											},
-											RightOperand: &script.ValueOperand{
-												OperandBase: script.OperandBase{
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
 													DataType: "string",
 												},
 												Value: "11.08.2022",

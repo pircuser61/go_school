@@ -27,6 +27,7 @@ require (
 	gitlab.services.mts.ru/erius/monitoring v0.1.0
 	gitlab.services.mts.ru/erius/network-monitor-client v1.0.5
 	gitlab.services.mts.ru/erius/scheduler_client v0.0.5
+	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.0
 	gitlab.services.mts.ru/jocasta/functions v1.3.0-alpha.3
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
