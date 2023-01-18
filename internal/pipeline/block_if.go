@@ -5,14 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/conditions-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-)
-
-const (
-	OrLogicalOperator  string = "or"
-	AndLogicalOperator string = "and"
 )
 
 type IF struct {
@@ -38,12 +34,12 @@ func (gb *IF) CheckSLA() (bool, bool, time.Time, time.Time) {
 }
 
 type ConditionsData struct {
-	Type            script.ConditionType    `json:"type"`
-	ConditionGroups []script.ConditionGroup `json:"conditionGroups"`
-	ChosenGroupID   string                  `json:"-"`
+	Type            conditions_kit.ConditionType    `json:"type"`
+	ConditionGroups []conditions_kit.ConditionGroup `json:"conditionGroups"`
+	ChosenGroupID   string                          `json:"-"`
 }
 
-func (cd *ConditionsData) GetConditionGroups() []script.ConditionGroup {
+func (cd *ConditionsData) GetConditionGroups() []conditions_kit.ConditionGroup {
 	return cd.ConditionGroups
 }
 
@@ -80,7 +76,7 @@ func (gb *IF) GetState() interface{} {
 }
 
 func (gb *IF) Update(_ context.Context) (interface{}, error) {
-	var chosenGroup *script.ConditionGroup
+	var chosenGroup *conditions_kit.ConditionGroup
 
 	if gb.State != nil {
 		conditionGroups := gb.State.GetConditionGroups()
@@ -90,7 +86,7 @@ func (gb *IF) Update(_ context.Context) (interface{}, error) {
 			return nil, err
 		}
 
-		chosenGroup = processConditionGroups(conditionGroups, variables)
+		chosenGroup = conditions_kit.ProcessConditionGroups(conditionGroups, variables)
 	}
 
 	var chosenGroupID string
@@ -114,7 +110,7 @@ func (gb *IF) Model() script.FunctionModel {
 		Outputs:   nil,
 		Params: &script.FunctionParams{
 			Type: BlockGoIfID,
-			Params: &script.ConditionParams{
+			Params: &conditions_kit.ConditionParams{
 				Type: "",
 			},
 		},
@@ -145,7 +141,7 @@ func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext)
 	}
 
 	if ef.Params != nil {
-		var params script.ConditionParams
+		var params conditions_kit.ConditionParams
 		err = json.Unmarshal(ef.Params, &params)
 		if err != nil {
 			return nil, err
@@ -163,70 +159,10 @@ func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext)
 	return b, nil
 }
 
-func processConditionGroups(groups []script.ConditionGroup, variables map[string]interface{}) (
-	chosenGroup *script.ConditionGroup) {
-	for i, conditionGroup := range groups {
-		var co = groups[i]
-		switch conditionGroup.LogicalOperator {
-		case OrLogicalOperator:
-			if processOrConditions(conditionGroup.Conditions, variables) {
-				chosenGroup = &co
-			}
-		case AndLogicalOperator:
-			if processAndConditions(conditionGroup.Conditions, variables) {
-				chosenGroup = &co
-			}
-		default:
-			if processAndConditions(conditionGroup.Conditions, variables) {
-				chosenGroup = &co
-			}
-		}
-	}
-
-	return chosenGroup
-}
-
-func processAndConditions(conditions []script.Condition, variables map[string]interface{}) bool {
-	var successCount = 0
-	for _, condition := range conditions {
-		setValuesToCompare(condition.LeftOperand, condition.RightOperand, variables)
-		if result, _ := condition.IsTrue(); result {
-			successCount++
-		}
-	}
-
-	return successCount == len(conditions)
-}
-
-func processOrConditions(conditions []script.Condition, variables map[string]interface{}) bool {
-	for _, condition := range conditions {
-		setValuesToCompare(condition.LeftOperand, condition.RightOperand, variables)
-		if result, _ := condition.IsTrue(); result {
-			return true
-		}
-	}
-	return false
-}
-
-func setValuesToCompare(leftOperand, rightOperand script.Operand, variables map[string]interface{}) {
-	setOperandValueToCompare(leftOperand, variables)
-	setOperandValueToCompare(rightOperand, variables)
-}
-
-func setOperandValueToCompare(operand script.Operand, variables map[string]interface{}) {
-	switch op := operand.(type) {
-	case *script.ValueOperand:
-		op.ValueToCompare = op.Value
-	case *script.VariableOperand:
-		op.ValueToCompare = getVariable(variables, op.VariableRef)
-	}
-}
-
 func getVariables(runCtx *store.VariableStore) (result map[string]interface{}, err error) {
 	variables, err := runCtx.GrabStorage()
 	if err != nil {
 		return nil, err
 	}
-
 	return variables, nil
 }
