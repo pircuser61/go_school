@@ -69,10 +69,6 @@ func upMoveOldDeadlines(tx *sql.Tx) error {
 			return execErr
 		}
 	}
-	commitErr := tx.Commit()
-	if commitErr != nil {
-		return commitErr
-	}
 	return nil
 }
 
@@ -122,21 +118,17 @@ func downMoveOldDeadlines(tx *sql.Tx) error {
 	for _, row := range resultRows {
 		if row.HalfSlaDeadline != nil {
 			query = "update variable_storage set half_sla_deadline = $1, check_half_sla = True where id = $2"
-			_, queryErr := tx.Query(query, row.HalfSlaDeadline, row.Id)
+			_, queryErr := tx.Exec(query, row.HalfSlaDeadline, row.Id)
 			if queryErr != nil {
 				return queryErr
 			}
 		} else {
 			query = "update variable_storage set sla_deadline = $1, check_sla = True where id = $2"
-			_, queryErr := tx.Query(query, row.HalfSlaDeadline, row.Id)
+			_, queryErr := tx.Exec(query, row.SlaDeadline, row.Id)
 			if queryErr != nil {
 				return queryErr
 			}
 		}
-	}
-	commitErr := tx.Commit()
-	if commitErr != nil {
-		return commitErr
 	}
 	return nil
 }
