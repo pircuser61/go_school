@@ -2,9 +2,9 @@ package pipeline
 
 import (
 	"context"
-	"time"
-
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"time"
 )
 
 type Status string
@@ -25,6 +25,11 @@ type Member struct {
 	Actions    []MemberAction
 }
 
+type Deadline struct {
+	Deadline time.Time
+	Action   entity.TaskUpdateAction
+}
+
 var (
 	StatusIdle      Status = "idle"
 	StatusReady     Status = "ready"
@@ -42,5 +47,5 @@ type Runner interface {
 	GetStatus() Status
 	UpdateManual() bool
 	Members() []Member
-	CheckSLA() (bool, bool, time.Time, time.Time)
+	Deadlines() []Deadline
 }

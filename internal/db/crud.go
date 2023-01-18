@@ -1560,16 +1560,18 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
-		dto.CheckSLA,
-		dto.SLADeadline,
-		dto.CheckHalfSLA,
-		dto.HalfSLADeadline,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
 	}
 
 	err = db.insertIntoMembers(ctx, dto.Members, id)
+	if err != nil {
+		return NullUuid, time.Time{}, err
+	}
+
+	err = db.insertIntoDeadlines(ctx, dto.Deadlines, id)
+
 	if err != nil {
 		return NullUuid, time.Time{}, err
 	}
@@ -1592,15 +1594,11 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		, check_sla = $5
 		, content = $6
 		, updated_at = NOW()
-		, sla_deadline = $7
-		, check_half_sla = $8
-		, half_sla_deadline = $9
 	WHERE
 		id = $1
 `
 	args := []interface{}{
 		dto.Id, dto.BreakPoints, dto.HasError, dto.Status,
-		dto.CheckSLA, dto.Content, dto.SLADeadline, dto.CheckHalfSLA, dto.HalfSLADeadline,
 	}
 
 	_, err := db.Connection.Exec(
@@ -1631,6 +1629,18 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	if err != nil {
 		return err
 	}
+
+	err = db.deleteDeadlines(ctx, dto.Id)
+	if err != nil {
+		return err
+	}
+
+	err = db.insertIntoDeadlines(ctx, dto.Deadlines, dto.Id)
+
+	if err != nil {
+		return nil
+	}
+
 	return nil
 }
 
@@ -1672,6 +1682,58 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			return err
 		}
 	}
+	return nil
+}
+
+func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline, id uuid.UUID) error {
+	// nolint:gocritic
+	// language=PostgreSQL
+	const queryDeadlines = `
+		INSERT INTO deadlines(
+			id,
+			block_id,
+			deadline,
+			action
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3,
+		    $4
+		)
+`
+	for _, val := range deadlines {
+		deadlineId := uuid.New()
+		_, err := db.Connection.Exec(
+			ctx,
+			queryDeadlines,
+			deadlineId,
+			id,
+			val.Deadline,
+			val.Action,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (db *PGCon) deleteDeadlines(ctx context.Context, id uuid.UUID) error {
+	// nolint:gocritic
+	// language=PostgreSQL
+	const queryDeadlines = `
+		DELETE from deadlines where block_id = $1
+`
+	_, err := db.Connection.Exec(
+		ctx,
+		queryDeadlines,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

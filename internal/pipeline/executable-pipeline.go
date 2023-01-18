@@ -2,10 +2,8 @@ package pipeline
 
 import (
 	c "context"
-	"net/http"
-	"time"
-
 	"github.com/google/uuid"
+	"net/http"
 
 	"go.opencensus.io/trace"
 
@@ -59,8 +57,8 @@ func (gb *ExecutablePipeline) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutablePipeline) CheckSLA() (bool, bool, time.Time, time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *ExecutablePipeline) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 func (gb *ExecutablePipeline) GetStatus() Status {

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -55,8 +53,8 @@ func (gb *ExecutableFunctionBlock) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *ExecutableFunctionBlock) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {

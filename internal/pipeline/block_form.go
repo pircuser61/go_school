@@ -87,8 +87,8 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	return []MemberAction{action}
 }
 
-func (gb *GoFormBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *GoFormBlock) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 func (gb *GoFormBlock) UpdateManual() bool {
