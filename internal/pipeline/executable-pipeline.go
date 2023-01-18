@@ -2,9 +2,9 @@ package pipeline
 
 import (
 	c "context"
-	"github.com/google/uuid"
 	"net/http"
 
+	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"

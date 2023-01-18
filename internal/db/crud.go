@@ -1590,7 +1590,6 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		break_points = $2
 		, has_error = $3
 		, status = $4
-		, check_sla = $5
 		, content = $6
 		, updated_at = NOW()
 	WHERE
@@ -1630,6 +1629,9 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	}
 
 	err = db.deleteAndInsertIntoDeadlines(ctx, dto.Deadlines, dto.Id)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -1734,7 +1736,6 @@ func (db *PGCon) deleteAndInsertIntoDeadlines(ctx context.Context, deadlines []D
 	}
 
 	insertErr := db.insertIntoDeadlines(ctx, deadlines, id)
-
 	if insertErr != nil {
 		return insertErr
 	}

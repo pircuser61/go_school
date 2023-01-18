@@ -27,7 +27,7 @@ func upMoveOldDeadlines(tx *sql.Tx) error {
 		Action   entity.TaskUpdateAction
 	}
 	var resultRows []UpdateStruct
-	query = "select id block_id, half_sla_deadline, sla_deadline, check_half_sla, check_sla from variable_storage where status in ('running', 'idle') and (check_sla = True AND sla_deadline < NOW()) OR (check_half_sla = True AND half_sla_deadline < NOW())"
+	query = "select id block_id, half_sla_deadline, sla_deadline, check_half_sla, check_sla from variable_storage where status in ('running', 'idle')"
 	rows, queryErr := tx.Query(query)
 	if queryErr != nil {
 		return queryErr
@@ -121,13 +121,13 @@ func downMoveOldDeadlines(tx *sql.Tx) error {
 
 	for _, row := range resultRows {
 		if row.HalfSlaDeadline != nil {
-			query = "update variable_storage set half_sla_deadline = $1 where id = $2"
+			query = "update variable_storage set half_sla_deadline = $1, check_half_sla = True where id = $2"
 			_, queryErr := tx.Query(query, row.HalfSlaDeadline, row.Id)
 			if queryErr != nil {
 				return queryErr
 			}
 		} else {
-			query = "update variable_storage set sla_deadline = $1 where id = $2"
+			query = "update variable_storage set sla_deadline = $1, check_sla = True where id = $2"
 			_, queryErr := tx.Query(query, row.HalfSlaDeadline, row.Id)
 			if queryErr != nil {
 				return queryErr
