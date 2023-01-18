@@ -107,8 +107,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 		activeBlocks, ok := block.Next(runCtx.VarStore)
 		if !ok {
-			err = runCtx.updateStepInDB(ctx, name, id, true, block.GetStatus(), block.Members(),
-				false, time.Time{}, false, time.Time{})
+			err = runCtx.updateStepInDB(ctx, name, id, true, block.GetStatus(), block.Members(), []Deadline{})
 			if err != nil {
 				return
 			}
@@ -242,9 +241,9 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	}
 
 	runCtx.currBlockStartTime = time.Now() // will be used only for the block creation
-	checkSLA, checkHalfSLA, deadline, halfDeadline := block.CheckSLA()
+	deadlines := block.Deadlines()
 	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()),
-		block.Members(), checkSLA, deadline, checkHalfSLA, halfDeadline)
+		block.Members(), deadlines)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -257,8 +256,8 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	if err != nil {
 		return err
 	}
-	checkSLA, checkHalfSLA, deadline, halfDeadline := block.CheckSLA()
-	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), checkSLA, deadline, checkHalfSLA, halfDeadline)
+	deadlines := block.Deadlines()
+	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), deadlines)
 	if err != nil {
 		return err
 	}
@@ -267,12 +266,13 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	pl []Member, checkSLA bool, deadline time.Time, checkHalfSLA bool, halfDeadline time.Time) (uuid.UUID, time.Time, error) {
+	pl []Member, deadlines []Deadline) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
 	}
 	dbPeople := make([]db.DbMember, 0, len(pl))
+	dbDeadlines := make([]db.DbDeadline, 0, len(deadlines))
 	for i := range pl {
 		actions := make([]db.DbMemberAction, 0, len(pl[i].Actions))
 		for _, act := range pl[i].Actions {
@@ -287,29 +287,34 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 			Actions:  actions,
 		})
 	}
+
+	for i := range deadlines {
+		dbDeadlines = append(dbDeadlines, db.DbDeadline{
+			Action:   string(deadlines[i].Action),
+			Deadline: deadlines[i].Deadline,
+		})
+	}
 	return runCtx.Storage.SaveStepContext(ctx, &db.SaveStepRequest{
-		WorkID:          runCtx.TaskID,
-		StepType:        stepType,
-		StepName:        name,
-		Content:         storageData,
-		BreakPoints:     []string{},
-		HasError:        false,
-		Status:          status,
-		Members:         dbPeople,
-		CheckSLA:        checkSLA,
-		CheckHalfSLA:    checkHalfSLA,
-		SLADeadline:     deadline,
-		HalfSLADeadline: halfDeadline,
+		WorkID:      runCtx.TaskID,
+		StepType:    stepType,
+		StepName:    name,
+		Content:     storageData,
+		BreakPoints: []string{},
+		HasError:    false,
+		Status:      status,
+		Members:     dbPeople,
+		Deadlines:   dbDeadlines,
 	})
 }
 
 func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uuid.UUID, hasError bool, status Status,
-	pl []Member, checkSLA bool, deadline time.Time, checkHalfSLA bool, halfDeadline time.Time) error {
+	pl []Member, deadlines []Deadline) error {
 	storageData, err := json.Marshal(runCtx.VarStore)
 	if err != nil {
 		return err
 	}
 	dbPeople := make([]db.DbMember, 0, len(pl))
+	dbDeadlines := make([]db.DbDeadline, 0, len(deadlines))
 	for i := range pl {
 		actions := make([]db.DbMemberAction, 0, len(pl[i].Actions))
 		for _, act := range pl[i].Actions {
@@ -324,18 +329,21 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 			Actions:  actions,
 		})
 	}
+	for i := range deadlines {
+		dbDeadlines = append(dbDeadlines, db.DbDeadline{
+			Action:   string(deadlines[i].Action),
+			Deadline: deadlines[i].Deadline,
+		})
+	}
 	return runCtx.Storage.UpdateStepContext(ctx, &db.UpdateStepRequest{
-		Id:              id,
-		StepName:        name,
-		Content:         storageData,
-		BreakPoints:     []string{},
-		HasError:        hasError,
-		Status:          string(status),
-		Members:         dbPeople,
-		CheckSLA:        checkSLA,
-		CheckHalfSLA:    checkHalfSLA,
-		SLADeadline:     deadline,
-		HalfSLADeadline: halfDeadline,
+		Id:          id,
+		StepName:    name,
+		Content:     storageData,
+		BreakPoints: []string{},
+		HasError:    hasError,
+		Status:      string(status),
+		Members:     dbPeople,
+		Deadlines:   dbDeadlines,
 	})
 }
 

@@ -2,8 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"time"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -24,8 +22,8 @@ func (gb *GoBeginParallelTaskBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoBeginParallelTaskBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *GoBeginParallelTaskBlock) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 func (gb *GoBeginParallelTaskBlock) UpdateManual() bool {

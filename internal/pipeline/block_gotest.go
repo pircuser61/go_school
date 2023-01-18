@@ -2,8 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"time"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -25,8 +23,8 @@ func (gb *GoTestBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoTestBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *GoTestBlock) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 func (gb *GoTestBlock) UpdateManual() bool {

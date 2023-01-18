@@ -2,8 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"time"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -23,8 +21,8 @@ func (gb *GoEndBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoEndBlock) CheckSLA() (sla, halfSLA bool, maxDate time.Time, maxHalfDate time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *GoEndBlock) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 func (gb *GoEndBlock) GetStatus() Status {

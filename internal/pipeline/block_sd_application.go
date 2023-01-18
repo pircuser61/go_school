@@ -3,8 +3,6 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"time"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"github.com/pkg/errors"
@@ -47,8 +45,8 @@ func (gb *GoSdApplicationBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoSdApplicationBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *GoSdApplicationBlock) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 func (gb *GoSdApplicationBlock) UpdateManual() bool {

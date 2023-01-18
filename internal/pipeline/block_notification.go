@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -38,8 +37,8 @@ func (gb *GoNotificationBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoNotificationBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *GoNotificationBlock) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 func (gb *GoNotificationBlock) UpdateManual() bool {

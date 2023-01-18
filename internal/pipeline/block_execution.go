@@ -1,8 +1,7 @@
 package pipeline
 
 import (
-	"time"
-
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -89,16 +88,23 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		}}
 }
 
-func (gb *GoExecutionBlock) CheckSLA() (sla, halfSLA bool, maxDate time.Time, maxHalfDate time.Time) {
-	if !gb.State.CheckSLA {
-		gb.State.SLAChecked = true
-		gb.State.HalfSLAChecked = true
-		return sla, halfSLA, time.Time{}, time.Time{}
+func (gb *GoExecutionBlock) Deadlines() []Deadline {
+	deadlines := make([]Deadline, 0, 2)
+	if !gb.State.SLAChecked {
+		deadlines = append(deadlines,
+			Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
+				Action: entity.TaskUpdateActionSLABreach,
+			},
+		)
 	}
-
-	return !gb.State.SLAChecked, !gb.State.HalfSLAChecked,
-		ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
-		ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2)
+	if !gb.State.HalfSLAChecked {
+		deadlines = append(deadlines,
+			Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2),
+				Action: entity.TaskUpdateActionHalfSLABreach,
+			},
+		)
+	}
+	return deadlines
 }
 
 func (gb *GoExecutionBlock) UpdateManual() bool {

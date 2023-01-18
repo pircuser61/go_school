@@ -3,8 +3,6 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"time"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -33,8 +31,8 @@ func (gb *GoWaitForAllInputsBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoWaitForAllInputsBlock) CheckSLA() (bool, bool, time.Time, time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *GoWaitForAllInputsBlock) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 func (gb *GoWaitForAllInputsBlock) UpdateManual() bool {

@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"gitlab.services.mts.ru/jocasta/conditions-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -29,8 +28,8 @@ func (gb *IF) Members() []Member {
 	return nil
 }
 
-func (gb *IF) CheckSLA() (bool, bool, time.Time, time.Time) {
-	return false, false, time.Time{}, time.Time{}
+func (gb *IF) Deadlines() []Deadline {
+	return []Deadline{}
 }
 
 type ConditionsData struct {
