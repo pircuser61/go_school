@@ -101,7 +101,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		return err
 	}
 	if block.GetStatus() == StatusFinished || block.GetStatus() == StatusNoSuccess {
-		err = runCtx.handleInitiatorNotification(ctx, name, block.GetTaskHumanStatus())
+		err = runCtx.handleInitiatorNotification(ctx, name, bl.TypeID, block.GetTaskHumanStatus())
 		if err != nil {
 			return err
 		}
@@ -367,10 +367,14 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (str
 	return descr, nil
 }
 
-func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context, step string, status TaskHumanStatus) error {
+func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
+	step, stepType string, status TaskHumanStatus) error {
+	const FormStepType = "form"
+
 	if runCtx.skipNotifications {
 		return nil
 	}
+
 	switch status {
 	case StatusNew,
 		StatusApproved,
@@ -383,6 +387,10 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context, step s
 		StatusExecutionRejected,
 		StatusDone:
 	default:
+		return nil
+	}
+
+	if status == StatusDone && stepType == FormStepType {
 		return nil
 	}
 
