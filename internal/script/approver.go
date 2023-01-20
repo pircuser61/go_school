@@ -81,7 +81,7 @@ func (a *ApproverParams) Validate() error {
 		return fmt.Errorf("invalid SLA: %d", a.SLA)
 	}
 
-	if a.IsEditable && a.ReworkSLA < 16 {
+	if a.IsEditable && a.CheckReworkSLA && a.ReworkSLA < 16 {
 		return fmt.Errorf("invalid Rework SLA: %d", a.SLA)
 	}
 

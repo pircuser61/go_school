@@ -53,7 +53,7 @@ func (a *ExecutionParams) Validate() error {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
 	}
 
-	if a.IsEditable && a.ReworkSLA < 16 {
+	if a.IsEditable && a.CheckReworkSLA && a.ReworkSLA < 16 {
 		return fmt.Errorf("invalid Rework SLA: %d", a.SLA)
 	}
 
