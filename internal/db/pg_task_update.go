@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"golang.org/x/net/context"
+
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
@@ -13,6 +15,19 @@ import (
 
 	"github.com/google/uuid"
 )
+
+func (db *PGCon) deleteFinishedPipelineDeadlines(ctx context.Context, taskID uuid.UUID) error {
+	ctx, span := trace.StartSpan(ctx, "delete_finished_pipeline_deadlines")
+	defer span.End()
+
+	q := `
+		DELETE 
+		FROM deadlines
+		WHERE block_id IN (SELECT id FROM variable_storage WHERE work_id = $1)
+	`
+	_, err := db.Connection.Exec(ctx, q, taskID)
+	return err
+}
 
 func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error {
 	ctx, span := trace.StartSpan(ctx, "pg_change_task_status")
@@ -36,6 +51,12 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) e
 		return err
 	}
 
+	switch status {
+	case RunStatusFinished, RunStatusStopped, RunStatusError:
+		if delErr := db.deleteFinishedPipelineDeadlines(ctx, taskID); delErr != nil {
+			return delErr
+		}
+	}
 	return nil
 }
 
