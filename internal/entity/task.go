@@ -139,6 +139,7 @@ const (
 	TaskUpdateActionAdditionalApprovement TaskUpdateAction = "additional_approvement"
 	TaskUpdateActionSLABreach             TaskUpdateAction = "sla_breached"
 	TaskUpdateActionHalfSLABreach         TaskUpdateAction = "half_sla_breached"
+	TaskUpdateActionReworkSLABreach       TaskUpdateAction = "rework_sla_breached"
 	TaskUpdateActionExecution             TaskUpdateAction = "execution"
 	TaskUpdateActionChangeExecutor        TaskUpdateAction = "change_executor"
 	TaskUpdateActionRequestExecutionInfo  TaskUpdateAction = "request_execution_info"

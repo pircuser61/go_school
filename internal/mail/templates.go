@@ -2,6 +2,7 @@ package mail
 
 import (
 	"fmt"
+	"strconv"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -85,6 +86,24 @@ func NewExecutiontHalfSLATemplate(id, name, sdUrl string) Template {
 		}{
 			Name: name,
 			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
+func NewReworkSLATemplate(id, sdUrl string, reworkSla int) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка %s автоматически отклонена", id),
+		Text: `Уважаемый коллега, истек срок ожидания доработок по заявке {{.Id}}.</br>
+Заявка автоматически отклонена по истечении {{.Duration}} дней.</br>
+Для просмотра заявки перейдите по <a href={{.Link}}>ссылке</a><br>`,
+		Variables: struct {
+			Id       string `json:"id"`
+			Duration string `json:"duration"`
+			Link     string `json:"link"`
+		}{
+			Id:       id,
+			Duration: strconv.Itoa(reworkSla / 8),
+			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 		},
 	}
 }

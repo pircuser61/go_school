@@ -97,6 +97,7 @@ func (gb *GoExecutionBlock) Deadlines() []Deadline {
 			},
 		)
 	}
+
 	if !gb.State.HalfSLAChecked {
 		deadlines = append(deadlines,
 			Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2),
@@ -104,6 +105,15 @@ func (gb *GoExecutionBlock) Deadlines() []Deadline {
 			},
 		)
 	}
+
+	if gb.State.IsEditable && gb.State.CheckReworkSLA && gb.State.EditingApp != nil {
+		deadlines = append(deadlines,
+			Deadline{Deadline: ComputeMaxDate(gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA)),
+				Action: entity.TaskUpdateActionReworkSLABreach,
+			},
+		)
+	}
+
 	return deadlines
 }
 

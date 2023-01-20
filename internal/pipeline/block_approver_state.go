@@ -180,6 +180,8 @@ type ApproverData struct {
 	CheckSLA       bool `json:"check_sla"`
 	SLAChecked     bool `json:"sla_checked"`
 	HalfSLAChecked bool `json:"half_sla_checked"`
+	ReworkSLA      int  `json:"rework_sla"`
+	CheckReworkSLA bool `json:"check_rework_sla"`
 
 	AutoAction *ApproverAction `json:"auto_action,omitempty"`
 

@@ -83,6 +83,8 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		Type:               params.Type,
 		SLA:                params.SLA,
 		CheckSLA:           params.CheckSLA,
+		ReworkSLA:          params.ReworkSLA,
+		CheckReworkSLA:     params.CheckReworkSLA,
 		AutoAction:         ApproverActionFromString(params.AutoAction),
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,

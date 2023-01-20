@@ -72,6 +72,8 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		ExecutionType:      params.Type,
 		SLA:                params.SLA,
 		CheckSLA:           params.CheckSLA,
+		ReworkSLA:          params.ReworkSLA,
+		CheckReworkSLA:     params.CheckReworkSLA,
 		FormsAccessibility: params.FormsAccessibility,
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,

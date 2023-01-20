@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"golang.org/x/exp/slices"
-	"golang.org/x/net/context"
 
 	"github.com/pkg/errors"
 
@@ -28,6 +27,10 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 	case string(entity.TaskUpdateActionHalfSLABreach):
 		if errUpdate := gb.handleHalfSLABreached(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionReworkSLABreach):
+		if errUpdate := gb.handleReworkSLABreached(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecution):
@@ -239,6 +242,52 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 		}
 	}
 	gb.State.HalfSLAChecked = true
+	return nil
+}
+
+// nolint:dupl // another action
+func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
+	const fn = "pipeline.execution.handleReworkSLABreached"
+
+	if !gb.State.CheckReworkSLA {
+		return nil
+	}
+
+	log := logger.GetLogger(ctx)
+
+	gb.RunContext.UpdateData.ByLogin = gb.RunContext.Initiator
+	err := gb.cancelPipeline(ctx)
+	if err != nil {
+		return err
+	}
+
+	gb.State.EditingApp = nil
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		log.WithError(err).Info(fn, fmt.Sprintf("initiator %v has no delegates", gb.RunContext.Initiator))
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var em string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+			continue
+		}
+
+		emails = append(emails, em)
+	}
+
+	tpl := mail.NewReworkSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -513,7 +562,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 	return nil
 }
 
-func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx context.Context) error {
+func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx c.Context) error {
 	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return err
@@ -543,7 +592,7 @@ func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx context.Context) error {
 	return nil
 }
 
-func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx context.Context) error {
+func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx c.Context) error {
 	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
 	if err != nil {
 		return err

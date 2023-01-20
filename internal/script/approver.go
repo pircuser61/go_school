@@ -42,6 +42,8 @@ type ApproverParams struct {
 
 	SLA                int                 `json:"sla"`
 	CheckSLA           bool                `json:"check_sla"`
+	ReworkSLA          int                 `json:"rework_sla"`
+	CheckReworkSLA     bool                `json:"check_rework_sla"`
 	AutoAction         *string             `json:"auto_action,omitempty"`
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 
@@ -77,6 +79,10 @@ func (a *ApproverParams) Validate() error {
 
 	if a.CheckSLA && a.SLA <= 0 {
 		return fmt.Errorf("invalid SLA: %d", a.SLA)
+	}
+
+	if a.IsEditable && a.ReworkSLA < 16 {
+		return fmt.Errorf("invalid Rework SLA: %d", a.SLA)
 	}
 
 	return nil

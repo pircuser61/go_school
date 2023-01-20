@@ -220,6 +220,52 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 	return nil
 }
 
+// nolint:dupl // another action
+func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
+	const fn = "pipeline.approver.handleReworkSLABreached"
+
+	if !gb.State.CheckReworkSLA {
+		return nil
+	}
+
+	log := logger.GetLogger(ctx)
+
+	gb.RunContext.UpdateData.ByLogin = gb.RunContext.Initiator
+	err := gb.cancelPipeline(ctx)
+	if err != nil {
+		return err
+	}
+
+	gb.State.EditingApp = nil
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		log.WithError(err).Info(fn, fmt.Sprintf("initiator %v has no delegates", gb.RunContext.Initiator))
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var em string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+			continue
+		}
+
+		emails = append(emails, em)
+	}
+
+	tpl := mail.NewReworkSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //nolint:gocyclo //its ok here
 func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approverUpdateEditingParams) error {
 	errSet := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, gb.RunContext.Delegations)
@@ -353,7 +399,10 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.handleHalfBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-
+	case string(entity.TaskUpdateActionReworkSLABreach):
+		if errUpdate := gb.handleReworkSLABreached(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
 	case string(entity.TaskUpdateActionApprovement):
 		var updateParams approverUpdateParams
 
