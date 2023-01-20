@@ -110,7 +110,10 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 					return nil, errors.New("function returned not all of expected results")
 				}
 
-				// todo: конвертируем в нужный тип на основе метаданных (JAP-903)
+				if err := checkVariableType(param, expectedOutput[k].Type); err != nil {
+					return nil, err
+				}
+
 				resultOutput[k] = param
 			}
 
@@ -142,19 +145,25 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			if variable == nil {
 				return nil, fmt.Errorf("cant fill function mapping with value: %s = %v", k, v.Value)
 			}
+
+			if err = checkVariableType(variable, v.Type); err != nil {
+				return nil, err
+			}
+
 			functionMapping[k] = variable
-			// TODO надо будет проверять типы, а также нам нужна будет работа с обьектами JAP-904
 		}
 
-		err = gb.RunContext.Kafka.Produce(ctx, kafka.RunnerOutMessage{
-			TaskID:          taskStep.ID,
-			FunctionMapping: functionMapping,
-			RetryPolicy:     string(SimpleFunctionRetryPolicy),
-			FunctionName:    gb.State.Name,
-		})
+		if !gb.RunContext.skipProduce {
+			err = gb.RunContext.Kafka.Produce(ctx, kafka.RunnerOutMessage{
+				TaskID:          taskStep.ID,
+				FunctionMapping: functionMapping,
+				RetryPolicy:     string(SimpleFunctionRetryPolicy),
+				FunctionName:    gb.State.Name,
+			})
 
-		if err != nil {
-			return nil, err
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
