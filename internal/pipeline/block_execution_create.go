@@ -127,7 +127,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	}
 
 	// maybe we should notify the executor
-	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, gb.Name, gb.GetTaskHumanStatus()); notifErr != nil {
+	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifErr != nil {
 		return notifErr
 	}
 	return gb.handleNotifications(ctx)
