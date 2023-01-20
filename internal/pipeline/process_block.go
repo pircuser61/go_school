@@ -42,6 +42,7 @@ type BlockRunContext struct {
 	VarStore           *store.VariableStore
 	UpdateData         *script.BlockUpdateData
 	skipNotifications  bool // for tests
+	skipProduce        bool // for tests too :)
 	currBlockStartTime time.Time
 	Delegations        human_tasks.Delegations
 }
