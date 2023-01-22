@@ -466,6 +466,8 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 		if err != nil {
 			return err
 		}
+
+		gb.State.CheckDayBeforeSLARequestInfo = true
 	}
 
 	if updateParams.ReqType == RequestInfoAnswer {
