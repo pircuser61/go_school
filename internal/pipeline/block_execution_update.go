@@ -303,7 +303,9 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.execution.handleBreachedDayBeforeSLARequestAddInfo"
 
-	// TODO check deadlines
+	if !gb.State.CheckDayBeforeSLARequestInfo {
+		return nil
+	}
 
 	log := logger.GetLogger(ctx)
 
@@ -332,13 +334,13 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 		return err
 	}
 
+	gb.State.CheckDayBeforeSLARequestInfo = true
+
 	return nil
 }
 
 func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.execution.HandleBreachedSLARequestAddInfo"
-
-	// TODO check deadlines
 
 	log := logger.GetLogger(ctx)
 

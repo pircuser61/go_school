@@ -270,7 +270,9 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.approver.handleBreachedDayBeforeSLARequestAddInfo"
 
-	// TODO check deadlines
+	if !gb.State.CheckDayBeforeSLARequestInfo {
+		return nil
+	}
 
 	log := logger.GetLogger(ctx)
 
@@ -299,13 +301,13 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.
 		return err
 	}
 
+	gb.State.CheckDayBeforeSLARequestInfo = true
+
 	return nil
 }
 
 func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
-
-	// TODO check deadlines
 
 	log := logger.GetLogger(ctx)
 
@@ -759,16 +761,16 @@ func (gb *GoApproverBlock) notificateNeedRework(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
 
-	var email string
+	var em string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 			continue
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, em)
 	}
 
 	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
@@ -790,16 +792,16 @@ func (gb *GoApproverBlock) notificateNewInfoRecieved(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.UpdateData.ByLogin})
 
-	var email string
+	var em string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 			return err
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, em)
 	}
 
 	tpl := mail.NewAnswerApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
@@ -821,16 +823,16 @@ func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
 
-	var email string
+	var em string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 			return err
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, em)
 	}
 
 	tpl := mail.NewRequestApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
