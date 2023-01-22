@@ -4,6 +4,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"time"
 )
 
 const (
@@ -112,6 +113,15 @@ func (gb *GoExecutionBlock) Deadlines() []Deadline {
 				Action: entity.TaskUpdateActionReworkSLABreach,
 			},
 		)
+	}
+
+	// TODO check deadline
+	if gb.State.CheckDayBeforeSLARequestInfo {
+		deadlines = append(deadlines,
+			Deadline{
+				Deadline: time.Time{},
+				Action:   "",
+			})
 	}
 
 	return deadlines

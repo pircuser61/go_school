@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -55,6 +56,14 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 	case string(entity.TaskUpdateActionExecutorSendEditApp):
 		if errUpdate := gb.toEditApplication(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionDayBeforeSLARequestAddInfo):
+		if errUpdate := gb.handleBreachedDayBeforeSLARequestAddInfo(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionSLABreachRequestAddInfo):
+		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
@@ -283,6 +292,81 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 	}
 
 	tpl := mail.NewReworkSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
+	const fn = "pipeline.execution.handleBreachedDayBeforeSLARequestAddInfo"
+
+	// TODO check deadlines
+
+	log := logger.GetLogger(ctx)
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		log.WithError(err).Info(fn, fmt.Sprintf("initiator %v has no delegates", gb.RunContext.Initiator))
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+			continue
+		}
+
+		emails = append(emails, email)
+	}
+
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
+	const fn = "pipeline.execution.HandleBreachedSLARequestAddInfo"
+
+	// TODO check deadlines
+
+	log := logger.GetLogger(ctx)
+
+	err := gb.cancelPipeline(ctx)
+	if err != nil {
+		return err
+	}
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		log.WithError(err).Info(fn, fmt.Sprintf("initiator %v has no delegates", gb.RunContext.Initiator))
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var email string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+			continue
+		}
+
+		emails = append(emails, email)
+	}
+
+	tpl := mail.NewRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
