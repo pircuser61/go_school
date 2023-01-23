@@ -4,10 +4,10 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 	"time"
 
 	"golang.org/x/exp/slices"
+	"golang.org/x/net/context"
 
 	"github.com/pkg/errors"
 
@@ -344,6 +344,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 
 	log := logger.GetLogger(ctx)
 
+	gb.RunContext.UpdateData.ByLogin = gb.RunContext.Initiator
 	err := gb.cancelPipeline(ctx)
 	if err != nil {
 		return err

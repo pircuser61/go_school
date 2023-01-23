@@ -360,7 +360,10 @@ func NewDecisionMadeByAdditionalApproverTemplate(id, fullname, decision, comment
 func NewDayBeforeRequestAddInfoSLABreachedTemplate(id, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s требуется дополнительная информация", id),
-		Text: `Уважаемый коллега, по вашей заявке №{{.Id}} необходимо предоставить дополнительную информацию в течение одного рабочего дня с момента данного уведомления, иначе заявка будет автоматически <b>закрыта</b>.</br> 
+		Text: `Уважаемый коллега, по вашей заявке №{{.Id}} 
+				необходимо предоставить дополнительную информацию в течение 
+				одного рабочего дня с момента данного уведомления, 
+				иначе заявка будет автоматически <b>закрыта</b>.</br> 
 				Заявка доступна по <a href={{.Link}}>ссылке</a></p></br>`,
 		Variables: struct {
 			Id   string `json:"id"`
@@ -375,7 +378,9 @@ func NewDayBeforeRequestAddInfoSLABreachedTemplate(id, sdUrl string) Template {
 func NewRequestAddInfoSLABreachedTemplate(id, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s автоматически отклонена", id),
-		Text: `Уважаемый коллега, заявка №{{.Id}} автоматически отклонена из-за отсутствия ответа на запрос дополнительной информации в течении 3 дней 
+		Text: `Уважаемый коллега, заявка №{{.Id}} 
+				автоматически отклонена из-за отсутствия ответа 
+				на запрос дополнительной информации в течении 3 дней 
 				Заявка доступна по <a href={{.Link}}>ссылке</a></p></br>`,
 		Variables: struct {
 			Id   string `json:"id"`

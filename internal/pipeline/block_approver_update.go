@@ -4,10 +4,10 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 	"time"
 
 	"golang.org/x/exp/slices"
+	"golang.org/x/net/context"
 
 	"github.com/google/uuid"
 
@@ -311,6 +311,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 
 	log := logger.GetLogger(ctx)
 
+	gb.RunContext.UpdateData.ByLogin = gb.RunContext.Initiator
 	err := gb.cancelPipeline(ctx)
 	if err != nil {
 		return err
@@ -557,7 +558,6 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.handleBreachedDayBeforeSLARequestAddInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-
 	case string(entity.TaskUpdateActionSLABreachRequestAddInfo):
 		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
