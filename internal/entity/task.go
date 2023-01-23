@@ -135,21 +135,23 @@ type TaskFilter struct {
 type TaskUpdateAction string
 
 const (
-	TaskUpdateActionApprovement           TaskUpdateAction = "approvement"
-	TaskUpdateActionAdditionalApprovement TaskUpdateAction = "additional_approvement"
-	TaskUpdateActionSLABreach             TaskUpdateAction = "sla_breached"
-	TaskUpdateActionHalfSLABreach         TaskUpdateAction = "half_sla_breached"
-	TaskUpdateActionReworkSLABreach       TaskUpdateAction = "rework_sla_breached"
-	TaskUpdateActionExecution             TaskUpdateAction = "execution"
-	TaskUpdateActionChangeExecutor        TaskUpdateAction = "change_executor"
-	TaskUpdateActionRequestExecutionInfo  TaskUpdateAction = "request_execution_info"
-	TaskUpdateActionExecutorStartWork     TaskUpdateAction = "executor_start_work"
-	TaskUpdateActionApproverSendEditApp   TaskUpdateAction = "approver_send_edit_app"
-	TaskUpdateActionExecutorSendEditApp   TaskUpdateAction = "executor_send_edit_app"
-	TaskUpdateActionCancelApp             TaskUpdateAction = "cancel_app"
-	TaskUpdateActionRequestApproveInfo    TaskUpdateAction = "request_add_info"
-	TaskUpdateActionRequestFillForm       TaskUpdateAction = "fill_form"
-	TaskUpdateActionAddApprovers          TaskUpdateAction = "add_approvers"
+	TaskUpdateActionApprovement                TaskUpdateAction = "approvement"
+	TaskUpdateActionAdditionalApprovement      TaskUpdateAction = "additional_approvement"
+	TaskUpdateActionSLABreach                  TaskUpdateAction = "sla_breached"
+	TaskUpdateActionHalfSLABreach              TaskUpdateAction = "half_sla_breached"
+	TaskUpdateActionReworkSLABreach            TaskUpdateAction = "rework_sla_breached"
+	TaskUpdateActionExecution                  TaskUpdateAction = "execution"
+	TaskUpdateActionChangeExecutor             TaskUpdateAction = "change_executor"
+	TaskUpdateActionRequestExecutionInfo       TaskUpdateAction = "request_execution_info"
+	TaskUpdateActionExecutorStartWork          TaskUpdateAction = "executor_start_work"
+	TaskUpdateActionApproverSendEditApp        TaskUpdateAction = "approver_send_edit_app"
+	TaskUpdateActionExecutorSendEditApp        TaskUpdateAction = "executor_send_edit_app"
+	TaskUpdateActionCancelApp                  TaskUpdateAction = "cancel_app"
+	TaskUpdateActionRequestApproveInfo         TaskUpdateAction = "request_add_info"
+	TaskUpdateActionRequestFillForm            TaskUpdateAction = "fill_form"
+	TaskUpdateActionAddApprovers               TaskUpdateAction = "add_approvers"
+	TaskUpdateActionDayBeforeSLARequestAddInfo TaskUpdateAction = "day_before_sla_request_add_info"
+	TaskUpdateActionSLABreachRequestAddInfo    TaskUpdateAction = "sla_breach_request_add_info"
 )
 
 var (

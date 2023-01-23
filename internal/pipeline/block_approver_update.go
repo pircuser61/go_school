@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"golang.org/x/exp/slices"
+	"golang.org/x/net/context"
 
 	"github.com/google/uuid"
 
@@ -266,6 +267,84 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 	return nil
 }
 
+func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
+	const fn = "pipeline.approver.handleBreachedDayBeforeSLARequestAddInfo"
+
+	if !gb.State.CheckDayBeforeSLARequestInfo {
+		return nil
+	}
+
+	log := logger.GetLogger(ctx)
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		log.WithError(err).Info(fn, fmt.Sprintf("initiator %v has no delegates", gb.RunContext.Initiator))
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var em string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+			continue
+		}
+
+		emails = append(emails, em)
+	}
+
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	gb.State.CheckDayBeforeSLARequestInfo = true
+
+	return nil
+}
+
+func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
+	const fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
+
+	log := logger.GetLogger(ctx)
+
+	gb.RunContext.UpdateData.ByLogin = gb.RunContext.Initiator
+	err := gb.cancelPipeline(ctx)
+	if err != nil {
+		return err
+	}
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		log.WithError(err).Info(fn, fmt.Sprintf("initiator %v has no delegates", gb.RunContext.Initiator))
+	}
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+
+	var em string
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		if err != nil {
+			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
+			continue
+		}
+
+		emails = append(emails, em)
+	}
+
+	tpl := mail.NewRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //nolint:gocyclo //its ok here
 func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approverUpdateEditingParams) error {
 	errSet := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, gb.RunContext.Delegations)
@@ -310,6 +389,8 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 		if err != nil {
 			return err
 		}
+
+		gb.State.CheckDayBeforeSLARequestInfo = true
 	}
 
 	if updateParams.Type == ReplyAddInfoType {
@@ -472,6 +553,16 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.addApprovers(ctx, updateParams); errUpdate != nil {
 			return nil, errUpdate
 		}
+
+	case string(entity.TaskUpdateActionDayBeforeSLARequestAddInfo):
+		if errUpdate := gb.handleBreachedDayBeforeSLARequestAddInfo(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionSLABreachRequestAddInfo):
+		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+
 	}
 
 	var stateBytes []byte
@@ -672,16 +763,16 @@ func (gb *GoApproverBlock) notificateNeedRework(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
 
-	var email string
+	var em string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 			continue
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, em)
 	}
 
 	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
@@ -703,16 +794,16 @@ func (gb *GoApproverBlock) notificateNewInfoRecieved(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.UpdateData.ByLogin})
 
-	var email string
+	var em string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 			return err
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, em)
 	}
 
 	tpl := mail.NewAnswerApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
@@ -734,16 +825,16 @@ func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
 
-	var email string
+	var em string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 			return err
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, em)
 	}
 
 	tpl := mail.NewRequestApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
