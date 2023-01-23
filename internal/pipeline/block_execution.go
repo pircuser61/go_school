@@ -114,7 +114,7 @@ func (gb *GoExecutionBlock) Deadlines() []Deadline {
 		)
 	}
 
-	if gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoAnswer {
+	if len(gb.State.RequestExecutionInfoLogs) > 0 && gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoAnswer {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
 				Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 2*8),

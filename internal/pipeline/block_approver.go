@@ -142,7 +142,7 @@ func (gb *GoApproverBlock) Deadlines() []Deadline {
 		)
 	}
 
-	if gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
+	if len(gb.State.AddInfo) > 0 && gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
 				Deadline: ComputeMaxDate(gb.State.RequestApproverInfoLog[len(gb.State.AddInfo)-1].CreatedAt, 2*8),
