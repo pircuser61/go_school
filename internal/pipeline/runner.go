@@ -14,6 +14,7 @@ const (
 	ActionTypePrimary   = "primary"
 	ActionTypeSecondary = "secondary"
 	ActionTypeOther     = "other"
+	ActionTypeCustom    = "custom"
 )
 
 type MemberAction struct {
