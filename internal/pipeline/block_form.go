@@ -82,7 +82,7 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	}
 	action := MemberAction{
 		Id:   formFillFormAction,
-		Type: ActionTypePrimary,
+		Type: ActionTypeCustom,
 	}
 	return []MemberAction{action}
 }
