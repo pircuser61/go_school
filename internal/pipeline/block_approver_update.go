@@ -301,7 +301,7 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.
 		return err
 	}
 
-	gb.State.CheckDayBeforeSLARequestInfo = true
+	gb.State.CheckDayBeforeSLARequestInfo = false
 
 	return nil
 }
