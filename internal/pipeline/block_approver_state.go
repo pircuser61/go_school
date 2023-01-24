@@ -370,7 +370,7 @@ func (a *ApproverData) SetDecision(login string,
 
 func decisionForPersonExists(login string, logs *[]ApproverLogEntry) bool {
 	for _, logEntry := range *logs {
-		if logEntry.Login == login || logEntry.DelegateFor == login {
+		if (logEntry.Login == login || logEntry.DelegateFor == login) && logEntry.LogType == ApproverLogDecision {
 			return true
 		}
 	}
