@@ -601,6 +601,30 @@ func getActionsToIgnoreIfOtherExist() []IgnoreActionRule {
 		},
 		{
 			IgnoreActionId:   "additional_reject",
+			ExistingActionId: "approve",
+		},
+		{
+			IgnoreActionId:   "additional_reject",
+			ExistingActionId: "informed",
+		},
+		{
+			IgnoreActionId:   "additional_reject",
+			ExistingActionId: "confirm",
+		},
+		{
+			IgnoreActionId:   "additional_reject",
+			ExistingActionId: "sign",
+		},
+		{
+			IgnoreActionId:   "additional_reject",
+			ExistingActionId: "viewed",
+		},
+		{
+			IgnoreActionId:   "additional_reject",
+			ExistingActionId: "reject",
+		},
+		{
+			IgnoreActionId:   "additional_approvement",
 			ExistingActionId: "reject",
 		},
 	}
