@@ -117,6 +117,10 @@ func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []MemberA
 }
 
 func (gb *GoApproverBlock) Deadlines() []Deadline {
+	if gb.State.IsRevoked {
+		return []Deadline{}
+	}
+
 	deadlines := make([]Deadline, 0, 2)
 	if !gb.State.SLAChecked {
 		deadlines = append(deadlines,
