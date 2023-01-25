@@ -2314,6 +2314,8 @@ components:
           type: string
         rate:
           type: integer
+        initiator_attachments_count:
+          type: integer
       required:
         - id
         - version_id
@@ -2329,6 +2331,7 @@ components:
         - steps
         - work_number
         - blueprint_id
+        - initiator_attachments_count
 
     EriusTasks:
       type: object

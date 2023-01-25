@@ -434,7 +434,7 @@ type ApproverParams struct {
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 
-	// Execution rework SLA (in working hours)
+	// Approvement rework SLA (in working hours)
 	ReworkSla int `json:"rework_sla"`
 
 	// Approvement SLA (in working hours)
@@ -659,17 +659,18 @@ type EriusTask struct {
 	Description string  `json:"description"`
 
 	// Task human readable status
-	HumanStatus   TaskHumanStatus        `json:"human_status"`
-	Id            string                 `json:"id"`
-	LastChangedAt string                 `json:"last_changed_at"`
-	Name          string                 `json:"name"`
-	Parameters    map[string]interface{} `json:"parameters"`
-	Rate          *int                   `json:"rate,omitempty"`
-	StartedAt     string                 `json:"started_at"`
-	Status        string                 `json:"status"`
-	Steps         []Step                 `json:"steps"`
-	VersionId     string                 `json:"version_id"`
-	WorkNumber    string                 `json:"work_number"`
+	HumanStatus               TaskHumanStatus        `json:"human_status"`
+	Id                        string                 `json:"id"`
+	InitiatorAttachmentsCount int                    `json:"initiator_attachments_count"`
+	LastChangedAt             string                 `json:"last_changed_at"`
+	Name                      string                 `json:"name"`
+	Parameters                map[string]interface{} `json:"parameters"`
+	Rate                      *int                   `json:"rate,omitempty"`
+	StartedAt                 string                 `json:"started_at"`
+	Status                    string                 `json:"status"`
+	Steps                     []Step                 `json:"steps"`
+	VersionId                 string                 `json:"version_id"`
+	WorkNumber                string                 `json:"work_number"`
 }
 
 // EriusTasks defines model for EriusTasks.
