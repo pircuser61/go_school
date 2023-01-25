@@ -1042,7 +1042,7 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 	return nil, errCantFindPipelineVersion
 }
 
-func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
+func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkIsDeleted bool) (*entity.EriusScenario, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipeline_version")
 	defer span.End()
 
@@ -1064,9 +1064,13 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.Er
 	FROM versions pv
 	JOIN pipelines p ON pv.pipeline_id = p.id
     LEFT JOIN pipeline_history pph ON pph.version_id = pv.id
-	WHERE pv.id = $1 AND p.deleted_at IS NULL
+	WHERE pv.id = $1 --is_deleted--
 	ORDER BY pph.date DESC 
 	LIMIT 1`
+
+	if checkIsDeleted {
+		qVersion = strings.Replace(qVersion, "--is_deleted--", "AND p.deleted_at IS NULL", 1)
+	}
 
 	rows, err := db.Connection.Query(c, qVersion, id)
 	if err != nil {

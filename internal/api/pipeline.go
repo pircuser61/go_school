@@ -87,7 +87,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
+	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
 	if err != nil {
 		e := PipelineReadError
 		log.Error(e.errorMessage(err))
@@ -172,7 +172,7 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
+	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
 	if err != nil {
 		e := PipelineReadError
 		log.Error(e.errorMessage(err))
