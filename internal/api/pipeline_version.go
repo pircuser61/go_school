@@ -367,7 +367,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versio
 		return
 	}
 
-	p, err := ae.DB.GetPipelineVersion(ctx, vID, false)
+	p, err := ae.DB.GetPipelineVersion(ctx, vID, true)
 	if err != nil {
 		e := PipelineDeleteError
 		log.Error(e.errorMessage(err))
