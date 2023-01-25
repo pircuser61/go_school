@@ -592,7 +592,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	scenario, err := ae.DB.GetPipelineVersion(ctx, dbTask.VersionID)
+	scenario, err := ae.DB.GetPipelineVersion(ctx, dbTask.VersionID, false)
 	if err != nil {
 		e := GetVersionError
 		log.Error(e.errorMessage(nil))

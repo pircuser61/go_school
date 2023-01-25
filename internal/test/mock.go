@@ -1097,10 +1097,10 @@ func (m *MockDB) DeletePipeline(c context.Context, id uuid.UUID) error {
 }
 
 func (m *MockDB) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
-	return m.GetPipelineVersion(c, id)
+	return m.GetPipelineVersion(c, id, true)
 }
 
-func (m *MockDB) GetPipelineVersion(c context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
+func (m *MockDB) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDeleted bool) (*entity.EriusScenario, error) {
 	for i := range m.pipelines {
 		if m.pipelines[i].ID == id {
 			return &m.pipelines[i], nil

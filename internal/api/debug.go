@@ -242,7 +242,7 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request, workNumber
 		return
 	}
 
-	version, err := ae.DB.GetPipelineVersion(ctx, task.VersionID)
+	version, err := ae.DB.GetPipelineVersion(ctx, task.VersionID, false)
 	if err != nil {
 		e := GetVersionError
 		log.Error(e.errorMessage(err))

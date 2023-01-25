@@ -152,7 +152,7 @@ type Database interface {
 	VersionEditable(ctx c.Context, versionID uuid.UUID) (bool, error)
 	CreateVersion(ctx c.Context, p *e.EriusScenario, author string, pipelineData []byte) error
 	DeleteVersion(ctx c.Context, versionID uuid.UUID) error
-	GetPipelineVersion(ctx c.Context, id uuid.UUID) (*e.EriusScenario, error)
+	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
 	UpdateDraft(ctx c.Context, p *e.EriusScenario, pipelineData []byte) error
 	SaveStepContext(ctx c.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error)

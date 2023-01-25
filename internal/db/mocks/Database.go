@@ -667,7 +667,7 @@ func (_m *MockedDatabase) GetPipelineTasks(ctx context.Context, pipelineID uuid.
 }
 
 // GetPipelineVersion provides a mock function with given fields: ctx, id
-func (_m *MockedDatabase) GetPipelineVersion(ctx context.Context, id uuid.UUID) (*entity.EriusScenario, error) {
+func (_m *MockedDatabase) GetPipelineVersion(ctx context.Context, id uuid.UUID, checkNotDeleted bool) (*entity.EriusScenario, error) {
 	ret := _m.Called(ctx, id)
 
 	var r0 *entity.EriusScenario

@@ -90,7 +90,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
+	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
 	if err != nil {
 		e := PipelineReadError
 		log.Error(e.errorMessage(err))
@@ -124,7 +124,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID
 		return
 	}
 
-	p, err := ae.DB.GetPipelineVersion(ctx, id)
+	p, err := ae.DB.GetPipelineVersion(ctx, id, true)
 	if err != nil {
 		e := GetPipelineError
 		log.Error(e.errorMessage(err))
@@ -367,7 +367,7 @@ func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versio
 		return
 	}
 
-	p, err := ae.DB.GetPipelineVersion(ctx, vID)
+	p, err := ae.DB.GetPipelineVersion(ctx, vID, true)
 	if err != nil {
 		e := PipelineDeleteError
 		log.Error(e.errorMessage(err))
@@ -422,7 +422,7 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request, v
 		return
 	}
 
-	p, err := ae.DB.GetPipelineVersion(ctx, versionUUID)
+	p, err := ae.DB.GetPipelineVersion(ctx, versionUUID, true)
 	if err != nil {
 		e := GetVersionError
 		log.Error(e.errorMessage(err))
@@ -545,7 +545,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	edited, err := ae.DB.GetPipelineVersion(ctx, p.VersionID)
+	edited, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
 	if err != nil {
 		e := PipelineReadError
 		log.Error(e.errorMessage(err))
