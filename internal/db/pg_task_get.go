@@ -317,8 +317,6 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		taskIDs = append(taskIDs, task.ID.String())
 	}
 
-	qTaskIDs := strings.Join(taskIDs, "','")
-
 	q = `
 		WITH blocks_with_work_id AS (
 			SELECT work_id, jsonb_each(state) AS blocks
@@ -326,12 +324,12 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 			JOIN LATERAL (
 				SELECT work_id, content::jsonb->'State' AS state
 				FROM variable_storage vs
-				WHERE vs.work_id IN ('` + qTaskIDs + `')
+				WHERE vs.work_id = ANY($1)
 				  AND vs.work_id = w.id
 				ORDER BY vs.time DESC
 				LIMIT 1
 			) descr ON descr.work_id = w.id
-			WHERE w.id IN ('` + qTaskIDs + `')
+			WHERE w.id = ANY($1)
 		)
 	
 		SELECT work_id, COUNT(*)
@@ -340,17 +338,20 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 				FROM blocks_with_work_id	
 				WHERE (
 					(
-						key(blocks) LIKE 'form%'
-						AND value(blocks) ->> 'executors' SIMILAR TO '{"(` + strings.Join(delegations, "|") + `)": {}}'	
+						key(blocks) LIKE 'form%%'
+						AND value(blocks) ->> 'executors' SIMILAR TO '{"(%s)": {}}'	
 					)
-					OR key(blocks) LIKE 'servicedesk_application%'
+					OR key(blocks) LIKE 'servicedesk_application%%'
 				)		 
 			 ) a
-		WHERE value(data)::text LIKE '"attachment:%'
+		WHERE value(data)::text LIKE '"attachment:%%'
 		GROUP BY work_id;
 	`
 
-	rows, err := db.Connection.Query(ctx, q)
+	logins := strings.Join(delegations, "|")
+	q = fmt.Sprintf(q, logins)
+
+	rows, err := db.Connection.Query(ctx, q, taskIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +373,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	for i := range tasks.Tasks {
-		tasks.Tasks[i].InitiatorAttachmentsCount = attachmentsToTasks[tasks.Tasks[i].ID]
+		count := attachmentsToTasks[tasks.Tasks[i].ID]
+		tasks.Tasks[i].AttachmentsCount = &count
 	}
 
 	return &entity.EriusTasksPage{

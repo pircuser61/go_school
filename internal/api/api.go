@@ -652,25 +652,25 @@ type EriusTagInfo struct {
 
 // EriusTask defines model for EriusTask.
 type EriusTask struct {
-	Author      string  `json:"author"`
-	BlueprintId string  `json:"blueprint_id"`
-	Comment     *string `json:"comment,omitempty"`
-	Debug       bool    `json:"debug"`
-	Description string  `json:"description"`
+	AttachmentsCount *int    `json:"attachments_count,omitempty"`
+	Author           string  `json:"author"`
+	BlueprintId      string  `json:"blueprint_id"`
+	Comment          *string `json:"comment,omitempty"`
+	Debug            bool    `json:"debug"`
+	Description      string  `json:"description"`
 
 	// Task human readable status
-	HumanStatus               TaskHumanStatus        `json:"human_status"`
-	Id                        string                 `json:"id"`
-	InitiatorAttachmentsCount int                    `json:"initiator_attachments_count"`
-	LastChangedAt             string                 `json:"last_changed_at"`
-	Name                      string                 `json:"name"`
-	Parameters                map[string]interface{} `json:"parameters"`
-	Rate                      *int                   `json:"rate,omitempty"`
-	StartedAt                 string                 `json:"started_at"`
-	Status                    string                 `json:"status"`
-	Steps                     []Step                 `json:"steps"`
-	VersionId                 string                 `json:"version_id"`
-	WorkNumber                string                 `json:"work_number"`
+	HumanStatus   TaskHumanStatus        `json:"human_status"`
+	Id            string                 `json:"id"`
+	LastChangedAt string                 `json:"last_changed_at"`
+	Name          string                 `json:"name"`
+	Parameters    map[string]interface{} `json:"parameters"`
+	Rate          *int                   `json:"rate,omitempty"`
+	StartedAt     string                 `json:"started_at"`
+	Status        string                 `json:"status"`
+	Steps         []Step                 `json:"steps"`
+	VersionId     string                 `json:"version_id"`
+	WorkNumber    string                 `json:"work_number"`
 }
 
 // EriusTasks defines model for EriusTasks.

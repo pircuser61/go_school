@@ -80,12 +80,12 @@ type EriusTask struct {
 	Actions       []TaskAction           `json:"available_actions"`
 	IsDelegate    bool                   `json:"is_delegate"`
 
-	ActiveBlocks              map[string]struct{} `json:"active_blocks"`
-	SkippedBlocks             map[string]struct{} `json:"skipped_blocks"`
-	NotifiedBlocks            map[string][]string `json:"notified_blocks"`
-	PrevUpdateStatusBlocks    map[string]string   `json:"prev_update_status_blocks"`
-	Total                     int                 `json:"-"`
-	InitiatorAttachmentsCount int                 `json:"initiator_attachments_count"`
+	ActiveBlocks           map[string]struct{} `json:"active_blocks"`
+	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
+	NotifiedBlocks         map[string][]string `json:"notified_blocks"`
+	PrevUpdateStatusBlocks map[string]string   `json:"prev_update_status_blocks"`
+	Total                  int                 `json:"-"`
+	AttachmentsCount       *int                `json:"attachments_count"`
 }
 
 func (et *EriusTask) IsRun() bool {
