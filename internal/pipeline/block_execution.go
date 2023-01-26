@@ -89,6 +89,10 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 }
 
 func (gb *GoExecutionBlock) Deadlines() []Deadline {
+	if gb.State.IsRevoked {
+		return []Deadline{}
+	}
+
 	deadlines := make([]Deadline, 0, 2)
 	if !gb.State.SLAChecked {
 		deadlines = append(deadlines,
