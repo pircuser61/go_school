@@ -19,6 +19,7 @@ import (
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -39,6 +40,7 @@ type APIEnv struct {
 	ServiceDesc          *servicedesc.Service
 	FunctionStore        *functions.Service
 	HumanTasks           *human_tasks.Service
+	MailFetcher          mail_fetcher.Service
 }
 
 type ServerParam struct {

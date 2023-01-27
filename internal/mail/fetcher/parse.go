@@ -1,81 +1,64 @@
-package imapparser
+package fetcher
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-message/mail"
-	"github.com/pkg/errors"
-	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/briefcase/notification-service/pkg/mail/answer"
-	"gitlab.services.mts.ru/prodboard/infra/tracer"
+	"github.com/pkg/errors"
+
+	"go.opencensus.io/trace"
 )
 
-func (s *FetchService) processMessage(ctx context.Context, msg *imap.Message, section *imap.BodySectionName) (err error) {
-	ctx, span := trace.StartSpan(ctx, "IncomingService.processMessage")
-	defer func() { tracer.End(span, err) }()
+type ApproverDecisionPayload struct {
+	WorkNumber string
+	Decision   string
+}
+
+type ExecutorDecisionPayload struct {
+	WorkNumber string
+	Decision   string
+}
+
+func (s *service) processMessage(ctx context.Context, msg *imap.Message, section *imap.BodySectionName) (err error) {
+	const fn = "mail.fetcher.processMessage"
+	ctx, span := trace.StartSpan(ctx, fn)
+	defer span.End()
 
 	if msg == nil {
 		err = errors.Wrap(errors.New("server didn't return message"), "no messages")
 		return err
 	}
 
-	r := msg.GetBody(section)
-	if r == nil {
+	log := logger.GetLogger(ctx)
+
+	msgBody := msg.GetBody(section)
+	if msgBody == nil {
 		err = errors.Wrap(errors.New("server didn't return message"), "no messages")
 		return err
 	}
 
-	msgReader, err := mail.CreateReader(r)
+	msgReader, err := mail.CreateReader(msgBody)
 	if err != nil {
 		err = errors.Wrap(err, "can't create reader")
 		return err
 	}
 
-	s.log.Info("Start processing email")
+	log.Info(fn, "Start processing email")
 
 	processedEmail, err := s.parseEmail(ctx, msgReader)
 	if err != nil {
-		err = errors.New("parseMgsHeaders")
+		err = errors.Wrap(err, "parseMgsHeaders")
 		return err
 	}
 
 	if processedEmail == nil || processedEmail.Action == nil {
 		return
-	}
-
-	switch processedEmail.TemplateName {
-	case answer.TdEngineCoreWebApproverDecisionCode:
-		if decisionMeta, ok := processedEmail.Action.(*answer.TDWebApproverDecision); ok {
-			err = s.tdRequestService.UpdateProcessNodeProps(ctx, decisionMeta.ToUpdateProcessNodePropsRequest())
-			if err != nil {
-				return err
-			}
-		}
-	case answer.TdEngineCoreWebDirectorApproverDecisionCode:
-		if decisionMeta, ok := processedEmail.Action.(*answer.TDWebDirectorApproverDecision); ok {
-
-			nodeIds, err := s.tdRequestService.GetLawyersDigitalProjectNodesIds(ctx, decisionMeta.ProjectCode)
-			if err != nil {
-				return err
-			}
-
-			s.log.Info("TdEngineCoreWebDirectorApproverDecisionCode ids", nodeIds)
-
-			for i := range nodeIds {
-				err = s.tdRequestService.UpdateProcessNodeProps(
-					ctx,
-					decisionMeta.ToUpdateProcessNodePropsRequest(nodeIds[i]),
-				)
-				if err != nil {
-					s.log.Warn(err, "nodeId: " + nodeIds[i])
-				}
-			}
-		}
 	}
 
 	return nil
@@ -89,33 +72,31 @@ type parsedEmail struct {
 	Action       interface{}
 }
 
-func (s *FetchService) parseEmail(ctx context.Context, r *mail.Reader) (pe *parsedEmail, err error) {
-	const funcName = "IncomingService.parseEmail"
-	var subject string
+func (s *service) parseEmail(ctx context.Context, r *mail.Reader) (pe *parsedEmail, err error) {
+	const funcName = "mail.fetcher.parseEmail"
 	_, span := trace.StartSpan(ctx, funcName)
-	defer func() {
-		span.AddAttributes(trace.StringAttribute("subject", fmt.Sprintf("%+v", subject)))
-		tracer.End(span, err)
-	}()
+	defer span.End()
+
+	var subject string
 
 	headers, err := parseEmailHeaders(r.Header)
 	if err != nil {
 		return nil, errors.Wrap(err, funcName+": headers")
 	}
 
-	from := AddressListToStrList(headers.From)
+	from := addressListToStrList(headers.From)
 	if len(from) == 0 {
 		return nil, errors.New("invalid from header")
 	}
 
-	to := AddressListToStrList(headers.To)
+	to := addressListToStrList(headers.To)
 	if len(to) == 0 {
 		return nil, errors.New("invalid to header")
 	}
 
 	subject = headers.Subject
 
-	fields := strings.Split(subject, answer.FieldsDelimiter)
+	fields := strings.Split(subject, fieldsDelimiter)
 	if len(fields) < 1 {
 		return nil, errors.New("invalid subject to parse")
 	}
@@ -171,33 +152,17 @@ func parseEmailHeaders(header mail.Header) (parsedHeaders *ParsedHeaders, err er
 }
 
 func parseAction(fields, from, to []string) (action interface{}, tmplName string, err error) {
-	templateNameField := strings.Split(fields[0], answer.FieldsKeyValueDelimiter)
+	templateNameField := strings.Split(fields[0], fieldsKeyValueDelimiter)
 	if len(templateNameField) != 2 {
 		return nil, "", errors.New("invalid template code to parse")
 	}
 
 	tmplName = templateNameField[1]
 
-	switch tmplName {
-	case answer.TdEngineCoreWebApproverDecisionCode:
-		action, err := answer.NewTDWebApproverDecision(from, to, fields)
-		if err != nil {
-			return nil, tmplName, err
-		}
-		return action, tmplName, nil
-	case answer.TdEngineCoreWebDirectorApproverDecisionCode:
-		action, err := answer.NewTDWebDirectorApproverDecision(from, fields)
-		if err != nil {
-			return nil, tmplName, err
-		}
-		return action, tmplName, nil
-
-	default:
-		return nil, tmplName, errors.New(fmt.Sprintf("template with code \"%s\" doesn't exist", templateNameField[1]))
-	}
+	return nil, "", err
 }
 
-func AddressListToStrList(addrs []*mail.Address) (res []string) {
+func addressListToStrList(addrs []*mail.Address) (res []string) {
 	res = make([]string, 0)
 	for i := range addrs {
 		if addrs[i] != nil && len(addrs[i].Address) > 0 {

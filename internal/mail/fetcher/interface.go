@@ -1,4 +1,4 @@
-package mailparser
+package fetcher
 
 import c "context"
 

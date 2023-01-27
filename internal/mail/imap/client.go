@@ -3,21 +3,22 @@ package imap
 import (
 	"context"
 	"fmt"
-	"github.com/emersion/go-imap"
-	"github.com/emersion/go-imap/client"
+
+	"sync"
+
 	"github.com/pkg/errors"
+
+	"go.opencensus.io/trace"
+
 	ilogger "gitlab.services.mts.ru/prodboard/infra/logger"
 	"gitlab.services.mts.ru/prodboard/infra/tracer"
-	"go.opencensus.io/trace"
-	"sync"
+
+	"github.com/emersion/go-imap"
+	"github.com/emersion/go-imap/client"
+
 )
 
 const reconnectRetryCount = 3
-
-type IncomingClient interface {
-	Close(ctx context.Context) // Иногда залипает соединение с сервером и нужно его пересоздавать
-	SelectUnread(ctx context.Context) (chan *imap.Message, *imap.BodySectionName, error)
-}
 
 type Client struct {
 	imapClient     *client.Client

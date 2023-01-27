@@ -506,6 +506,14 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request, vers
 	}
 }
 
+func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request, workNumber string) {
+	ctx, s := trace.StartSpan(req.Context(), "update_tasks_by_mails")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+	log.Info("UpdateTasksByMails started")
+}
+
 //nolint:gocyclo //its ok here
 func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	ctx, s := trace.StartSpan(req.Context(), "update_task")
