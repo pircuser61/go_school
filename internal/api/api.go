@@ -434,7 +434,7 @@ type ApproverParams struct {
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 
-	// Execution rework SLA (in working hours)
+	// Approvement rework SLA (in working hours)
 	ReworkSla int `json:"rework_sla"`
 
 	// Approvement SLA (in working hours)
@@ -652,11 +652,12 @@ type EriusTagInfo struct {
 
 // EriusTask defines model for EriusTask.
 type EriusTask struct {
-	Author      string  `json:"author"`
-	BlueprintId string  `json:"blueprint_id"`
-	Comment     *string `json:"comment,omitempty"`
-	Debug       bool    `json:"debug"`
-	Description string  `json:"description"`
+	AttachmentsCount *int    `json:"attachments_count,omitempty"`
+	Author           string  `json:"author"`
+	BlueprintId      string  `json:"blueprint_id"`
+	Comment          *string `json:"comment,omitempty"`
+	Debug            bool    `json:"debug"`
+	Description      string  `json:"description"`
 
 	// Task human readable status
 	HumanStatus   TaskHumanStatus        `json:"human_status"`

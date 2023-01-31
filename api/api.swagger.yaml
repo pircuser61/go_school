@@ -2314,6 +2314,8 @@ components:
           type: string
         rate:
           type: integer
+        attachments_count:
+          type: integer
       required:
         - id
         - version_id
