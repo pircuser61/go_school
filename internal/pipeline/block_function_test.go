@@ -173,7 +173,7 @@ func TestBlockFunction_Update(t *testing.T) {
 				State: &ExecutableFunction{
 					HasResponse: true,
 					Function: script.FunctionParam{
-						Output: `{"mktu": {"type": "array"}, "name": {"type": "string"}}`,
+						Output: `{"mktu": {"type": "array", "items": [{"type": "number"}]}, "name": {"type": "string"}, "obj": {"type": "object", "properties": {"k1": {"type": "string"}}}}`,
 					},
 				},
 			},
@@ -184,7 +184,8 @@ func TestBlockFunction_Update(t *testing.T) {
 					Parameters: json.RawMessage(`{
 						"mapping": {
 							"mktu": [1, 2, 3],
-							"name": "example"
+							"name": "example",
+							"obj": {"k2": "v2", "k1": "v1"}
 						}
 					}`),
 				},
@@ -222,6 +223,38 @@ func TestBlockFunction_Update(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "test with update data missing key",
+			fields: fields{
+				RunContext: &BlockRunContext{
+					TaskID:            workId,
+					skipNotifications: true,
+					skipProduce:       true,
+					VarStore:          store.NewStore(),
+				},
+				State: &ExecutableFunction{
+					HasResponse: true,
+					Function: script.FunctionParam{
+						Output: `{"mktu": {"type": "array"}, "name": {"type": "string"}, "obj": {"type": "object", "properties": {"k1": {"type": "string"}}}}`,
+					},
+				},
+			},
+			args: args{
+				data: &script.BlockUpdateData{
+					ByLogin: "example",
+					Action:  string(entity.TaskUpdateActionExecution),
+					Parameters: json.RawMessage(`{
+						"mapping": {
+							"mktu": [1, 2, 3],
+							"name": "example",
+							"obj": {"k2": "v2"}
+						}
+					}`),
+				},
+				ctx: context.Background(),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -238,6 +271,7 @@ func TestBlockFunction_Update(t *testing.T) {
 			}
 			test.fields.RunContext.UpdateData = test.args.data
 			_, err := efb.Update(test.args.ctx)
+
 			assert.Equalf(t, test.wantErr, err != nil, fmt.Sprintf("Update(%v)", test.args.ctx))
 		})
 	}

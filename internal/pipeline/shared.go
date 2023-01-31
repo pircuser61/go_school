@@ -1,8 +1,6 @@
 package pipeline
 
 import (
-	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/google/uuid"
@@ -78,25 +76,4 @@ func getSliceFromMapOfStrings(source map[string]struct{}) []string {
 
 func getStringAddress(s string) *string {
 	return &s
-}
-
-var typesMapping = map[string]reflect.Kind{
-	"array":   reflect.Slice,
-	"integer": reflect.Int,
-	"string":  reflect.String,
-	"number":  reflect.Float64,
-	"boolean": reflect.Bool,
-}
-
-func checkVariableType(variable interface{}, expectedType string) error {
-	goType, ok := typesMapping[expectedType]
-	if !ok {
-		return fmt.Errorf("unexpected type %v", expectedType)
-	}
-
-	if reflect.TypeOf(variable).Kind() != goType {
-		return fmt.Errorf("unexpected type of variable %v %T", variable, variable)
-	}
-
-	return nil
 }
