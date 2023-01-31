@@ -434,7 +434,7 @@ type ApproverParams struct {
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 
-	// Execution rework SLA (in working hours)
+	// Approvement rework SLA (in working hours)
 	ReworkSla int `json:"rework_sla"`
 
 	// Approvement SLA (in working hours)
@@ -605,6 +605,9 @@ type EriusScenario struct {
 	Name            string                `json:"name"`
 	Output          *[]EriusFunctionValue `json:"output,omitempty"`
 	Pipeline        Pipeline              `json:"pipeline"`
+
+	// Настройки старта версии пайплайна(процесса)
+	ProcessSettings ProcessSettings `json:"process_settings"`
 
 	// 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	Status    int            `json:"status"`
@@ -787,6 +790,18 @@ type ExecutorChangeParams struct {
 	NewExecutorLogin string `json:"newExecutorLogin"`
 }
 
+// ExternalSystem defines model for ExternalSystem.
+type ExternalSystem struct {
+	// Id внешней системы
+	Id string `json:"id"`
+
+	// JSON-схема данных, которые отдаёт внешняя система
+	InputSchema string `json:"input_schema"`
+
+	// JSON-схема данных, которые принимает внешняя система
+	OutputSchema string `json:"output_schema"`
+}
+
 // Fill form
 type FillFormUpdateParams struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
@@ -956,6 +971,18 @@ type NumberOperandOperandType string
 
 // Block constant params
 type Params interface{}
+
+// Настройки старта версии пайплайна(процесса)
+type ProcessSettings struct {
+	// JSON-схема выходных параметров пайплайна
+	EndSchema string `json:"end_schema"`
+
+	// Внешние системы, которые используют данный пайплайн
+	ExternalSystems []ExternalSystem `json:"external_systems"`
+
+	// JSON-схема входных параметров пайплайна
+	StartSchema string `json:"start_schema"`
+}
 
 // RateApplicationRequest defines model for RateApplicationRequest.
 type RateApplicationRequest struct {

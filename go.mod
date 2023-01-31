@@ -22,6 +22,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/swag v1.7.0
+	github.com/valyala/fastjson v1.6.4
 	gitlab.services.mts.ru/abp/mail/pkg v1.18.7
 	gitlab.services.mts.ru/abp/myosotis v1.4.4
 	gitlab.services.mts.ru/erius/monitoring v0.1.0
