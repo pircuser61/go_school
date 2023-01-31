@@ -24,6 +24,26 @@ type MappingValue struct {
 	Value string `json:"value,omitempty"`
 }
 
+func (m MappingValue) GetType() string {
+	return m.Type
+}
+
+func (m MappingValue) GetProperties() map[string]interface{} {
+	properties := make(map[string]interface{})
+	for k, v := range m.Properties {
+		properties[k] = v
+	}
+	return properties
+}
+
+func (m MappingValue) GetItems() []interface{} {
+	items := make([]interface{}, 0)
+	for _, v := range m.Items {
+		items = append(items, v)
+	}
+	return items
+}
+
 type ExecutableFunctionParams struct {
 	Name     string        `json:"name"`
 	Version  string        `json:"version"`
@@ -52,6 +72,26 @@ type ParamMetadata struct {
 	Description string
 	Items       []ParamMetadata
 	Properties  map[string]ParamMetadata
+}
+
+func (p ParamMetadata) GetType() string {
+	return p.Type
+}
+
+func (p ParamMetadata) GetProperties() map[string]interface{} {
+	properties := make(map[string]interface{})
+	for k, v := range p.Properties {
+		properties[k] = v
+	}
+	return properties
+}
+
+func (p ParamMetadata) GetItems() []interface{} {
+	items := make([]interface{}, 0)
+	for _, v := range p.Items {
+		items = append(items, v)
+	}
+	return items
 }
 
 type Options struct {

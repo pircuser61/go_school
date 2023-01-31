@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -110,7 +111,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 					return nil, errors.New("function returned not all of expected results")
 				}
 
-				if err := checkVariableType(param, expectedOutput[k].Type); err != nil {
+				if err := checkVariableType(param, expectedOutput[k]); err != nil {
 					return nil, err
 				}
 
@@ -146,7 +147,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 				return nil, fmt.Errorf("cant fill function mapping with value: %s = %v", k, v.Value)
 			}
 
-			if err = checkVariableType(variable, v.Type); err != nil {
+			if err = checkVariableType(variable, v); err != nil {
 				return nil, err
 			}
 
