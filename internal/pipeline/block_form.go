@@ -288,7 +288,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	return gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-		mail.NewRequestFormExecutionInfoTemplate(
+		mail.NewRequestFormExecutionInfoTpl(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.WorkTitle,
 			gb.RunContext.Sender.SdAddress))

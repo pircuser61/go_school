@@ -186,7 +186,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 			ctx,
 			emails,
 			nil,
-			mail.NewExecutionSLATemplate(
+			mail.NewExecutionSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
@@ -241,7 +241,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			ctx,
 			emails,
 			nil,
-			mail.NewExecutiontHalfSLATemplate(
+			mail.NewExecutiontHalfSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
@@ -291,7 +291,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewReworkSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
+	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -328,7 +328,7 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewDayBeforeRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -369,7 +369,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -571,7 +571,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		return err
 	}
 
-	tpl := mail.NewExecutionTakenInWork(&mail.ExecutorNotifTemplate{
+	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		Id:           gb.RunContext.WorkNumber,
 		SdUrl:        gb.RunContext.Sender.SdAddress,
 		ExecutorName: typedAuthor.GetFullName(),
@@ -641,7 +641,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber,
+	tpl := mail.NewAnswerSendToEditTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
@@ -670,7 +670,7 @@ func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx c.Context) error {
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewRequestExecutionInfoTemplate(gb.RunContext.WorkNumber,
+	tpl := mail.NewRequestExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
@@ -700,7 +700,7 @@ func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx c.Context) error {
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewAnswerExecutionInfoTemplate(gb.RunContext.WorkNumber,
+	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {

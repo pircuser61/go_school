@@ -426,7 +426,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 		emails = append(emails, email)
 	}
 
-	tmpl := mail.NewApplicationInitiatorStatusNotification(
+	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		runCtx.WorkNumber,
 		runCtx.WorkTitle,
 		statusToTaskState[status],

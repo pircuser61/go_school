@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -131,7 +132,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			return nil
 		}
 		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-			mail.NewApprovementSLATemplate(
+			mail.NewApprovementSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
@@ -205,7 +206,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			return nil
 		}
 		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-			mail.NewApprovementHalfSLATemplate(
+			mail.NewApprovementHalfSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
@@ -258,7 +259,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewReworkSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
+	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -295,7 +296,7 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewDayBeforeRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -336,7 +337,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -652,7 +653,7 @@ func (gb *GoApproverBlock) checkAdditionalApproverNotAdded(login string) bool {
 	return true
 }
 
-func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, attachmentsId []string) error {
+func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, attachsId []string) error {
 	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
 		return err
@@ -660,36 +661,53 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(logins)
 
-	approverEmails := make([]string, 0, len(loginsToNotify))
+	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
 		approverEmail, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			return emailErr
 		}
 
-		approverEmails = append(approverEmails, approverEmail)
+		emails = append(emails, approverEmail)
 	}
 
-	tpl := mail.NewAddApproversTemplate(
-		gb.RunContext.WorkNumber,
-		gb.RunContext.WorkTitle,
-		gb.RunContext.Sender.SdAddress,
-		gb.State.ApproveStatusName,
-	)
+	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
+	for i := range gb.State.ActionList {
+		actionsList = append(actionsList, mail.Action{
+			Id:       gb.State.ActionList[i].Id,
+			Decision: string(ApproverAction(gb.State.ActionList[i].Id).ToDecision()),
+			Title:    gb.State.ActionList[i].Title,
+		})
+	}
 
-	attachmentFiles, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, map[string][]string{"Ids": attachmentsId})
+	attachFiles, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, map[string][]string{"Ids": attachsId})
 	if err != nil {
 		return err
 	}
 
 	files := make([]email.Attachment, 0)
-	for k := range attachmentFiles {
-		files = append(files, attachmentFiles[k]...)
+	for k := range attachFiles {
+		files = append(files, attachFiles[k]...)
 	}
 
-	err = gb.RunContext.Sender.SendNotification(ctx, approverEmails, files, tpl)
-	if err != nil {
-		return err
+	emails = utils.UniqueStrings(emails)
+
+	for i := range emails {
+		tpl := mail.NewAddApproversTpl(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.WorkTitle,
+			gb.RunContext.Sender.SdAddress,
+			gb.State.ApproveStatusName,
+			emails[i],
+			BlockGoApproverID,
+			actionsList,
+			gb.State.GetIsEditable(),
+		)
+
+		err = gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -727,7 +745,7 @@ func (gb *GoApproverBlock) notificateDecisionMadeByAdditionalApprover(ctx c.Cont
 
 	latestDecisonLog := gb.State.ApproverLog[len(gb.State.ApproverLog)-1]
 
-	tpl := mail.NewDecisionMadeByAdditionalApproverTemplate(
+	tpl := mail.NewDecisionMadeByAdditionalApprover(
 		gb.RunContext.WorkNumber,
 		userInfo.FullName,
 		latestDecisonLog.Decision.ToRuString(),
@@ -775,7 +793,7 @@ func (gb *GoApproverBlock) notificateNeedRework(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewAnswerSendToEditTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -806,7 +824,7 @@ func (gb *GoApproverBlock) notificateNewInfoRecieved(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewAnswerApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewAnswerApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -837,7 +855,7 @@ func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewRequestApproverInfoTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewRequestApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err

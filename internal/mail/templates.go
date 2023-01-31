@@ -3,6 +3,7 @@ package mail
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -28,7 +29,7 @@ type ExecutorNotifTemplate struct {
 	Id, SdUrl, ExecutorName, Initiator, Description string
 }
 
-func NewApprovementSLATemplate(id, name, sdUrl, status string) Template {
+func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время %s", id, name, actionName),
@@ -45,7 +46,7 @@ func NewApprovementSLATemplate(id, name, sdUrl, status string) Template {
 	}
 }
 
-func NewApprovementHalfSLATemplate(id, name, sdUrl, status string) Template {
+func NewApprovementHalfSLATpl(id, name, sdUrl, status string) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время %s", id, name, actionName),
@@ -62,7 +63,7 @@ func NewApprovementHalfSLATemplate(id, name, sdUrl, status string) Template {
 	}
 }
 
-func NewExecutionSLATemplate(id, name, sdUrl string) Template {
+func NewExecutionSLATpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время исполнения", id, name),
 		Text:    "Истекло время исполнения заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
@@ -76,7 +77,7 @@ func NewExecutionSLATemplate(id, name, sdUrl string) Template {
 	}
 }
 
-func NewExecutiontHalfSLATemplate(id, name, sdUrl string) Template {
+func NewExecutiontHalfSLATpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время исполнения", id, name),
 		Text:    "Истекает время исполнения заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
@@ -90,7 +91,7 @@ func NewExecutiontHalfSLATemplate(id, name, sdUrl string) Template {
 	}
 }
 
-func NewReworkSLATemplate(id, sdUrl string, reworkSla int) Template {
+func NewReworkSLATpl(id, sdUrl string, reworkSla int) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s автоматически отклонена", id),
 		Text: `Уважаемый коллега, истек срок ожидания доработок по заявке {{.Id}}.</br>
@@ -108,7 +109,7 @@ func NewReworkSLATemplate(id, sdUrl string, reworkSla int) Template {
 	}
 }
 
-func NewRequestExecutionInfoTemplate(id, name, sdUrl string) Template {
+func NewRequestExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),
 		Text: `Уважаемый коллега, по заявке {{.Id}} требуется дополнительная информация<br>
@@ -125,7 +126,7 @@ func NewRequestExecutionInfoTemplate(id, name, sdUrl string) Template {
 	}
 }
 
-func NewRequestFormExecutionInfoTemplate(id, name, sdUrl string) Template {
+func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s - Необходимо предоставить информацию", id),
 		Text: `Уважаемый коллега, по заявке {{.Id}} необходимо предоставить информацию.<br>
@@ -142,7 +143,7 @@ func NewRequestFormExecutionInfoTemplate(id, name, sdUrl string) Template {
 	}
 }
 
-func NewRequestApproverInfoTemplate(id, name, sdUrl string) Template {
+func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),
 		Text: `Уважаемый коллега, по заявке № {{.Id}} требуется дополнительная информация<br>
@@ -159,7 +160,7 @@ func NewRequestApproverInfoTemplate(id, name, sdUrl string) Template {
 	}
 }
 
-func NewAnswerApproverInfoTemplate(id, name, sdUrl string) Template {
+func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),
 		Text: `Уважаемый коллега, по заявке № {{.Id}} была получена дополнительная информация<br>
@@ -176,7 +177,7 @@ func NewAnswerApproverInfoTemplate(id, name, sdUrl string) Template {
 	}
 }
 
-func NewAnswerExecutionInfoTemplate(id, name, sdUrl string) Template {
+func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s  получена дополнительная информация", id),
 		Text: `Уважаемый коллега, по заявке {{.Id}} была получена дополнительная информация<br>
@@ -193,7 +194,7 @@ func NewAnswerExecutionInfoTemplate(id, name, sdUrl string) Template {
 	}
 }
 
-func NewApplicationInitiatorStatusNotification(id, name, action, description, sdUrl string) Template {
+func NewAppInitiatorStatusNotificationTpl(id, name, action, description, sdUrl string) Template {
 	subject := fmt.Sprintf("Заявка %s %s", id, action)
 	textPart := `Уважаемый коллега, заявка {{.Id}} <b>{{.Action}}</b><br>`
 
@@ -228,10 +229,52 @@ func NewApplicationInitiatorStatusNotification(id, name, action, description, sd
 	}
 }
 
-func NewApplicationPersonStatusNotification(id, name, status, action, deadline, description, sdUrl string) Template {
-	actionName := getApprovementActionNameByStatus(status, action)
+type NewAppPersonStatusTpl struct {
+	WorkNumber  string
+	Name        string
+	Status      string
+	Action      string
+	DeadLine    string
+	Description string
+	SdUrl       string
+	Mailto      string
+
+	BlockID                   string
+	ExecutionDecisionExecuted string
+	ExecutionDecisionRejected string
+
+	// actions for approver
+	ApproverActions []Action
+
+	IsEditable bool
+}
+
+const (
+	statusExecution   = "processing"
+	statusApprovement = "approvement"
+)
+
+func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
+	actionName := getApprovementActionNameByStatus(in.Status, in.Action)
+
+	buttons := ""
+	if in.Status == statusExecution {
+		buttons = getExecutionButtons(
+			in.WorkNumber,
+			in.Mailto,
+			in.BlockID,
+			in.ExecutionDecisionExecuted,
+			in.ExecutionDecisionRejected,
+			in.IsEditable,
+		)
+	}
+
+	if in.Status == statusApprovement {
+		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.ApproverActions, in.IsEditable)
+	}
+
 	return Template{
-		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
+		Subject: fmt.Sprintf("Заявка %s ожидает %s", in.WorkNumber, actionName),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
 				Срок {{.Action}} до {{.Deadline}}<br>
@@ -244,18 +287,20 @@ func NewApplicationPersonStatusNotification(id, name, status, action, deadline, 
 			Action      string `json:"action"`
 			Deadline    string `json:"deadline"`
 			Description string `json:"description"`
+			Buttons     string `json:"buttons"`
 		}{
-			Id:          id,
-			Name:        name,
-			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Id:          in.WorkNumber,
+			Name:        in.Name,
+			Link:        fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
 			Action:      actionName,
-			Deadline:    deadline,
-			Description: description,
+			Deadline:    in.DeadLine,
+			Description: in.Description,
+			Buttons:     buttons,
 		},
 	}
 }
 
-func NewAnswerSendToEditTemplate(id, name, sdUrl string) Template {
+func NewAnswerSendToEditTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s  требует доработки", id),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>требует доработки.</b><br>
@@ -272,7 +317,7 @@ func NewAnswerSendToEditTemplate(id, name, sdUrl string) Template {
 	}
 }
 
-func NewExecutionTakenInWork(dto *ExecutorNotifTemplate) Template {
+func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.Id, dto.ExecutorName),
 		Text: `<p>Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b></br>
@@ -304,27 +349,32 @@ func NewExecutionTakenInWork(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTemplate(id, name, sdUrl, status string) Template {
+func NewAddApproversTpl(id, name, sdUrl, status, mailto, blockId string, al []Action, isEditable bool) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
+
+	buttons := getApproverButtons(id, mailto, blockId, al, isEditable)
+
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.ActionName}}.</b><br>
-				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
+				Для просмотра перейти по <a href={{.Link}}>ссылке</a> {{.Buttons}}`,
 		Variables: struct {
 			Id         string `json:"id"`
 			Name       string `json:"name"`
 			Link       string `json:"link"`
 			ActionName string `json:"actionName"`
+			Buttons    string `json:"buttons"`
 		}{
 			Id:         id,
 			Name:       name,
 			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 			ActionName: actionName,
+			Buttons:    buttons,
 		},
 	}
 }
 
-func NewDecisionMadeByAdditionalApproverTemplate(id, fullname, decision, comment, sdUrl string) Template {
+func NewDecisionMadeByAdditionalApprover(id, fullname, decision, comment, sdUrl string) Template {
 	if comment != "" {
 		comment = ": " + comment
 	}
@@ -357,7 +407,7 @@ func NewDecisionMadeByAdditionalApproverTemplate(id, fullname, decision, comment
 	}
 }
 
-func NewDayBeforeRequestAddInfoSLABreachedTemplate(id, sdUrl string) Template {
+func NewDayBeforeRequestAddInfoSLABreached(id, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s требуется дополнительная информация", id),
 		Text: `Уважаемый коллега, по вашей заявке №{{.Id}} 
@@ -375,7 +425,7 @@ func NewDayBeforeRequestAddInfoSLABreachedTemplate(id, sdUrl string) Template {
 	}
 }
 
-func NewRequestAddInfoSLABreachedTemplate(id, sdUrl string) Template {
+func NewRequestAddInfoSLABreached(id, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s автоматически отклонена", id),
 		Text: `Уважаемый коллега, заявка №{{.Id}} 
@@ -407,4 +457,59 @@ func getApprovementActionNameByStatus(status, defaultActionName string) (res str
 	default:
 		return defaultActionName
 	}
+}
+
+type Action struct {
+	Id       string
+	Title    string
+	Decision string
+}
+
+const (
+	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s"
+	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=***Комментарий***" target="_blank">%s</a></p>`
+
+	actionApproverSendEditApp = "approver_send_edit_app"
+	actionExecutorSendEditApp = "executor_send_edit_app"
+	taskUpdateActionExecution = "execution"
+)
+
+func getApproverButtons(workNumber, mailto, blockId string, actions []Action, isEditable bool) string {
+	buttons := make([]string, 0, len(actions))
+	for i := range actions {
+		if actions[i].Id == actionApproverSendEditApp {
+			continue
+		}
+		subject := fmt.Sprintf(subjectTpl, blockId, actions[i].Decision, workNumber, actions[i].Id)
+		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, actions[i].Title))
+	}
+
+	if isEditable {
+		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp)
+		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Отправить на доработку")
+		buttons = append(buttons, sendEditAppBtn)
+	}
+
+	return strings.Join(buttons, "")
+}
+
+func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string, isEditable bool) string {
+	executedSubject := fmt.Sprintf(subjectTpl, blockId, executed, workNumber, taskUpdateActionExecution)
+	executedBtn := fmt.Sprintf(buttonTpl, mailto, executedSubject, "Исполнено")
+
+	rejectedSubject := fmt.Sprintf(subjectTpl, blockId, rejected, workNumber, taskUpdateActionExecution)
+	rejectedBtn := fmt.Sprintf(buttonTpl, mailto, rejectedSubject, "Не исполнено")
+
+	buttons := []string{
+		executedBtn,
+		rejectedBtn,
+	}
+
+	if isEditable {
+		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionExecutorSendEditApp)
+		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Отправить на доработку")
+		buttons = append(buttons, sendEditAppBtn)
+	}
+
+	return strings.Join(buttons, "")
 }
