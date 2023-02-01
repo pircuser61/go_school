@@ -88,6 +88,7 @@ const (
 	GetPipelinesSearchError
 	ValidationPipelineSearchError
 	UpdateTaskRateError
+	CreateVersionValidationError
 )
 
 //nolint:dupl //its not duplicate
@@ -161,6 +162,7 @@ var errorText = map[Err]string{
 	ValidationPipelineSearchError: "name and id are empty",
 	GetFormsChangelogError:        "can't get forms history",
 	UpdateTaskRateError:           "can`t update task rate",
+	CreateVersionValidationError:  "create version request is invalid",
 }
 
 // JOKE.
@@ -236,6 +238,7 @@ var errorDescription = map[Err]string{
 	ValidationPipelineSearchError: "Не заполнены имя и айди сценария",
 	GetFormsChangelogError:        "Не удалось получить историю изменения форм",
 	UpdateTaskRateError:           "Не удалось обновить оценку заявки",
+	CreateVersionValidationError:  "Ошибка при валидации запроса",
 }
 
 var errorStatus = map[Err]int{
