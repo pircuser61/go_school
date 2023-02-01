@@ -965,3 +965,28 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 
 	return nil
 }
+
+func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pipelineId string) {
+	ctx, s := trace.StartSpan(req.Context(), "get_task_mean_solve_time")
+	defer s.End()
+
+	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineId)
+
+	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineId)
+	if intervalsErr != nil {
+		e := GetTaskError
+		log.Error(e.errorMessage(intervalsErr))
+		_ = e.sendError(w)
+		return
+	}
+
+	var mean = pipeline.ComputeMeanTaskCompletionTime(taskTimeIntervals)
+
+	if err := sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: mean.MeanWorkHours}); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}

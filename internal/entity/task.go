@@ -59,6 +59,15 @@ type TaskAction struct {
 	IsPublic           bool   `json:"-"`
 }
 
+type TaskCompletionInterval struct {
+	StartedAt  time.Time
+	FinishedAt time.Time
+}
+
+type TaskMeanSolveTime struct {
+	WorkHours float64
+}
+
 type EriusTask struct {
 	ID            uuid.UUID              `json:"id"`
 	VersionID     uuid.UUID              `json:"version_id"`

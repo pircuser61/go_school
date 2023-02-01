@@ -1276,3 +1276,7 @@ func (m *MockDB) RollbackTransaction(_ context.Context) error {
 func (m *MockDB) Ping(_ context.Context) error {
 	return errNotFound
 }
+
+func (m *MockDB) GetMeanTaskSolveTime(_ context.Context, _ string) ([]entity.TaskCompletionInterval, error) {
+	return nil, errNotImplemented
+}

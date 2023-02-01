@@ -1816,6 +1816,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /tasks/mean/{pipelineId}:
+    get:
+      tags:
+        - tasks
+      summary: Get Task Mean Solve time
+      description: Получить среднее время выполнения заявки
+      operationId: get-task-mean-solve-time
+      parameters:
+        - name: pipelineId
+          in: path
+          description: pipeline id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskMeanSolveTime'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /forms/changelog:
     get:
       tags:
@@ -2537,6 +2576,14 @@ components:
       required:
         - action
         - parameters
+
+    TaskMeanSolveTime:
+      type: object
+      properties:
+        meanWorkHours:
+          type: number
+      required:
+        - meanWorkHours
 
     FillFormUpdateParams:
       type: object

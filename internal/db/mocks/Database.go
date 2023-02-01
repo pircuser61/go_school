@@ -252,29 +252,6 @@ func (_m *MockedDatabase) EditTag(ctx context.Context, e *entity.EriusTagInfo) e
 	return r0
 }
 
-// GetTaskFormSchemaID provides a mock function with given fields: workNumber, formID
-func (_m *MockedDatabase) GetTaskFormSchemaID(workNumber string, formID string) (string, error) {
-	ret := _m.Called(workNumber, formID)
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func(string, string) string); ok {
-		r0 = rf(workNumber, formID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(string)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(workNumber, formID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetAdditionalForms provides a mock function with given fields: workNumber, nodeName
 func (_m *MockedDatabase) GetAdditionalForms(workNumber string, nodeName string) ([]string, error) {
 	ret := _m.Called(workNumber, nodeName)
@@ -551,6 +528,29 @@ func (_m *MockedDatabase) GetLastDebugTask(ctx context.Context, versionID uuid.U
 	return r0, r1
 }
 
+// GetMeanTaskSolveTime provides a mock function with given fields: ctx, pipelineId
+func (_m *MockedDatabase) GetMeanTaskSolveTime(ctx context.Context, pipelineId string) ([]entity.TaskCompletionInterval, error) {
+	ret := _m.Called(ctx, pipelineId)
+
+	var r0 []entity.TaskCompletionInterval
+	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.TaskCompletionInterval); ok {
+		r0 = rf(ctx, pipelineId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.TaskCompletionInterval)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, pipelineId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetOnApproveVersions provides a mock function with given fields: ctx
 func (_m *MockedDatabase) GetOnApproveVersions(ctx context.Context) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(ctx)
@@ -666,13 +666,13 @@ func (_m *MockedDatabase) GetPipelineTasks(ctx context.Context, pipelineID uuid.
 	return r0, r1
 }
 
-// GetPipelineVersion provides a mock function with given fields: ctx, id
+// GetPipelineVersion provides a mock function with given fields: ctx, id, checkNotDeleted
 func (_m *MockedDatabase) GetPipelineVersion(ctx context.Context, id uuid.UUID, checkNotDeleted bool) (*entity.EriusScenario, error) {
-	ret := _m.Called(ctx, id)
+	ret := _m.Called(ctx, id, checkNotDeleted)
 
 	var r0 *entity.EriusScenario
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *entity.EriusScenario); ok {
-		r0 = rf(ctx, id)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool) *entity.EriusScenario); ok {
+		r0 = rf(ctx, id, checkNotDeleted)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusScenario)
@@ -680,8 +680,8 @@ func (_m *MockedDatabase) GetPipelineVersion(ctx context.Context, id uuid.UUID, 
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(ctx, id)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, bool) error); ok {
+		r1 = rf(ctx, id, checkNotDeleted)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -820,6 +820,27 @@ func (_m *MockedDatabase) GetTask(ctx context.Context, usernames []string, workN
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, []string, string) error); ok {
 		r1 = rf(ctx, usernames, workNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTaskFormSchemaID provides a mock function with given fields: workNumber, formID
+func (_m *MockedDatabase) GetTaskFormSchemaID(workNumber string, formID string) (string, error) {
+	ret := _m.Called(workNumber, formID)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, string) string); ok {
+		r0 = rf(workNumber, formID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(workNumber, formID)
 	} else {
 		r1 = ret.Error(1)
 	}
