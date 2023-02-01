@@ -517,13 +517,12 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	mails, err := ae.MailFetcher.FetchEmails(ctx)
 	if err != nil {
 		e := ParseMailsError
-		log.Error(e.errorMessage(errors.New(funcName + ", parse mails failed")))
+		log.WithField(funcName, "parse mails failed").Error(err)
 		_ = e.sendError(w)
 		return
 	}
 
 	if mails == nil {
-		log.Info(funcName, ", empty mails")
 		return
 	}
 
@@ -531,7 +530,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		jsonBody, err := json.Marshal(mails[i].Action)
 		if err != nil {
 			e := ParseMailsError
-			log.Error(e.errorMessage(errors.Wrap(err, funcName+", parse mails failed")))
+			log.WithField(funcName, "parse mails failed").Error(err)
 			_ = e.sendError(w)
 			return
 		}
@@ -545,7 +544,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		updateDataBody, err := json.Marshal(updateData)
 		if err != nil {
 			e := ParseMailsError
-			log.Error(e.errorMessage(errors.Wrap(err, funcName+", parse mails failed")))
+			log.WithField(funcName, "parse mails failed").Error(err)
 			_ = e.sendError(w)
 			return
 		}

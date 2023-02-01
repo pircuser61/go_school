@@ -95,6 +95,6 @@ human_tasks:
 
 imap:
   imap_connection: "mail.inside.mts.ru:993"
-  imap_user_name: "amprodbpm@mts.ru"
-  imap_password: "password"
+  imap_user_name: "servicedeskmail@mts.ru"
+  imap_password: "IMAP_PASSWORD"
   imap_mail_box: "Inbox"

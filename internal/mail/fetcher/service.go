@@ -26,7 +26,7 @@ type service struct {
 	incomingClient imap.IncomingClient
 }
 
-func NewService(cfg *Config) (Service, error) {
+func NewService(cfg Config) (Service, error) {
 	imapCli, err := imap.NewImapClient(&imap.ClientConfig{
 		ImapConnection: cfg.ImapConnection,
 		ImapUserName:   cfg.ImapUserName,

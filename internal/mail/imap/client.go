@@ -3,7 +3,7 @@ package imap
 import (
 	"context"
 	"fmt"
-
+	"os"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -40,7 +40,7 @@ func NewImapClient(cfg *ClientConfig) (*Client, error) {
 	c := &Client{
 		imapConnection: cfg.ImapConnection,
 		imapUserName:   cfg.ImapUserName,
-		imapPassword:   cfg.ImapPassword,
+		imapPassword:   os.Getenv(cfg.ImapPassword),
 		imapMailBox:    cfg.ImapMailBox,
 	}
 
@@ -176,7 +176,7 @@ func (s *Client) SelectUnread(ctx context.Context) (messages chan *imap.Message,
 		return nil, nil, nil
 	}
 
-	log.Info(fmt.Sprintf("Found %d messages in mailbox", mailBox.Messages))
+	log.Info(fmt.Sprintf("found %d messages in mailbox", mailBox.Messages))
 
 	ids, err := s.Search(ctx, s.criteria)
 	if err != nil {
