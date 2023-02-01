@@ -491,6 +491,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
+  /tasks/by-mails:
+    get:
+      tags:
+        - tasks
+      summary: Update tasks by mails
+      description: Update tasks by mails
+      operationId: update-tasks-by-mails
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /pipelines/{pipelineID}/versions:
     get:
       tags:

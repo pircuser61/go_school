@@ -1,9 +1,8 @@
 package fetcher
 
 import (
-	"context"
+	c "context"
 	"strings"
-	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -15,69 +14,62 @@ import (
 	"go.opencensus.io/trace"
 )
 
-type ApproverDecisionPayload struct {
-	WorkNumber string
-	Decision   string
+type ActionPayload struct {
+	WorkNumber string `json:"workNumber"`
+	StepName   string `json:"stepName"`
+	ActionName string `json:"actionName"`
+	Decision   string `json:"decision"`
 }
 
-type ExecutorDecisionPayload struct {
-	WorkNumber string
-	Decision   string
+type ParsedEmail struct {
+	From   string
+	To     string
+	Action *ActionPayload
 }
 
-func (s *service) processMessage(ctx context.Context, msg *imap.Message, section *imap.BodySectionName) (err error) {
+func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap.BodySectionName) (*ParsedEmail, error) {
 	const fn = "mail.fetcher.processMessage"
 	ctx, span := trace.StartSpan(ctx, fn)
 	defer span.End()
 
 	if msg == nil {
-		err = errors.Wrap(errors.New("server didn't return message"), "no messages")
-		return err
+		err := errors.Wrap(errors.New("server didn't return message"), "no messages")
+		return nil, err
 	}
 
 	log := logger.GetLogger(ctx)
 
 	msgBody := msg.GetBody(section)
 	if msgBody == nil {
-		err = errors.Wrap(errors.New("server didn't return message"), "no messages")
-		return err
+		err := errors.Wrap(errors.New("server didn't return message"), "no messages")
+		return nil, err
 	}
 
 	msgReader, err := mail.CreateReader(msgBody)
 	if err != nil {
-		err = errors.Wrap(err, "can't create reader")
-		return err
+		err := errors.Wrap(err, "can't create reader")
+		return nil, err
 	}
 
-	log.Info(fn, "Start processing email")
+	log.Info(fn, "start processing email")
 
 	processedEmail, err := s.parseEmail(ctx, msgReader)
 	if err != nil {
-		err = errors.Wrap(err, "parseMgsHeaders")
-		return err
+		err := errors.Wrap(err, "parseEmail")
+		return nil, err
 	}
 
 	if processedEmail == nil || processedEmail.Action == nil {
-		return
+		return nil, nil
 	}
 
-	return nil
+	return processedEmail, nil
 }
 
-type parsedEmail struct {
-	Date         time.Time
-	From         string
-	To           string
-	TemplateName string
-	Action       interface{}
-}
-
-func (s *service) parseEmail(ctx context.Context, r *mail.Reader) (pe *parsedEmail, err error) {
+func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, err error) {
 	const funcName = "mail.fetcher.parseEmail"
 	_, span := trace.StartSpan(ctx, funcName)
 	defer span.End()
-
-	var subject string
 
 	headers, err := parseEmailHeaders(r.Header)
 	if err != nil {
@@ -94,40 +86,30 @@ func (s *service) parseEmail(ctx context.Context, r *mail.Reader) (pe *parsedEma
 		return nil, errors.New("invalid to header")
 	}
 
-	subject = headers.Subject
-
-	fields := strings.Split(subject, fieldsDelimiter)
+	fields := strings.Split(headers.Subject, fieldsDelimiter)
 	if len(fields) < 1 {
 		return nil, errors.New("invalid subject to parse")
 	}
 
-	action, tmplName, err := parseAction(fields, from, to)
+	action, err := parseSubject(fields)
 	if err != nil {
 		return nil, err
 	}
 
-	return &parsedEmail{
-		Date:         headers.Date,
-		From:         from[0],
-		To:           to[0],
-		TemplateName: tmplName,
-		Action:       action,
+	return &ParsedEmail{
+		From:   from[0],
+		To:     to[0],
+		Action: action,
 	}, nil
 }
 
-type ParsedHeaders struct {
-	Date    time.Time
+type parsedHeaders struct {
 	From    []*mail.Address
 	To      []*mail.Address
 	Subject string
 }
 
-func parseEmailHeaders(header mail.Header) (parsedHeaders *ParsedHeaders, err error) {
-	date, err := header.Date()
-	if err != nil {
-		return nil, errors.Wrap(err, ": date")
-	}
-
+func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
 	fromAddrs, err := header.AddressList("From")
 	if err != nil {
 		return nil, errors.Wrap(err, ": header From")
@@ -143,23 +125,35 @@ func parseEmailHeaders(header mail.Header) (parsedHeaders *ParsedHeaders, err er
 		return nil, errors.Wrap(err, ": header Subject")
 	}
 
-	return &ParsedHeaders{
-		Date:    date,
+	return &parsedHeaders{
 		From:    fromAddrs,
 		To:      toAddrs,
 		Subject: subject,
 	}, nil
 }
 
-func parseAction(fields, from, to []string) (action interface{}, tmplName string, err error) {
-	templateNameField := strings.Split(fields[0], fieldsKeyValueDelimiter)
-	if len(templateNameField) != 2 {
-		return nil, "", errors.New("invalid template code to parse")
+func parseSubject(fields []string) (action *ActionPayload, err error) {
+	for i := range fields {
+		keyValue := strings.Split(fields[i], fieldsKeyValueDelimiter)
+		if len(keyValue) != 2 {
+			return nil, errors.New("parseSubject, invalid subject: " + strings.Join(fields, ""))
+		}
+
+		action = &ActionPayload{}
+
+		switch keyValue[0] {
+		case stepName:
+			action.StepName = keyValue[1]
+		case decision:
+			action.Decision = keyValue[1]
+		case workNumber:
+			action.WorkNumber = keyValue[1]
+		case actionName:
+			action.ActionName = keyValue[1]
+		}
 	}
 
-	tmplName = templateNameField[1]
-
-	return nil, "", err
+	return action, err
 }
 
 func addressListToStrList(addrs []*mail.Address) (res []string) {

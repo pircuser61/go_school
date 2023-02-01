@@ -12,21 +12,21 @@ import (
 	"go.opencensus.io/trace"
 )
 
-const fieldsDelimiter string = "|"
-const fieldsKeyValueDelimiter string = "="
-
 const (
-	subjectFieldTemplateCode string = "template_code"
-	subjectFieldNodeId       string = "node_id"
-	subjectFieldProjectCode  string = "project_code"
-	subjectFieldDecision     string = "decision"
+	stepName   = "step_name"
+	decision   = "decision"
+	workNumber = "work_number"
+	actionName = "action_name"
+
+	fieldsDelimiter string = "|"
+	fieldsKeyValueDelimiter string = "="
 )
 
 type service struct {
 	incomingClient imap.IncomingClient
 }
 
-func NewService(cfg *Config) (*service, error) {
+func NewService(cfg *Config) (Service, error) {
 	imapCli, err := imap.NewImapClient(&imap.ClientConfig{
 		ImapConnection: cfg.ImapConnection,
 		ImapUserName:   cfg.ImapUserName,
@@ -42,7 +42,7 @@ func NewService(cfg *Config) (*service, error) {
 	}, nil
 }
 
-func (s *service) FetchEmails(ctx c.Context) (err error) {
+func (s *service) FetchEmails(ctx c.Context) (actions []ParsedEmail, err error) {
 	ctx, span := trace.StartSpan(ctx, "mail.fetcher.FetchEmails")
 	defer func() { tracer.End(span, err) }()
 
@@ -50,20 +50,30 @@ func (s *service) FetchEmails(ctx c.Context) (err error) {
 
 	messages, section, err := s.incomingClient.SelectUnread(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if messages == nil || section == nil {
-		return nil
+		return nil, nil
 	}
+
+	actions = make([]ParsedEmail, 0)
+
 	for msg := range messages {
-		errProcess := s.processMessage(ctx, msg, section)
+		action, errProcess := s.processMessage(ctx, msg, section)
 		if errProcess != nil {
 			log.Error(fmt.Sprintf("processMessage err: %s", errProcess.Error()))
 			continue
 		}
+
+		if action == nil {
+			log.Warning(fmt.Sprint("processMessage action is nil"))
+			continue
+		}
+
+		actions = append(actions, *action)
 	}
-	return nil
+	return actions, nil
 }
 
 func (s *service) CloseIMAP(ctx c.Context) {

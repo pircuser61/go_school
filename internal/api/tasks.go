@@ -506,12 +506,55 @@ func (ae *APIEnv) GetVersionTasks(w http.ResponseWriter, req *http.Request, vers
 	}
 }
 
-func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request, workNumber string) {
-	ctx, s := trace.StartSpan(req.Context(), "update_tasks_by_mails")
+func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
+	const funcName = "update_tasks_by_mails"
+	ctx, s := trace.StartSpan(req.Context(), funcName)
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
-	log.Info("UpdateTasksByMails started")
+	log.Info(funcName, ", started")
+
+	mails, err := ae.MailFetcher.FetchEmails(ctx)
+	if err != nil {
+		e := ParseMailsError
+		log.Error(e.errorMessage(errors.New(funcName + ", parse mails failed")))
+		_ = e.sendError(w)
+		return
+	}
+
+	if mails == nil {
+		log.Info(funcName, ", empty mails")
+		return
+	}
+
+	for i := range mails {
+		jsonBody, err := json.Marshal(mails[i].Action)
+		if err != nil {
+			e := ParseMailsError
+			log.Error(e.errorMessage(errors.Wrap(err, funcName+", parse mails failed")))
+			_ = e.sendError(w)
+			return
+		}
+
+		var actionName interface{}
+		actionName = mails[i].Action.ActionName
+
+		updateData := entity.TaskUpdate{
+			Action:     actionName.(entity.TaskUpdateAction),
+			Parameters: jsonBody,
+		}
+
+		updateDataBody, err := json.Marshal(updateData)
+		if err != nil {
+			e := ParseMailsError
+			log.Error(e.errorMessage(errors.Wrap(err, funcName+", parse mails failed")))
+			_ = e.sendError(w)
+			return
+		}
+
+		req = &http.Request{Body: io.NopCloser(strings.NewReader(string(updateDataBody)))}
+		ae.UpdateTask(w, req, mails[i].Action.WorkNumber)
+	}
 }
 
 //nolint:gocyclo //its ok here
