@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block

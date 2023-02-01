@@ -134,7 +134,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask,
 	return out
 }
 
-func (ae *APIEnv) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workNumber string, formID string) {
+func (ae *APIEnv) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workNumber, formID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_task_form_schema")
 	defer s.End()
 
@@ -536,9 +536,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		var actionName interface{}
-		actionName = mails[i].Action.ActionName
-
+		var actionName interface{} = mails[i].Action.ActionName
 		updateData := entity.TaskUpdate{
 			Action:     actionName.(entity.TaskUpdateAction),
 			Parameters: jsonBody,
@@ -893,7 +891,6 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	routineCtx = logger.WithLogger(routineCtx, log)
 	// in goroutine so we can return 202?
 	for _, item := range steps {
-
 		log = log.WithFields(map[string]interface{}{
 			"taskID":   item.TaskID,
 			"stepName": item.StepName,

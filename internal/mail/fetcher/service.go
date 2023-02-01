@@ -18,7 +18,7 @@ const (
 	workNumber = "work_number"
 	actionName = "action_name"
 
-	fieldsDelimiter string = "|"
+	fieldsDelimiter         string = "|"
 	fieldsKeyValueDelimiter string = "="
 )
 
@@ -67,7 +67,7 @@ func (s *service) FetchEmails(ctx c.Context) (actions []ParsedEmail, err error) 
 		}
 
 		if action == nil {
-			log.Warning(fmt.Sprint("processMessage action is nil"))
+			log.Warning("processMessage action is nil")
 			continue
 		}
 

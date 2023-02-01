@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"gitlab.services.mts.ru/jocasta/conditions-kit"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"

@@ -47,7 +47,7 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 
 	msgReader, err := mail.CreateReader(msgBody)
 	if err != nil {
-		err := errors.Wrap(err, "can't create reader")
+		err = errors.Wrap(err, "can't create reader")
 		return nil, err
 	}
 
@@ -55,7 +55,7 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 
 	processedEmail, err := s.parseEmail(ctx, msgReader)
 	if err != nil {
-		err := errors.Wrap(err, "parseEmail")
+		err = errors.Wrap(err, "parseEmail")
 		return nil, err
 	}
 

@@ -2,6 +2,7 @@ package imap
 
 import (
 	c "context"
+
 	"github.com/emersion/go-imap"
 )
 

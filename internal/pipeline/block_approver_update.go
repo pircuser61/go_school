@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -21,6 +20,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type approverUpdateEditingParams struct {
@@ -147,7 +147,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		gb.RunContext.UpdateData.ByLogin = AutoApprover
 		if setErr := gb.setApproverDecision(
 			approverUpdateParams{
-				internalDecision: (*gb.State.AutoAction).ToDecision(),
+				internalDecision: gb.State.AutoAction.ToDecision(),
 				Comment:          AutoActionComment,
 			}); setErr != nil {
 			return setErr
@@ -563,7 +563,6 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.HandleBreachedSLARequestAddInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-
 	}
 
 	var stateBytes []byte

@@ -138,7 +138,7 @@ func (delegations *Delegations) GetDelegates(login string) []string {
 	return result
 }
 
-func (delegations *Delegations) IsLoginDelegateFor(delegate string, sourceMember string) bool {
+func (delegations *Delegations) IsLoginDelegateFor(delegate, sourceMember string) bool {
 	for _, delegation := range *delegations {
 		if delegation.FromLogin == sourceMember {
 			if delegation.ToLogin == delegate {

@@ -15,7 +15,6 @@ import (
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
-
 )
 
 const reconnectRetryCount = 3
@@ -96,7 +95,6 @@ func (s *Client) Reconnect(ctx context.Context) error {
 
 func (s *Client) Check(ctx context.Context) (err error) {
 	for retryCount := 0; retryCount < reconnectRetryCount; retryCount++ {
-
 		err = s.imapClient.Check()
 		if err == nil {
 			return nil
@@ -110,7 +108,6 @@ func (s *Client) Check(ctx context.Context) (err error) {
 
 func (s *Client) Select(ctx context.Context, name string, readOnly bool) (mailBox *imap.MailboxStatus, err error) {
 	for retryCount := 0; retryCount < reconnectRetryCount; retryCount++ {
-
 		mailBox, err = s.imapClient.Select(name, readOnly)
 		if err == nil {
 			return mailBox, nil
@@ -124,7 +121,6 @@ func (s *Client) Select(ctx context.Context, name string, readOnly bool) (mailBo
 
 func (s *Client) Search(ctx context.Context, criteria *imap.SearchCriteria) (ids []uint32, err error) {
 	for retryCount := 0; retryCount < reconnectRetryCount; retryCount++ {
-
 		ids, err = s.imapClient.Search(criteria)
 		if err == nil {
 			return ids, nil
@@ -138,7 +134,6 @@ func (s *Client) Search(ctx context.Context, criteria *imap.SearchCriteria) (ids
 
 func (s *Client) Fetch(ctx context.Context, seqset *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) (err error) {
 	for retryCount := 0; retryCount < reconnectRetryCount; retryCount++ {
-
 		err = s.imapClient.Fetch(seqset, items, ch)
 		if err == nil {
 			return nil
@@ -177,7 +172,7 @@ func (s *Client) SelectUnread(ctx context.Context) (messages chan *imap.Message,
 	}
 
 	if mailBox.Messages == 0 {
-		log.Info("Mailbox is empty")
+		log.Info("mailbox is empty")
 		return nil, nil, nil
 	}
 
@@ -188,7 +183,7 @@ func (s *Client) SelectUnread(ctx context.Context) (messages chan *imap.Message,
 		return nil, nil, err
 	}
 	if len(ids) == 0 {
-		log.Info("No unseen messages to process")
+		log.Info("no unseen messages to process")
 		return nil, nil, nil
 	}
 
