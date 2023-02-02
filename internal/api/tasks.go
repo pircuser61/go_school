@@ -24,7 +24,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -529,12 +528,10 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for i := range mails {
-		jsonBody, err := json.Marshal(mails[i].Action)
-		if err != nil {
-			e := ParseMailsError
-			log.WithField(funcName, "parse mails failed").Error(err)
-			_ = e.sendError(w)
-			return
+		jsonBody, errParse := json.Marshal(mails[i].Action)
+		if errParse != nil {
+			log.WithField(funcName, "parse mails failed").Error(errParse)
+			continue
 		}
 
 		var actionName interface{} = mails[i].Action.ActionName
@@ -543,22 +540,23 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			Parameters: jsonBody,
 		}
 
-		updateDataBody, err := json.Marshal(updateData)
-		if err != nil {
-			e := ParseMailsError
-			log.WithField(funcName, "parse mails failed").Error(err)
+		userLogin := utils.GetLoginFromEmail(mails[i].From)
+		errUpdate := ae.UpdateTaskInternal(ctx, mails[i].Action.WorkNumber, userLogin, updateData)
+		if errUpdate != nil {
+			e := UpdateTaskParsingError
+			log.Error(e.errorMessage(errUpdate))
 			_ = e.sendError(w)
+
 			return
 		}
+	}
 
-		req = &http.Request{Body: io.NopCloser(strings.NewReader(string(updateDataBody)))}
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 
-		user.SetUserInfoToCtx(req.Context(), &sso.UserInfo{
-			Email:    mails[i].From,
-			Username: utils.GetLoginFromEmail(mails[i].From),
-		})
-
-		ae.UpdateTask(w, req, mails[i].Action.WorkNumber)
+		return
 	}
 }
 
@@ -605,56 +603,56 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
+	err = ae.UpdateTaskInternal(ctx, workNumber, ui.Username, updateData)
 	if err != nil {
-		e := GetDelegationsError
+		e := UpdateTaskParsingError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
 	}
 
-	if err = updateData.Validate(); err != nil {
-		e := UpdateTaskValidationError
+	if err = sendResponse(w, http.StatusOK, nil); err != nil {
+		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
+	}
+}
+
+func (ae *APIEnv) UpdateTaskInternal(ctx c.Context, workNumber, userLogin string, updateData entity.TaskUpdate) (err error) {
+	log := logger.GetLogger(ctx)
+
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
+	if err != nil {
+		return err
+	}
+
+	if err = updateData.Validate(); err != nil {
+		return err
 	}
 
 	blockTypes := getTaskStepNameByAction(updateData.Action)
 	if len(blockTypes) == 0 {
-		e := UpdateTaskValidationError
-		log.Error(e.errorMessage(nil))
-		_ = e.sendError(w)
-
-		return
+		return errors.New("blockTypes is empty")
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, []string{ui.Username}, workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, []string{userLogin}, workNumber)
 	if err != nil {
 		e := GetTaskError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
+		return errors.New(e.errorMessage(nil))
 	}
 
 	if !dbTask.IsRun() {
 		e := UpdateNotRunningTaskError
-		log.Error(e.errorMessage(nil))
-		_ = e.sendError(w)
-
-		return
+		return errors.New(e.errorMessage(nil))
 	}
 
 	scenario, err := ae.DB.GetPipelineVersion(ctx, dbTask.VersionID, false)
 	if err != nil {
 		e := GetVersionError
-		log.Error(e.errorMessage(nil))
-		_ = e.sendError(w)
-
-		return
+		return errors.New(e.errorMessage(nil))
 	}
 
 	var steps entity.TaskSteps
@@ -662,19 +660,14 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
 		if stepErr != nil {
 			e := GetTaskError
-			log.Error(e.errorMessage(stepErr))
-			_ = e.sendError(w)
-			return
+			return errors.New(e.errorMessage(nil))
 		}
 		steps = append(steps, stepsByBlock...)
 	}
 
 	if len(steps) == 0 {
 		e := GetTaskError
-		log.Error(e.errorMessage(nil))
-		_ = e.sendError(w)
-
-		return
+		return errors.New(e.errorMessage(nil))
 	}
 	if updateData.Action == entity.TaskUpdateActionCancelApp {
 		steps = steps[:1]
@@ -714,7 +707,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 			FaaS:          ae.FaaS,
 
 			UpdateData: &script.BlockUpdateData{
-				ByLogin:    ui.Username,
+				ByLogin:    userLogin,
 				Action:     string(updateData.Action),
 				Parameters: updateData.Parameters,
 			},
@@ -753,19 +746,10 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 	if !couldUpdateOne {
 		e := UpdateBlockError
-		log.Error(e.errorMessage(errors.New("couldn't update work")))
-		_ = e.sendError(w)
-
-		return
+		return errors.New(e.errorMessage(errors.New("couldn't update work")))
 	}
 
-	if err = sendResponse(w, http.StatusOK, nil); err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
+	return
 }
 
 //nolint:gocyclo //its ok here
