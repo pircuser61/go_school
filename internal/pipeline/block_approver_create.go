@@ -223,7 +223,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				DeadLine:        ComputeDeadline(time.Now(), gb.State.SLA),
 				Description:     description,
 				SdUrl:           gb.RunContext.Sender.SdAddress,
-				Mailto:          emails[i],
+				Mailto:          gb.RunContext.Sender.FetchEmail,
 				IsEditable:      gb.State.GetIsEditable(),
 				ApproverActions: actionsList,
 
@@ -232,7 +232,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 			})
 
-		if err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+		if err = gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, nil, tpl); err != nil {
 			return err
 		}
 	}
