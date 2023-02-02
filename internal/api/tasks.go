@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -535,6 +536,12 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		}
 
 		var actionName interface{} = mails[i].Action.ActionName
+		if _, ok := actionName.(entity.TaskUpdateAction); !ok {
+			log.WithField("workNumber", mails[i].Action.WorkNumber).
+				WithField("actionName", mails[i].Action.ActionName).
+				Error(fmt.Errorf("can`t cast %s to TaskUpdateAction type", actionName))
+			continue
+		}
 		updateData := entity.TaskUpdate{
 			Action:     actionName.(entity.TaskUpdateAction),
 			Parameters: jsonBody,
