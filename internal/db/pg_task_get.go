@@ -308,14 +308,78 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		return nil, err
 	}
 
-	total := 0
-	if len(tasks.Tasks) > 0 {
-		total = tasks.Tasks[0].Total
+	if len(tasks.Tasks) == 0 {
+		return &entity.EriusTasksPage{Tasks: []entity.EriusTask{}}, nil
+	}
+
+	taskIDs := make([]string, 0, len(tasks.Tasks))
+	for _, task := range tasks.Tasks {
+		taskIDs = append(taskIDs, task.ID.String())
+	}
+
+	q = `
+		WITH blocks_with_work_id AS (
+			SELECT work_id, jsonb_each(state) AS blocks
+			FROM works w
+			JOIN LATERAL (
+				SELECT work_id, content::jsonb->'State' AS state
+				FROM variable_storage vs
+				WHERE vs.work_id = ANY($1)
+				  AND vs.work_id = w.id
+				ORDER BY vs.time DESC
+				LIMIT 1
+			) descr ON descr.work_id = w.id
+			WHERE w.id = ANY($1)
+		)
+	
+		SELECT work_id, COUNT(*)
+		FROM (
+				SELECT work_id, jsonb_each(value(blocks)->'application_body') AS data
+				FROM blocks_with_work_id	
+				WHERE (
+					(
+						key(blocks) LIKE 'form%%'
+						AND value(blocks) ->> 'executors' SIMILAR TO '{"(%s)": {}}'	
+					)
+					OR key(blocks) LIKE 'servicedesk_application%%'
+				)		 
+			 ) a
+		WHERE value(data)::text LIKE '"attachment:%%'
+		GROUP BY work_id;
+	`
+
+	logins := strings.Join(delegations, "|")
+	q = fmt.Sprintf(q, logins)
+
+	rows, err := db.Connection.Query(ctx, q, taskIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		taskID             uuid.UUID
+		attachmentsCount   int
+		attachmentsToTasks = map[uuid.UUID]int{}
+	)
+
+	for rows.Next() {
+		err = rows.Scan(&taskID, &attachmentsCount)
+		if err != nil {
+			return nil, err
+		}
+
+		attachmentsToTasks[taskID] = attachmentsCount
+	}
+
+	for i := range tasks.Tasks {
+		count := attachmentsToTasks[tasks.Tasks[i].ID]
+		tasks.Tasks[i].AttachmentsCount = &count
 	}
 
 	return &entity.EriusTasksPage{
 		Tasks: tasks.Tasks,
-		Total: total,
+		Total: tasks.Tasks[0].Total,
 	}, nil
 }
 

@@ -88,6 +88,7 @@ const (
 	GetPipelinesSearchError
 	ValidationPipelineSearchError
 	UpdateTaskRateError
+	CreateVersionValidationError
 	ParseMailsError
 )
 
@@ -163,6 +164,7 @@ var errorText = map[Err]string{
 	GetFormsChangelogError:        "can't get forms history",
 	UpdateTaskRateError:           "can`t update task rate",
 	ParseMailsError:               "can`t parse mails",
+	CreateVersionValidationError:  "create version request is invalid",
 }
 
 // JOKE.
@@ -239,6 +241,7 @@ var errorDescription = map[Err]string{
 	GetFormsChangelogError:        "Не удалось получить историю изменения форм",
 	UpdateTaskRateError:           "Не удалось обновить оценку заявки",
 	ParseMailsError:               "Не удалось разобрать письма с действиями",
+	CreateVersionValidationError:  "Ошибка при валидации запроса",
 }
 
 var errorStatus = map[Err]int{

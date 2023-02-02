@@ -8,7 +8,7 @@ import (
 	"os"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/pressly/goose"
+	"github.com/pressly/goose/v3"
 
 	_ "gitlab.services.mts.ru/jocasta/pipeliner/migrations"
 )
