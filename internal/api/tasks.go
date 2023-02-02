@@ -530,7 +530,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	for i := range mails {
 		jsonBody, errParse := json.Marshal(mails[i].Action)
 		if errParse != nil {
-			log.WithField(funcName, "parse mails failed").Error(errParse)
+			log.WithField("workNumber", mails[i].Action.WorkNumber).Error(errParse)
 			continue
 		}
 
@@ -543,11 +543,8 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		userLogin := utils.GetLoginFromEmail(mails[i].From)
 		errUpdate := ae.updateTaskInternal(ctx, mails[i].Action.WorkNumber, userLogin, updateData)
 		if errUpdate != nil {
-			e := UpdateTaskParsingError
-			log.Error(e.errorMessage(errUpdate))
-			_ = e.sendError(w)
-
-			return
+			log.WithField("workNumber", mails[i].Action.WorkNumber).Error(errUpdate)
+			continue
 		}
 	}
 
