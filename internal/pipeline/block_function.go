@@ -86,6 +86,7 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 	return gb.State
 }
 
+//nolint:gocyclo //its ok here
 func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
 	if gb.RunContext.UpdateData != nil {
 		var updateDataParams FunctionUpdateParams

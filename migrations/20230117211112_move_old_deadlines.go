@@ -2,9 +2,13 @@ package migrations
 
 import (
 	"database/sql"
+
 	"github.com/google/uuid"
+
 	"github.com/pressly/goose/v3"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+
 	"time"
 )
 
@@ -27,14 +31,22 @@ func upMoveOldDeadlines(tx *sql.Tx) error {
 		Action   entity.TaskUpdateAction
 	}
 	var resultRows []UpdateStruct
-	query = "select id block_id, half_sla_deadline, sla_deadline, check_half_sla, check_sla from variable_storage where status in ('running', 'idle')"
+	query = `
+		select id block_id, half_sla_deadline, sla_deadline, check_half_sla, check_sla 
+			from variable_storage where status in ('running', 'idle')`
 	rows, queryErr := tx.Query(query)
 	if queryErr != nil {
 		return queryErr
 	}
 	for rows.Next() {
 		var resultRow ResultRowStruct
-		scanErr := rows.Scan(&resultRow.BlockId, &resultRow.HalfSlaDeadline, &resultRow.SlaDeadline, &resultRow.CheckHalfSLA, &resultRow.CheckSLA)
+		scanErr := rows.Scan(
+			&resultRow.BlockId,
+			&resultRow.HalfSlaDeadline,
+			&resultRow.SlaDeadline,
+			&resultRow.CheckHalfSLA,
+			&resultRow.CheckSLA,
+		)
 		if scanErr != nil {
 			rows.Close()
 			return scanErr

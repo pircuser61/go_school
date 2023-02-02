@@ -89,6 +89,7 @@ const (
 	ValidationPipelineSearchError
 	UpdateTaskRateError
 	CreateVersionValidationError
+	ParseMailsError
 )
 
 //nolint:dupl //its not duplicate
@@ -162,6 +163,7 @@ var errorText = map[Err]string{
 	ValidationPipelineSearchError: "name and id are empty",
 	GetFormsChangelogError:        "can't get forms history",
 	UpdateTaskRateError:           "can`t update task rate",
+	ParseMailsError:               "can`t parse mails",
 	CreateVersionValidationError:  "create version request is invalid",
 }
 
@@ -238,6 +240,7 @@ var errorDescription = map[Err]string{
 	ValidationPipelineSearchError: "Не заполнены имя и айди сценария",
 	GetFormsChangelogError:        "Не удалось получить историю изменения форм",
 	UpdateTaskRateError:           "Не удалось обновить оценку заявки",
+	ParseMailsError:               "Не удалось разобрать письма с действиями",
 	CreateVersionValidationError:  "Ошибка при валидации запроса",
 }
 

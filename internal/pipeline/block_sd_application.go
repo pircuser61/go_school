@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"github.com/pkg/errors"

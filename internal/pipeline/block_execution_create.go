@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -163,22 +164,34 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		return nil
 	}
 
-	descr, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
 	}
 
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-		mail.NewApplicationPersonStatusNotification(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.WorkTitle,
-			string(StatusExecution),
-			statusToTaskAction[StatusExecution],
-			ComputeDeadline(time.Now(), gb.State.SLA),
-			descr,
-			gb.RunContext.Sender.SdAddress))
-	if err != nil {
-		return err
+	emails = utils.UniqueStrings(emails)
+
+	for i := range emails {
+		tpl := mail.NewAppPersonStatusNotificationTpl(
+			&mail.NewAppPersonStatusTpl{
+				WorkNumber:  gb.RunContext.WorkNumber,
+				Name:        gb.RunContext.WorkTitle,
+				Status:      string(StatusExecution),
+				Action:      statusToTaskAction[StatusExecution],
+				DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA),
+				Description: description,
+				SdUrl:       gb.RunContext.Sender.SdAddress,
+				Mailto:      emails[i],
+				IsEditable:  gb.State.GetIsEditable(),
+
+				BlockID:                   BlockGoExecutionID,
+				ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
+				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
+			})
+
+		if err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+			return err
+		}
 	}
 
 	return nil
