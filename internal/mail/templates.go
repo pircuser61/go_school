@@ -250,8 +250,7 @@ type NewAppPersonStatusTpl struct {
 }
 
 const (
-	statusExecution   = "processing"
-	statusApprovement = "approvement"
+	statusExecution = "processing"
 )
 
 func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
@@ -269,7 +268,11 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 		)
 	}
 
-	if in.Status == statusApprovement {
+	if in.Status == script.SettingStatusApprovement ||
+		in.Status == script.SettingStatusApproveConfirm ||
+		in.Status == script.SettingStatusApproveView ||
+		in.Status == script.SettingStatusApproveInform ||
+		in.Status == script.SettingStatusApproveSign {
 		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.ApproverActions, in.IsEditable)
 	}
 
@@ -278,6 +281,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
 				Срок {{.Action}} до {{.Deadline}}<br>
+				{{.Buttons}}
 				Текст заявки:<br><br>
 				<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
 		Variables: struct {
@@ -490,7 +494,7 @@ func getApproverButtons(workNumber, mailto, blockId string, actions []Action, is
 		buttons = append(buttons, sendEditAppBtn)
 	}
 
-	return strings.Join(buttons, "")
+	return fmt.Sprintf("<p><b>Действия с заявкой</b></p> %s", strings.Join(buttons, ""))
 }
 
 func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string, isEditable bool) string {
@@ -511,5 +515,5 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string,
 		buttons = append(buttons, sendEditAppBtn)
 	}
 
-	return strings.Join(buttons, "")
+	return fmt.Sprintf("<p><b>Действия с заявкой</b></p> %s", strings.Join(buttons, ""))
 }
