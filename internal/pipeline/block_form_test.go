@@ -5,9 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks/mocks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"io"
 	"net/http"
 	"testing"
@@ -23,7 +20,9 @@ import (
 	dbMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )

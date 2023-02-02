@@ -548,7 +548,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		}
 
 		userLogin := utils.GetLoginFromEmail(mails[i].From)
-		errUpdate := ae.updateTaskInternal(ctx, mails[i].Action.WorkNumber, userLogin, updateData)
+		errUpdate := ae.updateTaskInternal(ctx, mails[i].Action.WorkNumber, userLogin, &updateData)
 		if errUpdate != nil {
 			log.WithField("workNumber", mails[i].Action.WorkNumber).Error(errUpdate)
 			continue
@@ -607,7 +607,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	err = ae.updateTaskInternal(ctx, workNumber, ui.Username, updateData)
+	err = ae.updateTaskInternal(ctx, workNumber, ui.Username, &updateData)
 	if err != nil {
 		e := UpdateTaskParsingError
 		log.Error(e.errorMessage(err))
@@ -625,7 +625,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 }
 
-func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in entity.TaskUpdate) (err error) {
+func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	log := logger.GetLogger(ctx)
 
 	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
