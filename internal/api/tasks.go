@@ -541,7 +541,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		}
 
 		userLogin := utils.GetLoginFromEmail(mails[i].From)
-		errUpdate := ae.UpdateTaskInternal(ctx, mails[i].Action.WorkNumber, userLogin, updateData)
+		errUpdate := ae.updateTaskInternal(ctx, mails[i].Action.WorkNumber, userLogin, updateData)
 		if errUpdate != nil {
 			e := UpdateTaskParsingError
 			log.Error(e.errorMessage(errUpdate))
@@ -603,7 +603,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	err = ae.UpdateTaskInternal(ctx, workNumber, ui.Username, updateData)
+	err = ae.updateTaskInternal(ctx, workNumber, ui.Username, updateData)
 	if err != nil {
 		e := UpdateTaskParsingError
 		log.Error(e.errorMessage(err))
@@ -621,7 +621,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 }
 
-func (ae *APIEnv) UpdateTaskInternal(ctx c.Context, workNumber, userLogin string, updateData entity.TaskUpdate) (err error) {
+func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in entity.TaskUpdate) (err error) {
 	log := logger.GetLogger(ctx)
 
 	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
@@ -629,11 +629,11 @@ func (ae *APIEnv) UpdateTaskInternal(ctx c.Context, workNumber, userLogin string
 		return err
 	}
 
-	if err = updateData.Validate(); err != nil {
+	if err = in.Validate(); err != nil {
 		return err
 	}
 
-	blockTypes := getTaskStepNameByAction(updateData.Action)
+	blockTypes := getTaskStepNameByAction(in.Action)
 	if len(blockTypes) == 0 {
 		return errors.New("blockTypes is empty")
 	}
@@ -669,7 +669,7 @@ func (ae *APIEnv) UpdateTaskInternal(ctx c.Context, workNumber, userLogin string
 		e := GetTaskError
 		return errors.New(e.errorMessage(nil))
 	}
-	if updateData.Action == entity.TaskUpdateActionCancelApp {
+	if in.Action == entity.TaskUpdateActionCancelApp {
 		steps = steps[:1]
 	}
 
@@ -708,8 +708,8 @@ func (ae *APIEnv) UpdateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 			UpdateData: &script.BlockUpdateData{
 				ByLogin:    userLogin,
-				Action:     string(updateData.Action),
-				Parameters: updateData.Parameters,
+				Action:     string(in.Action),
+				Parameters: in.Parameters,
 			},
 			Delegations: delegations,
 		}
