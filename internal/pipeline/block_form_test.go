@@ -210,6 +210,8 @@ func Test_createGoFormBlock(t *testing.T) {
 					ActualExecutor:   nil,
 					ChangesLog:       []ChangesLogItem{},
 					IsRevoked:        false,
+					Description:      "",
+					FormsAccessibility: []script.FormAccessibility{},
 				},
 				Sockets: entity.ConvertSocket(next),
 			},

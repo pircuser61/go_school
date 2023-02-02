@@ -113,6 +113,7 @@ func main() {
 		return
 	}
 
+	cfg.Mail.FetchEmail = cfg.MailFetcher.ImapUserName
 	mailService, err := mail.NewService(cfg.Mail)
 	if err != nil {
 		log.WithError(err).Error("can't create mail service")
