@@ -24,8 +24,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type eriusTaskResponse struct {
@@ -550,6 +552,12 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		}
 
 		req = &http.Request{Body: io.NopCloser(strings.NewReader(string(updateDataBody)))}
+
+		user.SetUserInfoToCtx(req.Context(), &sso.UserInfo{
+			Email:    mails[i].From,
+			Username: utils.GetLoginFromEmail(mails[i].From),
+		})
+
 		ae.UpdateTask(w, req, mails[i].Action.WorkNumber)
 	}
 }
