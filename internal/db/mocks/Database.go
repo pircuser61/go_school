@@ -528,6 +528,29 @@ func (_m *MockedDatabase) GetLastDebugTask(ctx context.Context, versionID uuid.U
 	return r0, r1
 }
 
+// GetMeanTaskSolveTime provides a mock function with given fields: ctx, pipelineId
+func (_m *MockedDatabase) GetMeanTaskSolveTime(ctx context.Context, pipelineId string) ([]entity.TaskCompletionInterval, error) {
+	ret := _m.Called(ctx, pipelineId)
+
+	var r0 []entity.TaskCompletionInterval
+	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.TaskCompletionInterval); ok {
+		r0 = rf(ctx, pipelineId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.TaskCompletionInterval)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, pipelineId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetOnApproveVersions provides a mock function with given fields: ctx
 func (_m *MockedDatabase) GetOnApproveVersions(ctx context.Context) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(ctx)

@@ -1087,3 +1087,52 @@ func (db *PGCon) actionsToStrings(nullStringActions []sql.NullString) []string {
 
 	return actions
 }
+
+func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
+	result []entity.TaskCompletionInterval, err error) {
+	const q = `
+	SELECT
+		started_at,
+		finished_at
+	FROM works w
+	  JOIN versions v ON v.id = w.version_id
+	  JOIN pipelines p ON p.id = v.pipeline_id
+	  JOIN work_status ws ON w.status = ws.id
+	WHERE p.id = $1
+		AND v.is_actual = TRUE
+		AND coalesce(w.run_context -> 'initial_application' -> 'is_test_application' = 'false', true)
+		AND ws.name = 'finished'
+	HAVING count(*) < 30
+	ORDER BY w.started_at DESC`
+
+	result = make([]entity.TaskCompletionInterval, 0)
+
+	rows, err := db.Connection.Query(ctx, q, pipelineId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return result, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		interval := entity.TaskCompletionInterval{}
+
+		if scanErr := rows.Scan(
+			&interval.StartedAt,
+			&interval.FinishedAt,
+		); scanErr != nil {
+			return nil, scanErr
+		}
+
+		result = append(result, interval)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		rows.Close()
+		return nil, rowsErr
+	}
+
+	return result, nil
+}

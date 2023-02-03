@@ -14,3 +14,7 @@ type FormAccessibility struct {
 	Description string     `json:"description"`
 	AccessType  AccessType `json:"accessType"`
 }
+
+type TaskSolveTime struct {
+	MeanWorkHours float64 `json:"meanWorkHours"`
+}

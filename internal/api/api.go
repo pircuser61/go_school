@@ -1138,6 +1138,11 @@ type StringOperandDataType string
 // StringOperandOperandType defines model for StringOperand.OperandType.
 type StringOperandOperandType string
 
+// TaskMeanSolveTime defines model for TaskMeanSolveTime.
+type TaskMeanSolveTime struct {
+	WorkHours float32 `json:"workHours"`
+}
+
 // TaskUpdate defines model for TaskUpdate.
 type TaskUpdate struct {
 	Action TaskUpdateAction `json:"action"`
@@ -2023,6 +2028,9 @@ type ServerInterface interface {
 	// Get last debug task for version
 	// (GET /tasks/last-by-version/{versionID})
 	LastVersionDebugTask(w http.ResponseWriter, r *http.Request, versionID string)
+	// Get Task Mean Solve time
+	// (GET /tasks/mean/{pipelineId})
+	GetTaskMeanSolveTime(w http.ResponseWriter, r *http.Request, pipelineId string)
 	// Get Pipeline Tasks
 	// (GET /tasks/pipeline/{pipelineID})
 	GetPipelineTasks(w http.ResponseWriter, r *http.Request, pipelineID string)
@@ -3114,6 +3122,32 @@ func (siw *ServerInterfaceWrapper) LastVersionDebugTask(w http.ResponseWriter, r
 	handler(w, r.WithContext(ctx))
 }
 
+// GetTaskMeanSolveTime operation middleware
+func (siw *ServerInterfaceWrapper) GetTaskMeanSolveTime(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "pipelineId" -------------
+	var pipelineId string
+
+	err = runtime.BindStyledParameter("simple", false, "pipelineId", chi.URLParam(r, "pipelineId"), &pipelineId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipelineId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTaskMeanSolveTime(w, r, pipelineId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // GetPipelineTasks operation middleware
 func (siw *ServerInterfaceWrapper) GetPipelineTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -3485,6 +3519,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/last-by-version/{versionID}", wrapper.LastVersionDebugTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/tasks/mean/{pipelineId}", wrapper.GetTaskMeanSolveTime)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/pipeline/{pipelineID}", wrapper.GetPipelineTasks)

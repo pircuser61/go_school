@@ -203,8 +203,8 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotWorkHours := getWorkWorkHoursBetweenDates(tt.fields.from, tt.fields.to); gotWorkHours != tt.wantWorkHours {
-				t.Errorf("getWorkWorkHoursBetweenDates() = %v, want %v", gotWorkHours, tt.wantWorkHours)
+			if gotWorkHours := getWorkHoursBetweenDates(tt.fields.from, tt.fields.to); gotWorkHours != tt.wantWorkHours {
+				t.Errorf("getWorkHoursBetweenDates() = %v, want %v", gotWorkHours, tt.wantWorkHours)
 			}
 		})
 	}

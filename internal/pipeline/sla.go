@@ -2,6 +2,9 @@ package pipeline
 
 import (
 	"time"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const (
@@ -11,7 +14,7 @@ const (
 	ddmmyyFormat = "02.01.2006"
 )
 
-func getWorkWorkHoursBetweenDates(from, to time.Time) (workHours int) {
+func getWorkHoursBetweenDates(from, to time.Time) (workHours int) {
 	if from.After(to) || from.Equal(to) {
 		return 0
 	}
@@ -76,6 +79,20 @@ func ComputeMaxDate(start time.Time, sla float32) time.Time {
 	}
 
 	return deadline
+}
+
+func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval) (
+	result script.TaskSolveTime) {
+	var taskIntervalsCnt = len(taskIntervals)
+
+	var totalHours = 0
+	for _, interval := range taskIntervals {
+		totalHours += getWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt)
+	}
+
+	return script.TaskSolveTime{
+		MeanWorkHours: float64(totalHours) / float64(taskIntervalsCnt),
+	}
 }
 
 func CheckBreachSLA(start, current time.Time, sla int) bool {
