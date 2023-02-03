@@ -1,9 +1,10 @@
 package pipeline
 
 import (
+	"time"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"time"
 )
 
 const (
@@ -13,7 +14,7 @@ const (
 	ddmmyyFormat = "02.01.2006"
 )
 
-func getWorkWorkHoursBetweenDates(from, to time.Time) (workHours int) {
+func getWorkHoursBetweenDates(from, to time.Time) (workHours int) {
 	if from.After(to) || from.Equal(to) {
 		return 0
 	}
@@ -89,7 +90,7 @@ func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval
 
 	var totalHours = 0
 	for _, interval := range taskIntervals {
-		totalHours += getWorkWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt)
+		totalHours += getWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt)
 	}
 
 	return script.TaskSolveTime{

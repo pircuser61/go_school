@@ -454,7 +454,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 		}
 
 		if len(gb.State.RequestExecutionInfoLogs) > 0 {
-			workHours := getWorkWorkHoursBetweenDates(
+			workHours := getWorkHoursBetweenDates(
 				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
 				time.Now(),
 			)
@@ -523,7 +523,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	}
 
 	gb.State.IsTakenInWork = true
-	workHours := getWorkWorkHoursBetweenDates(
+	workHours := getWorkHoursBetweenDates(
 		gb.RunContext.currBlockStartTime,
 		time.Now(),
 	)

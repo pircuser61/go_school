@@ -1093,7 +1093,7 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 	  JOIN work_status ws ON w.status = ws.id
 	WHERE p.id = $1
 		AND v.is_actual = TRUE
-		AND w.debug = FALSE
+		AND w.run_context -> 'initial_application' -> 'is_test_application' = 'false'
 		AND ws.name = 'finished'
 	ORDER BY w.started_at DESC`
 
@@ -1106,20 +1106,24 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 		}
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	for rows.Next() {
-		tci := entity.TaskCompletionInterval{}
+		interval := entity.TaskCompletionInterval{}
 
 		if scanErr := rows.Scan(
-			&tci.StartedAt,
-			&tci.FinishedAt,
+			&interval.StartedAt,
+			&interval.FinishedAt,
 		); scanErr != nil {
 			return nil, scanErr
 		}
 
-		result = append(result, tci)
+		result = append(result, interval)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		rows.Close()
+		return nil, rowsErr
 	}
 
 	return result, nil
