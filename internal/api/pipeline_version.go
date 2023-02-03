@@ -163,11 +163,12 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID
 }
 
 type runVersionsByPipelineIDRequest struct {
-	ApplicationBody  orderedmap.OrderedMap `json:"application_body"`
-	Description      string                `json:"description"`
-	PipelineId       string                `json:"pipeline_id"`
-	AttachmentFields []string              `json:"attachment_fields"`
-	Keys             map[string]string     `json:"keys"`
+	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
+	Description       string                `json:"description"`
+	PipelineId        string                `json:"pipeline_id"`
+	AttachmentFields  []string              `json:"attachment_fields"`
+	Keys              map[string]string     `json:"keys"`
+	IsTestApplication bool                  `json:"is_test_application"`
 }
 
 func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
@@ -231,10 +232,11 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 				req:      r,
 				runCtx: entity.TaskRunContext{
 					InitialApplication: entity.InitialApplication{
-						Description:      req.Description,
-						ApplicationBody:  req.ApplicationBody,
-						Keys:             req.Keys,
-						AttachmentFields: req.AttachmentFields,
+						Description:       req.Description,
+						ApplicationBody:   req.ApplicationBody,
+						Keys:              req.Keys,
+						AttachmentFields:  req.AttachmentFields,
+						IsTestApplication: req.IsTestApplication,
 					},
 				},
 			})

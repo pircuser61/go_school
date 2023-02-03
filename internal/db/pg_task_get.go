@@ -137,7 +137,11 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
 			w.author, 
 			w.version_id,
 			w.work_number,
-			p.name,
+			CASE
+        		WHEN w.run_context -> 'initial_application' -> 'is_test_application' = 'true'
+            		THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
+        		ELSE p.name
+    		END,
 			COALESCE(descr.description, ''),
 			COALESCE(descr.blueprint_id, ''),
 			count(*) over() as total,
@@ -552,7 +556,11 @@ func (db *PGCon) GetTask(ctx c.Context, delegatorsWithUser []string, workNumber 
 			w.author,
 			w.version_id,
 			w.work_number,
-			p.name,
+			 CASE
+        		WHEN run_context -> 'initial_application' -> 'is_test_application' = 'true'
+            		THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
+        		ELSE p.name
+    		END,
 			COALESCE(descr.description, ''),
 			COALESCE(descr.blueprint_id, ''),
 			w.rate,
