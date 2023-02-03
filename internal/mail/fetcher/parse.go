@@ -19,6 +19,7 @@ type ActionPayload struct {
 	StepName   string `json:"stepName"`
 	ActionName string `json:"actionName"`
 	Decision   string `json:"decision"`
+	Comment    string `json:"comment"`
 }
 
 type ParsedEmail struct {
