@@ -30,6 +30,7 @@ type ExecutableFunction struct {
 	Async       bool                 `json:"async"`
 	HasAck      bool                 `json:"has_ack"`
 	HasResponse bool                 `json:"has_response"`
+	Contracts   string               `json:"contracts"`
 }
 
 type FunctionStatus string
@@ -159,6 +160,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			err = gb.RunContext.Kafka.Produce(ctx, kafka.RunnerOutMessage{
 				TaskID:          taskStep.ID,
 				FunctionMapping: functionMapping,
+				Contracts:       gb.State.Contracts,
 				RetryPolicy:     string(SimpleFunctionRetryPolicy),
 				FunctionName:    gb.State.Name,
 			})
@@ -273,6 +275,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		HasAck:      false,
 		HasResponse: false,
 		Async:       isAsync,
+		Contracts:   function.Contracts,
 	}
 
 	return nil

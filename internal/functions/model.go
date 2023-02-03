@@ -12,6 +12,7 @@ type Function struct {
 	Input       map[string]ParamMetadata
 	Output      map[string]ParamMetadata
 	Options     Options
+	Contracts   string
 	CreatedAt   string
 	DeletedAt   string
 	UpdatedAt   string
@@ -26,6 +27,7 @@ type Version struct {
 	Input       string
 	Output      string
 	Options     string
+	Contracts   string
 	CreatedAt   string
 	UpdatedAt   string
 	DeletedAt   string
