@@ -473,9 +473,10 @@ const (
 	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s"
 	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=***Комментарий***" target="_blank">%s</a></p>`
 
-	actionApproverSendEditApp = "approver_send_edit_app"
-	actionExecutorSendEditApp = "executor_send_edit_app"
-	taskUpdateActionExecution = "execution"
+	actionApproverSendEditApp   = "approver_send_edit_app"
+	actionExecutorSendEditApp   = "executor_send_edit_app"
+	taskUpdateActionExecution   = "execution"
+	taskUpdateActionApprovement = "approvement"
 )
 
 func getApproverButtons(workNumber, mailto, blockId string, actions []Action, isEditable bool) string {
@@ -484,7 +485,7 @@ func getApproverButtons(workNumber, mailto, blockId string, actions []Action, is
 		if actions[i].Id == actionApproverSendEditApp {
 			continue
 		}
-		subject := fmt.Sprintf(subjectTpl, blockId, actions[i].Decision, workNumber, actions[i].Id)
+		subject := fmt.Sprintf(subjectTpl, blockId, actions[i].Decision, workNumber, taskUpdateActionApprovement)
 		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, actions[i].Title))
 	}
 
