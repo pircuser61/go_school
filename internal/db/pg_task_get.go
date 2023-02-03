@@ -1094,6 +1094,7 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 		AND v.is_actual = TRUE
 		AND coalesce(w.run_context -> 'initial_application' -> 'is_test_application' = 'false', true)
 		AND ws.name = 'finished'
+	HAVING count(*) < 30
 	ORDER BY w.started_at DESC`
 
 	result = make([]entity.TaskCompletionInterval, 0)
