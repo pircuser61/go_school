@@ -84,9 +84,6 @@ func ComputeMaxDate(start time.Time, sla float32) time.Time {
 func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval) (
 	result script.TaskSolveTime) {
 	var taskIntervalsCnt = len(taskIntervals)
-	if taskIntervalsCnt < 30 {
-		return script.TaskSolveTime{}
-	}
 
 	var totalHours = 0
 	for _, interval := range taskIntervals {
