@@ -231,17 +231,29 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 
 	log := logger.GetLogger(ctx)
 
-	gb.RunContext.UpdateData.ByLogin = gb.RunContext.Initiator
-	err := gb.cancelPipeline(ctx)
-	if err != nil {
-		return err
+	decision := ApproverDecisionRejected
+	gb.State.Decision = &decision
+	gb.State.EditingApp = nil
+
+	comment := fmt.Sprintf("заявка автоматически перенесена в архив по истечении %d дней", gb.State.ReworkSLA/8)
+	gb.State.Comment = &comment
+
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
 	}
 
-	gb.State.EditingApp = nil
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
+		return stopErr
+	}
+
+	if stopErr := gb.RunContext.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
+	}
 
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	var em string
+	var err error
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
 		em, err = gb.RunContext.People.GetUserEmail(ctx, login)

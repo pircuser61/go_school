@@ -197,6 +197,11 @@ func TestProcessBlock(t *testing.T) {
 								Title:     BlockGoEndTitle,
 							}, nil,
 						)
+
+						res.On("CheckIsArchived",
+							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							uuid.Nil,
+						).Return(false, nil)
 						return res
 					}(),
 					ServiceDesc: func() *servicedesc.Service {
@@ -391,6 +396,12 @@ func TestProcessBlock(t *testing.T) {
 								Title:     BlockGoEndTitle,
 							}, nil,
 						)
+
+						res.On("CheckIsArchived",
+							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							uuid.Nil,
+						).Return(false, nil)
+
 						return res
 					}(),
 					ServiceDesc: func() *servicedesc.Service {

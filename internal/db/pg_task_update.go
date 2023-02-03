@@ -150,13 +150,27 @@ func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedM
 
 func (db *PGCon) UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) (err error) {
 	const q = `
-		update works 
-		set 
+		UPDATE works 
+		SET 
 			rate = $1,
 			rate_comment = $2
-		where work_number = $3 and author = $4`
+		WHERE work_number = $3 AND author = $4`
 
 	_, err = db.Connection.Exec(ctx, q, req.Rate, req.Comment, req.WorkNumber, req.ByLogin)
+
+	return err
+}
+
+func (db *PGCon) SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error) {
+	ctx, span := trace.StartSpan(ctx, "send_task_to_archive")
+	defer span.End()
+
+	const q = `
+		UPDATE works 
+		SET archived = true
+		WHERE id = $1`
+
+	_, err = db.Connection.Exec(ctx, q, taskID)
 
 	return err
 }

@@ -1136,3 +1136,20 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 
 	return result, nil
 }
+
+func (db *PGCon) CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_is_archived")
+	defer span.End()
+
+	q := `
+		SELECT archived
+		FROM works
+		WHERE id = $1`
+
+	var isArchived bool
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&isArchived); err != nil {
+		return false, err
+	}
+
+	return isArchived, nil
+}
