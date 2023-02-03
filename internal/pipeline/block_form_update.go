@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -33,9 +31,7 @@ func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	var initiator = gb.RunContext.Initiator
 
-	var initiatorDelegates = gb.RunContext.Delegations.GetDelegates(initiator)
-
-	if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
+	if currentLogin != initiator {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
@@ -90,11 +86,8 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 	} else {
 		_, executorFound := gb.State.Executors[data.ByLogin]
-		var isDelegate bool
-		delegateFor, isDelegate = gb.RunContext.Delegations.FindDelegatorFor(data.ByLogin,
-			getSliceFromMapOfStrings(gb.State.Executors))
 
-		if !(executorFound || isDelegate) {
+		if !executorFound {
 			return nil, NewUserIsNotPartOfProcessErr()
 		}
 

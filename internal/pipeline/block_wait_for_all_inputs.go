@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"

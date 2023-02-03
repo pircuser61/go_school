@@ -266,9 +266,9 @@ func (a *ApproverData) SetDecision(login string,
 	decision ApproverDecision, comment string, attach []string, delegations human_tasks.Delegations) error {
 	_, approverFound := a.Approvers[login]
 
-	var delegators = delegations.GetDelegators(login)
-	var delegateFor = ""
+	delegators := delegations.GetDelegators(login)
 
+	var delegateFor = ""
 	for approver := range a.Approvers {
 		for _, delegator := range delegators {
 			if delegator == approver && !decisionForPersonExists(delegator, &a.ApproverLog) {

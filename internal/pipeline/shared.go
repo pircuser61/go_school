@@ -1,8 +1,6 @@
 package pipeline
 
 import (
-	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/google/uuid"
@@ -44,8 +42,8 @@ func getVariable(variables map[string]interface{}, key string) interface{} {
 }
 
 func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolve map[string]struct{}) (
-	entitiesToResolve map[string]struct{}, err error) {
-	entitiesToResolve = make(map[string]struct{})
+	map[string]struct{}, error) {
+	entitiesToResolve := make(map[string]struct{})
 	for entityVariableRef := range toResolve {
 		if len(strings.Split(entityVariableRef, dotSeparator)) == 1 {
 			continue
@@ -53,17 +51,17 @@ func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolv
 		entityVar := getVariable(variableStorage, entityVariableRef)
 
 		if entityVar == nil {
-			return nil, errors.Wrap(err, "Unable to find entity by variable reference")
+			return nil, errors.New("Unable to find entity by variable reference")
 		}
 
 		if actualFormExecutorUsername, castOK := entityVar.(string); castOK {
 			entitiesToResolve[actualFormExecutorUsername] = toResolve[entityVariableRef]
 		}
 
-		return entitiesToResolve, err
+		return entitiesToResolve, nil
 	}
 
-	return nil, errors.Wrap(err, "Unexpected behavior")
+	return nil, errors.New("Unexpected behavior")
 }
 
 func getSliceFromMapOfStrings(source map[string]struct{}) []string {
@@ -78,25 +76,4 @@ func getSliceFromMapOfStrings(source map[string]struct{}) []string {
 
 func getStringAddress(s string) *string {
 	return &s
-}
-
-var typesMapping = map[string]reflect.Kind{
-	"array":   reflect.Slice,
-	"integer": reflect.Int,
-	"string":  reflect.String,
-	"number":  reflect.Float64,
-	"boolean": reflect.Bool,
-}
-
-func checkVariableType(variable interface{}, expectedType string) error {
-	goType, ok := typesMapping[expectedType]
-	if !ok {
-		return fmt.Errorf("unexpected type %v", expectedType)
-	}
-
-	if reflect.TypeOf(variable).Kind() != goType {
-		return fmt.Errorf("unexpected type of variable %v %T", variable, variable)
-	}
-
-	return nil
 }

@@ -1,17 +1,32 @@
 package human_tasks
 
-import "time"
+import (
+	"time"
+
+	"golang.org/x/exp/slices"
+)
 
 type Delegations []Delegation
 
 type Delegation struct {
-	FromDate  time.Time
-	ToDate    time.Time
-	FromLogin string // Delegator
-	ToLogin   string // Delegate
+	FromDate        time.Time
+	ToDate          time.Time
+	DelegationTypes []string
+	FromLogin       string // Delegator
+	ToLogin         string // Delegate
 }
 
 type DelegationLogins map[string]Delegation
+
+func (delegations *Delegations) FilterByType(delegationType string) Delegations {
+	filteredDelegations := make([]Delegation, 0)
+	for _, delegation := range *delegations {
+		if slices.Contains(delegation.DelegationTypes, delegationType) {
+			filteredDelegations = append(filteredDelegations, delegation)
+		}
+	}
+	return filteredDelegations
+}
 
 func (delegations *Delegations) GetUserInArrayWithDelegations(logins []string) (result []string) {
 	if delegations == nil {
@@ -138,7 +153,7 @@ func (delegations *Delegations) GetDelegates(login string) []string {
 	return result
 }
 
-func (delegations *Delegations) IsLoginDelegateFor(delegate string, sourceMember string) bool {
+func (delegations *Delegations) IsLoginDelegateFor(delegate, sourceMember string) bool {
 	for _, delegation := range *delegations {
 		if delegation.FromLogin == sourceMember {
 			if delegation.ToLogin == delegate {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/exp/slices"
 	"golang.org/x/net/context"
 
 	"github.com/pkg/errors"
@@ -21,6 +20,7 @@ import (
 
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
+	gb.RunContext.Delegations = gb.RunContext.Delegations.FilterByType("execution")
 	switch gb.RunContext.UpdateData.Action {
 	case string(entity.TaskUpdateActionSLABreach):
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
@@ -166,7 +166,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		if err != nil {
 			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
 		}
-
+		delegations = delegations.FilterByType("execution")
 		logins = delegations.GetUserInArrayWithDelegations(logins)
 
 		var executorEmail string
@@ -186,7 +186,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 			ctx,
 			emails,
 			nil,
-			mail.NewExecutionSLATemplate(
+			mail.NewExecutionSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
@@ -220,7 +220,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 		if err != nil {
 			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
 		}
-
+		delegations = delegations.FilterByType("execution")
 		logins = delegations.GetUserInArrayWithDelegations(logins)
 
 		var executorEmail string
@@ -241,7 +241,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			ctx,
 			emails,
 			nil,
-			mail.NewExecutiontHalfSLATemplate(
+			mail.NewExecutiontHalfSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
@@ -272,12 +272,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 
 	gb.State.EditingApp = nil
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
-	if err != nil {
-		log.WithError(err).Info(fn, fmt.Sprintf("initiator %v has no delegates", gb.RunContext.Initiator))
-	}
-
-	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	var em string
 	emails := make([]string, 0, len(loginsToNotify))
@@ -291,7 +286,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewReworkSLATemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
+	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -309,17 +304,11 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 
 	log := logger.GetLogger(ctx)
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
-	if err != nil {
-		log.WithError(err).Info(fn, fmt.Sprintf("initiator %v has no delegates", gb.RunContext.Initiator))
-	}
+	loginsToNotify := []string{gb.RunContext.Initiator}
 
-	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
-
-	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
 			continue
@@ -328,8 +317,8 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewDayBeforeRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -350,12 +339,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 		return err
 	}
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
-	if err != nil {
-		log.WithError(err).Info(fn, fmt.Sprintf("initiator %v has no delegates", gb.RunContext.Initiator))
-	}
-
-	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	var email string
 	emails := make([]string, 0, len(loginsToNotify))
@@ -369,7 +353,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewRequestAddInfoSLABreachedTemplate(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -434,7 +418,8 @@ type RequestInfoUpdateParams struct {
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	var updateParams RequestInfoUpdateParams
-	var delegations = gb.RunContext.Delegations
+	var delegations = gb.RunContext.Delegations.FilterByType("execution")
+
 	err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update requestExecutionInfo data")
@@ -446,10 +431,8 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 
 	if updateParams.ReqType == RequestInfoAnswer {
 		_, executorExists := gb.State.Executors[updateParams.ExecutorLogin]
-		_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
-			gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Executors))
 
-		if !(isDelegate || executorExists) {
+		if executorExists {
 			return NewUserIsNotPartOfProcessErr()
 		}
 
@@ -510,8 +493,8 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations human_
 func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
-	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
 
+	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
 	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
 	}
@@ -571,7 +554,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 		return err
 	}
 
-	tpl := mail.NewExecutionTakenInWork(&mail.ExecutorNotifTemplate{
+	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		Id:           gb.RunContext.WorkNumber,
 		SdUrl:        gb.RunContext.Sender.SdAddress,
 		ExecutorName: typedAuthor.GetFullName(),
@@ -591,9 +574,7 @@ func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context) error {
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	var initiator = gb.RunContext.Initiator
 
-	var initiatorDelegates = gb.RunContext.Delegations.GetDelegates(initiator)
-
-	if currentLogin != initiator && !slices.Contains(initiatorDelegates, currentLogin) {
+	if currentLogin != initiator {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
@@ -623,12 +604,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		return editErr
 	}
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
-	if err != nil {
-		return err
-	}
-
-	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
+	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	var email string
 	emails := make([]string, 0, len(loginsToNotify))
@@ -641,7 +617,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewAnswerSendToEditTemplate(gb.RunContext.WorkNumber,
+	tpl := mail.NewAnswerSendToEditTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
@@ -652,17 +628,11 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 }
 
 func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx c.Context) error {
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
-	if err != nil {
-		return err
-	}
+	loginsToNotify := []string{gb.RunContext.Initiator}
 
-	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.Initiator})
-
-	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			return err
 		}
@@ -670,10 +640,10 @@ func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx c.Context) error {
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewRequestExecutionInfoTemplate(gb.RunContext.WorkNumber,
+	tpl := mail.NewRequestExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -700,7 +670,7 @@ func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx c.Context) error {
 		emails = append(emails, email)
 	}
 
-	tpl := mail.NewAnswerExecutionInfoTemplate(gb.RunContext.WorkNumber,
+	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {

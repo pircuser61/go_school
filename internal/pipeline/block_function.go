@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -29,6 +30,7 @@ type ExecutableFunction struct {
 	Async       bool                 `json:"async"`
 	HasAck      bool                 `json:"has_ack"`
 	HasResponse bool                 `json:"has_response"`
+	Contracts   string               `json:"contracts"`
 }
 
 type FunctionStatus string
@@ -85,6 +87,7 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 	return gb.State
 }
 
+//nolint:gocyclo //its ok here
 func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
 	if gb.RunContext.UpdateData != nil {
 		var updateDataParams FunctionUpdateParams
@@ -110,7 +113,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 					return nil, errors.New("function returned not all of expected results")
 				}
 
-				if err := checkVariableType(param, expectedOutput[k].Type); err != nil {
+				if err := checkVariableType(param, expectedOutput[k]); err != nil {
 					return nil, err
 				}
 
@@ -146,7 +149,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 				return nil, fmt.Errorf("cant fill function mapping with value: %s = %v", k, v.Value)
 			}
 
-			if err = checkVariableType(variable, v.Type); err != nil {
+			if err = checkVariableType(variable, v); err != nil {
 				return nil, err
 			}
 
@@ -157,6 +160,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			err = gb.RunContext.Kafka.Produce(ctx, kafka.RunnerOutMessage{
 				TaskID:          taskStep.ID,
 				FunctionMapping: functionMapping,
+				Contracts:       gb.State.Contracts,
 				RetryPolicy:     string(SimpleFunctionRetryPolicy),
 				FunctionName:    gb.State.Name,
 			})
@@ -271,6 +275,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		HasAck:      false,
 		HasResponse: false,
 		Async:       isAsync,
+		Contracts:   function.Contracts,
 	}
 
 	return nil

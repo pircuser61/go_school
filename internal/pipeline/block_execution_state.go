@@ -4,9 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type RequestInfoType string

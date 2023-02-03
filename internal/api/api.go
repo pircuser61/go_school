@@ -449,10 +449,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   - user - Single user
-//   - group - Approver group ID
-//   - head - Receiver's head
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -605,6 +605,9 @@ type EriusScenario struct {
 	Name            string                `json:"name"`
 	Output          *[]EriusFunctionValue `json:"output,omitempty"`
 	Pipeline        Pipeline              `json:"pipeline"`
+
+	// Настройки старта версии пайплайна(процесса)
+	ProcessSettings ProcessSettings `json:"process_settings"`
 
 	// 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	Status    int            `json:"status"`
@@ -759,9 +762,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//   - user - Single user
-//   - group - Execution group ID
-//   - from_schema - Selected by initiator
+//  * user - Single user
+//  * group - Execution group ID
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -786,6 +789,18 @@ type ExecutorChangeParams struct {
 
 	// New executor login
 	NewExecutorLogin string `json:"newExecutorLogin"`
+}
+
+// ExternalSystem defines model for ExternalSystem.
+type ExternalSystem struct {
+	// Id внешней системы
+	Id string `json:"id"`
+
+	// JSON-схема данных, которые отдаёт внешняя система
+	InputSchema string `json:"input_schema"`
+
+	// JSON-схема данных, которые принимает внешняя система
+	OutputSchema string `json:"output_schema"`
 }
 
 // Fill form
@@ -821,9 +836,9 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   - User - Single user
-//   - Initiator - Process initiator
-//   - From_schema - Selected by initiator
+//   * User - Single user
+//   * Initiator - Process initiator
+//   * From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -958,6 +973,18 @@ type NumberOperandOperandType string
 // Block constant params
 type Params interface{}
 
+// Настройки старта версии пайплайна(процесса)
+type ProcessSettings struct {
+	// JSON-схема выходных параметров пайплайна
+	EndSchema string `json:"end_schema"`
+
+	// Внешние системы, которые используют данный пайплайн
+	ExternalSystems []ExternalSystem `json:"external_systems"`
+
+	// JSON-схема входных параметров пайплайна
+	StartSchema string `json:"start_schema"`
+}
+
 // RateApplicationRequest defines model for RateApplicationRequest.
 type RateApplicationRequest struct {
 	Comment *string `json:"comment,omitempty"`
@@ -1019,11 +1046,12 @@ type RunVersionBody map[string]interface{}
 
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
-	ApplicationBody  map[string]interface{}              `json:"application_body"`
-	AttachmentFields []string                            `json:"attachment_fields"`
-	Description      string                              `json:"description"`
-	Keys             RunVersionsByPipelineIdRequest_Keys `json:"keys"`
-	PipelineId       string                              `json:"pipeline_id"`
+	ApplicationBody   map[string]interface{}              `json:"application_body"`
+	AttachmentFields  []string                            `json:"attachment_fields"`
+	Description       string                              `json:"description"`
+	IsTestApplication *bool                               `json:"is_test_application,omitempty"`
+	Keys              RunVersionsByPipelineIdRequest_Keys `json:"keys"`
+	PipelineId        string                              `json:"pipeline_id"`
 }
 
 // RunVersionsByPipelineIdRequest_Keys defines model for RunVersionsByPipelineIdRequest.Keys.
@@ -1162,17 +1190,17 @@ type Action struct {
 }
 
 // Approver decision:
-//   - approved - Согласовать
-//   - rejected - Отклонить
+//  * approved - Согласовать
+//  * rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//   - approve - Согласовать
-//   - reject - Отклонить
-//   - viewed - Ознакомлен
-//   - informed - Проинформирован
-//   - sign - Подписать
-//   - confirm - Утвердить
+//  * approve - Согласовать
+//  * reject - Отклонить
+//  * viewed - Ознакомлен
+//  * informed - Проинформирован
+//  * sign - Подписать
+//  * confirm - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1219,8 +1247,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//   - executed - executor executed block
-//   - rejected - executor rejected block
+//  * executed - executor executed block
+//  * rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1260,11 +1288,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//   - 1 - Draft
-//   - 2 - Approved
-//   - 3 - Deleted
-//   - 4 - Rejected
-//   - 5 - On approve
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1991,6 +2019,9 @@ type ServerInterface interface {
 	// Get Tasks
 	// (GET /tasks)
 	GetTasks(w http.ResponseWriter, r *http.Request, params GetTasksParams)
+	// Update tasks by mails
+	// (GET /tasks/by-mails)
+	UpdateTasksByMails(w http.ResponseWriter, r *http.Request)
 	// Get amount of tasks
 	// (GET /tasks/count)
 	GetTasksCount(w http.ResponseWriter, r *http.Request)
@@ -3035,6 +3066,21 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	handler(w, r.WithContext(ctx))
 }
 
+// UpdateTasksByMails operation middleware
+func (siw *ServerInterfaceWrapper) UpdateTasksByMails(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateTasksByMails(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // GetTasksCount operation middleware
 func (siw *ServerInterfaceWrapper) GetTasksCount(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -3464,6 +3510,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks", wrapper.GetTasks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/tasks/by-mails", wrapper.UpdateTasksByMails)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/count", wrapper.GetTasksCount)

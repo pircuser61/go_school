@@ -491,6 +491,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
+  /tasks/by-mails:
+    get:
+      tags:
+        - tasks
+      summary: Update tasks by mails
+      description: Update tasks by mails
+      operationId: update-tasks-by-mails
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /pipelines/{pipelineID}/versions:
     get:
       tags:
@@ -2201,6 +2228,8 @@ components:
             $ref: '#/components/schemas/EriusFunctionValue'
         pipeline:
           $ref: '#/components/schemas/pipeline'
+        process_settings:
+          $ref: '#/components/schemas/ProcessSettings'
         status:
           type: integer
           description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On
@@ -2219,6 +2248,7 @@ components:
         - status
         - name
         - pipeline
+        - process_settings
         - author
         - tags
         - comment
@@ -2228,6 +2258,45 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/EriusVersionInfo'
+
+    ProcessSettings:
+      type: object
+      description: Настройки старта версии пайплайна(процесса)
+      properties:
+        external_systems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalSystem'
+          description: Внешние системы, которые используют данный пайплайн
+        start_schema:
+          type: string
+          description: JSON-схема входных параметров пайплайна
+        end_schema:
+          type: string
+          description: JSON-схема выходных параметров пайплайна
+      required:
+        - external_systems
+        - start_schema
+        - end_schema
+
+    ExternalSystem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Id внешней системы
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        input_schema:
+          type: string
+          description: JSON-схема данных, которые отдаёт внешняя система
+        output_schema:
+          type: string
+          description: JSON-схема данных, которые принимает внешняя система
+      required:
+        - id
+        - input_schema
+        - output_schema
 
     EriusScenarioInfo:
       type: object
@@ -2914,6 +2983,8 @@ components:
           properties: { }
         pipeline_id:
           type: string
+        is_test_application:
+          type: boolean
         description:
           type: string
         keys:
@@ -2948,8 +3019,6 @@ components:
       properties:
         author:
           type: string
-        is_delegate_of_author:
-          type: boolean
         blueprint_id:
           type: string
         debug:

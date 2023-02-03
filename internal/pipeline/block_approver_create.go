@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -156,6 +157,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		if htErr != nil {
 			return htErr
 		}
+		delegations = delegations.FilterByType("approvement")
 
 		gb.RunContext.Delegations = delegations
 	}
@@ -177,6 +179,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	if err != nil {
 		return err
 	}
+	delegates = delegates.FilterByType("approvement")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Approvers))
 
@@ -196,22 +199,46 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		return nil
 	}
 
-	descr, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
 	if err != nil {
 		return err
 	}
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-		mail.NewApplicationPersonStatusNotification(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.WorkTitle,
-			gb.State.ApproveStatusName,
-			statusToTaskAction[StatusApprovement],
-			ComputeDeadline(time.Now(), gb.State.SLA),
-			descr,
-			gb.RunContext.Sender.SdAddress))
-	if err != nil {
-		return err
+
+	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
+	for i := range gb.State.ActionList {
+		actionsList = append(actionsList, mail.Action{
+			Id:       gb.State.ActionList[i].Id,
+			Decision: string(ApproverAction(gb.State.ActionList[i].Id).ToDecision()),
+			Title:    gb.State.ActionList[i].Title,
+		})
 	}
+
+	emails = utils.UniqueStrings(emails)
+
+	for i := range emails {
+		tpl := mail.NewAppPersonStatusNotificationTpl(
+			&mail.NewAppPersonStatusTpl{
+				WorkNumber:      gb.RunContext.WorkNumber,
+				Name:            gb.RunContext.WorkTitle,
+				Status:          gb.State.ApproveStatusName,
+				Action:          statusToTaskAction[StatusApprovement],
+				DeadLine:        ComputeDeadline(time.Now(), gb.State.SLA),
+				Description:     description,
+				SdUrl:           gb.RunContext.Sender.SdAddress,
+				Mailto:          gb.RunContext.Sender.FetchEmail,
+				IsEditable:      gb.State.GetIsEditable(),
+				ApproverActions: actionsList,
+
+				BlockID:                   BlockGoApproverID,
+				ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
+				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
+			})
+
+		if err = gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, nil, tpl); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

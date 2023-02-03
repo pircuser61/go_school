@@ -245,13 +245,6 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 
 		gb.State.Executors = resolvedEntities
-
-		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
-		if htErr != nil {
-			return htErr
-		}
-
-		gb.RunContext.Delegations = delegations
 	}
 
 	return gb.handleNotifications(ctx)
@@ -267,15 +260,8 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		return executorsErr
 	}
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
-	if err != nil {
-		return err
-	}
-
-	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
-
-	var emails = make([]string, 0, len(loginsToNotify))
-	for _, login := range loginsToNotify {
+	var emails = make([]string, 0, len(executors))
+	for _, login := range executors {
 		email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			continue
@@ -288,7 +274,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	return gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-		mail.NewRequestFormExecutionInfoTemplate(
+		mail.NewRequestFormExecutionInfoTpl(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.WorkTitle,
 			gb.RunContext.Sender.SdAddress))

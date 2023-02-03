@@ -2,9 +2,11 @@ package entity
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/valyala/fastjson"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -56,12 +58,48 @@ type EriusScenario struct {
 		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
 	} `json:"pipeline"`
-	CreatedAt       *time.Time     `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	ApprovedAt      *time.Time     `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	Author          string         `json:"author" example:"testAuthor"`
-	Tags            []EriusTagInfo `json:"tags"`
-	Comment         string         `json:"comment"`
-	CommentRejected string         `json:"comment_rejected"`
+	ProcessSettings ProcessSettings `json:"process_settings"`
+	CreatedAt       *time.Time      `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt      *time.Time      `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author          string          `json:"author" example:"testAuthor"`
+	Tags            []EriusTagInfo  `json:"tags"`
+	Comment         string          `json:"comment"`
+	CommentRejected string          `json:"comment_rejected"`
+}
+
+func (s EriusScenario) Validate() error {
+	if s.ProcessSettings.ExternalSystems != nil {
+		var systems = make(map[uuid.UUID]struct{}, len(s.ProcessSettings.ExternalSystems))
+		for _, system := range s.ProcessSettings.ExternalSystems {
+			if _, ok := systems[system.Id]; ok {
+				return fmt.Errorf("duplicate external system id: %s", system.Id)
+			}
+
+			if err := fastjson.Validate(system.InputSchema); err != nil {
+				return err
+			}
+
+			if err := fastjson.Validate(system.OutputSchema); err != nil {
+				return err
+			}
+
+			systems[system.Id] = struct{}{}
+		}
+	}
+
+	if s.ProcessSettings.StartSchema != "" {
+		if err := fastjson.Validate(s.ProcessSettings.StartSchema); err != nil {
+			return err
+		}
+	}
+
+	if s.ProcessSettings.EndSchema != "" {
+		if err := fastjson.Validate(s.ProcessSettings.EndSchema); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 type EriusFunctionList struct {
@@ -95,6 +133,18 @@ type EriusFunctionValue struct {
 	Name   string `json:"name" example:"some_data"`
 	Type   string `json:"type" example:"string"`
 	Global string `json:"global,omitempty" example:"block.some_data"`
+}
+
+type ProcessSettings struct {
+	EndSchema       string           `json:"end_schema"`
+	ExternalSystems []ExternalSystem `json:"external_systems"`
+	StartSchema     string           `json:"start_schema"`
+}
+
+type ExternalSystem struct {
+	Id           uuid.UUID `json:"id"`
+	InputSchema  string    `json:"input_schema"`
+	OutputSchema string    `json:"output_schema"`
 }
 
 type UsageResponse struct {

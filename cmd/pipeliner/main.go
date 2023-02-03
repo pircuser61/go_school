@@ -32,6 +32,7 @@ import (
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
@@ -112,6 +113,7 @@ func main() {
 		return
 	}
 
+	cfg.Mail.FetchEmail = cfg.MailFetcher.ImapUserName
 	mailService, err := mail.NewService(cfg.Mail)
 	if err != nil {
 		log.WithError(err).Error("can't create mail service")
@@ -150,6 +152,12 @@ func main() {
 		return
 	}
 
+	mailFetcher, err := mail_fetcher.NewService(cfg.MailFetcher)
+	if err != nil {
+		log.WithError(err).Error("can't create mail fetcher service")
+		return
+	}
+
 	APIEnv := &api.APIEnv{
 		DB:                   &dbConn,
 		Remedy:               cfg.Remedy,
@@ -164,6 +172,7 @@ func main() {
 		ServiceDesc:          serviceDescService,
 		FunctionStore:        functionsService,
 		HumanTasks:           humanTasksService,
+		MailFetcher:          mailFetcher,
 	}
 
 	serverParam := api.ServerParam{
