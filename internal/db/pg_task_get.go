@@ -1082,7 +1082,6 @@ func (db *PGCon) actionsToStrings(nullStringActions []sql.NullString) []string {
 
 func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 	result []entity.TaskCompletionInterval, err error) {
-
 	const q = `
 	SELECT
 		started_at,
