@@ -58,7 +58,7 @@ func uniqueActiveActions(currentUser string, logins []string, workNumber string)
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
-    WHERE (m.login IN %s AND vs.step_name != 'form_0') OR (m.login = %s AND vs.step_type = 'form_0')
+    WHERE (m.login IN %s AND vs.step_type != 'form') OR (m.login = '%s' AND vs.step_type = 'form')
       AND w.work_number = '%s'
       AND vs.status IN ('running', 'idle', 'ready')
 	  AND w.child_id IS NULL
