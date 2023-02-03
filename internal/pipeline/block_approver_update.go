@@ -400,7 +400,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 		}
 
 		if len(gb.State.RequestApproverInfoLog) > 0 {
-			workHours := getWorkWorkHoursBetweenDates(
+			workHours := getWorkHoursBetweenDates(
 				gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].CreatedAt,
 				time.Now(),
 			)

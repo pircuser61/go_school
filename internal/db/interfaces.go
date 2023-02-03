@@ -57,6 +57,7 @@ type TaskStorager interface {
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
+	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
 }
 
 type UpdateTaskRate struct {

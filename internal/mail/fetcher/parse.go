@@ -134,13 +134,12 @@ func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
 }
 
 func parseSubject(fields []string) (action *ActionPayload, err error) {
+	action = &ActionPayload{}
 	for i := range fields {
 		keyValue := strings.Split(fields[i], fieldsKeyValueDelimiter)
 		if len(keyValue) != 2 {
 			return nil, errors.New("parseSubject, invalid subject: " + strings.Join(fields, ""))
 		}
-
-		action = &ActionPayload{}
 
 		switch keyValue[0] {
 		case stepName:
