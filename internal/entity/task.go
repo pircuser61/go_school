@@ -136,7 +136,7 @@ type TaskFilter struct {
 type TaskUpdateAction string
 
 const (
-	TaskUpdateActionApprovement                TaskUpdateAction = `approvement`
+	TaskUpdateActionApprovement                TaskUpdateAction = "approvement"
 	TaskUpdateActionAdditionalApprovement      TaskUpdateAction = "additional_approvement"
 	TaskUpdateActionSLABreach                  TaskUpdateAction = "sla_breached"
 	TaskUpdateActionHalfSLABreach              TaskUpdateAction = "half_sla_breached"
