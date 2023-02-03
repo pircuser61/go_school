@@ -1092,7 +1092,7 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 	  JOIN work_status ws ON w.status = ws.id
 	WHERE p.id = $1
 		AND v.is_actual = TRUE
-		AND coalesce(w.run_context -> 'initial_application' -> 'is_test_application' = 'false', false)
+		AND coalesce(w.run_context -> 'initial_application' -> 'is_test_application' = 'false', true)
 		AND ws.name = 'finished'
 	ORDER BY w.started_at DESC`
 
