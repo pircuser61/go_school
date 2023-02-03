@@ -1019,11 +1019,12 @@ type RunVersionBody map[string]interface{}
 
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
-	ApplicationBody  map[string]interface{}              `json:"application_body"`
-	AttachmentFields []string                            `json:"attachment_fields"`
-	Description      string                              `json:"description"`
-	Keys             RunVersionsByPipelineIdRequest_Keys `json:"keys"`
-	PipelineId       string                              `json:"pipeline_id"`
+	ApplicationBody   map[string]interface{}              `json:"application_body"`
+	AttachmentFields  []string                            `json:"attachment_fields"`
+	Description       string                              `json:"description"`
+	IsTestApplication *bool                               `json:"is_test_application,omitempty"`
+	Keys              RunVersionsByPipelineIdRequest_Keys `json:"keys"`
+	PipelineId        string                              `json:"pipeline_id"`
 }
 
 // RunVersionsByPipelineIdRequest_Keys defines model for RunVersionsByPipelineIdRequest.Keys.

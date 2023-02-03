@@ -2867,6 +2867,8 @@ components:
           properties: { }
         pipeline_id:
           type: string
+        is_test_application:
+          type: boolean
         description:
           type: string
         keys:
