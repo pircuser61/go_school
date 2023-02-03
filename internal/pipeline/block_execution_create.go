@@ -107,6 +107,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		if htErr != nil {
 			return htErr
 		}
+		delegations = delegations.FilterByType("execution")
 
 		gb.RunContext.Delegations = delegations
 	case script.ExecutionTypeGroup:
@@ -145,6 +146,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	if err != nil {
 		return err
 	}
+	delegates = delegates.FilterByType("execution")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
 

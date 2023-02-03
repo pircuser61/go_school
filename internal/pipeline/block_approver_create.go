@@ -157,6 +157,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		if htErr != nil {
 			return htErr
 		}
+		delegations = delegations.FilterByType("approvement")
 
 		gb.RunContext.Delegations = delegations
 	}
@@ -178,6 +179,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	if err != nil {
 		return err
 	}
+	delegates = delegates.FilterByType("approvement")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Approvers))
 

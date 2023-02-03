@@ -31,25 +31,24 @@ import (
 )
 
 type eriusTaskResponse struct {
-	ID                 uuid.UUID              `json:"id"`
-	VersionID          uuid.UUID              `json:"version_id"`
-	StartedAt          time.Time              `json:"started_at"`
-	LastChangedAt      time.Time              `json:"last_changed_at"`
-	FinishedAt         *time.Time             `json:"finished_at"`
-	Name               string                 `json:"name"`
-	Description        string                 `json:"description"`
-	Status             string                 `json:"status"`
-	HumanStatus        string                 `json:"human_status"`
-	Author             string                 `json:"author"`
-	IsDelegateOfAuthor bool                   `json:"is_delegate_of_author"`
-	IsDebugMode        bool                   `json:"debug"`
-	Parameters         map[string]interface{} `json:"parameters"`
-	Steps              taskSteps              `json:"steps"`
-	WorkNumber         string                 `json:"work_number"`
-	BlueprintID        string                 `json:"blueprint_id"`
-	Rate               *int                   `json:"rate"`
-	RateComment        *string                `json:"rate_comment"`
-	AvailableActions   taskActions            `json:"available_actions"`
+	ID               uuid.UUID              `json:"id"`
+	VersionID        uuid.UUID              `json:"version_id"`
+	StartedAt        time.Time              `json:"started_at"`
+	LastChangedAt    time.Time              `json:"last_changed_at"`
+	FinishedAt       *time.Time             `json:"finished_at"`
+	Name             string                 `json:"name"`
+	Description      string                 `json:"description"`
+	Status           string                 `json:"status"`
+	HumanStatus      string                 `json:"human_status"`
+	Author           string                 `json:"author"`
+	IsDebugMode      bool                   `json:"debug"`
+	Parameters       map[string]interface{} `json:"parameters"`
+	Steps            taskSteps              `json:"steps"`
+	WorkNumber       string                 `json:"work_number"`
+	BlueprintID      string                 `json:"blueprint_id"`
+	Rate             *int                   `json:"rate"`
+	RateComment      *string                `json:"rate_comment"`
+	AvailableActions taskActions            `json:"available_actions"`
 }
 
 type step struct {
@@ -77,7 +76,7 @@ type taskActions []action
 type taskSteps []step
 
 func (eriusTaskResponse) toResponse(in *entity.EriusTask,
-	currentUserDelegateSteps map[string]bool, isAuthorDelegate bool) *eriusTaskResponse {
+	currentUserDelegateSteps map[string]bool) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
 	for i := range in.Steps {
@@ -112,25 +111,24 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask,
 	}
 
 	out := &eriusTaskResponse{
-		ID:                 in.ID,
-		VersionID:          in.VersionID,
-		StartedAt:          in.StartedAt,
-		LastChangedAt:      in.LastChangedAt,
-		FinishedAt:         in.FinishedAt,
-		Name:               in.Name,
-		Description:        in.Description,
-		Status:             in.Status,
-		HumanStatus:        in.HumanStatus,
-		Author:             in.Author,
-		IsDebugMode:        in.IsDebugMode,
-		Parameters:         in.Parameters,
-		Steps:              steps,
-		WorkNumber:         in.WorkNumber,
-		BlueprintID:        in.BlueprintID,
-		Rate:               in.Rate,
-		RateComment:        in.RateComment,
-		AvailableActions:   actions,
-		IsDelegateOfAuthor: isAuthorDelegate,
+		ID:               in.ID,
+		VersionID:        in.VersionID,
+		StartedAt:        in.StartedAt,
+		LastChangedAt:    in.LastChangedAt,
+		FinishedAt:       in.FinishedAt,
+		Name:             in.Name,
+		Description:      in.Description,
+		Status:           in.Status,
+		HumanStatus:      in.HumanStatus,
+		Author:           in.Author,
+		IsDebugMode:      in.IsDebugMode,
+		Parameters:       in.Parameters,
+		Steps:            steps,
+		WorkNumber:       in.WorkNumber,
+		BlueprintID:      in.BlueprintID,
+		Rate:             in.Rate,
+		RateComment:      in.RateComment,
+		AvailableActions: actions,
 	}
 
 	return out
@@ -188,7 +186,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, delegations.GetUserInArrayWithDelegators([]string{ui.Username}), workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, ui.Username, delegations.GetUserInArrayWithDelegators([]string{ui.Username}), workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -208,9 +206,6 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	dbTask.Steps = steps
 
-	var delegates = delegations.GetDelegators(ui.Username)
-	isAuthorDelegate := slices.Contains(delegates, dbTask.Author)
-
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
 	if tErr != nil {
 		e := GetDelegationsError
@@ -220,7 +215,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 	resp := &eriusTaskResponse{}
-	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask, currentUserDelegateSteps, isAuthorDelegate)); err != nil {
+	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask, currentUserDelegateSteps)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -327,6 +322,16 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
+	}
+	if filters.SelectAs != nil {
+		switch *filters.SelectAs {
+		case "approver", "finished_approver":
+			delegations = delegations.FilterByType("execution")
+		case "executor", "finished_executor":
+			delegations = delegations.FilterByType("approvement")
+		default:
+			delegations = delegations[:0]
+		}
 	}
 
 	currentUserAndDelegates := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
@@ -608,6 +613,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 
 	err = ae.updateTaskInternal(ctx, workNumber, ui.Username, &updateData)
+
 	if err != nil {
 		e := UpdateTaskParsingError
 		log.Error(e.errorMessage(err))
@@ -642,7 +648,8 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		return errors.New("blockTypes is empty")
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, []string{userLogin}, workNumber)
+	dbTask, err := ae.DB.GetTask(ctx, userLogin, []string{userLogin}, workNumber)
+
 	if err != nil {
 		e := GetTaskError
 		return errors.New(e.errorMessage(nil))

@@ -49,7 +49,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
      )`, loginsIn, stepType, statuses)
 }
 
-func uniqueActiveActions(logins []string, workNumber string) string {
+func uniqueActiveActions(currentUser string, logins []string, workNumber string) string {
 	var loginsIn = buildInExpression(logins)
 
 	return fmt.Sprintf(`WITH actions AS (
@@ -58,17 +58,17 @@ func uniqueActiveActions(logins []string, workNumber string) string {
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
-    WHERE m.login IN %s
+    WHERE (m.login IN %s AND vs.step_name != 'form_0') OR (m.login = %s AND vs.step_type = 'form_0')
       AND w.work_number = '%s'
       AND vs.status IN ('running', 'idle', 'ready')
 	  AND w.child_id IS NULL
-),
+	),
      unique_actions AS (
          SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
          FROM actions
                   LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
          GROUP BY actions.work_id
-     )`, loginsIn, workNumber)
+     )`, loginsIn, currentUser, workNumber)
 }
 
 func buildInExpression(items []string) string {
@@ -536,13 +536,13 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 	return &et, nil
 }
 
-func (db *PGCon) GetTask(ctx c.Context, delegatorsWithUser []string, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) GetTask(ctx c.Context, currentUser string, delegatorsWithUser []string, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := uniqueActiveActions(delegatorsWithUser, workNumber)
+	q := uniqueActiveActions(currentUser, delegatorsWithUser, workNumber)
 
 	q += ` SELECT 
 			w.id, 

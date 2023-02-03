@@ -408,12 +408,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 		return err
 	}
 
-	delegates, err := runCtx.HumanTasks.GetDelegationsFromLogin(ctx, runCtx.Initiator)
-	if err != nil {
-		return err
-	}
-
-	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{runCtx.Initiator})
+	loginsToNotify := []string{runCtx.Initiator}
 
 	var email string
 	emails := make([]string, 0, len(loginsToNotify))

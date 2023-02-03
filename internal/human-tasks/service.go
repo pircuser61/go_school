@@ -64,10 +64,11 @@ func (s *Service) getDelegationsInternal(ctx c.Context, req *delegationht.GetDel
 
 		if time.Now().Before(toDate) || toDate.IsZero() {
 			delegations = append(delegations, Delegation{
-				FromDate:  fromDate,
-				ToDate:    toDate,
-				FromLogin: delegation.FromUser.Username,
-				ToLogin:   delegation.ToUser.Username,
+				FromDate:        fromDate,
+				ToDate:          toDate,
+				FromLogin:       delegation.FromUser.Username,
+				ToLogin:         delegation.ToUser.Username,
+				DelegationTypes: delegation.DelegationTypes,
 			})
 		}
 	}

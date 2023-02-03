@@ -2972,8 +2972,6 @@ components:
       properties:
         author:
           type: string
-        is_delegate_of_author:
-          type: boolean
         blueprint_id:
           type: string
         debug:

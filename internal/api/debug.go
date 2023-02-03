@@ -44,7 +44,15 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, []string{ui.Username}, debugRequest.WorkNumber)
+	currentUi, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	task, err := ae.DB.GetTask(ctx, currentUi.Username, []string{ui.Username}, debugRequest.WorkNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
@@ -233,7 +241,15 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request, workNumber
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, []string{ui.Username}, workNumber)
+	currentUi, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	task, err := ae.DB.GetTask(ctx, currentUi.Username, []string{ui.Username}, workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
