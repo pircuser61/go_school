@@ -3,14 +3,17 @@
 ALTER TABLE works
     ADD COLUMN archived boolean NOT NULL DEFAULT false;
 
-COMMENT ON COLUMN works.archived
-    IS 'Флаг того, что заявка перенесена в архив.';
+CREATE INDEX works_archived_index
+    on works (archived);
 
-UPDATE works SET archived = true WHERE (now()::TIMESTAMP - finished_at::TIMESTAMP) > '3 days';
+COMMENT ON COLUMN works.archived
+    IS 'Флаг того, что заявка автоматически (по дедлайну) перенесена в архив.';
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+DROP INDEX IF EXISTS works_archived_index;
+
 ALTER TABLE works
-    DROP COLUMN IF EXISTS archived;;
+    DROP COLUMN IF EXISTS archived;
 -- +goose StatementEnd
