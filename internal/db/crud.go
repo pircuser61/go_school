@@ -2548,7 +2548,11 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		    JOIN versions v on w.version_id = v.id
 			JOIN pipelines p on v.pipeline_id = p.id
 		    JOIN deadlines d on vs.id = d.block_id
-		WHERE (vs.status = 'running' OR (vs.status = 'idle' AND d.action = 'rework_sla_breached'))
+		WHERE (
+		    vs.status = 'running' 
+		    OR ( vs.status = 'idle' AND (
+		    d.action = 'rework_sla_breached' OR d.action = 'day_before_sla_request_add_info' OR d.action = 'sla_breach_request_add_info'))
+			)
 			AND w.child_id IS NULL
 			AND d.deadline < NOW()`
 	rows, err := db.Connection.Query(ctx, q)

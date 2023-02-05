@@ -199,7 +199,7 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
 	if filters.Archived != nil {
 		switch *filters.Archived {
 		case true:
-			q = fmt.Sprintf("%s AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days'", q)
+			q = fmt.Sprintf("%s AND ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days' OR w.archived = true)", q)
 		case false:
 			q = fmt.Sprintf("%s AND ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)", q)
 		}
