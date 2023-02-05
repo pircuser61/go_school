@@ -58,6 +58,8 @@ type TaskStorager interface {
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
+	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
+	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
 }
 
 type UpdateTaskRate struct {

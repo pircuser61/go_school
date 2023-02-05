@@ -93,9 +93,9 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl string) Template {
 
 func NewReworkSLATpl(id, sdUrl string, reworkSla int) Template {
 	return Template{
-		Subject: fmt.Sprintf("Заявка %s автоматически отклонена", id),
+		Subject: fmt.Sprintf("Заявка %s автоматически перенесена в архив", id),
 		Text: `Уважаемый коллега, истек срок ожидания доработок по заявке {{.Id}}.</br>
-Заявка автоматически отклонена по истечении {{.Duration}} дней.</br>
+Заявка автоматически перенесена в архив по истечении {{.Duration}} дней.</br>
 Для просмотра заявки перейдите по <a href={{.Link}}>ссылке</a><br>`,
 		Variables: struct {
 			Id       string `json:"id"`

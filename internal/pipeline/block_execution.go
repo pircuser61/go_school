@@ -89,7 +89,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 }
 
 func (gb *GoExecutionBlock) Deadlines() []Deadline {
-	if gb.State.IsRevoked {
+	if gb.State.IsRevoked || gb.State.Decision != nil {
 		return []Deadline{}
 	}
 
