@@ -146,20 +146,20 @@ func (gb *GoApproverBlock) Deadlines() []Deadline {
 		)
 	}
 
-	//if len(gb.State.RequestApproverInfoLog) > 0 &&
-	//	gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].Type == RequestAddInfoType {
-	//	if gb.State.CheckDayBeforeSLARequestInfo {
-	//		deadlines = append(deadlines, Deadline{
-	//			Deadline: ComputeMaxDate(gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].CreatedAt, 2*8),
-	//			Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
-	//		})
-	//	}
-	//
-	//	deadlines = append(deadlines, Deadline{
-	//		Deadline: ComputeMaxDate(gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].CreatedAt, 3*8),
-	//		Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
-	//	})
-	//}
+	if len(gb.State.RequestApproverInfoLog) > 0 &&
+		gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].Type == RequestAddInfoType {
+		if gb.State.CheckDayBeforeSLARequestInfo {
+			deadlines = append(deadlines, Deadline{
+				Deadline: ComputeMaxDate(gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].CreatedAt, 2*8),
+				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
+			})
+		}
+
+		deadlines = append(deadlines, Deadline{
+			Deadline: ComputeMaxDate(gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].CreatedAt, 3*8),
+			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
+		})
+	}
 
 	return deadlines
 }

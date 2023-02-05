@@ -309,18 +309,30 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.
 
 func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
+	var comment = "заявка автоматически перенесена в архив по истечении 3 дней"
 
 	log := logger.GetLogger(ctx)
 
-	gb.RunContext.UpdateData.ByLogin = gb.RunContext.Initiator
-	err := gb.cancelPipeline(ctx)
-	if err != nil {
-		return err
+	decision := ApproverDecisionRejected
+	gb.State.Decision = &decision
+	gb.State.Comment = &comment
+
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
+	}
+
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
+		return stopErr
+	}
+
+	if stopErr := gb.RunContext.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
 	}
 
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
 	var em string
+	var err error
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
 		em, err = gb.RunContext.People.GetUserEmail(ctx, login)

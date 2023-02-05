@@ -342,27 +342,39 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 
 func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.execution.HandleBreachedSLARequestAddInfo"
+	var comment = "заявка автоматически перенесена в архив по истечении 3 дней"
 
 	log := logger.GetLogger(ctx)
 
-	gb.RunContext.UpdateData.ByLogin = gb.RunContext.Initiator
-	err := gb.cancelPipeline(ctx)
-	if err != nil {
-		return err
+	decision := ExecutionDecisionRejected
+	gb.State.Decision = &decision
+	gb.State.DecisionComment = &comment
+
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
+	}
+
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
+		return stopErr
+	}
+
+	if stopErr := gb.RunContext.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
 	}
 
 	loginsToNotify := []string{gb.RunContext.Initiator}
 
-	var email string
+	var em string
+	var err error
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
 			continue
 		}
 
-		emails = append(emails, email)
+		emails = append(emails, em)
 	}
 
 	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
