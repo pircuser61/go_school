@@ -464,7 +464,6 @@ func getApprovementActionNameByStatus(status, defaultActionName string) (res str
 }
 
 type Action struct {
-	Id       string
 	Title    string
 	Decision string
 }
@@ -482,16 +481,18 @@ const (
 func getApproverButtons(workNumber, mailto, blockId string, actions []Action, isEditable bool) string {
 	buttons := make([]string, 0, len(actions))
 	for i := range actions {
-		if actions[i].Id == actionApproverSendEditApp {
+		if actions[i].Decision == actionApproverSendEditApp {
 			continue
 		}
 		subject := fmt.Sprintf(
 			subjectTpl,
 			blockId,
-			approverActionToDecision(actions[i].Decision),
+			actions[i].Decision,
 			workNumber,
 			taskUpdateActionApprovement,
 		)
+
+		subject = strings.Replace(subject, "su bject", "subject", 1)
 		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, actions[i].Title))
 	}
 
@@ -523,39 +524,4 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string,
 	}
 
 	return fmt.Sprintf("<p><b>Действия с заявкой</b></p> %s", strings.Join(buttons, ""))
-}
-
-const (
-	approverActionApprove  = "approve"
-	approverActionReject   = "reject"
-	approverActionViewed   = "viewed"
-	approverActionInformed = "informed"
-	approverActionSign     = "sign"
-	approverActionConfirm  = "confirm"
-
-	approverDecisionApproved  = "approved"
-	approverDecisionRejected  = "rejected"
-	approverDecisionViewed    = "viewed"
-	approverDecisionInformed  = "informed"
-	approverDecisionSigned    = "signed"
-	approverDecisionConfirmed = "confirmed"
-)
-
-func approverActionToDecision(action string) string {
-	switch action {
-	case approverDecisionApproved:
-		return approverActionApprove
-	case approverDecisionRejected:
-		return approverActionReject
-	case approverDecisionViewed:
-		return approverActionViewed
-	case approverDecisionInformed:
-		return approverActionInformed
-	case approverDecisionSigned:
-		return approverActionSign
-	case approverDecisionConfirmed:
-		return approverActionConfirm
-	default:
-		return "undefined_action"
-	}
 }

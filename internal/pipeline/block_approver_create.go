@@ -207,8 +207,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
 	for i := range gb.State.ActionList {
 		actionsList = append(actionsList, mail.Action{
-			Id:       gb.State.ActionList[i].Id,
-			Decision: string(ApproverAction(gb.State.ActionList[i].Id).ToDecision()),
+			Decision: gb.State.ActionList[i].Id,
 			Title:    gb.State.ActionList[i].Title,
 		})
 	}
