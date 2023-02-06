@@ -928,6 +928,14 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) SendTaskToArchive(ctx context.Context, taskID uuid.UUID) (err error) {
+	return nil
+}
+
+func (_m *MockDB) CheckIsArchived(ctx context.Context, taskID uuid.UUID) (bool, error) {
+	return false, nil
+}
+
 func (_m *MockDB) UpdateTaskStatus(_ context.Context, _ uuid.UUID, _ int) error {
 	return nil
 }
