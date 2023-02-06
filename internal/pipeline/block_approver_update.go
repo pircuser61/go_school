@@ -678,9 +678,8 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
 	for i := range gb.State.ActionList {
 		actionsList = append(actionsList, mail.Action{
-			Id:       gb.State.ActionList[i].Id,
-			Decision: string(ApproverAction(gb.State.ActionList[i].Id).ToDecision()),
-			Title:    gb.State.ActionList[i].Title,
+			InternalActionName: gb.State.ActionList[i].Id,
+			Title:              gb.State.ActionList[i].Title,
 		})
 	}
 

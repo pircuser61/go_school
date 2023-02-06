@@ -464,9 +464,8 @@ func getApprovementActionNameByStatus(status, defaultActionName string) (res str
 }
 
 type Action struct {
-	Id       string
-	Title    string
-	Decision string
+	Title              string
+	InternalActionName string
 }
 
 const (
@@ -482,10 +481,19 @@ const (
 func getApproverButtons(workNumber, mailto, blockId string, actions []Action, isEditable bool) string {
 	buttons := make([]string, 0, len(actions))
 	for i := range actions {
-		if actions[i].Id == actionApproverSendEditApp {
+		if actions[i].InternalActionName == actionApproverSendEditApp {
 			continue
 		}
-		subject := fmt.Sprintf(subjectTpl, blockId, actions[i].Decision, workNumber, taskUpdateActionApprovement)
+		subject := fmt.Sprintf(
+			subjectTpl,
+			blockId,
+			actions[i].InternalActionName,
+			workNumber,
+			taskUpdateActionApprovement,
+		)
+
+		// это из-за магии появления пробела в слове subject
+		subject = strings.Replace(subject, "su bject", "subject", 1)
 		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, actions[i].Title))
 	}
 
