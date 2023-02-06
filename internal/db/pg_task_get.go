@@ -49,8 +49,9 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
      )`, loginsIn, stepType, statuses)
 }
 
-func uniqueActiveActions(currentUser string, logins []string, workNumber string) string {
-	var loginsIn = buildInExpression(logins)
+func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
+	var approverLoginsIn = buildInExpression(approverLogins)
+	var executionLoginsIn = buildInExpression(executionLogins)
 
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                      AS work_id
@@ -58,7 +59,9 @@ func uniqueActiveActions(currentUser string, logins []string, workNumber string)
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
-    WHERE (m.login IN %s AND vs.step_type != 'form') OR (m.login = '%s' AND vs.step_type = 'form')
+    WHERE (m.login = '%s' AND vs.step_type = 'form')
+       OR (m.login IN %s AND vs.step_type = 'approver')
+       OR (m.login IN %s AND vs.step_type = 'execution')
       AND w.work_number = '%s'
       AND vs.status IN ('running', 'idle', 'ready')
 	  AND w.child_id IS NULL
@@ -68,7 +71,7 @@ func uniqueActiveActions(currentUser string, logins []string, workNumber string)
          FROM actions
                   LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
          GROUP BY actions.work_id
-     )`, loginsIn, currentUser, workNumber)
+     )`, currentUser, approverLoginsIn, executionLoginsIn, workNumber)
 }
 
 func buildInExpression(items []string) string {
@@ -387,7 +390,11 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}, nil
 }
 
-func (db *PGCon) GetTasksCount(ctx c.Context, usernames []string) (*entity.CountTasks, error) {
+func (db *PGCon) GetTasksCount(
+	ctx c.Context,
+	currentUser string,
+	delegationsByApprovement,
+	delegationsByExecution []string) (*entity.CountTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 	// nolint:gocritic
@@ -403,31 +410,35 @@ func (db *PGCon) GetTasksCount(ctx c.Context, usernames []string) (*entity.Count
 		)
 		SELECT
 		(SELECT count(*) FROM works w join ids on w.id = ids.id
-		WHERE author = ANY($1) AND
+		WHERE author = $1 AND
 		      ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)),
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = ANY($1) AND vs.step_type = 'approver'
+				m.login = ANY($2) AND vs.step_type = 'approver'
 		),
 		(SELECT count(*)
 			 FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			 WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = ANY($1) AND vs.step_type = 'execution'),
+				m.login = ANY($3) AND vs.step_type = 'execution'),
 		
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
-				m.login = ANY($1) AND vs.step_type = 'form'
+				m.login = $1 AND vs.step_type = 'form'
 		)`
 
-	counter, err := db.getTasksCount(ctx, q, usernames)
+	counter, err := db.getTasksCount(
+		ctx, q,
+		currentUser,
+		delegationsByApprovement,
+		delegationsByExecution)
 	if err != nil {
 		return nil, err
 	}
@@ -536,13 +547,17 @@ func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*
 	return &et, nil
 }
 
-func (db *PGCon) GetTask(ctx c.Context, currentUser string, delegatorsWithUser []string, workNumber string) (*entity.EriusTask, error) {
+func (db *PGCon) GetTask(
+	ctx c.Context,
+	delegationsApprover,
+	delegationsExecution []string,
+	currentUser, workNumber string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := uniqueActiveActions(currentUser, delegatorsWithUser, workNumber)
+	q := uniqueActiveActions(delegationsApprover, delegationsExecution, currentUser, workNumber)
 
 	q += ` SELECT 
 			w.id, 
@@ -583,7 +598,7 @@ func (db *PGCon) GetTask(ctx c.Context, currentUser string, delegatorsWithUser [
 		WHERE w.work_number = $1 
 			AND w.child_id IS NULL
 `
-	return db.getTask(ctx, delegatorsWithUser, q, workNumber)
+	return db.getTask(ctx, []string{currentUser}, q, workNumber)
 }
 
 func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber string) (*entity.EriusTask, error) {
@@ -781,13 +796,16 @@ type tasksCounter struct {
 	totalFormExecutor int
 }
 
-func (db *PGCon) getTasksCount(ctx c.Context, q string, usernames []string) (*tasksCounter, error) {
+func (db *PGCon) getTasksCount(
+	ctx c.Context,
+	q, currentUser string,
+	usernamesByApprovement, usernamesByExecution []string) (*tasksCounter, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_tasks_count")
 	defer span.End()
 
 	counter := &tasksCounter{}
 
-	if scanErr := db.Connection.QueryRow(ctx, q, usernames).
+	if scanErr := db.Connection.QueryRow(ctx, q, currentUser, usernamesByApprovement, usernamesByExecution).
 		Scan(
 			&counter.totalActive,
 			&counter.totalApprover,

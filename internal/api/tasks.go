@@ -185,12 +185,18 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, ui.Username, delegations.GetUserInArrayWithDelegators([]string{ui.Username}), workNumber)
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	dbTask, err := ae.DB.GetTask(ctx,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}),
+		ui.Username,
+		workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-
 		return
 	}
 
@@ -426,7 +432,15 @@ func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp, err := ae.DB.GetTasksCount(ctx, delegations.GetUserInArrayWithDelegators([]string{ui.Username}))
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	resp, err := ae.DB.GetTasksCount(
+		ctx,
+		ui.Username,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}))
+
 	if err != nil {
 		e := GetTasksCountError
 		log.Error(e.errorMessage(err))
@@ -642,7 +656,14 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		return errors.New("blockTypes is empty")
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, userLogin, []string{userLogin}, workNumber)
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	dbTask, err := ae.DB.GetTask(ctx,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
+		userLogin,
+		workNumber)
 
 	if err != nil {
 		e := GetTaskError
