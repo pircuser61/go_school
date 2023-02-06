@@ -385,7 +385,7 @@ func NewDecisionMadeByAdditionalApprover(id, fullname, decision, comment, sdUrl 
 	return Template{
 		Subject: fmt.Sprintf("Получена рецензия по Заявке №%s", id),
 		Text: `<p>Уважаемый коллега, получена рецензия по заявке №{{.Id}}</p></br>
-				<p>{{.Fullname}} {{.InternalActionName}}{{.Comment}}</p></br>
+				<p>{{.Fullname}} {{.Decision}}{{.Comment}}</p></br>
 				<p>Для просмотра перейдите по <a href={{.Link}}>ссылке</a></p></br>
 				
 				<style>
