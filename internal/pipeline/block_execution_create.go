@@ -87,7 +87,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	case script.ExecutionTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
-			return err
+			return grabStorageErr
 		}
 
 		resolvedEntities, resolveErr := resolveValuesFromVariables(
@@ -97,7 +97,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 			},
 		)
 		if resolveErr != nil {
-			return err
+			return resolveErr
 		}
 
 		gb.State.Executors = resolvedEntities
@@ -115,7 +115,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 
 		if len(executorsGroup.People) == 0 {
-			return errors.Wrap(errGroup, "zero executors in group: "+params.ExecutorsGroupID)
+			return errors.New("zero executors in group: "+params.ExecutorsGroupID)
 		}
 
 		gb.State.Executors = make(map[string]struct{})

@@ -125,7 +125,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		}
 
 		if len(approversGroup.People) == 0 {
-			return errors.Wrap(errGroup, "zero approvers in group: "+params.ApproversGroupID)
+			return errors.New("zero approvers in group: "+params.ApproversGroupID)
 		}
 
 		gb.State.Approvers = make(map[string]struct{})
@@ -137,7 +137,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 	case script.ApproverTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
-			return err
+			return grabStorageErr
 		}
 
 		resolvedEntities, resolveErr := resolveValuesFromVariables(
@@ -147,7 +147,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 			},
 		)
 		if resolveErr != nil {
-			return err
+			return resolveErr
 		}
 
 		gb.State.Approvers = resolvedEntities
