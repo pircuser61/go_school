@@ -8,10 +8,8 @@ variables:
   KUBERNETES_MEMORY_LIMIT: 1Gi
   KUBERNETES_CPU_LIMIT: 500m
   ENABLED_DEPLOY: "true"
-  ENABLED_LINT: 'allow-failure-true'
   ENABLED_REVIEW: 'allow-failure-true'
   ENABLED_DEP_CHECK: 'allow-failure-true'
-  ENABLED_TEST: 'allow-failure-true'
   CONFIG_PATH: cmd/pipeliner/config.yaml
   WRK_MEMORY_LIMIT_LINT: 1Gi
   WRK_MEMORY_LIMIT_REVIEW: 1Gi
