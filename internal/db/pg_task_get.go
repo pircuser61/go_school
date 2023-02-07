@@ -202,9 +202,10 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
 	if filters.Archived != nil {
 		switch *filters.Archived {
 		case true:
-			q = fmt.Sprintf("%s AND ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days' OR w.archived = true)", q)
+			q = fmt.Sprintf("%s AND (w.archived = true OR (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days')", q)
 		case false:
-			q = fmt.Sprintf("%s AND ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)", q)
+			q = fmt.Sprintf(`%s AND (w.finished_at IS NULL 
+							OR (w.archived = false AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))`, q)
 		}
 	}
 
@@ -410,8 +411,8 @@ func (db *PGCon) GetTasksCount(
 		)
 		SELECT
 		(SELECT count(*) FROM works w join ids on w.id = ids.id
-		WHERE author = $1 AND
-		      ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)),
+		WHERE author = $1 AND (w.finished_at IS NULL OR (w.archived = false AND
+		      (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))),
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
