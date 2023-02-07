@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/iancoleman/orderedmap"
-
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -32,9 +31,9 @@ type TaskStorager interface {
 	GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error)
 	SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error
 	GetTasks(ctx c.Context, filters e.TaskFilter, delegations []string) (*e.EriusTasksPage, error)
-	GetTasksCount(ctx c.Context, usernames []string) (*e.CountTasks, error)
+	GetTasksCount(ctx c.Context, currentUser string, delegationsByApprovement, delegationsByExecution []string) (*e.CountTasks, error)
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
-	GetTask(ctx c.Context, currentUser string, usernames []string, workNumber string) (*e.EriusTask, error)
+	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
 	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string) (e.TaskSteps, error)
 	GetTaskStepById(ctx c.Context, id uuid.UUID) (*e.Step, error)
@@ -58,6 +57,8 @@ type TaskStorager interface {
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
+	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
+	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
 }
 
 type UpdateTaskRate struct {

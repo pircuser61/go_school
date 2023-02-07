@@ -35,7 +35,22 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, currentUi.Username, []string{ui.Username}, params.WorkNumber)
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
+	if err != nil {
+		e := GetDelegationsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	dbTask, err := ae.DB.GetTask(ctx,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}),
+		currentUi.Username,
+		params.WorkNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
