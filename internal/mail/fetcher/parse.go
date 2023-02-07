@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	c "context"
+	"fmt"
 	"io"
 	"strings"
 
@@ -70,6 +71,8 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 
 func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, err error) {
 	const funcName = "mail.fetcher.parseEmail"
+	const rejected = "Отклонено"
+
 	_, span := trace.StartSpan(ctx, funcName)
 	defer span.End()
 
@@ -107,6 +110,27 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, er
 
 		if processedBody != nil {
 			action.Comment = processedBody.Body
+		}
+
+		if action.Comment == "" {
+			switch action.Decision {
+			case "approve":
+				action.Comment = "Согласовано"
+			case "confirm":
+				action.Comment = "Утверждено"
+			case "informed":
+				action.Comment = "Проинформировано"
+			case "reject":
+				action.Comment = rejected
+			case "sign":
+				action.Comment = "Подписано"
+			case "viewed":
+				action.Comment = "Ознакомлено"
+			case "executed":
+				action.Comment = "Решено"
+			case "rejected":
+				action.Comment = rejected
+			}
 		}
 	}
 
@@ -185,13 +209,9 @@ type parsedBody struct {
 	Attachments string
 }
 
-const (
-	startLine = "___ВАШ КОММЕНТАРИЙ НИЖЕ___"
-	endLine   = "_____________________________________________________"
-)
-
 func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
-	const funcName = "mail.fetcher.parseMsgBody"
+	const fn = "mail.fetcher.parseMsgBody"
+	const startLine = "___ВАШ КОММЕНТАРИЙ НИЖЕ___"
 
 	var (
 		body, attachments string
@@ -202,26 +222,26 @@ func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
 
 LOOP:
 	for {
-		p, err := r.NextPart()
+		part, err := r.NextPart()
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return nil, errors.Wrap(err, funcName)
+			return nil, errors.Wrap(err, fmt.Sprintf("%s, cant`t nexPart", fn))
 		}
 
-		switch h := p.Header.(type) {
+		switch h := part.Header.(type) {
 		case *mail.InlineHeader:
-			b, err := io.ReadAll(p.Body)
-			if err != nil {
-				log.Error(errors.Wrap(err, funcName))
+			b, errRead := io.ReadAll(part.Body)
+			if errRead != nil {
+				log.
+					WithField("fn", fn).
+					WithField("text", string(b)).
+					Error(errors.Wrap(errRead, "can`t read body"))
+				break LOOP
 			}
-			text := string(b)
-			log.Info(text)
-
-			body += text
+			body += string(b)
 			break LOOP
 		case *mail.AttachmentHeader:
-			// This is an attachment
 			filename, _ := h.Filename()
 			attachments += filename
 		}
@@ -234,15 +254,14 @@ LOOP:
 	}
 
 	if !strings.Contains(body, startLine) {
-		return nil, errors.Wrap(errors.New("no parsing lines found"), funcName)
+		return nil, errors.Wrap(errors.New("no parsing lines found"), fn)
 	}
 
 	start := strings.Index(body, startLine)
-	end := strings.Index(body, endLine)
-	if start == -1 || end == -1 || end <= start {
+	if start == -1 {
 		body = ""
 	} else {
-		body = strings.TrimSpace(body[start+len(startLine) : end])
+		body = strings.Replace(body, startLine, "", 1)
 	}
 	pb.Body = body
 	pb.Attachments = attachments
