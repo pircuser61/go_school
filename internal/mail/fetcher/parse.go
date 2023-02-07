@@ -150,17 +150,17 @@ type parsedHeaders struct {
 func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
 	fromAddrs, err := header.AddressList("From")
 	if err != nil {
-		return nil, errors.Wrap(err, ": header From")
+		return nil, errors.Wrap(err, "header From")
 	}
 
 	toAddrs, err := header.AddressList("To")
 	if err != nil {
-		return nil, errors.Wrap(err, ": header To")
+		return nil, errors.Wrap(err, "header To")
 	}
 
 	subject, err := header.Subject()
 	if err != nil {
-		return nil, errors.Wrap(err, ": header Subject")
+		return nil, errors.Wrap(err, "header Subject")
 	}
 
 	return &parsedHeaders{
@@ -211,7 +211,7 @@ type parsedBody struct {
 
 func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
 	const fn = "mail.fetcher.parseMsgBody"
-	const startLine = "***Comment***"
+	const startLine = "***Комментарий***"
 
 	var (
 		body, attachments string
