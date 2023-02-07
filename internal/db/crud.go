@@ -2098,7 +2098,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 
 	var s entity.Step
 	var content string
-	err := db.Connection.QueryRow(ctx, query, workID, stepName).Scan(
+	queryErr := db.Connection.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -2108,14 +2108,14 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 		&s.HasError,
 		&s.Status,
 	)
-	if err != nil {
-		return nil, err
+	if queryErr != nil {
+		return nil, queryErr
 	}
 
 	storage := store.NewStore()
 
-	if err = json.Unmarshal([]byte(content), storage); err != nil {
-		return nil, err
+	if unmarshalErr := json.Unmarshal([]byte(content), storage); unmarshalErr != nil {
+		return nil, unmarshalErr
 	}
 
 	s.State = storage.State

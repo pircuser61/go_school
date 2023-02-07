@@ -55,6 +55,7 @@ type ApproverParams struct {
 	ApproveStatusName  string `json:"approve_status_name"`
 }
 
+// nolint:gocyclo // its ok here
 func (a *ApproverParams) Validate() error {
 	if a.Approver == "" && a.Type == ApproverTypeUser {
 		return errors.New("approver is empty")

@@ -17,6 +17,7 @@ var (
 	errUnknown         = errors.New("unknown")
 )
 
+//nolint:gocritic // fix later
 type VariableStore struct {
 	// TODO: RWMutex?
 	sync.Mutex

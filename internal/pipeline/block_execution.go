@@ -88,6 +88,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		}}
 }
 
+//nolint:dupl //Need here
 func (gb *GoExecutionBlock) Deadlines() []Deadline {
 	if gb.State.IsRevoked || gb.State.Decision != nil {
 		return []Deadline{}

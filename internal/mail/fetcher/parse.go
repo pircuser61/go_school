@@ -3,7 +3,6 @@ package fetcher
 import (
 	c "context"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -212,7 +211,7 @@ LOOP:
 
 		switch h := p.Header.(type) {
 		case *mail.InlineHeader:
-			b, err := ioutil.ReadAll(p.Body)
+			b, err := io.ReadAll(p.Body)
 			if err != nil {
 				log.Error(errors.Wrap(err, funcName))
 			}

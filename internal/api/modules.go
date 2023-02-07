@@ -54,6 +54,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			eriusFunctions[i].Title = ForBase
 		case "go_test_block":
 			eriusFunctions[i].Title = "input"
+		//nolint:goconst //ok
 		case "approver":
 			eriusFunctions[i].Title = "Согласование"
 		case "servicedesk_application":
