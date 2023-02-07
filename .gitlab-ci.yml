@@ -15,5 +15,5 @@ variables:
   CONFIG_PATH: cmd/pipeliner/config.yaml
   WRK_MEMORY_LIMIT_LINT: 1Gi
   WRK_MEMORY_LIMIT_REVIEW: 1Gi
-  GOLANGCI_LINT_TIMEOUT: 5m
+  GOLANGCI_LINT_TIMEOUT: 15m
   WRK_IMG_GOLANG_BUILD: registry.services.mts.ru/docker/golang/all:1.20.0-alpine3.17.1-gcc-v1
