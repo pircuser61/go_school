@@ -14,6 +14,8 @@ variables:
   # ENABLED_TEST: 'allow-failure-true'
   CONFIG_PATH: cmd/pipeliner/config.yaml
   WRK_MEMORY_LIMIT_LINT: 2Gi
+  WRK_CPU_LIMIT_LINT: 2
   WRK_MEMORY_LIMIT_REVIEW: 2Gi
+  WRK_CPU_LIMIT_REVIEW: 2
   GOLANGCI_LINT_TIMEOUT: 30m
   WRK_IMG_GOLANG_BUILD: registry.services.mts.ru/docker/golang/all:1.20.0-alpine3.17.1-gcc-v1
