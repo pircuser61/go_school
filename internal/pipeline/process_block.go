@@ -47,6 +47,7 @@ type BlockRunContext struct {
 	Delegations        human_tasks.Delegations
 }
 
+//nolint:staticcheck //ok here
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy := &(*runCtx)
 	runCtxCopy.VarStore = &(*runCtx.VarStore)

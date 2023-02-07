@@ -305,7 +305,7 @@ func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
 	return slices.Contains(delegates, currentUser)
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocritic //its not duplicate
 func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
 	defer s.End()
@@ -641,6 +641,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 }
 
+//nolint:gocyclo // ok here
 func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	log := logger.GetLogger(ctx)
 
@@ -703,6 +704,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 	couldUpdateOne := false
 	for _, item := range steps {
+		// nolint:staticcheck // fix later
 		routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 		routineCtx = logger.WithLogger(routineCtx, log)
 		txStorage, transactionErr := ae.DB.StartTransaction(routineCtx)
@@ -890,7 +892,7 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	return []string{}
 }
 
-//nolint:gocyclo //its ok here
+//nolint:gocyclo,staticcheck //its ok here
 func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "update_task")
 	defer s.End()

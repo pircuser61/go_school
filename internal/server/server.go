@@ -23,7 +23,7 @@ func NewServer(
 	ctx context.Context,
 	log logger.Logger,
 	kf *kafka.Service,
-	serverParam api.ServerParam,
+	serverParam *api.ServerParam,
 ) *Server {
 	httpServer, err := api.NewServer(ctx, serverParam)
 	if err != nil {

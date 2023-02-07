@@ -117,7 +117,8 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 
 		if len(executorsGroup.People) == 0 {
-			return errors.New("zero executors in group: "+params.ExecutorsGroupID)
+			//nolint:goimports // bugged golint
+			return errors.New("zero executors in group: " + params.ExecutorsGroupID)
 		}
 
 		gb.State.Executors = make(map[string]struct{})
@@ -198,7 +199,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-//nolint:unparam
+//nolint:unparam // ok here
 func (gb *GoExecutionBlock) setPrevDecision(ctx c.Context) error {
 	decision := gb.State.GetDecision()
 

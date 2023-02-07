@@ -74,7 +74,7 @@ func getSliceFromMapOfStrings(source map[string]struct{}) []string {
 	return result
 }
 
-// nolint:deadcode //used in tests
+// nolint:deadcode,unused //used in tests
 func getStringAddress(s string) *string {
 	return &s
 }

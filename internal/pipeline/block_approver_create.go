@@ -126,7 +126,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		}
 
 		if len(approversGroup.People) == 0 {
-			return errors.New("zero approvers in group: "+params.ApproversGroupID)
+			return errors.New("zero approvers in group: " + params.ApproversGroupID)
 		}
 
 		gb.State.Approvers = make(map[string]struct{})
@@ -240,7 +240,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-//nolint:unparam
+//nolint:unparam // Need here
 func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
 	decision := gb.State.GetDecision()
 

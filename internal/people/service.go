@@ -66,7 +66,7 @@ var (
 	companyFilterOption = `(attributes.OrgUnit co "%s")`
 )
 
-// nolint:staticcheck
+// nolint:staticcheck // Cant use cases.Title
 func defineFilter(input string, oneWord bool, filter []string) string {
 	parts := strings.Split(strings.ToLower(input), " ")
 	var q string

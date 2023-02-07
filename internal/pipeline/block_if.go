@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	//nolint:goimports //cant sort import to not trigger golint
 	"gitlab.services.mts.ru/jocasta/conditions-kit"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"

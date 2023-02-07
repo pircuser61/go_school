@@ -40,11 +40,12 @@ func (gb *GoApproverBlock) Members() []Member {
 			Actions:    gb.approvementBaseActions(login),
 		})
 	}
-	for _, addApprover := range gb.State.AdditionalApprovers {
+	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
+		addApprover := gb.State.AdditionalApprovers[i]
 		members = append(members, Member{
 			Login:      addApprover.ApproverLogin,
-			IsFinished: gb.isApprovementAddFinished(addApprover),
-			Actions:    gb.approvementAddActions(addApprover),
+			IsFinished: gb.isApprovementAddFinished(&addApprover),
+			Actions:    gb.approvementAddActions(&addApprover),
 		})
 	}
 	return members
@@ -54,7 +55,8 @@ func (gb *GoApproverBlock) isApprovementBaseFinished(login string) bool {
 	if gb.State.Decision != nil || gb.State.IsRevoked {
 		return true
 	}
-	for _, log := range gb.State.ApproverLog {
+	for i := 0; i < len(gb.State.ApproverLog); i++ {
+		log := gb.State.ApproverLog[i]
 		if log.Login == login && log.LogType == ApproverLogDecision {
 			return true
 		}
@@ -66,7 +68,8 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	if gb.State.Decision != nil || gb.State.IsRevoked {
 		return []MemberAction{}
 	}
-	for _, log := range gb.State.ApproverLog {
+	for i := 0; i < len(gb.State.ApproverLog); i++ {
+		log := gb.State.ApproverLog[i]
 		if log.Login == login && log.LogType == ApproverLogDecision {
 			return []MemberAction{}
 		}
@@ -87,14 +90,14 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	})
 }
 
-func (gb *GoApproverBlock) isApprovementAddFinished(a AdditionalApprover) bool {
+func (gb *GoApproverBlock) isApprovementAddFinished(a *AdditionalApprover) bool {
 	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != nil {
 		return true
 	}
 	return false
 }
 
-func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []MemberAction {
+func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []MemberAction {
 	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != nil {
 		return []MemberAction{}
 	}
@@ -116,7 +119,7 @@ func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []MemberA
 		}}
 }
 
-//nolint:dupl
+//nolint:dupl //Need here
 func (gb *GoApproverBlock) Deadlines() []Deadline {
 	if gb.State.IsRevoked || gb.State.Decision != nil {
 		return []Deadline{}
