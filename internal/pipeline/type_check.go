@@ -38,7 +38,7 @@ var nestedTypesMapping = map[string]reflect.Kind{
 }
 
 func nestedTypeHandler(variable interface{}, originalValue TypeValue) error {
-	nestedType, _ := nestedTypesMapping[originalValue.GetType()]
+	nestedType := nestedTypesMapping[originalValue.GetType()]
 	variableType := reflect.TypeOf(variable)
 	if variableType.Kind() != nestedType {
 		return fmt.Errorf("unexpected type of variable %v %T", variable, variable)

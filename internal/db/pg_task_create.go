@@ -153,8 +153,8 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 
 	var worksNumber string
 
-	if err = row.Scan(&worksNumber); err != nil {
-		return "", err
+	if scanErr := row.Scan(&worksNumber); scanErr != nil {
+		return "", scanErr
 	}
 
 	return worksNumber, nil

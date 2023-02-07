@@ -116,6 +116,7 @@ func (gb *GoApproverBlock) approvementAddActions(a AdditionalApprover) []MemberA
 		}}
 }
 
+//nolint:dupl
 func (gb *GoApproverBlock) Deadlines() []Deadline {
 	if gb.State.IsRevoked || gb.State.Decision != nil {
 		return []Deadline{}

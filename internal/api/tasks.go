@@ -628,12 +628,12 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	log := logger.GetLogger(ctx)
 
-	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
-	if err != nil {
+	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
+	if getDelegationsErr != nil {
 		return err
 	}
 
-	if err = in.Validate(); err != nil {
+	if validateErr := in.Validate(); validateErr != nil {
 		return err
 	}
 
