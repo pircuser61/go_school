@@ -2,6 +2,8 @@ package fetcher
 
 import (
 	c "context"
+	"io"
+	"io/ioutil"
 	"strings"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -97,6 +99,18 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, er
 		return nil, err
 	}
 
+	if action != nil {
+		var processedBody *parsedBody
+		processedBody, err = parseMsgBody(ctx, r)
+		if err != nil {
+			return nil, err
+		}
+
+		if processedBody != nil {
+			action.Comment = processedBody.Body
+		}
+	}
+
 	return &ParsedEmail{
 		From:   from[0],
 		To:     to[0],
@@ -165,4 +179,74 @@ func addressListToStrList(addrs []*mail.Address) (res []string) {
 	}
 
 	return res
+}
+
+type parsedBody struct {
+	Body        string
+	Attachments string
+}
+
+const (
+	startLine = "___ВАШ КОММЕНТАРИЙ НИЖЕ___"
+	endLine   = "_____________________________________________________"
+)
+
+func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
+	const funcName = "mail.fetcher.parseMsgBody"
+
+	var (
+		body, attachments string
+		pb                parsedBody
+	)
+
+	log := logger.GetLogger(ctx)
+
+LOOP:
+	for {
+		p, err := r.NextPart()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, errors.Wrap(err, funcName)
+		}
+
+		switch h := p.Header.(type) {
+		case *mail.InlineHeader:
+			b, err := ioutil.ReadAll(p.Body)
+			if err != nil {
+				log.Error(errors.Wrap(err, funcName))
+			}
+			text := string(b)
+			log.Info(text)
+
+			body += text
+			break LOOP
+		case *mail.AttachmentHeader:
+			// This is an attachment
+			filename, _ := h.Filename()
+			attachments += filename
+		}
+	}
+
+	if body == "" && attachments == "" {
+		pb.Body = ""
+		pb.Attachments = attachments
+		return &pb, nil
+	}
+
+	if !strings.Contains(body, startLine) {
+		return nil, errors.Wrap(errors.New("no parsing lines found"), funcName)
+	}
+
+	start := strings.Index(body, startLine)
+	end := strings.Index(body, endLine)
+	if start == -1 || end == -1 || end <= start {
+		body = ""
+	} else {
+		body = strings.TrimSpace(body[start+len(startLine) : end])
+	}
+	pb.Body = body
+	pb.Attachments = attachments
+
+	return &pb, nil
 }
