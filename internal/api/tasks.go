@@ -337,6 +337,8 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		default:
 			delegations = delegations[:0]
 		}
+	} else {
+		delegations = delegations[:0]
 	}
 
 	currentUserAndDelegates := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
