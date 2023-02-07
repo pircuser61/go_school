@@ -340,6 +340,7 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 	return nil
 }
 
+//nolint:dupl // dont duplicate
 func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.execution.HandleBreachedSLARequestAddInfo"
 	var comment = "заявка автоматически перенесена в архив по истечении 3 дней"
