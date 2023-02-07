@@ -647,11 +647,11 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
 	if getDelegationsErr != nil {
-		return err
+		return getDelegationsErr
 	}
 
 	if validateErr := in.Validate(); validateErr != nil {
-		return err
+		return validateErr
 	}
 
 	blockTypes := getTaskStepNameByAction(in.Action)
