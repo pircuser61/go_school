@@ -58,6 +58,17 @@ func (s *Service) GetApplicationLink(applicationID string) string {
 	return fmt.Sprintf(TaskUrlTemplate, s.SdAddress, applicationID)
 }
 
+const htmlWrapper = `
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html lang="ru">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+</head>
+<body>%s</body></html>`
+
 func (s *Service) SendNotification(ctx context.Context, to []string, files []email.Attachment, tmpl Template) error {
 	_, span := trace.StartSpan(ctx, "SendNotification")
 	defer span.End()
@@ -82,7 +93,7 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		msg.To = append(msg.To, &mail.Address{Address: person})
 	}
 
-	temp, err := template.New("").Parse(tmpl.Text)
+	temp, err := template.New("").Parse(fmt.Sprintf(htmlWrapper, tmpl.Text))
 	if err != nil {
 		return err
 	}

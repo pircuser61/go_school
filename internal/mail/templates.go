@@ -492,13 +492,14 @@ func getApproverButtons(workNumber, mailto, blockId string, actions []Action, is
 			taskUpdateActionApprovement,
 		)
 
-		// это из-за магии появления пробела в слове subject
+		// это из-за магии появления пробела
 		subject = strings.ReplaceAll(subject, " ", "")
 		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, actions[i].Title))
 	}
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp)
+		sendEditAppSubject = strings.ReplaceAll(sendEditAppSubject, " ", "")
 		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Вернуть на доработку")
 		buttons = append(buttons, sendEditAppBtn)
 	}
