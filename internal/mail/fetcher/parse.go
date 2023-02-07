@@ -211,7 +211,7 @@ type parsedBody struct {
 
 func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
 	const fn = "mail.fetcher.parseMsgBody"
-	const startLine = "***Комментарий***"
+	const startLine = "***Comment***"
 
 	var (
 		body, attachments string
