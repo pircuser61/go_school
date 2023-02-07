@@ -470,12 +470,7 @@ type Action struct {
 
 const (
 	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s"
-	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=%s" target="_blank">%s</a></p>`
-
-	commentBodyTpl = `___ВАШ КОММЕНТАРИЙ НИЖЕ___
-
-
-_____________________________________________________`
+	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=___ВАШ КОММЕНТАРИЙ НИЖЕ___" target="_blank">%s</a></p>`
 
 	actionApproverSendEditApp   = "approver_send_edit_app"
 	actionExecutorSendEditApp   = "executor_send_edit_app"
@@ -499,12 +494,12 @@ func getApproverButtons(workNumber, mailto, blockId string, actions []Action, is
 
 		// это из-за магии появления пробела в слове subject
 		subject = strings.ReplaceAll(subject, " ", "")
-		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, commentBodyTpl, actions[i].Title))
+		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, actions[i].Title))
 	}
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp)
-		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, commentBodyTpl, "Вернуть на доработку")
+		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Вернуть на доработку")
 		buttons = append(buttons, sendEditAppBtn)
 	}
 
@@ -514,11 +509,11 @@ func getApproverButtons(workNumber, mailto, blockId string, actions []Action, is
 func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string, isEditable bool) string {
 	executedSubject := fmt.Sprintf(subjectTpl, blockId, executed, workNumber, taskUpdateActionExecution)
 	executedSubject = strings.ReplaceAll(executedSubject, " ", "")
-	executedBtn := fmt.Sprintf(buttonTpl, mailto, executedSubject, commentBodyTpl, "Решить")
+	executedBtn := fmt.Sprintf(buttonTpl, mailto, executedSubject, "Решить")
 
 	rejectedSubject := fmt.Sprintf(subjectTpl, blockId, rejected, workNumber, taskUpdateActionExecution)
 	rejectedSubject = strings.ReplaceAll(rejectedSubject, " ", "")
-	rejectedBtn := fmt.Sprintf(buttonTpl, mailto, rejectedSubject, commentBodyTpl, "Отклонить")
+	rejectedBtn := fmt.Sprintf(buttonTpl, mailto, rejectedSubject, "Отклонить")
 
 	buttons := []string{
 		executedBtn,
@@ -527,7 +522,7 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string,
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionExecutorSendEditApp)
-		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, commentBodyTpl, "Вернуть на доработку")
+		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Вернуть на доработку")
 		buttons = append(buttons, sendEditAppBtn)
 	}
 
