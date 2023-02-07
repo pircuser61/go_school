@@ -470,7 +470,7 @@ type Action struct {
 
 const (
 	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s"
-	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=***Комментарий***" target="_blank">%s</a></p>`
+	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=***Comment***" target="_blank">%s</a></p>`
 
 	actionApproverSendEditApp   = "approver_send_edit_app"
 	actionExecutorSendEditApp   = "executor_send_edit_app"
