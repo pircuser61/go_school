@@ -143,14 +143,15 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 
 		functionMapping := make(map[string]interface{})
 
-		for k, v := range executableFunctionMapping {
+		for k := range executableFunctionMapping {
+			v := executableFunctionMapping[k]
 			variable := getVariable(variables, v.Value)
 			if variable == nil {
 				return nil, fmt.Errorf("cant fill function mapping with value: %s = %v", k, v.Value)
 			}
 
-			if err = checkVariableType(variable, v); err != nil {
-				return nil, err
+			if checkErr := checkVariableType(variable, &v); checkErr != nil {
+				return nil, checkErr
 			}
 
 			functionMapping[k] = variable

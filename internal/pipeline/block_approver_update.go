@@ -307,6 +307,7 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.
 	return nil
 }
 
+//nolint:dupl // dont duplicate
 func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
 	const fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
 	var comment = "заявка автоматически перенесена в архив по истечении 3 дней"

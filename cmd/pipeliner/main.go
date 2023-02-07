@@ -209,7 +209,7 @@ func main() {
 
 	monitoring.Setup(cfg.Monitoring.Addr, &http.Client{Timeout: cfg.Monitoring.Timeout.Duration})
 
-	s := server.NewServer(ctx, log, kafkaService, serverParam)
+	s := server.NewServer(ctx, log, kafkaService, &serverParam)
 	s.Run(ctx)
 
 	sgnl := make(chan os.Signal, 1)

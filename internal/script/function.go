@@ -24,11 +24,11 @@ type MappingValue struct {
 	Value string `json:"value,omitempty"`
 }
 
-func (m MappingValue) GetType() string {
+func (m *MappingValue) GetType() string {
 	return m.Type
 }
 
-func (m MappingValue) GetProperties() map[string]interface{} {
+func (m *MappingValue) GetProperties() map[string]interface{} {
 	properties := make(map[string]interface{})
 	for k, v := range m.Properties {
 		properties[k] = v
@@ -36,7 +36,7 @@ func (m MappingValue) GetProperties() map[string]interface{} {
 	return properties
 }
 
-func (m MappingValue) GetItems() []interface{} {
+func (m *MappingValue) GetItems() []interface{} {
 	items := make([]interface{}, 0)
 	for _, v := range m.Items {
 		items = append(items, v)

@@ -164,7 +164,7 @@ func MakeBodyHeader(fullname, username, link, initialDescription string) string 
 	res := strings.Builder{}
 	res.WriteString(fmt.Sprintf("<p>%s<p><br>", initialDescription))
 	res.WriteString(fmt.Sprintf("<p> <b>Инициатор: </b>%s</p> <br>", userFromSD{fullname, username}.String()))
-	res.WriteString(fmt.Sprintf("<p> <b>Ссылка: </b><a href=\"%s\">%s</a></p> <br>", link, link))
+	res.WriteString(fmt.Sprintf("<p> <b>Ссылка: </b><a href=%q>%s</a></p> <br>", link, link))
 	return res.String()
 }
 

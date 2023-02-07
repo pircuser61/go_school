@@ -311,7 +311,8 @@ func (a *ApproverData) SetDecision(login string,
 	}
 
 	if approvementRule == script.AllOfApprovementRequired {
-		for _, entry := range a.ApproverLog {
+		for i := 0; i < len(a.ApproverLog); i++ {
+			entry := a.ApproverLog[i]
 			if entry.Login == login && entry.LogType == ApproverLogDecision {
 				return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 			}
@@ -335,7 +336,8 @@ func (a *ApproverData) SetDecision(login string,
 		} else {
 			decisions := make(map[ApproverDecision]int)
 			decisionsCount := 0
-			for _, entry := range a.ApproverLog {
+			for i := 0; i < len(a.ApproverLog); i++ {
+				entry := a.ApproverLog[i]
 				if entry.LogType != ApproverLogDecision {
 					continue
 				}
@@ -369,7 +371,8 @@ func (a *ApproverData) SetDecision(login string,
 }
 
 func decisionForPersonExists(login string, logs *[]ApproverLogEntry) bool {
-	for _, logEntry := range *logs {
+	for i := 0; i < len(*logs); i++ {
+		logEntry := (*logs)[i]
 		if (logEntry.Login == login || logEntry.DelegateFor == login) && logEntry.LogType == ApproverLogDecision {
 			return true
 		}

@@ -53,7 +53,7 @@ type ServerParam struct {
 	ReadinessPath string
 }
 
-func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
+func NewServer(ctx context.Context, param *ServerParam) (*http.Server, error) {
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
 	mux.Use(LoggerMiddleware(logger.GetLogger(ctx)))
@@ -81,6 +81,7 @@ func NewServer(ctx context.Context, param ServerParam) (*http.Server, error) {
 			HandlerFromMux(param.APIEnv, r)
 		})
 
+	//nolint:gosec // no lint ReadHeaderTimeout
 	return &http.Server{
 		Addr:    param.ServerAddr,
 		Handler: mux,

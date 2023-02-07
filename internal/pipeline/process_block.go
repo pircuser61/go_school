@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,10 +49,13 @@ type BlockRunContext struct {
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
-	runCtxCopy := &(*runCtx)
-	runCtxCopy.VarStore = &(*runCtx.VarStore)
+	runCtxCopy := *runCtx
+	//nolint:govet // declare new mutex on next line
+	varStore := *runCtx.VarStore
+	varStore.Mutex = sync.Mutex{}
+	runCtxCopy.VarStore = &varStore
 	runCtxCopy.UpdateData = nil
-	return runCtxCopy
+	return &runCtxCopy
 }
 
 //nolint:gocyclo //todo: need to decompose

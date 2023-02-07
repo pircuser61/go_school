@@ -725,6 +725,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
 	spCtx := span.SpanContext()
+	// nolint:staticcheck //its ok here
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 	routineCtx = logger.WithLogger(routineCtx, log)
 	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_processing", spCtx)

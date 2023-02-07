@@ -88,7 +88,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	case script.ExecutionTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
-			return err
+			return grabStorageErr
 		}
 
 		resolvedEntities, resolveErr := resolveValuesFromVariables(
@@ -98,7 +98,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 			},
 		)
 		if resolveErr != nil {
-			return err
+			return resolveErr
 		}
 
 		gb.State.Executors = resolvedEntities
@@ -117,7 +117,8 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 
 		if len(executorsGroup.People) == 0 {
-			return errors.Wrap(errGroup, "zero executors in group: "+params.ExecutorsGroupID)
+			//nolint:goimports // bugged golint
+			return errors.New("zero executors in group: " + params.ExecutorsGroupID)
 		}
 
 		gb.State.Executors = make(map[string]struct{})
@@ -142,20 +143,19 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	l := logger.GetLogger(ctx)
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
-	if err != nil {
-		return err
+	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+	if getDelegationsErr != nil {
+		return getDelegationsErr
 	}
 	delegates = delegates.FilterByType("execution")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
 
-	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
-		if err != nil {
-			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+		email, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		if getUserEmailErr != nil {
+			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
 
@@ -166,9 +166,9 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		return nil
 	}
 
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
-	if err != nil {
-		return err
+	description, makeNotificationErr := gb.RunContext.makeNotificationDescription(gb.Name)
+	if makeNotificationErr != nil {
+		return makeNotificationErr
 	}
 
 	emails = utils.UniqueStrings(emails)
@@ -191,14 +191,15 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 			})
 
-		if err = gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, nil, tpl); err != nil {
-			return err
+		if sendNotificationErr := gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, nil, tpl); sendNotificationErr != nil {
+			return sendNotificationErr
 		}
 	}
 
 	return nil
 }
 
+//nolint:unparam // ok here
 func (gb *GoExecutionBlock) setPrevDecision(ctx c.Context) error {
 	decision := gb.State.GetDecision()
 

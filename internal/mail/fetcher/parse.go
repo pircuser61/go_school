@@ -4,7 +4,6 @@ import (
 	c "context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -230,7 +229,7 @@ LOOP:
 
 		switch h := part.Header.(type) {
 		case *mail.InlineHeader:
-			b, errRead := ioutil.ReadAll(part.Body)
+			b, errRead := io.ReadAll(part.Body)
 			if errRead != nil {
 				log.
 					WithField("fn", fn).

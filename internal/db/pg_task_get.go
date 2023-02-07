@@ -202,9 +202,10 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
 	if filters.Archived != nil {
 		switch *filters.Archived {
 		case true:
-			q = fmt.Sprintf("%s AND ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days' OR w.archived = true)", q)
+			q = fmt.Sprintf("%s AND (w.archived = true OR (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days')", q)
 		case false:
-			q = fmt.Sprintf("%s AND ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)", q)
+			q = fmt.Sprintf(`%s AND (w.finished_at IS NULL 
+							OR (w.archived = false AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))`, q)
 		}
 	}
 
@@ -310,7 +311,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 
 	q, args := compileGetTasksQuery(filters, delegations)
 
-	tasks, err := db.getTasks(ctx, filters, delegations, q, args)
+	tasks, err := db.getTasks(ctx, &filters, delegations, q, args)
 	if err != nil {
 		return nil, err
 	}
@@ -410,8 +411,8 @@ func (db *PGCon) GetTasksCount(
 		)
 		SELECT
 		(SELECT count(*) FROM works w join ids on w.id = ids.id
-		WHERE author = $1 AND
-		      ((now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days' OR w.finished_at IS NULL)),
+		WHERE author = $1 AND (w.finished_at IS NULL OR (w.archived = false AND
+		      (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))),
 		(SELECT count(*)
 			FROM members m
 				JOIN variable_storage vs on vs.id = m.block_id
@@ -475,7 +476,7 @@ func (db *PGCon) GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*entity.
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
-	return db.getTasks(ctx, entity.TaskFilter{}, []string{}, q, []interface{}{pipelineID})
+	return db.getTasks(ctx, &entity.TaskFilter{}, []string{}, q, []interface{}{pipelineID})
 }
 
 func (db *PGCon) GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*entity.EriusTasks, error) {
@@ -501,7 +502,7 @@ func (db *PGCon) GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*entity.Er
 		ORDER BY w.started_at DESC
 		LIMIT 100`
 
-	return db.getTasks(ctx, entity.TaskFilter{}, []string{}, q, []interface{}{versionID})
+	return db.getTasks(ctx, &entity.TaskFilter{}, []string{}, q, []interface{}{versionID})
 }
 
 func (db *PGCon) GetLastDebugTask(ctx c.Context, id uuid.UUID, author string) (*entity.EriusTask, error) {
@@ -819,7 +820,7 @@ func (db *PGCon) getTasksCount(
 }
 
 //nolint:gocyclo //its ok here
-func (db *PGCon) getTasks(ctx c.Context, filters entity.TaskFilter,
+func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 	delegatorsWithUser []string, q string, args []interface{}) (*entity.EriusTasks, error) {
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
@@ -1120,6 +1121,7 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 		AND v.is_actual = TRUE
 		AND coalesce(w.run_context -> 'initial_application' -> 'is_test_application' = 'false', true)
 		AND ws.name = 'finished'
+	GROUP BY w.id, started_at, finished_at
 	HAVING count(*) < 30
 	ORDER BY w.started_at DESC`
 
