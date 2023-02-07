@@ -470,7 +470,7 @@ type Action struct {
 
 const (
 	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s"
-	buttonTpl  = "<p><a href='mailto:%s?subject=%s&body=***Comment***' target='_blank'>%s</a></p>"
+	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=***Комментарий***" target="_blank">%s</a></p>`
 
 	actionApproverSendEditApp   = "approver_send_edit_app"
 	actionExecutorSendEditApp   = "executor_send_edit_app"
@@ -492,28 +492,23 @@ func getApproverButtons(workNumber, mailto, blockId string, actions []Action, is
 			taskUpdateActionApprovement,
 		)
 
-		// это из-за магии появления пробела
-		subject = strings.ReplaceAll(subject, " ", "")
 		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, actions[i].Title))
 	}
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp)
-		sendEditAppSubject = strings.ReplaceAll(sendEditAppSubject, " ", "")
 		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Вернуть на доработку")
 		buttons = append(buttons, sendEditAppBtn)
 	}
 
-	return fmt.Sprintf("<p><b>Действия с заявкой</b></p> %s", strings.Join(buttons, ""))
+	return fmt.Sprintf("<p><b>Действия с заявкой</b></p>%s", strings.Join(buttons, ""))
 }
 
 func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string, isEditable bool) string {
 	executedSubject := fmt.Sprintf(subjectTpl, blockId, executed, workNumber, taskUpdateActionExecution)
-	executedSubject = strings.ReplaceAll(executedSubject, " ", "")
 	executedBtn := fmt.Sprintf(buttonTpl, mailto, executedSubject, "Решить")
 
 	rejectedSubject := fmt.Sprintf(subjectTpl, blockId, rejected, workNumber, taskUpdateActionExecution)
-	rejectedSubject = strings.ReplaceAll(rejectedSubject, " ", "")
 	rejectedBtn := fmt.Sprintf(buttonTpl, mailto, rejectedSubject, "Отклонить")
 
 	buttons := []string{
