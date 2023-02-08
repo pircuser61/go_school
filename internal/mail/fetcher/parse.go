@@ -2,6 +2,8 @@ package fetcher
 
 import (
 	c "context"
+	"fmt"
+	"io"
 	"strings"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -69,6 +71,9 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 
 func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, err error) {
 	const funcName = "mail.fetcher.parseEmail"
+	const rejected = "Отклонено"
+
+	log := logger.GetLogger(ctx)
 
 	_, span := trace.StartSpan(ctx, funcName)
 	defer span.End()
@@ -96,6 +101,39 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, er
 	action, err := parseSubject(fields)
 	if err != nil {
 		return nil, err
+	}
+
+	if action != nil {
+		var processedBody *parsedBody
+		processedBody, err = parseMsgBody(ctx, r)
+		if err != nil {
+			log.WithError(err).Error("can't parse message body: " + action.WorkNumber)
+		}
+
+		if processedBody != nil {
+			action.Comment = processedBody.Body
+		}
+
+		if action.Comment == "" {
+			switch action.Decision {
+			case "approve":
+				action.Comment = "Согласовано"
+			case "confirm":
+				action.Comment = "Утверждено"
+			case "informed":
+				action.Comment = "Проинформировано"
+			case "reject":
+				action.Comment = rejected
+			case "sign":
+				action.Comment = "Подписано"
+			case "viewed":
+				action.Comment = "Ознакомлено"
+			case "executed":
+				action.Comment = "Решено"
+			case "rejected":
+				action.Comment = rejected
+			}
+		}
 	}
 
 	return &ParsedEmail{
@@ -166,4 +204,69 @@ func addressListToStrList(addrs []*mail.Address) (res []string) {
 	}
 
 	return res
+}
+
+type parsedBody struct {
+	Body        string
+	Attachments string
+}
+
+func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
+	const fn = "mail.fetcher.parseMsgBody"
+	const startLine = "***Комментарий***"
+
+	var (
+		body, attachments string
+		pb                parsedBody
+	)
+
+	log := logger.GetLogger(ctx)
+
+LOOP:
+	for {
+		part, err := r.NextPart()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("%s, cant`t nexPart", fn))
+		}
+
+		switch h := part.Header.(type) {
+		case *mail.InlineHeader:
+			b, errRead := io.ReadAll(part.Body)
+			if errRead != nil {
+				log.
+					WithField("fn", fn).
+					WithField("text", string(b)).
+					Error(errors.Wrap(errRead, "can`t read body"))
+				break LOOP
+			}
+			body += string(b)
+			break LOOP
+		case *mail.AttachmentHeader:
+			filename, _ := h.Filename()
+			attachments += filename
+		}
+	}
+
+	if body == "" && attachments == "" {
+		pb.Body = ""
+		pb.Attachments = attachments
+		return &pb, nil
+	}
+
+	if !strings.Contains(body, startLine) {
+		return nil, errors.Wrap(errors.New("no parsing lines found"), fn)
+	}
+
+	start := strings.Index(body, startLine)
+	if start == -1 {
+		body = ""
+	} else {
+		body = strings.Replace(body, startLine, "", 1)
+	}
+	pb.Body = body
+	pb.Attachments = attachments
+
+	return &pb, nil
 }
