@@ -93,9 +93,9 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl string) Template {
 
 func NewReworkSLATpl(id, sdUrl string, reworkSla int) Template {
 	return Template{
-		Subject: fmt.Sprintf("Заявка %s автоматически отклонена", id),
+		Subject: fmt.Sprintf("Заявка %s автоматически перенесена в архив", id),
 		Text: `Уважаемый коллега, истек срок ожидания доработок по заявке {{.Id}}.</br>
-Заявка автоматически отклонена по истечении {{.Duration}} дней.</br>
+Заявка автоматически перенесена в архив по истечении {{.Duration}} дней.</br>
 Для просмотра заявки перейдите по <a href={{.Link}}>ссылке</a><br>`,
 		Variables: struct {
 			Id       string `json:"id"`
@@ -417,7 +417,7 @@ func NewDayBeforeRequestAddInfoSLABreached(id, sdUrl string) Template {
 		Text: `Уважаемый коллега, по вашей заявке №{{.Id}} 
 				необходимо предоставить дополнительную информацию в течение 
 				одного рабочего дня с момента данного уведомления, 
-				иначе заявка будет автоматически <b>закрыта</b>.</br> 
+				иначе заявка будет автоматически <b>перенесена в архив</b>.</br> 
 				Заявка доступна по <a href={{.Link}}>ссылке</a></p></br>`,
 		Variables: struct {
 			Id   string `json:"id"`
@@ -431,9 +431,9 @@ func NewDayBeforeRequestAddInfoSLABreached(id, sdUrl string) Template {
 
 func NewRequestAddInfoSLABreached(id, sdUrl string) Template {
 	return Template{
-		Subject: fmt.Sprintf("Заявка №%s автоматически отклонена", id),
+		Subject: fmt.Sprintf("Заявка №%s автоматически перенесена в архив", id),
 		Text: `Уважаемый коллега, заявка №{{.Id}} 
-				автоматически отклонена из-за отсутствия ответа 
+				автоматически перенесена в архив из-за отсутствия ответа 
 				на запрос дополнительной информации в течении 3 дней 
 				Заявка доступна по <a href={{.Link}}>ссылке</a></p></br>`,
 		Variables: struct {
@@ -464,14 +464,13 @@ func getApprovementActionNameByStatus(status, defaultActionName string) (res str
 }
 
 type Action struct {
-	Id       string
-	Title    string
-	Decision string
+	Title              string
+	InternalActionName string
 }
 
 const (
 	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s"
-	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=***Комментарий***" target="_blank">%s</a></p>`
+	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=Вы можете оставить комментарий здесь" target="_blank">%s</a></p>`
 
 	actionApproverSendEditApp   = "approver_send_edit_app"
 	actionExecutorSendEditApp   = "executor_send_edit_app"
@@ -482,28 +481,36 @@ const (
 func getApproverButtons(workNumber, mailto, blockId string, actions []Action, isEditable bool) string {
 	buttons := make([]string, 0, len(actions))
 	for i := range actions {
-		if actions[i].Id == actionApproverSendEditApp {
+		if actions[i].InternalActionName == actionApproverSendEditApp {
 			continue
 		}
-		subject := fmt.Sprintf(subjectTpl, blockId, actions[i].Decision, workNumber, taskUpdateActionApprovement)
+		subject := fmt.Sprintf(
+			subjectTpl,
+			blockId,
+			actions[i].InternalActionName,
+			workNumber,
+			taskUpdateActionApprovement,
+		)
+
+		subject = strings.ReplaceAll(subject, " ", "")
 		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, actions[i].Title))
 	}
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp)
-		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Отправить на доработку")
+		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Вернуть на доработку")
 		buttons = append(buttons, sendEditAppBtn)
 	}
 
-	return fmt.Sprintf("<p><b>Действия с заявкой</b></p> %s", strings.Join(buttons, ""))
+	return fmt.Sprintf("<p><b>Действия с заявкой</b></p>%s", strings.Join(buttons, ""))
 }
 
 func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string, isEditable bool) string {
 	executedSubject := fmt.Sprintf(subjectTpl, blockId, executed, workNumber, taskUpdateActionExecution)
-	executedBtn := fmt.Sprintf(buttonTpl, mailto, executedSubject, "Исполнено")
+	executedBtn := fmt.Sprintf(buttonTpl, mailto, executedSubject, "Решить")
 
 	rejectedSubject := fmt.Sprintf(subjectTpl, blockId, rejected, workNumber, taskUpdateActionExecution)
-	rejectedBtn := fmt.Sprintf(buttonTpl, mailto, rejectedSubject, "Не исполнено")
+	rejectedBtn := fmt.Sprintf(buttonTpl, mailto, rejectedSubject, "Отклонить")
 
 	buttons := []string{
 		executedBtn,
@@ -512,7 +519,7 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string,
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionExecutorSendEditApp)
-		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Отправить на доработку")
+		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Вернуть на доработку")
 		buttons = append(buttons, sendEditAppBtn)
 	}
 

@@ -52,6 +52,27 @@ func (_m *MockedDatabase) AttachTag(ctx context.Context, id uuid.UUID, p *entity
 	return r0
 }
 
+// CheckIsArchived provides a mock function with given fields: ctx, taskID
+func (_m *MockedDatabase) CheckIsArchived(ctx context.Context, taskID uuid.UUID) (bool, error) {
+	ret := _m.Called(ctx, taskID)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) bool); ok {
+		r0 = rf(ctx, taskID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // CheckTaskStepsExecuted provides a mock function with given fields: ctx, workNumber, blocks
 func (_m *MockedDatabase) CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error) {
 	ret := _m.Called(ctx, workNumber, blocks)
@@ -804,13 +825,13 @@ func (_m *MockedDatabase) GetTag(ctx context.Context, e *entity.EriusTagInfo) (*
 	return r0, r1
 }
 
-// GetTask provides a mock function with given fields: ctx, currentUser, usernames, workNumber
-func (_m *MockedDatabase) GetTask(ctx context.Context, currentUser string, usernames []string, workNumber string) (*entity.EriusTask, error) {
-	ret := _m.Called(ctx, currentUser, usernames, workNumber)
+// GetTask provides a mock function with given fields: ctx, delegationsApprover, delegationsExecution, currentUser, workNumber
+func (_m *MockedDatabase) GetTask(ctx context.Context, delegationsApprover []string, delegationsExecution []string, currentUser string, workNumber string) (*entity.EriusTask, error) {
+	ret := _m.Called(ctx, delegationsApprover, delegationsExecution, currentUser, workNumber)
 
 	var r0 *entity.EriusTask
-	if rf, ok := ret.Get(0).(func(context.Context, string, []string, string) *entity.EriusTask); ok {
-		r0 = rf(ctx, currentUser, usernames, workNumber)
+	if rf, ok := ret.Get(0).(func(context.Context, []string, []string, string, string) *entity.EriusTask); ok {
+		r0 = rf(ctx, delegationsApprover, delegationsExecution, currentUser, workNumber)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusTask)
@@ -818,8 +839,8 @@ func (_m *MockedDatabase) GetTask(ctx context.Context, currentUser string, usern
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, []string, string) error); ok {
-		r1 = rf(ctx, currentUser, usernames, workNumber)
+	if rf, ok := ret.Get(1).(func(context.Context, []string, []string, string, string) error); ok {
+		r1 = rf(ctx, delegationsApprover, delegationsExecution, currentUser, workNumber)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1005,13 +1026,13 @@ func (_m *MockedDatabase) GetTasks(ctx context.Context, filters entity.TaskFilte
 	return r0, r1
 }
 
-// GetTasksCount provides a mock function with given fields: ctx, usernames
-func (_m *MockedDatabase) GetTasksCount(ctx context.Context, usernames []string) (*entity.CountTasks, error) {
-	ret := _m.Called(ctx, usernames)
+// GetTasksCount provides a mock function with given fields: ctx, currentUser, delegationsByApprovement, delegationsByExecution
+func (_m *MockedDatabase) GetTasksCount(ctx context.Context, currentUser string, delegationsByApprovement []string, delegationsByExecution []string) (*entity.CountTasks, error) {
+	ret := _m.Called(ctx, currentUser, delegationsByApprovement, delegationsByExecution)
 
 	var r0 *entity.CountTasks
-	if rf, ok := ret.Get(0).(func(context.Context, []string) *entity.CountTasks); ok {
-		r0 = rf(ctx, usernames)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string, []string) *entity.CountTasks); ok {
+		r0 = rf(ctx, currentUser, delegationsByApprovement, delegationsByExecution)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.CountTasks)
@@ -1019,8 +1040,8 @@ func (_m *MockedDatabase) GetTasksCount(ctx context.Context, usernames []string)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
-		r1 = rf(ctx, usernames)
+	if rf, ok := ret.Get(1).(func(context.Context, string, []string, []string) error); ok {
+		r1 = rf(ctx, currentUser, delegationsByApprovement, delegationsByExecution)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1366,6 +1387,20 @@ func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepR
 	}
 
 	return r0, r1, r2
+}
+
+// SendTaskToArchive provides a mock function with given fields: ctx, taskID
+func (_m *MockedDatabase) SendTaskToArchive(ctx context.Context, taskID uuid.UUID) error {
+	ret := _m.Called(ctx, taskID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, taskID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // SetApplicationData provides a mock function with given fields: workNumber, data

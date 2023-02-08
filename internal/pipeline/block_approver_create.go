@@ -126,7 +126,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		}
 
 		if len(approversGroup.People) == 0 {
-			return errors.Wrap(errGroup, "zero approvers in group: "+params.ApproversGroupID)
+			return errors.New("zero approvers in group: " + params.ApproversGroupID)
 		}
 
 		gb.State.Approvers = make(map[string]struct{})
@@ -138,7 +138,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 	case script.ApproverTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
-			return err
+			return grabStorageErr
 		}
 
 		resolvedEntities, resolveErr := resolveValuesFromVariables(
@@ -148,7 +148,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 			},
 		)
 		if resolveErr != nil {
-			return err
+			return resolveErr
 		}
 
 		gb.State.Approvers = resolvedEntities
@@ -175,20 +175,19 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	l := logger.GetLogger(ctx)
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Approvers))
-	if err != nil {
-		return err
+	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Approvers))
+	if getDelegationsErr != nil {
+		return getDelegationsErr
 	}
 	delegates = delegates.FilterByType("approvement")
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Approvers))
 
-	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
-		if err != nil {
-			l.WithField("login", login).WithError(err).Warning("couldn't get email")
+		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		if getEmailErr != nil {
+			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
 			continue
 		}
 
@@ -199,17 +198,16 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		return nil
 	}
 
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
-	if err != nil {
-		return err
+	description, makeNotifErr := gb.RunContext.makeNotificationDescription(gb.Name)
+	if makeNotifErr != nil {
+		return makeNotifErr
 	}
 
 	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
 	for i := range gb.State.ActionList {
 		actionsList = append(actionsList, mail.Action{
-			Id:       gb.State.ActionList[i].Id,
-			Decision: string(ApproverAction(gb.State.ActionList[i].Id).ToDecision()),
-			Title:    gb.State.ActionList[i].Title,
+			InternalActionName: gb.State.ActionList[i].Id,
+			Title:              gb.State.ActionList[i].Title,
 		})
 	}
 
@@ -234,14 +232,15 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 			})
 
-		if err = gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, nil, tpl); err != nil {
-			return err
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, nil, tpl); sendErr != nil {
+			return sendErr
 		}
 	}
 
 	return nil
 }
 
+//nolint:unparam // Need here
 func (gb *GoApproverBlock) setPrevDecision(ctx c.Context) error {
 	decision := gb.State.GetDecision()
 

@@ -67,7 +67,7 @@ type EriusScenario struct {
 	CommentRejected string          `json:"comment_rejected"`
 }
 
-func (s EriusScenario) Validate() error {
+func (s *EriusScenario) Validate() error {
 	if s.ProcessSettings.ExternalSystems != nil {
 		var systems = make(map[uuid.UUID]struct{}, len(s.ProcessSettings.ExternalSystems))
 		for _, system := range s.ProcessSettings.ExternalSystems {

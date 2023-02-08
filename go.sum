@@ -1048,6 +1048,8 @@ gitlab.services.mts.ru/jocasta/functions v1.3.0-alpha.3 h1:LBILSJBqSSX5oPyt6pVvJ
 gitlab.services.mts.ru/jocasta/functions v1.3.0-alpha.3/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.1 h1:bGq+r5ESVCex+8oib4i5ku6ATNFGLLaYBAtBuC4tvYU=
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.1/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
+gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/lyqa+CrStWUJ4nAd5H5j4w=
+gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXUjJYRgJO4doHbs+ZVOEvKUgIE=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3/go.mod h1:s5ymK5liDXfZRBcLNOFZr+YleyYBNCUCUhzr6ddtJuo=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.1 h1:+cqIlLRKbmJmBwzGsvdtwzXkUaui8KhVg1spmsbfHS8=

@@ -44,22 +44,22 @@ func (ae *APIEnv) StartDebugTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUi, err := user.GetUserInfoFromCtx(ctx)
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
 	if err != nil {
-		e := NoUserInContextError
+		e := GetDelegationsError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, currentUi.Username, []string{ui.Username}, debugRequest.WorkNumber)
-	if err != nil {
-		e := GetTaskError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
 
-		return
-	}
+	task, err := ae.DB.GetTask(ctx,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}),
+		ui.Username,
+		debugRequest.WorkNumber)
 
 	if !task.IsStopped() && !task.IsCreated() {
 		if task.IsRun() {
@@ -241,15 +241,22 @@ func (ae *APIEnv) DebugTask(w http.ResponseWriter, req *http.Request, workNumber
 		return
 	}
 
-	currentUi, err := user.GetUserInfoFromCtx(ctx)
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
 	if err != nil {
-		e := NoUserInContextError
+		e := GetDelegationsError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
 	}
 
-	task, err := ae.DB.GetTask(ctx, currentUi.Username, []string{ui.Username}, workNumber)
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	task, err := ae.DB.GetTask(ctx,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}),
+		ui.Username,
+		workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))

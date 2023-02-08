@@ -35,7 +35,7 @@ func Test_createGoFormBlock(t *testing.T) {
 		global2    = "form_0.application_body"
 		schemaId   = "c77be97a-f978-46d3-aa03-ab72663f2b74"
 		schemaName = "название формы"
-		executor   = "servicedesk_application_0.application_body.field-uuid-3.username"
+		executor   = "executor"
 	)
 
 	next := []entity.Socket{
@@ -201,17 +201,17 @@ func Test_createGoFormBlock(t *testing.T) {
 					keyOutputFormBody:     global2,
 				},
 				State: &FormData{
-					FormExecutorType: script.FormExecutorTypeFromSchema,
-					SchemaId:         schemaId,
-					SchemaName:       schemaName,
-					Executors:        nil,
-					ApplicationBody:  map[string]interface{}{},
-					IsFilled:         false,
-					ActualExecutor:   nil,
-					ChangesLog:       []ChangesLogItem{},
-					IsRevoked:        false,
-					Description:      "",
-					FormsAccessibility: []script.FormAccessibility{},
+					FormExecutorType:   script.FormExecutorTypeFromSchema,
+					SchemaId:           schemaId,
+					SchemaName:         schemaName,
+					Executors:          map[string]struct{}{executor: {}},
+					ApplicationBody:    map[string]interface{}{},
+					IsFilled:           false,
+					ActualExecutor:     nil,
+					ChangesLog:         []ChangesLogItem{},
+					IsRevoked:          false,
+					Description:        "",
+					FormsAccessibility: nil,
 				},
 				Sockets: entity.ConvertSocket(next),
 			},

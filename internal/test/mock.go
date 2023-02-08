@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -51,7 +51,7 @@ var (
 
 		w.Header().Set("Content-type", "application/json")
 
-		bytes, err := ioutil.ReadAll(r.Body)
+		bytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -85,7 +85,7 @@ var (
 
 			w.Header().Set("Content-type", "application/json")
 
-			bytes, err := ioutil.ReadAll(r.Body)
+			bytes, err := io.ReadAll(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -928,6 +928,21 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetTasksCount(
+	ctx context.Context,
+	currentUser string,
+	delegationsByApprovement, delegationsByExecution []string) (*entity.CountTasks, error) {
+	return nil, nil
+}
+
+func (_m *MockDB) SendTaskToArchive(ctx context.Context, taskID uuid.UUID) (err error) {
+	return nil
+}
+
+func (_m *MockDB) CheckIsArchived(ctx context.Context, taskID uuid.UUID) (bool, error) {
+	return false, nil
+}
+
 func (_m *MockDB) UpdateTaskStatus(_ context.Context, _ uuid.UUID, _ int) error {
 	return nil
 }
@@ -994,10 +1009,6 @@ func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter,
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTasksCount(c context.Context, usernames []string) (*entity.CountTasks, error) {
-	return nil, errNotImplemented
-}
-
 func (m *MockDB) CheckTaskStepsExecuted(_ context.Context, _ string, _ []string) (bool, error) {
 	return false, nil
 }
@@ -1034,7 +1045,7 @@ func (m *MockDB) GetTaskSteps(c context.Context, id uuid.UUID) (entity.TaskSteps
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetTask(_ context.Context, _ string, _ []string, _ string) (*entity.EriusTask, error) {
+func (m *MockDB) GetTask(_ context.Context, _, _ []string, _, _ string) (*entity.EriusTask, error) {
 	return nil, errNotFound
 }
 

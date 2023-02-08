@@ -185,12 +185,18 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, ui.Username, delegations.GetUserInArrayWithDelegators([]string{ui.Username}), workNumber)
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	dbTask, err := ae.DB.GetTask(ctx,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}),
+		ui.Username,
+		workNumber)
 	if err != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-
 		return
 	}
 
@@ -299,7 +305,7 @@ func isDelegate(currentUser, login string, delegations *ht.Delegations) bool {
 	return slices.Contains(delegates, currentUser)
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocritic //its not duplicate
 func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetTasksParams) {
 	ctx, s := trace.StartSpan(req.Context(), "get_tasks")
 	defer s.End()
@@ -325,12 +331,14 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 	if filters.SelectAs != nil {
 		switch *filters.SelectAs {
 		case "approver", "finished_approver":
-			delegations = delegations.FilterByType("execution")
-		case "executor", "finished_executor":
 			delegations = delegations.FilterByType("approvement")
+		case "executor", "finished_executor":
+			delegations = delegations.FilterByType("execution")
 		default:
 			delegations = delegations[:0]
 		}
+	} else {
+		delegations = delegations[:0]
 	}
 
 	currentUserAndDelegates := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
@@ -426,7 +434,15 @@ func (ae *APIEnv) GetTasksCount(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp, err := ae.DB.GetTasksCount(ctx, delegations.GetUserInArrayWithDelegators([]string{ui.Username}))
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	resp, err := ae.DB.GetTasksCount(
+		ctx,
+		ui.Username,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}))
+
 	if err != nil {
 		e := GetTasksCountError
 		log.Error(e.errorMessage(err))
@@ -625,16 +641,17 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 }
 
+//nolint:gocyclo // ok here
 func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	log := logger.GetLogger(ctx)
 
-	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
-	if err != nil {
-		return err
+	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
+	if getDelegationsErr != nil {
+		return getDelegationsErr
 	}
 
-	if err = in.Validate(); err != nil {
-		return err
+	if validateErr := in.Validate(); validateErr != nil {
+		return validateErr
 	}
 
 	blockTypes := getTaskStepNameByAction(in.Action)
@@ -642,7 +659,14 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		return errors.New("blockTypes is empty")
 	}
 
-	dbTask, err := ae.DB.GetTask(ctx, userLogin, []string{userLogin}, workNumber)
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	dbTask, err := ae.DB.GetTask(ctx,
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
+		userLogin,
+		workNumber)
 
 	if err != nil {
 		e := GetTaskError
@@ -680,6 +704,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 	couldUpdateOne := false
 	for _, item := range steps {
+		// nolint:staticcheck // fix later
 		routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 		routineCtx = logger.WithLogger(routineCtx, log)
 		txStorage, transactionErr := ae.DB.StartTransaction(routineCtx)
@@ -867,7 +892,7 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	return []string{}
 }
 
-//nolint:gocyclo //its ok here
+//nolint:gocyclo,staticcheck //its ok here
 func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "update_task")
 	defer s.End()

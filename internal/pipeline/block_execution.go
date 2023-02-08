@@ -88,8 +88,9 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		}}
 }
 
+//nolint:dupl //Need here
 func (gb *GoExecutionBlock) Deadlines() []Deadline {
-	if gb.State.IsRevoked {
+	if gb.State.IsRevoked || gb.State.Decision != nil {
 		return []Deadline{}
 	}
 
@@ -118,20 +119,20 @@ func (gb *GoExecutionBlock) Deadlines() []Deadline {
 		)
 	}
 
-	//if len(gb.State.RequestExecutionInfoLogs) > 0 &&
-	//	gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
-	//	if gb.State.CheckDayBeforeSLARequestInfo {
-	//		deadlines = append(deadlines, Deadline{
-	//			Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 2*8),
-	//			Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
-	//		})
-	//	}
-	//
-	//	deadlines = append(deadlines, Deadline{
-	//		Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 3*8),
-	//		Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
-	//	})
-	//}
+	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
+		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
+		if gb.State.CheckDayBeforeSLARequestInfo {
+			deadlines = append(deadlines, Deadline{
+				Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 2*8),
+				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
+			})
+		}
+
+		deadlines = append(deadlines, Deadline{
+			Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 3*8),
+			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
+		})
+	}
 
 	return deadlines
 }

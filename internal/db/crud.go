@@ -2098,7 +2098,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 
 	var s entity.Step
 	var content string
-	err := db.Connection.QueryRow(ctx, query, workID, stepName).Scan(
+	queryErr := db.Connection.QueryRow(ctx, query, workID, stepName).Scan(
 		&s.ID,
 		&s.Type,
 		&s.Name,
@@ -2108,14 +2108,14 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 		&s.HasError,
 		&s.Status,
 	)
-	if err != nil {
-		return nil, err
+	if queryErr != nil {
+		return nil, queryErr
 	}
 
 	storage := store.NewStore()
 
-	if err = json.Unmarshal([]byte(content), storage); err != nil {
-		return nil, err
+	if unmarshalErr := json.Unmarshal([]byte(content), storage); unmarshalErr != nil {
+		return nil, unmarshalErr
 	}
 
 	s.State = storage.State
@@ -2548,7 +2548,11 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		    JOIN versions v on w.version_id = v.id
 			JOIN pipelines p on v.pipeline_id = p.id
 		    JOIN deadlines d on vs.id = d.block_id
-		WHERE (vs.status = 'running' OR (vs.status = 'idle' AND d.action = 'rework_sla_breached'))
+		WHERE (
+		    vs.status = 'running' 
+		    OR ( vs.status = 'idle' AND (
+		    d.action = 'rework_sla_breached' OR d.action = 'day_before_sla_request_add_info' OR d.action = 'sla_breach_request_add_info'))
+			)
 			AND w.child_id IS NULL
 			AND d.deadline < NOW()`
 	rows, err := db.Connection.Query(ctx, q)

@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,10 +49,13 @@ type BlockRunContext struct {
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
-	runCtxCopy := &(*runCtx)
-	runCtxCopy.VarStore = &(*runCtx.VarStore)
+	runCtxCopy := *runCtx
+	//nolint:govet // declare new mutex on next line
+	varStore := *runCtx.VarStore
+	varStore.Mutex = sync.Mutex{}
+	runCtxCopy.VarStore = &varStore
 	runCtxCopy.UpdateData = nil
-	return runCtxCopy
+	return &runCtxCopy
 }
 
 //nolint:gocyclo //todo: need to decompose
@@ -75,6 +79,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		err = getErr
 		return
 	}
+
 	switch status {
 	case db.RunStatusCreated:
 		if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusRunning); changeErr != nil {
@@ -91,42 +96,56 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		err = initErr
 		return
 	}
+
 	if (block.UpdateManual() && manual) || !block.UpdateManual() {
 		err = updateBlock(ctx, block, name, id, runCtx)
 		if err != nil {
 			return
 		}
 	}
-	err = runCtx.updateStatusByStep(ctx, block.GetTaskHumanStatus())
+
+	taskHumanStatus := block.GetTaskHumanStatus()
+	err = runCtx.updateStatusByStep(ctx, taskHumanStatus)
 	if err != nil {
 		return err
 	}
-	if block.GetStatus() == StatusFinished || block.GetStatus() == StatusNoSuccess {
-		err = runCtx.handleInitiatorNotification(ctx, name, bl.TypeID, block.GetTaskHumanStatus())
+
+	isArchived, err := runCtx.Storage.CheckIsArchived(ctx, runCtx.TaskID)
+	if err != nil {
+		return err
+	}
+
+	if isArchived || (block.GetStatus() != StatusFinished && block.GetStatus() != StatusNoSuccess) {
+		return nil
+	}
+
+	err = runCtx.handleInitiatorNotification(ctx, name, bl.TypeID, taskHumanStatus)
+	if err != nil {
+		return err
+	}
+
+	activeBlocks, ok := block.Next(runCtx.VarStore)
+	if !ok {
+		err = runCtx.updateStepInDB(ctx, name, id, true, block.GetStatus(), block.Members(), []Deadline{})
 		if err != nil {
-			return err
-		}
-		activeBlocks, ok := block.Next(runCtx.VarStore)
-		if !ok {
-			err = runCtx.updateStepInDB(ctx, name, id, true, block.GetStatus(), block.Members(), []Deadline{})
-			if err != nil {
-				return
-			}
-			err = ErrCantGetNextStep
 			return
 		}
-		for _, b := range activeBlocks {
-			blockData, blockErr := runCtx.Storage.GetBlockDataFromVersion(ctx, runCtx.WorkNumber, b)
-			if blockErr != nil {
-				err = blockErr
-				return
-			}
-			err = ProcessBlock(ctx, b, blockData, runCtx.Copy(), false)
-			if err != nil {
-				return
-			}
+		err = ErrCantGetNextStep
+		return
+	}
+
+	for _, b := range activeBlocks {
+		blockData, blockErr := runCtx.Storage.GetBlockDataFromVersion(ctx, runCtx.WorkNumber, b)
+		if blockErr != nil {
+			err = blockErr
+			return
+		}
+		err = ProcessBlock(ctx, b, blockData, runCtx.Copy(), false)
+		if err != nil {
+			return
 		}
 	}
+
 	return nil
 }
 
