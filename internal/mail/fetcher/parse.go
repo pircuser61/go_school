@@ -71,7 +71,6 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 
 func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, err error) {
 	const funcName = "mail.fetcher.parseEmail"
-	const rejected = "Отклонено"
 
 	_, span := trace.StartSpan(ctx, funcName)
 	defer span.End()
@@ -99,39 +98,6 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, er
 	action, err := parseSubject(fields)
 	if err != nil {
 		return nil, err
-	}
-
-	if action != nil {
-		var processedBody *parsedBody
-		processedBody, err = parseMsgBody(ctx, r)
-		if err != nil {
-			return nil, err
-		}
-
-		if processedBody != nil {
-			action.Comment = processedBody.Body
-		}
-
-		if action.Comment == "" {
-			switch action.Decision {
-			case "approve":
-				action.Comment = "Согласовано"
-			case "confirm":
-				action.Comment = "Утверждено"
-			case "informed":
-				action.Comment = "Проинформировано"
-			case "reject":
-				action.Comment = rejected
-			case "sign":
-				action.Comment = "Подписано"
-			case "viewed":
-				action.Comment = "Ознакомлено"
-			case "executed":
-				action.Comment = "Решено"
-			case "rejected":
-				action.Comment = rejected
-			}
-		}
 	}
 
 	return &ParsedEmail{
