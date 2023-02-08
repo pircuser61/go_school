@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"math"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -94,7 +95,7 @@ func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval
 	}
 
 	return script.TaskSolveTime{
-		MeanWorkHours: float64(totalHours) / float64(taskIntervalsCnt),
+		MeanWorkHours: math.Ceil(float64(totalHours) / float64(taskIntervalsCnt)),
 	}
 }
 
