@@ -1863,7 +1863,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskMeanSolveTime'
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TaskMeanSolveTime'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:

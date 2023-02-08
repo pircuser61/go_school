@@ -15,6 +15,9 @@ const (
 )
 
 func getWorkHoursBetweenDates(from, to time.Time) (workHours int) {
+	from = from.UTC()
+	to = to.UTC()
+
 	if from.After(to) || from.Equal(to) {
 		return 0
 	}

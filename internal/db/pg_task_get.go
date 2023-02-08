@@ -1110,9 +1110,11 @@ func (db *PGCon) actionsToStrings(nullStringActions []sql.NullString) []string {
 func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 	result []entity.TaskCompletionInterval, err error) {
 	const q = `
+	WITH cte AS (
 	SELECT
 		started_at,
-		finished_at
+		finished_at,
+		count(*) OVER() cnt
 	FROM works w
 	  JOIN versions v ON v.id = w.version_id
 	  JOIN pipelines p ON p.id = v.pipeline_id
@@ -1120,10 +1122,11 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 	WHERE p.id = $1
 		AND v.is_actual = TRUE
 		AND coalesce(w.run_context -> 'initial_application' -> 'is_test_application' = 'false', true)
-		AND ws.name = 'finished'
-	GROUP BY w.id, started_at, finished_at
-	HAVING count(*) < 30
-	ORDER BY w.started_at DESC`
+		AND ws.name = 'finished')
+
+	SELECT started_at, finished_at FROM cte
+		WHERE cnt >= 30
+	`
 
 	result = make([]entity.TaskCompletionInterval, 0)
 
