@@ -1106,7 +1106,7 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 		AND ws.name = 'finished')
 
 	SELECT started_at, finished_at FROM cte
-		WHERE cnt >= 5
+		WHERE cnt >= 30
 	`
 
 	result = make([]entity.TaskCompletionInterval, 0)
