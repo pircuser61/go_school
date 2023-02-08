@@ -69,7 +69,6 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 
 func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, err error) {
 	const funcName = "mail.fetcher.parseEmail"
-	const rejected = "Отклонено"
 
 	_, span := trace.StartSpan(ctx, funcName)
 	defer span.End()
