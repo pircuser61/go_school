@@ -326,34 +326,49 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	q = `
-		WITH blocks_with_work_id AS (
-			SELECT work_id, jsonb_each(state) AS blocks
-			FROM works w
-			JOIN LATERAL (
-				SELECT work_id, content::jsonb->'State' AS state
-				FROM variable_storage vs
-				WHERE vs.work_id = ANY($1)
-				  AND vs.work_id = w.id
-				ORDER BY vs.time DESC
-				LIMIT 1
-			) descr ON descr.work_id = w.id
-			WHERE w.id = ANY($1)
-		)
-	
-		SELECT work_id, COUNT(*)
-		FROM (
-				SELECT work_id, jsonb_each(value(blocks)->'application_body') AS data
-				FROM blocks_with_work_id	
-				WHERE (
-					(
-						key(blocks) LIKE 'form%%'
-						AND value(blocks) ->> 'executors' SIMILAR TO '{"(%s)": {}}'	
-					)
-					OR key(blocks) LIKE 'servicedesk_application%%'
-				)		 
-			 ) a
-		WHERE value(data)::text LIKE '"attachment:%%'
-		GROUP BY work_id;
+	WITH blocks_with_filtered_forms AS (
+		SELECT work_id, value(blocks) AS blocks
+		FROM (SELECT work_id, jsonb_each(state) AS blocks
+			  FROM works w
+					   JOIN LATERAL (
+				  SELECT work_id, content::jsonb->'State' AS state
+				  FROM variable_storage vs
+				  WHERE vs.work_id = ANY($1)
+					AND vs.work_id = w.id
+				  ORDER BY vs.time DESC
+				  LIMIT 1
+				  ) descr ON descr.work_id = w.id
+			  WHERE w.id = ANY($1)) blocks_with_work_id
+		WHERE key(blocks) NOT LIKE 'form%%'
+		   OR (
+					key(blocks) LIKE 'form%%'
+				AND value(blocks) ->> 'executors' SIMILAR TO '{"(%s)": {}}'
+			)
+	), data AS (SELECT work_id,
+					   jsonb_each(blocks -> 'application_body')                           AS form_and_sd_application_body,
+					   jsonb_array_elements_text(blocks -> 'decision_attachments')        AS execution_and_approver_attachments,
+					   jsonb_array_elements(blocks -> 'additional_info') -> 'attachments' AS additional_info_attachments,
+					   jsonb_array_elements(blocks -> 'approver_log') -> 'attachments'    AS approver_log_attachments,
+					   jsonb_array_elements(blocks -> 'editing_app_log') -> 'attachments' AS editing_app_log_attachments
+				FROM blocks_with_filtered_forms),
+		 counts AS (SELECT
+						work_id,
+						COUNT(form_and_sd_application_body) AS form_and_sd_count,
+						count(execution_and_approver_attachments) AS execution_and_approver_count,
+						SUM(coalesce(jsonb_array_length(additional_info_attachments), 0)) AS additional_attachment_count,
+						SUM(coalesce(jsonb_array_length(approver_log_attachments),0)) AS additional_approvers_count,
+						SUM(coalesce(jsonb_array_length(editing_app_log_attachments),0)) AS rework_count
+					FROM data
+					WHERE value(form_and_sd_application_body)::text LIKE '"attachment:%%'
+					   OR execution_and_approver_attachments IS NOT NULL
+					   OR additional_info_attachments IS NOT NULL
+					   OR approver_log_attachments IS NOT NULL
+					   OR editing_app_log_attachments IS NOT NULL
+					GROUP BY work_id)
+	SELECT work_id,
+		   form_and_sd_count + execution_and_approver_count + additional_attachment_count + additional_approvers_count +
+		   rework_count
+	FROM counts;
 	`
 
 	logins := strings.Join(delegations, "|")
