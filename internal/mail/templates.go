@@ -492,6 +492,7 @@ func getApproverButtons(workNumber, mailto, blockId string, actions []Action, is
 			taskUpdateActionApprovement,
 		)
 
+		subject = strings.ReplaceAll(subject, " ", "")
 		buttons = append(buttons, fmt.Sprintf(buttonTpl, mailto, subject, actions[i].Title))
 	}
 
