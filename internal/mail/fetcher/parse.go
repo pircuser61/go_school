@@ -213,7 +213,7 @@ type parsedBody struct {
 
 func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
 	const fn = "mail.fetcher.parseMsgBody"
-	const startLine = "***Комментарий***"
+	const startLine = "Вы можете оставить комментарий здесь"
 
 	var (
 		body, attachments string
@@ -255,17 +255,7 @@ LOOP:
 		return &pb, nil
 	}
 
-	if !strings.Contains(body, startLine) {
-		return nil, errors.Wrap(errors.New("no parsing lines found"), fn)
-	}
-
-	start := strings.Index(body, startLine)
-	if start == -1 {
-		body = ""
-	} else {
-		body = strings.Replace(body, startLine, "", 1)
-	}
-	pb.Body = body
+	pb.Body = strings.Replace(body, startLine, "", 1)
 	pb.Attachments = attachments
 
 	return &pb, nil
