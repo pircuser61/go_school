@@ -256,6 +256,8 @@ LOOP:
 	}
 
 	pb.Body = strings.Replace(body, startLine, "", 1)
+	pb.Body = strings.Replace(pb.Body,"\n","",-1)
+	pb.Body = strings.TrimSpace(pb.Body)
 	pb.Attachments = attachments
 
 	return &pb, nil
