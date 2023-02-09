@@ -34,12 +34,6 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 		return Function{}, optionsUnmarshalErr
 	}
 
-	var contracts string
-	contractsUnmarshalErr := json.Unmarshal([]byte(res.Function.Contracts), &contracts)
-	if err != nil {
-		return Function{}, contractsUnmarshalErr
-	}
-
 	versions := make([]Version, 0)
 
 	for _, v := range res.Function.Versions {
@@ -68,7 +62,7 @@ func (s *Service) GetFunction(ctx context.Context, id string) (result Function, 
 		Input:       input,
 		Output:      output,
 		Options:     options,
-		Contracts:   contracts,
+		Contracts:   res.Function.Contracts,
 		CreatedAt:   res.Function.CreatedAt,
 		DeletedAt:   res.Function.DeletedAt,
 		UpdatedAt:   res.Function.UpdatedAt,
