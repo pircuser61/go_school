@@ -353,7 +353,7 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTpl(id, name, sdUrl, status, mailto, blockId string, al []Action, isEditable bool) Template {
+func NewAddApproversTpl(id, name, sdUrl, status string) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 
 	return Template{

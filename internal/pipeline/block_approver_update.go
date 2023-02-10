@@ -702,10 +702,6 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 			gb.RunContext.WorkTitle,
 			gb.RunContext.Sender.SdAddress,
 			gb.State.ApproveStatusName,
-			emails[i],
-			BlockGoApproverID,
-			actionsList,
-			gb.State.GetIsEditable(),
 		)
 
 		err = gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
