@@ -69,6 +69,7 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 	return processedEmail, nil
 }
 
+//nolint:gocyclo //its ok here
 func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, err error) {
 	const funcName = "mail.fetcher.parseEmail"
 	const rejected = "Отклонено"

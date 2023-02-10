@@ -676,14 +676,6 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 		emails = append(emails, approverEmail)
 	}
 
-	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
-	for i := range gb.State.ActionList {
-		actionsList = append(actionsList, mail.Action{
-			InternalActionName: gb.State.ActionList[i].Id,
-			Title:              gb.State.ActionList[i].Title,
-		})
-	}
-
 	attachFiles, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, map[string][]string{"Ids": attachsId})
 	if err != nil {
 		return err
@@ -702,10 +694,6 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 			gb.RunContext.WorkTitle,
 			gb.RunContext.Sender.SdAddress,
 			gb.State.ApproveStatusName,
-			emails[i],
-			BlockGoApproverID,
-			actionsList,
-			gb.State.GetIsEditable(),
 		)
 
 		err = gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
