@@ -356,24 +356,20 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 func NewAddApproversTpl(id, name, sdUrl, status, mailto, blockId string, al []Action, isEditable bool) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 
-	buttons := getApproverButtons(id, mailto, blockId, al, isEditable)
-
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.ActionName}}.</b><br>
-				Для просмотра перейти по <a href={{.Link}}>ссылке</a> {{.Buttons}}`,
+				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
 			Id         string `json:"id"`
 			Name       string `json:"name"`
 			Link       string `json:"link"`
 			ActionName string `json:"actionName"`
-			Buttons    string `json:"buttons"`
 		}{
 			Id:         id,
 			Name:       name,
 			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 			ActionName: actionName,
-			Buttons:    buttons,
 		},
 	}
 }
