@@ -2011,6 +2011,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /monitoring/tasks:
+    get:
+      tags:
+        - monitoring
+      summary: Get tasks for monitoring
+      description: Получить заявки для таблицы мониторинга
+      operationId: get-tasks-for-monitoring
+      parameters:
+        - name: perPage
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: sort.column
+          in: query
+          schema:
+            type: string
+        - name: sort.order
+          in: query
+          schema:
+            type: string
+            enum:
+              - ASC
+              - DESC
+            default: DESC
+        - name: filter
+          in: query
+          description: Фильтр по UUID, work_number или наименованию процесса
+          schema:
+            type: string
+        - name: from_date
+          in: query
+          description: Фильтровать по дате, начало периода
+          schema:
+            type: string
+        - name: to_date
+          in: query
+          description: Фильтровать по дате, конец периода
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MonitoringTasksPage'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
 
 components:
   schemas:
@@ -2464,6 +2541,41 @@ components:
       required:
         - tasks
         - total
+
+    MonitoringTasksPage:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonitoringTask'
+        total:
+          type: integer
+      required:
+        - tasks
+        - total
+
+    MonitoringTask:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        process_name:
+          type: string
+        initiator:
+          type: string
+        work_number:
+          type: string
+        started_at:
+          type: string
+      required:
+        - id
+        - status
+        - process_name
+        - work_number
+        - started_at
 
     EriusVersionInfo:
       type: object
