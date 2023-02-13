@@ -943,27 +943,6 @@ type MappingParam struct {
 	} `json:"-"`
 }
 
-// MonitoringHistory defines model for MonitoringHistory.
-type MonitoringHistory struct {
-	NodeId   string `json:"node_id"`
-	RealName string `json:"real_name"`
-	Status   string `json:"status"`
-	StepName string `json:"step_name"`
-}
-
-// MonitoringTask defines model for MonitoringTask.
-type MonitoringTask struct {
-	History      []MonitoringHistory `json:"history"`
-	PipelineId   string              `json:"pipeline_id"`
-	ScenarioInfo struct {
-		Author       string `json:"author"`
-		CreationTime string `json:"creationTime"`
-		ScenarioName string `json:"scenarioName"`
-		VersionId    string `json:"version_id"`
-	} `json:"scenarioInfo"`
-	WorkNumber string `json:"workNumber"`
-}
-
 // Notification params
 type NotificationParams struct {
 	// Emails to get notifications
@@ -1964,9 +1943,6 @@ type ServerInterface interface {
 	// Usage of module in pipelines
 	// (GET /modules/{moduleName}/usage)
 	ModuleUsage(w http.ResponseWriter, r *http.Request, moduleName string)
-	// Get task for monitoring
-	// (GET /monitoring/{workNumber})
-	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Get list of pipelines
 	// (GET /pipelines)
 	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
@@ -2339,32 +2315,6 @@ func (siw *ServerInterfaceWrapper) ModuleUsage(w http.ResponseWriter, r *http.Re
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ModuleUsage(w, r, moduleName)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// GetMonitoringTask operation middleware
-func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "workNumber" -------------
-	var workNumber string
-
-	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetMonitoringTask(w, r, workNumber)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3484,9 +3434,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules/{moduleName}/usage", wrapper.ModuleUsage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/monitoring/{workNumber}", wrapper.GetMonitoringTask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines", wrapper.ListPipelines)
