@@ -2013,7 +2013,7 @@ paths:
                 $ref: '#/components/schemas/httpError'
 
 
-  /monitoring/task/{workNumber}:
+  /monitoring/tasks/{workNumber}:
     get:
       tags:
         - monitoring
