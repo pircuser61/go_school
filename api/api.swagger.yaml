@@ -228,6 +228,8 @@ paths:
       x-codegen-request-body-name: variables
   /debug/info/{blockId}:
     get:
+      tags:
+        - debug
       summary: Get outputs of block
       description: Получить аутпуты блока
       parameters:
@@ -3018,10 +3020,13 @@ components:
       properties:
         name:
           type: string
+          description: Имя поля
         type:
           type: string
+          description: Тип поля
         description:
           type: string
+          description: Описание поля
         value:
           oneOf:
             - type: string
@@ -3030,6 +3035,7 @@ components:
             - type: array
             - type: object
             - type: boolean
+          description: Значение поля
 
     DebugRunRequest:
       type: object
