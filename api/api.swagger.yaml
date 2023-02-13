@@ -226,6 +226,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
+  /debug/info/{versionId}:
+    get:
+      summary: Get outputs of version
+      description: Получить аутпуты версии
+      parameters:
+        - name: versionId
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DebugInfoResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
   /modules:
     get:
       tags:
@@ -2962,6 +3004,31 @@ components:
         version_id:
           type: string
           format: uuid
+
+    DebugInfoResponse:
+      type: object
+      properties:
+        blocks:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/DebugInfoFunc'
+
+    DebugInfoFunc:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: array
+            - type: object
+
     DebugRunRequest:
       type: object
       required: [ action,break_points,work_number ]
@@ -3120,6 +3187,7 @@ components:
           type: string
         type:
           type: string
+      x-go-name: step
 
     action:
       type: object
