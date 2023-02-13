@@ -2013,7 +2013,7 @@ paths:
                 $ref: '#/components/schemas/httpError'
 
 
-  /monitoring/{workNumber}:
+  /monitoring/task/{workNumber}:
     get:
       tags:
         - monitoring
@@ -3817,7 +3817,7 @@ components:
           items:
             $ref: '#/components/schemas/MonitoringHistory'
       required:
-        - pipeline_id
+        - version_id
         - work_number
         - scenario_info
         - history
@@ -3859,7 +3859,6 @@ components:
           type: string
           description: "Автор сценария"
       required:
-        - version_id
         - scenario_name
         - creation_time
         - author
