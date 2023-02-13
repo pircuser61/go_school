@@ -2033,10 +2033,8 @@ paths:
               schema:
                 type: object
                 properties:
-                  tasks:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/MonitoringTask'
+                  data:
+                    $ref: '#/components/schemas/MonitoringTask'
                   status_code:
                     type: integer
         400:
