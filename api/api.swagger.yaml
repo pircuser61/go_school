@@ -3804,38 +3804,24 @@ components:
     MonitoringTask:
       type: object
       properties:
-        pipeline_id:
+        version_id:
           type: string
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-        workNumber:
+          description: "Айди версии сценария для мониторинга"
+        work_number:
           type: string
-        scenarioInfo:
-         type: object
-         properties:
-           version_id:
-             type: string
-             format: uuid
-             example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-           scenarioName:
-             type: string
-           creationTime:
-             type: string
-           author:
-             type: string
-         required:
-           - version_id
-           - scenarioName
-           - creationTime
-           - author
+          description: "Номер заявки для мониторинга"
+        scenario_info:
+          $ref: '#/components/schemas/MonitoringScenarioInfo'
         history:
           type: array
           items:
             $ref: '#/components/schemas/MonitoringHistory'
       required:
         - pipeline_id
-        - workNumber
-        - scenarioInfo
+        - work_number
+        - scenario_info
         - history
 
     MonitoringHistory:
@@ -3845,14 +3831,37 @@ components:
           type: string
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          description: "Айди ноды в variable_storage"
         status:
           type: string
+          enum: [ "running", "finished" ]
+          description: "Статус ноды"
         step_name:
           type: string
+          description: "имя по типу ноды в сценарии "
         real_name:
           type: string
+          description: "читаемое имя ноды"
       required:
         - node_id
         - status
         - step_name
         - real_name
+
+    MonitoringScenarioInfo:
+      type: object
+      properties:
+        scenario_name:
+          type: string
+          description: "Имя сценария"
+        creation_time:
+          type: string
+          description: "Время создания сценария"
+        author:
+          type: string
+          description: "Автор сценария"
+      required:
+        - version_id
+        - scenario_name
+        - creation_time
+        - author
