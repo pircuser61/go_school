@@ -127,6 +127,15 @@ const (
 	IntegerOperandOperandTypeVariableOperand IntegerOperandOperandType = "variableOperand"
 )
 
+// Defines values for MonitoringTaskStatus.
+const (
+	MonitoringTaskStatusВРаботе MonitoringTaskStatus = "В работе"
+
+	MonitoringTaskStatusЗавершен MonitoringTaskStatus = "Завершен"
+
+	MonitoringTaskStatusОстановлен MonitoringTaskStatus = "Остановлен"
+)
+
 // Defines values for NumberOperandDataType.
 const (
 	NumberOperandDataTypeInteger NumberOperandDataType = "integer"
@@ -945,18 +954,30 @@ type MappingParam struct {
 
 // MonitoringTask defines model for MonitoringTask.
 type MonitoringTask struct {
-	Id          string  `json:"id"`
-	Initiator   *string `json:"initiator,omitempty"`
-	ProcessName string  `json:"process_name"`
-	StartedAt   string  `json:"started_at"`
-	Status      string  `json:"status"`
-	WorkNumber  string  `json:"work_number"`
+	// UUID of task
+	Id string `json:"id"`
+
+	// login of initiator
+	Initiator *string `json:"initiator,omitempty"`
+
+	// name of the process
+	ProcessName string `json:"process_name"`
+	StartedAt   string `json:"started_at"`
+
+	// task status
+	Status     MonitoringTaskStatus `json:"status"`
+	WorkNumber string               `json:"work_number"`
 }
+
+// task status
+type MonitoringTaskStatus string
 
 // MonitoringTasksPage defines model for MonitoringTasksPage.
 type MonitoringTasksPage struct {
 	Tasks []MonitoringTask `json:"tasks"`
-	Total int              `json:"total"`
+
+	// total number of tasks
+	Total int `json:"total"`
 }
 
 // Notification params
@@ -1347,10 +1368,10 @@ type GetFormsChangelogParams struct {
 
 // GetTasksForMonitoringParams defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParams struct {
-	PerPage    *int                                  `json:"perPage,omitempty"`
-	Page       *int                                  `json:"page,omitempty"`
-	SortColumn *string                               `json:"sort.column,omitempty"`
-	SortOrder  *GetTasksForMonitoringParamsSortOrder `json:"sort.order,omitempty"`
+	PerPage    *int                                   `json:"per_page,omitempty"`
+	Page       *int                                   `json:"page,omitempty"`
+	SortColumn *GetTasksForMonitoringParamsSortColumn `json:"sort.column,omitempty"`
+	SortOrder  *GetTasksForMonitoringParamsSortOrder  `json:"sort.order,omitempty"`
 
 	// Фильтр по UUID, work_number или наименованию процесса
 	Filter *string `json:"filter,omitempty"`
@@ -1361,6 +1382,9 @@ type GetTasksForMonitoringParams struct {
 	// Фильтровать по дате, конец периода
 	ToDate *string `json:"to_date,omitempty"`
 }
+
+// GetTasksForMonitoringParamsSortColumn defines parameters for GetTasksForMonitoring.
+type GetTasksForMonitoringParamsSortColumn string
 
 // GetTasksForMonitoringParamsSortOrder defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParamsSortOrder string
@@ -2372,14 +2396,14 @@ func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetTasksForMonitoringParams
 
-	// ------------- Optional query parameter "perPage" -------------
-	if paramValue := r.URL.Query().Get("perPage"); paramValue != "" {
+	// ------------- Optional query parameter "per_page" -------------
+	if paramValue := r.URL.Query().Get("per_page"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "perPage", r.URL.Query(), &params.PerPage)
+	err = runtime.BindQueryParameter("form", true, false, "per_page", r.URL.Query(), &params.PerPage)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "perPage", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "per_page", Err: err})
 		return
 	}
 
