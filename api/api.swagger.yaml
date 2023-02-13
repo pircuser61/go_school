@@ -2018,8 +2018,7 @@ paths:
       tags:
         - monitoring
       summary: Get tasks for monitoring
-      description: Получить заявки для таблицы мониторинга
-      operationId: get-tasks-for-monitoring
+      operationId: get-task-for-monitoring
       parameters:
         - name: workNumber
           in: path
