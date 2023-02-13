@@ -2335,6 +2335,9 @@ components:
           format: uuid
           description: Id внешней системы
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        name:
+          type: string
+          description: Название системы
         input_schema:
           type: string
           description: JSON-схема данных, которые отдаёт внешняя система
@@ -2343,6 +2346,7 @@ components:
           description: JSON-схема данных, которые принимает внешняя система
       required:
         - id
+        - name
         - input_schema
         - output_schema
 
