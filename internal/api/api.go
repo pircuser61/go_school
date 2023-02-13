@@ -799,6 +799,9 @@ type ExternalSystem struct {
 	// JSON-схема данных, которые отдаёт внешняя система
 	InputSchema string `json:"input_schema"`
 
+	// Название системы
+	Name string `json:"name"`
+
 	// JSON-схема данных, которые принимает внешняя система
 	OutputSchema string `json:"output_schema"`
 }
