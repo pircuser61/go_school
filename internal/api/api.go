@@ -127,6 +127,15 @@ const (
 	IntegerOperandOperandTypeVariableOperand IntegerOperandOperandType = "variableOperand"
 )
 
+// Defines values for MonitoringTaskStatus.
+const (
+	MonitoringTaskStatusВРаботе MonitoringTaskStatus = "В работе"
+
+	MonitoringTaskStatusЗавершен MonitoringTaskStatus = "Завершен"
+
+	MonitoringTaskStatusОстановлен MonitoringTaskStatus = "Остановлен"
+)
+
 // Defines values for NumberOperandDataType.
 const (
 	NumberOperandDataTypeInteger NumberOperandDataType = "integer"
@@ -946,6 +955,34 @@ type MappingParam struct {
 	} `json:"-"`
 }
 
+// MonitoringTask defines model for MonitoringTask.
+type MonitoringTask struct {
+	// UUID of task
+	Id string `json:"id"`
+
+	// login of initiator
+	Initiator *string `json:"initiator,omitempty"`
+
+	// name of the process
+	ProcessName string `json:"process_name"`
+	StartedAt   string `json:"started_at"`
+
+	// task status
+	Status     MonitoringTaskStatus `json:"status"`
+	WorkNumber string               `json:"work_number"`
+}
+
+// task status
+type MonitoringTaskStatus string
+
+// MonitoringTasksPage defines model for MonitoringTasksPage.
+type MonitoringTasksPage struct {
+	Tasks []MonitoringTask `json:"tasks"`
+
+	// total number of tasks
+	Total int `json:"total"`
+}
+
 // Notification params
 type NotificationParams struct {
 	// Emails to get notifications
@@ -1331,6 +1368,29 @@ type GetFormsChangelogParams struct {
 	// Id of form block (name)
 	BlockId string `json:"block_id"`
 }
+
+// GetTasksForMonitoringParams defines parameters for GetTasksForMonitoring.
+type GetTasksForMonitoringParams struct {
+	PerPage    *int                                   `json:"per_page,omitempty"`
+	Page       *int                                   `json:"page,omitempty"`
+	SortColumn *GetTasksForMonitoringParamsSortColumn `json:"sort.column,omitempty"`
+	SortOrder  *GetTasksForMonitoringParamsSortOrder  `json:"sort.order,omitempty"`
+
+	// Фильтр по UUID, work_number или наименованию процесса
+	Filter *string `json:"filter,omitempty"`
+
+	// Фильтровать по дате, начало периода
+	FromDate *string `json:"from_date,omitempty"`
+
+	// Фильтровать по дате, конец периода
+	ToDate *string `json:"to_date,omitempty"`
+}
+
+// GetTasksForMonitoringParamsSortColumn defines parameters for GetTasksForMonitoring.
+type GetTasksForMonitoringParamsSortColumn string
+
+// GetTasksForMonitoringParamsSortOrder defines parameters for GetTasksForMonitoring.
+type GetTasksForMonitoringParamsSortOrder string
 
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
@@ -1946,6 +2006,9 @@ type ServerInterface interface {
 	// Usage of module in pipelines
 	// (GET /modules/{moduleName}/usage)
 	ModuleUsage(w http.ResponseWriter, r *http.Request, moduleName string)
+	// Get tasks for monitoring
+	// (GET /monitoring/tasks)
+	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
 	// Get list of pipelines
 	// (GET /pipelines)
 	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
@@ -2318,6 +2381,103 @@ func (siw *ServerInterfaceWrapper) ModuleUsage(w http.ResponseWriter, r *http.Re
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ModuleUsage(w, r, moduleName)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetTasksForMonitoring operation middleware
+func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTasksForMonitoringParams
+
+	// ------------- Optional query parameter "per_page" -------------
+	if paramValue := r.URL.Query().Get("per_page"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "per_page", r.URL.Query(), &params.PerPage)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "per_page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+	if paramValue := r.URL.Query().Get("page"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "page", r.URL.Query(), &params.Page)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "sort.column" -------------
+	if paramValue := r.URL.Query().Get("sort.column"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "sort.column", r.URL.Query(), &params.SortColumn)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort.column", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "sort.order" -------------
+	if paramValue := r.URL.Query().Get("sort.order"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "sort.order", r.URL.Query(), &params.SortOrder)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort.order", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "filter" -------------
+	if paramValue := r.URL.Query().Get("filter"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "filter", r.URL.Query(), &params.Filter)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filter", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "from_date" -------------
+	if paramValue := r.URL.Query().Get("from_date"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "from_date", r.URL.Query(), &params.FromDate)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from_date", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "to_date" -------------
+	if paramValue := r.URL.Query().Get("to_date"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "to_date", r.URL.Query(), &params.ToDate)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to_date", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTasksForMonitoring(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3437,6 +3597,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules/{moduleName}/usage", wrapper.ModuleUsage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines", wrapper.ListPipelines)
