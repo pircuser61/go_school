@@ -2012,6 +2012,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
+
+  /monitoring/tasks/{workNumber}:
+    get:
+      tags:
+        - monitoring
+      summary: Get task for monitoring
+      operationId: get-monitoring-task
+      parameters:
+        - name: workNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringTask'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
 components:
   schemas:
     ApproveStatusesResponse:
@@ -3755,3 +3798,67 @@ components:
           type: integer
       required:
         - status_code
+
+    MonitoringTask:
+      type: object
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          description: "Айди версии сценария для мониторинга"
+        work_number:
+          type: string
+          description: "Номер заявки для мониторинга"
+        scenario_info:
+          $ref: '#/components/schemas/MonitoringScenarioInfo'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonitoringHistory'
+      required:
+        - version_id
+        - work_number
+        - scenario_info
+        - history
+
+    MonitoringHistory:
+      type: object
+      properties:
+        node_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          description: "Айди ноды в variable_storage"
+        status:
+          type: string
+          enum: [ "running", "finished" ]
+          description: "Статус ноды"
+        step_name:
+          type: string
+          description: "имя по типу ноды в сценарии "
+        real_name:
+          type: string
+          description: "читаемое имя ноды"
+      required:
+        - node_id
+        - status
+        - step_name
+        - real_name
+
+    MonitoringScenarioInfo:
+      type: object
+      properties:
+        scenario_name:
+          type: string
+          description: "Имя сценария"
+        creation_time:
+          type: string
+          description: "Время создания сценария"
+        author:
+          type: string
+          description: "Автор сценария"
+      required:
+        - scenario_name
+        - creation_time
+        - author
