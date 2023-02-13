@@ -226,14 +226,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-  /debug/info/{versionId}:
+  /debug/info/{blockId}:
     get:
-      summary: Get outputs of version
-      description: Получить аутпуты версии
+      summary: Get outputs of block
+      description: Получить аутпуты блока
       parameters:
-        - name: versionId
+        - name: blockId
           in: path
-          description: Version ID
+          description: block ID
           required: true
           schema:
             type: string
@@ -3026,8 +3026,10 @@ components:
           oneOf:
             - type: string
             - type: number
+            - type: integer
             - type: array
             - type: object
+            - type: boolean
 
     DebugRunRequest:
       type: object
