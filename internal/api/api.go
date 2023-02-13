@@ -1964,9 +1964,9 @@ type ServerInterface interface {
 	// Usage of module in pipelines
 	// (GET /modules/{moduleName}/usage)
 	ModuleUsage(w http.ResponseWriter, r *http.Request, moduleName string)
-	// Get tasks for monitoring
-	// (GET /monitoring/tasks/{workNumber})
-	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Get task for monitoring
+	// (GET /monitoring/{workNumber})
+	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Get list of pipelines
 	// (GET /pipelines)
 	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
@@ -2348,8 +2348,8 @@ func (siw *ServerInterfaceWrapper) ModuleUsage(w http.ResponseWriter, r *http.Re
 	handler(w, r.WithContext(ctx))
 }
 
-// GetTasksForMonitoring operation middleware
-func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request) {
+// GetMonitoringTask operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
@@ -2364,7 +2364,7 @@ func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, 
 	}
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTasksForMonitoring(w, r, workNumber)
+		siw.Handler.GetMonitoringTask(w, r, workNumber)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3486,7 +3486,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/modules/{moduleName}/usage", wrapper.ModuleUsage)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetTasksForMonitoring)
+		r.Get(options.BaseURL+"/monitoring/{workNumber}", wrapper.GetMonitoringTask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines", wrapper.ListPipelines)

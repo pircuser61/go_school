@@ -2013,12 +2013,12 @@ paths:
                 $ref: '#/components/schemas/httpError'
 
 
-  /monitoring/tasks/{workNumber}:
+  /monitoring/{workNumber}:
     get:
       tags:
         - monitoring
-      summary: Get tasks for monitoring
-      operationId: get-task-for-monitoring
+      summary: Get task for monitoring
+      operationId: get-monitoring-task
       parameters:
         - name: workNumber
           in: path
