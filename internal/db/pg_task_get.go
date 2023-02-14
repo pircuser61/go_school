@@ -962,7 +962,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-		`
+	`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
@@ -1185,7 +1185,8 @@ func (db *PGCon) GetBlocksOutputs(ctx context.Context, blockId string) (entity.B
 	q := `
 		SELECT content -> 'Values'
 		FROM variable_storage
-		WHERE id = $1;`
+		WHERE id = $1;
+	`
 
 	var blockContent map[string]interface{}
 	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockContent); err != nil {

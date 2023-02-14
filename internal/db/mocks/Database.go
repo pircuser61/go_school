@@ -595,6 +595,29 @@ func (_m *MockedDatabase) GetMeanTaskSolveTime(ctx context.Context, pipelineId s
 	return r0, r1
 }
 
+// GetMergedVariableStorage provides a mock function with given fields: ctx, workId, blockIds
+func (_m *MockedDatabase) GetMergedVariableStorage(ctx context.Context, workId string, blockIds []string) (*store.VariableStore, error) {
+	ret := _m.Called(ctx, workId, blockIds)
+
+	var r0 *store.VariableStore
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) *store.VariableStore); ok {
+		r0 = rf(ctx, workId, blockIds)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*store.VariableStore)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, []string) error); ok {
+		r1 = rf(ctx, workId, blockIds)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetOnApproveVersions provides a mock function with given fields: ctx
 func (_m *MockedDatabase) GetOnApproveVersions(ctx context.Context) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(ctx)
