@@ -127,13 +127,20 @@ const (
 	IntegerOperandOperandTypeVariableOperand IntegerOperandOperandType = "variableOperand"
 )
 
-// Defines values for MonitoringTaskStatus.
+// Defines values for MonitoringHistoryStatus.
 const (
-	MonitoringTaskStatusВРаботе MonitoringTaskStatus = "В работе"
+	MonitoringHistoryStatusFinished MonitoringHistoryStatus = "finished"
 
-	MonitoringTaskStatusЗавершен MonitoringTaskStatus = "Завершен"
+	MonitoringHistoryStatusRunning MonitoringHistoryStatus = "running"
+)
 
-	MonitoringTaskStatusОстановлен MonitoringTaskStatus = "Остановлен"
+// Defines values for MonitoringTableTaskStatus.
+const (
+	MonitoringTableTaskStatusВРаботе MonitoringTableTaskStatus = "В работе"
+
+	MonitoringTableTaskStatusЗавершен MonitoringTableTaskStatus = "Завершен"
+
+	MonitoringTableTaskStatusОстановлен MonitoringTableTaskStatus = "Остановлен"
 )
 
 // Defines values for NumberOperandDataType.
@@ -955,8 +962,38 @@ type MappingParam struct {
 	} `json:"-"`
 }
 
-// MonitoringTask defines model for MonitoringTask.
-type MonitoringTask struct {
+// MonitoringHistory defines model for MonitoringHistory.
+type MonitoringHistory struct {
+	// Айди ноды в variable_storage
+	NodeId string `json:"node_id"`
+
+	// читаемое имя ноды
+	RealName string `json:"real_name"`
+
+	// Статус ноды
+	Status MonitoringHistoryStatus `json:"status"`
+
+	// имя по типу ноды в сценарии
+	StepName string `json:"step_name"`
+}
+
+// Статус ноды
+type MonitoringHistoryStatus string
+
+// MonitoringScenarioInfo defines model for MonitoringScenarioInfo.
+type MonitoringScenarioInfo struct {
+	// Автор сценария
+	Author string `json:"author"`
+
+	// Время создания сценария
+	CreationTime string `json:"creation_time"`
+
+	// Имя сценария
+	ScenarioName string `json:"scenario_name"`
+}
+
+// MonitoringTableTask defines model for MonitoringTableTask.
+type MonitoringTableTask struct {
 	// UUID of task
 	Id string `json:"id"`
 
@@ -968,16 +1005,28 @@ type MonitoringTask struct {
 	StartedAt   string `json:"started_at"`
 
 	// task status
-	Status     MonitoringTaskStatus `json:"status"`
-	WorkNumber string               `json:"work_number"`
+	Status     MonitoringTableTaskStatus `json:"status"`
+	WorkNumber string                    `json:"work_number"`
 }
 
 // task status
-type MonitoringTaskStatus string
+type MonitoringTableTaskStatus string
+
+// MonitoringTask defines model for MonitoringTask.
+type MonitoringTask struct {
+	History      []MonitoringHistory    `json:"history"`
+	ScenarioInfo MonitoringScenarioInfo `json:"scenario_info"`
+
+	// Айди версии сценария для мониторинга
+	VersionId string `json:"version_id"`
+
+	// Номер заявки для мониторинга
+	WorkNumber string `json:"work_number"`
+}
 
 // MonitoringTasksPage defines model for MonitoringTasksPage.
 type MonitoringTasksPage struct {
-	Tasks []MonitoringTask `json:"tasks"`
+	Tasks []MonitoringTableTask `json:"tasks"`
 
 	// total number of tasks
 	Total int `json:"total"`
@@ -2009,6 +2058,9 @@ type ServerInterface interface {
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
+	// Get task for monitoring
+	// (GET /monitoring/tasks/{workNumber})
+	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Get list of pipelines
 	// (GET /pipelines)
 	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
@@ -2478,6 +2530,32 @@ func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, 
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetTasksForMonitoring(w, r, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetMonitoringTask operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitoringTask(w, r, workNumber)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3600,6 +3678,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines", wrapper.ListPipelines)
