@@ -50,3 +50,17 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, req *http.Request
 func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string) {
 	panic("implement me")
 }
+
+func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, req *http.Request, blockId string) {
+	ctx, span := trace.StartSpan(req.Context(), "get_monitoring_tasks_block_blockId_params")
+	defer span.End()
+
+	log := logger.GetLogger(ctx)
+
+	if err := sendResponse(w, http.StatusOK, nil); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+}

@@ -2057,6 +2057,51 @@ paths:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
 
+  /monitoring/tasks/block/{blockId}/params:
+    get:
+      tags:
+        - monitoring
+      summary: Get inputs and outputs of block
+      description: Получить инпуты и аутпуты блока
+      parameters:
+        - name: blockId
+          in: path
+          description: block ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringParamsResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+
   /monitoring/tasks:
     get:
       tags:
@@ -4049,6 +4094,53 @@ components:
             $ref: '#/components/schemas/MonitoringBlockOutput'
 
     MonitoringBlockOutput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя поля
+        type:
+          type: string
+          description: Тип поля
+        description:
+          type: string
+          description: Описание поля
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: integer
+            - type: array
+            - type: object
+            - type: boolean
+          description: Значение поля
+      required:
+        - name
+        - type
+        - description
+        - value
+
+    MonitoringParamsResponse:
+      type: object
+      properties:
+        started_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        finished_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        inputs:
+          type: object
+          description: Входные параметы
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockParam'
+        outputs:
+          type: object
+          description: Выходные параметы
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockParam'
+
+    MonitoringBlockParam:
       type: object
       properties:
         name:
