@@ -2602,7 +2602,7 @@ components:
         tasks:
           type: array
           items:
-            $ref: '#/components/schemas/MonitoringTask'
+            $ref: '#/components/schemas/MonitoringTableTask'
         total:
           type: integer
           description: total number of tasks
@@ -2610,7 +2610,7 @@ components:
         - tasks
         - total
 
-    MonitoringTask:
+    MonitoringTableTask:
       type: object
       properties:
         id:
