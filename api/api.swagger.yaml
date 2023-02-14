@@ -226,50 +226,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
-  /debug/info/{blockId}:
-    get:
-      tags:
-        - debug
-      summary: Get outputs of block
-      description: Получить аутпуты блока
-      parameters:
-        - name: blockId
-          in: path
-          description: block ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/DebugInfoResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: variables
   /modules:
     get:
       tags:
@@ -1577,7 +1533,7 @@ paths:
   /tasks/{workNumber}/{formID}/schema:
     get:
       tags:
-      - tasks
+        - tasks
       summary: Get Task form schema
       description: Получить id схемы формы задачи
       operationId: get-task-form-schema
@@ -2056,6 +2012,179 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
+  /monitoring/tasks/block/{blockId}/context:
+    get:
+      tags:
+        - monitoring
+      summary: Get outputs of block
+      description: Получить аутпуты блока
+      parameters:
+        - name: blockId
+          in: path
+          description: block ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringOutputsResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+
+  /monitoring/tasks:
+    get:
+      tags:
+        - monitoring
+      summary: Get tasks for monitoring
+      description: Получить заявки для таблицы мониторинга
+      operationId: get-tasks-for-monitoring
+      parameters:
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: sort.column
+          in: query
+          schema:
+            type: string
+            enum:
+              - id
+              - status
+              - process_name
+              - initiator
+              - work_number
+              - started_at
+        - name: sort.order
+          in: query
+          schema:
+            type: string
+            enum:
+              - ASC
+              - DESC
+            default: DESC
+        - name: filter
+          in: query
+          description: Фильтр по UUID, work_number или наименованию процесса
+          schema:
+            type: string
+        - name: from_date
+          in: query
+          description: Фильтровать по дате, начало периода
+          schema:
+            type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+        - name: to_date
+          in: query
+          description: Фильтровать по дате, конец периода
+          schema:
+            type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringTasksPage'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
+
+  /monitoring/tasks/{workNumber}:
+    get:
+      tags:
+        - monitoring
+      summary: Get task for monitoring
+      operationId: get-monitoring-task
+      parameters:
+        - name: workNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MonitoringTask'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
 components:
   schemas:
     ApproveStatusesResponse:
@@ -2336,6 +2465,9 @@ components:
           format: uuid
           description: Id внешней системы
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        name:
+          type: string
+          description: Название системы
         input_schema:
           type: string
           description: JSON-схема данных, которые отдаёт внешняя система
@@ -2344,6 +2476,7 @@ components:
           description: JSON-схема данных, которые принимает внешняя система
       required:
         - id
+        - name
         - input_schema
         - output_schema
 
@@ -2508,6 +2641,48 @@ components:
       required:
         - tasks
         - total
+
+    MonitoringTasksPage:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonitoringTableTask'
+        total:
+          type: integer
+          description: total number of tasks
+      required:
+        - tasks
+        - total
+
+    MonitoringTableTask:
+      type: object
+      properties:
+        id:
+          type: string
+          description: UUID of task
+        status:
+          type: string
+          enum: [ "В работе", "Завершен", "Остановлен" ]
+          description: task status
+        process_name:
+          type: string
+          description: name of the process
+        initiator:
+          type: string
+          description: login of initiator
+        work_number:
+          type: string
+        started_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
+      required:
+        - id
+        - status
+        - process_name
+        - work_number
+        - started_at
 
     EriusVersionInfo:
       type: object
@@ -3006,37 +3181,6 @@ components:
         version_id:
           type: string
           format: uuid
-
-    DebugInfoResponse:
-      type: object
-      properties:
-        blocks:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/DebugInfoFunc'
-
-    DebugInfoFunc:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Имя поля
-        type:
-          type: string
-          description: Тип поля
-        description:
-          type: string
-          description: Описание поля
-        value:
-          oneOf:
-            - type: string
-            - type: number
-            - type: integer
-            - type: array
-            - type: object
-            - type: boolean
-          description: Значение поля
-
     DebugRunRequest:
       type: object
       required: [ action,break_points,work_number ]
@@ -3195,7 +3339,6 @@ components:
           type: string
         type:
           type: string
-      x-go-name: step
 
     action:
       type: object
@@ -3831,3 +3974,103 @@ components:
           type: integer
       required:
         - status_code
+
+    MonitoringTask:
+      type: object
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          description: "Айди версии сценария для мониторинга"
+        work_number:
+          type: string
+          description: "Номер заявки для мониторинга"
+        scenario_info:
+          $ref: '#/components/schemas/MonitoringScenarioInfo'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonitoringHistory'
+      required:
+        - version_id
+        - work_number
+        - scenario_info
+        - history
+
+    MonitoringHistory:
+      type: object
+      properties:
+        node_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+          description: "Айди ноды в variable_storage"
+        status:
+          type: string
+          enum: [ "running", "finished" ]
+          description: "Статус ноды"
+        step_name:
+          type: string
+          description: "имя по типу ноды в сценарии "
+        real_name:
+          type: string
+          description: "читаемое имя ноды"
+      required:
+        - node_id
+        - status
+        - step_name
+        - real_name
+
+    MonitoringScenarioInfo:
+      type: object
+      properties:
+        scenario_name:
+          type: string
+          description: "Имя сценария"
+        creation_time:
+          type: string
+          description: "Время создания сценария"
+        author:
+          type: string
+          description: "Автор сценария"
+      required:
+        - scenario_name
+        - creation_time
+        - author
+
+    MonitoringOutputsResponse:
+      type: object
+      properties:
+        blocks:
+          type: object
+          description: Ноды
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockOutput'
+
+    MonitoringBlockOutput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя поля
+        type:
+          type: string
+          description: Тип поля
+        description:
+          type: string
+          description: Описание поля
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: integer
+            - type: array
+            - type: object
+            - type: boolean
+          description: Значение поля
+      required:
+        - name
+        - type
+        - description
+        - value

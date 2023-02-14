@@ -127,6 +127,22 @@ const (
 	IntegerOperandOperandTypeVariableOperand IntegerOperandOperandType = "variableOperand"
 )
 
+// Defines values for MonitoringHistoryStatus.
+const (
+	MonitoringHistoryStatusFinished MonitoringHistoryStatus = "finished"
+
+	MonitoringHistoryStatusRunning MonitoringHistoryStatus = "running"
+)
+
+// Defines values for MonitoringTableTaskStatus.
+const (
+	MonitoringTableTaskStatusВРаботе MonitoringTableTaskStatus = "В работе"
+
+	MonitoringTableTaskStatusЗавершен MonitoringTableTaskStatus = "Завершен"
+
+	MonitoringTableTaskStatusОстановлен MonitoringTableTaskStatus = "Остановлен"
+)
+
 // Defines values for NumberOperandDataType.
 const (
 	NumberOperandDataTypeInteger NumberOperandDataType = "integer"
@@ -799,6 +815,9 @@ type ExternalSystem struct {
 	// JSON-схема данных, которые отдаёт внешняя система
 	InputSchema string `json:"input_schema"`
 
+	// Название системы
+	Name string `json:"name"`
+
 	// JSON-схема данных, которые принимает внешняя система
 	OutputSchema string `json:"output_schema"`
 }
@@ -941,6 +960,102 @@ type MappingParam struct {
 		// Global name for value
 		Value *string `json:"value,omitempty"`
 	} `json:"-"`
+}
+
+// MonitoringBlockOutput defines model for MonitoringBlockOutput.
+type MonitoringBlockOutput struct {
+	// Описание поля
+	Description string `json:"description"`
+
+	// Имя поля
+	Name string `json:"name"`
+
+	// Тип поля
+	Type string `json:"type"`
+
+	// Значение поля
+	Value interface{} `json:"value"`
+}
+
+// MonitoringHistory defines model for MonitoringHistory.
+type MonitoringHistory struct {
+	// Айди ноды в variable_storage
+	NodeId string `json:"node_id"`
+
+	// читаемое имя ноды
+	RealName string `json:"real_name"`
+
+	// Статус ноды
+	Status MonitoringHistoryStatus `json:"status"`
+
+	// имя по типу ноды в сценарии
+	StepName string `json:"step_name"`
+}
+
+// Статус ноды
+type MonitoringHistoryStatus string
+
+// MonitoringOutputsResponse defines model for MonitoringOutputsResponse.
+type MonitoringOutputsResponse struct {
+	// Ноды
+	Blocks *MonitoringOutputsResponse_Blocks `json:"blocks,omitempty"`
+}
+
+// Ноды
+type MonitoringOutputsResponse_Blocks struct {
+	AdditionalProperties map[string]MonitoringBlockOutput `json:"-"`
+}
+
+// MonitoringScenarioInfo defines model for MonitoringScenarioInfo.
+type MonitoringScenarioInfo struct {
+	// Автор сценария
+	Author string `json:"author"`
+
+	// Время создания сценария
+	CreationTime string `json:"creation_time"`
+
+	// Имя сценария
+	ScenarioName string `json:"scenario_name"`
+}
+
+// MonitoringTableTask defines model for MonitoringTableTask.
+type MonitoringTableTask struct {
+	// UUID of task
+	Id string `json:"id"`
+
+	// login of initiator
+	Initiator *string `json:"initiator,omitempty"`
+
+	// name of the process
+	ProcessName string `json:"process_name"`
+	StartedAt   string `json:"started_at"`
+
+	// task status
+	Status     MonitoringTableTaskStatus `json:"status"`
+	WorkNumber string                    `json:"work_number"`
+}
+
+// task status
+type MonitoringTableTaskStatus string
+
+// MonitoringTask defines model for MonitoringTask.
+type MonitoringTask struct {
+	History      []MonitoringHistory    `json:"history"`
+	ScenarioInfo MonitoringScenarioInfo `json:"scenario_info"`
+
+	// Айди версии сценария для мониторинга
+	VersionId string `json:"version_id"`
+
+	// Номер заявки для мониторинга
+	WorkNumber string `json:"work_number"`
+}
+
+// MonitoringTasksPage defines model for MonitoringTasksPage.
+type MonitoringTasksPage struct {
+	Tasks []MonitoringTableTask `json:"tasks"`
+
+	// total number of tasks
+	Total int `json:"total"`
 }
 
 // Notification params
@@ -1328,6 +1443,29 @@ type GetFormsChangelogParams struct {
 	// Id of form block (name)
 	BlockId string `json:"block_id"`
 }
+
+// GetTasksForMonitoringParams defines parameters for GetTasksForMonitoring.
+type GetTasksForMonitoringParams struct {
+	PerPage    *int                                   `json:"per_page,omitempty"`
+	Page       *int                                   `json:"page,omitempty"`
+	SortColumn *GetTasksForMonitoringParamsSortColumn `json:"sort.column,omitempty"`
+	SortOrder  *GetTasksForMonitoringParamsSortOrder  `json:"sort.order,omitempty"`
+
+	// Фильтр по UUID, work_number или наименованию процесса
+	Filter *string `json:"filter,omitempty"`
+
+	// Фильтровать по дате, начало периода
+	FromDate *string `json:"from_date,omitempty"`
+
+	// Фильтровать по дате, конец периода
+	ToDate *string `json:"to_date,omitempty"`
+}
+
+// GetTasksForMonitoringParamsSortColumn defines parameters for GetTasksForMonitoring.
+type GetTasksForMonitoringParamsSortColumn string
+
+// GetTasksForMonitoringParamsSortOrder defines parameters for GetTasksForMonitoring.
+type GetTasksForMonitoringParamsSortOrder string
 
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
@@ -1746,6 +1884,59 @@ func (a MappingParam) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for MonitoringOutputsResponse_Blocks. Returns the specified
+// element and whether it was found
+func (a MonitoringOutputsResponse_Blocks) Get(fieldName string) (value MonitoringBlockOutput, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MonitoringOutputsResponse_Blocks
+func (a *MonitoringOutputsResponse_Blocks) Set(fieldName string, value MonitoringBlockOutput) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockOutput)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MonitoringOutputsResponse_Blocks to handle AdditionalProperties
+func (a *MonitoringOutputsResponse_Blocks) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockOutput)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockOutput
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MonitoringOutputsResponse_Blocks to handle AdditionalProperties
+func (a MonitoringOutputsResponse_Blocks) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for RunNewVersionByPrevVersionRequest_Keys. Returns the specified
 // element and whether it was found
 func (a RunNewVersionByPrevVersionRequest_Keys) Get(fieldName string) (value string, found bool) {
@@ -1943,6 +2134,15 @@ type ServerInterface interface {
 	// Usage of module in pipelines
 	// (GET /modules/{moduleName}/usage)
 	ModuleUsage(w http.ResponseWriter, r *http.Request, moduleName string)
+	// Get tasks for monitoring
+	// (GET /monitoring/tasks)
+	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
+	// Get outputs of block
+	// (GET /monitoring/tasks/block/{blockId}/context)
+	GetMonitoringTasksBlockBlockIdContext(w http.ResponseWriter, r *http.Request, blockId string)
+	// Get task for monitoring
+	// (GET /monitoring/tasks/{workNumber})
+	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Get list of pipelines
 	// (GET /pipelines)
 	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
@@ -2315,6 +2515,155 @@ func (siw *ServerInterfaceWrapper) ModuleUsage(w http.ResponseWriter, r *http.Re
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ModuleUsage(w, r, moduleName)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetTasksForMonitoring operation middleware
+func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTasksForMonitoringParams
+
+	// ------------- Optional query parameter "per_page" -------------
+	if paramValue := r.URL.Query().Get("per_page"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "per_page", r.URL.Query(), &params.PerPage)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "per_page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+	if paramValue := r.URL.Query().Get("page"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "page", r.URL.Query(), &params.Page)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "sort.column" -------------
+	if paramValue := r.URL.Query().Get("sort.column"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "sort.column", r.URL.Query(), &params.SortColumn)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort.column", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "sort.order" -------------
+	if paramValue := r.URL.Query().Get("sort.order"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "sort.order", r.URL.Query(), &params.SortOrder)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort.order", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "filter" -------------
+	if paramValue := r.URL.Query().Get("filter"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "filter", r.URL.Query(), &params.Filter)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filter", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "from_date" -------------
+	if paramValue := r.URL.Query().Get("from_date"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "from_date", r.URL.Query(), &params.FromDate)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from_date", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "to_date" -------------
+	if paramValue := r.URL.Query().Get("to_date"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "to_date", r.URL.Query(), &params.ToDate)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to_date", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTasksForMonitoring(w, r, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetMonitoringTasksBlockBlockIdContext operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockBlockIdContext(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "blockId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitoringTasksBlockBlockIdContext(w, r, blockId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetMonitoringTask operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "workNumber" -------------
+	var workNumber string
+
+	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitoringTask(w, r, workNumber)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3434,6 +3783,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/modules/{moduleName}/usage", wrapper.ModuleUsage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/context", wrapper.GetMonitoringTasksBlockBlockIdContext)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines", wrapper.ListPipelines)

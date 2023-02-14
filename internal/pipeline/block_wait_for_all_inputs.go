@@ -79,6 +79,9 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	if err != nil {
 		return nil, err
 	}
+
+	//gb.RunContext.VarStore = gb.Sockets
+
 	gb.State.Done = executed
 
 	return nil, nil
