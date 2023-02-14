@@ -2014,6 +2014,7 @@ paths:
 
   /monitoring/tasks/block/{blockId}/context:
     get:
+      operationId: GetBlockContext
       tags:
         - monitoring
       summary: Get outputs of block
@@ -2034,7 +2035,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/MonitoringOutputsResponse'
+                    $ref: '#/components/schemas/BlockContextResponse'
                   status_code:
                     type: integer
         400:
@@ -4039,7 +4040,7 @@ components:
         - creation_time
         - author
 
-    MonitoringOutputsResponse:
+    BlockContextResponse:
       type: object
       properties:
         blocks:

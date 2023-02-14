@@ -9,13 +9,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/net/context"
 
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/lib/pq"
 
 	"github.com/pkg/errors"
+
+	"golang.org/x/net/context"
 
 	"golang.org/x/exp/slices"
 
@@ -962,7 +963,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-	`
+		`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
