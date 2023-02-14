@@ -1210,7 +1210,7 @@ func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId string, bl
 
 	q := fmt.Sprintf(`SELECT jsonb_object_agg(t.k, t.v) AS content 
 		FROM variable_storage vs, jsonb_each(vs.content) AS t(k, v)
-    	WHERE work_id = '$1' AND step_name IN $2;`, workId, buildInExpression(blockIds))
+    	WHERE work_id = '%s' AND step_name IN %s`, workId, buildInExpression(blockIds))
 
 	var content []byte
 	if err := db.Connection.QueryRow(ctx, q).Scan(&content); err != nil {
