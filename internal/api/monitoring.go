@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -20,7 +19,7 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, r *http.Request, work
 }
 
 func (ae *APIEnv) GetMonitoringTasksBlockBlockIdContext(w http.ResponseWriter, r *http.Request, blockId string) {
-	ctx, span := trace.StartSpan(r.Context(), "start debug info")
+	ctx, span := trace.StartSpan(r.Context(), "start get block context")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
@@ -35,22 +34,11 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdContext(w http.ResponseWriter, r
 
 	blocks := make(map[string]MonitoringBlockOutput, len(blocksOutputs))
 	for _, bo := range blocksOutputs {
-		valueData, err := json.Marshal(bo.Value)
-		if err != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-			return
-		}
-
-		var valueType string
-		valueType = utils.GetJsonType(bo)
-
 		blocks[bo.Name] = MonitoringBlockOutput{
 			Name:        bo.Name,
-			Value:       valueData,
+			Value:       bo.Value,
 			Description: "",
-			Type:        valueType,
+			Type:        utils.GetJsonType(bo.Value),
 		}
 	}
 
