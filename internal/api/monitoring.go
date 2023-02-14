@@ -3,20 +3,11 @@ package api
 import (
 	"net/http"
 
+	"go.opencensus.io/trace"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
-	"go.opencensus.io/trace"
 )
-
-func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string) {
-	//TODO implement me
-	panic("implement me")
-}
 
 func (ae *APIEnv) GetMonitoringTasksBlockBlockIdContext(w http.ResponseWriter, r *http.Request, blockId string) {
 	ctx, span := trace.StartSpan(r.Context(), "start get block context")
@@ -50,4 +41,12 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdContext(w http.ResponseWriter, r
 		_ = e.sendError(w)
 		return
 	}
+}
+
+func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, req *http.Request, params GetTasksForMonitoringParams) {
+	panic("implement me")
+}
+
+func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, workNumber string) {
+	panic("implement me")
 }

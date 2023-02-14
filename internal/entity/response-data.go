@@ -143,6 +143,7 @@ type ProcessSettings struct {
 
 type ExternalSystem struct {
 	Id           uuid.UUID `json:"id"`
+	Name         string    `json:"name"`
 	InputSchema  string    `json:"input_schema"`
 	OutputSchema string    `json:"output_schema"`
 }
