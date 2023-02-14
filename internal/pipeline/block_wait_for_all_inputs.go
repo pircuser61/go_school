@@ -80,8 +80,12 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 		return nil, err
 	}
 
-	//gb.RunContext.VarStore = gb.Sockets
+	variableStorage, err := gb.RunContext.Storage.GetMergedVariableStorage(ctx, gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
+	if err != nil {
+		return nil, err
+	}
 
+	gb.RunContext.VarStore = variableStorage
 	gb.State.Done = executed
 
 	return nil, nil

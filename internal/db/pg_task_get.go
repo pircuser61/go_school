@@ -962,7 +962,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-	`
+		`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
@@ -1201,4 +1201,25 @@ func (db *PGCon) GetBlocksOutputs(ctx context.Context, blockId string) (entity.B
 	}
 
 	return blockOutputs, nil
+}
+
+func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId string, blockIds []string) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "get merged variable storage")
+	defer span.End()
+
+	q := fmt.Sprintf(`SELECT jsonb_object_agg(t.k, t.v) AS content 
+		FROM variable_storage vs, jsonb_each(vs.content) AS t(k, v)
+    	WHERE work_id = '$1' AND step_name IN $2;`, workId, buildInExpression(blockIds))
+
+	var content []byte
+	if err := db.Connection.QueryRow(ctx, q).Scan(&content); err != nil {
+		return nil, err
+	}
+
+	storage := store.NewStore()
+	if err := json.Unmarshal(content, &storage); err != nil {
+		return nil, err
+	}
+
+	return storage, nil
 }
