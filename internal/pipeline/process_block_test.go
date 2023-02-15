@@ -67,7 +67,7 @@ func makeStorage() *mocks.MockedDatabase {
 
 	res.On("GetMergedVariableStorage",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
-		mock.MatchedBy(func(workNumber string) bool { return true }),
+		mock.MatchedBy(func(workNumber uuid.UUID) bool { return true }),
 		mock.MatchedBy(func(blockIds []string) bool { return true }),
 	).Return(store.NewStore(), nil)
 

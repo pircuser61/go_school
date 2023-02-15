@@ -928,7 +928,7 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
-func (_m *MockDB) GetMergedVariableStorage(ctx context.Context, workId string, blockIds []string) (*store.VariableStore, error) {
+func (_m *MockDB) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
 	return nil, errNotImplemented
 }
 
