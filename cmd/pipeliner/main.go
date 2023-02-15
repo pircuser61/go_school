@@ -159,6 +159,7 @@ func main() {
 	}
 
 	APIEnv := &api.APIEnv{
+		Log:                  log,
 		DB:                   &dbConn,
 		Remedy:               cfg.Remedy,
 		FaaS:                 cfg.FaaS,
