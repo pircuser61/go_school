@@ -1204,7 +1204,7 @@ func (db *PGCon) GetBlocksOutputs(ctx context.Context, blockId string) (entity.B
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId string, blockIds []string) (*store.VariableStore, error) {
+func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
 	ctx, span := trace.StartSpan(ctx, "get merged variable storage")
 	defer span.End()
 

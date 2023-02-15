@@ -12,8 +12,8 @@ import (
 
 type SyncData struct {
 	IncomingBlockIds []string `json:"incoming_block_ids"`
-	Done             bool
-	IsRevoked        bool `json:"is_revoked"`
+	Done             bool     `json:"done"`
+	IsRevoked        bool     `json:"is_revoked"`
 }
 
 type GoWaitForAllInputsBlock struct {
@@ -80,7 +80,11 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 		return nil, err
 	}
 
-	variableStorage, err := gb.RunContext.Storage.GetMergedVariableStorage(ctx, gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
+	if !executed {
+		return nil, nil
+	}
+
+	variableStorage, err := gb.RunContext.Storage.GetMergedVariableStorage(ctx, gb.RunContext.TaskID, gb.State.IncomingBlockIds)
 	if err != nil {
 		return nil, err
 	}
