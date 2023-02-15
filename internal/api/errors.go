@@ -90,7 +90,7 @@ const (
 	UpdateTaskRateError
 	CreateVersionValidationError
 	ParseMailsError
-	GetBlockOutputsError
+	GetBlockContextError
 )
 
 //nolint:dupl //its not duplicate

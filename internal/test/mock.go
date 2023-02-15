@@ -929,7 +929,7 @@ type MockDB struct {
 }
 
 func (_m *MockDB) GetMergedVariableStorage(ctx context.Context, workId string, blockIds []string) (*store.VariableStore, error) {
-	return nil, nil
+	return nil, errNotImplemented
 }
 
 func (_m *MockDB) GetBlocksOutputs(ctx context.Context, blockId string) (entity.BlockOutputs, error) {

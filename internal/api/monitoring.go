@@ -9,7 +9,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func (ae *APIEnv) GetMonitoringTasksBlockBlockIdContext(w http.ResponseWriter, r *http.Request, blockId string) {
+func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockId string) {
 	ctx, span := trace.StartSpan(r.Context(), "start get block context")
 	defer span.End()
 
@@ -17,7 +17,7 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdContext(w http.ResponseWriter, r
 
 	blocksOutputs, err := ae.DB.GetBlocksOutputs(ctx, blockId)
 	if err != nil {
-		e := GetBlockOutputsError
+		e := GetBlockContextError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
@@ -33,8 +33,8 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdContext(w http.ResponseWriter, r
 		}
 	}
 
-	if err = sendResponse(w, http.StatusOK, MonitoringOutputsResponse{
-		Blocks: &MonitoringOutputsResponse_Blocks{blocks},
+	if err = sendResponse(w, http.StatusOK, BlockContextResponse{
+		Blocks: &BlockContextResponse_Blocks{blocks},
 	}); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
