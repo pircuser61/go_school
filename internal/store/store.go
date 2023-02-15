@@ -55,6 +55,27 @@ func NewFromStep(step *entity.Step) *VariableStore {
 	return &vs
 }
 
+func (c *VariableStore) Copy() *VariableStore {
+	newState := make(map[string]json.RawMessage)
+	for k, v := range c.State {
+		newState[k] = v
+	}
+
+	newValues := make(map[string]interface{})
+	for k, v := range c.Values {
+		newValues[k] = v
+	}
+
+	return &VariableStore{
+		Mutex:      sync.Mutex{},
+		State:      newState,
+		Values:     newValues,
+		Steps:      c.Steps[:],
+		Errors:     c.Errors[:],
+		StopPoints: c.StopPoints,
+	}
+}
+
 func (c *VariableStore) AddStep(name string) {
 	lenSteps := len(c.Steps)
 

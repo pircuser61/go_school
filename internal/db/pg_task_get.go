@@ -1208,8 +1208,7 @@ func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID,
 	ctx, span := trace.StartSpan(ctx, "get merged variable storage")
 	defer span.End()
 
-	q := fmt.Sprintf(`SELECT jsonb_object_agg(t.k, t.v) AS content 
-		FROM variable_storage vs, jsonb_each(vs.content) AS t(k, v)
+	q := fmt.Sprintf(`SELECT jsonb_merge_agg(vs.content) FROM variable_storage vs
     	WHERE work_id = '%s' AND step_name IN %s`, workId, buildInExpression(blockIds))
 
 	var content []byte
