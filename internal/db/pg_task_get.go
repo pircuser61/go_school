@@ -960,10 +960,9 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 }
 
 func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
-	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-		`
+	const q = `
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
