@@ -92,6 +92,12 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	gb.RunContext.VarStore = variableStorage
 	gb.State.Done = executed
 
+	state, stateErr := json.Marshal(gb.GetState())
+	if stateErr != nil {
+		return nil, stateErr
+	}
+	gb.RunContext.VarStore.ReplaceState(gb.Name, state)
+
 	return nil, nil
 }
 
