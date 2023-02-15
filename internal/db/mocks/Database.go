@@ -480,6 +480,29 @@ func (_m *MockedDatabase) GetBlocksOutputs(ctx context.Context, blockId string) 
 	return r0, r1
 }
 
+// GetBlockOutputs provides a mock function with given fields: ctx, blockId, blockName
+func (_m *MockedDatabase) GetBlockOutputs(ctx context.Context, blockId, blockName string) (entity.BlockOutputs, error) {
+	ret := _m.Called(ctx, blockId)
+
+	var r0 entity.BlockOutputs
+	if rf, ok := ret.Get(0).(func(context.Context, string) entity.BlockOutputs); ok {
+		r0 = rf(ctx, blockId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(entity.BlockOutputs)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, blockId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetDraftVersions provides a mock function with given fields: ctx, author
 func (_m *MockedDatabase) GetDraftVersions(ctx context.Context, author string) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(ctx, author)
@@ -1646,4 +1669,8 @@ func NewMockedDatabase(t mockConstructorTestingTNewMockedDatabase) *MockedDataba
 	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
+}
+
+func (_m *MockedDatabase) GetBlockInputs(ctx context.Context, blockId, workNumber string) (entity.BlockInputs, error) {
+	return entity.BlockInputs{}, nil
 }

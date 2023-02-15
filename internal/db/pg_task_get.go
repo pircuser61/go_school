@@ -16,8 +16,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"golang.org/x/net/context"
-
 	"golang.org/x/exp/slices"
 
 	"go.opencensus.io/trace"
@@ -963,7 +961,7 @@ func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, step
 	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-		`
+	`
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
@@ -1179,8 +1177,8 @@ func (db *PGCon) CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error) 
 	return isArchived, nil
 }
 
-func (db *PGCon) GetBlocksOutputs(ctx context.Context, blockId string) (entity.BlockOutputs, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_get_block_content")
+func (db *PGCon) GetBlocksOutputs(ctx c.Context, blockId string) (entity.BlockOutputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_blocks_outputs")
 	defer span.End()
 
 	q := `
@@ -1205,8 +1203,64 @@ func (db *PGCon) GetBlocksOutputs(ctx context.Context, blockId string) (entity.B
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId string, blockIds []string) (*store.VariableStore, error) {
-	ctx, span := trace.StartSpan(ctx, "get merged variable storage")
+func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (entity.BlockOutputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_outputs")
+	defer span.End()
+
+	blocksOutputs, err := db.GetBlocksOutputs(ctx, blockId)
+	if err != nil {
+		return nil, err
+	}
+
+	blockOutputs := make(entity.BlockOutputs, 0)
+
+	for i := range blocksOutputs {
+		if strings.Contains(blocksOutputs[i].Name, blockName) {
+			blockOutputs = append(blockOutputs, entity.BlockOutputValue{
+				Name:  strings.Replace(blocksOutputs[i].Name, blockName+".", "", 1),
+				Value: blocksOutputs[i].Value,
+			})
+		}
+	}
+
+	return blockOutputs, nil
+}
+
+func (db *PGCon) GetBlockInputs(ctx c.Context, blockId, workNumber string) (entity.BlockInputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_inputs")
+	defer span.End()
+
+	version, err := db.GetVersionByWorkNumber(ctx, workNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	const q = `
+		SELECT content -> 'State' -> step_name
+		FROM variable_storage
+		WHERE id = $1;
+	`
+	blockInputs := make(entity.BlockInputs, 0)
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockInputs); err != nil {
+		return nil, err
+	}
+
+	for i := range blockInputs {
+		for j := range version.Input {
+			if blockInputs[i].Name == version.Input[j].Name {
+				blockInputs = append(blockInputs, entity.BlockInputValue{
+					Name:  blockInputs[i].Name,
+					Value: blockInputs[i].Value,
+				})
+			}
+		}
+	}
+
+	return blockInputs, nil
+}
+
+func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId string, blockIds []string) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "get_merged_variable_storage")
 	defer span.End()
 
 	q := fmt.Sprintf(`SELECT jsonb_object_agg(t.k, t.v) AS content 
