@@ -1259,3 +1259,26 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockId, workNumber string) (enti
 
 	return blockInputs, nil
 }
+
+func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (entity.BlockOutputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_outputs")
+	defer span.End()
+
+	blocksOutputs, err := db.GetBlocksOutputs(ctx, blockId)
+	if err != nil {
+		return nil, err
+	}
+
+	blockOutputs := make(entity.BlockOutputs, 0)
+
+	for i := range blocksOutputs {
+		if strings.Contains(blocksOutputs[i].Name, blockName) {
+			blockOutputs = append(blockOutputs, entity.BlockOutputValue{
+				Name:  strings.Replace(blocksOutputs[i].Name, blockName+".", "", 1),
+				Value: blocksOutputs[i].Value,
+			})
+		}
+	}
+
+	return blockOutputs, nil
+}
