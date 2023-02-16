@@ -22,7 +22,7 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 		Page:       params.Page,
 		SortColumn: (*string)(params.SortColumn),
 		SortOrder:  (*string)(params.SortOrder),
-		Filter:     (*string)(params.Filter),
+		Filter:     params.Filter,
 		FromDate:   params.FromDate,
 		ToDate:     params.ToDate,
 	})
