@@ -1139,7 +1139,7 @@ func (m *MockDB) CreatePipeline(c context.Context, p *entity.EriusScenario, auth
 	return errNotImplemented
 }
 
-func (m *MockDB) CreateVersion(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error {
+func (m *MockDB) CreateVersion(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
 	return errNotImplemented
 }
 

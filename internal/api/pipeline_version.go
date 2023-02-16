@@ -57,6 +57,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	oldVersionID := p.VersionID
 	p.VersionID = uuid.New()
 	p.ID, err = uuid.Parse(pipelineID)
 	if err != nil {
@@ -81,7 +82,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated)
+	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))

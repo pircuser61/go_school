@@ -217,13 +217,13 @@ func (_m *MockedDatabase) CreateTask(ctx context.Context, dto *db.CreateTaskDTO)
 	return r0, r1
 }
 
-// CreateVersion provides a mock function with given fields: ctx, p, author, pipelineData
-func (_m *MockedDatabase) CreateVersion(ctx context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error {
-	ret := _m.Called(ctx, p, author, pipelineData)
+// CreateVersion provides a mock function with given fields: ctx, p, author, pipelineData, oldVersionID
+func (_m *MockedDatabase) CreateVersion(ctx context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
+	ret := _m.Called(ctx, p, author, pipelineData, oldVersionID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, string, []byte) error); ok {
-		r0 = rf(ctx, p, author, pipelineData)
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, string, []byte, uuid.UUID) error); ok {
+		r0 = rf(ctx, p, author, pipelineData, oldVersionID)
 	} else {
 		r0 = ret.Error(0)
 	}

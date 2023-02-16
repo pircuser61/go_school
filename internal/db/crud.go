@@ -727,11 +727,11 @@ func (db *PGCon) CreatePipeline(c context.Context,
 		return err
 	}
 
-	return db.CreateVersion(c, p, author, pipelineData)
+	return db.CreateVersion(c, p, author, pipelineData, uuid.Nil)
 }
 
 func (db *PGCon) CreateVersion(c context.Context,
-	p *entity.EriusScenario, author string, pipelineData []byte) error {
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_create_version")
 	defer span.End()
 
@@ -762,6 +762,41 @@ func (db *PGCon) CreateVersion(c context.Context,
 	createdAt := time.Now()
 
 	_, err := db.Connection.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author, p.Comment, createdAt)
+	if err != nil {
+		return err
+	}
+
+	if oldVersionID != uuid.Nil {
+		err = db.copyProcessSettingsFromOldVersion(c, p.VersionID, oldVersionID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersionID, oldVersionID uuid.UUID) error {
+	qCopyPrevSettings := `
+	INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
+		SELECT uuid_generate_v4(), $1, start_schema, end_schema 
+		FROM version_settings 
+		WHERE version_id = $2
+	`
+
+	_, err := db.Connection.Exec(c, qCopyPrevSettings, newVersionID, oldVersionID)
+	if err != nil {
+		return err
+	}
+
+	qCopyExternalSystems := `
+	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema) 
+	SELECT uuid_generate_v4(), $1, system_id, input_schema, output_schema 
+	FROM external_systems 
+	WHERE version_id = $2;
+	`
+
+	_, err = db.Connection.Exec(c, qCopyExternalSystems, newVersionID, oldVersionID)
 	if err != nil {
 		return err
 	}
