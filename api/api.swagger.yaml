@@ -2064,7 +2064,7 @@ paths:
         - monitoring
       summary: Get tasks for monitoring
       description: Получить заявки для таблицы мониторинга
-      operationId: get-tasks-for-monitoring
+      operationId: GetTasksForMonitoring
       parameters:
         - name: per_page
           in: query
@@ -2684,6 +2684,7 @@ components:
         - process_name
         - work_number
         - started_at
+        - initiator
 
     EriusVersionInfo:
       type: object

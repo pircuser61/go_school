@@ -928,6 +928,10 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetTasksForMonitoring(ctx context.Context, filters entity.TasksForMonitoringFilters) ([]entity.TaskForMonitoring, error) {
+	return []entity.TaskForMonitoring{}, nil
+}
+
 func (_m *MockDB) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
 	return nil, errNotImplemented
 }

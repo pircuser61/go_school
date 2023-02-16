@@ -186,4 +186,5 @@ type Database interface {
 
 	GetBlocksOutputs(ctx c.Context, blockId string) (e.BlockOutputs, error)
 	GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error)
+	GetTasksForMonitoring(ctx c.Context, filters e.TasksForMonitoringFilters) ([]e.TaskForMonitoring, error)
 }

@@ -1228,3 +1228,104 @@ func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID,
 
 	return storage, nil
 }
+
+func (db *PGCon) GetTasksForMonitoring(ctx context.Context, filters entity.TasksForMonitoringFilters) ([]entity.TaskForMonitoring, error) {
+	ctx, span := trace.StartSpan(ctx, "get_tasks_for_monitoring")
+	defer span.End()
+
+	q := getTasksForMonitoringQuery(filters)
+
+	rows, err := db.Connection.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tasksForMonitoring := make([]entity.TaskForMonitoring, 0)
+
+	for rows.Next() {
+		task := entity.TaskForMonitoring{}
+
+		err = rows.Scan(&task.Id,
+			&task.Status,
+			&task.ProcessName,
+			&task.Initiator,
+			&task.WorkNumber,
+			&task.StartedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		tasksForMonitoring = append(tasksForMonitoring, task)
+	}
+
+	return tasksForMonitoring, nil
+}
+
+func getTasksForMonitoringQuery(filters entity.TasksForMonitoringFilters) string {
+	q := `
+			SELECT w.version_id as id,
+				CASE
+					WHEN v.status = 1 THEN 'В работе'
+        			WHEN v.status = 2 THEN 'Завершен'
+        			WHEN v.status = 3 THEN 'Ошибка'
+				    WHEN v.status = 4 THEN 'Остановлен'
+				    WHEN v.status = 5 THEN 'Создан'
+        			WHEN v.status IS NULL THEN 'Неизвестный статус'
+    			END AS status,
+				p.name AS process_name,
+				w.author AS initiator,
+				w.work_number AS work_number,
+				w.started_at AS started_at from works w
+			LEFT JOIN versions v on w.version_id = v.id
+			LEFT JOIN pipelines p on v.pipeline_id = p.id
+			WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL
+	`
+
+	if filters.FromDate != nil || filters.ToDate != nil {
+		q = fmt.Sprintf("%s AND %s", q, getFiltersDateConditions(filters.FromDate, filters.ToDate))
+	}
+
+	if searchConditions := getFiltersSearchConditions(filters.Filter); searchConditions != "" {
+		q = fmt.Sprintf("%s AND %s", q, searchConditions)
+	}
+
+	if filters.SortColumn != nil && filters.SortOrder != nil {
+		q = fmt.Sprintf("%s ORDER BY %s %s", q, *filters.SortColumn, *filters.SortOrder)
+	}
+
+	if filters.Page != nil {
+		q = fmt.Sprintf("%s OFFSET %d", q, *filters.Page)
+	}
+
+	if filters.PerPage != nil {
+		q = fmt.Sprintf("%s LIMIT %d", q, *filters.PerPage)
+	}
+
+	return q
+}
+
+func getFiltersSearchConditions(filter *string) string {
+	if filter == nil {
+		return ""
+	}
+	return fmt.Sprintf(`
+		(w.version_id::text ilike '%%%s%%' or
+		 w.work_number ilike '%%%s%%' or
+		 p.name ilike '%%%s%%')`,
+		*filter, *filter, *filter)
+}
+
+func getFiltersDateConditions(dateFrom, dateTo *string) string {
+	conditions := make([]string, 0)
+
+	if dateFrom != nil {
+		conditions = append(conditions, fmt.Sprintf("w.started_at >= '%s'::timestamptz", *dateFrom))
+	}
+
+	if dateTo != nil {
+		conditions = append(conditions, fmt.Sprintf("w.started_at <= '%s'::timestamptz", *dateTo))
+	}
+
+	return strings.Join(conditions, " AND ")
+}

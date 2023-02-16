@@ -91,6 +91,7 @@ const (
 	CreateVersionValidationError
 	ParseMailsError
 	GetBlockContextError
+	GetTasksForMonitoringError
 )
 
 //nolint:dupl //its not duplicate
