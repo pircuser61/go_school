@@ -1193,19 +1193,16 @@ func (db *PGCon) GetBlocksOutputs(ctx context.Context, blockId string) (entity.B
 		VariableStorage map[string]interface{}
 	}{}
 
-	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockData); err != nil {
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockData.StepName, &blockData.VariableStorage); err != nil {
 		return nil, err
 	}
 
 	blockOutputs := make(entity.BlockOutputs, 0)
 	for k, v := range blockData.VariableStorage {
-		if strings.Contains(k, blockData.StepName) {
-			continue
-		}
-
 		blockOutputs = append(blockOutputs, entity.BlockOutputValue{
-			Name:  k,
-			Value: v,
+			StepName: blockData.StepName,
+			Name:     k,
+			Value:    v,
 		})
 
 	}
