@@ -2610,7 +2610,8 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
     		left join versions v on w.version_id = v.id
     		left join pipelines p on v.pipeline_id = p.id
     		left join variable_storage vs on w.id = vs.work_id
-		where w.work_number = $1`
+		where w.work_number = $1
+		order by vs.time`
 
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {
