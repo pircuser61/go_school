@@ -185,5 +185,7 @@ type Database interface {
 	GetPipelinesByNameOrId(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
 
 	GetBlocksOutputs(ctx c.Context, blockId string) (e.BlockOutputs, error)
+	GetBlockOutputs(ctx c.Context, blockId, blockName string) (e.BlockOutputs, error)
+	GetBlockInputs(ctx c.Context, blockName, workNumber string) (e.BlockInputs, error)
 	GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error)
 }
