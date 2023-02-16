@@ -1227,7 +1227,7 @@ func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, block
 	return storage, nil
 }
 
-func (db *PGCon) GetBlockInputs(ctx c.Context, blockId, workNumber string) (entity.BlockInputs, error) {
+func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (entity.BlockInputs, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_block_inputs")
 	defer span.End()
 
@@ -1237,24 +1237,20 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockId, workNumber string) (enti
 	}
 
 	const q = `
-		SELECT content -> 'State' -> step_name
-		FROM variable_storage
-		WHERE id = $1;
+		SELECT content -> 'pipeline' -> 'blocks' -> '$1' -> 'params'
+		FROM versions
+		WHERE id = $2;
 	`
 	blockInputs := make(entity.BlockInputs, 0)
-	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockInputs); err != nil {
+	if err := db.Connection.QueryRow(ctx, q, blockName, version.ID).Scan(&blockInputs); err != nil {
 		return nil, err
 	}
 
 	for i := range blockInputs {
-		for j := range version.Input {
-			if blockInputs[i].Name == version.Input[j].Name {
-				blockInputs = append(blockInputs, entity.BlockInputValue{
-					Name:  blockInputs[i].Name,
-					Value: blockInputs[i].Value,
-				})
-			}
-		}
+		blockInputs = append(blockInputs, entity.BlockInputValue{
+			Name:  blockInputs[i].Name,
+			Value: blockInputs[i].Value,
+		})
 	}
 
 	return blockInputs, nil

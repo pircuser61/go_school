@@ -78,7 +78,7 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 		_ = e.sendError(w)
 	}
 
-	blockInputs, err := ae.DB.GetBlockInputs(ctx, blockId, taskStep.WorkNumber)
+	blockInputs, err := ae.DB.GetBlockInputs(ctx, taskStep.Name, taskStep.WorkNumber)
 	if err != nil {
 		e := GetBlockContextError
 		log.Error(e.errorMessage(err))
