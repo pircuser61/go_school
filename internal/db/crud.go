@@ -2589,3 +2589,56 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 	}
 	return res, nil
 }
+
+func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_nodes_for_monitoring")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+		SELECT w.work_number, 
+		       w.version_id, 
+		       p.author,
+		       p.created_at::text,
+		       p.name,
+		       vs.step_name, 
+		       vs.status,
+		       vs.id,
+       		   v.content::json->'pipeline'-> 'blocks'->step_name->>'title' title
+		from works w
+    		left join versions v on w.version_id = v.id
+    		left join pipelines p on v.pipeline_id = p.id
+    		left join variable_storage vs on w.id = vs.work_id
+		where w.work_number = $1`
+
+	rows, err := db.Connection.Query(ctx, q, workNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	res := make([]entity.MonitoringTaskNode, 0)
+	for rows.Next() {
+		item := entity.MonitoringTaskNode{}
+		if scanErr := rows.Scan(
+			&item.WorkNumber,
+			&item.VersionId,
+			&item.Author,
+			&item.CreationTime,
+			&item.ScenarioName,
+			&item.StepName,
+			&item.Status,
+			&item.NodeId,
+			&item.RealName,
+		); scanErr != nil {
+			return nil, scanErr
+		}
+
+		res = append(res, item)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+	return res, nil
+}

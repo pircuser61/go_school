@@ -90,6 +90,7 @@ const (
 	UpdateTaskRateError
 	CreateVersionValidationError
 	ParseMailsError
+	GetMonitoringNodesError
 )
 
 //nolint:dupl //its not duplicate
@@ -165,6 +166,7 @@ var errorText = map[Err]string{
 	UpdateTaskRateError:           "can`t update task rate",
 	ParseMailsError:               "can`t parse mails",
 	CreateVersionValidationError:  "create version request is invalid",
+	GetMonitoringNodesError:       "can't get nodes for monitoring",
 }
 
 // JOKE.
@@ -242,6 +244,7 @@ var errorDescription = map[Err]string{
 	UpdateTaskRateError:           "Не удалось обновить оценку заявки",
 	ParseMailsError:               "Не удалось разобрать письма с действиями",
 	CreateVersionValidationError:  "Ошибка при валидации запроса",
+	GetMonitoringNodesError:       "Ошибка при получени нод для мониторинга в базе данных",
 }
 
 var errorStatus = map[Err]int{

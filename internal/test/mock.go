@@ -1291,3 +1291,7 @@ func (m *MockDB) Ping(_ context.Context) error {
 func (m *MockDB) GetMeanTaskSolveTime(_ context.Context, _ string) ([]entity.TaskCompletionInterval, error) {
 	return nil, errNotImplemented
 }
+
+func (m *MockDB) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
+	return nil, errNotImplemented
+}
