@@ -465,10 +465,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   - user - Single user
-//   - group - Approver group ID
-//   - head - Receiver's head
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -486,6 +486,17 @@ type ApproverUpdateParams struct {
 	//  * sign - Подписать
 	//  * confirm - Утвердить
 	Decision ApproverDecision `json:"decision"`
+}
+
+// BlockContextResponse defines model for BlockContextResponse.
+type BlockContextResponse struct {
+	// Ноды
+	Blocks *BlockContextResponse_Blocks `json:"blocks,omitempty"`
+}
+
+// Ноды
+type BlockContextResponse_Blocks struct {
+	AdditionalProperties map[string]MonitoringBlockOutput `json:"-"`
 }
 
 // Basic boolean operand, can provide working compare types for this type
@@ -778,9 +789,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//   - user - Single user
-//   - group - Execution group ID
-//   - from_schema - Selected by initiator
+//  * user - Single user
+//  * group - Execution group ID
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -855,9 +866,9 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   - User - Single user
-//   - Initiator - Process initiator
-//   - From_schema - Selected by initiator
+//   * User - Single user
+//   * Initiator - Process initiator
+//   * From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -962,6 +973,36 @@ type MappingParam struct {
 	} `json:"-"`
 }
 
+// MonitoringBlockOutput defines model for MonitoringBlockOutput.
+type MonitoringBlockOutput struct {
+	// Описание поля
+	Description string `json:"description"`
+
+	// Имя поля
+	Name string `json:"name"`
+
+	// Тип поля
+	Type string `json:"type"`
+
+	// Значение поля
+	Value interface{} `json:"value"`
+}
+
+// MonitoringBlockParam defines model for MonitoringBlockParam.
+type MonitoringBlockParam struct {
+	// Описание поля
+	Description string `json:"description"`
+
+	// Имя поля
+	Name string `json:"name"`
+
+	// Тип поля
+	Type string `json:"type"`
+
+	// Значение поля
+	Value interface{} `json:"value"`
+}
+
 // MonitoringHistory defines model for MonitoringHistory.
 type MonitoringHistory struct {
 	// Айди ноды в variable_storage
@@ -979,6 +1020,28 @@ type MonitoringHistory struct {
 
 // Статус ноды
 type MonitoringHistoryStatus string
+
+// MonitoringParamsResponse defines model for MonitoringParamsResponse.
+type MonitoringParamsResponse struct {
+	FinishedAt *string `json:"finished_at,omitempty"`
+
+	// Входные параметы
+	Inputs *MonitoringParamsResponse_Inputs `json:"inputs,omitempty"`
+
+	// Выходные параметы
+	Outputs   *MonitoringParamsResponse_Outputs `json:"outputs,omitempty"`
+	StartedAt *string                           `json:"started_at,omitempty"`
+}
+
+// Входные параметы
+type MonitoringParamsResponse_Inputs struct {
+	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
+}
+
+// Выходные параметы
+type MonitoringParamsResponse_Outputs struct {
+	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
+}
 
 // MonitoringScenarioInfo defines model for MonitoringScenarioInfo.
 type MonitoringScenarioInfo struct {
@@ -1279,17 +1342,17 @@ type Action struct {
 }
 
 // Approver decision:
-//   - approved - Согласовать
-//   - rejected - Отклонить
+//  * approved - Согласовать
+//  * rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//   - approve - Согласовать
-//   - reject - Отклонить
-//   - viewed - Ознакомлен
-//   - informed - Проинформирован
-//   - sign - Подписать
-//   - confirm - Утвердить
+//  * approve - Согласовать
+//  * reject - Отклонить
+//  * viewed - Ознакомлен
+//  * informed - Проинформирован
+//  * sign - Подписать
+//  * confirm - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1335,8 +1398,8 @@ type EriusTaskResponse struct {
 }
 
 // Executor decision:
-//   - executed - executor executed block
-//   - rejected - executor rejected block
+//  * executed - executor executed block
+//  * rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1376,11 +1439,11 @@ type PipelineRename struct {
 }
 
 // Tag status:
-//   - 1 - Draft
-//   - 2 - Approved
-//   - 3 - Deleted
-//   - 4 - Rejected
-//   - 5 - On approve
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1682,6 +1745,59 @@ func (a Application) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for BlockContextResponse_Blocks. Returns the specified
+// element and whether it was found
+func (a BlockContextResponse_Blocks) Get(fieldName string) (value MonitoringBlockOutput, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BlockContextResponse_Blocks
+func (a *BlockContextResponse_Blocks) Set(fieldName string, value MonitoringBlockOutput) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockOutput)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BlockContextResponse_Blocks to handle AdditionalProperties
+func (a *BlockContextResponse_Blocks) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockOutput)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockOutput
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BlockContextResponse_Blocks to handle AdditionalProperties
+func (a BlockContextResponse_Blocks) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for EriusFunc_Next. Returns the specified
 // element and whether it was found
 func (a EriusFunc_Next) Get(fieldName string) (value []string, found bool) {
@@ -1846,6 +1962,112 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for MappingParam to handle AdditionalProperties
 func (a MappingParam) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MonitoringParamsResponse_Inputs. Returns the specified
+// element and whether it was found
+func (a MonitoringParamsResponse_Inputs) Get(fieldName string) (value MonitoringBlockParam, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MonitoringParamsResponse_Inputs
+func (a *MonitoringParamsResponse_Inputs) Set(fieldName string, value MonitoringBlockParam) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MonitoringParamsResponse_Inputs to handle AdditionalProperties
+func (a *MonitoringParamsResponse_Inputs) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockParam
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MonitoringParamsResponse_Inputs to handle AdditionalProperties
+func (a MonitoringParamsResponse_Inputs) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MonitoringParamsResponse_Outputs. Returns the specified
+// element and whether it was found
+func (a MonitoringParamsResponse_Outputs) Get(fieldName string) (value MonitoringBlockParam, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MonitoringParamsResponse_Outputs
+func (a *MonitoringParamsResponse_Outputs) Set(fieldName string, value MonitoringBlockParam) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MonitoringParamsResponse_Outputs to handle AdditionalProperties
+func (a *MonitoringParamsResponse_Outputs) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockParam
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MonitoringParamsResponse_Outputs to handle AdditionalProperties
+func (a MonitoringParamsResponse_Outputs) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -2058,6 +2280,12 @@ type ServerInterface interface {
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
+	// Получение контекста блоков
+	// (GET /monitoring/tasks/block/{blockId}/context)
+	GetBlockContext(w http.ResponseWriter, r *http.Request, blockId string)
+	// Get inputs and outputs of block
+	// (GET /monitoring/tasks/block/{blockId}/params)
+	GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request, blockId string)
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
@@ -2530,6 +2758,58 @@ func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, 
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetTasksForMonitoring(w, r, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetBlockContext operation middleware
+func (siw *ServerInterfaceWrapper) GetBlockContext(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "blockId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBlockContext(w, r, blockId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetMonitoringTasksBlockBlockIdParams operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "blockId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitoringTasksBlockBlockIdParams(w, r, blockId)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3678,6 +3958,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks", wrapper.GetTasksForMonitoring)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/context", wrapper.GetBlockContext)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/params", wrapper.GetMonitoringTasksBlockBlockIdParams)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)

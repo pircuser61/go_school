@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
@@ -113,7 +114,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 					return nil, errors.New("function returned not all of expected results")
 				}
 
-				if err := checkVariableType(param, expectedOutput[k]); err != nil {
+				if err := utils.CheckVariableType(param, expectedOutput[k]); err != nil {
 					return nil, err
 				}
 
@@ -150,7 +151,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 				return nil, fmt.Errorf("cant fill function mapping with value: %s = %v", k, v.Value)
 			}
 
-			if checkErr := checkVariableType(variable, &v); checkErr != nil {
+			if checkErr := utils.CheckVariableType(variable, &v); checkErr != nil {
 				return nil, checkErr
 			}
 

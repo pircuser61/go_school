@@ -457,6 +457,52 @@ func (_m *MockedDatabase) GetBlocksBreachedSLA(ctx context.Context) ([]db.StepBr
 	return r0, r1
 }
 
+// GetBlocksOutputs provides a mock function with given fields: ctx, blockId
+func (_m *MockedDatabase) GetBlocksOutputs(ctx context.Context, blockId string) (entity.BlockOutputs, error) {
+	ret := _m.Called(ctx, blockId)
+
+	var r0 entity.BlockOutputs
+	if rf, ok := ret.Get(0).(func(context.Context, string) entity.BlockOutputs); ok {
+		r0 = rf(ctx, blockId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(entity.BlockOutputs)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, blockId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetBlockOutputs provides a mock function with given fields: ctx, blockId, blockName
+func (_m *MockedDatabase) GetBlockOutputs(ctx context.Context, blockId, blockName string) (entity.BlockOutputs, error) {
+	ret := _m.Called(ctx, blockId)
+
+	var r0 entity.BlockOutputs
+	if rf, ok := ret.Get(0).(func(context.Context, string) entity.BlockOutputs); ok {
+		r0 = rf(ctx, blockId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(entity.BlockOutputs)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, blockId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetDraftVersions provides a mock function with given fields: ctx, author
 func (_m *MockedDatabase) GetDraftVersions(ctx context.Context, author string) ([]entity.EriusScenarioInfo, error) {
 	ret := _m.Called(ctx, author)
@@ -565,6 +611,29 @@ func (_m *MockedDatabase) GetMeanTaskSolveTime(ctx context.Context, pipelineId s
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = rf(ctx, pipelineId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetMergedVariableStorage provides a mock function with given fields: ctx, workId, blockIds
+func (_m *MockedDatabase) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
+	ret := _m.Called(ctx, workId, blockIds)
+
+	var r0 *store.VariableStore
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, []string) *store.VariableStore); ok {
+		r0 = rf(ctx, workId, blockIds)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*store.VariableStore)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, []string) error); ok {
+		r1 = rf(ctx, workId, blockIds)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1623,4 +1692,8 @@ func NewMockedDatabase(t mockConstructorTestingTNewMockedDatabase) *MockedDataba
 	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
+}
+
+func (_m *MockedDatabase) GetBlockInputs(ctx context.Context, blockId, workNumber string) (entity.BlockInputs, error) {
+	return entity.BlockInputs{}, nil
 }

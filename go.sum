@@ -1044,10 +1044,6 @@ gitlab.services.mts.ru/erius/scheduler_client v0.0.5 h1:wjQl+H9GnRcGocj9klzmPY97
 gitlab.services.mts.ru/erius/scheduler_client v0.0.5/go.mod h1:5LM12WrgQ0mrw78Bghydat7YfPrjYRX+g7/damC0MxQ=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.0 h1:DmTJ2VB1EJ9zQZtsIUCjMD/edTwHtCSqEc88Z3uMz0Y=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.0/go.mod h1:6Q7Q5QkybhdvGpYBOojsDENuKigwRxZCCX+b/F9Y5w0=
-gitlab.services.mts.ru/jocasta/functions v1.3.0-alpha.3 h1:LBILSJBqSSX5oPyt6pVvJrUhtSAOjftCebe7A9Zinwk=
-gitlab.services.mts.ru/jocasta/functions v1.3.0-alpha.3/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
-gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.1 h1:bGq+r5ESVCex+8oib4i5ku6ATNFGLLaYBAtBuC4tvYU=
-gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.1/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/lyqa+CrStWUJ4nAd5H5j4w=
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXUjJYRgJO4doHbs+ZVOEvKUgIE=

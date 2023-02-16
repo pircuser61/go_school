@@ -958,10 +958,9 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 }
 
 func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
-	const q =
 	// nolint:gocritic
 	// language=PostgreSQL
-	`
+	const q = `
 	with blocks_executors_pair as (
 		select
 			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
@@ -1175,4 +1174,107 @@ func (db *PGCon) CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error) 
 	}
 
 	return isArchived, nil
+}
+
+func (db *PGCon) GetBlocksOutputs(ctx c.Context, blockId string) (entity.BlockOutputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_content")
+	defer span.End()
+
+	q := `
+		SELECT step_name, content -> 'Values'
+		FROM variable_storage
+		WHERE id = $1;
+	`
+
+	blockData := struct {
+		StepName        string
+		VariableStorage map[string]interface{}
+	}{}
+
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockData.StepName, &blockData.VariableStorage); err != nil {
+		return nil, err
+	}
+
+	blockOutputs := make(entity.BlockOutputs, 0)
+	for k, v := range blockData.VariableStorage {
+		blockOutputs = append(blockOutputs, entity.BlockOutputValue{
+			StepName: blockData.StepName,
+			Name:     k,
+			Value:    v,
+		})
+	}
+
+	return blockOutputs, nil
+}
+
+func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "get_merged_variable_storage")
+	defer span.End()
+
+	q := fmt.Sprintf(`SELECT jsonb_merge_agg(vs.content) as content FROM variable_storage vs
+    	WHERE work_id = '%s' AND step_name IN %s`, workId, buildInExpression(blockIds))
+
+	var content []byte
+	if err := db.Connection.QueryRow(ctx, q).Scan(&content); err != nil {
+		return nil, err
+	}
+
+	storage := store.NewStore()
+	if err := json.Unmarshal(content, &storage); err != nil {
+		return nil, err
+	}
+
+	return storage, nil
+}
+
+func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (entity.BlockInputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_inputs")
+	defer span.End()
+
+	version, err := db.GetVersionByWorkNumber(ctx, workNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	const q = `
+		SELECT content -> 'pipeline' -> 'blocks' -> '$1' -> 'params'
+		FROM versions
+		WHERE id = $2;
+	`
+	blockInputs := make(entity.BlockInputs, 0)
+	if err := db.Connection.QueryRow(ctx, q, blockName, version.ID).Scan(&blockInputs); err != nil {
+		return nil, err
+	}
+
+	for i := range blockInputs {
+		blockInputs = append(blockInputs, entity.BlockInputValue{
+			Name:  blockInputs[i].Name,
+			Value: blockInputs[i].Value,
+		})
+	}
+
+	return blockInputs, nil
+}
+
+func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (entity.BlockOutputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_outputs")
+	defer span.End()
+
+	blocksOutputs, err := db.GetBlocksOutputs(ctx, blockId)
+	if err != nil {
+		return nil, err
+	}
+
+	blockOutputs := make(entity.BlockOutputs, 0)
+
+	for i := range blocksOutputs {
+		if strings.Contains(blocksOutputs[i].Name, blockName) {
+			blockOutputs = append(blockOutputs, entity.BlockOutputValue{
+				Name:  strings.Replace(blocksOutputs[i].Name, blockName+".", "", 1),
+				Value: blocksOutputs[i].Value,
+			})
+		}
+	}
+
+	return blockOutputs, nil
 }
