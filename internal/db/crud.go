@@ -138,6 +138,7 @@ const (
 var (
 	errCantFindPipelineVersion = errors.New("can't find pipeline version")
 	errCantFindTag             = errors.New("can't find tag")
+	errCantFindExternalSystem  = errors.New("can't find external system settings")
 )
 
 // TODO ErrNoRows ? Split file?
@@ -2642,4 +2643,196 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 		return nil, rowsErr
 	}
 	return res, nil
+}
+
+func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (entity.ProcessSettings, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_version_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT start_schema, end_schema
+	FROM version_settings
+	WHERE version_id = $1`
+
+	row := db.Connection.QueryRow(ctx, query, versionID)
+
+	processSettings := entity.ProcessSettings{Id: versionID}
+	err := row.Scan(&processSettings.StartSchema, &processSettings.EndSchema)
+	if err != nil && err != pgx.ErrNoRows {
+		return processSettings, err
+	}
+
+	return processSettings, nil
+}
+
+func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_version_settings")
+	defer span.End()
+
+	tx, err := db.Connection.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (version_id) DO UPDATE 
+			SET start_schema = excluded.start_schema, 
+				end_schema = excluded.end_schema`
+
+	_, err = tx.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema)
+	if err != nil {
+		return err
+	}
+
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		return commitErr
+	}
+
+	return nil
+}
+
+func (db *PGCon) AddExternalSystemToVersion(ctx context.Context, versionID string, systemID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_add_external_system_to_version")
+	defer span.End()
+
+	tx, err := db.Connection.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `INSERT INTO external_systems (id, version_id, system_id) VALUES ($1, $2, $3)`
+
+	_, err = tx.Exec(ctx, query, uuid.New(), versionID, systemID)
+	if err != nil {
+		return err
+	}
+
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		return commitErr
+	}
+
+	return nil
+}
+
+func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([]uuid.UUID, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_external_systems_ids")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT array_agg(system_id)
+	FROM external_systems
+	WHERE version_id = $1`
+
+	row := db.Connection.QueryRow(ctx, query, versionID)
+
+	var systemIDs []uuid.UUID
+	err := row.Scan(&systemIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return systemIDs, nil
+}
+
+func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID string, systemID string) (entity.ExternalSystem, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT input_schema, output_schema
+	FROM external_systems
+	WHERE version_id = $1 AND system_id = $2`
+
+	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
+
+	externalSystemSettings := entity.ExternalSystem{Id: systemID}
+	err := row.Scan(&externalSystemSettings.InputSchema, &externalSystemSettings.OutputSchema)
+	if err != nil {
+		return externalSystemSettings, err
+	}
+
+	return externalSystemSettings, nil
+}
+
+func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, params *entity.SaveExternalSystemParams) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
+	defer span.End()
+
+	tx, err := db.Connection.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+		UPDATE external_systems SET input_schema = $3, output_schema = $4
+		WHERE version_id = $1 AND system_id = $2`
+
+	commandTag, err := tx.Exec(
+		ctx,
+		query,
+		params.VersionID,
+		params.ExternalSystem.Id,
+		params.ExternalSystem.InputSchema,
+		params.ExternalSystem.OutputSchema,
+	)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return errCantFindExternalSystem
+	}
+
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		return commitErr
+	}
+
+	return nil
+}
+
+func (db *PGCon) RemoveExternalSystem(ctx context.Context, versionID string, systemID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_remove_external_system")
+	defer span.End()
+
+	tx, err := db.Connection.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `DELETE FROM external_systems WHERE version_id = $1 AND system_id = $2`
+
+	_, err = tx.Exec(ctx, query, versionID, systemID)
+	if err != nil {
+		return err
+	}
+
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		return commitErr
+	}
+
+	return nil
 }

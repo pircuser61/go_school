@@ -190,4 +190,12 @@ type Database interface {
 	GetBlockOutputs(ctx c.Context, blockId, blockName string) (e.BlockOutputs, error)
 	GetBlockInputs(ctx c.Context, blockName, workNumber string) (e.BlockInputs, error)
 	GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error)
+
+	SaveVersionSettings(ctx c.Context, settings *e.ProcessSettings) error
+	GetVersionSettings(ctx c.Context, versionID string) (e.ProcessSettings, error)
+	AddExternalSystemToVersion(ctx c.Context, versionID string, systemID string) error
+	GetExternalSystemsIDs(ctx c.Context, versionID string) ([]uuid.UUID, error)
+	GetExternalSystemSettings(ctx c.Context, versionID string, systemID string) (e.ExternalSystem, error)
+	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
+	SaveExternalSystemSettings(ctx c.Context, settings *e.SaveExternalSystemParams) error
 }

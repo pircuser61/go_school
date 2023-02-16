@@ -944,6 +944,34 @@ func (_m *MockDB) GetBlocksOutputs(ctx context.Context, blockId string) (entity.
 	return nil, nil
 }
 
+func (_m *MockDB) SaveExternalSystemSettings(ctx context.Context, settings *entity.SaveExternalSystemParams) error {
+	return nil
+}
+
+func (_m *MockDB) RemoveExternalSystem(ctx context.Context, versionID string, systemID string) error {
+	return nil
+}
+
+func (_m *MockDB) GetExternalSystemSettings(ctx context.Context, versionID string, systemID string) (entity.ExternalSystem, error) {
+	return entity.ExternalSystem{}, nil
+}
+
+func (_m *MockDB) GetExternalSystemsIDs(ctx context.Context, versionID string) ([]uuid.UUID, error) {
+	return nil, nil
+}
+
+func (_m *MockDB) AddExternalSystemToVersion(ctx context.Context, versionID string, systemID string) error {
+	return nil
+}
+
+func (_m *MockDB) GetVersionSettings(ctx context.Context, id string) (entity.ProcessSettings, error) {
+	return entity.ProcessSettings{}, nil
+}
+
+func (_m *MockDB) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings) error {
+	return nil
+}
+
 func (_m *MockDB) GetTasksCount(
 	ctx context.Context,
 	currentUser string,
