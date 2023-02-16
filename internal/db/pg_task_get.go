@@ -1183,32 +1183,41 @@ func (db *PGCon) GetBlocksOutputs(ctx context.Context, blockId string) (entity.B
 	defer span.End()
 
 	q := `
-		SELECT content -> 'Values'
+		SELECT step_name, content -> 'Values'
 		FROM variable_storage
 		WHERE id = $1;
 	`
 
-	var blockContent map[string]interface{}
-	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockContent); err != nil {
+	blockData := struct {
+		StepName        string
+		VariableStorage map[string]interface{}
+	}{}
+
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockData); err != nil {
 		return nil, err
 	}
 
 	blockOutputs := make(entity.BlockOutputs, 0)
-	for k, v := range blockContent {
+	for k, v := range blockData.VariableStorage {
+		if strings.Contains(k, blockData.StepName) {
+			continue
+		}
+
 		blockOutputs = append(blockOutputs, entity.BlockOutputValue{
 			Name:  k,
 			Value: v,
 		})
+
 	}
 
 	return blockOutputs, nil
 }
 
 func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
-	ctx, span := trace.StartSpan(ctx, "get merged variable storage")
+	ctx, span := trace.StartSpan(ctx, "get_merged_variable_storage")
 	defer span.End()
 
-	q := fmt.Sprintf(`SELECT jsonb_merge_agg(vs.content) FROM variable_storage vs
+	q := fmt.Sprintf(`SELECT jsonb_merge_agg(vs.content) as content FROM variable_storage vs
     	WHERE work_id = '%s' AND step_name IN %s`, workId, buildInExpression(blockIds))
 
 	var content []byte
