@@ -936,7 +936,7 @@ func (_m *MockDB) GetBlockInputs(ctx context.Context, blockId, workNumber string
 	return nil, errNotImplemented
 }
 
-func (_m *MockDB) GetMergedVariableStorage(ctx context.Context, workId string, blockIds []string) (*store.VariableStore, error) {
+func (_m *MockDB) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
 	return nil, errNotImplemented
 }
 

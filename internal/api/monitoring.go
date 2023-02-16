@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"go.opencensus.io/trace"
 
@@ -27,6 +28,10 @@ func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockI
 
 	blocks := make(map[string]MonitoringBlockOutput, len(blocksOutputs))
 	for _, bo := range blocksOutputs {
+		if strings.Contains(bo.Name, bo.StepName) {
+			continue
+		}
+
 		blocks[bo.Name] = MonitoringBlockOutput{
 			Name:        bo.Name,
 			Value:       bo.Value,

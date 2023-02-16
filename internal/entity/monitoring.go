@@ -3,8 +3,9 @@ package entity
 type BlockOutputs []BlockOutputValue
 
 type BlockOutputValue struct {
-	Name  string
-	Value interface{}
+	StepName string
+	Name     string
+	Value    interface{}
 }
 
 type BlockInputs []BlockInputValue
