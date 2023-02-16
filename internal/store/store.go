@@ -66,12 +66,18 @@ func (c *VariableStore) Copy() *VariableStore {
 		newValues[k] = v
 	}
 
+	newSteps := make([]string, len(c.Steps))
+	copy(newSteps, c.Steps)
+
+	newErrors := make([]string, len(c.Errors))
+	copy(newErrors, c.Errors)
+
 	return &VariableStore{
 		Mutex:      sync.Mutex{},
 		State:      newState,
 		Values:     newValues,
-		Steps:      c.Steps[:],
-		Errors:     c.Errors[:],
+		Steps:      newSteps,
+		Errors:     newErrors,
 		StopPoints: c.StopPoints,
 	}
 }

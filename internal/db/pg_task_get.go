@@ -1204,7 +1204,6 @@ func (db *PGCon) GetBlocksOutputs(ctx context.Context, blockId string) (entity.B
 			Name:     k,
 			Value:    v,
 		})
-
 	}
 
 	return blockOutputs, nil
