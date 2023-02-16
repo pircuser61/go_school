@@ -2137,7 +2137,7 @@ type ServerInterface interface {
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
-	// Get outputs of block
+	// Получение контекста блоков
 	// (GET /monitoring/tasks/block/{blockId}/context)
 	GetBlockContext(w http.ResponseWriter, r *http.Request, blockId string)
 	// Get task for monitoring

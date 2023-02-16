@@ -2017,8 +2017,8 @@ paths:
       operationId: GetBlockContext
       tags:
         - monitoring
-      summary: Get outputs of block
-      description: Получить аутпуты блока
+      summary: Получение контекста блоков
+      description: Получение контекста блоков до переданного блока
       parameters:
         - name: blockId
           in: path
