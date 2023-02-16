@@ -1,10 +1,13 @@
 package api
 
 import (
-	"github.com/pkg/errors"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"go.opencensus.io/trace"
 	"net/http"
+
+	"github.com/pkg/errors"
+
+	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 )
 
 func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, req *http.Request, params GetTasksForMonitoringParams) {
