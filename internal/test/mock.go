@@ -928,6 +928,14 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
+	return nil, errNotImplemented
+}
+
+func (_m *MockDB) GetBlocksOutputs(ctx context.Context, blockId string) (entity.BlockOutputs, error) {
+	return nil, nil
+}
+
 func (_m *MockDB) GetTasksCount(
 	ctx context.Context,
 	currentUser string,

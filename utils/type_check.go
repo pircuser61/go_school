@@ -1,4 +1,4 @@
-package pipeline
+package utils
 
 import (
 	"fmt"
@@ -11,7 +11,35 @@ type TypeValue interface {
 	GetItems() []interface{}
 }
 
-func checkVariableType(variable interface{}, originalValue TypeValue) error {
+const (
+	integerType = "integer"
+	stringType  = "string"
+	numberType  = "number"
+	boolType    = "boolean"
+	arrayType   = "array"
+	objectType  = "object"
+)
+
+func GetJsonType(value interface{}) string {
+	switch reflect.TypeOf(value).Kind() {
+	case reflect.Int:
+		return integerType
+	case reflect.Float64:
+		return numberType
+	case reflect.String:
+		return stringType
+	case reflect.Bool:
+		return boolType
+	case reflect.Array:
+		return arrayType
+	case reflect.Map:
+		return objectType
+	default:
+		return ""
+	}
+}
+
+func CheckVariableType(variable interface{}, originalValue TypeValue) error {
 	tHandler, ok := typesHandlersMapping[originalValue.GetType()]
 	if !ok {
 		return fmt.Errorf("unexpected type %v", originalValue.GetType())
@@ -21,20 +49,20 @@ func checkVariableType(variable interface{}, originalValue TypeValue) error {
 }
 
 var typesHandlersMapping = map[string]typeHandler{
-	"integer": simpleTypeHandler,
-	"string":  simpleTypeHandler,
-	"number":  simpleTypeHandler,
-	"boolean": simpleTypeHandler,
+	integerType: simpleTypeHandler,
+	stringType:  simpleTypeHandler,
+	numberType:  simpleTypeHandler,
+	boolType:    simpleTypeHandler,
 
-	"array":  nestedTypeHandler,
-	"object": nestedTypeHandler,
+	arrayType:  nestedTypeHandler,
+	objectType: nestedTypeHandler,
 }
 
 type typeHandler func(variable interface{}, originalValue TypeValue) error
 
 var nestedTypesMapping = map[string]reflect.Kind{
-	"array":  reflect.Slice,
-	"object": reflect.Map,
+	arrayType:  reflect.Slice,
+	objectType: reflect.Map,
 }
 
 func nestedTypeHandler(variable interface{}, originalValue TypeValue) error {
@@ -93,10 +121,10 @@ func handleMap(variable interface{}, originalValue TypeValue) error {
 }
 
 var simpleTypesMapping = map[string]reflect.Kind{
-	"integer": reflect.Int,
-	"string":  reflect.String,
-	"number":  reflect.Float64,
-	"boolean": reflect.Bool,
+	integerType: reflect.Int,
+	stringType:  reflect.String,
+	numberType:  reflect.Float64,
+	boolType:    reflect.Bool,
 }
 
 func simpleTypeHandler(variable interface{}, originalValue TypeValue) error {

@@ -12,8 +12,8 @@ import (
 
 type SyncData struct {
 	IncomingBlockIds []string `json:"incoming_block_ids"`
-	Done             bool
-	IsRevoked        bool `json:"is_revoked"`
+	Done             bool     `json:"done"`
+	IsRevoked        bool     `json:"is_revoked"`
 }
 
 type GoWaitForAllInputsBlock struct {
@@ -79,7 +79,24 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	if err != nil {
 		return nil, err
 	}
+
+	if !executed {
+		return nil, nil
+	}
+
+	variableStorage, err := gb.RunContext.Storage.GetMergedVariableStorage(ctx, gb.RunContext.TaskID, gb.State.IncomingBlockIds)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore = variableStorage
 	gb.State.Done = executed
+
+	state, stateErr := json.Marshal(gb.GetState())
+	if stateErr != nil {
+		return nil, stateErr
+	}
+	gb.RunContext.VarStore.ReplaceState(gb.Name, state)
 
 	return nil, nil
 }

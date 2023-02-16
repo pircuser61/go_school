@@ -965,7 +965,14 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 	if transactionErr != nil {
 		return transactionErr
 	}
+
+	anyErr := false
+
 	defer func(txStorage db.Database, ctx c.Context) {
+		if !anyErr {
+			return
+		}
+		log.Info("rollbackTx")
 		txErr := txStorage.RollbackTransaction(ctx)
 		if txErr != nil {
 			log.Error(txErr)
@@ -973,12 +980,14 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 	}(txStorage, ctx)
 
 	if message.Err != "" {
+		anyErr = true
 		log.Error(message.Err)
 		return nil
 	}
 
 	step, err := ae.DB.GetTaskStepById(ctx, message.TaskID)
 	if err != nil {
+		anyErr = true
 		log.Error(err)
 		return nil
 	}
@@ -994,6 +1003,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 
 	mapping, err := json.Marshal(functionMapping)
 	if err != nil {
+		anyErr = true
 		log.Error(err)
 		return nil
 	}
@@ -1019,18 +1029,22 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)
 	if err != nil {
+		anyErr = true
 		log.WithError(err).Error("couldn't get block to update")
 		return nil
 	}
 
 	blockErr := pipeline.ProcessBlock(ctx, step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
+		anyErr = true
 		log.WithError(blockErr).Error("couldn't update block")
 		return nil
 	}
 
 	log.Info("trying to commit transaction")
 	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
+		anyErr = true
+		log.WithError(commitErr).Error("couldn't commit transaction")
 		return commitErr
 	}
 

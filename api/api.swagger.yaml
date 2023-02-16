@@ -1533,7 +1533,7 @@ paths:
   /tasks/{workNumber}/{formID}/schema:
     get:
       tags:
-      - tasks
+        - tasks
       summary: Get Task form schema
       description: Получить id схемы формы задачи
       operationId: get-task-form-schema
@@ -2011,6 +2011,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
+  /monitoring/tasks/block/{blockId}/context:
+    get:
+      operationId: GetBlockContext
+      tags:
+        - monitoring
+      summary: Получение контекста блоков
+      description: Получение контекста блоков до переданного блока
+      parameters:
+        - name: blockId
+          in: path
+          description: block ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BlockContextResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+
   /monitoring/tasks:
     get:
       tags:
@@ -3992,3 +4039,39 @@ components:
         - scenario_name
         - creation_time
         - author
+
+    BlockContextResponse:
+      type: object
+      properties:
+        blocks:
+          type: object
+          description: Ноды
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockOutput'
+
+    MonitoringBlockOutput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя поля
+        type:
+          type: string
+          description: Тип поля
+        description:
+          type: string
+          description: Описание поля
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: integer
+            - type: array
+            - type: object
+            - type: boolean
+          description: Значение поля
+      required:
+        - name
+        - type
+        - description
+        - value
