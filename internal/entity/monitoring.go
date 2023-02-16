@@ -10,6 +10,8 @@ type MonitoringTaskNode struct {
 	RealName     string `json:"real_name"`
 	Status       string `json:"status"`
 	StepName     string `json:"step_name"`
+}
+
 type BlockOutputs []BlockOutputValue
 
 type BlockOutputValue struct {

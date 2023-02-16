@@ -2605,11 +2605,11 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 		       vs.step_name, 
 		       vs.status,
 		       vs.id,
-       		   v.content::json->'pipeline'-> 'blocks'->step_name->>'title' title
+       		   v.content->'pipeline'-> 'blocks'->step_name->>'title' title
 		from works w
-    		left join versions v on w.version_id = v.id
-    		left join pipelines p on v.pipeline_id = p.id
-    		left join variable_storage vs on w.id = vs.work_id
+    		join versions v on w.version_id = v.id
+    		join pipelines p on v.pipeline_id = p.id
+    		join variable_storage vs on w.id = vs.work_id
 		where w.work_number = $1
 		order by vs.time`
 

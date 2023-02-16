@@ -2,19 +2,15 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"strings"
 
-	"go.opencensus.io/trace"
-
-	"github.com/google/uuid"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -80,16 +76,21 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 		_ = e.sendError(w)
 		return
 	}
-	res := MonitoringTask{History: make([]MonitoringHistory, 0)}
-	if nodes != nil {
-		res.ScenarioInfo = MonitoringScenarioInfo{
-			Author:       nodes[0].Author,
-			CreationTime: nodes[0].CreationTime,
-			ScenarioName: nodes[0].ScenarioName,
-		}
-		res.VersionId = nodes[0].VersionId
-		res.WorkNumber = nodes[0].WorkNumber
+	if len(nodes) == 0 {
+		e := NoProcessNodesForMonitoringError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
 	}
+
+	res := MonitoringTask{History: make([]MonitoringHistory, 0)}
+	res.ScenarioInfo = MonitoringScenarioInfo{
+		Author:       nodes[0].Author,
+		CreationTime: nodes[0].CreationTime,
+		ScenarioName: nodes[0].ScenarioName,
+	}
+	res.VersionId = nodes[0].VersionId
+	res.WorkNumber = nodes[0].WorkNumber
 
 	for i := range nodes {
 		res.History = append(res.History, MonitoringHistory{
