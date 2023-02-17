@@ -2109,7 +2109,7 @@ paths:
         - monitoring
       summary: Get tasks for monitoring
       description: Получить заявки для таблицы мониторинга
-      operationId: get-tasks-for-monitoring
+      operationId: GetTasksForMonitoring
       parameters:
         - name: per_page
           in: query
@@ -2710,7 +2710,7 @@ components:
           description: UUID of task
         status:
           type: string
-          enum: [ "В работе", "Завершен", "Остановлен" ]
+          enum: [ "В работе", "Завершен", "Остановлен", "Неизвестный статус" ]
           description: task status
         process_name:
           type: string
@@ -2729,6 +2729,7 @@ components:
         - process_name
         - work_number
         - started_at
+        - initiator
 
     EriusVersionInfo:
       type: object

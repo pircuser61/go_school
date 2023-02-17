@@ -928,6 +928,10 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetTasksForMonitoring(ctx context.Context, filters entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
+	return &entity.TasksForMonitoring{}, nil
+}
+
 func (_m *MockDB) GetBlockOutputs(ctx context.Context, blockId, blockName string) (entity.BlockOutputs, error) {
 	return nil, errNotImplemented
 }
