@@ -140,6 +140,8 @@ const (
 
 	MonitoringTableTaskStatusЗавершен MonitoringTableTaskStatus = "Завершен"
 
+	MonitoringTableTaskStatusНеизвестныйСтатус MonitoringTableTaskStatus = "Неизвестный статус"
+
 	MonitoringTableTaskStatusОстановлен MonitoringTableTaskStatus = "Остановлен"
 )
 

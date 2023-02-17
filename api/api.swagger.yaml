@@ -2665,7 +2665,7 @@ components:
           description: UUID of task
         status:
           type: string
-          enum: [ "В работе", "Завершен", "Остановлен" ]
+          enum: [ "В работе", "Завершен", "Остановлен", "Неизвестный статус" ]
           description: task status
         process_name:
           type: string

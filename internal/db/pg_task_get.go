@@ -1269,11 +1269,9 @@ func getTasksForMonitoringQuery(filters entity.TasksForMonitoringFilters) string
 	q := `
 			SELECT w.version_id as id,
 				CASE
-					WHEN v.status = 1 THEN 'В работе'
+					WHEN v.status IN (1, 3, 5) THEN 'В работе'
         			WHEN v.status = 2 THEN 'Завершен'
-        			WHEN v.status = 3 THEN 'Ошибка'
 				    WHEN v.status = 4 THEN 'Остановлен'
-				    WHEN v.status = 5 THEN 'Создан'
         			WHEN v.status IS NULL THEN 'Неизвестный статус'
     			END AS status,
 				p.name AS process_name,
@@ -1315,9 +1313,9 @@ func getFiltersSearchConditions(filter *string) string {
 		return ""
 	}
 	return fmt.Sprintf(`
-		(w.version_id::text ilike '%%%s%%' or
-		 w.work_number ilike '%%%s%%' or
-		 p.name ilike '%%%s%%')`,
+		(w.version_id::TEXT ILIKE '%%%s%%' OR
+		 w.work_number ILIKE '%%%s%%' OR
+		 p.name ILIKE '%%%s%%')`,
 		*filter, *filter, *filter)
 }
 
