@@ -3290,16 +3290,16 @@ components:
       properties:
         author:
           type: string
-          description: Логин автора
+          description: Логин инициатора
         blueprint_id:
           type: string
-          description: UUID заявки
+          description: ID шаблона SD, на основании которого, запускалась заявка
         debug:
           type: boolean
           description: Режим отладки
         description:
           type: string
-          description: Описание заявки
+          description: Описание заявки (основной текст)
         human_status:
           $ref: '#/components/schemas/taskHumanStatus'
         id:
@@ -3310,7 +3310,7 @@ components:
           description: Время последнего изменения
         name:
           type: string
-          description: Наименвоание заявки
+          description: Наименование заявки
         parameters:
           type: object
           description: Параметры заявки
@@ -3320,14 +3320,18 @@ components:
           description: Время начала исполнения заявки
         status:
           type: string
-          description: Статус заявки
+          description: Технический статус заявки
+          enum:
+            - В работе
+            - Завершен
+            - Остановлен
         steps:
           type: array
           items:
             $ref: '#/components/schemas/step'
         version_id:
           type: string
-          description: ID версии заявки
+          description: Версия процесса заявки
         work_number:
           type: string
           description: Номер заявки
@@ -3336,8 +3340,10 @@ components:
           description: Время окончания заявки
         rate:
           type: integer
+          description: Оценка для выполненной заявки
         rate_comment:
           type: string
+          description: Комментарий к оценке
         available_actions:
           type: array
           description: Доступные действия
@@ -3384,7 +3390,7 @@ components:
           description: Была ли ошибка
         is_delegate_of_any_step_member:
           type: boolean
-          description: Является ли делегтом
+          description: Является ли пользователь, запрашивающий заявку, делегатом кого-либо на этом шаге
         name:
           type: string
           description: Наименование шага

@@ -329,6 +329,15 @@ const (
 	CompareStringOperatorСодержит CompareStringOperator = "Содержит"
 )
 
+// Defines values for EriusTaskResponseStatus.
+const (
+	EriusTaskResponseStatusВРаботе EriusTaskResponseStatus = "В работе"
+
+	EriusTaskResponseStatusЗавершен EriusTaskResponseStatus = "Завершен"
+
+	EriusTaskResponseStatusОстановлен EriusTaskResponseStatus = "Остановлен"
+)
+
 // Defines values for ExecutionDecision.
 const (
 	ExecutionDecisionExecuted ExecutionDecision = "executed"
@@ -1377,19 +1386,19 @@ type CompareStringOperator string
 
 // EriusTaskResponse defines model for eriusTaskResponse.
 type EriusTaskResponse struct {
-	// Логин автора
+	// Логин инициатора
 	Author string `json:"author"`
 
 	// Доступные действия
 	AvailableActions *[]Action `json:"available_actions,omitempty"`
 
-	// UUID заявки
+	// ID шаблона SD, на основании которого, запускалась заявка
 	BlueprintId string `json:"blueprint_id"`
 
 	// Режим отладки
 	Debug bool `json:"debug"`
 
-	// Описание заявки
+	// Описание заявки (основной текст)
 	Description string `json:"description"`
 
 	// Время окончания заявки
@@ -1404,27 +1413,34 @@ type EriusTaskResponse struct {
 	// Время последнего изменения
 	LastChangedAt string `json:"last_changed_at"`
 
-	// Наименвоание заявки
+	// Наименование заявки
 	Name string `json:"name"`
 
 	// Параметры заявки
-	Parameters  map[string]interface{} `json:"parameters"`
-	Rate        int                    `json:"rate"`
-	RateComment string                 `json:"rate_comment"`
+	Parameters map[string]interface{} `json:"parameters"`
+
+	// Оценка для выполненной заявки
+	Rate int `json:"rate"`
+
+	// Комментарий к оценке
+	RateComment string `json:"rate_comment"`
 
 	// Время начала исполнения заявки
 	StartedAt string `json:"started_at"`
 
-	// Статус заявки
-	Status string `json:"status"`
-	Steps  []Step `json:"steps"`
+	// Технический статус заявки
+	Status EriusTaskResponseStatus `json:"status"`
+	Steps  []Step                  `json:"steps"`
 
-	// ID версии заявки
+	// Версия процесса заявки
 	VersionId string `json:"version_id"`
 
 	// Номер заявки
 	WorkNumber string `json:"work_number"`
 }
+
+// Технический статус заявки
+type EriusTaskResponseStatus string
 
 // Executor decision:
 //   - executed - executor executed block
