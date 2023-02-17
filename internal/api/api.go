@@ -1340,19 +1340,19 @@ type UsedBy struct {
 
 // Action defines model for action.
 type Action struct {
-	// enables attachment function
+	// Возможность прикреплять вложение к действию
 	AttachmentsEnabled bool `json:"attachments_enabled"`
 
-	// type of renderable button with action (primary, secondary, other, none)
+	// Тип отображаемой кнопки (primary, secondary, other, none)
 	ButtonType string `json:"button_type"`
 
-	// enables comment function
+	// Возможность прикреплять комментарий к действию
 	CommentEnabled bool `json:"comment_enabled"`
 
-	// id of action
+	// UUID действия
 	Id string `json:"id"`
 
-	// human action name
+	// Человекочитаемое наименование действия
 	Title *string `json:"title,omitempty"`
 }
 
@@ -1396,7 +1396,7 @@ type EriusTaskResponse struct {
 	// Доступные действия
 	AvailableActions *[]Action `json:"available_actions,omitempty"`
 
-	// ID шаблона SD на основании которого, запускалась заявка
+	// ID шаблона SD, на основании которого запускалась заявка
 	BlueprintId string `json:"blueprint_id"`
 
 	// Запускалась ли заявка в режиме отладки
