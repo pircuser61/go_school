@@ -140,6 +140,8 @@ const (
 
 	MonitoringTableTaskStatusЗавершен MonitoringTableTaskStatus = "Завершен"
 
+	MonitoringTableTaskStatusНеизвестныйСтатус MonitoringTableTaskStatus = "Неизвестный статус"
+
 	MonitoringTableTaskStatusОстановлен MonitoringTableTaskStatus = "Остановлен"
 )
 
@@ -1024,7 +1026,7 @@ type MonitoringTableTask struct {
 	Id string `json:"id"`
 
 	// login of initiator
-	Initiator *string `json:"initiator,omitempty"`
+	Initiator string `json:"initiator"`
 
 	// name of the process
 	ProcessName string `json:"process_name"`
