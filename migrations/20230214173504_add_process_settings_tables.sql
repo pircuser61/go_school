@@ -13,8 +13,6 @@ CREATE TABLE IF NOT EXISTS version_settings
         ON DELETE NO ACTION
 );
 
-GRANT ALL ON TABLE version_settings TO jocasta;
-
 CREATE INDEX IF NOT EXISTS version_settings_version_idx
     ON version_settings USING btree
         (version_id ASC);
@@ -33,8 +31,6 @@ CREATE TABLE IF NOT EXISTS external_systems
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 );
-
-GRANT ALL ON TABLE external_systems TO jocasta;
 
 CREATE INDEX IF NOT EXISTS external_systems_version_idx
     ON external_systems USING btree

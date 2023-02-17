@@ -2361,7 +2361,7 @@ type ServerInterface interface {
 	// (GET /pipelines/version/{versionID}/system/{systemID})
 	GetExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
 	// Save external system settings
-	// (POST /pipelines/version/{versionID}/system/{systemID})
+	// (PUT /pipelines/version/{versionID}/system/{systemID})
 	SaveExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
 	// Delete Pipeline
 	// (DELETE /pipelines/{pipelineID})
@@ -4241,7 +4241,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.GetExternalSystemSettings)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.SaveExternalSystemSettings)
+		r.Put(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.SaveExternalSystemSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/pipelines/{pipelineID}", wrapper.DeletePipeline)

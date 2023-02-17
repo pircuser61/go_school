@@ -1156,7 +1156,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-    post:
+    put:
       tags:
         - pipeline
         - process_settings
