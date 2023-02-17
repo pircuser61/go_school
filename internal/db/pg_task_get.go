@@ -1233,9 +1233,7 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 
 	version, err := db.GetVersionByWorkNumber(ctx, workNumber)
 	if err != nil {
-		return nil, errors.Wrap(err,
-			fmt.Sprintf("blockName: %s, workNumber: %s", blockName, workNumber),
-		)
+		return nil, err
 	}
 
 	const q = `
@@ -1248,9 +1246,7 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 		if errors.Is(err, sql.ErrNoRows) {
 			return blockInputs, nil
 		}
-		return nil, errors.Wrap(err,
-			fmt.Sprintf("blockName: %s, workNumber: %s, version.ID: %s", blockName, workNumber, version.ID),
-		)
+		return nil, err
 	}
 
 	for i := range blockInputs {
