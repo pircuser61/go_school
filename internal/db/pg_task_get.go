@@ -1237,7 +1237,7 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 	}
 
 	const q = `
-		SELECT content -> 'pipeline' -> 'blocks' -> '$1' -> 'params'
+		SELECT content -> 'pipeline' -> 'blocks' -> $1 -> 'params'
 		FROM versions
 		WHERE id = $2;
 	`
