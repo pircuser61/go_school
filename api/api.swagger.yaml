@@ -3420,19 +3420,19 @@ components:
       properties:
         id:
           type: string
-          description: id of action
+          description: UUID действия
         button_type:
           type: string
-          description: type of renderable button with action (primary, secondary, other, none)
+          description: Тип отображаемой кнопки (primary, secondary, other, none)
         title:
           type: string
-          description: human action name
+          description: Человекочитаемое наименование действия
         comment_enabled:
           type: boolean
-          description: enables comment function
+          description: озможность прикреплять комментарий к действию
         attachments_enabled:
           type: boolean
-          description: enables attachment function
+          description: Возможность прикреплять вложение к действию
       required:
         - id
         - button_type
