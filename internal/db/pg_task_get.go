@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"strings"
 	"time"
 
@@ -1231,9 +1232,13 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 	ctx, span := trace.StartSpan(ctx, "pg_get_block_inputs")
 	defer span.End()
 
+
+	blockInputs := make(entity.BlockInputs, 0)
+	params := make(map[string]interface{}, 0)
+
 	version, err := db.GetVersionByWorkNumber(ctx, workNumber)
 	if err != nil {
-		return nil, errors.Wrap(err, "can`t get version by number")
+		return blockInputs, nil
 	}
 
 	const q = `
@@ -1241,18 +1246,18 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 		FROM versions
 		WHERE id = $2;
 	`
-	blockInputs := make(entity.BlockInputs, 0)
-	if err := db.Connection.QueryRow(ctx, q, blockName, version.ID).Scan(&blockInputs); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+
+	if err = db.Connection.QueryRow(ctx, q, blockName, version.VersionID).Scan(&params); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return blockInputs, nil
 		}
 		return nil, err
 	}
 
-	for i := range blockInputs {
+	for i := range params {
 		blockInputs = append(blockInputs, entity.BlockInputValue{
-			Name:  blockInputs[i].Name,
-			Value: blockInputs[i].Value,
+			Name:  i,
+			Value: params[i],
 		})
 	}
 

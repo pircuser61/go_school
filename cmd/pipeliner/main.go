@@ -118,7 +118,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Error("can't create mail service")
 
-		return
+		//return
 	}
 
 	stat, err := statistic.InitStatistic()

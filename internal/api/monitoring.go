@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -162,6 +163,7 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 
 	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockId, taskStep.Name)
 	if err != nil {
+		fmt.Println("GetBlockOutputs")
 		e := GetBlockContextError
 		log.WithField("blockId", blockId).
 			WithField("taskStep.Name", taskStep.Name).

@@ -323,6 +323,7 @@ func NewAnswerSendToEditTpl(id, name, sdUrl string) Template {
 
 func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockID, "", dto.WorkNumber, executionStartWorkAction)
+	actionSubject = strings.ReplaceAll(actionSubject, " ", "")
 	actionBtn := fmt.Sprintf(buttonTpl, dto.Mailto, actionSubject, "Взять в работу")
 
 	return Template{
@@ -345,12 +346,12 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Id          string `json:"id"`
 			Link        string `json:"link"`
 			Description string `json:"description"`
-			Btn         string `json:"btn"`
+			ActionBtn   string `json:"actionBtn"`
 		}{
 			Id:          dto.WorkNumber,
 			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Description: dto.Description,
-			Btn:         actionBtn,
+			ActionBtn:   actionBtn,
 		},
 	}
 }
