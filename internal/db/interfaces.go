@@ -59,6 +59,8 @@ type TaskStorager interface {
 	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
 	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
 	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
+
+	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
 }
 
 type UpdateTaskRate struct {
@@ -183,4 +185,9 @@ type Database interface {
 	GetVersionsByPipelineID(ctx c.Context, blueprintID string) ([]e.EriusScenario, error)
 	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
 	GetPipelinesByNameOrId(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
+
+	GetBlocksOutputs(ctx c.Context, blockId string) (e.BlockOutputs, error)
+	GetBlockOutputs(ctx c.Context, blockId, blockName string) (e.BlockOutputs, error)
+	GetBlockInputs(ctx c.Context, blockName, workNumber string) (e.BlockInputs, error)
+	GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error)
 }
