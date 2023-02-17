@@ -32,3 +32,8 @@ type TaskForMonitoring struct {
 	Status      string
 	WorkNumber  string
 }
+
+type TasksForMonitoring struct {
+	Tasks []TaskForMonitoring
+	Total int
+}

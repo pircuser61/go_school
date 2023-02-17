@@ -1229,7 +1229,7 @@ func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID,
 	return storage, nil
 }
 
-func (db *PGCon) GetTasksForMonitoring(ctx context.Context, filters entity.TasksForMonitoringFilters) ([]entity.TaskForMonitoring, error) {
+func (db *PGCon) GetTasksForMonitoring(ctx context.Context, filters entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
 	ctx, span := trace.StartSpan(ctx, "get_tasks_for_monitoring")
 	defer span.End()
 
@@ -1241,7 +1241,9 @@ func (db *PGCon) GetTasksForMonitoring(ctx context.Context, filters entity.Tasks
 	}
 	defer rows.Close()
 
-	tasksForMonitoring := make([]entity.TaskForMonitoring, 0)
+	tasksForMonitoring := &entity.TasksForMonitoring{
+		Tasks: make([]entity.TaskForMonitoring, 0),
+	}
 
 	for rows.Next() {
 		task := entity.TaskForMonitoring{}
@@ -1251,12 +1253,13 @@ func (db *PGCon) GetTasksForMonitoring(ctx context.Context, filters entity.Tasks
 			&task.ProcessName,
 			&task.Initiator,
 			&task.WorkNumber,
-			&task.StartedAt)
+			&task.StartedAt,
+			&tasksForMonitoring.Total)
 		if err != nil {
 			return nil, err
 		}
 
-		tasksForMonitoring = append(tasksForMonitoring, task)
+		tasksForMonitoring.Tasks = append(tasksForMonitoring.Tasks, task)
 	}
 
 	return tasksForMonitoring, nil
@@ -1276,7 +1279,9 @@ func getTasksForMonitoringQuery(filters entity.TasksForMonitoringFilters) string
 				p.name AS process_name,
 				w.author AS initiator,
 				w.work_number AS work_number,
-				w.started_at AS started_at from works w
+				w.started_at AS started_at,
+				COUNT(*) OVER() as total
+			FROM works w
 			LEFT JOIN versions v on w.version_id = v.id
 			LEFT JOIN pipelines p on v.pipeline_id = p.id
 			WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL

@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"strings"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -33,8 +34,8 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	responseTasks := make([]MonitoringTableTask, 0, len(dbTasks))
-	for _, t := range dbTasks {
+	responseTasks := make([]MonitoringTableTask, 0, len(dbTasks.Tasks))
+	for _, t := range dbTasks.Tasks {
 		responseTasks = append(responseTasks, MonitoringTableTask{
 			Id:          t.Id.String(),
 			Initiator:   t.Initiator,
@@ -47,7 +48,7 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 
 	if err = sendResponse(w, http.StatusOK, MonitoringTasksPage{
 		Tasks: responseTasks,
-		Total: len(responseTasks),
+		Total: dbTasks.Total,
 	}); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))

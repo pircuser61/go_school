@@ -1096,15 +1096,15 @@ func (_m *MockedDatabase) GetTasksCount(ctx context.Context, currentUser string,
 }
 
 // GetTasksForMonitoring provides a mock function with given fields: ctx, filters
-func (_m *MockedDatabase) GetTasksForMonitoring(ctx context.Context, filters entity.TasksForMonitoringFilters) ([]entity.TaskForMonitoring, error) {
+func (_m *MockedDatabase) GetTasksForMonitoring(ctx context.Context, filters entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
 	ret := _m.Called(ctx, filters)
 
-	var r0 []entity.TaskForMonitoring
-	if rf, ok := ret.Get(0).(func(context.Context, entity.TasksForMonitoringFilters) []entity.TaskForMonitoring); ok {
+	var r0 *entity.TasksForMonitoring
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TasksForMonitoringFilters) *entity.TasksForMonitoring); ok {
 		r0 = rf(ctx, filters)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.TaskForMonitoring)
+			r0 = ret.Get(0).(*entity.TasksForMonitoring)
 		}
 	}
 
