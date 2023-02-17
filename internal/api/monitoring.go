@@ -177,15 +177,18 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 
 	taskStep, err := ae.DB.GetTaskStepById(ctx, blockIdUUID)
 	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
+		e := UnknownError
+		log.WithField("blockId", blockId).
+			Error(e.errorMessage(err))
 		_ = e.sendError(w)
 	}
 
 	blockInputs, err := ae.DB.GetBlockInputs(ctx, taskStep.Name, taskStep.WorkNumber)
 	if err != nil {
 		e := GetBlockContextError
-		log.Error(e.errorMessage(err))
+		log.WithField("blockId", blockId).
+			WithField("taskStep.Name", taskStep.Name).
+			Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
 	}
@@ -202,7 +205,9 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 	blockOutputs, err := ae.DB.GetBlockOutputs(ctx, blockId, taskStep.Name)
 	if err != nil {
 		e := GetBlockContextError
-		log.Error(e.errorMessage(err))
+		log.WithField("blockId", blockId).
+			WithField("taskStep.Name", taskStep.Name).
+			Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
 	}

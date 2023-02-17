@@ -1337,7 +1337,7 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 
 	version, err := db.GetVersionByWorkNumber(ctx, workNumber)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can`t get version by number")
 	}
 
 	const q = `
@@ -1347,6 +1347,9 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 	`
 	blockInputs := make(entity.BlockInputs, 0)
 	if err := db.Connection.QueryRow(ctx, q, blockName, version.ID).Scan(&blockInputs); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return blockInputs, nil
+		}
 		return nil, err
 	}
 
@@ -1364,12 +1367,14 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	ctx, span := trace.StartSpan(ctx, "pg_get_block_outputs")
 	defer span.End()
 
+	blockOutputs := make(entity.BlockOutputs, 0)
 	blocksOutputs, err := db.GetBlocksOutputs(ctx, blockId)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return blockOutputs, nil
+		}
 		return nil, err
 	}
-
-	blockOutputs := make(entity.BlockOutputs, 0)
 
 	for i := range blocksOutputs {
 		if strings.Contains(blocksOutputs[i].Name, blockName) {
