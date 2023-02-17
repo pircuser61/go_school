@@ -3293,10 +3293,10 @@ components:
           description: Логин инициатора
         blueprint_id:
           type: string
-          description: ID шаблона SD, на основании которого, запускалась заявка
+          description: ID шаблона SD на основании которого, запускалась заявка
         debug:
           type: boolean
-          description: Режим отладки
+          description: Запускалась ли заявка в режиме отладки
         description:
           type: string
           description: Описание заявки (основной текст)
@@ -3310,7 +3310,7 @@ components:
           description: Время последнего изменения
         name:
           type: string
-          description: Наименование заявки
+          description: Название заявки
         parameters:
           type: object
           description: Параметры заявки
@@ -3322,9 +3322,11 @@ components:
           type: string
           description: Технический статус заявки
           enum:
-            - В работе
-            - Завершен
-            - Остановлен
+            - finished
+            - error
+            - run
+            - stopped
+            - created
         steps:
           type: array
           items:

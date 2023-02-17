@@ -331,11 +331,15 @@ const (
 
 // Defines values for EriusTaskResponseStatus.
 const (
-	EriusTaskResponseStatusВРаботе EriusTaskResponseStatus = "В работе"
+	EriusTaskResponseStatusCreated EriusTaskResponseStatus = "created"
 
-	EriusTaskResponseStatusЗавершен EriusTaskResponseStatus = "Завершен"
+	EriusTaskResponseStatusError EriusTaskResponseStatus = "error"
 
-	EriusTaskResponseStatusОстановлен EriusTaskResponseStatus = "Остановлен"
+	EriusTaskResponseStatusFinished EriusTaskResponseStatus = "finished"
+
+	EriusTaskResponseStatusRun EriusTaskResponseStatus = "run"
+
+	EriusTaskResponseStatusStopped EriusTaskResponseStatus = "stopped"
 )
 
 // Defines values for ExecutionDecision.
@@ -1392,10 +1396,10 @@ type EriusTaskResponse struct {
 	// Доступные действия
 	AvailableActions *[]Action `json:"available_actions,omitempty"`
 
-	// ID шаблона SD, на основании которого, запускалась заявка
+	// ID шаблона SD на основании которого, запускалась заявка
 	BlueprintId string `json:"blueprint_id"`
 
-	// Режим отладки
+	// Запускалась ли заявка в режиме отладки
 	Debug bool `json:"debug"`
 
 	// Описание заявки (основной текст)
@@ -1413,7 +1417,7 @@ type EriusTaskResponse struct {
 	// Время последнего изменения
 	LastChangedAt string `json:"last_changed_at"`
 
-	// Наименование заявки
+	// Название заявки
 	Name string `json:"name"`
 
 	// Параметры заявки
