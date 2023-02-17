@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/google/uuid"
 
@@ -1231,7 +1232,6 @@ func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, block
 func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (entity.BlockInputs, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_block_inputs")
 	defer span.End()
-
 
 	blockInputs := make(entity.BlockInputs, 0)
 	params := make(map[string]interface{}, 0)
