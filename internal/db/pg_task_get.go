@@ -1233,7 +1233,7 @@ func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (en
 
 	version, err := db.GetVersionByWorkNumber(ctx, workNumber)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can`t get version by number")
 	}
 
 	const q = `
