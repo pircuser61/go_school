@@ -172,9 +172,10 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails = utils.UniqueStrings(emails)
+	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution)
 
 	// if group executors we send notification with action "executor_start_work"
-	if len(emails) > 1 {
+	if isGroupExecutors {
 		tpl := mail.NewExecutionNeedTakeInWorkTpl(
 			&mail.ExecutorNotifTemplate{
 				WorkNumber:  gb.RunContext.WorkNumber,
@@ -190,7 +191,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		}
 	}
 
-	if len(emails) == 1 {
+	if !isGroupExecutors {
 		tpl := mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber:  gb.RunContext.WorkNumber,
