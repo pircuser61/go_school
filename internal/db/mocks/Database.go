@@ -1222,6 +1222,29 @@ func (_m *MockedDatabase) GetTasksCount(ctx context.Context, currentUser string,
 	return r0, r1
 }
 
+// GetTasksForMonitoring provides a mock function with given fields: ctx, filters
+func (_m *MockedDatabase) GetTasksForMonitoring(ctx context.Context, filters entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
+	ret := _m.Called(ctx, filters)
+
+	var r0 *entity.TasksForMonitoring
+	if rf, ok := ret.Get(0).(func(context.Context, entity.TasksForMonitoringFilters) *entity.TasksForMonitoring); ok {
+		r0 = rf(ctx, filters)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.TasksForMonitoring)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, entity.TasksForMonitoringFilters) error); ok {
+		r1 = rf(ctx, filters)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetUnfinishedTaskStepsByWorkIdAndStepType provides a mock function with given fields: ctx, id, stepType
 func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error) {
 	ret := _m.Called(ctx, id, stepType)

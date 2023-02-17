@@ -26,7 +26,7 @@ type Notification struct {
 }
 
 type ExecutorNotifTemplate struct {
-	Id, SdUrl, ExecutorName, Initiator, Description string
+	WorkNumber, SdUrl, ExecutorName, Initiator, Description, BlockID, Mailto string
 }
 
 func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
@@ -321,9 +321,43 @@ func NewAnswerSendToEditTpl(id, name, sdUrl string) Template {
 	}
 }
 
+func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
+	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockID, "", dto.WorkNumber, executionStartWorkAction)
+	actionBtn := fmt.Sprintf(buttonTpl, dto.Mailto, actionSubject, "Взять в работу")
+
+	return Template{
+		Subject: fmt.Sprintf("Заявка №%s назначена на Группу исполнителей", dto.WorkNumber),
+		Text: `<p>Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b></br>
+ Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
+ <b>Действия с заявкой</b>
+ {{.ActionBtn}}
+ ------------ Описание ------------  </br>
+<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>
+
+<style>
+    p {
+        font-family: : Arial;
+        font-size: 11px;
+        margin-bottom: -20px;
+    }
+</style>`,
+		Variables: struct {
+			Id          string `json:"id"`
+			Link        string `json:"link"`
+			Description string `json:"description"`
+			Btn         string `json:"btn"`
+		}{
+			Id:          dto.WorkNumber,
+			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Description: dto.Description,
+			Btn:         actionBtn,
+		},
+	}
+}
+
 func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	return Template{
-		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.Id, dto.ExecutorName),
+		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.WorkNumber, dto.ExecutorName),
 		Text: `<p>Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b></br>
  <b>Инициатор: </b>{{.Initiator}}</br>
  <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>
@@ -344,9 +378,9 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Initiator   string `json:"initiator"`
 			Description string `json:"description"`
 		}{
-			Id:          dto.Id,
+			Id:          dto.WorkNumber,
 			Executor:    dto.ExecutorName,
-			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.Id),
+			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Initiator:   dto.Initiator,
 			Description: dto.Description,
 		},
@@ -472,6 +506,7 @@ const (
 	actionExecutorSendEditApp   = "executor_send_edit_app"
 	taskUpdateActionExecution   = "execution"
 	taskUpdateActionApprovement = "approvement"
+	executionStartWorkAction    = "executor_start_work"
 )
 
 func getApproverButtons(workNumber, mailto, blockId string, actions []Action, isEditable bool) string {
