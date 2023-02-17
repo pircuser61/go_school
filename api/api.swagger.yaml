@@ -3290,43 +3290,57 @@ components:
       properties:
         author:
           type: string
+          description: Логин автора
         blueprint_id:
           type: string
+          description: UUID заявки
         debug:
           type: boolean
+          description: Режим отладки
         description:
           type: string
+          description: Описание заявки
         human_status:
           $ref: '#/components/schemas/taskHumanStatus'
         id:
           type: string
+          description: ID заявки
         last_changed_at:
           type: string
+          description: Время последнего изменения
         name:
           type: string
+          description: Наименвоание заявки
         parameters:
           type: object
+          description: Параметры заявки
           properties: { }
         started_at:
           type: string
+          description: Время начала исполнения заявки
         status:
           type: string
+          description: Статус заявки
         steps:
           type: array
           items:
             $ref: '#/components/schemas/step'
         version_id:
           type: string
+          description: ID версии заявки
         work_number:
           type: string
+          description: Номер заявки
         finished_at:
           type: string
+          description: Время окончания заявки
         rate:
           type: integer
         rate_comment:
           type: string
         available_actions:
           type: array
+          description: Доступные действия
           items:
             $ref: '#/components/schemas/action'
       required:
@@ -3362,18 +3376,24 @@ components:
       properties:
         errors:
           type: array
+          description: Массив ошибок
           items:
             type: string
         has_error:
           type: boolean
+          description: Была ли ошибка
         is_delegate_of_any_step_member:
           type: boolean
+          description: Является ли делегтом
         name:
           type: string
+          description: Наименование шага
         state:
           type: object
+          description: Объект состояния
           properties: { }
         status:
+          description: Статус шага
           type: string
         steps:
           type: array
