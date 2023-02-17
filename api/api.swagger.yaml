@@ -3290,43 +3290,65 @@ components:
       properties:
         author:
           type: string
+          description: Логин инициатора
         blueprint_id:
           type: string
+          description: ID шаблона SD, на основании которого запускалась заявка
         debug:
           type: boolean
+          description: Запускалась ли заявка в режиме отладки
         description:
           type: string
+          description: Описание заявки (основной текст)
         human_status:
           $ref: '#/components/schemas/taskHumanStatus'
         id:
           type: string
+          description: ID заявки
         last_changed_at:
           type: string
+          description: Время последнего изменения
         name:
           type: string
+          description: Название заявки
         parameters:
           type: object
+          description: Параметры заявки
           properties: { }
         started_at:
           type: string
+          description: Время начала исполнения заявки
         status:
           type: string
+          description: Технический статус заявки
+          enum:
+            - finished
+            - error
+            - run
+            - stopped
+            - created
         steps:
           type: array
           items:
             $ref: '#/components/schemas/step'
         version_id:
           type: string
+          description: Версия процесса заявки
         work_number:
           type: string
+          description: Номер заявки
         finished_at:
           type: string
+          description: Время окончания заявки
         rate:
           type: integer
+          description: Оценка для выполненной заявки
         rate_comment:
           type: string
+          description: Комментарий к оценке
         available_actions:
           type: array
+          description: Доступные действия
           items:
             $ref: '#/components/schemas/action'
       required:
@@ -3362,18 +3384,24 @@ components:
       properties:
         errors:
           type: array
+          description: Массив ошибок
           items:
             type: string
         has_error:
           type: boolean
+          description: Была ли ошибка
         is_delegate_of_any_step_member:
           type: boolean
+          description: Является ли пользователь, запрашивающий заявку, делегатом кого-либо на этом шаге
         name:
           type: string
+          description: Наименование шага
         state:
           type: object
+          description: Объект состояния
           properties: { }
         status:
+          description: Статус шага
           type: string
         steps:
           type: array
@@ -3392,19 +3420,19 @@ components:
       properties:
         id:
           type: string
-          description: id of action
+          description: UUID действия
         button_type:
           type: string
-          description: type of renderable button with action (primary, secondary, other, none)
+          description: Тип отображаемой кнопки (primary, secondary, other, none)
         title:
           type: string
-          description: human action name
+          description: Человекочитаемое наименование действия
         comment_enabled:
           type: boolean
-          description: enables comment function
+          description: Возможность прикреплять комментарий к действию
         attachments_enabled:
           type: boolean
-          description: enables attachment function
+          description: Возможность прикреплять вложение к действию
       required:
         - id
         - button_type
