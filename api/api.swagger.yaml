@@ -967,15 +967,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/version/{ID}/settings:
+  /pipelines/version/{versionID}/settings:
     get:
       tags:
         - pipeline
+        - process_settings
       summary: Get process settings with a list of external systems
       description: Получить настройки процесса со списком внешних систем
       operationId: get-version-settings
       parameters:
-        - name: ID
+        - name: versionID
           in: path
           description: Version ID
           required: true
@@ -1011,13 +1012,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/version/settings:
     post:
       tags:
         - pipeline
+        - process_settings
       summary: Save process settings(start and end schemas)
       description: Сохранить настройки процесса(JSON-схемы)
       operationId: save-version-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
       requestBody:
         description: Modified JSON-schemas
         content:
@@ -1050,10 +1058,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/version/{versionID}/system/{systemID}:
+  /pipelines/version/{versionID}/system:
     post:
       tags:
         - pipeline
+        - process_settings
       summary: Add external system to version
       description: Добавить внешнюю систему для версии процесса
       operationId: add-external-system-to-version
@@ -1064,12 +1073,13 @@ paths:
           required: true
           schema:
             type: string
-        - name: systemID
-          in: path
-          description: System ID
-          required: true
-          schema:
-            type: string
+      requestBody:
+        description: Modified JSON-schemas
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalSystemId'
+        required: true
       responses:
         200:
           description: OK
@@ -1095,9 +1105,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/system/{systemID}:
     get:
       tags:
         - pipeline
+        - process_settings
       summary: Get external system settings
       description: Получить настройки внешней системы
       operationId: get-external-system-settings
@@ -1144,12 +1156,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-    delete:
+    post:
       tags:
         - pipeline
-      summary: Remove external system from list
-      description: Удалить из списка внешних систем
-      operationId: remove-external-system
+        - process_settings
+      summary: Save external system settings
+      description: Сохранить настройки внешней системы
+      operationId: save-external-system-settings
       parameters:
         - name: versionID
           in: path
@@ -1163,6 +1176,13 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        description: Modified settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalSystem'
+        required: true
       responses:
         200:
           description: OK
@@ -1188,20 +1208,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/version/system:
-    post:
+    delete:
       tags:
         - pipeline
-      summary: Save external system settings
-      description: Сохранить настройки внешней системы
-      operationId: save-external-system-settings
-      requestBody:
-        description: Modified settings
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SaveExternalSystemParams'
-        required: true
+        - process_settings
+      summary: Remove external system from list
+      description: Удалить из списка внешних систем
+      operationId: remove-external-system
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+        - name: systemID
+          in: path
+          description: System ID
+          required: true
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -2796,19 +2822,11 @@ components:
         - id
         - name
 
-    SaveExternalSystemParams:
-      type: object
-      properties:
-        versionID:
-          type: string
-          format: uuid
-          description: Id версии
-          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-        external_system:
-          $ref: '#/components/schemas/ExternalSystem'
-      required:
-        - versionID
-        - external_system
+    ExternalSystemId:
+      type: string
+      format: uuid
+      description: Id внешней системы
+      example: bde144c9-8d4e-4b42-8ff3-2eda48e1f32d
 
     EriusScenarioInfo:
       type: object

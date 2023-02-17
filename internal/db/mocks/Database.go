@@ -1590,13 +1590,13 @@ func (_m *MockedDatabase) RollbackVersion(ctx context.Context, pipelineID uuid.U
 	return r0
 }
 
-// SaveExternalSystemSettings provides a mock function with given fields: ctx, settings
-func (_m *MockedDatabase) SaveExternalSystemSettings(ctx context.Context, settings *entity.SaveExternalSystemParams) error {
-	ret := _m.Called(ctx, settings)
+// SaveExternalSystemSettings provides a mock function with given fields: ctx, versionID, settings
+func (_m *MockedDatabase) SaveExternalSystemSettings(ctx context.Context, versionID string, settings *entity.ExternalSystem) error {
+	ret := _m.Called(ctx, versionID, settings)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.SaveExternalSystemParams) error); ok {
-		r0 = rf(ctx, settings)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *entity.ExternalSystem) error); ok {
+		r0 = rf(ctx, versionID, settings)
 	} else {
 		r0 = ret.Error(0)
 	}

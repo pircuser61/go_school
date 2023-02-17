@@ -791,9 +791,9 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersion
 
 	qCopyExternalSystems := `
 	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema) 
-	SELECT uuid_generate_v4(), $1, system_id, input_schema, output_schema 
-	FROM external_systems 
-	WHERE version_id = $2;
+		SELECT uuid_generate_v4(), $1, system_id, input_schema, output_schema 
+		FROM external_systems 
+		WHERE version_id = $2;
 	`
 
 	_, err = db.Connection.Exec(c, qCopyExternalSystems, newVersionID, oldVersionID)
@@ -2706,13 +2706,6 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.Proce
 	ctx, span := trace.StartSpan(ctx, "pg_save_version_settings")
 	defer span.End()
 
-	tx, err := db.Connection.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
@@ -2722,13 +2715,9 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.Proce
 			SET start_schema = excluded.start_schema, 
 				end_schema = excluded.end_schema`
 
-	_, err = tx.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema)
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema)
 	if err != nil {
 		return err
-	}
-
-	if commitErr := tx.Commit(ctx); commitErr != nil {
-		return commitErr
 	}
 
 	return nil
@@ -2738,24 +2727,13 @@ func (db *PGCon) AddExternalSystemToVersion(ctx context.Context, versionID strin
 	ctx, span := trace.StartSpan(ctx, "pg_add_external_system_to_version")
 	defer span.End()
 
-	tx, err := db.Connection.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `INSERT INTO external_systems (id, version_id, system_id) VALUES ($1, $2, $3)`
 
-	_, err = tx.Exec(ctx, query, uuid.New(), versionID, systemID)
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), versionID, systemID)
 	if err != nil {
 		return err
-	}
-
-	if commitErr := tx.Commit(ctx); commitErr != nil {
-		return commitErr
 	}
 
 	return nil
@@ -2805,16 +2783,9 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID string
 	return externalSystemSettings, nil
 }
 
-func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, params *entity.SaveExternalSystemParams) error {
+func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, versionID string, system *entity.ExternalSystem) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
 	defer span.End()
-
-	tx, err := db.Connection.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -2822,13 +2793,13 @@ func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, params *entity.
 		UPDATE external_systems SET input_schema = $3, output_schema = $4
 		WHERE version_id = $1 AND system_id = $2`
 
-	commandTag, err := tx.Exec(
+	commandTag, err := db.Connection.Exec(
 		ctx,
 		query,
-		params.VersionID,
-		params.ExternalSystem.Id,
-		params.ExternalSystem.InputSchema,
-		params.ExternalSystem.OutputSchema,
+		versionID,
+		system.Id,
+		system.InputSchema,
+		system.OutputSchema,
 	)
 	if err != nil {
 		return err
@@ -2838,10 +2809,6 @@ func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, params *entity.
 		return errCantFindExternalSystem
 	}
 
-	if commitErr := tx.Commit(ctx); commitErr != nil {
-		return commitErr
-	}
-
 	return nil
 }
 
@@ -2849,24 +2816,13 @@ func (db *PGCon) RemoveExternalSystem(ctx context.Context, versionID string, sys
 	ctx, span := trace.StartSpan(ctx, "pg_remove_external_system")
 	defer span.End()
 
-	tx, err := db.Connection.Begin(ctx)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback(ctx) // nolint:errcheck // rollback err
-
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `DELETE FROM external_systems WHERE version_id = $1 AND system_id = $2`
 
-	_, err = tx.Exec(ctx, query, versionID, systemID)
+	_, err := db.Connection.Exec(ctx, query, versionID, systemID)
 	if err != nil {
 		return err
-	}
-
-	if commitErr := tx.Commit(ctx); commitErr != nil {
-		return commitErr
 	}
 
 	return nil

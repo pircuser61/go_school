@@ -198,5 +198,5 @@ type Database interface {
 	GetExternalSystemsIDs(ctx c.Context, versionID string) ([]uuid.UUID, error)
 	GetExternalSystemSettings(ctx c.Context, versionID string, systemID string) (e.ExternalSystem, error)
 	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
-	SaveExternalSystemSettings(ctx c.Context, settings *e.SaveExternalSystemParams) error
+	SaveExternalSystemSettings(ctx c.Context, versionID string, settings *e.ExternalSystem) error
 }

@@ -948,7 +948,7 @@ func (_m *MockDB) GetBlocksOutputs(ctx context.Context, blockId string) (entity.
 	return nil, nil
 }
 
-func (_m *MockDB) SaveExternalSystemSettings(ctx context.Context, settings *entity.SaveExternalSystemParams) error {
+func (_m *MockDB) SaveExternalSystemSettings(ctx context.Context, versionID string, settings *entity.ExternalSystem) error {
 	return nil
 }
 
@@ -1143,7 +1143,8 @@ func (m *MockDB) CreatePipeline(c context.Context, p *entity.EriusScenario, auth
 	return errNotImplemented
 }
 
-func (m *MockDB) CreateVersion(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
+func (m *MockDB) CreateVersion(c context.Context,
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
 	return errNotImplemented
 }
 

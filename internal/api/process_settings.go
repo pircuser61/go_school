@@ -51,7 +51,8 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 	}
 }
 
-func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request) {
+//nolint:dupl //its not duplicate
+func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "save_version_settings")
 	defer s.End()
 
@@ -97,7 +98,8 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request) 
 	}
 }
 
-func (ae *APIEnv) SaveExternalSystemSettings(w http.ResponseWriter, req *http.Request) {
+//nolint:dupl //its not duplicate
+func (ae *APIEnv) SaveExternalSystemSettings(w http.ResponseWriter, req *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(req.Context(), "save_external_system_settings")
 	defer s.End()
 
@@ -114,8 +116,8 @@ func (ae *APIEnv) SaveExternalSystemSettings(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	externalSystemSettings := &entity.SaveExternalSystemParams{}
-	err = json.Unmarshal(b, externalSystemSettings)
+	externalSystem := &entity.ExternalSystem{}
+	err = json.Unmarshal(b, externalSystem)
 	if err != nil {
 		e := ExternalSystemSettingsParseError
 		log.Error(e.errorMessage(err))
@@ -124,7 +126,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	err = ae.DB.SaveExternalSystemSettings(ctx, externalSystemSettings)
+	err = ae.DB.SaveExternalSystemSettings(ctx, versionID, externalSystem)
 	if err != nil {
 		e := ExternalSystemSettingsSaveError
 		log.Error(e.errorMessage(err))
@@ -192,13 +194,34 @@ func (ae *APIEnv) GetExternalSystemSettings(w http.ResponseWriter, req *http.Req
 	}
 }
 
-func (ae *APIEnv) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Request, versionID string, systemID string) {
+func (ae *APIEnv) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "add_external_system_to_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
 
-	err := ae.DB.AddExternalSystemToVersion(ctx, versionID, systemID)
+	b, err := io.ReadAll(req.Body)
+	defer req.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var systemID ExternalSystemId
+	err = json.Unmarshal(b, &systemID)
+	if err != nil {
+		e := ExternalSystemSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = ae.DB.AddExternalSystemToVersion(ctx, versionID, string(systemID))
 	if err != nil {
 		e := ExternalSystemAddingError
 		log.Error(e.errorMessage(err))

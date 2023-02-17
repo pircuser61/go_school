@@ -114,11 +114,6 @@ type ExternalSystem struct {
 	OutputSchema string `json:"output_schema"`
 }
 
-type SaveExternalSystemParams struct {
-	ExternalSystem ExternalSystem `json:"external_system"`
-	VersionID      string         `json:"versionID"`
-}
-
 type UsageResponse struct {
 	Name      string   `json:"name"` // Имя блока
 	Used      bool     `json:"used"`

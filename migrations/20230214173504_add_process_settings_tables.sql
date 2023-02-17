@@ -13,9 +13,6 @@ CREATE TABLE IF NOT EXISTS version_settings
         ON DELETE NO ACTION
 );
 
-ALTER TABLE IF EXISTS version_settings
-    OWNER to jocasta;
-
 GRANT ALL ON TABLE version_settings TO jocasta;
 
 CREATE INDEX IF NOT EXISTS version_settings_version_idx
@@ -36,9 +33,6 @@ CREATE TABLE IF NOT EXISTS external_systems
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 );
-
-ALTER TABLE IF EXISTS external_systems
-    OWNER to jocasta;
 
 GRANT ALL ON TABLE external_systems TO jocasta;
 
