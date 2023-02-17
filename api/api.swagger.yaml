@@ -3429,7 +3429,7 @@ components:
           description: Человекочитаемое наименование действия
         comment_enabled:
           type: boolean
-          description: озможность прикреплять комментарий к действию
+          description: Возможность прикреплять комментарий к действию
         attachments_enabled:
           type: boolean
           description: Возможность прикреплять вложение к действию
