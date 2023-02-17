@@ -138,6 +138,7 @@ const (
 var (
 	errCantFindPipelineVersion = errors.New("can't find pipeline version")
 	errCantFindTag             = errors.New("can't find tag")
+	errCantFindExternalSystem  = errors.New("can't find external system settings")
 )
 
 // TODO ErrNoRows ? Split file?
@@ -726,11 +727,11 @@ func (db *PGCon) CreatePipeline(c context.Context,
 		return err
 	}
 
-	return db.CreateVersion(c, p, author, pipelineData)
+	return db.CreateVersion(c, p, author, pipelineData, uuid.Nil)
 }
 
 func (db *PGCon) CreateVersion(c context.Context,
-	p *entity.EriusScenario, author string, pipelineData []byte) error {
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_create_version")
 	defer span.End()
 
@@ -761,6 +762,41 @@ func (db *PGCon) CreateVersion(c context.Context,
 	createdAt := time.Now()
 
 	_, err := db.Connection.Exec(c, qNewVersion, p.VersionID, StatusDraft, p.ID, createdAt, pipelineData, author, p.Comment, createdAt)
+	if err != nil {
+		return err
+	}
+
+	if oldVersionID != uuid.Nil {
+		err = db.copyProcessSettingsFromOldVersion(c, p.VersionID, oldVersionID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersionID, oldVersionID uuid.UUID) error {
+	qCopyPrevSettings := `
+	INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
+		SELECT uuid_generate_v4(), $1, start_schema, end_schema 
+		FROM version_settings 
+		WHERE version_id = $2
+	`
+
+	_, err := db.Connection.Exec(c, qCopyPrevSettings, newVersionID, oldVersionID)
+	if err != nil {
+		return err
+	}
+
+	qCopyExternalSystems := `
+	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema) 
+		SELECT uuid_generate_v4(), $1, system_id, input_schema, output_schema 
+		FROM external_systems 
+		WHERE version_id = $2;
+	`
+
+	_, err = db.Connection.Exec(c, qCopyExternalSystems, newVersionID, oldVersionID)
 	if err != nil {
 		return err
 	}
@@ -2642,4 +2678,152 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 		return nil, rowsErr
 	}
 	return res, nil
+}
+
+func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (entity.ProcessSettings, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_version_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT start_schema, end_schema
+	FROM version_settings
+	WHERE version_id = $1`
+
+	row := db.Connection.QueryRow(ctx, query, versionID)
+
+	processSettings := entity.ProcessSettings{Id: versionID}
+	err := row.Scan(&processSettings.StartSchema, &processSettings.EndSchema)
+	if err != nil && err != pgx.ErrNoRows {
+		return processSettings, err
+	}
+
+	return processSettings, nil
+}
+
+func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_version_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (version_id) DO UPDATE 
+			SET start_schema = excluded.start_schema, 
+				end_schema = excluded.end_schema`
+
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) AddExternalSystemToVersion(ctx context.Context, versionID string, systemID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_add_external_system_to_version")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `INSERT INTO external_systems (id, version_id, system_id) VALUES ($1, $2, $3)`
+
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), versionID, systemID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([]uuid.UUID, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_external_systems_ids")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT array_agg(system_id)
+	FROM external_systems
+	WHERE version_id = $1`
+
+	row := db.Connection.QueryRow(ctx, query, versionID)
+
+	var systemIDs []uuid.UUID
+	err := row.Scan(&systemIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return systemIDs, nil
+}
+
+func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID string, systemID string) (entity.ExternalSystem, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT input_schema, output_schema
+	FROM external_systems
+	WHERE version_id = $1 AND system_id = $2`
+
+	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
+
+	externalSystemSettings := entity.ExternalSystem{Id: systemID}
+	err := row.Scan(&externalSystemSettings.InputSchema, &externalSystemSettings.OutputSchema)
+	if err != nil {
+		return externalSystemSettings, err
+	}
+
+	return externalSystemSettings, nil
+}
+
+func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, versionID string, system *entity.ExternalSystem) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+		UPDATE external_systems SET input_schema = $3, output_schema = $4
+		WHERE version_id = $1 AND system_id = $2`
+
+	commandTag, err := db.Connection.Exec(
+		ctx,
+		query,
+		versionID,
+		system.Id,
+		system.InputSchema,
+		system.OutputSchema,
+	)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return errCantFindExternalSystem
+	}
+
+	return nil
+}
+
+func (db *PGCon) RemoveExternalSystem(ctx context.Context, versionID string, systemID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_remove_external_system")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `DELETE FROM external_systems WHERE version_id = $1 AND system_id = $2`
+
+	_, err := db.Connection.Exec(ctx, query, versionID, systemID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

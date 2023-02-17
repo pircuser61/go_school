@@ -967,6 +967,292 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/settings:
+    get:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Get process settings with a list of external systems
+      description: Получить настройки процесса со списком внешних систем
+      operationId: get-version-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ProcessSettingsWithExternalSystems'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    post:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Save process settings(start and end schemas)
+      description: Сохранить настройки процесса(JSON-схемы)
+      operationId: save-version-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified JSON-schemas
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/system:
+    post:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Add external system to version
+      description: Добавить внешнюю систему для версии процесса
+      operationId: add-external-system-to-version
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified JSON-schemas
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalSystemId'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/system/{systemID}:
+    get:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Get external system settings
+      description: Получить настройки внешней системы
+      operationId: get-external-system-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+        - name: systemID
+          in: path
+          description: System ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExternalSystem'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    put:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Save external system settings
+      description: Сохранить настройки внешней системы
+      operationId: save-external-system-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+        - name: systemID
+          in: path
+          description: System ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalSystem'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    delete:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Remove external system from list
+      description: Удалить из списка внешних систем
+      operationId: remove-external-system
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+        - name: systemID
+          in: path
+          description: System ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/name:
     put:
       tags:
@@ -2452,8 +2738,6 @@ components:
             $ref: '#/components/schemas/EriusFunctionValue'
         pipeline:
           $ref: '#/components/schemas/pipeline'
-        process_settings:
-          $ref: '#/components/schemas/ProcessSettings'
         status:
           type: integer
           description: 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On
@@ -2483,7 +2767,7 @@ components:
       items:
         $ref: '#/components/schemas/EriusVersionInfo'
 
-    ProcessSettings:
+    ProcessSettingsWithExternalSystems:
       type: object
       description: Настройки старта версии пайплайна(процесса)
       properties:
@@ -2492,6 +2776,21 @@ components:
           items:
             $ref: '#/components/schemas/ExternalSystem'
           description: Внешние системы, которые используют данный пайплайн
+        process_settings:
+          $ref: '#/components/schemas/ProcessSettings'
+      required:
+        - external_systems
+        - process_settings
+
+    ProcessSettings:
+      type: object
+      description: Настройки старта версии пайплайна(процесса)
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Id версии процесса
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         start_schema:
           type: string
           description: JSON-схема входных параметров пайплайна
@@ -2499,7 +2798,6 @@ components:
           type: string
           description: JSON-схема выходных параметров пайплайна
       required:
-        - external_systems
         - start_schema
         - end_schema
 
@@ -2523,8 +2821,12 @@ components:
       required:
         - id
         - name
-        - input_schema
-        - output_schema
+
+    ExternalSystemId:
+      type: string
+      format: uuid
+      description: Id внешней системы
+      example: bde144c9-8d4e-4b42-8ff3-2eda48e1f32d
 
     EriusScenarioInfo:
       type: object

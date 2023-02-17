@@ -648,9 +648,6 @@ type EriusScenario struct {
 	Output          *[]EriusFunctionValue `json:"output,omitempty"`
 	Pipeline        Pipeline              `json:"pipeline"`
 
-	// Настройки старта версии пайплайна(процесса)
-	ProcessSettings ProcessSettings `json:"process_settings"`
-
 	// 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	Status    int            `json:"status"`
 	Tags      []EriusTagInfo `json:"tags"`
@@ -839,14 +836,17 @@ type ExternalSystem struct {
 	Id string `json:"id"`
 
 	// JSON-схема данных, которые отдаёт внешняя система
-	InputSchema string `json:"input_schema"`
+	InputSchema *string `json:"input_schema,omitempty"`
 
 	// Название системы
 	Name string `json:"name"`
 
 	// JSON-схема данных, которые принимает внешняя система
-	OutputSchema string `json:"output_schema"`
+	OutputSchema *string `json:"output_schema,omitempty"`
 }
+
+// Id внешней системы
+type ExternalSystemId string
 
 // Fill form
 type FillFormUpdateParams struct {
@@ -1145,11 +1145,20 @@ type ProcessSettings struct {
 	// JSON-схема выходных параметров пайплайна
 	EndSchema string `json:"end_schema"`
 
-	// Внешние системы, которые используют данный пайплайн
-	ExternalSystems []ExternalSystem `json:"external_systems"`
+	// Id версии процесса
+	Id *string `json:"id,omitempty"`
 
 	// JSON-схема входных параметров пайплайна
 	StartSchema string `json:"start_schema"`
+}
+
+// Настройки старта версии пайплайна(процесса)
+type ProcessSettingsWithExternalSystems struct {
+	// Внешние системы, которые используют данный пайплайн
+	ExternalSystems []ExternalSystem `json:"external_systems"`
+
+	// Настройки старта версии пайплайна(процесса)
+	ProcessSettings ProcessSettings `json:"process_settings"`
 }
 
 // RateApplicationRequest defines model for RateApplicationRequest.
@@ -1589,6 +1598,15 @@ type EditVersionJSONBody EriusScenario
 // CreatePipelineVersionJSONBody defines parameters for CreatePipelineVersion.
 type CreatePipelineVersionJSONBody EriusScenario
 
+// SaveVersionSettingsJSONBody defines parameters for SaveVersionSettings.
+type SaveVersionSettingsJSONBody ProcessSettings
+
+// AddExternalSystemToVersionJSONBody defines parameters for AddExternalSystemToVersion.
+type AddExternalSystemToVersionJSONBody ExternalSystemId
+
+// SaveExternalSystemSettingsJSONBody defines parameters for SaveExternalSystemSettings.
+type SaveExternalSystemSettingsJSONBody ExternalSystem
+
 // RunNewVersionByPrevVersionJSONBody defines parameters for RunNewVersionByPrevVersion.
 type RunNewVersionByPrevVersionJSONBody RunNewVersionByPrevVersionRequest
 
@@ -1666,6 +1684,15 @@ type EditVersionJSONRequestBody EditVersionJSONBody
 
 // CreatePipelineVersionJSONRequestBody defines body for CreatePipelineVersion for application/json ContentType.
 type CreatePipelineVersionJSONRequestBody CreatePipelineVersionJSONBody
+
+// SaveVersionSettingsJSONRequestBody defines body for SaveVersionSettings for application/json ContentType.
+type SaveVersionSettingsJSONRequestBody SaveVersionSettingsJSONBody
+
+// AddExternalSystemToVersionJSONRequestBody defines body for AddExternalSystemToVersion for application/json ContentType.
+type AddExternalSystemToVersionJSONRequestBody AddExternalSystemToVersionJSONBody
+
+// SaveExternalSystemSettingsJSONRequestBody defines body for SaveExternalSystemSettings for application/json ContentType.
+type SaveExternalSystemSettingsJSONRequestBody SaveExternalSystemSettingsJSONBody
 
 // RunNewVersionByPrevVersionJSONRequestBody defines body for RunNewVersionByPrevVersion for application/json ContentType.
 type RunNewVersionByPrevVersionJSONRequestBody RunNewVersionByPrevVersionJSONBody
@@ -2365,6 +2392,24 @@ type ServerInterface interface {
 	// Create pipeline version
 	// (POST /pipelines/version/{ID})
 	CreatePipelineVersion(w http.ResponseWriter, r *http.Request, iD string)
+	// Get process settings with a list of external systems
+	// (GET /pipelines/version/{versionID}/settings)
+	GetVersionSettings(w http.ResponseWriter, r *http.Request, versionID string)
+	// Save process settings(start and end schemas)
+	// (POST /pipelines/version/{versionID}/settings)
+	SaveVersionSettings(w http.ResponseWriter, r *http.Request, versionID string)
+	// Add external system to version
+	// (POST /pipelines/version/{versionID}/system)
+	AddExternalSystemToVersion(w http.ResponseWriter, r *http.Request, versionID string)
+	// Remove external system from list
+	// (DELETE /pipelines/version/{versionID}/system/{systemID})
+	RemoveExternalSystem(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
+	// Get external system settings
+	// (GET /pipelines/version/{versionID}/system/{systemID})
+	GetExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
+	// Save external system settings
+	// (PUT /pipelines/version/{versionID}/system/{systemID})
+	SaveExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
 	// Delete Pipeline
 	// (DELETE /pipelines/{pipelineID})
 	DeletePipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
@@ -3118,6 +3163,189 @@ func (siw *ServerInterfaceWrapper) CreatePipelineVersion(w http.ResponseWriter, 
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreatePipelineVersion(w, r, iD)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetVersionSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetVersionSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVersionSettings(w, r, versionID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SaveVersionSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveVersionSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveVersionSettings(w, r, versionID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// AddExternalSystemToVersion operation middleware
+func (siw *ServerInterfaceWrapper) AddExternalSystemToVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddExternalSystemToVersion(w, r, versionID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// RemoveExternalSystem operation middleware
+func (siw *ServerInterfaceWrapper) RemoveExternalSystem(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveExternalSystem(w, r, versionID, systemID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetExternalSystemSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetExternalSystemSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExternalSystemSettings(w, r, versionID, systemID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SaveExternalSystemSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveExternalSystemSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveExternalSystemSettings(w, r, versionID, systemID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4043,6 +4271,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/version/{ID}", wrapper.CreatePipelineVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/pipelines/version/{versionID}/settings", wrapper.GetVersionSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings", wrapper.SaveVersionSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/version/{versionID}/system", wrapper.AddExternalSystemToVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.RemoveExternalSystem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.GetExternalSystemSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.SaveExternalSystemSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/pipelines/{pipelineID}", wrapper.DeletePipeline)

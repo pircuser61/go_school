@@ -55,6 +55,15 @@ const (
 	TagDeleteError
 	TagParseError
 	TagDetachError
+	GetProcessSettingsError
+	GetExternalSystemsError
+	GetExternalSystemSettingsError
+	ProcessSettingsSaveError
+	ProcessSettingsParseError
+	ExternalSystemSettingsSaveError
+	ExternalSystemSettingsParseError
+	ExternalSystemAddingError
+	ExternalSystemRemoveError
 	ModuleFindError
 	PipelineIsNotDraft
 	SchedulerClientFailed
@@ -88,7 +97,6 @@ const (
 	GetPipelinesSearchError
 	ValidationPipelineSearchError
 	UpdateTaskRateError
-	CreateVersionValidationError
 	ParseMailsError
 	GetMonitoringNodesError
 	GetBlockContextError
@@ -134,6 +142,15 @@ var errorText = map[Err]string{
 	TagDeleteError:                   "can't delete tag",
 	TagParseError:                    "can't pars tag data",
 	TagDetachError:                   "can't detaсh tags from pipeline",
+	GetProcessSettingsError:          "can't get process settings",
+	GetExternalSystemsError:          "can't get external systems",
+	GetExternalSystemSettingsError:   "can't get external system settings",
+	ProcessSettingsSaveError:         "can't save process settings",
+	ProcessSettingsParseError:        "can't parse process settings data",
+	ExternalSystemSettingsSaveError:  "can't save external system settings",
+	ExternalSystemSettingsParseError: "can't parse external systems settings data",
+	ExternalSystemAddingError:        "can't add external system to version",
+	ExternalSystemRemoveError:        "can't remove external system from the list",
 	ModuleFindError:                  "can't find module",
 	SchedulerClientFailed:            "scheduler client failed",
 	NetworkMonitorClientFailed:       "network monitor client failed",
@@ -168,7 +185,6 @@ var errorText = map[Err]string{
 	GetFormsChangelogError:           "can't get forms history",
 	UpdateTaskRateError:              "can`t update task rate",
 	ParseMailsError:                  "can`t parse mails",
-	CreateVersionValidationError:     "create version request is invalid",
 	GetMonitoringNodesError:          "can't get nodes for monitoring",
 	NoProcessNodesForMonitoringError: "can't find nodes for monitoring",
 }
@@ -213,6 +229,15 @@ var errorDescription = map[Err]string{
 	TagDeleteError:                   "Не удалось удалить информацию о теге",
 	TagParseError:                    "Не удалось разбрать информацию о теге",
 	TagDetachError:                   "Не удалось открепить тег от сценария",
+	GetProcessSettingsError:          "Не удалось получить настройки процесса",
+	GetExternalSystemsError:          "Не удалось получить подключенные внешние системы",
+	GetExternalSystemSettingsError:   "Не удалось получить настройки внешней системы",
+	ProcessSettingsSaveError:         "Не удалось сохранить настройки процесса",
+	ProcessSettingsParseError:        "Не удалось получить данные из тела запроса",
+	ExternalSystemSettingsSaveError:  "Не удалось сохранить настройки внешней системы",
+	ExternalSystemSettingsParseError: "Не удалось получить данные из тела запроса",
+	ExternalSystemAddingError:        "Не удалось подключить внешнюю систему к версии процесса",
+	ExternalSystemRemoveError:        "Не удалось удалить внешнюю систему из списка подключенных",
 	ModuleFindError:                  "Не удалось найти функцию",
 	SchedulerClientFailed:            "Ошибка клиента планировщика",
 	NetworkMonitorClientFailed:       "Ошибка клиента сетевого мониторинга",
@@ -247,7 +272,6 @@ var errorDescription = map[Err]string{
 	GetFormsChangelogError:           "Не удалось получить историю изменения форм",
 	UpdateTaskRateError:              "Не удалось обновить оценку заявки",
 	ParseMailsError:                  "Не удалось разобрать письма с действиями",
-	CreateVersionValidationError:     "Ошибка при валидации запроса",
 	GetMonitoringNodesError:          "Ошибка при получени нод для мониторинга в базе данных",
 	NoProcessNodesForMonitoringError: "Не удалось найти ноды для мониторинга даного процесса",
 }
