@@ -172,8 +172,26 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails = utils.UniqueStrings(emails)
+	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution)
 
-	for i := range emails {
+	// if group executors we send notification with action "executor_start_work"
+	if isGroupExecutors {
+		tpl := mail.NewExecutionNeedTakeInWorkTpl(
+			&mail.ExecutorNotifTemplate{
+				WorkNumber:  gb.RunContext.WorkNumber,
+				SdUrl:       gb.RunContext.Sender.SdAddress,
+				Description: description,
+				BlockID:     BlockGoExecutionID,
+				Mailto:      gb.RunContext.Sender.FetchEmail,
+			},
+		)
+
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); sendErr != nil {
+			return sendErr
+		}
+	}
+
+	if !isGroupExecutors {
 		tpl := mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber:  gb.RunContext.WorkNumber,
@@ -191,8 +209,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 			})
 
-		if sendNotificationErr := gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, nil, tpl); sendNotificationErr != nil {
-			return sendNotificationErr
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); sendErr != nil {
+			return sendErr
 		}
 	}
 

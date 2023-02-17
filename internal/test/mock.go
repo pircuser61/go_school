@@ -932,6 +932,14 @@ func (_m *MockDB) GetTasksForMonitoring(ctx context.Context, filters entity.Task
 	return &entity.TasksForMonitoring{}, nil
 }
 
+func (_m *MockDB) GetBlockOutputs(ctx context.Context, blockId, blockName string) (entity.BlockOutputs, error) {
+	return nil, errNotImplemented
+}
+
+func (_m *MockDB) GetBlockInputs(ctx context.Context, blockId, workNumber string) (entity.BlockInputs, error) {
+	return nil, errNotImplemented
+}
+
 func (_m *MockDB) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
 	return nil, errNotImplemented
 }
@@ -1301,5 +1309,9 @@ func (m *MockDB) Ping(_ context.Context) error {
 }
 
 func (m *MockDB) GetMeanTaskSolveTime(_ context.Context, _ string) ([]entity.TaskCompletionInterval, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
 	return nil, errNotImplemented
 }
