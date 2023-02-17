@@ -92,6 +92,7 @@ const (
 	ParseMailsError
 	GetMonitoringNodesError
 	GetBlockContextError
+	GetTasksForMonitoringError
 	NoProcessNodesForMonitoringError
 )
 
