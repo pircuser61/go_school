@@ -43,7 +43,7 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 			Id:          t.Id.String(),
 			Initiator:   t.Initiator,
 			ProcessName: t.ProcessName,
-			StartedAt:   t.StartedAt.String(),
+			StartedAt:   t.StartedAt.Format("2006-01-02 15:04:05.000000 -0700"),
 			Status:      MonitoringTableTaskStatus(t.Status),
 			WorkNumber:  t.WorkNumber,
 		})
