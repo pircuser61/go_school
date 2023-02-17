@@ -3293,7 +3293,7 @@ components:
           description: Логин инициатора
         blueprint_id:
           type: string
-          description: ID шаблона SD на основании которого, запускалась заявка
+          description: ID шаблона SD, на основании которого запускалась заявка
         debug:
           type: boolean
           description: Запускалась ли заявка в режиме отладки
