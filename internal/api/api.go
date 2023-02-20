@@ -140,6 +140,8 @@ const (
 
 	MonitoringTableTaskStatusЗавершен MonitoringTableTaskStatus = "Завершен"
 
+	MonitoringTableTaskStatusНеизвестныйСтатус MonitoringTableTaskStatus = "Неизвестный статус"
+
 	MonitoringTableTaskStatusОстановлен MonitoringTableTaskStatus = "Остановлен"
 )
 
@@ -325,6 +327,19 @@ const (
 	CompareStringOperatorРавно CompareStringOperator = "Равно"
 
 	CompareStringOperatorСодержит CompareStringOperator = "Содержит"
+)
+
+// Defines values for EriusTaskResponseStatus.
+const (
+	EriusTaskResponseStatusCreated EriusTaskResponseStatus = "created"
+
+	EriusTaskResponseStatusError EriusTaskResponseStatus = "error"
+
+	EriusTaskResponseStatusFinished EriusTaskResponseStatus = "finished"
+
+	EriusTaskResponseStatusRun EriusTaskResponseStatus = "run"
+
+	EriusTaskResponseStatusStopped EriusTaskResponseStatus = "stopped"
 )
 
 // Defines values for ExecutionDecision.
@@ -633,9 +648,6 @@ type EriusScenario struct {
 	Output          *[]EriusFunctionValue `json:"output,omitempty"`
 	Pipeline        Pipeline              `json:"pipeline"`
 
-	// Настройки старта версии пайплайна(процесса)
-	ProcessSettings ProcessSettings `json:"process_settings"`
-
 	// 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
 	Status    int            `json:"status"`
 	Tags      []EriusTagInfo `json:"tags"`
@@ -824,14 +836,17 @@ type ExternalSystem struct {
 	Id string `json:"id"`
 
 	// JSON-схема данных, которые отдаёт внешняя система
-	InputSchema string `json:"input_schema"`
+	InputSchema *string `json:"input_schema,omitempty"`
 
 	// Название системы
 	Name string `json:"name"`
 
 	// JSON-схема данных, которые принимает внешняя система
-	OutputSchema string `json:"output_schema"`
+	OutputSchema *string `json:"output_schema,omitempty"`
 }
+
+// Id внешней системы
+type ExternalSystemId string
 
 // Fill form
 type FillFormUpdateParams struct {
@@ -988,6 +1003,21 @@ type MonitoringBlockOutput struct {
 	Value interface{} `json:"value"`
 }
 
+// MonitoringBlockParam defines model for MonitoringBlockParam.
+type MonitoringBlockParam struct {
+	// Описание поля
+	Description string `json:"description"`
+
+	// Имя поля
+	Name string `json:"name"`
+
+	// Тип поля
+	Type string `json:"type"`
+
+	// Значение поля
+	Value interface{} `json:"value"`
+}
+
 // MonitoringHistory defines model for MonitoringHistory.
 type MonitoringHistory struct {
 	// Айди ноды в variable_storage
@@ -1005,6 +1035,28 @@ type MonitoringHistory struct {
 
 // Статус ноды
 type MonitoringHistoryStatus string
+
+// MonitoringParamsResponse defines model for MonitoringParamsResponse.
+type MonitoringParamsResponse struct {
+	FinishedAt *string `json:"finished_at,omitempty"`
+
+	// Входные параметы
+	Inputs *MonitoringParamsResponse_Inputs `json:"inputs,omitempty"`
+
+	// Выходные параметы
+	Outputs   *MonitoringParamsResponse_Outputs `json:"outputs,omitempty"`
+	StartedAt *string                           `json:"started_at,omitempty"`
+}
+
+// Входные параметы
+type MonitoringParamsResponse_Inputs struct {
+	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
+}
+
+// Выходные параметы
+type MonitoringParamsResponse_Outputs struct {
+	AdditionalProperties map[string]MonitoringBlockParam `json:"-"`
+}
 
 // MonitoringScenarioInfo defines model for MonitoringScenarioInfo.
 type MonitoringScenarioInfo struct {
@@ -1024,7 +1076,7 @@ type MonitoringTableTask struct {
 	Id string `json:"id"`
 
 	// login of initiator
-	Initiator *string `json:"initiator,omitempty"`
+	Initiator string `json:"initiator"`
 
 	// name of the process
 	ProcessName string `json:"process_name"`
@@ -1093,11 +1145,20 @@ type ProcessSettings struct {
 	// JSON-схема выходных параметров пайплайна
 	EndSchema string `json:"end_schema"`
 
-	// Внешние системы, которые используют данный пайплайн
-	ExternalSystems []ExternalSystem `json:"external_systems"`
+	// Id версии процесса
+	Id *string `json:"id,omitempty"`
 
 	// JSON-схема входных параметров пайплайна
 	StartSchema string `json:"start_schema"`
+}
+
+// Настройки старта версии пайплайна(процесса)
+type ProcessSettingsWithExternalSystems struct {
+	// Внешние системы, которые используют данный пайплайн
+	ExternalSystems []ExternalSystem `json:"external_systems"`
+
+	// Настройки старта версии пайплайна(процесса)
+	ProcessSettings ProcessSettings `json:"process_settings"`
 }
 
 // RateApplicationRequest defines model for RateApplicationRequest.
@@ -1288,19 +1349,19 @@ type UsedBy struct {
 
 // Action defines model for action.
 type Action struct {
-	// enables attachment function
+	// Возможность прикреплять вложение к действию
 	AttachmentsEnabled bool `json:"attachments_enabled"`
 
-	// type of renderable button with action (primary, secondary, other, none)
+	// Тип отображаемой кнопки (primary, secondary, other, none)
 	ButtonType string `json:"button_type"`
 
-	// enables comment function
+	// Возможность прикреплять комментарий к действию
 	CommentEnabled bool `json:"comment_enabled"`
 
-	// id of action
+	// UUID действия
 	Id string `json:"id"`
 
-	// human action name
+	// Человекочитаемое наименование действия
 	Title *string `json:"title,omitempty"`
 }
 
@@ -1338,27 +1399,61 @@ type CompareStringOperator string
 
 // EriusTaskResponse defines model for eriusTaskResponse.
 type EriusTaskResponse struct {
-	Author           string    `json:"author"`
+	// Логин инициатора
+	Author string `json:"author"`
+
+	// Доступные действия
 	AvailableActions *[]Action `json:"available_actions,omitempty"`
-	BlueprintId      string    `json:"blueprint_id"`
-	Debug            bool      `json:"debug"`
-	Description      string    `json:"description"`
-	FinishedAt       *string   `json:"finished_at,omitempty"`
+
+	// ID шаблона SD, на основании которого запускалась заявка
+	BlueprintId string `json:"blueprint_id"`
+
+	// Запускалась ли заявка в режиме отладки
+	Debug bool `json:"debug"`
+
+	// Описание заявки (основной текст)
+	Description string `json:"description"`
+
+	// Время окончания заявки
+	FinishedAt *string `json:"finished_at,omitempty"`
 
 	// Task human readable status
-	HumanStatus   TaskHumanStatus        `json:"human_status"`
-	Id            string                 `json:"id"`
-	LastChangedAt string                 `json:"last_changed_at"`
-	Name          string                 `json:"name"`
-	Parameters    map[string]interface{} `json:"parameters"`
-	Rate          int                    `json:"rate"`
-	RateComment   string                 `json:"rate_comment"`
-	StartedAt     string                 `json:"started_at"`
-	Status        string                 `json:"status"`
-	Steps         []Step                 `json:"steps"`
-	VersionId     string                 `json:"version_id"`
-	WorkNumber    string                 `json:"work_number"`
+	HumanStatus TaskHumanStatus `json:"human_status"`
+
+	// ID заявки
+	Id string `json:"id"`
+
+	// Время последнего изменения
+	LastChangedAt string `json:"last_changed_at"`
+
+	// Название заявки
+	Name string `json:"name"`
+
+	// Параметры заявки
+	Parameters map[string]interface{} `json:"parameters"`
+
+	// Оценка для выполненной заявки
+	Rate int `json:"rate"`
+
+	// Комментарий к оценке
+	RateComment string `json:"rate_comment"`
+
+	// Время начала исполнения заявки
+	StartedAt string `json:"started_at"`
+
+	// Технический статус заявки
+	Status EriusTaskResponseStatus `json:"status"`
+	Steps  []Step                  `json:"steps"`
+
+	// Версия процесса заявки
+	VersionId string `json:"version_id"`
+
+	// Номер заявки
+	WorkNumber string `json:"work_number"`
 }
+
+// Технический статус заявки
+type EriusTaskResponseStatus string
 
 // Executor decision:
 //   - executed - executor executed block
@@ -1503,6 +1598,15 @@ type EditVersionJSONBody EriusScenario
 // CreatePipelineVersionJSONBody defines parameters for CreatePipelineVersion.
 type CreatePipelineVersionJSONBody EriusScenario
 
+// SaveVersionSettingsJSONBody defines parameters for SaveVersionSettings.
+type SaveVersionSettingsJSONBody ProcessSettings
+
+// AddExternalSystemToVersionJSONBody defines parameters for AddExternalSystemToVersion.
+type AddExternalSystemToVersionJSONBody ExternalSystemId
+
+// SaveExternalSystemSettingsJSONBody defines parameters for SaveExternalSystemSettings.
+type SaveExternalSystemSettingsJSONBody ExternalSystem
+
 // RunNewVersionByPrevVersionJSONBody defines parameters for RunNewVersionByPrevVersion.
 type RunNewVersionByPrevVersionJSONBody RunNewVersionByPrevVersionRequest
 
@@ -1580,6 +1684,15 @@ type EditVersionJSONRequestBody EditVersionJSONBody
 
 // CreatePipelineVersionJSONRequestBody defines body for CreatePipelineVersion for application/json ContentType.
 type CreatePipelineVersionJSONRequestBody CreatePipelineVersionJSONBody
+
+// SaveVersionSettingsJSONRequestBody defines body for SaveVersionSettings for application/json ContentType.
+type SaveVersionSettingsJSONRequestBody SaveVersionSettingsJSONBody
+
+// AddExternalSystemToVersionJSONRequestBody defines body for AddExternalSystemToVersion for application/json ContentType.
+type AddExternalSystemToVersionJSONRequestBody AddExternalSystemToVersionJSONBody
+
+// SaveExternalSystemSettingsJSONRequestBody defines body for SaveExternalSystemSettings for application/json ContentType.
+type SaveExternalSystemSettingsJSONRequestBody SaveExternalSystemSettingsJSONBody
 
 // RunNewVersionByPrevVersionJSONRequestBody defines body for RunNewVersionByPrevVersion for application/json ContentType.
 type RunNewVersionByPrevVersionJSONRequestBody RunNewVersionByPrevVersionJSONBody
@@ -1937,6 +2050,112 @@ func (a MappingParam) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for MonitoringParamsResponse_Inputs. Returns the specified
+// element and whether it was found
+func (a MonitoringParamsResponse_Inputs) Get(fieldName string) (value MonitoringBlockParam, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MonitoringParamsResponse_Inputs
+func (a *MonitoringParamsResponse_Inputs) Set(fieldName string, value MonitoringBlockParam) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MonitoringParamsResponse_Inputs to handle AdditionalProperties
+func (a *MonitoringParamsResponse_Inputs) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockParam
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MonitoringParamsResponse_Inputs to handle AdditionalProperties
+func (a MonitoringParamsResponse_Inputs) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for MonitoringParamsResponse_Outputs. Returns the specified
+// element and whether it was found
+func (a MonitoringParamsResponse_Outputs) Get(fieldName string) (value MonitoringBlockParam, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for MonitoringParamsResponse_Outputs
+func (a *MonitoringParamsResponse_Outputs) Set(fieldName string, value MonitoringBlockParam) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for MonitoringParamsResponse_Outputs to handle AdditionalProperties
+func (a *MonitoringParamsResponse_Outputs) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockParam)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockParam
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for MonitoringParamsResponse_Outputs to handle AdditionalProperties
+func (a MonitoringParamsResponse_Outputs) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for RunNewVersionByPrevVersionRequest_Keys. Returns the specified
 // element and whether it was found
 func (a RunNewVersionByPrevVersionRequest_Keys) Get(fieldName string) (value string, found bool) {
@@ -2137,9 +2356,12 @@ type ServerInterface interface {
 	// Get tasks for monitoring
 	// (GET /monitoring/tasks)
 	GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams)
-	// Get outputs of block
+	// Получение контекста блоков
 	// (GET /monitoring/tasks/block/{blockId}/context)
 	GetBlockContext(w http.ResponseWriter, r *http.Request, blockId string)
+	// Get inputs and outputs of block
+	// (GET /monitoring/tasks/block/{blockId}/params)
+	GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request, blockId string)
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
@@ -2170,6 +2392,24 @@ type ServerInterface interface {
 	// Create pipeline version
 	// (POST /pipelines/version/{ID})
 	CreatePipelineVersion(w http.ResponseWriter, r *http.Request, iD string)
+	// Get process settings with a list of external systems
+	// (GET /pipelines/version/{versionID}/settings)
+	GetVersionSettings(w http.ResponseWriter, r *http.Request, versionID string)
+	// Save process settings(start and end schemas)
+	// (POST /pipelines/version/{versionID}/settings)
+	SaveVersionSettings(w http.ResponseWriter, r *http.Request, versionID string)
+	// Add external system to version
+	// (POST /pipelines/version/{versionID}/system)
+	AddExternalSystemToVersion(w http.ResponseWriter, r *http.Request, versionID string)
+	// Remove external system from list
+	// (DELETE /pipelines/version/{versionID}/system/{systemID})
+	RemoveExternalSystem(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
+	// Get external system settings
+	// (GET /pipelines/version/{versionID}/system/{systemID})
+	GetExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
+	// Save external system settings
+	// (PUT /pipelines/version/{versionID}/system/{systemID})
+	SaveExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
 	// Delete Pipeline
 	// (DELETE /pipelines/{pipelineID})
 	DeletePipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
@@ -2647,6 +2887,32 @@ func (siw *ServerInterfaceWrapper) GetBlockContext(w http.ResponseWriter, r *htt
 	handler(w, r.WithContext(ctx))
 }
 
+// GetMonitoringTasksBlockBlockIdParams operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "blockId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitoringTasksBlockBlockIdParams(w, r, blockId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // GetMonitoringTask operation middleware
 func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -2897,6 +3163,189 @@ func (siw *ServerInterfaceWrapper) CreatePipelineVersion(w http.ResponseWriter, 
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreatePipelineVersion(w, r, iD)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetVersionSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetVersionSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVersionSettings(w, r, versionID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SaveVersionSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveVersionSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveVersionSettings(w, r, versionID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// AddExternalSystemToVersion operation middleware
+func (siw *ServerInterfaceWrapper) AddExternalSystemToVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddExternalSystemToVersion(w, r, versionID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// RemoveExternalSystem operation middleware
+func (siw *ServerInterfaceWrapper) RemoveExternalSystem(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveExternalSystem(w, r, versionID, systemID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetExternalSystemSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetExternalSystemSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExternalSystemSettings(w, r, versionID, systemID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SaveExternalSystemSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveExternalSystemSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveExternalSystemSettings(w, r, versionID, systemID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3791,6 +4240,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/context", wrapper.GetBlockContext)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/params", wrapper.GetMonitoringTasksBlockBlockIdParams)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
 	})
 	r.Group(func(r chi.Router) {
@@ -3819,6 +4271,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/version/{ID}", wrapper.CreatePipelineVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/pipelines/version/{versionID}/settings", wrapper.GetVersionSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings", wrapper.SaveVersionSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/version/{versionID}/system", wrapper.AddExternalSystemToVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.RemoveExternalSystem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.GetExternalSystemSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.SaveExternalSystemSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/pipelines/{pipelineID}", wrapper.DeletePipeline)

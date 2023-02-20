@@ -26,6 +26,7 @@ import (
 )
 
 type APIEnv struct {
+	Log                  logger.Logger
 	DB                   db.Database
 	Remedy               string
 	FaaS                 string
