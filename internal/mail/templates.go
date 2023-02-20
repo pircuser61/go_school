@@ -455,7 +455,7 @@ func NewDayBeforeRequestAddInfoSLABreached(id, sdUrl string) Template {
 				необходимо предоставить дополнительную информацию в течение 
 				одного рабочего дня с момента данного уведомления, 
 				иначе заявка будет автоматически <b>перенесена в архив</b>.</br> 
-				Заявка доступна по <a href={{.Link}}>ссылке</a></p></br>`,
+				Заявка доступна по <a href={{.Link}}>ссылке</a></br>`,
 		Variables: struct {
 			Id   string `json:"id"`
 			Link string `json:"link"`
@@ -471,8 +471,8 @@ func NewRequestAddInfoSLABreached(id, sdUrl string) Template {
 		Subject: fmt.Sprintf("Заявка №%s автоматически перенесена в архив", id),
 		Text: `Уважаемый коллега, заявка №{{.Id}} 
 				автоматически перенесена в архив из-за отсутствия ответа 
-				на запрос дополнительной информации в течение 3 дней 
-				Заявка доступна по <a href={{.Link}}>ссылке</a></p></br>`,
+				на запрос дополнительной информации в течение 3 дней <br>
+				Заявка доступна по <a href={{.Link}}>ссылке</a></br>`,
 		Variables: struct {
 			Id   string `json:"id"`
 			Link string `json:"link"`
