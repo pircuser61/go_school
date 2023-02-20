@@ -4378,7 +4378,7 @@ components:
     MonitoringHistory:
       type: object
       properties:
-        node_id:
+        block_id:
           type: string
           format: uuid
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
@@ -4387,16 +4387,16 @@ components:
           type: string
           enum: [ "running", "finished" ]
           description: "Статус ноды"
-        step_name:
+        node_id:
           type: string
-          description: "имя по типу ноды в сценарии "
+          description:  "id ноды в заявке"
         real_name:
           type: string
           description: "читаемое имя ноды"
       required:
         - node_id
         - status
-        - step_name
+        - block_id
         - real_name
 
     MonitoringScenarioInfo:

@@ -12,10 +12,10 @@ type MonitoringTaskNode struct {
 	Author       string `json:"author"`
 	CreationTime string `json:"creation_time"`
 	ScenarioName string `json:"scenario_name"`
-	NodeId       string `json:"node_id"`
+	BlockId      string `json:"block_id"`
 	RealName     string `json:"real_name"`
 	Status       string `json:"status"`
-	StepName     string `json:"step_name"`
+	NodeId       string `json:"node_id"`
 }
 
 type BlockOutputs []BlockOutputValue
