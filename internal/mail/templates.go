@@ -336,7 +336,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		Subject: fmt.Sprintf("Заявка №%s назначена на Группу исполнителей", dto.WorkNumber),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b></br>
  Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
- <b>Действия с заявкой</b>
+ <b>Действия с заявкой</b><br>
  {{.ActionBtn}}
  ------------ Описание ------------  </br>
 <pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>
