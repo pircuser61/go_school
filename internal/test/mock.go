@@ -928,12 +928,52 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetTasksForMonitoring(ctx context.Context, filters entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
+	return &entity.TasksForMonitoring{}, nil
+}
+
+func (_m *MockDB) GetBlockOutputs(ctx context.Context, blockId, blockName string) (entity.BlockOutputs, error) {
+	return nil, errNotImplemented
+}
+
+func (_m *MockDB) GetBlockInputs(ctx context.Context, blockId, workNumber string) (entity.BlockInputs, error) {
+	return nil, errNotImplemented
+}
+
 func (_m *MockDB) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
 	return nil, errNotImplemented
 }
 
 func (_m *MockDB) GetBlocksOutputs(ctx context.Context, blockId string) (entity.BlockOutputs, error) {
 	return nil, nil
+}
+
+func (_m *MockDB) SaveExternalSystemSettings(ctx context.Context, versionID string, settings *entity.ExternalSystem) error {
+	return nil
+}
+
+func (_m *MockDB) RemoveExternalSystem(ctx context.Context, versionID, systemID string) error {
+	return nil
+}
+
+func (_m *MockDB) GetExternalSystemSettings(ctx context.Context, versionID, systemID string) (entity.ExternalSystem, error) {
+	return entity.ExternalSystem{}, nil
+}
+
+func (_m *MockDB) GetExternalSystemsIDs(ctx context.Context, versionID string) ([]uuid.UUID, error) {
+	return nil, nil
+}
+
+func (_m *MockDB) AddExternalSystemToVersion(ctx context.Context, versionID, systemID string) error {
+	return nil
+}
+
+func (_m *MockDB) GetVersionSettings(ctx context.Context, id string) (entity.ProcessSettings, error) {
+	return entity.ProcessSettings{}, nil
+}
+
+func (_m *MockDB) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings) error {
+	return nil
 }
 
 func (_m *MockDB) GetTasksCount(
@@ -1103,7 +1143,8 @@ func (m *MockDB) CreatePipeline(c context.Context, p *entity.EriusScenario, auth
 	return errNotImplemented
 }
 
-func (m *MockDB) CreateVersion(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error {
+func (m *MockDB) CreateVersion(c context.Context,
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
 	return errNotImplemented
 }
 
@@ -1297,5 +1338,9 @@ func (m *MockDB) Ping(_ context.Context) error {
 }
 
 func (m *MockDB) GetMeanTaskSolveTime(_ context.Context, _ string) ([]entity.TaskCompletionInterval, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
 	return nil, errNotImplemented
 }
