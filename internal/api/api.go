@@ -1078,6 +1078,9 @@ type MonitoringTableTask struct {
 	// login of initiator
 	Initiator string `json:"initiator"`
 
+	// fullname of the initiator
+	InitiatorFullname string `json:"initiator_fullname"`
+
 	// name of the process
 	ProcessName string `json:"process_name"`
 	StartedAt   string `json:"started_at"`

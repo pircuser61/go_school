@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -37,15 +36,38 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	initiatorsFullnameCache := make(map[string]string)
+
 	responseTasks := make([]MonitoringTableTask, 0, len(dbTasks.Tasks))
 	for _, t := range dbTasks.Tasks {
+		if _, ok := initiatorsFullnameCache[t.Initiator]; !ok {
+			userLog := log.WithField("username", t.Initiator)
+
+			initiatorUserInfo, getUserErr := ae.People.GetUser(ctx, t.Initiator)
+			if getUserErr != nil {
+				e := GetTasksForMonitoringGetUserError
+				userLog.Error(e.errorMessage(getUserErr))
+				continue
+			}
+
+			initiatorSSOUser, typedErr := initiatorUserInfo.ToSSOUserTyped()
+			if typedErr != nil {
+				e := GetTasksForMonitoringGetUserError
+				userLog.Error(e.errorMessage(typedErr))
+				continue
+			}
+
+			initiatorsFullnameCache[t.Initiator] = initiatorSSOUser.GetFullName()
+		}
+
 		responseTasks = append(responseTasks, MonitoringTableTask{
-			Id:          t.Id.String(),
-			Initiator:   t.Initiator,
-			ProcessName: t.ProcessName,
-			StartedAt:   t.StartedAt.Format("2006-01-02 15:04:05.000000 -0700"),
-			Status:      MonitoringTableTaskStatus(t.Status),
-			WorkNumber:  t.WorkNumber,
+			Id:                t.Id.String(),
+			Initiator:         t.Initiator,
+			InitiatorFullname: initiatorsFullnameCache[t.Initiator],
+			ProcessName:       t.ProcessName,
+			StartedAt:         t.StartedAt.Format("2006-01-02 15:04:05.000000 -0700"),
+			Status:            MonitoringTableTaskStatus(t.Status),
+			WorkNumber:        t.WorkNumber,
 		})
 	}
 

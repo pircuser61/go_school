@@ -101,6 +101,7 @@ const (
 	GetMonitoringNodesError
 	GetBlockContextError
 	GetTasksForMonitoringError
+	GetTasksForMonitoringGetUserError
 	NoProcessNodesForMonitoringError
 )
 

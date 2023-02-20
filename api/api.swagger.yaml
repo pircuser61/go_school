@@ -3020,6 +3020,9 @@ components:
         initiator:
           type: string
           description: login of initiator
+        initiator_fullname:
+          type: string
+          description: fullname of the initiator
         work_number:
           type: string
         started_at:
@@ -3032,6 +3035,7 @@ components:
         - work_number
         - started_at
         - initiator
+        - initiator_fullname
 
     EriusVersionInfo:
       type: object
