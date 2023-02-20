@@ -516,6 +516,9 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations human_
 }
 
 func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
+	if gb.State.IsTakenInWork {
+		return nil
+	}
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
@@ -537,14 +540,14 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	)
 	gb.State.IncreaseSLA(workHours)
 
-	if err = gb.emailGroupExecutors(ctx, executorLogins); err != nil {
+	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
 		return nil
 	}
 
 	return nil
 }
 
-func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string]struct{}) (err error) {
+func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
 	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
 	if err != nil {
 		return err
@@ -580,15 +583,41 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, logins map[string
 	}
 
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
-		Id:           gb.RunContext.WorkNumber,
+		WorkNumber:   gb.RunContext.WorkNumber,
 		SdUrl:        gb.RunContext.Sender.SdAddress,
 		ExecutorName: typedAuthor.GetFullName(),
 		Initiator:    gb.RunContext.Initiator,
 		Description:  descr,
 	})
 
-	if err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
-		return err
+	if errSend := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); errSend != nil {
+		return errSend
+	}
+
+	emailTakenInWork, emailErr := gb.RunContext.People.GetUserEmail(ctx, loginTakenInWork)
+	if emailErr != nil {
+		return emailErr
+	}
+
+	tpl = mail.NewAppPersonStatusNotificationTpl(
+		&mail.NewAppPersonStatusTpl{
+			WorkNumber:  gb.RunContext.WorkNumber,
+			Name:        gb.RunContext.WorkTitle,
+			Status:      string(StatusExecution),
+			Action:      statusToTaskAction[StatusExecution],
+			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA),
+			Description: descr,
+			SdUrl:       gb.RunContext.Sender.SdAddress,
+			Mailto:      gb.RunContext.Sender.FetchEmail,
+			IsEditable:  gb.State.GetIsEditable(),
+
+			BlockID:                   BlockGoExecutionID,
+			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
+			ExecutionDecisionRejected: string(ExecutionDecisionRejected),
+		})
+
+	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {
+		return sendErr
 	}
 
 	return nil

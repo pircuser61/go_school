@@ -958,7 +958,8 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
-	log := logger.GetLogger(ctx).WithField("step_id", message.TaskID)
+	log := ae.Log.WithField("step_id", message.TaskID)
+	ctx = logger.WithLogger(ctx, log)
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
@@ -1040,6 +1041,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		return nil
 	}
 
+	log.Info("trying to commit transaction")
 	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
 		anyErr = true
 		log.WithError(commitErr).Error("couldn't commit transaction")

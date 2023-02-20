@@ -59,6 +59,8 @@ type TaskStorager interface {
 	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
 	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
 	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
+
+	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
 }
 
 type UpdateTaskRate struct {
@@ -152,7 +154,7 @@ type Database interface {
 	GetOnApproveVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	SwitchApproved(ctx c.Context, pipelineID, versionID uuid.UUID, author string) error
 	VersionEditable(ctx c.Context, versionID uuid.UUID) (bool, error)
-	CreateVersion(ctx c.Context, p *e.EriusScenario, author string, pipelineData []byte) error
+	CreateVersion(ctx c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error
 	DeleteVersion(ctx c.Context, versionID uuid.UUID) error
 	GetPipelineVersion(ctx c.Context, id uuid.UUID, checkNotDeleted bool) (*e.EriusScenario, error)
 	GetPipelineVersions(ctx c.Context, id uuid.UUID) ([]e.EriusVersionInfo, error)
@@ -185,5 +187,16 @@ type Database interface {
 	GetPipelinesByNameOrId(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
 
 	GetBlocksOutputs(ctx c.Context, blockId string) (e.BlockOutputs, error)
+	GetBlockOutputs(ctx c.Context, blockId, blockName string) (e.BlockOutputs, error)
+	GetBlockInputs(ctx c.Context, blockName, workNumber string) (e.BlockInputs, error)
 	GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error)
+	GetTasksForMonitoring(ctx c.Context, filters e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
+
+	SaveVersionSettings(ctx c.Context, settings *e.ProcessSettings) error
+	GetVersionSettings(ctx c.Context, versionID string) (e.ProcessSettings, error)
+	AddExternalSystemToVersion(ctx c.Context, versionID string, systemID string) error
+	GetExternalSystemsIDs(ctx c.Context, versionID string) ([]uuid.UUID, error)
+	GetExternalSystemSettings(ctx c.Context, versionID string, systemID string) (e.ExternalSystem, error)
+	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
+	SaveExternalSystemSettings(ctx c.Context, versionID string, settings *e.ExternalSystem) error
 }

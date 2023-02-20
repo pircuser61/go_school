@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/google/uuid"
 
 	"github.com/iancoleman/orderedmap"
@@ -15,8 +17,6 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/pkg/errors"
-
-	"golang.org/x/net/context"
 
 	"golang.org/x/exp/slices"
 
@@ -1178,37 +1178,42 @@ func (db *PGCon) CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error) 
 	return isArchived, nil
 }
 
-func (db *PGCon) GetBlocksOutputs(ctx context.Context, blockId string) (entity.BlockOutputs, error) {
+func (db *PGCon) GetBlocksOutputs(ctx c.Context, blockId string) (entity.BlockOutputs, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_block_content")
 	defer span.End()
 
 	q := `
-		SELECT content -> 'Values'
+		SELECT step_name, content -> 'Values'
 		FROM variable_storage
 		WHERE id = $1;
 	`
 
-	var blockContent map[string]interface{}
-	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockContent); err != nil {
+	blockData := struct {
+		StepName        string
+		VariableStorage map[string]interface{}
+	}{}
+
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&blockData.StepName, &blockData.VariableStorage); err != nil {
 		return nil, err
 	}
 
 	blockOutputs := make(entity.BlockOutputs, 0)
-	for k, v := range blockContent {
+	for k, v := range blockData.VariableStorage {
 		blockOutputs = append(blockOutputs, entity.BlockOutputValue{
-			Name:  k,
-			Value: v,
+			StepName: blockData.StepName,
+			Name:     k,
+			Value:    v,
 		})
 	}
 
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
-	ctx, span := trace.StartSpan(ctx, "get merged variable storage")
+func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error) {
+	ctx, span := trace.StartSpan(ctx, "get_merged_variable_storage")
 	defer span.End()
 
-	q := fmt.Sprintf(`SELECT jsonb_merge_agg(vs.content) FROM variable_storage vs
+	q := fmt.Sprintf(`SELECT jsonb_merge_agg(vs.content) as content FROM variable_storage vs
     	WHERE work_id = '%s' AND step_name IN %s`, workId, buildInExpression(blockIds))
 
 	var content []byte
@@ -1222,4 +1227,168 @@ func (db *PGCon) GetMergedVariableStorage(ctx context.Context, workId uuid.UUID,
 	}
 
 	return storage, nil
+}
+
+func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
+	ctx, span := trace.StartSpan(ctx, "get_tasks_for_monitoring")
+	defer span.End()
+
+	q := getTasksForMonitoringQuery(filters)
+
+	rows, err := db.Connection.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tasksForMonitoring := &entity.TasksForMonitoring{
+		Tasks: make([]entity.TaskForMonitoring, 0),
+	}
+
+	for rows.Next() {
+		task := entity.TaskForMonitoring{}
+
+		err = rows.Scan(&task.Id,
+			&task.Status,
+			&task.ProcessName,
+			&task.Initiator,
+			&task.WorkNumber,
+			&task.StartedAt,
+			&tasksForMonitoring.Total)
+		if err != nil {
+			return nil, err
+		}
+
+		tasksForMonitoring.Tasks = append(tasksForMonitoring.Tasks, task)
+	}
+
+	return tasksForMonitoring, nil
+}
+
+func getTasksForMonitoringQuery(filters entity.TasksForMonitoringFilters) string {
+	q := `
+			SELECT w.version_id as id,
+				CASE
+					WHEN v.status IN (1, 3, 5) THEN 'В работе'
+        			WHEN v.status = 2 THEN 'Завершен'
+				    WHEN v.status = 4 THEN 'Остановлен'
+        			WHEN v.status IS NULL THEN 'Неизвестный статус'
+    			END AS status,
+				p.name AS process_name,
+				w.author AS initiator,
+				w.work_number AS work_number,
+				w.started_at AS started_at,
+				COUNT(*) OVER() as total
+			FROM works w
+			LEFT JOIN versions v on w.version_id = v.id
+			LEFT JOIN pipelines p on v.pipeline_id = p.id
+			WHERE w.started_at IS NOT NULL AND p.name IS NOT NULL
+	`
+
+	if filters.FromDate != nil || filters.ToDate != nil {
+		q = fmt.Sprintf("%s AND %s", q, getFiltersDateConditions(filters.FromDate, filters.ToDate))
+	}
+
+	if searchConditions := getFiltersSearchConditions(filters.Filter); searchConditions != "" {
+		q = fmt.Sprintf("%s AND %s", q, searchConditions)
+	}
+
+	if filters.SortColumn != nil && filters.SortOrder != nil {
+		q = fmt.Sprintf("%s ORDER BY %s %s", q, *filters.SortColumn, *filters.SortOrder)
+	}
+
+	if filters.Page != nil {
+		q = fmt.Sprintf("%s OFFSET %d", q, *filters.Page)
+	}
+
+	if filters.PerPage != nil {
+		q = fmt.Sprintf("%s LIMIT %d", q, *filters.PerPage)
+	}
+
+	return q
+}
+
+func getFiltersSearchConditions(filter *string) string {
+	if filter == nil {
+		return ""
+	}
+	return fmt.Sprintf(`
+		(w.version_id::TEXT ILIKE '%%%s%%' OR
+		 w.work_number ILIKE '%%%s%%' OR
+		 p.name ILIKE '%%%s%%')`,
+		*filter, *filter, *filter)
+}
+
+func getFiltersDateConditions(dateFrom, dateTo *string) string {
+	conditions := make([]string, 0)
+
+	if dateFrom != nil {
+		conditions = append(conditions, fmt.Sprintf("w.started_at >= '%s'::timestamptz", *dateFrom))
+	}
+
+	if dateTo != nil {
+		conditions = append(conditions, fmt.Sprintf("w.started_at <= '%s'::timestamptz", *dateTo))
+	}
+
+	return strings.Join(conditions, " AND ")
+}
+
+func (db *PGCon) GetBlockInputs(ctx c.Context, blockName, workNumber string) (entity.BlockInputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_inputs")
+	defer span.End()
+
+	blockInputs := make(entity.BlockInputs, 0)
+	params := make(map[string]interface{}, 0)
+
+	version, err := db.GetVersionByWorkNumber(ctx, workNumber)
+	if err != nil {
+		return blockInputs, nil
+	}
+
+	const q = `
+		SELECT content -> 'pipeline' -> 'blocks' -> $1 -> 'params'
+		FROM versions
+		WHERE id = $2;
+	`
+
+	if err = db.Connection.QueryRow(ctx, q, blockName, version.VersionID).Scan(&params); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return blockInputs, nil
+		}
+		return nil, err
+	}
+
+	for i := range params {
+		blockInputs = append(blockInputs, entity.BlockInputValue{
+			Name:  i,
+			Value: params[i],
+		})
+	}
+
+	return blockInputs, nil
+}
+
+func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (entity.BlockOutputs, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_outputs")
+	defer span.End()
+
+	blockOutputs := make(entity.BlockOutputs, 0)
+	blocksOutputs, err := db.GetBlocksOutputs(ctx, blockId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return blockOutputs, nil
+		}
+		return nil, err
+	}
+
+	for i := range blocksOutputs {
+		if strings.Contains(blocksOutputs[i].Name, blockName) {
+			blockOutputs = append(blockOutputs, entity.BlockOutputValue{
+				Name:  strings.Replace(blocksOutputs[i].Name, blockName+".", "", 1),
+				Value: blocksOutputs[i].Value,
+			})
+		}
+	}
+
+	return blockOutputs, nil
 }
