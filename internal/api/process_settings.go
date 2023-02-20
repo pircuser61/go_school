@@ -145,7 +145,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(w http.ResponseWriter, req *http.Re
 	}
 }
 
-func (ae *APIEnv) RemoveExternalSystem(w http.ResponseWriter, req *http.Request, versionID string, systemID string) {
+func (ae *APIEnv) RemoveExternalSystem(w http.ResponseWriter, req *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(req.Context(), "remove_external_system")
 	defer s.End()
 
@@ -170,7 +170,7 @@ func (ae *APIEnv) RemoveExternalSystem(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *APIEnv) GetExternalSystemSettings(w http.ResponseWriter, req *http.Request, versionID string, systemID string) {
+func (ae *APIEnv) GetExternalSystemSettings(w http.ResponseWriter, req *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_external_system_settings")
 	defer s.End()
 

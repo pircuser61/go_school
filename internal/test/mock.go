@@ -952,11 +952,11 @@ func (_m *MockDB) SaveExternalSystemSettings(ctx context.Context, versionID stri
 	return nil
 }
 
-func (_m *MockDB) RemoveExternalSystem(ctx context.Context, versionID string, systemID string) error {
+func (_m *MockDB) RemoveExternalSystem(ctx context.Context, versionID, systemID string) error {
 	return nil
 }
 
-func (_m *MockDB) GetExternalSystemSettings(ctx context.Context, versionID string, systemID string) (entity.ExternalSystem, error) {
+func (_m *MockDB) GetExternalSystemSettings(ctx context.Context, versionID, systemID string) (entity.ExternalSystem, error) {
 	return entity.ExternalSystem{}, nil
 }
 
@@ -964,7 +964,7 @@ func (_m *MockDB) GetExternalSystemsIDs(ctx context.Context, versionID string) (
 	return nil, nil
 }
 
-func (_m *MockDB) AddExternalSystemToVersion(ctx context.Context, versionID string, systemID string) error {
+func (_m *MockDB) AddExternalSystemToVersion(ctx context.Context, versionID, systemID string) error {
 	return nil
 }
 

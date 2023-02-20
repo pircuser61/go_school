@@ -2723,7 +2723,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.Proce
 	return nil
 }
 
-func (db *PGCon) AddExternalSystemToVersion(ctx context.Context, versionID string, systemID string) error {
+func (db *PGCon) AddExternalSystemToVersion(ctx context.Context, versionID, systemID string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_add_external_system_to_version")
 	defer span.End()
 
@@ -2761,7 +2761,7 @@ func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([
 	return systemIDs, nil
 }
 
-func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID string, systemID string) (entity.ExternalSystem, error) {
+func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, systemID string) (entity.ExternalSystem, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_settings")
 	defer span.End()
 
@@ -2812,7 +2812,7 @@ func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, versionID strin
 	return nil
 }
 
-func (db *PGCon) RemoveExternalSystem(ctx context.Context, versionID string, systemID string) error {
+func (db *PGCon) RemoveExternalSystem(ctx context.Context, versionID, systemID string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_remove_external_system")
 	defer span.End()
 

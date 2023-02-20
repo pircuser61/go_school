@@ -26,7 +26,13 @@ type Notification struct {
 }
 
 type ExecutorNotifTemplate struct {
-	WorkNumber, SdUrl, ExecutorName, Initiator, Description, BlockID, Mailto string
+	WorkNumber   string
+	SdUrl        string
+	ExecutorName string
+	Initiator    string
+	Description  string
+	BlockID      string
+	Mailto       string
 }
 
 func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
@@ -328,7 +334,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s назначена на Группу исполнителей", dto.WorkNumber),
-		Text: `<p>Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b></br>
+		Text: `Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b></br>
  Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
  <b>Действия с заявкой</b>
  {{.ActionBtn}}
@@ -358,7 +364,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	return Template{
-		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.Id, dto.ExecutorName),
+		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.WorkNumber, dto.ExecutorName),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
  <b>Инициатор: </b>{{.Initiator}}</br>
  <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>
@@ -449,7 +455,7 @@ func NewDayBeforeRequestAddInfoSLABreached(id, sdUrl string) Template {
 				необходимо предоставить дополнительную информацию в течение 
 				одного рабочего дня с момента данного уведомления, 
 				иначе заявка будет автоматически <b>перенесена в архив</b>.</br> 
-				Заявка доступна по <a href={{.Link}}>ссылке</a></p></br>`,
+				Заявка доступна по <a href={{.Link}}>ссылке</a></br>`,
 		Variables: struct {
 			Id   string `json:"id"`
 			Link string `json:"link"`
@@ -465,8 +471,8 @@ func NewRequestAddInfoSLABreached(id, sdUrl string) Template {
 		Subject: fmt.Sprintf("Заявка №%s автоматически перенесена в архив", id),
 		Text: `Уважаемый коллега, заявка №{{.Id}} 
 				автоматически перенесена в архив из-за отсутствия ответа 
-				на запрос дополнительной информации в течение 3 дней 
-				Заявка доступна по <a href={{.Link}}>ссылке</a></p></br>`,
+				на запрос дополнительной информации в течение 3 дней <br>
+				Заявка доступна по <a href={{.Link}}>ссылке</a></br>`,
 		Variables: struct {
 			Id   string `json:"id"`
 			Link string `json:"link"`
