@@ -1021,6 +1021,9 @@ type MonitoringBlockParam struct {
 // MonitoringHistory defines model for MonitoringHistory.
 type MonitoringHistory struct {
 	// Айди ноды в variable_storage
+	BlockId string `json:"block_id"`
+
+	// id ноды в заявке
 	NodeId string `json:"node_id"`
 
 	// читаемое имя ноды
@@ -1028,9 +1031,6 @@ type MonitoringHistory struct {
 
 	// Статус ноды
 	Status MonitoringHistoryStatus `json:"status"`
-
-	// имя по типу ноды в сценарии
-	StepName string `json:"step_name"`
 }
 
 // Статус ноды

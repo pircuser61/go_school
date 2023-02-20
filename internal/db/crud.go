@@ -2663,9 +2663,9 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 			&item.Author,
 			&item.CreationTime,
 			&item.ScenarioName,
-			&item.StepName,
-			&item.Status,
 			&item.NodeId,
+			&item.Status,
+			&item.BlockId,
 			&item.RealName,
 		); scanErr != nil {
 			return nil, scanErr
