@@ -18,6 +18,42 @@ import (
 )
 
 const imageMimeTypePrefix = "image"
+const messageTplStart = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta content="telephone=no" name="format-detection" />
+    <title></title>
+    <!--[if mso]>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:AllowPNG />
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+    </xml>
+    <![endif]-->
+    <!--[if lte mso 11]>
+    <style type="text/css">
+        .mj-outlook-group-fix {
+            width: 100% !important;
+        }
+        .preheader {
+            display: none !important;
+            visibility: hidden;
+            opacity: 0;
+            color: transparent;
+            height: 0;
+            width: 0;
+        }
+    </style>
+    </style>
+    <![endif]-->
+</head><body>
+`
+const msgTplEnd = "</body></html>"
 
 type Service struct {
 	cli *mailclient.Client
@@ -82,7 +118,7 @@ func (s *Service) SendNotification(ctx context.Context, to []string, files []ema
 		msg.To = append(msg.To, &mail.Address{Address: person})
 	}
 
-	temp, err := template.New("").Parse(tmpl.Text)
+	temp, err := template.New("").Parse(messageTplStart + tmpl.Text + msgTplEnd)
 	if err != nil {
 		return err
 	}
