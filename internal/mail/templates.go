@@ -329,6 +329,7 @@ func NewAnswerSendToEditTpl(id, name, sdUrl string) Template {
 
 func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockID, "", dto.WorkNumber, executionStartWorkAction)
+	actionSubject = strings.ReplaceAll(actionSubject, " ", "")
 	actionBtn := fmt.Sprintf(buttonTpl, dto.Mailto, actionSubject, "Взять в работу")
 
 	return Template{
