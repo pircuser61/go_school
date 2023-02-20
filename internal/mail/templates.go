@@ -358,8 +358,8 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	return Template{
-		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.WorkNumber, dto.ExecutorName),
-		Text: `<p>Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b></br>
+		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.Id, dto.ExecutorName),
+		Text: `Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
  <b>Инициатор: </b>{{.Initiator}}</br>
  <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>
  ------------ Описание ------------  </br>
@@ -415,9 +415,9 @@ func NewDecisionMadeByAdditionalApprover(id, fullname, decision, comment, sdUrl 
 	}
 	return Template{
 		Subject: fmt.Sprintf("Получена рецензия по Заявке №%s", id),
-		Text: `<p>Уважаемый коллега, получена рецензия по заявке №{{.Id}}</p></br>
-				<p>{{.Fullname}} {{.Decision}}{{.Comment}}</p></br>
-				<p>Для просмотра перейдите по <a href={{.Link}}>ссылке</a></p></br>
+		Text: `Уважаемый коллега, получена рецензия по заявке №{{.Id}}<br>
+				{{.Fullname}} {{.Decision}}{{.Comment}}<br>
+				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
 				
 				<style>
 					p {
@@ -501,7 +501,7 @@ type Action struct {
 
 const (
 	subjectTpl = "step_name=%s|decision=%s|work_number=%s|action_name=%s"
-	buttonTpl  = `<p><a href="mailto:%s?subject=%s&body=Вы можете оставить комментарий здесь" target="_blank">%s</a></p>`
+	buttonTpl  = "<a href='mailto:%s?subject=%s&body=Вы можете оставить комментарий здесь' target='_blank'>%s</a><br>"
 
 	actionApproverSendEditApp   = "approver_send_edit_app"
 	actionExecutorSendEditApp   = "executor_send_edit_app"
@@ -530,18 +530,21 @@ func getApproverButtons(workNumber, mailto, blockId string, actions []Action, is
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp)
+		sendEditAppSubject = strings.ReplaceAll(sendEditAppSubject, " ", "")
 		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Вернуть на доработку")
 		buttons = append(buttons, sendEditAppBtn)
 	}
 
-	return fmt.Sprintf("<p><b>Действия с заявкой</b></p>%s", strings.Join(buttons, ""))
+	return fmt.Sprintf("<b>Действия с заявкой</b><br>%s", strings.Join(buttons, ""))
 }
 
 func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string, isEditable bool) string {
 	executedSubject := fmt.Sprintf(subjectTpl, blockId, executed, workNumber, taskUpdateActionExecution)
+	executedSubject = strings.ReplaceAll(executedSubject, " ", "")
 	executedBtn := fmt.Sprintf(buttonTpl, mailto, executedSubject, "Решить")
 
 	rejectedSubject := fmt.Sprintf(subjectTpl, blockId, rejected, workNumber, taskUpdateActionExecution)
+	rejectedSubject = strings.ReplaceAll(rejectedSubject, " ", "")
 	rejectedBtn := fmt.Sprintf(buttonTpl, mailto, rejectedSubject, "Отклонить")
 
 	buttons := []string{
@@ -551,9 +554,10 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected string,
 
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionExecutorSendEditApp)
+		sendEditAppSubject = strings.ReplaceAll(sendEditAppSubject, " ", "")
 		sendEditAppBtn := fmt.Sprintf(buttonTpl, mailto, sendEditAppSubject, "Вернуть на доработку")
 		buttons = append(buttons, sendEditAppBtn)
 	}
 
-	return fmt.Sprintf("<p><b>Действия с заявкой</b></p> %s", strings.Join(buttons, ""))
+	return fmt.Sprintf("<b>Действия с заявкой</b><br> %s", strings.Join(buttons, ""))
 }
