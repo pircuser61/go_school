@@ -76,8 +76,8 @@ func (c *VariableStore) Copy() *VariableStore {
 		Mutex:      sync.Mutex{},
 		State:      newState,
 		Values:     newValues,
-		Steps:      c.Steps,
-		Errors:     c.Errors,
+		Steps:      newSteps,
+		Errors:     newErrors,
 		StopPoints: c.StopPoints,
 	}
 }
