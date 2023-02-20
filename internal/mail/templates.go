@@ -26,7 +26,11 @@ type Notification struct {
 }
 
 type ExecutorNotifTemplate struct {
-	Id, SdUrl, ExecutorName, Initiator, Description string
+	Id           string
+	SdUrl        string
+	ExecutorName string
+	Initiator    string
+	Description  string
 }
 
 func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
