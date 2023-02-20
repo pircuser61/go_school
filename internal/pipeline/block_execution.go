@@ -57,14 +57,17 @@ func (gb *GoExecutionBlock) isExecutionFinished() bool {
 
 func (gb *GoExecutionBlock) executionActions() []MemberAction {
 	if gb.State.Decision != nil || gb.State.IsRevoked {
-		if gb.State.ExecutionType == script.ExecutionTypeGroup && !gb.State.IsTakenInWork {
-			action := MemberAction{
-				Id:   executionStartWorkAction,
-				Type: ActionTypePrimary,
-			}
-			return []MemberAction{action}
-		}
+		return nil
 	}
+
+	if gb.State.ExecutionType == script.ExecutionTypeGroup && !gb.State.IsTakenInWork {
+		action := MemberAction{
+			Id:   executionStartWorkAction,
+			Type: ActionTypePrimary,
+		}
+		return []MemberAction{action}
+	}
+
 	return []MemberAction{
 		{
 			Id:   executionExecuteAction,
