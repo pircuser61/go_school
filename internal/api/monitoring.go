@@ -65,7 +65,7 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 			Initiator:         t.Initiator,
 			InitiatorFullname: initiatorsFullnameCache[t.Initiator],
 			ProcessName:       t.ProcessName,
-			StartedAt:         t.StartedAt.Format("2006-01-02 15:04:05.000000 -0700"),
+			StartedAt:         t.StartedAt.Format("2006-01-02T15:04:05-0700"),
 			Status:            MonitoringTableTaskStatus(t.Status),
 			WorkNumber:        t.WorkNumber,
 		})
