@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -36,36 +37,28 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	initiatorsFullnameCache := make(map[string]string)
+	initiatorsFullNameCache := make(map[string]string)
 
 	responseTasks := make([]MonitoringTableTask, 0, len(dbTasks.Tasks))
 	for _, t := range dbTasks.Tasks {
-		if _, ok := initiatorsFullnameCache[t.Initiator]; !ok {
+		if _, ok := initiatorsFullNameCache[t.Initiator]; !ok {
 			userLog := log.WithField("username", t.Initiator)
 
-			initiatorUserInfo, getUserErr := ae.People.GetUser(ctx, t.Initiator)
+			userFullName, getUserErr := ae.getUserFullName(ctx, t.Initiator)
 			if getUserErr != nil {
 				e := GetTasksForMonitoringGetUserError
 				userLog.Error(e.errorMessage(getUserErr))
-				continue
 			}
 
-			initiatorSSOUser, typedErr := initiatorUserInfo.ToSSOUserTyped()
-			if typedErr != nil {
-				e := GetTasksForMonitoringGetUserError
-				userLog.Error(e.errorMessage(typedErr))
-				continue
-			}
-
-			initiatorsFullnameCache[t.Initiator] = initiatorSSOUser.GetFullName()
+			initiatorsFullNameCache[t.Initiator] = userFullName
 		}
 
 		responseTasks = append(responseTasks, MonitoringTableTask{
 			Id:                t.Id.String(),
 			Initiator:         t.Initiator,
-			InitiatorFullname: initiatorsFullnameCache[t.Initiator],
+			InitiatorFullname: initiatorsFullNameCache[t.Initiator],
 			ProcessName:       t.ProcessName,
-			StartedAt:         t.StartedAt.Format("2006-01-02 15:04:05.000000 -0700"),
+			StartedAt:         t.StartedAt.Format("2006-01-02T15:04:05-0700"),
 			Status:            MonitoringTableTaskStatus(t.Status),
 			WorkNumber:        t.WorkNumber,
 		})
@@ -80,6 +73,20 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 		_ = e.sendError(w)
 		return
 	}
+}
+
+func (ae *APIEnv) getUserFullName(ctx context.Context, username string) (string, error) {
+	initiatorUserInfo, getUserErr := ae.People.GetUser(ctx, username)
+	if getUserErr != nil {
+		return "", getUserErr
+	}
+
+	initiatorSSOUser, typedErr := initiatorUserInfo.ToSSOUserTyped()
+	if typedErr != nil {
+		return "", typedErr
+	}
+
+	return initiatorSSOUser.GetFullName(), nil
 }
 
 func (ae *APIEnv) GetBlockContext(w http.ResponseWriter, r *http.Request, blockId string) {
