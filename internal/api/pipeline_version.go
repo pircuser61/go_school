@@ -671,6 +671,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.ServiceDesc = ae.ServiceDesc
 	ep.FunctionStore = ae.FunctionStore
 	ep.HumanTasks = ae.HumanTasks
+	ep.Integrations = ae.Integrations
 
 	if dto.makeNewWork {
 		ep.WorkNumber = dto.workNumber
@@ -710,6 +711,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		ServiceDesc:   ep.ServiceDesc,
 		FunctionStore: ep.FunctionStore,
 		HumanTasks:    ep.HumanTasks,
+		Integrations:  ep.Integrations,
 		FaaS:          ep.FaaS,
 
 		UpdateData: nil,

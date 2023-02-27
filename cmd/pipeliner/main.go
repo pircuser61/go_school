@@ -30,6 +30,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
@@ -158,6 +159,11 @@ func main() {
 		return
 	}
 
+	integrationsService, err := integrations.NewService(cfg.Integrations)
+	if err != nil {
+		log.WithError(err).Error("can't create integrations service")
+	}
+
 	APIEnv := &api.APIEnv{
 		Log:                  log,
 		DB:                   &dbConn,
@@ -174,6 +180,7 @@ func main() {
 		FunctionStore:        functionsService,
 		HumanTasks:           humanTasksService,
 		MailFetcher:          mailFetcher,
+		Integrations:         integrationsService,
 	}
 
 	serverParam := api.ServerParam{

@@ -8,6 +8,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
@@ -57,6 +58,7 @@ type Pipeliner struct {
 	FunctionStore         functions.Config    `yaml:"function_store"`
 	HumanTasks            human_tasks.Config  `yaml:"human_tasks"`
 	MailFetcher           mail_fetcher.Config `yaml:"imap"`
+	Integrations          integrations.Config `yaml:"integrations"`
 }
 
 type RunEnv struct {

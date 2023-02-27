@@ -98,3 +98,6 @@ imap:
   imap_user_name: "servicedeskmail@mts.ru"
   imap_password: "IMAP_PASSWORD"
   imap_mail_box: "Inbox"
+
+integrations:
+  url: 'integrations:90'

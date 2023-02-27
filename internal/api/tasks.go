@@ -735,6 +735,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 			ServiceDesc:   ae.ServiceDesc,
 			FunctionStore: ae.FunctionStore,
 			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
 			FaaS:          ae.FaaS,
 
 			UpdateData: &script.BlockUpdateData{
@@ -937,6 +938,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			ServiceDesc:   ae.ServiceDesc,
 			FunctionStore: ae.FunctionStore,
 			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
 			FaaS:          ae.FaaS,
 
 			UpdateData: &script.BlockUpdateData{
@@ -1021,6 +1023,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		ServiceDesc:   ae.ServiceDesc,
 		FunctionStore: ae.FunctionStore,
 		HumanTasks:    ae.HumanTasks,
+		Integrations:  ae.Integrations,
 		FaaS:          ae.FaaS,
 
 		UpdateData: &script.BlockUpdateData{

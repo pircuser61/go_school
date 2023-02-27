@@ -18,6 +18,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
@@ -38,6 +39,7 @@ type BlockRunContext struct {
 	ServiceDesc        *servicedesc.Service
 	FunctionStore      *functions.Service
 	HumanTasks         *human_tasks.Service
+	Integrations       *integrations.Service
 	FaaS               string
 	VarStore           *store.VariableStore
 	UpdateData         *script.BlockUpdateData
