@@ -35,10 +35,20 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 		return
 	}
 
+	systemsNames, err := ae.Integrations.GetSystemsNames(ctx, externalSystemsIds)
+	if err != nil {
+		e := GetExternalSystemsNamesError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	result := entity.ProcessSettingsWithExternalSystems{ProcessSettings: processSettings}
 	for _, id := range externalSystemsIds {
 		result.ExternalSystems = append(result.ExternalSystems, entity.ExternalSystem{
-			Id: id.String(),
+			Id:   id.String(),
+			Name: systemsNames[id.String()],
 		})
 	}
 
