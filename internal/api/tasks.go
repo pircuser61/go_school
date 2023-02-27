@@ -26,7 +26,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type eriusTaskResponse struct {
@@ -561,8 +560,20 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			Parameters: jsonBody,
 		}
 
-		userLogin := utils.GetLoginFromEmail(mails[i].From)
-		errUpdate := ae.updateTaskInternal(ctx, mails[i].Action.WorkNumber, userLogin, &updateData)
+		userEmail, errGetEmail := ae.People.GetUserEmail(ctx, mails[i].Action.Login)
+		if errGetEmail != nil {
+			log.WithField("workNumber", mails[i].Action.WorkNumber).
+				WithField("login", mails[i].Action.Login).Error(errGetEmail)
+			continue
+		}
+
+		if userEmail != mails[i].From {
+			log.WithField("userEmail", userEmail).
+				WithField("mails[i].From", mails[i].From).Error(errors.New("login from email not eq"))
+			continue
+		}
+
+		errUpdate := ae.updateTaskInternal(ctx, mails[i].Action.WorkNumber, mails[i].Action.Login, &updateData)
 		if errUpdate != nil {
 			log.WithField("action", *mails[i].Action).
 				WithField("workNumber", mails[i].Action.WorkNumber).

@@ -12,7 +12,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -151,7 +150,13 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
 
-	emails := make([]string, 0, len(loginsToNotify))
+	description, makeNotificationErr := gb.RunContext.makeNotificationDescription(gb.Name)
+	if makeNotificationErr != nil {
+		return makeNotificationErr
+	}
+
+	emails := make(map[string]mail.Template, 0)
+	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution)
 	for _, login := range loginsToNotify {
 		email, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
@@ -159,57 +164,40 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			continue
 		}
 
-		emails = append(emails, email)
-	}
+		if isGroupExecutors {
+			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
+				&mail.ExecutorNotifTemplate{
+					WorkNumber:  gb.RunContext.WorkNumber,
+					SdUrl:       gb.RunContext.Sender.SdAddress,
+					Description: description,
+					BlockID:     BlockGoExecutionID,
+					Mailto:      gb.RunContext.Sender.FetchEmail,
+					Login:       login,
+				},
+			)
+		} else {
+			emails[email] = mail.NewAppPersonStatusNotificationTpl(
+				&mail.NewAppPersonStatusTpl{
+					WorkNumber:  gb.RunContext.WorkNumber,
+					Name:        gb.RunContext.WorkTitle,
+					Status:      string(StatusExecution),
+					Action:      statusToTaskAction[StatusExecution],
+					DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA),
+					Description: description,
+					SdUrl:       gb.RunContext.Sender.SdAddress,
+					Mailto:      gb.RunContext.Sender.FetchEmail,
+					Login:       login,
+					IsEditable:  gb.State.GetIsEditable(),
 
-	if len(emails) == 0 {
-		return nil
-	}
-
-	description, makeNotificationErr := gb.RunContext.makeNotificationDescription(gb.Name)
-	if makeNotificationErr != nil {
-		return makeNotificationErr
-	}
-
-	emails = utils.UniqueStrings(emails)
-	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution)
-
-	// if group executors we send notification with action "executor_start_work"
-	if isGroupExecutors {
-		tpl := mail.NewExecutionNeedTakeInWorkTpl(
-			&mail.ExecutorNotifTemplate{
-				WorkNumber:  gb.RunContext.WorkNumber,
-				SdUrl:       gb.RunContext.Sender.SdAddress,
-				Description: description,
-				BlockID:     BlockGoExecutionID,
-				Mailto:      gb.RunContext.Sender.FetchEmail,
-			},
-		)
-
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); sendErr != nil {
-			return sendErr
+					BlockID:                   BlockGoExecutionID,
+					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
+					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
+				})
 		}
 	}
 
-	if !isGroupExecutors {
-		tpl := mail.NewAppPersonStatusNotificationTpl(
-			&mail.NewAppPersonStatusTpl{
-				WorkNumber:  gb.RunContext.WorkNumber,
-				Name:        gb.RunContext.WorkTitle,
-				Status:      string(StatusExecution),
-				Action:      statusToTaskAction[StatusExecution],
-				DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA),
-				Description: description,
-				SdUrl:       gb.RunContext.Sender.SdAddress,
-				Mailto:      gb.RunContext.Sender.FetchEmail,
-				IsEditable:  gb.State.GetIsEditable(),
-
-				BlockID:                   BlockGoExecutionID,
-				ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
-				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
-			})
-
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); sendErr != nil {
+	for i := range emails {
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, nil, emails[i]); sendErr != nil {
 			return sendErr
 		}
 	}

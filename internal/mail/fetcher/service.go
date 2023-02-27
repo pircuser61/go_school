@@ -17,6 +17,7 @@ const (
 	decision   = "decision"
 	workNumber = "work_number"
 	actionName = "action_name"
+	login      = "login"
 
 	fieldsDelimiter         string = "|"
 	fieldsKeyValueDelimiter string = "="
