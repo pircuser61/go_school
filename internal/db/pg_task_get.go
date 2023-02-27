@@ -1281,10 +1281,10 @@ func getTasksForMonitoringQuery(filters entity.TasksForMonitoringFilters) string
 	q := `
 			SELECT w.version_id as id,
 				CASE
-					WHEN v.status IN (1, 3, 5) THEN 'В работе'
-        			WHEN v.status = 2 THEN 'Завершен'
-				    WHEN v.status = 4 THEN 'Остановлен'
-        			WHEN v.status IS NULL THEN 'Неизвестный статус'
+					WHEN w.status IN (1, 3, 5) THEN 'В работе'
+        			WHEN w.status = 2 THEN 'Завершен'
+				    WHEN w.status = 4 THEN 'Остановлен'
+        			WHEN w.status IS NULL THEN 'Неизвестный статус'
     			END AS status,
 				p.name AS process_name,
 				w.author AS initiator,
