@@ -2,7 +2,6 @@ package people
 
 import (
 	"encoding/json"
-	"strings"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
@@ -23,7 +22,7 @@ type SSOUserAttributes struct {
 	MemberOf          []string `json:"memberOf,omitempty"`
 	FullName          string   `json:"fullname"`
 	UserPrincipalName string   `json:"userPrincipalName"`
-	ProxyEmails       string   `json:"proxyAddresses"`
+	ProxyEmails       []string `json:"proxyAddresses"`
 }
 
 func zeroOrDefault(ss []string) string {
@@ -76,7 +75,7 @@ func (a *SSOUserAttributes) UnmarshalJSON(data []byte) error {
 		FullName:          zeroOrDefault(raw.FullName),
 		UserPrincipalName: zeroOrDefault(raw.UserPrincipalName),
 		TelephoneNumber:   zeroOrDefault(raw.TelephoneNumber),
-		ProxyEmails:       strings.Join(raw.ProxyEmails, ","),
+		ProxyEmails:       raw.ProxyEmails,
 	}
 
 	*a = newA

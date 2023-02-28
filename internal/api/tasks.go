@@ -26,6 +26,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type eriusTaskResponse struct {
@@ -573,7 +574,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		if useInfo.Email != mails[i].From && !strings.Contains(useInfo.ProxyEmails, mails[i].From) {
+		if useInfo.Email != mails[i].From && !utils.IsContainsInSlice(mails[i].From, useInfo.ProxyEmails) {
 			log.WithField("userEmailByLogin", useInfo.Email).
 				WithField("emailFromEmail", mails[i].From).
 				WithField("proxyEmails", useInfo.ProxyEmails).
