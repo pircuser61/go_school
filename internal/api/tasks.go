@@ -577,7 +577,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			log.WithField("userEmailByLogin", useInfo.Email).
 				WithField("emailFromEmail", mails[i].From).
 				WithField("proxyEmails", useInfo.ProxyEmails).
-				Error(errors.New("login from email not eq or not in proxyEmails"))
+				Error(errors.New("login from email not eq or not in proxyAddresses"))
 			continue
 		}
 

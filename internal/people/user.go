@@ -23,7 +23,7 @@ type SSOUserAttributes struct {
 	MemberOf          []string `json:"memberOf,omitempty"`
 	FullName          string   `json:"fullname"`
 	UserPrincipalName string   `json:"userPrincipalName"`
-	ProxyEmails       string   `json:"proxyEmails"`
+	ProxyEmails       string   `json:"proxyAddresses"`
 }
 
 func zeroOrDefault(ss []string) string {
@@ -49,7 +49,7 @@ type SSOUserAttributesRAW struct {
 	FullName          []string `json:"fullname"`
 	UserPrincipalName []string `json:"userPrincipalName"`
 	TelephoneNumber   []string `json:"telephoneNumber"`
-	ProxyEmails       []string `json:"proxyEmails"`
+	ProxyEmails       []string `json:"proxyAddresses"`
 }
 
 func (a *SSOUserAttributes) UnmarshalJSON(data []byte) error {
