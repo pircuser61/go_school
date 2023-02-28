@@ -560,16 +560,24 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			Parameters: jsonBody,
 		}
 
-		userEmail, errGetEmail := ae.People.GetUserEmail(ctx, mails[i].Action.Login)
-		if errGetEmail != nil {
+		usr, errGetUser := ae.People.GetUser(ctx, mails[i].Action.Login)
+		if errGetUser != nil {
 			log.WithField("workNumber", mails[i].Action.WorkNumber).
-				WithField("login", mails[i].Action.Login).Error(errGetEmail)
+				WithField("login", mails[i].Action.Login).Error(errGetUser)
 			continue
 		}
 
-		if userEmail != mails[i].From {
-			log.WithField("userEmail", userEmail).
-				WithField("mails[i].From", mails[i].From).Error(errors.New("login from email not eq"))
+		useInfo, errToUserinfo := usr.ToUserinfo()
+		if errToUserinfo != nil {
+			log.Error(errToUserinfo)
+			continue
+		}
+
+		if useInfo.Email != mails[i].From && !strings.Contains(useInfo.ProxyEmails, mails[i].From){
+			log.WithField("userEmailByLogin", useInfo.Email).
+				WithField("emailFromEmail", mails[i].From).
+				WithField("proxyEmails", useInfo.ProxyEmails).
+				Error(errors.New("login from email not eq or not in proxyEmails"))
 			continue
 		}
 

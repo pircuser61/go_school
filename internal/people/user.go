@@ -2,6 +2,7 @@ package people
 
 import (
 	"encoding/json"
+	"strings"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
@@ -22,6 +23,7 @@ type SSOUserAttributes struct {
 	MemberOf          []string `json:"memberOf,omitempty"`
 	FullName          string   `json:"fullname"`
 	UserPrincipalName string   `json:"userPrincipalName"`
+	ProxyEmails       string   `json:"proxyEmails"`
 }
 
 func zeroOrDefault(ss []string) string {
@@ -47,6 +49,7 @@ type SSOUserAttributesRAW struct {
 	FullName          []string `json:"fullname"`
 	UserPrincipalName []string `json:"userPrincipalName"`
 	TelephoneNumber   []string `json:"telephoneNumber"`
+	ProxyEmails       []string `json:"proxyEmails"`
 }
 
 func (a *SSOUserAttributes) UnmarshalJSON(data []byte) error {
@@ -73,6 +76,7 @@ func (a *SSOUserAttributes) UnmarshalJSON(data []byte) error {
 		FullName:          zeroOrDefault(raw.FullName),
 		UserPrincipalName: zeroOrDefault(raw.UserPrincipalName),
 		TelephoneNumber:   zeroOrDefault(raw.TelephoneNumber),
+		ProxyEmails:       strings.Join(raw.ProxyEmails, ","),
 	}
 
 	*a = newA
@@ -132,6 +136,7 @@ func (u SSOUser) ToUserinfo() (*sso.UserInfo, error) {
 		ThumbnailPhoto: typed.Attributes.ThumbnailPhoto,
 		MemberOf:       typed.Attributes.MemberOf,
 		OrgUnit:        typed.Attributes.OrgUnit,
+		ProxyEmails:    typed.Attributes.ProxyEmails,
 	}, nil
 }
 

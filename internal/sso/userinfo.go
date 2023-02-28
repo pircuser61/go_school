@@ -40,6 +40,7 @@ type UserInfo struct {
 	Company           string                 `json:"company"`
 	MemberOf          []string               `json:"memberOf"`
 	OrgUnit           string                 `json:"OrgUnit"`
+	ProxyEmails       string                 `json:"proxyEmails"`
 }
 
 type custClaims struct {
