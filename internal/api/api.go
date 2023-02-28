@@ -888,6 +888,9 @@ type FormExecutorType string
 
 // Form params
 type FormParams struct {
+	// Is active SLA
+	CheckSla bool `json:"check_sla"`
+
 	// Executor value
 	Executor *string `json:"executor,omitempty"`
 
@@ -905,6 +908,9 @@ type FormParams struct {
 
 	// form template id name
 	SchemaName *string `json:"schema_name,omitempty"`
+
+	// form sla
+	Sla int `json:"sla"`
 }
 
 // FormsAccessibility defines model for FormsAccessibility.

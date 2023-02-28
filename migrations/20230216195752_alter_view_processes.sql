@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-DROP VIEW IF EXISTS processes
+DROP VIEW IF EXISTS processes;
 
 CREATE VIEW processes
 AS

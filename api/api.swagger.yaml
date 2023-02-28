@@ -4124,6 +4124,13 @@ components:
         schema_id:
           type: string
           description: form template id
+        sla:
+          type: integer
+          description: form sla
+          minimum: 1
+        check_sla:
+            type: boolean
+            description: Is active SLA
         schema_name:
           type: string
           description: form template id name
@@ -4133,6 +4140,8 @@ components:
           items:
             $ref: '#/components/schemas/FormsAccessibility'
       required:
+        - sla
+        - check_sla
         - blueprint_id
         - blueprint_name
 
