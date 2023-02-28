@@ -22,6 +22,7 @@ type SSOUserAttributes struct {
 	MemberOf          []string `json:"memberOf,omitempty"`
 	FullName          string   `json:"fullname"`
 	UserPrincipalName string   `json:"userPrincipalName"`
+	ProxyEmails       []string `json:"proxyAddresses"`
 }
 
 func zeroOrDefault(ss []string) string {
@@ -47,6 +48,7 @@ type SSOUserAttributesRAW struct {
 	FullName          []string `json:"fullname"`
 	UserPrincipalName []string `json:"userPrincipalName"`
 	TelephoneNumber   []string `json:"telephoneNumber"`
+	ProxyEmails       []string `json:"proxyAddresses"`
 }
 
 func (a *SSOUserAttributes) UnmarshalJSON(data []byte) error {
@@ -73,6 +75,7 @@ func (a *SSOUserAttributes) UnmarshalJSON(data []byte) error {
 		FullName:          zeroOrDefault(raw.FullName),
 		UserPrincipalName: zeroOrDefault(raw.UserPrincipalName),
 		TelephoneNumber:   zeroOrDefault(raw.TelephoneNumber),
+		ProxyEmails:       raw.ProxyEmails,
 	}
 
 	*a = newA
@@ -132,6 +135,7 @@ func (u SSOUser) ToUserinfo() (*sso.UserInfo, error) {
 		ThumbnailPhoto: typed.Attributes.ThumbnailPhoto,
 		MemberOf:       typed.Attributes.MemberOf,
 		OrgUnit:        typed.Attributes.OrgUnit,
+		ProxyEmails:    typed.Attributes.ProxyEmails,
 	}, nil
 }
 

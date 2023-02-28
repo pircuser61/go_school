@@ -609,6 +609,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			Description: descr,
 			SdUrl:       gb.RunContext.Sender.SdAddress,
 			Mailto:      gb.RunContext.Sender.FetchEmail,
+			Login:       loginTakenInWork,
 			IsEditable:  gb.State.GetIsEditable(),
 
 			BlockID:                   BlockGoExecutionID,

@@ -12,7 +12,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -183,21 +182,6 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Approvers))
 
-	emails := make([]string, 0, len(loginsToNotify))
-	for _, login := range loginsToNotify {
-		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
-		if getEmailErr != nil {
-			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
-			continue
-		}
-
-		emails = append(emails, email)
-	}
-
-	if len(emails) == 0 {
-		return nil
-	}
-
 	description, makeNotifErr := gb.RunContext.makeNotificationDescription(gb.Name)
 	if makeNotifErr != nil {
 		return makeNotifErr
@@ -211,10 +195,15 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		})
 	}
 
-	emails = utils.UniqueStrings(emails)
+	emails := make(map[string]mail.Template, 0)
+	for _, login := range loginsToNotify {
+		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		if getEmailErr != nil {
+			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
+			continue
+		}
 
-	for i := range emails {
-		tpl := mail.NewAppPersonStatusNotificationTpl(
+		emails[email] = mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber:      gb.RunContext.WorkNumber,
 				Name:            gb.RunContext.WorkTitle,
@@ -224,6 +213,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				Description:     description,
 				SdUrl:           gb.RunContext.Sender.SdAddress,
 				Mailto:          gb.RunContext.Sender.FetchEmail,
+				Login:           login,
 				IsEditable:      gb.State.GetIsEditable(),
 				ApproverActions: actionsList,
 
@@ -231,8 +221,10 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 			})
+	}
 
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, nil, tpl); sendErr != nil {
+	for i := range emails {
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, nil, emails[i]); sendErr != nil {
 			return sendErr
 		}
 	}

@@ -22,6 +22,7 @@ type ActionPayload struct {
 	ActionName string `json:"actionName"`
 	Decision   string `json:"decision"`
 	Comment    string `json:"comment"`
+	Login      string `json:"login"`
 }
 
 type ParsedEmail struct {
@@ -190,6 +191,8 @@ func parseSubject(fields []string) (action *ActionPayload, err error) {
 			action.WorkNumber = keyValue[1]
 		case actionName:
 			action.ActionName = keyValue[1]
+		case login:
+			action.Login = keyValue[1]
 		}
 	}
 
