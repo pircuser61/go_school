@@ -44,12 +44,17 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 		return
 	}
 
-	result := entity.ProcessSettingsWithExternalSystems{ProcessSettings: processSettings}
+	externalSystems := make([]entity.ExternalSystem, 0, len(externalSystemsIds))
 	for _, id := range externalSystemsIds {
-		result.ExternalSystems = append(result.ExternalSystems, entity.ExternalSystem{
+		externalSystems = append(externalSystems, entity.ExternalSystem{
 			Id:   id.String(),
 			Name: systemsNames[id.String()],
 		})
+	}
+
+	result := entity.ProcessSettingsWithExternalSystems{
+		ExternalSystems: externalSystems,
+		ProcessSettings: processSettings,
 	}
 
 	if err := sendResponse(w, http.StatusOK, result); err != nil {
