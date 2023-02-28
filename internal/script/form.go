@@ -1,6 +1,9 @@
 package script
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type FormExecutorType string
 
@@ -16,6 +19,8 @@ const (
 
 type FormParams struct {
 	SchemaId           string              `json:"schema_id"`
+	SLA                int                 `json:"sla"`
+	CheckSLA           bool                `json:"check_sla"`
 	SchemaName         string              `json:"schema_name"`
 	Executor           string              `json:"executor"`
 	FormExecutorType   FormExecutorType    `json:"form_executor_type"`
@@ -25,6 +30,10 @@ type FormParams struct {
 func (a *FormParams) Validate() error {
 	if a.SchemaId == "" || (a.FormExecutorType == FormExecutorTypeUser && a.Executor == "") {
 		return errors.New("got no form name, id or executor")
+	}
+
+	if a.SLA < 1 && a.CheckSLA {
+		return fmt.Errorf("invalid SLA value %d", a.SLA)
 	}
 
 	return nil
