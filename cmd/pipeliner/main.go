@@ -162,6 +162,7 @@ func main() {
 	integrationsService, err := integrations.NewService(cfg.Integrations)
 	if err != nil {
 		log.WithError(err).Error("can't create integrations service")
+		return
 	}
 
 	APIEnv := &api.APIEnv{
