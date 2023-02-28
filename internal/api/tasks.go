@@ -573,7 +573,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		if useInfo.Email != mails[i].From && !strings.Contains(useInfo.ProxyEmails, mails[i].From){
+		if useInfo.Email != mails[i].From && !strings.Contains(useInfo.ProxyEmails, mails[i].From) {
 			log.WithField("userEmailByLogin", useInfo.Email).
 				WithField("emailFromEmail", mails[i].From).
 				WithField("proxyEmails", useInfo.ProxyEmails).
