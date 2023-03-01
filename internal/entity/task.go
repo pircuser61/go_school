@@ -148,6 +148,7 @@ const (
 	TaskUpdateActionApprovement                TaskUpdateAction = "approvement"
 	TaskUpdateActionAdditionalApprovement      TaskUpdateAction = "additional_approvement"
 	TaskUpdateActionSLABreach                  TaskUpdateAction = "sla_breached"
+	TaskUpdateActionDayBeforeSLABreach         TaskUpdateAction = "sla_day_before"
 	TaskUpdateActionHalfSLABreach              TaskUpdateAction = "half_sla_breached"
 	TaskUpdateActionReworkSLABreach            TaskUpdateAction = "rework_sla_breached"
 	TaskUpdateActionExecution                  TaskUpdateAction = "execution"

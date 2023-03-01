@@ -43,6 +43,11 @@ type FormData struct {
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
 	IsRevoked bool `json:"is_revoked"`
+
+	SLA                 int  `json:"sla"`
+	CheckSLA            bool `json:"check_sla"`
+	SLAChecked          bool `json:"sla_checked"`
+	DayBeforeSLAChecked bool `json:"day_before_sla_checked"`
 }
 
 type GoFormBlock struct {
@@ -88,7 +93,29 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 }
 
 func (gb *GoFormBlock) Deadlines() []Deadline {
-	return []Deadline{}
+	if gb.State.IsRevoked {
+		return []Deadline{}
+	}
+
+	deadlines := make([]Deadline, 0, 2)
+
+	if !gb.State.SLAChecked {
+		deadlines = append(deadlines,
+			Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
+				Action: entity.TaskUpdateActionSLABreach,
+			},
+		)
+	}
+
+	if !gb.State.DayBeforeSLAChecked {
+		deadlines = append(deadlines,
+			Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA-8)),
+				Action: entity.TaskUpdateActionDayBeforeSLABreach,
+			},
+		)
+	}
+
+	return deadlines
 }
 
 func (gb *GoFormBlock) UpdateManual() bool {
@@ -212,6 +239,8 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			params.Executor: {},
 		},
 		SchemaId:           params.SchemaId,
+		SLA:                params.SLA,
+		CheckSLA:           params.CheckSLA,
 		SchemaName:         params.SchemaName,
 		ChangesLog:         make([]ChangesLogItem, 0),
 		FormExecutorType:   params.FormExecutorType,

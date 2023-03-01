@@ -8,8 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type updateFillFormParams struct {
@@ -58,37 +62,63 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 	if data == nil {
 		return nil, errors.New("empty data")
 	}
-	if data.Action == string(entity.TaskUpdateActionCancelApp) {
+
+	switch data.Action {
+	case string(entity.TaskUpdateActionSLABreach):
+		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionDayBeforeSLABreach):
+		if errUpdate := gb.handleDayBeforeSLABreached(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionCancelApp):
 		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 		return nil, nil
+	case string(entity.TaskUpdateActionRequestFillForm):
+		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
+			return nil, errFill
+		}
 	}
+
+	var stateBytes []byte
+	stateBytes, err := json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
+	return nil, nil
+}
+
+func (gb *GoFormBlock) handleRequestFillForm(ctx c.Context, data *script.BlockUpdateData) error {
 	var updateParams updateFillFormParams
 	err := json.Unmarshal(data.Parameters, &updateParams)
 	if err != nil {
-		return nil, errors.New("can't assert provided data")
+		return errors.New("can't assert provided data")
 	}
-
-	var delegateFor = ""
 
 	if updateParams.BlockId != gb.Name {
-		return nil, fmt.Errorf("wrong form id: %s, gb.Name: %s", updateParams.BlockId, gb.Name)
+		return fmt.Errorf("wrong form id: %s, gb.Name: %s", updateParams.BlockId, gb.Name)
 	}
+
 	if gb.State.IsFilled {
 		isAllowed, checkEditErr := gb.RunContext.Storage.CheckUserCanEditForm(ctx, gb.RunContext.WorkNumber,
 			gb.Name, data.ByLogin)
 		if checkEditErr != nil {
-			return nil, checkEditErr
+			return checkEditErr
 		}
 		if !isAllowed {
-			return nil, NewUserIsNotPartOfProcessErr()
+			return NewUserIsNotPartOfProcessErr()
 		}
 	} else {
 		_, executorFound := gb.State.Executors[data.ByLogin]
 
 		if !executorFound {
-			return nil, NewUserIsNotPartOfProcessErr()
+			return NewUserIsNotPartOfProcessErr()
 		}
 
 		gb.State.ActualExecutor = &data.ByLogin
@@ -104,24 +134,110 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			ApplicationBody: updateParams.ApplicationBody,
 			CreatedAt:       time.Now(),
 			Executor:        data.ByLogin,
-			DelegateFor:     delegateFor,
+			DelegateFor:     "",
 		},
 	}, gb.State.ChangesLog...)
 
 	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualExecutor)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
 
-	var stateBytes []byte
-	stateBytes, err = json.Marshal(gb.State)
-	if err != nil {
-		return nil, err
+	return nil
+}
+
+//nolint:dupl //its not duplicate
+func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
+	const fn = "pipeline.form.handleBreachedSLA"
+
+	if !gb.State.CheckSLA {
+		gb.State.SLAChecked = true
+		return nil
 	}
 
-	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
-	return nil, nil
+	log := logger.GetLogger(ctx)
+
+	if gb.State.SLA >= 8 {
+		emails := make([]string, 0, len(gb.State.Executors))
+		logins := getSliceFromMapOfStrings(gb.State.Executors)
+
+		for i := range logins {
+			executorEmail, err := gb.RunContext.People.GetUserEmail(ctx, logins[i])
+			if err != nil {
+				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
+				continue
+			}
+			emails = append(emails, executorEmail)
+		}
+
+		if len(emails) == 0 {
+			return nil
+		}
+
+		err := gb.RunContext.Sender.SendNotification(
+			ctx,
+			emails,
+			nil,
+			mail.NewFormSLATpl(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Sender.SdAddress,
+			))
+		if err != nil {
+			return err
+		}
+	}
+
+	gb.State.SLAChecked = true
+
+	return nil
+}
+
+//nolint:dupl //its not duplicate
+func (gb *GoFormBlock) handleDayBeforeSLABreached(ctx c.Context) error {
+	const fn = "pipeline.form.handleDayBeforeSLABreached"
+
+	if !gb.State.DayBeforeSLAChecked {
+		return nil
+	}
+
+	log := logger.GetLogger(ctx)
+
+	if gb.State.SLA >= 8 {
+		emails := make([]string, 0, len(gb.State.Executors))
+		logins := getSliceFromMapOfStrings(gb.State.Executors)
+
+		for i := range logins {
+			executorEmail, err := gb.RunContext.People.GetUserEmail(ctx, logins[i])
+			if err != nil {
+				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
+				continue
+			}
+			emails = append(emails, executorEmail)
+		}
+
+		if len(emails) == 0 {
+			return nil
+		}
+
+		err := gb.RunContext.Sender.SendNotification(
+			ctx,
+			emails,
+			nil,
+			mail.NewFormDayBeforeTpl(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Sender.SdAddress,
+			))
+		if err != nil {
+			return err
+		}
+	}
+
+	gb.State.DayBeforeSLAChecked = true
+
+	return nil
 }

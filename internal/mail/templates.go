@@ -73,7 +73,23 @@ func NewApprovementHalfSLATpl(id, name, sdUrl, status string) Template {
 func NewExecutionSLATpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время исполнения", id, name),
-		Text:    "Истекло время исполнения заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Text: `Истекло время исполнения заявки {{.Name}}<br>
+Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>`,
+		Variables: struct {
+			Name string `json:"name"`
+			Link string `json:"link"`
+		}{
+			Name: name,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
+func NewFormSLATpl(id, name, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("По заявке №%s %s истекло время предоставления дополнительной информации", id, name),
+		Text: `Истекло время предоставление дополнительной информации по заявке {{.Name}}<br>
+Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>`,
 		Variables: struct {
 			Name string `json:"name"`
 			Link string `json:"link"`
@@ -93,6 +109,23 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl string) Template {
 			Link string `json:"link"`
 		}{
 			Name: name,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
+func NewFormDayBeforeTpl(id, name, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
+		Text: "Уважаемый коллега, время предоставления информации по {{.Name}} заявке № {{.Id}} истекает " +
+			"через 8 часов\nДля просмотра перейдите по <a href={{.Link}}>заявке</a>",
+		Variables: struct {
+			Name string `json:"name"`
+			Id   string `json:"id"`
+			Link string `json:"link"`
+		}{
+			Name: name,
+			Id:   id,
 			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 		},
 	}
