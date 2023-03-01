@@ -101,3 +101,6 @@ imap:
 
 integrations:
   url: 'integrations:90'
+
+hrgate:
+  hr_gate_url: ""

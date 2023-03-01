@@ -28,6 +28,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
@@ -162,6 +163,12 @@ func main() {
 	integrationsService, err := integrations.NewService(cfg.Integrations)
 	if err != nil {
 		log.WithError(err).Error("can't create integrations service")
+		return
+	}
+
+	hrgateService, err := hrgate.NewService(cfg.HrGate, ssoService)
+	if err != nil {
+		log.WithError(err).Error("can't create hrgate service")
 		return
 	}
 
