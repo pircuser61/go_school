@@ -798,12 +798,18 @@ func (gb *GoApproverBlock) notificateNeedRework(ctx c.Context) error {
 func (gb *GoApproverBlock) notificateNewInfoRecieved(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.UpdateData.ByLogin)
+	logins := []string{gb.RunContext.UpdateData.ByLogin}
+	for i := range gb.State.AdditionalApprovers {
+		logins = append(logins, gb.State.AdditionalApprovers[i].ApproverLogin)
+	}
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
 		return err
 	}
 
-	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.UpdateData.ByLogin})
+	delegates = delegates.FilterByType("approvement")
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(logins)
 
 	var em string
 	emails := make([]string, 0, len(loginsToNotify))
