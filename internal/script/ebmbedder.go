@@ -1,7 +1,5 @@
 package script
 
-import "gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
-
 type Embedder interface {
 	Model() FunctionModel
 }
@@ -98,12 +96,12 @@ var (
 	ApproveSocket = Socket{
 		Id:         approveSocketId,
 		Title:      approveSocketTitle,
-		ActionType: pipeline.ActionTypePrimary,
+		ActionType: "primary",
 	}
 	RejectSocket = Socket{
 		Id:         rejectSocketId,
 		Title:      RejectSocketTitle,
-		ActionType: pipeline.ActionTypeSecondary,
+		ActionType: "secondary",
 	}
 
 	ApproverEditAppSocket = Socket{Id: approverEditAppSocketID, Title: approverEditAppSocketTitle}
