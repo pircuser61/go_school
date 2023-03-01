@@ -21,6 +21,9 @@ const (
 )
 
 func GetJsonType(value interface{}) string {
+	if value == nil {
+		return ""
+	}
 	switch reflect.TypeOf(value).Kind() {
 	case reflect.Int:
 		return integerType
