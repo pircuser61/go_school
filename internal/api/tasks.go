@@ -664,9 +664,12 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 //nolint:gocyclo // ok here
 func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
+	defer span.End()
+
 	log := logger.GetLogger(ctx)
 
-	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
+	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
@@ -683,7 +686,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	delegationsByApprovement := delegations.FilterByType("approvement")
 	delegationsByExecution := delegations.FilterByType("execution")
 
-	dbTask, err := ae.DB.GetTask(ctx,
+	dbTask, err := ae.DB.GetTask(ctxLocal,
 		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
 		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
 		userLogin,
@@ -699,7 +702,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		return errors.New(e.errorMessage(nil))
 	}
 
-	scenario, err := ae.DB.GetPipelineVersion(ctx, dbTask.VersionID, false)
+	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
 	if err != nil {
 		e := GetVersionError
 		return errors.New(e.errorMessage(nil))
@@ -707,7 +710,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 	var steps entity.TaskSteps
 	for _, blockType := range blockTypes {
-		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType)
 		if stepErr != nil {
 			e := GetTaskError
 			return errors.New(e.errorMessage(nil))
@@ -724,18 +727,23 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	}
 
 	couldUpdateOne := false
+	spCtx := span.SpanContext()
 	for _, item := range steps {
 		// nolint:staticcheck // fix later
 		routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 		routineCtx = logger.WithLogger(routineCtx, log)
-		txStorage, transactionErr := ae.DB.StartTransaction(routineCtx)
+		processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_task_step_update", spCtx)
+		fakeSpan.End()
+
+		txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
+
 		if transactionErr != nil {
 			continue
 		}
 
-		storage, getErr := txStorage.GetVariableStorageForStep(routineCtx, dbTask.ID, item.Name)
+		storage, getErr := txStorage.GetVariableStorageForStep(processCtx, dbTask.ID, item.Name)
 		if getErr != nil {
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			log.WithError(getErr).Error("couldn't get block to update")
@@ -768,7 +776,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
 		if !ok {
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			log.WithError(errors.New("couldn't get block from pipeline")).
@@ -776,17 +784,17 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 			continue
 		}
 
-		blockErr := pipeline.ProcessBlock(routineCtx, item.Name, &blockFunc, runCtx, true)
+		blockErr := pipeline.ProcessBlock(processCtx, item.Name, &blockFunc, runCtx, true)
 		if blockErr != nil {
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			log.WithError(blockErr).Error("couldn't update block")
 			continue
 		}
 
-		if err = txStorage.CommitTransaction(routineCtx); err != nil {
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+		if err = txStorage.CommitTransaction(processCtx); err != nil {
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			log.WithError(err).Error("couldn't update block")
