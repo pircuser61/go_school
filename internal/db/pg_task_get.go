@@ -194,8 +194,10 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
 		q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", q, len(args))
 	}
 	if filters.Name != nil {
-		args = append(args, *filters.Name)
-		q = fmt.Sprintf("%s AND p.name ILIKE $%d || '%%'", q, len(args))
+		name := strings.Replace(*filters.Name, "_", "!_", -1)
+		name = strings.Replace(name, "%", "!%", -1)
+		args = append(args, name)
+		q = fmt.Sprintf("%s AND p.name ILIKE $%d ESCAPE '!' || '%%'", q, len(args))
 	}
 	if filters.Created != nil {
 		args = append(args, time.Unix(int64(filters.Created.Start), 0).UTC(), time.Unix(int64(filters.Created.End), 0).UTC())
@@ -1245,11 +1247,13 @@ func getFiltersSearchConditions(filter *string) string {
 	if filter == nil {
 		return ""
 	}
+	escapeFilter := strings.Replace(*filter, "_", "!_", -1)
+	escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1)
 	return fmt.Sprintf(`
-		(w.version_id::TEXT ILIKE '%%%s%%' OR
-		 w.work_number ILIKE '%%%s%%' OR
-		 p.name ILIKE '%%%s%%')`,
-		*filter, *filter, *filter)
+		(w.version_id::TEXT ILIKE '%%%s%%' ESCAPE '!' OR
+		 w.work_number ILIKE '%%%s%%' ESCAPE '!' OR
+		 p.name ILIKE '%%%s%%' ESCAPE '!')`,
+		escapeFilter, escapeFilter, escapeFilter)
 }
 
 func getFiltersDateConditions(dateFrom, dateTo *string) string {
