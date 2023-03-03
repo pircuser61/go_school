@@ -217,7 +217,8 @@ type parsedBody struct {
 
 func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
 	const fn = "mail.fetcher.parseMsgBody"
-	const startLine = "Вы можете оставить комментарий здесь"
+	const startLine = "***КОММЕНТАРИЙ НИЖЕ***"
+	const endLine = "***ОБЩИЙ РАЗМЕР ВЛОЖЕНИЙ НЕ БОЛЕЕ 40МБ***"
 
 	var (
 		body, attachments string
@@ -260,6 +261,7 @@ LOOP:
 	}
 
 	pb.Body = strings.Replace(body, startLine, "", 1)
+	pb.Body = strings.Replace(body, endLine, "", 1)
 	pb.Body = strings.Replace(pb.Body, "\n", "", -1)
 	pb.Body = strings.TrimSpace(pb.Body)
 	pb.Attachments = attachments
