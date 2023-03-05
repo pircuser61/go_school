@@ -16,13 +16,20 @@ import (
 	"go.opencensus.io/trace"
 )
 
+type AttachmentData struct {
+	Raw []byte
+	Ext string
+}
+
 type ActionPayload struct {
-	WorkNumber string `json:"workNumber"`
-	StepName   string `json:"stepName"`
-	ActionName string `json:"actionName"`
-	Decision   string `json:"decision"`
-	Comment    string `json:"comment"`
-	Login      string `json:"login"`
+	WorkNumber     string                    `json:"workNumber"`
+	StepName       string                    `json:"stepName"`
+	ActionName     string                    `json:"actionName"`
+	Decision       string                    `json:"decision"`
+	Comment        string                    `json:"comment"`
+	Login          string                    `json:"login"`
+	AttachmentsIds []string                  `json:"attachments"`
+	Attachments    map[string]AttachmentData `json:"-"`
 }
 
 type ParsedEmail struct {
@@ -64,7 +71,7 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 	}
 
 	if processedEmail == nil || processedEmail.Action == nil {
-		return nil, nil
+		return nil, errors.New("processedEmail is nil")
 	}
 
 	return processedEmail, nil
@@ -116,6 +123,8 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, er
 			action.Comment = processedBody.Body
 		}
 
+		action.Attachments = processedBody.Attachments
+
 		if action.Comment == "" {
 			switch action.Decision {
 			case "approve":
@@ -152,12 +161,12 @@ type parsedHeaders struct {
 }
 
 func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
-	fromAddrs, err := header.AddressList("From")
+	from, err := header.AddressList("From")
 	if err != nil {
 		return nil, errors.Wrap(err, "header From")
 	}
 
-	toAddrs, err := header.AddressList("To")
+	to, err := header.AddressList("To")
 	if err != nil {
 		return nil, errors.Wrap(err, "header To")
 	}
@@ -168,8 +177,8 @@ func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
 	}
 
 	return &parsedHeaders{
-		From:    fromAddrs,
-		To:      toAddrs,
+		From:    from,
+		To:      to,
 		Subject: subject,
 	}, nil
 }
@@ -212,7 +221,7 @@ func addressListToStrList(addrs []*mail.Address) (res []string) {
 
 type parsedBody struct {
 	Body        string
-	Attachments string
+	Attachments map[string]AttachmentData
 }
 
 func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
@@ -220,12 +229,14 @@ func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
 	const startLine = "***КОММЕНТАРИЙ НИЖЕ***"
 	const endLine = "***ОБЩИЙ РАЗМЕР ВЛОЖЕНИЙ НЕ БОЛЕЕ 40МБ***"
 
+	log := logger.GetLogger(ctx)
+
 	var (
-		body, attachments string
-		pb                parsedBody
+		body string
+		pb   parsedBody
 	)
 
-	log := logger.GetLogger(ctx)
+	attachments := make(map[string]AttachmentData)
 
 LOOP:
 	for {
@@ -236,25 +247,29 @@ LOOP:
 			return nil, errors.Wrap(err, fmt.Sprintf("%s, cant`t nexPart", fn))
 		}
 
+		b, errRead := io.ReadAll(part.Body)
+		if errRead != nil {
+			log.
+				WithField("fn", fn).
+				WithField("text", string(b)).
+				Error(errors.Wrap(errRead, "can`t read body"))
+			break LOOP
+		}
+
 		switch h := part.Header.(type) {
 		case *mail.InlineHeader:
-			b, errRead := io.ReadAll(part.Body)
-			if errRead != nil {
-				log.
-					WithField("fn", fn).
-					WithField("text", string(b)).
-					Error(errors.Wrap(errRead, "can`t read body"))
-				break LOOP
-			}
 			body += string(b)
 			break LOOP
 		case *mail.AttachmentHeader:
 			filename, _ := h.Filename()
-			attachments += filename
+			nameParts := strings.Split(filename, ".")
+			if len(nameParts) > 1 {
+				attachments[filename] = AttachmentData{b, nameParts[len(nameParts)-1]}
+			}
 		}
 	}
 
-	if body == "" && attachments == "" {
+	if body == "" && len(attachments) == 0 {
 		pb.Body = ""
 		pb.Attachments = attachments
 		return &pb, nil

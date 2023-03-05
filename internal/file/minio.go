@@ -1,63 +1,53 @@
 package file
 
 import (
-	"context"
+	c "context"
+	"fmt"
 	"io"
-	"os"
+
+	"github.com/google/uuid"
 
 	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 
 	"go.opencensus.io/trace"
 )
 
-// nolint:gocritic // it's more comfortable to work with config as a value
-func connectToMinio(c FileStorage) (*minio.Client, error) {
-	accessKeyID := os.Getenv(c.AccessEnvKey)
-	secretAccessKey := os.Getenv(c.SecretAccessEnvKey)
-
-	opts := &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
-		Secure: c.UseSSl,
-	}
-
-	return minio.New(c.Addr, opts)
-}
-
-func (ss *Service) SaveFile(ctx context.Context, name, originalName, bucket string, file io.Reader, size int64) error {
+func (s *Service) SaveFile(ctx c.Context, ext, origName string, file io.Reader, size int64) (id string, err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "saveFile")
 	defer span.End()
 
 	opts := minio.PutObjectOptions{}
-	if originalName != "" {
-		opts.UserMetadata = map[string]string{"Filename": originalName}
+	if origName != "" {
+		opts.UserMetadata = map[string]string{"Filename": origName}
 	}
-	_, err := ss.minio.PutObject(ctxLocal, bucket, name, file, size, opts)
+
+	id, name, err := s.GenerateUniqFileName(ctxLocal, ext, s.bucket)
 	if err != nil {
-		return err
+		return id, err
 	}
-	return nil
+
+	_, err = s.minio.PutObject(ctxLocal, s.bucket, name, file, size, opts)
+	if err != nil {
+		return id, err
+	}
+
+	return id, nil
 }
 
-func (ss *Service) copyFileToBucket(ctx context.Context, fromBucket, toBucket, id string) error {
-	ctxLocal, span := trace.StartSpan(ctx, "copyFileToBucket")
-	defer span.End()
+func (s *Service) GenerateUniqFileName(ctx c.Context, ext, bucket string) (id, name string, err error) {
+	id = uuid.New().String()
 
-	src := minio.CopySrcOptions{
-		Bucket: fromBucket,
-		Object: id,
+	_, err = s.minio.StatObject(ctx, bucket, fmt.Sprintf("%s.%s", id, ext), minio.GetObjectOptions{})
+	if err != nil {
+		errResp := minio.ToErrorResponse(err)
+		if errResp.Code == "AccessDenied" || errResp.Code == "NoSuchBucket" || errResp.Code == "InvalidBucketName" {
+			return "", "", err
+		}
+
+		if errResp.Code == "NoSuchKey" {
+			return id, fmt.Sprintf("%s.%s", id, ext), nil
+		}
 	}
-	dst := minio.CopyDestOptions{
-		Bucket: toBucket,
-		Object: id,
-	}
 
-	_, err := ss.minio.CopyObject(ctxLocal, dst, src)
-	return err
-}
-
-type File struct {
-	Id   string
-	Name string
-	Size int
+	return s.GenerateUniqFileName(ctx, ext, bucket)
 }

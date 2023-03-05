@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"os"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -59,6 +60,7 @@ type Pipeliner struct {
 	HumanTasks            human_tasks.Config  `yaml:"human_tasks"`
 	MailFetcher           mail_fetcher.Config `yaml:"imap"`
 	Integrations          integrations.Config `yaml:"integrations"`
+	Minio                 file.Config         `yaml:"minio"`
 }
 
 type RunEnv struct {
