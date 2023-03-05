@@ -2,11 +2,11 @@ package configs
 
 import (
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"os"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"

@@ -250,7 +250,6 @@ LOOP:
 		b, errRead := io.ReadAll(part.Body)
 		if errRead != nil {
 			log.
-				WithField("fn", fn).
 				WithField("text", string(b)).
 				Error(errors.Wrap(errRead, "can`t read body"))
 			break LOOP
@@ -258,7 +257,9 @@ LOOP:
 
 		switch h := part.Header.(type) {
 		case *mail.InlineHeader:
-			body += string(b)
+			if !strings.Contains(body, endLine) {
+				body += string(b)
+			}
 			break LOOP
 		case *mail.AttachmentHeader:
 			filename, _ := h.Filename()
@@ -277,6 +278,7 @@ LOOP:
 
 	pb.Body = strings.Replace(body, startLine, "", 1)
 	pb.Body = strings.Replace(body, endLine, "", 1)
+
 	pb.Body = strings.Replace(pb.Body, "\n", "", -1)
 	pb.Body = strings.TrimSpace(pb.Body)
 	pb.Attachments = attachments
