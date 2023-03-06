@@ -40,13 +40,11 @@ func (s *Service) GenerateUniqFileName(ctx c.Context, ext, bucket string) (id, n
 	_, err = s.minio.StatObject(ctx, bucket, fmt.Sprintf("%s.%s", id, ext), minio.GetObjectOptions{})
 	if err != nil {
 		errResp := minio.ToErrorResponse(err)
-		if errResp.Code == "AccessDenied" || errResp.Code == "NoSuchBucket" || errResp.Code == "InvalidBucketName" {
-			return "", "", err
-		}
-
 		if errResp.Code == "NoSuchKey" {
 			return id, fmt.Sprintf("%s.%s", id, ext), nil
 		}
+
+		return "", "", err
 	}
 
 	return s.GenerateUniqFileName(ctx, ext, bucket)
