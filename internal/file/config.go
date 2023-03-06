@@ -6,5 +6,4 @@ type Config struct {
 	SecretAccessEnvKey string `yaml:"secret_access_env_key"`
 	UseSSl             bool   `yaml:"use_ssl"`
 	BucketName         string `yaml:"bucket_name"`
-	BaseURL            string `yaml:"base_url"`
 }

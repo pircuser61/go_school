@@ -101,3 +101,10 @@ imap:
 
 integrations:
   url: 'integrations:90'
+
+minio:
+  addr: "minio:9000"
+  access_env_key: "ACCESS_KEY"
+  secret_access_env_key: "SECRET_ACCESS_KEY"
+  use_ssl: False
+  bucket_name: "jocasta-attachments"
