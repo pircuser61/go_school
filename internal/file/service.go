@@ -8,9 +8,8 @@ import (
 )
 
 type Service struct {
-	minio   *minio.Client
-	bucket  string
-	baseURL string
+	minio  *minio.Client
+	bucket string
 }
 
 func NewService(cfg *Config) (*Service, error) {
@@ -28,8 +27,7 @@ func NewService(cfg *Config) (*Service, error) {
 	}
 
 	return &Service{
-		minio:   minioClient,
-		bucket:  cfg.BucketName,
-		baseURL: cfg.BaseURL,
+		minio:  minioClient,
+		bucket: cfg.BucketName,
 	}, nil
 }
