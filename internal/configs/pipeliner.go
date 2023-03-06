@@ -6,6 +6,7 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
@@ -59,6 +60,7 @@ type Pipeliner struct {
 	HumanTasks            human_tasks.Config  `yaml:"human_tasks"`
 	MailFetcher           mail_fetcher.Config `yaml:"imap"`
 	Integrations          integrations.Config `yaml:"integrations"`
+	Minio                 file.Config         `yaml:"minio"`
 }
 
 type RunEnv struct {

@@ -27,6 +27,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -88,7 +89,7 @@ func main() {
 
 	networkMonitoringClient, err := netmon.NewClient(cfg.NetworkMonitorBaseURL.URL, httpClient)
 	if err != nil {
-		log.WithError(err).Error("can't create network moninoring client")
+		log.WithError(err).Error("can't create network monitoring client")
 
 		return
 	}
@@ -165,6 +166,12 @@ func main() {
 		return
 	}
 
+	fileService, err := file.NewService(&cfg.Minio)
+	if err != nil {
+		log.WithError(err).Error("can't create file service")
+		return
+	}
+
 	APIEnv := &api.APIEnv{
 		Log:                  log,
 		DB:                   &dbConn,
@@ -181,6 +188,7 @@ func main() {
 		FunctionStore:        functionsService,
 		HumanTasks:           humanTasksService,
 		MailFetcher:          mailFetcher,
+		Minio:                fileService,
 		Integrations:         integrationsService,
 	}
 
