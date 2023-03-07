@@ -330,7 +330,8 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 		return stopErr
 	}
 
-	loginsToNotify := []string{gb.RunContext.Initiator}
+	loginsToNotify := getSliceFromMapOfStrings(gb.State.Approvers)
+	loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
 
 	var em string
 	var err error
