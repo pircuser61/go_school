@@ -3,11 +3,10 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"sync"
-
-	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 
@@ -327,8 +326,10 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 		workNumber:  req.WorkNumber,
 		runCtx: entity.TaskRunContext{
 			InitialApplication: entity.InitialApplication{
-				Description:     req.Description,
-				ApplicationBody: req.ApplicationBody,
+				Description:      req.Description,
+				ApplicationBody:  req.ApplicationBody,
+				AttachmentFields: req.AttachmentFields,
+				Keys:             req.Keys,
 			},
 		},
 	})
