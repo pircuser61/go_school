@@ -3,10 +3,11 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"sync"
+
+	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 
