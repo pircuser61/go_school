@@ -172,6 +172,12 @@ func main() {
 		return
 	}
 
+	fillErr := hrgateService.FillDefaultUnitId(ctx)
+	if fillErr != nil {
+		log.WithError(err).Error("can't fill default unit id")
+		return
+	}
+
 	APIEnv := &api.APIEnv{
 		Log:                  log,
 		DB:                   &dbConn,
@@ -189,6 +195,7 @@ func main() {
 		HumanTasks:           humanTasksService,
 		MailFetcher:          mailFetcher,
 		Integrations:         integrationsService,
+		HrGate:               hrgateService,
 	}
 
 	serverParam := api.ServerParam{

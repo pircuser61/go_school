@@ -1,6 +1,7 @@
 package hrgate
 
 import (
+	"github.com/google/uuid"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"go.opencensus.io/plugin/ochttp"
@@ -8,8 +9,9 @@ import (
 )
 
 type Service struct {
-	HrGateUrl string
-	Cli       *http.Client
+	HrGateUrl             string
+	DefaultCalendarUnitId *uuid.UUID
+	Cli                   *http.Client
 }
 
 func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {

@@ -103,4 +103,5 @@ integrations:
   url: 'integrations:90'
 
 hrgate:
-  hr_gate_url: ""
+  hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
+  scope: "hr-gate"
