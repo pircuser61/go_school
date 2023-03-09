@@ -102,6 +102,10 @@ imap:
 integrations:
   url: 'integrations:90'
 
+hrgate:
+  hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
+  scope: "hr-gate"
+
 minio:
   addr: "minio:9000"
   access_env_key: "ACCESS_KEY"

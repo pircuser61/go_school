@@ -16,6 +16,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
@@ -45,6 +46,7 @@ type APIEnv struct {
 	MailFetcher          mail_fetcher.Service
 	Minio                *file.Service
 	Integrations         *integrations.Service
+	HrGate               *hrgate.Service
 }
 
 type ServerParam struct {

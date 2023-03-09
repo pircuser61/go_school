@@ -1,24 +1,25 @@
-package servicedesc
+package hrgate
 
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 type Service struct {
-	SdURL string
-	Cli   *http.Client
+	HrGateUrl             string
+	DefaultCalendarUnitId *uuid.UUID
+	Cli                   *http.Client
 }
 
 func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 	newCli := &http.Client{}
 
-	tr := TransportForPeople{
+	tr := TransportForHrGate{
 		transport: ochttp.Transport{
 			Base:        newCli.Transport,
 			Propagation: observability.NewHTTPFormat(),
@@ -29,20 +30,20 @@ func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 	newCli.Transport = &tr
 
 	s := &Service{
-		Cli:   newCli,
-		SdURL: cfg.ServicedeskURL,
+		Cli:       newCli,
+		HrGateUrl: cfg.HrGateUrl,
 	}
 
 	return s, nil
 }
 
-type TransportForPeople struct {
+type TransportForHrGate struct {
 	transport ochttp.Transport
 	sso       *sso.Service
 	scope     string
 }
 
-func (t *TransportForPeople) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *TransportForHrGate) RoundTrip(req *http.Request) (*http.Response, error) {
 	err := t.sso.BindAuthHeader(req.Context(), req, t.scope)
 	if err != nil {
 		return nil, err

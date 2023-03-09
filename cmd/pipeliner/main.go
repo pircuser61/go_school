@@ -29,6 +29,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
@@ -166,6 +167,17 @@ func main() {
 		return
 	}
 
+	hrgateService, err := hrgate.NewService(cfg.HrGate, ssoService)
+	if err != nil {
+		log.WithError(err).Error("can't create hrgate service")
+		return
+	}
+
+	fillErr := hrgateService.FillDefaultUnitId(ctx)
+	if fillErr != nil {
+		log.WithError(err).Error("can't fill default unit id")
+	}
+
 	fileService, err := file.NewService(&cfg.Minio)
 	if err != nil {
 		log.WithError(err).Error("can't create file service")
@@ -190,6 +202,7 @@ func main() {
 		MailFetcher:          mailFetcher,
 		Minio:                fileService,
 		Integrations:         integrationsService,
+		HrGate:               hrgateService,
 	}
 
 	serverParam := api.ServerParam{

@@ -8,6 +8,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
@@ -60,6 +61,7 @@ type Pipeliner struct {
 	HumanTasks            human_tasks.Config  `yaml:"human_tasks"`
 	MailFetcher           mail_fetcher.Config `yaml:"imap"`
 	Integrations          integrations.Config `yaml:"integrations"`
+	HrGate                hrgate.Config       `yaml:"hrgate"`
 	Minio                 file.Config         `yaml:"minio"`
 }
 
