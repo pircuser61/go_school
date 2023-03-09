@@ -105,3 +105,10 @@ integrations:
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
   scope: "hr-gate"
+
+minio:
+  addr: "minio:9000"
+  access_env_key: "ACCESS_KEY"
+  secret_access_env_key: "SECRET_ACCESS_KEY"
+  use_ssl: False
+  bucket_name: "jocasta-attachments"

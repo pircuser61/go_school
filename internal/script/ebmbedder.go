@@ -64,6 +64,7 @@ type Socket struct {
 	Id           string   `json:"id"`
 	Title        string   `json:"title"`
 	NextBlockIds []string `json:"nextBlockIds"`
+	ActionType   string   `json:"actionType"`
 }
 
 const (
@@ -92,8 +93,17 @@ const (
 var (
 	DefaultSocket = Socket{Id: DefaultSocketID, Title: DefaultSocketTitle}
 
-	ApproveSocket         = Socket{Id: approveSocketId, Title: approveSocketTitle}
-	RejectSocket          = Socket{Id: rejectSocketId, Title: RejectSocketTitle}
+	ApproveSocket = Socket{
+		Id:         approveSocketId,
+		Title:      approveSocketTitle,
+		ActionType: "primary",
+	}
+	RejectSocket = Socket{
+		Id:         rejectSocketId,
+		Title:      RejectSocketTitle,
+		ActionType: "secondary",
+	}
+
 	ApproverEditAppSocket = Socket{Id: approverEditAppSocketID, Title: approverEditAppSocketTitle}
 	ExecutorEditAppSocket = Socket{Id: executorEditAppSocketID, Title: executorEditAppSocketTitle}
 

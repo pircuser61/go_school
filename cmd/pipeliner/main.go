@@ -27,6 +27,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
@@ -89,7 +90,7 @@ func main() {
 
 	networkMonitoringClient, err := netmon.NewClient(cfg.NetworkMonitorBaseURL.URL, httpClient)
 	if err != nil {
-		log.WithError(err).Error("can't create network moninoring client")
+		log.WithError(err).Error("can't create network monitoring client")
 
 		return
 	}
@@ -175,6 +176,11 @@ func main() {
 	fillErr := hrgateService.FillDefaultUnitId(ctx)
 	if fillErr != nil {
 		log.WithError(err).Error("can't fill default unit id")
+	}
+
+	fileService, err := file.NewService(&cfg.Minio)
+	if err != nil {
+		log.WithError(err).Error("can't create file service")
 		return
 	}
 
@@ -194,6 +200,7 @@ func main() {
 		FunctionStore:        functionsService,
 		HumanTasks:           humanTasksService,
 		MailFetcher:          mailFetcher,
+		Minio:                fileService,
 		Integrations:         integrationsService,
 		HrGate:               hrgateService,
 	}

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	c "context"
 	"encoding/json"
 	"io"
@@ -537,34 +538,23 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	log := logger.GetLogger(ctx)
 	log.Info(funcName, ", started")
 
-	mails, err := ae.MailFetcher.FetchEmails(ctx)
+	parsedEmails, err := ae.MailFetcher.FetchEmails(ctx)
 	if err != nil {
 		e := ParseMailsError
-		log.WithField(funcName, "parse mails failed").Error(err)
+		log.WithField(funcName, "parse parsedEmails failed").Error(err)
 		_ = e.sendError(w)
 		return
 	}
 
-	if mails == nil {
+	if parsedEmails == nil {
 		return
 	}
 
-	for i := range mails {
-		jsonBody, errParse := json.Marshal(mails[i].Action)
-		if errParse != nil {
-			log.WithField("workNumber", mails[i].Action.WorkNumber).Error(errParse)
-			continue
-		}
-
-		updateData := entity.TaskUpdate{
-			Action:     entity.TaskUpdateAction(mails[i].Action.ActionName),
-			Parameters: jsonBody,
-		}
-
-		usr, errGetUser := ae.People.GetUser(ctx, mails[i].Action.Login)
+	for i := range parsedEmails {
+		usr, errGetUser := ae.People.GetUser(ctx, parsedEmails[i].Action.Login)
 		if errGetUser != nil {
-			log.WithField("workNumber", mails[i].Action.WorkNumber).
-				WithField("login", mails[i].Action.Login).Error(errGetUser)
+			log.WithField("workNumber", parsedEmails[i].Action.WorkNumber).
+				WithField("login", parsedEmails[i].Action.Login).Error(errGetUser)
 			continue
 		}
 
@@ -574,18 +564,41 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		if useInfo.Email != mails[i].From && !utils.IsContainsInSlice(mails[i].From, useInfo.ProxyEmails) {
+		if useInfo.Email != parsedEmails[i].From && !utils.IsContainsInSlice(parsedEmails[i].From, useInfo.ProxyEmails) {
 			log.WithField("userEmailByLogin", useInfo.Email).
-				WithField("emailFromEmail", mails[i].From).
+				WithField("emailFromEmail", parsedEmails[i].From).
 				WithField("proxyEmails", useInfo.ProxyEmails).
 				Error(errors.New("login from email not eq or not in proxyAddresses"))
 			continue
 		}
 
-		errUpdate := ae.updateTaskInternal(ctx, mails[i].Action.WorkNumber, mails[i].Action.Login, &updateData)
+		for fileName := range parsedEmails[i].Action.Attachments {
+			r := bytes.NewReader(parsedEmails[i].Action.Attachments[fileName].Raw)
+			ext := parsedEmails[i].Action.Attachments[fileName].Ext
+			id, errSave := ae.Minio.SaveFile(ctx, ext, fileName, r, r.Size())
+			if errSave != nil {
+				log.WithField("fileName", fileName).Error(errSave)
+				continue
+			}
+
+			parsedEmails[i].Action.AttachmentsIds = append(parsedEmails[i].Action.AttachmentsIds, id)
+		}
+
+		jsonBody, errParse := json.Marshal(parsedEmails[i].Action)
+		if errParse != nil {
+			log.WithField("workNumber", parsedEmails[i].Action.WorkNumber).Error(errParse)
+			continue
+		}
+
+		updateData := entity.TaskUpdate{
+			Action:     entity.TaskUpdateAction(parsedEmails[i].Action.ActionName),
+			Parameters: jsonBody,
+		}
+
+		errUpdate := ae.updateTaskInternal(ctx, parsedEmails[i].Action.WorkNumber, parsedEmails[i].Action.Login, &updateData)
 		if errUpdate != nil {
-			log.WithField("action", *mails[i].Action).
-				WithField("workNumber", mails[i].Action.WorkNumber).
+			log.WithField("action", *parsedEmails[i].Action).
+				WithField("workNumber", parsedEmails[i].Action.WorkNumber).
 				Error(errUpdate)
 			continue
 		}
@@ -664,9 +677,12 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 
 //nolint:gocyclo // ok here
 func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
+	defer span.End()
+
 	log := logger.GetLogger(ctx)
 
-	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctx, userLogin)
+	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
@@ -683,7 +699,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	delegationsByApprovement := delegations.FilterByType("approvement")
 	delegationsByExecution := delegations.FilterByType("execution")
 
-	dbTask, err := ae.DB.GetTask(ctx,
+	dbTask, err := ae.DB.GetTask(ctxLocal,
 		delegationsByApprovement.GetUserInArrayWithDelegators([]string{userLogin}),
 		delegationsByExecution.GetUserInArrayWithDelegators([]string{userLogin}),
 		userLogin,
@@ -699,7 +715,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		return errors.New(e.errorMessage(nil))
 	}
 
-	scenario, err := ae.DB.GetPipelineVersion(ctx, dbTask.VersionID, false)
+	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
 	if err != nil {
 		e := GetVersionError
 		return errors.New(e.errorMessage(nil))
@@ -707,7 +723,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 	var steps entity.TaskSteps
 	for _, blockType := range blockTypes {
-		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctx, dbTask.ID, blockType)
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType)
 		if stepErr != nil {
 			e := GetTaskError
 			return errors.New(e.errorMessage(nil))
@@ -724,18 +740,23 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	}
 
 	couldUpdateOne := false
+	spCtx := span.SpanContext()
 	for _, item := range steps {
 		// nolint:staticcheck // fix later
 		routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 		routineCtx = logger.WithLogger(routineCtx, log)
-		txStorage, transactionErr := ae.DB.StartTransaction(routineCtx)
+		processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_task_step_update", spCtx)
+		fakeSpan.End()
+
+		txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
+
 		if transactionErr != nil {
 			continue
 		}
 
-		storage, getErr := txStorage.GetVariableStorageForStep(routineCtx, dbTask.ID, item.Name)
+		storage, getErr := txStorage.GetVariableStorageForStep(processCtx, dbTask.ID, item.Name)
 		if getErr != nil {
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			log.WithError(getErr).Error("couldn't get block to update")
@@ -768,7 +789,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
 		if !ok {
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			log.WithError(errors.New("couldn't get block from pipeline")).
@@ -776,17 +797,17 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 			continue
 		}
 
-		blockErr := pipeline.ProcessBlock(routineCtx, item.Name, &blockFunc, runCtx, true)
+		blockErr := pipeline.ProcessBlock(processCtx, item.Name, &blockFunc, runCtx, true)
 		if blockErr != nil {
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			log.WithError(blockErr).Error("couldn't update block")
 			continue
 		}
 
-		if err = txStorage.CommitTransaction(routineCtx); err != nil {
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+		if err = txStorage.CommitTransaction(processCtx); err != nil {
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 				log.Error(txErr)
 			}
 			log.WithError(err).Error("couldn't update block")

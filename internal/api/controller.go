@@ -14,6 +14,7 @@ import (
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -43,6 +44,7 @@ type APIEnv struct {
 	FunctionStore        *functions.Service
 	HumanTasks           *human_tasks.Service
 	MailFetcher          mail_fetcher.Service
+	Minio                *file.Service
 	Integrations         *integrations.Service
 	HrGate               *hrgate.Service
 }

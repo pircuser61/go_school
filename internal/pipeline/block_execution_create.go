@@ -142,13 +142,15 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	l := logger.GetLogger(ctx)
-	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+
+	executors := getSliceFromMapOfStrings(gb.State.Executors)
+	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
 	delegates = delegates.FilterByType("execution")
 
-	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
 	description, makeNotificationErr := gb.RunContext.makeNotificationDescription(gb.Name)
 	if makeNotificationErr != nil {

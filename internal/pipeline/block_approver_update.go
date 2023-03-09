@@ -330,7 +330,15 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 		return stopErr
 	}
 
-	loginsToNotify := []string{gb.RunContext.Initiator}
+	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
+	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, approvers)
+	if getDelegationsErr != nil {
+		return getDelegationsErr
+	}
+	delegates = delegates.FilterByType("approvement")
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
+	loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
 
 	var em string
 	var err error
@@ -798,12 +806,18 @@ func (gb *GoApproverBlock) notificateNeedRework(ctx c.Context) error {
 func (gb *GoApproverBlock) notificateNewInfoRecieved(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.UpdateData.ByLogin)
+	logins := []string{gb.RunContext.UpdateData.ByLogin}
+	for i := range gb.State.AdditionalApprovers {
+		logins = append(logins, gb.State.AdditionalApprovers[i].ApproverLogin)
+	}
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
 		return err
 	}
 
-	loginsToNotify := delegates.GetUserInArrayWithDelegations([]string{gb.RunContext.UpdateData.ByLogin})
+	delegates = delegates.FilterByType("approvement")
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(logins)
 
 	var em string
 	emails := make([]string, 0, len(loginsToNotify))

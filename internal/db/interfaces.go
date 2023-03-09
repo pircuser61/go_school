@@ -41,7 +41,6 @@ type TaskStorager interface {
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*e.EriusTasks, error)
 	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
-	GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]e.UsersWithFormAccess, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error

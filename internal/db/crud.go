@@ -2430,7 +2430,9 @@ func (db *PGCon) GetPipelinesByNameOrId(ctx context.Context, dto *SearchPipeline
 `
 
 	if dto.PipelineName != nil {
-		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.name ilike'%%%s%%'", *dto.PipelineName))
+		pipelineName := strings.Replace(*dto.PipelineName, "_", "!_", -1)
+		pipelineName = strings.Replace(pipelineName, "%", "!%", -1)
+		q = strings.ReplaceAll(q, "--pipe--", fmt.Sprintf("AND p.name ilike'%%%s%%' ESCAPE '!'", pipelineName))
 	}
 
 	if dto.PipelineId != nil {

@@ -49,7 +49,6 @@ const messageTplStart = `<!DOCTYPE html>
             width: 0;
         }
     </style>
-    </style>
     <![endif]-->
 </head><body>
 `

@@ -3636,7 +3636,7 @@ components:
         steps:
           type: array
           items:
-            $ref: '#/components/schemas/step'
+            $ref: '#/components/schemas/taskResponseStep'
         version_id:
           type: string
           description: Версия процесса заявки
@@ -3685,7 +3685,7 @@ components:
         status_code:
           type: integer
 
-    step:
+    taskResponseStep:
       type: object
       properties:
         errors:

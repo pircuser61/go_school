@@ -194,8 +194,10 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
 		q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", q, len(args))
 	}
 	if filters.Name != nil {
-		args = append(args, *filters.Name)
-		q = fmt.Sprintf("%s AND p.name ILIKE $%d || '%%'", q, len(args))
+		name := strings.Replace(*filters.Name, "_", "!_", -1)
+		name = strings.Replace(name, "%", "!%", -1)
+		args = append(args, name)
+		q = fmt.Sprintf("%s AND p.name ILIKE $%d ESCAPE '!' || '%%'", q, len(args))
 	}
 	if filters.Created != nil {
 		args = append(args, time.Unix(int64(filters.Created.Start), 0).UTC(), time.Unix(int64(filters.Created.End), 0).UTC())
@@ -971,85 +973,6 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
-func (db *PGCon) GetUsersWithReadWriteFormAccess(ctx c.Context, workNumber, stepName string) ([]entity.UsersWithFormAccess, error) {
-	// nolint:gocritic
-	// language=PostgreSQL
-	const q = `
-	with blocks_executors_pair as (
-		select
-			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_group_param as executors_group_id,
-			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> 'type' as execution_type,
-			   content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->> executor_param as executor,
-			   executor_param,
-			   jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> block_name -> 'params' ->
-						'forms_accessibility') as access_params
-		from (
-			with executor_approver_blocks as (
-			select content,
-				jsonb_object_keys(content -> 'pipeline' -> 'blocks') as block_name
-			from versions v
-				left join works w on v.id = w.version_id
-			where w.work_number = $1 AND w.child_id IS NULL
-			)
-			select
-				content,
-				block_name,
-				case 
-				    when block_name like 'approver%' then 'approver' 
-				    when block_name like 'execution%' then 'executors' end as executor_param,
-				case 
-				    when block_name like 'approver%' then 'approvers_group_id' 
-				    when block_name like 'execution%' then 'executors_group_id' 
-				    end as executor_group_param
-			from executor_approver_blocks
-			where
-				  block_name like 'execution%'
-			   or block_name like 'approver%'
-		) as result
-	)
-
-	select
-		case when execution_type = 'fromSchema' then 'from_schema' else execution_type end,
-		case when executor_param = 'executors' then 'execution' else executor_param end as block_type,
-		executors_group_id,
-		executor
-	
-	from blocks_executors_pair
-	where access_params ->> 'accessType' = 'ReadWrite'
-	and access_params ->> 'node_id' = $2
-	`
-
-	result := make([]entity.UsersWithFormAccess, 0)
-	rows, err := db.Connection.Query(ctx, q, workNumber, stepName)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return result, nil
-		}
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		s := entity.UsersWithFormAccess{}
-
-		if err := rows.Scan(
-			&s.ExecutionType,
-			&s.BlockType,
-			&s.GroupId,
-			&s.Executor,
-		); err != nil {
-			return nil, err
-		}
-
-		result = append(result, s)
-	}
-
-	if rowsErr := rows.Err(); rowsErr != nil {
-		return nil, rowsErr
-	}
-	return result, nil
-}
-
 func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_status")
 	defer span.End()
@@ -1324,11 +1247,13 @@ func getFiltersSearchConditions(filter *string) string {
 	if filter == nil {
 		return ""
 	}
+	escapeFilter := strings.Replace(*filter, "_", "!_", -1)
+	escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1)
 	return fmt.Sprintf(`
-		(w.version_id::TEXT ILIKE '%%%s%%' OR
-		 w.work_number ILIKE '%%%s%%' OR
-		 p.name ILIKE '%%%s%%')`,
-		*filter, *filter, *filter)
+		(w.version_id::TEXT ILIKE '%%%s%%' ESCAPE '!' OR
+		 w.work_number ILIKE '%%%s%%' ESCAPE '!' OR
+		 p.name ILIKE '%%%s%%' ESCAPE '!')`,
+		escapeFilter, escapeFilter, escapeFilter)
 }
 
 func getFiltersDateConditions(dateFrom, dateTo *string) string {

@@ -10,7 +10,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -284,18 +283,15 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		return nil
 	}
 
-	executors, executorsErr := gb.resolveExecutors(ctx)
-	if executorsErr != nil {
-		return executorsErr
-	}
+	executors := getSliceFromMapOfStrings(gb.State.Executors)
 
 	var emails = make([]string, 0, len(executors))
 	for _, login := range executors {
-		email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		em, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if emailErr != nil {
 			continue
 		}
-		emails = append(emails, email)
+		emails = append(emails, em)
 	}
 
 	if len(emails) == 0 {
@@ -307,99 +303,4 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			gb.RunContext.WorkNumber,
 			gb.RunContext.WorkTitle,
 			gb.RunContext.Sender.SdAddress))
-}
-
-//nolint:gocyclo //ok
-func (gb *GoFormBlock) resolveExecutors(ctx c.Context) (users []string, err error) {
-	const funcName = "pipeliner.block_form.resolveExecutors"
-	users = make([]string, 0)
-
-	var exists = func(entry string) bool {
-		for _, user := range users {
-			if user == entry {
-				return true
-			}
-		}
-		return false
-	}
-
-	var appendUnique = func(usersToAppend []string) {
-		for _, user := range usersToAppend {
-			if !exists(user) && user != "" {
-				users = append(users, user)
-			}
-		}
-	}
-
-	appendUnique(mapToString(gb.State.Executors))
-
-	executorsWithAccess, err := gb.RunContext.Storage.GetUsersWithReadWriteFormAccess(ctx, gb.RunContext.WorkNumber, gb.Name)
-	if err != nil {
-		return nil, errors.Wrap(err, funcName)
-	}
-
-	for _, executor := range executorsWithAccess {
-		switch executor.ExecutionType {
-		case entity.GroupExecution:
-			if executor.BlockType == entity.ExecutionBlockType {
-				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, *executor.GroupId)
-				if sdErr != nil {
-					return nil, errors.Wrap(sdErr, funcName)
-				}
-				appendUnique(executorsToString(sdUsers.People))
-			}
-			if executor.BlockType == entity.ApprovementBlockType {
-				sdUsers, sdErr := gb.RunContext.ServiceDesc.GetApproversGroup(ctx, *executor.GroupId)
-				if sdErr != nil {
-					return nil, errors.Wrap(sdErr, funcName)
-				}
-				appendUnique(approversToString(sdUsers.People))
-			}
-		case entity.FromSchemaExecution:
-			variables, varErr := gb.RunContext.VarStore.GrabStorage()
-			if varErr != nil {
-				return nil, errors.Wrap(varErr, funcName)
-			}
-
-			var toResolve = map[string]struct{}{
-				executor.Executor: {},
-			}
-
-			schemaUsers, resolveErr := resolveValuesFromVariables(variables, toResolve)
-			if resolveErr != nil {
-				return nil, errors.Wrap(resolveErr, funcName)
-			}
-			appendUnique(mapToString(schemaUsers))
-		case entity.UserExecution:
-			appendUnique([]string{executor.Executor})
-		default:
-			return nil, errors.New("invalid execution type from database")
-		}
-	}
-
-	return users, nil
-}
-
-func executorsToString(executors []servicedesc.Executor) []string {
-	var res = make([]string, len(executors))
-	for _, executor := range executors {
-		res = append(res, executor.Login)
-	}
-	return res
-}
-
-func approversToString(approvers []servicedesc.Approver) []string {
-	var res = make([]string, len(approvers))
-	for _, approver := range approvers {
-		res = append(res, approver.Login)
-	}
-	return res
-}
-
-func mapToString(schemaUsers map[string]struct{}) []string {
-	var res = make([]string, len(schemaUsers))
-	for userKey := range schemaUsers {
-		res = append(res, userKey)
-	}
-	return res
 }

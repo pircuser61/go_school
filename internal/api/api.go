@@ -1452,7 +1452,7 @@ type EriusTaskResponse struct {
 
 	// Технический статус заявки
 	Status EriusTaskResponseStatus `json:"status"`
-	Steps  []Step                  `json:"steps"`
+	Steps  []TaskResponseStep      `json:"steps"`
 
 	// Версия процесса заявки
 	VersionId string `json:"version_id"`
@@ -1515,6 +1515,31 @@ type ScenarioStatus int
 
 // Task human readable status
 type TaskHumanStatus string
+
+// TaskResponseStep defines model for taskResponseStep.
+type TaskResponseStep struct {
+	// Массив ошибок
+	Errors *[]string `json:"errors,omitempty"`
+
+	// Была ли ошибка
+	HasError *bool `json:"has_error,omitempty"`
+
+	// Является ли пользователь, запрашивающий заявку, делегатом кого-либо на этом шаге
+	IsDelegateOfAnyStepMember *bool `json:"is_delegate_of_any_step_member,omitempty"`
+
+	// Наименование шага
+	Name *string `json:"name,omitempty"`
+
+	// Объект состояния
+	State *map[string]interface{} `json:"state,omitempty"`
+
+	// Статус шага
+	Status  *string                 `json:"status,omitempty"`
+	Steps   *[]string               `json:"steps,omitempty"`
+	Storage *map[string]interface{} `json:"storage,omitempty"`
+	Time    *string                 `json:"time,omitempty"`
+	Type    *string                 `json:"type,omitempty"`
+}
 
 // ValueOperand defines model for valueOperand.
 type ValueOperand struct {
