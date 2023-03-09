@@ -228,9 +228,7 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 			return &CalendarDays{}, err
 		}
 
-		for _, calendarDay := range responseCalendarDays {
-			calendarDays = append(calendarDays, calendarDay)
-		}
+		calendarDays = append(calendarDays, calendarDays...)
 
 		total, offset, lim, handleErr = handleHeaders(resp.Header)
 		if handleErr != nil {
@@ -242,7 +240,7 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 		resp.Body.Close()
 	}
 
-	return &CalendarDays{}, nil
+	return &calendarDays, nil
 }
 
 func (s *Service) FillDefaultUnitId(ctx context.Context) error {
