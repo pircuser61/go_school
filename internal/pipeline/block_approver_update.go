@@ -330,7 +330,14 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) 
 		return stopErr
 	}
 
-	loginsToNotify := getSliceFromMapOfStrings(gb.State.Approvers)
+	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
+	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, approvers)
+	if getDelegationsErr != nil {
+		return getDelegationsErr
+	}
+	delegates = delegates.FilterByType("approvement")
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 	loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
 
 	var em string

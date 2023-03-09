@@ -363,7 +363,14 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 		return stopErr
 	}
 
-	loginsToNotify := getSliceFromMapOfStrings(gb.State.Executors)
+	executors := getSliceFromMapOfStrings(gb.State.Executors)
+	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
+	if getDelegationsErr != nil {
+		return getDelegationsErr
+	}
+	delegates = delegates.FilterByType("execution")
+
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 	loginsToNotify = append(loginsToNotify, gb.RunContext.Initiator)
 
 	var em string
