@@ -3,21 +3,12 @@ package hrgate
 import "github.com/google/uuid"
 
 type Employee struct {
-	Id       uuid.UUID `json:"id"`
-	Activity struct {
-		From string `json:"from"`
-		To   string `json:"to"`
-	} `json:"activity"`
-	CorpTaxiAgreement   bool      `json:"corpTaxiAgreement"`
-	Email               string    `json:"email"`
-	Login               string    `json:"login"`
-	OrganizationId      uuid.UUID `json:"organizationId"`
-	PdProcessingAllowed bool      `json:"pdProcessingAllowed"`
-	PersonId            uuid.UUID `json:"personId"`
-	Phone               string    `json:"phone"`
-	TabNum              string    `json:"tabNum"`
-	TypeId              uuid.UUID `json:"typeID"`
-	Primary             bool      `json:"primary"`
+	Id             uuid.UUID `json:"id"`
+	Email          string    `json:"email"`
+	Login          string    `json:"login"`
+	OrganizationId uuid.UUID `json:"organizationId"`
+	Phone          string    `json:"phone"`
+	Primary        bool      `json:"primary"`
 }
 
 type Employees []*Employee

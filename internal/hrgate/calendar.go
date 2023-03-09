@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"go.opencensus.io/trace"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/google/uuid"
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -130,7 +131,6 @@ func (s *Service) GetOrganizationById(ctx context.Context, organizationId uuid.U
 	if unmarshalErr != nil {
 		return &Organization{}, unmarshalErr
 	}
-	fmt.Println(organization.Unit.Id)
 
 	return &organization, nil
 }

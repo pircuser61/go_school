@@ -1,11 +1,13 @@
 package hrgate
 
 import (
+	"net/http"
+
 	"github.com/google/uuid"
+	"go.opencensus.io/plugin/ochttp"
+
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-	"go.opencensus.io/plugin/ochttp"
-	"net/http"
 )
 
 type Service struct {
