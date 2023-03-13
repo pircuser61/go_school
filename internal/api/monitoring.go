@@ -21,7 +21,7 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 
 	log := logger.GetLogger(ctx)
 
-	statusFilter := make([]string, 0, len(*params.Status))
+	statusFilter := make([]string, 0)
 	if params.Status != nil {
 		for i := range *params.Status {
 			statusFilter = append(statusFilter, string((*params.Status)[i]))
