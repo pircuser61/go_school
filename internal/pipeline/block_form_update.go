@@ -191,6 +191,7 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 		}
 	}
 
+	gb.State.HalfSLAChecked = true
 	gb.State.SLAChecked = true
 
 	return nil
