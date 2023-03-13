@@ -43,10 +43,10 @@ type FormData struct {
 
 	IsRevoked bool `json:"is_revoked"`
 
-	SLA                 int  `json:"sla"`
-	CheckSLA            bool `json:"check_sla"`
-	SLAChecked          bool `json:"sla_checked"`
-	DayBeforeSLAChecked bool `json:"day_before_sla_checked"`
+	SLA            int  `json:"sla"`
+	CheckSLA       bool `json:"check_sla"`
+	SLAChecked     bool `json:"sla_checked"`
+	HalfSLAChecked bool `json:"half_sla_checked"`
 }
 
 type GoFormBlock struct {
@@ -106,10 +106,10 @@ func (gb *GoFormBlock) Deadlines() []Deadline {
 		)
 	}
 
-	if !gb.State.DayBeforeSLAChecked {
+	if !gb.State.HalfSLAChecked && !(gb.State.SLA < 8) {
 		deadlines = append(deadlines,
-			Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA-8)),
-				Action: entity.TaskUpdateActionDayBeforeSLABreach,
+			Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2),
+				Action: entity.TaskUpdateActionHalfSLABreach,
 			},
 		)
 	}
