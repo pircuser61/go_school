@@ -928,6 +928,7 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+//nolint:lll // its ok here
 func (_m *MockDB) GetTasksForMonitoring(ctx context.Context, filters *entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
 	return &entity.TasksForMonitoring{}, nil
 }
