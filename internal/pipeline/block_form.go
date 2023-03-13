@@ -107,7 +107,7 @@ func (gb *GoFormBlock) Deadlines() []Deadline {
 			)
 		}
 
-		if !gb.State.HalfSLAChecked && !(gb.State.SLA < 8) {
+		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
 				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2),
 					Action: entity.TaskUpdateActionHalfSLABreach,
