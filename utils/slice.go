@@ -1,6 +1,8 @@
 package utils
 
-import "strings"
+import (
+	"strings"
+)
 
 func UniqueStrings(intSlice []string) []string {
 	keys := make(map[string]bool)

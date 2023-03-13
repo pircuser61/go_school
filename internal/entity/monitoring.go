@@ -27,13 +27,14 @@ type BlockOutputValue struct {
 }
 
 type TasksForMonitoringFilters struct {
-	PerPage    *int
-	Page       *int
-	SortColumn *string
-	SortOrder  *string
-	Filter     *string
-	FromDate   *string
-	ToDate     *string
+	PerPage      *int
+	Page         *int
+	SortColumn   *string
+	SortOrder    *string
+	Filter       *string
+	FromDate     *string
+	ToDate       *string
+	StatusFilter []string
 }
 
 type TaskForMonitoring struct {
@@ -41,6 +42,7 @@ type TaskForMonitoring struct {
 	Initiator   string
 	ProcessName string
 	StartedAt   time.Time
+	FinishedAt  time.Time
 	Status      string
 	WorkNumber  string
 }

@@ -21,14 +21,22 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 
 	log := logger.GetLogger(ctx)
 
-	dbTasks, err := ae.DB.GetTasksForMonitoring(ctx, entity.TasksForMonitoringFilters{
-		PerPage:    params.PerPage,
-		Page:       params.Page,
-		SortColumn: (*string)(params.SortColumn),
-		SortOrder:  (*string)(params.SortOrder),
-		Filter:     params.Filter,
-		FromDate:   params.FromDate,
-		ToDate:     params.ToDate,
+	statusFilter := make([]string, 0, len(*params.Status))
+	if params.Status != nil {
+		for i := range *params.Status {
+			statusFilter = append(statusFilter, string((*params.Status)[i]))
+		}
+	}
+
+	dbTasks, err := ae.DB.GetTasksForMonitoring(ctx, &entity.TasksForMonitoringFilters{
+		PerPage:      params.PerPage,
+		Page:         params.Page,
+		SortColumn:   (*string)(params.SortColumn),
+		SortOrder:    (*string)(params.SortOrder),
+		Filter:       params.Filter,
+		FromDate:     params.FromDate,
+		ToDate:       params.ToDate,
+		StatusFilter: statusFilter,
 	})
 	if err != nil {
 		e := GetTasksForMonitoringError
@@ -40,27 +48,27 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 	initiatorsFullNameCache := make(map[string]string)
 
 	responseTasks := make([]MonitoringTableTask, 0, len(dbTasks.Tasks))
-	for _, t := range dbTasks.Tasks {
-		if _, ok := initiatorsFullNameCache[t.Initiator]; !ok {
-			userLog := log.WithField("username", t.Initiator)
+	for i := range dbTasks.Tasks {
+		if _, ok := initiatorsFullNameCache[dbTasks.Tasks[i].Initiator]; !ok {
+			userLog := log.WithField("username", dbTasks.Tasks[i].Initiator)
 
-			userFullName, getUserErr := ae.getUserFullName(ctx, t.Initiator)
+			userFullName, getUserErr := ae.getUserFullName(ctx, dbTasks.Tasks[i].Initiator)
 			if getUserErr != nil {
 				e := GetTasksForMonitoringGetUserError
 				userLog.Error(e.errorMessage(getUserErr))
 			}
 
-			initiatorsFullNameCache[t.Initiator] = userFullName
+			initiatorsFullNameCache[dbTasks.Tasks[i].Initiator] = userFullName
 		}
 
 		responseTasks = append(responseTasks, MonitoringTableTask{
-			Id:                t.Id.String(),
-			Initiator:         t.Initiator,
-			InitiatorFullname: initiatorsFullNameCache[t.Initiator],
-			ProcessName:       t.ProcessName,
-			StartedAt:         t.StartedAt.Format("2006-01-02T15:04:05-0700"),
-			Status:            MonitoringTableTaskStatus(t.Status),
-			WorkNumber:        t.WorkNumber,
+			Initiator:         dbTasks.Tasks[i].Initiator,
+			InitiatorFullname: initiatorsFullNameCache[dbTasks.Tasks[i].Initiator],
+			ProcessName:       dbTasks.Tasks[i].ProcessName,
+			StartedAt:         dbTasks.Tasks[i].StartedAt.Format("2006-01-02T15:04:05-0700"),
+			FinishedAt:        dbTasks.Tasks[i].FinishedAt.Format("2006-01-02T15:04:05-0700"),
+			Status:            MonitoringTableTaskStatus(dbTasks.Tasks[i].Status),
+			WorkNumber:        dbTasks.Tasks[i].WorkNumber,
 		})
 	}
 

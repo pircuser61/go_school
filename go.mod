@@ -13,7 +13,6 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/render v1.0.1
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/schema v1.2.0
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgx/v4 v4.17.2
@@ -37,7 +36,6 @@ require (
 	gitlab.services.mts.ru/jocasta/integrations v1.2.0-alpha.1
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
 	gitlab.services.mts.ru/prodboard/infra v0.0.12
-	gitlab.services.mts.ru/servicedesk/herald v1.32.4
 	go.opencensus.io v0.24.0
 	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
 	golang.org/x/net v0.4.0
