@@ -263,7 +263,10 @@ LOOP:
 			}
 			break LOOP
 		case *mail.AttachmentHeader:
-			filename, _ := h.Filename()
+			filename, errFileName := h.Filename()
+			if errFileName != nil {
+				log.Error(errors.Wrap(errFileName, "can`t read attachment"))
+			}
 			nameParts := strings.Split(filename, ".")
 			log.Info("attachmentName", filename)
 			log.Info("attachmentExt", nameParts[len(nameParts)-1])
