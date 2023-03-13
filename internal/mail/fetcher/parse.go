@@ -242,27 +242,35 @@ func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
 LOOP:
 	for {
 		part, err := r.NextPart()
-		if err == io.EOF {
+		log.Info("readPart")
+		if err != nil && err == io.EOF {
+			log.Info("readPart EOF")
 			break
 		} else if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("%s, cant`t nexPart", fn))
-		}
-
-		b, errRead := io.ReadAll(part.Body)
-		if errRead != nil {
-			log.
-				WithField("text", string(b)).
-				Error(errors.Wrap(errRead, "can`t read body"))
-			break LOOP
+			log.Error(errors.Wrap(err, "can`t next part"))
+			return nil, errors.Wrap(err, fmt.Sprintf("%s, cant`t next part", fn))
 		}
 
 		switch h := part.Header.(type) {
 		case *mail.InlineHeader:
 			if !strings.Contains(body, endLine) {
+				b, errRead := io.ReadAll(part.Body)
+				if errRead != nil {
+					log.
+						WithField("text", string(b)).
+						Error(errors.Wrap(errRead, "can`t read body"))
+					break LOOP
+				}
 				body += string(b)
 			}
 			break LOOP
 		case *mail.AttachmentHeader:
+			b, errRead := io.ReadAll(part.Body)
+			if errRead != nil {
+				log.Error(errors.Wrap(errRead, "can`t read attachment body"))
+				break LOOP
+			}
+
 			filename, errFileName := h.Filename()
 			if errFileName != nil {
 				log.Error(errors.Wrap(errFileName, "can`t read attachment"))
@@ -296,5 +304,6 @@ LOOP:
 	pb.Body = strings.TrimSpace(pb.Body)
 	pb.Attachments = attachments
 
+	log.Info(fn, pb)
 	return &pb, nil
 }
