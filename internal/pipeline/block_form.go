@@ -98,20 +98,22 @@ func (gb *GoFormBlock) Deadlines() []Deadline {
 
 	deadlines := make([]Deadline, 0, 2)
 
-	if !gb.State.SLAChecked {
-		deadlines = append(deadlines,
-			Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
-				Action: entity.TaskUpdateActionSLABreach,
-			},
-		)
-	}
+	if gb.State.CheckSLA {
+		if !gb.State.SLAChecked {
+			deadlines = append(deadlines,
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
+					Action: entity.TaskUpdateActionSLABreach,
+				},
+			)
+		}
 
-	if !gb.State.HalfSLAChecked && !(gb.State.SLA < 8) {
-		deadlines = append(deadlines,
-			Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2),
-				Action: entity.TaskUpdateActionHalfSLABreach,
-			},
-		)
+		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
+			deadlines = append(deadlines,
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2),
+					Action: entity.TaskUpdateActionHalfSLABreach,
+				},
+			)
+		}
 	}
 
 	return deadlines

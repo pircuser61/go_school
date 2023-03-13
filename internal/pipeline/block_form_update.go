@@ -191,6 +191,7 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 		}
 	}
 
+	gb.State.HalfSLAChecked = true
 	gb.State.SLAChecked = true
 
 	return nil
@@ -200,7 +201,7 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 	const fn = "pipeline.form.handleHalfSLABreached"
 
-	if !gb.State.HalfSLAChecked {
+	if gb.State.HalfSLAChecked {
 		return nil
 	}
 
