@@ -266,6 +266,7 @@ LOOP:
 			filename, errFileName := h.Filename()
 			if errFileName != nil {
 				log.Error(errors.Wrap(errFileName, "can`t read attachment"))
+				break LOOP
 			}
 			nameParts := strings.Split(filename, ".")
 			log.Info("attachmentName", filename)
@@ -277,6 +278,8 @@ LOOP:
 				log.Info("attachmentRawLen", len(b))
 				attachments[filename] = AttachmentData{b, "txt"}
 			}
+		default:
+			log.Info("default mail part type", part.Header)
 		}
 	}
 
