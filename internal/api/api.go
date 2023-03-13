@@ -1026,6 +1026,9 @@ type MonitoringBlockParam struct {
 
 // MonitoringHistory defines model for MonitoringHistory.
 type MonitoringHistory struct {
+	// Время перехода на конкретный блок
+	BlockDateInit *string `json:"block_date_init,omitempty"`
+
 	// Айди ноды в variable_storage
 	BlockId string `json:"block_id"`
 
@@ -1579,7 +1582,7 @@ type GetTasksForMonitoringParams struct {
 	SortColumn *GetTasksForMonitoringParamsSortColumn `json:"sort.column,omitempty"`
 	SortOrder  *GetTasksForMonitoringParamsSortOrder  `json:"sort.order,omitempty"`
 
-	// Фильтр по UUID, work_number, наименованию процесса, логину инициатора
+	// Фильтр по work_number, наименованию процесса, логину инициатора
 	Filter *string `json:"filter,omitempty"`
 
 	// Фильтровать по дате, начало периода

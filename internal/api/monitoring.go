@@ -173,10 +173,11 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 
 	for i := range nodes {
 		res.History = append(res.History, MonitoringHistory{
-			BlockId:  nodes[i].BlockId,
-			RealName: nodes[i].RealName,
-			Status:   getMonitoringStatus(nodes[i].Status),
-			NodeId:   nodes[i].NodeId,
+			BlockId:       nodes[i].BlockId,
+			RealName:      nodes[i].RealName,
+			Status:        getMonitoringStatus(nodes[i].Status),
+			NodeId:        nodes[i].NodeId,
+			BlockDateInit: nodes[i].BlockDateInit,
 		})
 	}
 	if err = sendResponse(w, http.StatusOK, res); err != nil {

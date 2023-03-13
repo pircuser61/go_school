@@ -7,15 +7,16 @@ import (
 )
 
 type MonitoringTaskNode struct {
-	WorkNumber   string `json:"work_number"`
-	VersionId    string `json:"version_id"`
-	Author       string `json:"author"`
-	CreationTime string `json:"creation_time"`
-	ScenarioName string `json:"scenario_name"`
-	BlockId      string `json:"block_id"`
-	RealName     string `json:"real_name"`
-	Status       string `json:"status"`
-	NodeId       string `json:"node_id"`
+	WorkNumber    string  `json:"work_number"`
+	VersionId     string  `json:"version_id"`
+	Author        string  `json:"author"`
+	CreationTime  string  `json:"creation_time"`
+	ScenarioName  string  `json:"scenario_name"`
+	BlockId       string  `json:"block_id"`
+	RealName      string  `json:"real_name"`
+	Status        string  `json:"status"`
+	NodeId        string  `json:"node_id"`
+	BlockDateInit *string `json:"block_date_init"`
 }
 
 type BlockOutputs []BlockOutputValue

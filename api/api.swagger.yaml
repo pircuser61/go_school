@@ -2429,7 +2429,7 @@ paths:
             default: DESC
         - name: filter
           in: query
-          description: Фильтр по UUID, work_number, наименованию процесса, логину инициатора
+          description: Фильтр по work_number, наименованию процесса, логину инициатора
           schema:
             type: string
         - name: from_date
@@ -4422,6 +4422,10 @@ components:
         real_name:
           type: string
           description: "читаемое имя ноды"
+        block_date_init:
+          type: string
+          description: "Время перехода на конкретный блок"
+          example: "2020-07-16T17:10:25.112704+03:00"
       required:
         - node_id
         - status

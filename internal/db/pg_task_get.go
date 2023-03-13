@@ -1278,13 +1278,12 @@ func getFiltersSearchConditions(filter *string) string {
 		return ""
 	}
 	escapeFilter := strings.Replace(*filter, "_", "!_", -1)
-	escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1) // TODO ask if need to search by version id
+	escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1)
 	return fmt.Sprintf(`
-		(w.version_id::TEXT ILIKE '%%%s%%' ESCAPE '!' OR
-		 w.work_number ILIKE '%%%s%%' ESCAPE '!' OR
+		(w.work_number ILIKE '%%%s%%' ESCAPE '!' OR
 		 p.name ILIKE '%%%s%%' ESCAPE '!' OR
 		 w.author ILIKE '%%%s%%' ESCAPE '!')`,
-		escapeFilter, escapeFilter, escapeFilter, escapeFilter)
+		escapeFilter, escapeFilter, escapeFilter)
 }
 
 func getFiltersDateConditions(dateFrom, dateTo *string) string {
