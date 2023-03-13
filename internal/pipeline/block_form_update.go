@@ -227,7 +227,7 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 			ctx,
 			emails,
 			nil,
-			mail.NewFormDayBeforeTpl(
+			mail.NewFormDayHalfSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,

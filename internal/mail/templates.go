@@ -114,7 +114,7 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl string) Template {
 	}
 }
 
-func NewFormDayBeforeTpl(id, name, sdUrl string) Template {
+func NewFormDayHalfSLATpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
 		Text: "Уважаемый коллега, время предоставления информации по {{.Name}} заявке № {{.Id}} истекает " +
