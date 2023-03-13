@@ -118,7 +118,7 @@ func NewFormDayBeforeTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
 		Text: "Уважаемый коллега, время предоставления информации по {{.Name}} заявке № {{.Id}} истекает " +
-			"через 8 часов\nДля просмотра перейдите по <a href={{.Link}}>заявке</a>",
+			"\nДля просмотра перейдите по <a href={{.Link}}>заявке</a>",
 		Variables: struct {
 			Name string `json:"name"`
 			Id   string `json:"id"`

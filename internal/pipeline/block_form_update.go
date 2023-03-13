@@ -68,8 +68,8 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-	case string(entity.TaskUpdateActionDayBeforeSLABreach):
-		if errUpdate := gb.handleDayBeforeSLABreached(ctx); errUpdate != nil {
+	case string(entity.TaskUpdateActionHalfSLABreach):
+		if errUpdate := gb.handleHalfSLABreached(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionCancelApp):
@@ -197,10 +197,10 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 }
 
 //nolint:dupl //its not duplicate
-func (gb *GoFormBlock) handleDayBeforeSLABreached(ctx c.Context) error {
-	const fn = "pipeline.form.handleDayBeforeSLABreached"
+func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
+	const fn = "pipeline.form.handleHalfSLABreached"
 
-	if !gb.State.DayBeforeSLAChecked {
+	if !gb.State.HalfSLAChecked {
 		return nil
 	}
 
@@ -237,7 +237,7 @@ func (gb *GoFormBlock) handleDayBeforeSLABreached(ctx c.Context) error {
 		}
 	}
 
-	gb.State.DayBeforeSLAChecked = true
+	gb.State.HalfSLAChecked = true
 
 	return nil
 }
