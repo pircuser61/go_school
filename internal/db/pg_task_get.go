@@ -1186,8 +1186,7 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMo
 	for rows.Next() {
 		task := entity.TaskForMonitoring{}
 
-		err = rows.Scan(&task.Id,
-			&task.Status,
+		err = rows.Scan(&task.Status,
 			&task.ProcessName,
 			&task.Initiator,
 			&task.WorkNumber,

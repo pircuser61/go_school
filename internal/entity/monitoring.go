@@ -2,8 +2,6 @@ package entity
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type MonitoringTaskNode struct {
@@ -39,7 +37,6 @@ type TasksForMonitoringFilters struct {
 }
 
 type TaskForMonitoring struct {
-	Id          uuid.UUID
 	Initiator   string
 	ProcessName string
 	StartedAt   time.Time
