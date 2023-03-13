@@ -1,1 +1,300 @@
-package fetcherimport (	c "context"	"fmt"	"io"	"strings"	"github.com/emersion/go-imap"	"gitlab.services.mts.ru/abp/myosotis/logger"	"github.com/emersion/go-message/mail"	"github.com/pkg/errors"	"go.opencensus.io/trace")type AttachmentData struct {	Raw []byte	Ext string}type ActionPayload struct {	WorkNumber     string                    `json:"workNumber"`	StepName       string                    `json:"stepName"`	ActionName     string                    `json:"actionName"`	Decision       string                    `json:"decision"`	Comment        string                    `json:"comment"`	Login          string                    `json:"login"`	AttachmentsIds []string                  `json:"attachments"`	Attachments    map[string]AttachmentData `json:"-"`}type ParsedEmail struct {	From   string	To     string	Action *ActionPayload}func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap.BodySectionName) (*ParsedEmail, error) {	const fn = "mail.fetcher.processMessage"	ctx, span := trace.StartSpan(ctx, fn)	defer span.End()	if msg == nil {		err := errors.Wrap(errors.New("server didn't return message"), "no messages")		return nil, err	}	log := logger.GetLogger(ctx)	msgBody := msg.GetBody(section)	if msgBody == nil {		err := errors.Wrap(errors.New("server didn't return message"), "no messages")		return nil, err	}	msgReader, err := mail.CreateReader(msgBody)	if err != nil {		err = errors.Wrap(err, "can't create reader")		return nil, err	}	log.Info(fn, "start processing email")	processedEmail, err := s.parseEmail(ctx, msgReader)	if err != nil {		err = errors.Wrap(err, "parseEmail")		return nil, err	}	if processedEmail == nil || processedEmail.Action == nil {		return nil, errors.New("processedEmail is nil")	}	return processedEmail, nil}//nolint:gocyclo //its ok herefunc (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, err error) {	const funcName = "mail.fetcher.parseEmail"	const rejected = "Отклонено"	log := logger.GetLogger(ctx)	_, span := trace.StartSpan(ctx, funcName)	defer span.End()	headers, err := parseEmailHeaders(r.Header)	if err != nil {		return nil, errors.Wrap(err, funcName+": headers")	}	from := addressListToStrList(headers.From)	if len(from) == 0 {		return nil, errors.New("invalid from header")	}	to := addressListToStrList(headers.To)	if len(to) == 0 {		return nil, errors.New("invalid to header")	}	fields := strings.Split(headers.Subject, fieldsDelimiter)	if len(fields) < 1 {		return nil, errors.New("invalid subject to parse")	}	action, err := parseSubject(fields)	if err != nil {		return nil, err	}	if action != nil {		var processedBody *parsedBody		processedBody, err = parseMsgBody(ctx, r)		if err != nil {			log.WithError(err).Error("can't parse message body: " + action.WorkNumber)		}		if processedBody != nil {			action.Comment = processedBody.Body		}		action.Attachments = processedBody.Attachments		if action.Comment == "" {			switch action.Decision {			case "approve":				action.Comment = "Согласовано"			case "confirm":				action.Comment = "Утверждено"			case "informed":				action.Comment = "Проинформировано"			case "reject":				action.Comment = rejected			case "sign":				action.Comment = "Подписано"			case "viewed":				action.Comment = "Ознакомлено"			case "executed":				action.Comment = "Решено"			case "rejected":				action.Comment = rejected			}		}	}	return &ParsedEmail{		From:   from[0],		To:     to[0],		Action: action,	}, nil}type parsedHeaders struct {	From    []*mail.Address	To      []*mail.Address	Subject string}func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {	from, err := header.AddressList("From")	if err != nil {		return nil, errors.Wrap(err, "header From")	}	to, err := header.AddressList("To")	if err != nil {		return nil, errors.Wrap(err, "header To")	}	subject, err := header.Subject()	if err != nil {		return nil, errors.Wrap(err, "header Subject")	}	return &parsedHeaders{		From:    from,		To:      to,		Subject: subject,	}, nil}func parseSubject(fields []string) (action *ActionPayload, err error) {	action = &ActionPayload{}	for i := range fields {		keyValue := strings.Split(fields[i], fieldsKeyValueDelimiter)		if len(keyValue) != 2 {			return nil, errors.New("parseSubject, invalid subject: " + strings.Join(fields, ""))		}		switch keyValue[0] {		case stepName:			action.StepName = keyValue[1]		case decision:			action.Decision = keyValue[1]		case workNumber:			action.WorkNumber = keyValue[1]		case actionName:			action.ActionName = keyValue[1]		case login:			action.Login = keyValue[1]		}	}	return action, err}func addressListToStrList(addrs []*mail.Address) (res []string) {	res = make([]string, 0)	for i := range addrs {		if addrs[i] != nil && len(addrs[i].Address) > 0 {			res = append(res, addrs[i].Address)		}	}	return res}type parsedBody struct {	Body        string	Attachments map[string]AttachmentData}func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {	const fn = "mail.fetcher.parseMsgBody"	const startLine = "***КОММЕНТАРИЙ НИЖЕ***"	const endLine = "***ОБЩИЙ РАЗМЕР ВЛОЖЕНИЙ НЕ БОЛЕЕ 40МБ***"	log := logger.GetLogger(ctx)	var (		body string		pb   parsedBody	)	attachments := make(map[string]AttachmentData)LOOP:	for {		part, err := r.NextPart()		if err == io.EOF {			break		} else if err != nil {			return nil, errors.Wrap(err, fmt.Sprintf("%s, cant`t nexPart", fn))		}		b, errRead := io.ReadAll(part.Body)		if errRead != nil {			log.				WithField("text", string(b)).				Error(errors.Wrap(errRead, "can`t read body"))			break LOOP		}		switch h := part.Header.(type) {		case *mail.InlineHeader:			if !strings.Contains(body, endLine) {				body += string(b)			}			break LOOP		case *mail.AttachmentHeader:			filename, errFileName := h.Filename()			if errFileName != nil {				log.Error(errors.Wrap(errFileName, "can`t read attachment"))				break LOOP			}			nameParts := strings.Split(filename, ".")			log.Info("attachmentName", filename)			log.Info("attachmentExt", nameParts[len(nameParts)-1])			if len(nameParts) > 1 {				log.Info("attachmentRawLen", len(b))				attachments[filename] = AttachmentData{b, nameParts[len(nameParts)-1]}			} else {				log.Info("attachmentRawLen", len(b))				attachments[filename] = AttachmentData{b, "txt"}			}		default:			log.Info("default mail part type", part.Header)		}	}	if body == "" && len(attachments) == 0 {		pb.Body = ""		pb.Attachments = attachments		return &pb, nil	}	pb.Body = strings.Replace(body, startLine, "", 1)	pb.Body = strings.Replace(pb.Body, endLine, "", 1)	pb.Body = strings.Replace(pb.Body, "\n", "", -1)	pb.Body = strings.TrimSpace(pb.Body)	pb.Attachments = attachments	return &pb, nil}
+package fetcher
+
+import (
+	c "context"
+	"fmt"
+	"io"
+	"strings"
+
+	"github.com/emersion/go-imap"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"github.com/emersion/go-message/mail"
+
+	"github.com/pkg/errors"
+
+	"go.opencensus.io/trace"
+)
+
+type AttachmentData struct {
+	Raw []byte
+	Ext string
+}
+
+type ActionPayload struct {
+	WorkNumber     string                    `json:"workNumber"`
+	StepName       string                    `json:"stepName"`
+	ActionName     string                    `json:"actionName"`
+	Decision       string                    `json:"decision"`
+	Comment        string                    `json:"comment"`
+	Login          string                    `json:"login"`
+	AttachmentsIds []string                  `json:"attachments"`
+	Attachments    map[string]AttachmentData `json:"-"`
+}
+
+type ParsedEmail struct {
+	From   string
+	To     string
+	Action *ActionPayload
+}
+
+func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap.BodySectionName) (*ParsedEmail, error) {
+	const fn = "mail.fetcher.processMessage"
+	ctx, span := trace.StartSpan(ctx, fn)
+	defer span.End()
+
+	if msg == nil {
+		err := errors.Wrap(errors.New("server didn't return message"), "no messages")
+		return nil, err
+	}
+
+	log := logger.GetLogger(ctx)
+
+	msgBody := msg.GetBody(section)
+	if msgBody == nil {
+		err := errors.Wrap(errors.New("server didn't return message"), "no messages")
+		return nil, err
+	}
+
+	msgReader, err := mail.CreateReader(msgBody)
+	if err != nil {
+		err = errors.Wrap(err, "can't create reader")
+		return nil, err
+	}
+
+	log.Info(fn, "start processing email")
+
+	processedEmail, err := s.parseEmail(ctx, msgReader)
+	if err != nil {
+		err = errors.Wrap(err, "parseEmail")
+		return nil, err
+	}
+
+	if processedEmail == nil || processedEmail.Action == nil {
+		return nil, errors.New("processedEmail is nil")
+	}
+
+	return processedEmail, nil
+}
+
+//nolint:gocyclo //its ok here
+func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, err error) {
+	const funcName = "mail.fetcher.parseEmail"
+	const rejected = "Отклонено"
+
+	log := logger.GetLogger(ctx)
+
+	_, span := trace.StartSpan(ctx, funcName)
+	defer span.End()
+
+	headers, err := parseEmailHeaders(r.Header)
+	if err != nil {
+		return nil, errors.Wrap(err, funcName+": headers")
+	}
+
+	from := addressListToStrList(headers.From)
+	if len(from) == 0 {
+		return nil, errors.New("invalid from header")
+	}
+
+	to := addressListToStrList(headers.To)
+	if len(to) == 0 {
+		return nil, errors.New("invalid to header")
+	}
+
+	fields := strings.Split(headers.Subject, fieldsDelimiter)
+	if len(fields) < 1 {
+		return nil, errors.New("invalid subject to parse")
+	}
+
+	action, err := parseSubject(fields)
+	if err != nil {
+		return nil, err
+	}
+
+	if action != nil {
+		var processedBody *parsedBody
+		processedBody, err = parseMsgBody(ctx, r)
+		if err != nil {
+			log.WithError(err).Error("can't parse message body: " + action.WorkNumber)
+		}
+
+		if processedBody != nil {
+			action.Comment = processedBody.Body
+		}
+
+		action.Attachments = processedBody.Attachments
+
+		if action.Comment == "" {
+			switch action.Decision {
+			case "approve":
+				action.Comment = "Согласовано"
+			case "confirm":
+				action.Comment = "Утверждено"
+			case "informed":
+				action.Comment = "Проинформировано"
+			case "reject":
+				action.Comment = rejected
+			case "sign":
+				action.Comment = "Подписано"
+			case "viewed":
+				action.Comment = "Ознакомлено"
+			case "executed":
+				action.Comment = "Решено"
+			case "rejected":
+				action.Comment = rejected
+			}
+		}
+	}
+
+	return &ParsedEmail{
+		From:   from[0],
+		To:     to[0],
+		Action: action,
+	}, nil
+}
+
+type parsedHeaders struct {
+	From    []*mail.Address
+	To      []*mail.Address
+	Subject string
+}
+
+func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
+	from, err := header.AddressList("From")
+	if err != nil {
+		return nil, errors.Wrap(err, "header From")
+	}
+
+	to, err := header.AddressList("To")
+	if err != nil {
+		return nil, errors.Wrap(err, "header To")
+	}
+
+	subject, err := header.Subject()
+	if err != nil {
+		return nil, errors.Wrap(err, "header Subject")
+	}
+
+	return &parsedHeaders{
+		From:    from,
+		To:      to,
+		Subject: subject,
+	}, nil
+}
+
+func parseSubject(fields []string) (action *ActionPayload, err error) {
+	action = &ActionPayload{}
+	for i := range fields {
+		keyValue := strings.Split(fields[i], fieldsKeyValueDelimiter)
+		if len(keyValue) != 2 {
+			return nil, errors.New("parseSubject, invalid subject: " + strings.Join(fields, ""))
+		}
+
+		switch keyValue[0] {
+		case stepName:
+			action.StepName = keyValue[1]
+		case decision:
+			action.Decision = keyValue[1]
+		case workNumber:
+			action.WorkNumber = keyValue[1]
+		case actionName:
+			action.ActionName = keyValue[1]
+		case login:
+			action.Login = keyValue[1]
+		}
+	}
+
+	return action, err
+}
+
+func addressListToStrList(addrs []*mail.Address) (res []string) {
+	res = make([]string, 0)
+	for i := range addrs {
+		if addrs[i] != nil && len(addrs[i].Address) > 0 {
+			res = append(res, addrs[i].Address)
+		}
+	}
+
+	return res
+}
+
+type parsedBody struct {
+	Body        string
+	Attachments map[string]AttachmentData
+}
+
+func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
+	const fn = "mail.fetcher.parseMsgBody"
+	const startLine = "***КОММЕНТАРИЙ НИЖЕ***"
+	const endLine = "***ОБЩИЙ РАЗМЕР ВЛОЖЕНИЙ НЕ БОЛЕЕ 40МБ***"
+
+	log := logger.GetLogger(ctx)
+
+	var (
+		body string
+		pb   parsedBody
+	)
+
+	attachments := make(map[string]AttachmentData)
+
+LOOP:
+	for {
+		part, err := r.NextPart()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("%s, cant`t nexPart", fn))
+		}
+
+		b, errRead := io.ReadAll(part.Body)
+		if errRead != nil {
+			log.
+				WithField("text", string(b)).
+				Error(errors.Wrap(errRead, "can`t read body"))
+			break LOOP
+		}
+
+		switch h := part.Header.(type) {
+		case *mail.InlineHeader:
+			if !strings.Contains(body, endLine) {
+				body += string(b)
+			}
+			break LOOP
+		case *mail.AttachmentHeader:
+			filename, errFileName := h.Filename()
+			if errFileName != nil {
+				log.Error(errors.Wrap(errFileName, "can`t read attachment"))
+				break LOOP
+			}
+			nameParts := strings.Split(filename, ".")
+			log.Info("attachmentName", filename)
+			log.Info("attachmentExt", nameParts[len(nameParts)-1])
+			if len(nameParts) > 1 {
+				log.Info("attachmentRawLen", len(b))
+				attachments[filename] = AttachmentData{b, nameParts[len(nameParts)-1]}
+			} else {
+				log.Info("attachmentRawLen", len(b))
+				attachments[filename] = AttachmentData{b, "txt"}
+			}
+		default:
+			log.Info("default mail part type", part.Header)
+		}
+	}
+
+	if body == "" && len(attachments) == 0 {
+		pb.Body = ""
+		pb.Attachments = attachments
+		return &pb, nil
+	}
+
+	pb.Body = strings.Replace(body, startLine, "", 1)
+	pb.Body = strings.Replace(pb.Body, endLine, "", 1)
+
+	pb.Body = strings.Replace(pb.Body, "\n", "", -1)
+	pb.Body = strings.TrimSpace(pb.Body)
+	pb.Attachments = attachments
+
+	return &pb, nil
+}
