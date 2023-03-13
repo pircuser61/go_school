@@ -15,6 +15,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
+)
+
 func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
 	ctx, span := trace.StartSpan(r.Context(), "start get tasks for monitoring")
 	defer span.End()
@@ -49,26 +53,27 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 
 	responseTasks := make([]MonitoringTableTask, 0, len(dbTasks.Tasks))
 	for i := range dbTasks.Tasks {
-		if _, ok := initiatorsFullNameCache[dbTasks.Tasks[i].Initiator]; !ok {
-			userLog := log.WithField("username", dbTasks.Tasks[i].Initiator)
+		t := dbTasks.Tasks[i]
+		if _, ok := initiatorsFullNameCache[t.Initiator]; !ok {
+			userLog := log.WithField("username", t.Initiator)
 
-			userFullName, getUserErr := ae.getUserFullName(ctx, dbTasks.Tasks[i].Initiator)
+			userFullName, getUserErr := ae.getUserFullName(ctx, t.Initiator)
 			if getUserErr != nil {
 				e := GetTasksForMonitoringGetUserError
 				userLog.Error(e.errorMessage(getUserErr))
 			}
 
-			initiatorsFullNameCache[dbTasks.Tasks[i].Initiator] = userFullName
+			initiatorsFullNameCache[t.Initiator] = userFullName
 		}
 
 		responseTasks = append(responseTasks, MonitoringTableTask{
-			Initiator:         dbTasks.Tasks[i].Initiator,
-			InitiatorFullname: initiatorsFullNameCache[dbTasks.Tasks[i].Initiator],
-			ProcessName:       dbTasks.Tasks[i].ProcessName,
-			StartedAt:         dbTasks.Tasks[i].StartedAt.Format("2006-01-02T15:04:05-0700"),
-			FinishedAt:        dbTasks.Tasks[i].FinishedAt.Format("2006-01-02T15:04:05-0700"),
-			Status:            MonitoringTableTaskStatus(dbTasks.Tasks[i].Status),
-			WorkNumber:        dbTasks.Tasks[i].WorkNumber,
+			Initiator:         t.Initiator,
+			InitiatorFullname: initiatorsFullNameCache[t.Initiator],
+			ProcessName:       t.ProcessName,
+			StartedAt:         t.StartedAt.Format(monitoringTimeLayout),
+			FinishedAt:        t.FinishedAt.Format(monitoringTimeLayout),
+			Status:            MonitoringTableTaskStatus(t.Status),
+			WorkNumber:        t.WorkNumber,
 		})
 	}
 

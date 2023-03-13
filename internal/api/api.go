@@ -2897,7 +2897,7 @@ func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, 
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	err = runtime.BindQueryParameter("form", false, false, "status", r.URL.Query(), &params.Status)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
 		return

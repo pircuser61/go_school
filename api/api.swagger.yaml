@@ -2448,6 +2448,8 @@ paths:
           in: query
           description: Фильтровать по статусу заявки
           required: false
+          explode: false
+          style: form
           schema:
             type: array
             default: [ ]
