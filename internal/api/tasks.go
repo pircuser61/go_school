@@ -577,7 +577,9 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			ext := parsedEmails[i].Action.Attachments[fileName].Ext
 			id, errSave := ae.Minio.SaveFile(ctx, ext, fileName, r, r.Size())
 			if errSave != nil {
-				log.WithField("fileName", fileName).Error(errSave)
+				log.WithField("workNumber", parsedEmails[i].Action.WorkNumber).
+					WithField("fileName", fileName).
+					Error(errSave)
 				continue
 			}
 
