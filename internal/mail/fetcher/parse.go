@@ -6,9 +6,10 @@ import (
 	"io"
 	"strings"
 
+	"github.com/emersion/go-imap"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"github.com/emersion/go-imap"
 	"github.com/emersion/go-message/mail"
 
 	"github.com/pkg/errors"
@@ -264,8 +265,14 @@ LOOP:
 		case *mail.AttachmentHeader:
 			filename, _ := h.Filename()
 			nameParts := strings.Split(filename, ".")
+			log.Info("attachmentName", filename)
+			log.Info("attachmentExt", nameParts[len(nameParts)-1])
 			if len(nameParts) > 1 {
+				log.Info("attachmentRawLen", len(b))
 				attachments[filename] = AttachmentData{b, nameParts[len(nameParts)-1]}
+			} else {
+				log.Info("attachmentRawLen", len(b))
+				attachments[filename] = AttachmentData{b, "txt"}
 			}
 		}
 	}
@@ -277,7 +284,7 @@ LOOP:
 	}
 
 	pb.Body = strings.Replace(body, startLine, "", 1)
-	pb.Body = strings.Replace(body, endLine, "", 1)
+	pb.Body = strings.Replace(pb.Body, endLine, "", 1)
 
 	pb.Body = strings.Replace(pb.Body, "\n", "", -1)
 	pb.Body = strings.TrimSpace(pb.Body)
