@@ -2,7 +2,6 @@ package fetcher
 
 import (
 	c "context"
-	"fmt"
 	"io"
 	"strings"
 
@@ -252,7 +251,7 @@ LOOP:
 			break
 		} else if err != nil {
 			log.Error(errors.Wrap(err, "can`t next part"))
-			return nil, errors.Wrap(err, fmt.Sprintf("%s, cant`t next part", fn))
+			break
 		}
 
 		switch part.Header.(type) {
