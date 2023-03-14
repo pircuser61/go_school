@@ -40,7 +40,7 @@ type TaskForMonitoring struct {
 	Initiator   string
 	ProcessName string
 	StartedAt   time.Time
-	FinishedAt  time.Time
+	FinishedAt  *time.Time
 	Status      string
 	WorkNumber  string
 }
