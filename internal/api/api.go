@@ -1026,6 +1026,9 @@ type MonitoringBlockParam struct {
 
 // MonitoringHistory defines model for MonitoringHistory.
 type MonitoringHistory struct {
+	// Время перехода на конкретный блок
+	BlockDateInit *string `json:"block_date_init,omitempty"`
+
 	// Айди ноды в variable_storage
 	BlockId string `json:"block_id"`
 
@@ -1078,8 +1081,7 @@ type MonitoringScenarioInfo struct {
 
 // MonitoringTableTask defines model for MonitoringTableTask.
 type MonitoringTableTask struct {
-	// UUID of task
-	Id string `json:"id"`
+	FinishedAt string `json:"finished_at"`
 
 	// login of initiator
 	Initiator string `json:"initiator"`
@@ -1580,7 +1582,7 @@ type GetTasksForMonitoringParams struct {
 	SortColumn *GetTasksForMonitoringParamsSortColumn `json:"sort.column,omitempty"`
 	SortOrder  *GetTasksForMonitoringParamsSortOrder  `json:"sort.order,omitempty"`
 
-	// Фильтр по UUID, work_number или наименованию процесса
+	// Фильтр по work_number, наименованию процесса, логину инициатора
 	Filter *string `json:"filter,omitempty"`
 
 	// Фильтровать по дате, начало периода
@@ -1588,6 +1590,9 @@ type GetTasksForMonitoringParams struct {
 
 	// Фильтровать по дате, конец периода
 	ToDate *string `json:"to_date,omitempty"`
+
+	// Фильтровать по статусу заявки
+	Status *[]GetTasksForMonitoringParamsStatus `json:"status,omitempty"`
 }
 
 // GetTasksForMonitoringParamsSortColumn defines parameters for GetTasksForMonitoring.
@@ -1595,6 +1600,9 @@ type GetTasksForMonitoringParamsSortColumn string
 
 // GetTasksForMonitoringParamsSortOrder defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParamsSortOrder string
+
+// GetTasksForMonitoringParamsStatus defines parameters for GetTasksForMonitoring.
+type GetTasksForMonitoringParamsStatus string
 
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
@@ -2881,6 +2889,17 @@ func (siw *ServerInterfaceWrapper) GetTasksForMonitoring(w http.ResponseWriter, 
 	err = runtime.BindQueryParameter("form", true, false, "to_date", r.URL.Query(), &params.ToDate)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to_date", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+	if paramValue := r.URL.Query().Get("status"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", false, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
 		return
 	}
 

@@ -2418,6 +2418,7 @@ paths:
               - initiator
               - work_number
               - started_at
+              - finished_at
         - name: sort.order
           in: query
           schema:
@@ -2428,7 +2429,7 @@ paths:
             default: DESC
         - name: filter
           in: query
-          description: Фильтр по UUID, work_number или наименованию процесса
+          description: Фильтр по work_number, наименованию процесса, логину инициатора
           schema:
             type: string
         - name: from_date
@@ -2443,6 +2444,22 @@ paths:
           schema:
             type: string
           example: 2020-07-16T17:10:25.112704+03:00
+        - name: status
+          in: query
+          description: Фильтровать по статусу заявки
+          required: false
+          explode: false
+          style: form
+          schema:
+            type: array
+            default: [ ]
+            items:
+              type: string
+              enum:
+                - "В работе"
+                - "Завершен"
+                - "Остановлен"
+              description: Статус заявки
       responses:
         200:
           description: OK
@@ -3007,9 +3024,6 @@ components:
     MonitoringTableTask:
       type: object
       properties:
-        id:
-          type: string
-          description: UUID of task
         status:
           type: string
           enum: [ "В работе", "Завершен", "Остановлен", "Неизвестный статус" ]
@@ -3028,12 +3042,16 @@ components:
         started_at:
           type: string
           example: 2020-07-16T17:10:25.112704+03:00
+        finished_at:
+          type: string
+          example: 2020-07-16T17:10:25.112704+03:00
       required:
         - id
         - status
         - process_name
         - work_number
         - started_at
+        - finished_at
         - initiator
         - initiator_fullname
 
@@ -4406,6 +4424,10 @@ components:
         real_name:
           type: string
           description: "читаемое имя ноды"
+        block_date_init:
+          type: string
+          description: "Время перехода на конкретный блок"
+          example: "2020-07-16T17:10:25.112704+03:00"
       required:
         - node_id
         - status

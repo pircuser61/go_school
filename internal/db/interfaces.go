@@ -189,7 +189,7 @@ type Database interface {
 	GetBlockOutputs(ctx c.Context, blockId, blockName string) (e.BlockOutputs, error)
 	GetBlockInputs(ctx c.Context, blockName, workNumber string) (e.BlockInputs, error)
 	GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error)
-	GetTasksForMonitoring(ctx c.Context, filters e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
+	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 
 	SaveVersionSettings(ctx c.Context, settings *e.ProcessSettings) error
 	GetVersionSettings(ctx c.Context, versionID string) (e.ProcessSettings, error)

@@ -15,20 +15,32 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	monitoringTimeLayout = "2006-01-02T15:04:05-0700"
+)
+
 func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, params GetTasksForMonitoringParams) {
 	ctx, span := trace.StartSpan(r.Context(), "start get tasks for monitoring")
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
 
-	dbTasks, err := ae.DB.GetTasksForMonitoring(ctx, entity.TasksForMonitoringFilters{
-		PerPage:    params.PerPage,
-		Page:       params.Page,
-		SortColumn: (*string)(params.SortColumn),
-		SortOrder:  (*string)(params.SortOrder),
-		Filter:     params.Filter,
-		FromDate:   params.FromDate,
-		ToDate:     params.ToDate,
+	statusFilter := make([]string, 0)
+	if params.Status != nil {
+		for i := range *params.Status {
+			statusFilter = append(statusFilter, string((*params.Status)[i]))
+		}
+	}
+
+	dbTasks, err := ae.DB.GetTasksForMonitoring(ctx, &entity.TasksForMonitoringFilters{
+		PerPage:      params.PerPage,
+		Page:         params.Page,
+		SortColumn:   (*string)(params.SortColumn),
+		SortOrder:    (*string)(params.SortOrder),
+		Filter:       params.Filter,
+		FromDate:     params.FromDate,
+		ToDate:       params.ToDate,
+		StatusFilter: statusFilter,
 	})
 	if err != nil {
 		e := GetTasksForMonitoringError
@@ -40,7 +52,8 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 	initiatorsFullNameCache := make(map[string]string)
 
 	responseTasks := make([]MonitoringTableTask, 0, len(dbTasks.Tasks))
-	for _, t := range dbTasks.Tasks {
+	for i := range dbTasks.Tasks {
+		t := dbTasks.Tasks[i]
 		if _, ok := initiatorsFullNameCache[t.Initiator]; !ok {
 			userLog := log.WithField("username", t.Initiator)
 
@@ -54,11 +67,11 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 		}
 
 		responseTasks = append(responseTasks, MonitoringTableTask{
-			Id:                t.Id.String(),
 			Initiator:         t.Initiator,
 			InitiatorFullname: initiatorsFullNameCache[t.Initiator],
 			ProcessName:       t.ProcessName,
-			StartedAt:         t.StartedAt.Format("2006-01-02T15:04:05-0700"),
+			StartedAt:         t.StartedAt.Format(monitoringTimeLayout),
+			FinishedAt:        t.FinishedAt.Format(monitoringTimeLayout),
 			Status:            MonitoringTableTaskStatus(t.Status),
 			WorkNumber:        t.WorkNumber,
 		})
@@ -165,10 +178,11 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 
 	for i := range nodes {
 		res.History = append(res.History, MonitoringHistory{
-			BlockId:  nodes[i].BlockId,
-			RealName: nodes[i].RealName,
-			Status:   getMonitoringStatus(nodes[i].Status),
-			NodeId:   nodes[i].NodeId,
+			BlockId:       nodes[i].BlockId,
+			RealName:      nodes[i].RealName,
+			Status:        getMonitoringStatus(nodes[i].Status),
+			NodeId:        nodes[i].NodeId,
+			BlockDateInit: nodes[i].BlockDateInit,
 		})
 	}
 	if err = sendResponse(w, http.StatusOK, res); err != nil {

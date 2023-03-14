@@ -2,20 +2,19 @@ package entity
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type MonitoringTaskNode struct {
-	WorkNumber   string `json:"work_number"`
-	VersionId    string `json:"version_id"`
-	Author       string `json:"author"`
-	CreationTime string `json:"creation_time"`
-	ScenarioName string `json:"scenario_name"`
-	BlockId      string `json:"block_id"`
-	RealName     string `json:"real_name"`
-	Status       string `json:"status"`
-	NodeId       string `json:"node_id"`
+	WorkNumber    string  `json:"work_number"`
+	VersionId     string  `json:"version_id"`
+	Author        string  `json:"author"`
+	CreationTime  string  `json:"creation_time"`
+	ScenarioName  string  `json:"scenario_name"`
+	BlockId       string  `json:"block_id"`
+	RealName      string  `json:"real_name"`
+	Status        string  `json:"status"`
+	NodeId        string  `json:"node_id"`
+	BlockDateInit *string `json:"block_date_init"`
 }
 
 type BlockOutputs []BlockOutputValue
@@ -27,20 +26,21 @@ type BlockOutputValue struct {
 }
 
 type TasksForMonitoringFilters struct {
-	PerPage    *int
-	Page       *int
-	SortColumn *string
-	SortOrder  *string
-	Filter     *string
-	FromDate   *string
-	ToDate     *string
+	PerPage      *int
+	Page         *int
+	SortColumn   *string
+	SortOrder    *string
+	Filter       *string
+	FromDate     *string
+	ToDate       *string
+	StatusFilter []string
 }
 
 type TaskForMonitoring struct {
-	Id          uuid.UUID
 	Initiator   string
 	ProcessName string
 	StartedAt   time.Time
+	FinishedAt  *time.Time
 	Status      string
 	WorkNumber  string
 }

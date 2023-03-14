@@ -1164,13 +1164,16 @@ func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, block
 	return storage, nil
 }
 
-func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
+func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
 	ctx, span := trace.StartSpan(ctx, "get_tasks_for_monitoring")
 	defer span.End()
 
-	q := getTasksForMonitoringQuery(filters)
+	q, getQueryErr := getTasksForMonitoringQuery(filters)
+	if getQueryErr != nil {
+		return nil, getQueryErr
+	}
 
-	rows, err := db.Connection.Query(ctx, q)
+	rows, err := db.Connection.Query(ctx, *q)
 	if err != nil {
 		return nil, err
 	}
@@ -1183,12 +1186,12 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters entity.TasksForMon
 	for rows.Next() {
 		task := entity.TaskForMonitoring{}
 
-		err = rows.Scan(&task.Id,
-			&task.Status,
+		err = rows.Scan(&task.Status,
 			&task.ProcessName,
 			&task.Initiator,
 			&task.WorkNumber,
 			&task.StartedAt,
+			&task.FinishedAt,
 			&tasksForMonitoring.Total)
 		if err != nil {
 			return nil, err
@@ -1200,10 +1203,27 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters entity.TasksForMon
 	return tasksForMonitoring, nil
 }
 
-func getTasksForMonitoringQuery(filters entity.TasksForMonitoringFilters) string {
+func getWorksStatusQuery(statusFilter []string) (*string, error) {
+	statusQuery := `(CASE 
+						WHEN w.status IN (1, 3, 5) THEN 'В работе' 
+						WHEN w.status = 2 THEN 'Завершен' WHEN w.status = 4 THEN 'Остановлен' 
+						WHEN w.status IS NULL THEN 'Неизвестный статус' END) 
+						IN %s`
+
+	v, valueErr := pq.Array(statusFilter).Value()
+
+	if valueErr != nil {
+		return nil, valueErr
+	}
+
+	statusQuery = fmt.Sprintf(statusQuery, v)
+
+	return &statusQuery, nil
+}
+
+func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) (*string, error) {
 	q := `
-			SELECT w.version_id as id,
-				CASE
+			SELECT CASE
 					WHEN w.status IN (1, 3, 5) THEN 'В работе'
         			WHEN w.status = 2 THEN 'Завершен'
 				    WHEN w.status = 4 THEN 'Остановлен'
@@ -1213,6 +1233,7 @@ func getTasksForMonitoringQuery(filters entity.TasksForMonitoringFilters) string
 				w.author AS initiator,
 				w.work_number AS work_number,
 				w.started_at AS started_at,
+				w.finished_at as finished_at,
 				COUNT(*) OVER() as total
 			FROM works w
 			LEFT JOIN versions v on w.version_id = v.id
@@ -1228,6 +1249,14 @@ func getTasksForMonitoringQuery(filters entity.TasksForMonitoringFilters) string
 		q = fmt.Sprintf("%s AND %s", q, searchConditions)
 	}
 
+	if len(filters.StatusFilter) != 0 {
+		statusQuery, getErr := getWorksStatusQuery(filters.StatusFilter)
+		if getErr != nil {
+			return nil, getErr
+		}
+		q = fmt.Sprintf("%s AND %s", q, *statusQuery)
+	}
+
 	if filters.SortColumn != nil && filters.SortOrder != nil {
 		q = fmt.Sprintf("%s ORDER BY %s %s", q, *filters.SortColumn, *filters.SortOrder)
 	}
@@ -1240,7 +1269,7 @@ func getTasksForMonitoringQuery(filters entity.TasksForMonitoringFilters) string
 		q = fmt.Sprintf("%s LIMIT %d", q, *filters.PerPage)
 	}
 
-	return q
+	return &q, nil
 }
 
 func getFiltersSearchConditions(filter *string) string {
@@ -1250,9 +1279,9 @@ func getFiltersSearchConditions(filter *string) string {
 	escapeFilter := strings.Replace(*filter, "_", "!_", -1)
 	escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1)
 	return fmt.Sprintf(`
-		(w.version_id::TEXT ILIKE '%%%s%%' ESCAPE '!' OR
-		 w.work_number ILIKE '%%%s%%' ESCAPE '!' OR
-		 p.name ILIKE '%%%s%%' ESCAPE '!')`,
+		(w.work_number ILIKE '%%%s%%' ESCAPE '!' OR
+		 p.name ILIKE '%%%s%%' ESCAPE '!' OR
+		 w.author ILIKE '%%%s%%' ESCAPE '!')`,
 		escapeFilter, escapeFilter, escapeFilter)
 }
 

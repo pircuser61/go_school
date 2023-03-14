@@ -2643,7 +2643,8 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 		       vs.step_name, 
 		       vs.status,
 		       vs.id,
-       		   v.content->'pipeline'-> 'blocks'->step_name->>'title' title
+       		   v.content->'pipeline'-> 'blocks'->step_name->>'title' title,
+       		   vs.time block_date_init
 		from works w
     		join versions v on w.version_id = v.id
     		join pipelines p on v.pipeline_id = p.id
@@ -2669,6 +2670,7 @@ func (db *PGCon) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 			&item.Status,
 			&item.BlockId,
 			&item.RealName,
+			&item.BlockDateInit,
 		); scanErr != nil {
 			return nil, scanErr
 		}
