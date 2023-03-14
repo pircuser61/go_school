@@ -117,14 +117,10 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader, sn map[*imap.BodySec
 	}
 
 	if action != nil {
-		var processedBody *parsedBody
-		processedBody, err = parseMsgBody(ctx, r)
-		if err != nil {
-			log.WithError(err).Error("can't parse message body: " + action.WorkNumber)
-		}
+		comment := getComment(ctx, r)
 
-		if processedBody != nil {
-			action.Comment = processedBody.Body
+		if comment != nil {
+			action.Comment = comment.Body
 			action.Attachments, err = s.getAttachments(ctx, sn)
 			if err != nil {
 				log.WithError(err).Error("can't parse message body: " + action.WorkNumber)
@@ -231,8 +227,7 @@ type parsedBody struct {
 	Body string
 }
 
-func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
-	const fn = "mail.fetcher.parseMsgBody"
+func getComment(ctx c.Context, r *mail.Reader) *parsedBody {
 	const startLine = "***КОММЕНТАРИЙ НИЖЕ***"
 	const endLine = "***ОБЩИЙ РАЗМЕР ВЛОЖЕНИЙ НЕ БОЛЕЕ 40МБ***"
 
@@ -270,18 +265,13 @@ LOOP:
 		}
 	}
 
-	if body == "" {
-		pb.Body = ""
-		return &pb, nil
-	}
-
 	pb.Body = strings.Replace(body, startLine, "", 1)
 	pb.Body = strings.Replace(pb.Body, endLine, "", 1)
 
 	pb.Body = strings.Replace(pb.Body, "\n", "", -1)
 	pb.Body = strings.TrimSpace(pb.Body)
 
-	return &pb, nil
+	return &pb
 }
 
 func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]imap.Literal) (attach map[string]AttachmentData, err error) {
