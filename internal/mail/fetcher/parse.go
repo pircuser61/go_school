@@ -6,10 +6,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/emersion/go-imap"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"github.com/emersion/go-imap"
+	"github.com/emersion/go-message"
 	"github.com/emersion/go-message/mail"
 
 	"github.com/pkg/errors"
@@ -51,6 +51,10 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 
 	log := logger.GetLogger(ctx)
 
+	msgBodyMap := make(map[*imap.BodySectionName]imap.Literal)
+	for k, v := range msg.Body {
+		msgBodyMap[k] = v
+	}
 	msgBody := msg.GetBody(section)
 	if msgBody == nil {
 		err := errors.Wrap(errors.New("server didn't return message"), "no messages")
@@ -65,9 +69,9 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 
 	log.Info(fn, "start processing email")
 
-	processedEmail, err := s.parseEmail(ctx, msgReader)
+	processedEmail, err := s.parseEmail(ctx, msgReader, msgBodyMap)
 	if err != nil {
-		err = errors.Wrap(err, "parseEmail")
+		err = errors.Wrap(err, "parse email")
 		return nil, err
 	}
 
@@ -79,7 +83,7 @@ func (s *service) processMessage(ctx c.Context, msg *imap.Message, section *imap
 }
 
 //nolint:gocyclo //its ok here
-func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, err error) {
+func (s *service) parseEmail(ctx c.Context, r *mail.Reader, sn map[*imap.BodySectionName]imap.Literal) (pe *ParsedEmail, err error) {
 	const funcName = "mail.fetcher.parseEmail"
 	const rejected = "Отклонено"
 
@@ -122,9 +126,11 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader) (pe *ParsedEmail, er
 
 		if processedBody != nil {
 			action.Comment = processedBody.Body
+			action.Attachments, err = s.getAttachments(ctx, sn)
+			if err != nil {
+				log.WithError(err).Error("can't parse message body: " + action.WorkNumber)
+			}
 		}
-
-		action.Attachments = processedBody.Attachments
 
 		if action.Comment == "" {
 			switch action.Decision {
@@ -221,8 +227,7 @@ func addressListToStrList(addrs []*mail.Address) (res []string) {
 }
 
 type parsedBody struct {
-	Body        string
-	Attachments map[string]AttachmentData
+	Body string
 }
 
 func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
@@ -237,12 +242,9 @@ func parseMsgBody(ctx c.Context, r *mail.Reader) (*parsedBody, error) {
 		pb   parsedBody
 	)
 
-	attachments := make(map[string]AttachmentData)
-
 LOOP:
 	for {
 		part, err := r.NextPart()
-		log.Info("readPart")
 		if err != nil && err == io.EOF {
 			log.Info("readPart EOF")
 			break
@@ -251,7 +253,7 @@ LOOP:
 			return nil, errors.Wrap(err, fmt.Sprintf("%s, cant`t next part", fn))
 		}
 
-		switch h := part.Header.(type) {
+		switch part.Header.(type) {
 		case *mail.InlineHeader:
 			if !strings.Contains(body, endLine) {
 				b, errRead := io.ReadAll(part.Body)
@@ -264,36 +266,11 @@ LOOP:
 				body += string(b)
 			}
 			break LOOP
-		case *mail.AttachmentHeader:
-			b, errRead := io.ReadAll(part.Body)
-			if errRead != nil {
-				log.Error(errors.Wrap(errRead, "can`t read attachment body"))
-				break LOOP
-			}
-
-			filename, errFileName := h.Filename()
-			if errFileName != nil {
-				log.Error(errors.Wrap(errFileName, "can`t read attachment"))
-				break LOOP
-			}
-			nameParts := strings.Split(filename, ".")
-			log.Info("attachmentName", filename)
-			log.Info("attachmentExt", nameParts[len(nameParts)-1])
-			if len(nameParts) > 1 {
-				log.Info("attachmentRawLen", len(b))
-				attachments[filename] = AttachmentData{b, nameParts[len(nameParts)-1]}
-			} else {
-				log.Info("attachmentRawLen", len(b))
-				attachments[filename] = AttachmentData{b, "txt"}
-			}
-		default:
-			log.Info("default mail part type", part.Header)
 		}
 	}
 
-	if body == "" && len(attachments) == 0 {
+	if body == "" {
 		pb.Body = ""
-		pb.Attachments = attachments
 		return &pb, nil
 	}
 
@@ -302,8 +279,45 @@ LOOP:
 
 	pb.Body = strings.Replace(pb.Body, "\n", "", -1)
 	pb.Body = strings.TrimSpace(pb.Body)
-	pb.Attachments = attachments
 
-	log.Info(fn, pb)
 	return &pb, nil
+}
+
+func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]imap.Literal) (attach map[string]AttachmentData, err error) {
+	attach = make(map[string]AttachmentData)
+
+	log := logger.GetLogger(ctx)
+
+	for _, r := range mb {
+		entity, err := message.Read(r)
+		if err != nil {
+			log.Error(errors.Wrap(err, "can`t read attachments"))
+			continue
+		}
+
+		multiPartReader := entity.MultipartReader()
+
+		for part, err := multiPartReader.NextPart(); err != io.EOF; part, err = multiPartReader.NextPart() {
+			_, params, cErr := part.Header.ContentType()
+			if cErr != nil {
+				log.Error(errors.Wrap(cErr, "can`t read attachment"))
+				return nil, cErr
+			}
+
+			filename := params["name"]
+
+			nameParts := strings.Split(filename, ".")
+			log.Info("attachmentName", filename)
+
+			fileBytes, rErr := io.ReadAll(part.Body)
+			if rErr != nil {
+				log.Error(errors.Wrap(rErr, "can`t read part mail body"))
+				return nil, rErr
+			}
+
+			attach[filename] = AttachmentData{Raw: fileBytes, Ext: nameParts[len(nameParts)-1]}
+		}
+	}
+
+	return attach, nil
 }
