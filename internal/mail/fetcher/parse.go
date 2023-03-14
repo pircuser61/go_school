@@ -117,8 +117,7 @@ func (s *service) parseEmail(ctx c.Context, r *mail.Reader, sn map[*imap.BodySec
 	}
 
 	if action != nil {
-		var comment *parsedBody
-		comment = getComment(ctx, r)
+		comment := getComment(ctx, r)
 
 		if comment != nil {
 			action.Comment = comment.Body
