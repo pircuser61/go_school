@@ -165,14 +165,12 @@ type parsedHeaders struct {
 func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
 	from, err := header.AddressList("From")
 	if err != nil {
-		from = []*mail.Address{{Name: "rapetrin1", Address: "rapetrin1@mts.ru"}}
-		//return nil, errors.Wrap(err, "header From")
+		return nil, errors.Wrap(err, "header From")
 	}
 
 	to, err := header.AddressList("To")
 	if err != nil {
-		to = []*mail.Address{{Name: "dev_servicedeskmail", Address: "dev_servicedeskmail@mts.ru"}}
-		//return nil, errors.Wrap(err, "header To")
+		return nil, errors.Wrap(err, "header To")
 	}
 
 	subject, err := header.Subject()
@@ -267,7 +265,6 @@ LOOP:
 
 	pb.Body = strings.Replace(body, startLine, "", 1)
 	pb.Body = strings.Replace(pb.Body, endLine, "", 1)
-
 	pb.Body = strings.Replace(pb.Body, "\n", "", -1)
 	pb.Body = strings.TrimSpace(pb.Body)
 
@@ -305,9 +302,10 @@ func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]ima
 			}
 
 			filename := params["name"]
+			log.Info("file params: ", params)
 
 			nameParts := strings.Split(filename, ".")
-			log.Info("attachmentName", filename)
+			log.Info("attachmentName: ", filename)
 
 			fileBytes, rErr := io.ReadAll(part.Body)
 			if rErr != nil {
@@ -315,7 +313,12 @@ func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]ima
 				return nil, rErr
 			}
 
-			attach[filename] = AttachmentData{Raw: fileBytes, Ext: nameParts[len(nameParts)-1]}
+			ext := "txt"
+			if len(nameParts) > 1 {
+				ext = nameParts[len(nameParts)-1]
+			}
+
+			attach[filename] = AttachmentData{Raw: fileBytes, Ext: ext}
 		}
 	}
 

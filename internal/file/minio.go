@@ -19,7 +19,8 @@ func (s *Service) SaveFile(ctx c.Context, ext, origName string, file io.Reader, 
 	defer span.End()
 
 	log := logger.GetLogger(ctx)
-	log.Info("sending file to storage origName", origName)
+	log.Info("sending file to storage origName: ", origName)
+	log.Info("sending file to storage size: ", size)
 
 	opts := minio.PutObjectOptions{}
 	if origName != "" {
@@ -31,8 +32,8 @@ func (s *Service) SaveFile(ctx c.Context, ext, origName string, file io.Reader, 
 		return id, err
 	}
 
-	log.Info("sending file to storage", name)
-	_, err = s.minio.PutObject(ctxLocal, s.bucket, name, file, size, opts)
+	log.Info("sending file to storage: ", name)
+	_, err = s.minio.PutObject(ctxLocal, s.bucket, id, file, size, opts)
 	if err != nil {
 		return id, err
 	}
