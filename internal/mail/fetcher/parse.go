@@ -292,6 +292,10 @@ func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]ima
 		}
 
 		multiPartReader := entity.MultipartReader()
+		if multiPartReader == nil {
+			log.Error(errors.Wrap(err, "can`t read attachments multiPartReader is nil"))
+			continue
+		}
 
 		for part, err := multiPartReader.NextPart(); err != io.EOF; part, err = multiPartReader.NextPart() {
 			_, params, cErr := part.Header.ContentType()
