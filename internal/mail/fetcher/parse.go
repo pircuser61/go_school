@@ -170,12 +170,14 @@ type parsedHeaders struct {
 func parseEmailHeaders(header mail.Header) (headers *parsedHeaders, err error) {
 	from, err := header.AddressList("From")
 	if err != nil {
-		return nil, errors.Wrap(err, "header From")
+		from = []*mail.Address{{"rapetrin1@mts.ru", "rapetrin1@mts.ru"}}
+		//return nil, errors.Wrap(err, "header From")
 	}
 
 	to, err := header.AddressList("To")
 	if err != nil {
-		return nil, errors.Wrap(err, "header To")
+		to = []*mail.Address{{"dev_servicedeskmail@mts.ru", "dev_servicedeskmail@mts.ru"}}
+		//return nil, errors.Wrap(err, "header To")
 	}
 
 	subject, err := header.Subject()
