@@ -66,15 +66,18 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 			initiatorsFullNameCache[t.Initiator] = userFullName
 		}
 
-		responseTasks = append(responseTasks, MonitoringTableTask{
+		monitoringTableTask := MonitoringTableTask{
 			Initiator:         t.Initiator,
 			InitiatorFullname: initiatorsFullNameCache[t.Initiator],
 			ProcessName:       t.ProcessName,
 			StartedAt:         t.StartedAt.Format(monitoringTimeLayout),
-			FinishedAt:        t.FinishedAt.Format(monitoringTimeLayout),
 			Status:            MonitoringTableTaskStatus(t.Status),
 			WorkNumber:        t.WorkNumber,
-		})
+		}
+		if t.FinishedAt != nil {
+			monitoringTableTask.FinishedAt = t.FinishedAt.Format(monitoringTimeLayout)
+		}
+		responseTasks = append(responseTasks, monitoringTableTask)
 	}
 
 	if err = sendResponse(w, http.StatusOK, MonitoringTasksPage{
@@ -177,13 +180,18 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 	res.WorkNumber = nodes[0].WorkNumber
 
 	for i := range nodes {
-		res.History = append(res.History, MonitoringHistory{
-			BlockId:       nodes[i].BlockId,
-			RealName:      nodes[i].RealName,
-			Status:        getMonitoringStatus(nodes[i].Status),
-			NodeId:        nodes[i].NodeId,
-			BlockDateInit: nodes[i].BlockDateInit,
-		})
+		monitoringHistory := MonitoringHistory{
+			BlockId:  nodes[i].BlockId,
+			RealName: nodes[i].RealName,
+			Status:   getMonitoringStatus(nodes[i].Status),
+			NodeId:   nodes[i].NodeId,
+		}
+
+		if nodes[i].BlockDateInit != nil {
+			formattedTime := nodes[i].BlockDateInit.Format(monitoringTimeLayout)
+			monitoringHistory.BlockDateInit = &formattedTime
+		}
+		res.History = append(res.History, monitoringHistory)
 	}
 	if err = sendResponse(w, http.StatusOK, res); err != nil {
 		e := UnknownError

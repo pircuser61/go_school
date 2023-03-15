@@ -1168,10 +1168,7 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMo
 	ctx, span := trace.StartSpan(ctx, "get_tasks_for_monitoring")
 	defer span.End()
 
-	q, getQueryErr := getTasksForMonitoringQuery(filters)
-	if getQueryErr != nil {
-		return nil, getQueryErr
-	}
+	q := getTasksForMonitoringQuery(filters)
 
 	rows, err := db.Connection.Query(ctx, *q)
 	if err != nil {
@@ -1203,25 +1200,26 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMo
 	return tasksForMonitoring, nil
 }
 
-func getWorksStatusQuery(statusFilter []string) (*string, error) {
+func getWorksStatusQuery(statusFilter []string) *string {
 	statusQuery := `(CASE 
 						WHEN w.status IN (1, 3, 5) THEN 'В работе' 
 						WHEN w.status = 2 THEN 'Завершен' WHEN w.status = 4 THEN 'Остановлен' 
 						WHEN w.status IS NULL THEN 'Неизвестный статус' END) 
 						IN %s`
 
-	v, valueErr := pq.Array(statusFilter).Value()
+	statusQueryFilter := make([]string, 0, len(statusFilter))
 
-	if valueErr != nil {
-		return nil, valueErr
+	for i := range statusFilter {
+		statusQueryFilter = append(statusQueryFilter, "'"+statusFilter[i]+"'")
 	}
+	v := "(" + strings.Join(statusQueryFilter, ",") + ")"
 
 	statusQuery = fmt.Sprintf(statusQuery, v)
 
-	return &statusQuery, nil
+	return &statusQuery
 }
 
-func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) (*string, error) {
+func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *string {
 	q := `
 			SELECT CASE
 					WHEN w.status IN (1, 3, 5) THEN 'В работе'
@@ -1250,10 +1248,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) (*str
 	}
 
 	if len(filters.StatusFilter) != 0 {
-		statusQuery, getErr := getWorksStatusQuery(filters.StatusFilter)
-		if getErr != nil {
-			return nil, getErr
-		}
+		statusQuery := getWorksStatusQuery(filters.StatusFilter)
 		q = fmt.Sprintf("%s AND %s", q, *statusQuery)
 	}
 
@@ -1269,7 +1264,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) (*str
 		q = fmt.Sprintf("%s LIMIT %d", q, *filters.PerPage)
 	}
 
-	return &q, nil
+	return &q
 }
 
 func getFiltersSearchConditions(filter *string) string {
