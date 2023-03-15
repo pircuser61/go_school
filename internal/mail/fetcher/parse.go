@@ -313,11 +313,11 @@ func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]ima
 				return nil, rErr
 			}
 
-			ext := "txt"
-			if len(nameParts) > 1 {
-				ext = nameParts[len(nameParts)-1]
+			if len(nameParts) < 2 {
+				continue
 			}
 
+			ext := nameParts[len(nameParts)-1]
 			attach[filename] = AttachmentData{Raw: fileBytes, Ext: ext}
 		}
 	}
