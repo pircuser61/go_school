@@ -2835,9 +2835,12 @@ components:
         output_schema:
           type: string
           description: JSON-схема данных, которые принимает внешняя система
+        mapping:
+          $ref: '#/components/schemas/MappingParam'
       required:
         - id
         - name
+        - mapping
 
     ExternalSystemId:
       type: string

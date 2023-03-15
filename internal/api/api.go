@@ -836,7 +836,8 @@ type ExternalSystem struct {
 	Id string `json:"id"`
 
 	// JSON-схема данных, которые отдаёт внешняя система
-	InputSchema *string `json:"input_schema,omitempty"`
+	InputSchema *string      `json:"input_schema,omitempty"`
+	Mapping     MappingParam `json:"mapping"`
 
 	// Название системы
 	Name string `json:"name"`
