@@ -576,6 +576,16 @@ func getApproverButtons(workNumber, mailto, blockId, login string, actions []Act
 		buttons = append(buttons, getButton(mailto, subject, actions[i].Title))
 	}
 
+	if len(buttons) == 0 {
+		approveAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, taskUpdateActionApprovement, login)
+		approveAppBtn := getButton(mailto, approveAppSubject, "Согласовать")
+		buttons = append(buttons, approveAppBtn)
+
+		rejectAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, taskUpdateActionApprovement, login)
+		rejectAppBtn := getButton(mailto, rejectAppSubject, "Отклонить")
+		buttons = append(buttons, rejectAppBtn)
+	}
+
 	if isEditable {
 		sendEditAppSubject := fmt.Sprintf(subjectTpl, blockId, "", workNumber, actionApproverSendEditApp, login)
 		sendEditAppBtn := getButton(mailto, sendEditAppSubject, "Вернуть на доработку")
