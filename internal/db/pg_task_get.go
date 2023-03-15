@@ -1168,10 +1168,7 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMo
 	ctx, span := trace.StartSpan(ctx, "get_tasks_for_monitoring")
 	defer span.End()
 
-	q, getQueryErr := getTasksForMonitoringQuery(filters)
-	if getQueryErr != nil {
-		return nil, getQueryErr
-	}
+	q := getTasksForMonitoringQuery(filters)
 
 	rows, err := db.Connection.Query(ctx, *q)
 	if err != nil {
@@ -1222,7 +1219,7 @@ func getWorksStatusQuery(statusFilter []string) *string {
 	return &statusQuery
 }
 
-func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) (*string, error) {
+func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *string {
 	q := `
 			SELECT CASE
 					WHEN w.status IN (1, 3, 5) THEN 'В работе'
@@ -1267,7 +1264,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) (*str
 		q = fmt.Sprintf("%s LIMIT %d", q, *filters.PerPage)
 	}
 
-	return &q, nil
+	return &q
 }
 
 func getFiltersSearchConditions(filter *string) string {
