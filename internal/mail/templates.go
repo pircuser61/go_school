@@ -234,7 +234,7 @@ func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
-func NewAppInitiatorStatusNotificationTpl(id, name, action, description, sdUrl string) Template {
+func NewAppInitiatorStatusNotificationTpl(id, action, sdUrl string) Template {
 	subject := fmt.Sprintf("Заявка %s %s", id, action)
 	textPart := `Уважаемый коллега, заявка {{.Id}} <b>{{.Action}}</b><br>`
 
@@ -250,21 +250,15 @@ func NewAppInitiatorStatusNotificationTpl(id, name, action, description, sdUrl s
 
 	return Template{
 		Subject: subject,
-		Text: textPart + `Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
-			Текст заявки:<br><br>
-			<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
+		Text:    textPart + `Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>`,
 		Variables: struct {
-			Id          string `json:"id"`
-			Name        string `json:"name"`
-			Link        string `json:"link"`
-			Action      string `json:"action"`
-			Description string `json:"description"`
+			Id     string `json:"id"`
+			Link   string `json:"link"`
+			Action string `json:"action"`
 		}{
-			Id:          id,
-			Name:        name,
-			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			Action:      action,
-			Description: description,
+			Id:     id,
+			Link:   fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Action: action,
 		},
 	}
 }
@@ -323,25 +317,19 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br/>
 				Срок {{.Action}} до {{.Deadline}}<br/>
-				{{.Buttons}}
-				Текст заявки:<br/>
-				<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
+				{{.Buttons}}`,
 		Variables: struct {
-			Id          string
-			Name        string
-			Link        string
-			Action      string
-			Deadline    string
-			Description string
-			Buttons     string
+			Id       string
+			Link     string
+			Action   string
+			Deadline string
+			Buttons  string
 		}{
-			Id:          in.WorkNumber,
-			Name:        in.Name,
-			Link:        fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
-			Action:      actionName,
-			Deadline:    in.DeadLine,
-			Description: in.Description,
-			Buttons:     buttons,
+			Id:       in.WorkNumber,
+			Link:     fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
+			Action:   actionName,
+			Deadline: in.DeadLine,
+			Buttons:  buttons,
 		},
 	}
 }
@@ -374,8 +362,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
  Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
  <b>Действия с заявкой</b><br>
  {{.ActionBtn}}<br>
- ------------ Описание ------------  </br>
-<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>
+
 <style>
     p {
         font-family: Arial;
@@ -384,15 +371,13 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
     }
 </style>`,
 		Variables: struct {
-			Id          string
-			Link        string
-			Description string
-			ActionBtn   string
+			Id        string
+			Link      string
+			ActionBtn string
 		}{
-			Id:          dto.WorkNumber,
-			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			Description: dto.Description,
-			ActionBtn:   actionBtn,
+			Id:        dto.WorkNumber,
+			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			ActionBtn: actionBtn,
 		},
 	}
 }
@@ -403,8 +388,6 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
  <b>Инициатор: </b>{{.Initiator}}</br>
  <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>
- ------------ Описание ------------  </br>
-<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>
 
 <style>
     p {
@@ -414,17 +397,15 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
     }
 </style>`,
 		Variables: struct {
-			Id          string `json:"id"`
-			Executor    string `json:"executor"`
-			Link        string `json:"link"`
-			Initiator   string `json:"initiator"`
-			Description string `json:"description"`
+			Id        string `json:"id"`
+			Executor  string `json:"executor"`
+			Link      string `json:"link"`
+			Initiator string `json:"initiator"`
 		}{
-			Id:          dto.WorkNumber,
-			Executor:    dto.ExecutorName,
-			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			Initiator:   dto.Initiator,
-			Description: dto.Description,
+			Id:        dto.WorkNumber,
+			Executor:  dto.ExecutorName,
+			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Initiator: dto.Initiator,
 		},
 	}
 }

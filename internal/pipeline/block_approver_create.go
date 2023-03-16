@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -182,10 +183,11 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Approvers))
 
-	description, makeNotifErr := gb.RunContext.makeNotificationDescription(gb.Name)
-	if makeNotifErr != nil {
-		return makeNotifErr
+	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber)
+	if err != nil {
+		return err
 	}
+	emailAttachment := []e.Attachment{*descriptionFile}
 
 	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
 	for i := range gb.State.ActionList {
@@ -210,7 +212,6 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				Status:          gb.State.ApproveStatusName,
 				Action:          statusToTaskAction[StatusApprovement],
 				DeadLine:        ComputeDeadline(time.Now(), gb.State.SLA),
-				Description:     description,
 				SdUrl:           gb.RunContext.Sender.SdAddress,
 				Mailto:          gb.RunContext.Sender.FetchEmail,
 				Login:           login,
@@ -224,7 +225,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, nil, emails[i]); sendErr != nil {
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
 			return sendErr
 		}
 	}
