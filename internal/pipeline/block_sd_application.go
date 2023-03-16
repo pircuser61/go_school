@@ -155,7 +155,7 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 
 func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSdApplicationBlock, error) {
 	log := logger.CreateLogger(nil)
-	log.WithField("params", ef.Params).Info("sd_application parameters")
+	log.WithField("params", string(ef.Params)).Info("sd_application parameters")
 
 	b := &GoSdApplicationBlock{
 		Name:       name,
