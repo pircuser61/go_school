@@ -833,14 +833,15 @@ type ExecutorChangeParams struct {
 // ExternalSystem defines model for ExternalSystem.
 type ExternalSystem struct {
 	// Id внешней системы
-	Id string `json:"id"`
+	Id           string        `json:"id"`
+	InputMapping *MappingParam `json:"input_mapping,omitempty"`
 
 	// JSON-схема данных, которые отдаёт внешняя система
-	InputSchema *string      `json:"input_schema,omitempty"`
-	Mapping     MappingParam `json:"mapping"`
+	InputSchema *string `json:"input_schema,omitempty"`
 
 	// Название системы
-	Name string `json:"name"`
+	Name          string        `json:"name"`
+	OutputMapping *MappingParam `json:"output_mapping,omitempty"`
 
 	// JSON-схема данных, которые принимает внешняя система
 	OutputSchema *string `json:"output_schema,omitempty"`
