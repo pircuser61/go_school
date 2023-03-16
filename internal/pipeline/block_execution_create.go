@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -129,7 +130,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	}
 
 	// maybe we should notify the executor
-	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifErr != nil {
+	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, ef.TypeID, gb.GetTaskHumanStatus()); notifErr != nil {
 		return notifErr
 	}
 	return gb.handleNotifications(ctx)
@@ -152,10 +153,11 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
-	description, makeNotificationErr := gb.RunContext.makeNotificationDescription(gb.Name)
-	if makeNotificationErr != nil {
-		return makeNotificationErr
+	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber)
+	if err != nil {
+		return err
 	}
+	emailAttachment := []e.Attachment{*descriptionFile}
 
 	emails := make(map[string]mail.Template, 0)
 	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution)
@@ -169,27 +171,25 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		if isGroupExecutors {
 			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
 				&mail.ExecutorNotifTemplate{
-					WorkNumber:  gb.RunContext.WorkNumber,
-					SdUrl:       gb.RunContext.Sender.SdAddress,
-					Description: description,
-					BlockID:     BlockGoExecutionID,
-					Mailto:      gb.RunContext.Sender.FetchEmail,
-					Login:       login,
+					WorkNumber: gb.RunContext.WorkNumber,
+					SdUrl:      gb.RunContext.Sender.SdAddress,
+					BlockID:    BlockGoExecutionID,
+					Mailto:     gb.RunContext.Sender.FetchEmail,
+					Login:      login,
 				},
 			)
 		} else {
 			emails[email] = mail.NewAppPersonStatusNotificationTpl(
 				&mail.NewAppPersonStatusTpl{
-					WorkNumber:  gb.RunContext.WorkNumber,
-					Name:        gb.RunContext.WorkTitle,
-					Status:      string(StatusExecution),
-					Action:      statusToTaskAction[StatusExecution],
-					DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA),
-					Description: description,
-					SdUrl:       gb.RunContext.Sender.SdAddress,
-					Mailto:      gb.RunContext.Sender.FetchEmail,
-					Login:       login,
-					IsEditable:  gb.State.GetIsEditable(),
+					WorkNumber: gb.RunContext.WorkNumber,
+					Name:       gb.RunContext.WorkTitle,
+					Status:     string(StatusExecution),
+					Action:     statusToTaskAction[StatusExecution],
+					DeadLine:   ComputeDeadline(time.Now(), gb.State.SLA),
+					SdUrl:      gb.RunContext.Sender.SdAddress,
+					Mailto:     gb.RunContext.Sender.FetchEmail,
+					Login:      login,
+					IsEditable: gb.State.GetIsEditable(),
 
 					BlockID:                   BlockGoExecutionID,
 					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
@@ -199,7 +199,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, nil, emails[i]); sendErr != nil {
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
 			return sendErr
 		}
 	}

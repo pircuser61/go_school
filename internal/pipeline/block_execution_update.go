@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -575,10 +576,11 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		}
 	}
 
-	descr, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return err
 	}
+	emailAttachment := []e.Attachment{*descriptionFile}
 
 	author, err := gb.RunContext.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
 	if err != nil {
@@ -595,10 +597,9 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		SdUrl:        gb.RunContext.Sender.SdAddress,
 		ExecutorName: typedAuthor.GetFullName(),
 		Initiator:    gb.RunContext.Initiator,
-		Description:  descr,
 	})
 
-	if errSend := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); errSend != nil {
+	if errSend := gb.RunContext.Sender.SendNotification(ctx, emails, emailAttachment, tpl); errSend != nil {
 		return errSend
 	}
 
@@ -609,23 +610,22 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	tpl = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
-			WorkNumber:  gb.RunContext.WorkNumber,
-			Name:        gb.RunContext.WorkTitle,
-			Status:      string(StatusExecution),
-			Action:      statusToTaskAction[StatusExecution],
-			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA),
-			Description: descr,
-			SdUrl:       gb.RunContext.Sender.SdAddress,
-			Mailto:      gb.RunContext.Sender.FetchEmail,
-			Login:       loginTakenInWork,
-			IsEditable:  gb.State.GetIsEditable(),
+			WorkNumber: gb.RunContext.WorkNumber,
+			Name:       gb.RunContext.WorkTitle,
+			Status:     string(StatusExecution),
+			Action:     statusToTaskAction[StatusExecution],
+			DeadLine:   ComputeDeadline(time.Now(), gb.State.SLA),
+			SdUrl:      gb.RunContext.Sender.SdAddress,
+			Mailto:     gb.RunContext.Sender.FetchEmail,
+			Login:      loginTakenInWork,
+			IsEditable: gb.State.GetIsEditable(),
 
 			BlockID:                   BlockGoExecutionID,
 			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 			ExecutionDecisionRejected: string(ExecutionDecisionRejected),
 		})
 
-	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {
+	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, emailAttachment, tpl); sendErr != nil {
 		return sendErr
 	}
 
