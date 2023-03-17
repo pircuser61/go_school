@@ -1,10 +1,10 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE IF EXISTS external_systems
-    ADD COLUMN input_mapping jsonb;
+    ADD COLUMN IF NOT EXISTS input_mapping jsonb;
 
 ALTER TABLE IF EXISTS external_systems
-    ADD COLUMN output_mapping jsonb;
+    ADD COLUMN IF NOT EXISTS output_mapping jsonb;
 
 COMMENT ON COLUMN external_systems.input_mapping
     IS 'Маппинг данных, которые необходимы для старта процесса с данными, которые внешняя система отдаёт';
