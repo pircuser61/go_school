@@ -108,10 +108,12 @@ type ProcessSettings struct {
 }
 
 type ExternalSystem struct {
-	Id           string `json:"id"`
-	Name         string `json:"name"`
-	InputSchema  string `json:"input_schema"`
-	OutputSchema string `json:"output_schema"`
+	Id            string              `json:"id"`
+	Name          string              `json:"name,omitempty"`
+	InputSchema   string              `json:"input_schema,omitempty"`
+	OutputSchema  string              `json:"output_schema,omitempty"`
+	InputMapping  script.MappingParam `json:"input_mapping,omitempty"`
+	OutputMapping script.MappingParam `json:"output_mapping,omitempty"`
 }
 
 type UsageResponse struct {
