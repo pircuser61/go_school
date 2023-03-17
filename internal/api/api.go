@@ -998,7 +998,7 @@ type MappingParam struct {
 		Title string `json:"title"`
 
 		// Type of param
-		Type MappingParamType `json:"type"`
+		Type string `json:"type"`
 
 		// Global name for value
 		Value *string `json:"value,omitempty"`
@@ -2001,7 +2001,7 @@ func (a MappingParam) Get(fieldName string) (value struct {
 	Title string `json:"title"`
 
 	// Type of param
-	Type MappingParamType `json:"type"`
+	Type string `json:"type"`
 
 	// Global name for value
 	Value *string `json:"value,omitempty"`
@@ -2032,7 +2032,7 @@ func (a *MappingParam) Set(fieldName string, value struct {
 	Title string `json:"title"`
 
 	// Type of param
-	Type MappingParamType `json:"type"`
+	Type string `json:"type"`
 
 	// Global name for value
 	Value *string `json:"value,omitempty"`
@@ -2057,7 +2057,7 @@ func (a *MappingParam) Set(fieldName string, value struct {
 			Title string `json:"title"`
 
 			// Type of param
-			Type MappingParamType `json:"type"`
+			Type string `json:"type"`
 
 			// Global name for value
 			Value *string `json:"value,omitempty"`
@@ -2094,7 +2094,7 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 			Title string `json:"title"`
 
 			// Type of param
-			Type MappingParamType `json:"type"`
+			Type string `json:"type"`
 
 			// Global name for value
 			Value *string `json:"value,omitempty"`
@@ -2119,7 +2119,7 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 				Title string `json:"title"`
 
 				// Type of param
-				Type MappingParamType `json:"type"`
+				Type string `json:"type"`
 
 				// Global name for value
 				Value *string `json:"value,omitempty"`

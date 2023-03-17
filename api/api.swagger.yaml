@@ -3458,12 +3458,6 @@ components:
           type:
             type: string
             description: Type of param
-            enum:
-              - string
-              - number
-              - boolean
-              - object
-              - array
           format:
             type: string
             description: Format of param
