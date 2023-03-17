@@ -3454,6 +3454,7 @@ components:
           description:
             type: string
             description: Description of param
+          # add enum to validate values of type, not possible now coz bug in codegen
           type:
             type: string
             description: Type of param
