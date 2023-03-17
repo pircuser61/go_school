@@ -833,13 +833,15 @@ type ExecutorChangeParams struct {
 // ExternalSystem defines model for ExternalSystem.
 type ExternalSystem struct {
 	// Id внешней системы
-	Id string `json:"id"`
+	Id           string        `json:"id"`
+	InputMapping *MappingParam `json:"input_mapping,omitempty"`
 
 	// JSON-схема данных, которые отдаёт внешняя система
 	InputSchema *string `json:"input_schema,omitempty"`
 
 	// Название системы
-	Name string `json:"name"`
+	Name          string        `json:"name"`
+	OutputMapping *MappingParam `json:"output_mapping,omitempty"`
 
 	// JSON-схема данных, которые принимает внешняя система
 	OutputSchema *string `json:"output_schema,omitempty"`
@@ -978,13 +980,22 @@ type IntegerOperandOperandType string
 // MappingParam defines model for MappingParam.
 type MappingParam struct {
 	AdditionalProperties map[string]struct {
-		// Name of param
-		Description string `json:"description"`
+		// Default value
+		Default *interface{} `json:"default,omitempty"`
+
+		// Description of param
+		Description *string `json:"description,omitempty"`
 
 		// Format of param
 		Format     *string         `json:"format,omitempty"`
 		Items      *[]MappingParam `json:"items,omitempty"`
 		Properties *MappingParam   `json:"properties,omitempty"`
+
+		// Is param required?
+		Required *bool `json:"required,omitempty"`
+
+		// Title of param
+		Title string `json:"title"`
 
 		// Type of param
 		Type string `json:"type"`
@@ -1972,13 +1983,22 @@ func (a EriusFunc_Next) MarshalJSON() ([]byte, error) {
 // Getter for additional properties for MappingParam. Returns the specified
 // element and whether it was found
 func (a MappingParam) Get(fieldName string) (value struct {
-	// Name of param
-	Description string `json:"description"`
+	// Default value
+	Default *interface{} `json:"default,omitempty"`
+
+	// Description of param
+	Description *string `json:"description,omitempty"`
 
 	// Format of param
 	Format     *string         `json:"format,omitempty"`
 	Items      *[]MappingParam `json:"items,omitempty"`
 	Properties *MappingParam   `json:"properties,omitempty"`
+
+	// Is param required?
+	Required *bool `json:"required,omitempty"`
+
+	// Title of param
+	Title string `json:"title"`
 
 	// Type of param
 	Type string `json:"type"`
@@ -1994,13 +2014,22 @@ func (a MappingParam) Get(fieldName string) (value struct {
 
 // Setter for additional properties for MappingParam
 func (a *MappingParam) Set(fieldName string, value struct {
-	// Name of param
-	Description string `json:"description"`
+	// Default value
+	Default *interface{} `json:"default,omitempty"`
+
+	// Description of param
+	Description *string `json:"description,omitempty"`
 
 	// Format of param
 	Format     *string         `json:"format,omitempty"`
 	Items      *[]MappingParam `json:"items,omitempty"`
 	Properties *MappingParam   `json:"properties,omitempty"`
+
+	// Is param required?
+	Required *bool `json:"required,omitempty"`
+
+	// Title of param
+	Title string `json:"title"`
 
 	// Type of param
 	Type string `json:"type"`
@@ -2010,13 +2039,22 @@ func (a *MappingParam) Set(fieldName string, value struct {
 }) {
 	if a.AdditionalProperties == nil {
 		a.AdditionalProperties = make(map[string]struct {
-			// Name of param
-			Description string `json:"description"`
+			// Default value
+			Default *interface{} `json:"default,omitempty"`
+
+			// Description of param
+			Description *string `json:"description,omitempty"`
 
 			// Format of param
 			Format     *string         `json:"format,omitempty"`
 			Items      *[]MappingParam `json:"items,omitempty"`
 			Properties *MappingParam   `json:"properties,omitempty"`
+
+			// Is param required?
+			Required *bool `json:"required,omitempty"`
+
+			// Title of param
+			Title string `json:"title"`
 
 			// Type of param
 			Type string `json:"type"`
@@ -2038,13 +2076,22 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]struct {
-			// Name of param
-			Description string `json:"description"`
+			// Default value
+			Default *interface{} `json:"default,omitempty"`
+
+			// Description of param
+			Description *string `json:"description,omitempty"`
 
 			// Format of param
 			Format     *string         `json:"format,omitempty"`
 			Items      *[]MappingParam `json:"items,omitempty"`
 			Properties *MappingParam   `json:"properties,omitempty"`
+
+			// Is param required?
+			Required *bool `json:"required,omitempty"`
+
+			// Title of param
+			Title string `json:"title"`
 
 			// Type of param
 			Type string `json:"type"`
@@ -2054,13 +2101,22 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 		})
 		for fieldName, fieldBuf := range object {
 			var fieldVal struct {
-				// Name of param
-				Description string `json:"description"`
+				// Default value
+				Default *interface{} `json:"default,omitempty"`
+
+				// Description of param
+				Description *string `json:"description,omitempty"`
 
 				// Format of param
 				Format     *string         `json:"format,omitempty"`
 				Items      *[]MappingParam `json:"items,omitempty"`
 				Properties *MappingParam   `json:"properties,omitempty"`
+
+				// Is param required?
+				Required *bool `json:"required,omitempty"`
+
+				// Title of param
+				Title string `json:"title"`
 
 				// Type of param
 				Type string `json:"type"`

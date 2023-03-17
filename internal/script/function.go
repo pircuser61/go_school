@@ -14,10 +14,13 @@ const (
 type MappingParam map[string]MappingValue
 
 type MappingValue struct {
-	Description string `json:"description"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
 	Type        string `json:"type"`
 
 	Format     string         `json:"format,omitempty"`
+	Default    interface{}    `json:"default,omitempty"`
+	Required   bool           `json:"required,omitempty"`
 	Items      []MappingParam `json:"items,omitempty"`
 	Properties MappingParam   `json:"properties,omitempty"`
 

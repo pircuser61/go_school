@@ -2835,6 +2835,10 @@ components:
         output_schema:
           type: string
           description: JSON-схема данных, которые принимает внешняя система
+        input_mapping:
+          $ref: '#/components/schemas/MappingParam'
+        output_mapping:
+          $ref: '#/components/schemas/MappingParam'
       required:
         - id
         - name
@@ -3444,15 +3448,28 @@ components:
       additionalProperties:
         type: object
         properties:
+          title:
+            type: string
+            description: Title of param
           description:
             type: string
-            description: Name of param
+            description: Description of param
+          # add enum to validate values of type, not possible now coz bug in codegen
           type:
             type: string
             description: Type of param
           format:
             type: string
             description: Format of param
+          default:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+            description: Default value
+          required:
+            type: boolean
+            description: Is param required?
           properties:
             $ref: '#/components/schemas/MappingParam'
           items:
@@ -3464,7 +3481,7 @@ components:
             description: Global name for value
             example: form_0.application_body.passport_number
         required:
-          - description
+          - title
           - type
 
     RequestExecutionInfoType:

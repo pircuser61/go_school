@@ -2772,14 +2772,19 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-	SELECT input_schema, output_schema
+	SELECT input_schema, output_schema, input_mapping, output_mapping
 	FROM external_systems
 	WHERE version_id = $1 AND system_id = $2`
 
 	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
 
 	externalSystemSettings := entity.ExternalSystem{Id: systemID}
-	err := row.Scan(&externalSystemSettings.InputSchema, &externalSystemSettings.OutputSchema)
+	err := row.Scan(
+		&externalSystemSettings.InputSchema,
+		&externalSystemSettings.OutputSchema,
+		&externalSystemSettings.InputMapping,
+		&externalSystemSettings.OutputMapping,
+	)
 	if err != nil {
 		return externalSystemSettings, err
 	}
@@ -2794,7 +2799,8 @@ func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, versionID strin
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-		UPDATE external_systems SET input_schema = $3, output_schema = $4
+		UPDATE external_systems
+		SET input_schema = $3, output_schema = $4, input_mapping = $5, output_mapping = $6
 		WHERE version_id = $1 AND system_id = $2`
 
 	commandTag, err := db.Connection.Exec(
@@ -2804,6 +2810,8 @@ func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, versionID strin
 		system.Id,
 		system.InputSchema,
 		system.OutputSchema,
+		system.InputMapping,
+		system.OutputMapping,
 	)
 	if err != nil {
 		return err
