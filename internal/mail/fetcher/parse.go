@@ -227,9 +227,6 @@ type parsedBody struct {
 }
 
 func getComment(ctx c.Context, r *mail.Reader) *parsedBody {
-	const startLine = "***КОММЕНТАРИЙ НИЖЕ***"
-	const endLine = "***ОБЩИЙ РАЗМЕР ВЛОЖЕНИЙ НЕ БОЛЕЕ 40МБ***"
-
 	log := logger.GetLogger(ctx)
 
 	var (
@@ -250,7 +247,7 @@ LOOP:
 
 		switch part.Header.(type) {
 		case *mail.InlineHeader:
-			if !strings.Contains(body, endLine) {
+			if !strings.Contains(body, "40МБ***") {
 				b, errRead := io.ReadAll(part.Body)
 				if errRead != nil {
 					log.
