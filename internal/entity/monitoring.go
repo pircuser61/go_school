@@ -37,12 +37,13 @@ type TasksForMonitoringFilters struct {
 }
 
 type TaskForMonitoring struct {
-	Initiator   string
-	ProcessName string
-	StartedAt   time.Time
-	FinishedAt  *time.Time
-	Status      string
-	WorkNumber  string
+	Initiator        string
+	ProcessName      string
+	StartedAt        time.Time
+	FinishedAt       *time.Time
+	ProcessDeletedAt *time.Time
+	Status           string
+	WorkNumber       string
 }
 
 type TasksForMonitoring struct {
