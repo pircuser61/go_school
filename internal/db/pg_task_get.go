@@ -1256,6 +1256,8 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *stri
 
 	if filters.SortColumn != nil && filters.SortOrder != nil {
 		q = fmt.Sprintf("%s ORDER BY %s %s", q, *filters.SortColumn, *filters.SortOrder)
+	} else {
+		q = fmt.Sprintf("%s ORDER BY %s %s", q, "w.started_at", "DESC")
 	}
 
 	if filters.Page != nil {
