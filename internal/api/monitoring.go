@@ -71,13 +71,8 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 		if t.ProcessDeletedAt != nil {
 			const regexpString = "^(.+)(_deleted_at_\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.+)$"
 
-			regexCompiled, compileErr := regexp.Compile(regexpString)
-			if compileErr != nil {
-				e := UnknownError
-				log.Error(e.errorMessage(err))
-				_ = e.sendError(w)
-				return
-			}
+			regexCompiled := regexp.MustCompile(regexpString)
+
 			processName = regexCompiled.ReplaceAllString(t.ProcessName, "$1")
 		} else {
 			processName = t.ProcessName

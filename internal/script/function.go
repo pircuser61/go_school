@@ -33,8 +33,9 @@ func (m *MappingValue) GetType() string {
 
 func (m *MappingValue) GetProperties() map[string]interface{} {
 	properties := make(map[string]interface{})
-	for k, v := range m.Properties {
-		properties[k] = v
+
+	for k := range m.Properties {
+		properties[k] = m.Properties[k]
 	}
 	return properties
 }
@@ -117,7 +118,8 @@ func (a *ExecutableFunctionParams) Validate() error {
 }
 
 func (m MappingParam) Validate() error {
-	for _, mappingValue := range m {
+	for key := range m {
+		mappingValue := m[key]
 		if mappingValue.Type == "" || mappingValue.Description == "" {
 			return errors.New("type and description are required")
 		}
