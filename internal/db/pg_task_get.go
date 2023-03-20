@@ -1189,6 +1189,7 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMo
 			&task.WorkNumber,
 			&task.StartedAt,
 			&task.FinishedAt,
+			&task.ProcessDeletedAt,
 			&tasksForMonitoring.Total)
 		if err != nil {
 			return nil, err
@@ -1232,6 +1233,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *stri
 				w.work_number AS work_number,
 				w.started_at AS started_at,
 				w.finished_at as finished_at,
+				p.deleted_at as process_deleted_at,
 				COUNT(*) OVER() as total
 			FROM works w
 			LEFT JOIN versions v on w.version_id = v.id

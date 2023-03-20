@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -66,10 +67,20 @@ func (ae *APIEnv) GetTasksForMonitoring(w http.ResponseWriter, r *http.Request, 
 			initiatorsFullNameCache[t.Initiator] = userFullName
 		}
 
+		var processName string
+		if t.ProcessDeletedAt != nil {
+			const regexpString = "^(.+)(_deleted_at_\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.+)$"
+
+			regexCompiled := regexp.MustCompile(regexpString)
+
+			processName = regexCompiled.ReplaceAllString(t.ProcessName, "$1")
+		} else {
+			processName = t.ProcessName
+		}
 		monitoringTableTask := MonitoringTableTask{
 			Initiator:         t.Initiator,
 			InitiatorFullname: initiatorsFullNameCache[t.Initiator],
-			ProcessName:       t.ProcessName,
+			ProcessName:       processName,
 			StartedAt:         t.StartedAt.Format(monitoringTimeLayout),
 			Status:            MonitoringTableTaskStatus(t.Status),
 			WorkNumber:        t.WorkNumber,
