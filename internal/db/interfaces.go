@@ -191,11 +191,11 @@ type Database interface {
 	GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, blockIds []string) (*store.VariableStore, error)
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 
-	SaveVersionSettings(ctx c.Context, settings *e.ProcessSettings) error
+	SaveVersionSettings(ctx c.Context, settings *e.ProcessSettings, schemaFlag *string) error
 	GetVersionSettings(ctx c.Context, versionID string) (e.ProcessSettings, error)
 	AddExternalSystemToVersion(ctx c.Context, versionID string, systemID string) error
 	GetExternalSystemsIDs(ctx c.Context, versionID string) ([]uuid.UUID, error)
 	GetExternalSystemSettings(ctx c.Context, versionID string, systemID string) (e.ExternalSystem, error)
 	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
-	SaveExternalSystemSettings(ctx c.Context, versionID string, settings *e.ExternalSystem) error
+	SaveExternalSystemSettings(ctx c.Context, versionID string, settings *e.ExternalSystem, schemaFlag *string) error
 }

@@ -832,8 +832,6 @@ type ExecutorChangeParams struct {
 
 // ExternalSystem defines model for ExternalSystem.
 type ExternalSystem struct {
-	// Id внешней системы
-	Id           string        `json:"id"`
 	InputMapping *MappingParam `json:"input_mapping,omitempty"`
 
 	// JSON-схема данных, которые отдаёт внешняя система
@@ -845,6 +843,9 @@ type ExternalSystem struct {
 
 	// JSON-схема данных, которые принимает внешняя система
 	OutputSchema *string `json:"output_schema,omitempty"`
+
+	// Id внешней системы
+	SystemId string `json:"system_id"`
 }
 
 // Id внешней системы
@@ -1167,11 +1168,11 @@ type ProcessSettings struct {
 	// JSON-схема выходных параметров пайплайна
 	EndSchema string `json:"end_schema"`
 
-	// Id версии процесса
-	Id *string `json:"id,omitempty"`
-
 	// JSON-схема входных параметров пайплайна
 	StartSchema string `json:"start_schema"`
+
+	// Id версии процесса
+	VersionId *string `json:"version_id,omitempty"`
 }
 
 // Настройки старта версии пайплайна(процесса)
@@ -1654,11 +1655,29 @@ type CreatePipelineVersionJSONBody EriusScenario
 // SaveVersionSettingsJSONBody defines parameters for SaveVersionSettings.
 type SaveVersionSettingsJSONBody ProcessSettings
 
+// SaveVersionSettingsParams defines parameters for SaveVersionSettings.
+type SaveVersionSettingsParams struct {
+	// Флаг JSON-схемы, которую нужно сохранить
+	SchemaFlag *SaveVersionSettingsParamsSchemaFlag `json:"schema_flag,omitempty"`
+}
+
+// SaveVersionSettingsParamsSchemaFlag defines parameters for SaveVersionSettings.
+type SaveVersionSettingsParamsSchemaFlag string
+
 // AddExternalSystemToVersionJSONBody defines parameters for AddExternalSystemToVersion.
 type AddExternalSystemToVersionJSONBody ExternalSystemId
 
 // SaveExternalSystemSettingsJSONBody defines parameters for SaveExternalSystemSettings.
 type SaveExternalSystemSettingsJSONBody ExternalSystem
+
+// SaveExternalSystemSettingsParams defines parameters for SaveExternalSystemSettings.
+type SaveExternalSystemSettingsParams struct {
+	// Флаг JSON-схемы, которую нужно сохранить
+	SchemaFlag *SaveExternalSystemSettingsParamsSchemaFlag `json:"schema_flag,omitempty"`
+}
+
+// SaveExternalSystemSettingsParamsSchemaFlag defines parameters for SaveExternalSystemSettings.
+type SaveExternalSystemSettingsParamsSchemaFlag string
 
 // RunNewVersionByPrevVersionJSONBody defines parameters for RunNewVersionByPrevVersion.
 type RunNewVersionByPrevVersionJSONBody RunNewVersionByPrevVersionRequest
@@ -2495,7 +2514,7 @@ type ServerInterface interface {
 	GetVersionSettings(w http.ResponseWriter, r *http.Request, versionID string)
 	// Save process settings(start and end schemas)
 	// (POST /pipelines/version/{versionID}/settings)
-	SaveVersionSettings(w http.ResponseWriter, r *http.Request, versionID string)
+	SaveVersionSettings(w http.ResponseWriter, r *http.Request, versionID string, params SaveVersionSettingsParams)
 	// Add external system to version
 	// (POST /pipelines/version/{versionID}/system)
 	AddExternalSystemToVersion(w http.ResponseWriter, r *http.Request, versionID string)
@@ -2507,7 +2526,7 @@ type ServerInterface interface {
 	GetExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
 	// Save external system settings
 	// (PUT /pipelines/version/{versionID}/system/{systemID})
-	SaveExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
+	SaveExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string, params SaveExternalSystemSettingsParams)
 	// Delete Pipeline
 	// (DELETE /pipelines/{pipelineID})
 	DeletePipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
@@ -3322,8 +3341,22 @@ func (siw *ServerInterfaceWrapper) SaveVersionSettings(w http.ResponseWriter, r 
 		return
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SaveVersionSettingsParams
+
+	// ------------- Optional query parameter "schema_flag" -------------
+	if paramValue := r.URL.Query().Get("schema_flag"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "schema_flag", r.URL.Query(), &params.SchemaFlag)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schema_flag", Err: err})
+		return
+	}
+
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SaveVersionSettings(w, r, versionID)
+		siw.Handler.SaveVersionSettings(w, r, versionID, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3453,8 +3486,22 @@ func (siw *ServerInterfaceWrapper) SaveExternalSystemSettings(w http.ResponseWri
 		return
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SaveExternalSystemSettingsParams
+
+	// ------------- Optional query parameter "schema_flag" -------------
+	if paramValue := r.URL.Query().Get("schema_flag"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "schema_flag", r.URL.Query(), &params.SchemaFlag)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "schema_flag", Err: err})
+		return
+	}
+
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SaveExternalSystemSettings(w, r, versionID, systemID)
+		siw.Handler.SaveExternalSystemSettings(w, r, versionID, systemID, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
