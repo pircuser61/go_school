@@ -538,7 +538,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 	log := logger.GetLogger(ctx)
 	log.Info(funcName, ", started")
 
-	parsedEmails, err := ae.MailFetcher.FetchEmails(ctx)
+	emails, err := ae.MailFetcher.FetchEmails(ctx)
 	if err != nil {
 		e := ParseMailsError
 		log.WithField(funcName, "parse parsedEmails failed").Error(err)
@@ -546,15 +546,15 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if parsedEmails == nil {
+	if emails == nil {
 		return
 	}
 
-	for i := range parsedEmails {
-		usr, errGetUser := ae.People.GetUser(ctx, parsedEmails[i].Action.Login)
+	for i := range emails {
+		usr, errGetUser := ae.People.GetUser(ctx, emails[i].Action.Login)
 		if errGetUser != nil {
-			log.WithField("workNumber", parsedEmails[i].Action.WorkNumber).
-				WithField("login", parsedEmails[i].Action.Login).Error(errGetUser)
+			log.WithField("workNumber", emails[i].Action.WorkNumber).
+				WithField("login", emails[i].Action.Login).Error(errGetUser)
 			continue
 		}
 
@@ -564,43 +564,43 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		if useInfo.Email != parsedEmails[i].From && !utils.IsContainsInSlice(parsedEmails[i].From, useInfo.ProxyEmails) {
+		if !strings.EqualFold(useInfo.Email, emails[i].From) && !utils.IsContainsInSlice(emails[i].From, useInfo.ProxyEmails) {
 			log.WithField("userEmailByLogin", useInfo.Email).
-				WithField("emailFromEmail", parsedEmails[i].From).
+				WithField("emailFromEmail", emails[i].From).
 				WithField("proxyEmails", useInfo.ProxyEmails).
 				Error(errors.New("login from email not eq or not in proxyAddresses"))
 			continue
 		}
 
-		for fileName := range parsedEmails[i].Action.Attachments {
-			r := bytes.NewReader(parsedEmails[i].Action.Attachments[fileName].Raw)
-			ext := parsedEmails[i].Action.Attachments[fileName].Ext
+		for fileName := range emails[i].Action.Attachments {
+			r := bytes.NewReader(emails[i].Action.Attachments[fileName].Raw)
+			ext := emails[i].Action.Attachments[fileName].Ext
 			id, errSave := ae.Minio.SaveFile(ctx, ext, fileName, r, r.Size())
 			if errSave != nil {
-				log.WithField("workNumber", parsedEmails[i].Action.WorkNumber).
+				log.WithField("workNumber", emails[i].Action.WorkNumber).
 					WithField("fileName", fileName).
 					Error(errSave)
 				continue
 			}
 
-			parsedEmails[i].Action.AttachmentsIds = append(parsedEmails[i].Action.AttachmentsIds, id)
+			emails[i].Action.AttachmentsIds = append(emails[i].Action.AttachmentsIds, id)
 		}
 
-		jsonBody, errParse := json.Marshal(parsedEmails[i].Action)
+		jsonBody, errParse := json.Marshal(emails[i].Action)
 		if errParse != nil {
-			log.WithField("workNumber", parsedEmails[i].Action.WorkNumber).Error(errParse)
+			log.WithField("workNumber", emails[i].Action.WorkNumber).Error(errParse)
 			continue
 		}
 
 		updateData := entity.TaskUpdate{
-			Action:     entity.TaskUpdateAction(parsedEmails[i].Action.ActionName),
+			Action:     entity.TaskUpdateAction(emails[i].Action.ActionName),
 			Parameters: jsonBody,
 		}
 
-		errUpdate := ae.updateTaskInternal(ctx, parsedEmails[i].Action.WorkNumber, parsedEmails[i].Action.Login, &updateData)
+		errUpdate := ae.updateTaskInternal(ctx, emails[i].Action.WorkNumber, emails[i].Action.Login, &updateData)
 		if errUpdate != nil {
-			log.WithField("action", *parsedEmails[i].Action).
-				WithField("workNumber", parsedEmails[i].Action.WorkNumber).
+			log.WithField("action", *emails[i].Action).
+				WithField("workNumber", emails[i].Action.WorkNumber).
 				Error(errUpdate)
 			continue
 		}

@@ -3,6 +3,7 @@ package fetcher
 import (
 	c "context"
 	"io"
+	"regexp"
 	"strings"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -226,9 +227,6 @@ type parsedBody struct {
 }
 
 func getComment(ctx c.Context, r *mail.Reader) *parsedBody {
-	const startLine = "***КОММЕНТАРИЙ НИЖЕ***"
-	const endLine = "***ОБЩИЙ РАЗМЕР ВЛОЖЕНИЙ НЕ БОЛЕЕ 40МБ***"
-
 	log := logger.GetLogger(ctx)
 
 	var (
@@ -249,7 +247,7 @@ LOOP:
 
 		switch part.Header.(type) {
 		case *mail.InlineHeader:
-			if !strings.Contains(body, endLine) {
+			if !strings.Contains(body, "40МБ***") {
 				b, errRead := io.ReadAll(part.Body)
 				if errRead != nil {
 					log.
@@ -263,9 +261,11 @@ LOOP:
 		}
 	}
 
-	pb.Body = strings.Replace(body, startLine, "", 1)
-	pb.Body = strings.Replace(pb.Body, endLine, "", 1)
-	pb.Body = strings.Replace(pb.Body, "\n", "", -1)
+	pb.Body = strings.Replace(body, "\n", " ", -1)
+	pb.Body = strings.Replace(pb.Body, "\t", "", -1)
+	pb.Body = regexp.MustCompile(`^(\*\*\*.+НИЖЕ\*\*\*)`).ReplaceAllString(pb.Body, "")
+	pb.Body = regexp.MustCompile(`(\*\*\*ОБЩИЙ.+40МБ\*\*\*)`).ReplaceAllString(pb.Body, "")
+	pb.Body = regexp.MustCompile(`(\[cid:image.+\])`).ReplaceAllString(pb.Body, "")
 	pb.Body = strings.TrimSpace(pb.Body)
 
 	return &pb
