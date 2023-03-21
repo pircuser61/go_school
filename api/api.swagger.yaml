@@ -1026,6 +1026,15 @@ paths:
           required: true
           schema:
             type: string
+        - name: schema_flag
+          in: query
+          description: Флаг JSON-схемы, которую нужно сохранить
+          required: false
+          schema:
+            type: string
+            enum:
+              - start_schema
+              - end_schema
       requestBody:
         description: Modified JSON-schemas
         content:
@@ -1176,6 +1185,17 @@ paths:
           required: true
           schema:
             type: string
+        - name: schema_flag
+          in: query
+          description: Флаг JSON-схемы, которую нужно сохранить
+          required: false
+          schema:
+            type: string
+            enum:
+              - input_schema
+              - output_schema
+              - input_mapping
+              - output_mapping
       requestBody:
         description: Modified settings
         content:
@@ -2803,7 +2823,7 @@ components:
       type: object
       description: Настройки старта версии пайплайна(процесса)
       properties:
-        id:
+        version_id:
           type: string
           format: uuid
           description: Id версии процесса
@@ -2821,7 +2841,7 @@ components:
     ExternalSystem:
       type: object
       properties:
-        id:
+        system_id:
           type: string
           format: uuid
           description: Id внешней системы
@@ -2840,7 +2860,7 @@ components:
         output_mapping:
           $ref: '#/components/schemas/MappingParam'
       required:
-        - id
+        - system_id
         - name
 
     ExternalSystemId:

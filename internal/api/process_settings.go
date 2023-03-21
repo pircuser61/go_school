@@ -67,7 +67,7 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 }
 
 //nolint:dupl //its not duplicate
-func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
+func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, versionID string, params SaveVersionSettingsParams) {
 	ctx, s := trace.StartSpan(req.Context(), "save_version_settings")
 	defer s.End()
 
@@ -84,7 +84,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	processSettings := &entity.ProcessSettings{}
+	processSettings := &entity.ProcessSettings{Id: versionID}
 	err = json.Unmarshal(b, processSettings)
 	if err != nil {
 		e := ProcessSettingsParseError
@@ -94,7 +94,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	err = ae.DB.SaveVersionSettings(ctx, processSettings)
+	err = ae.DB.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
 	if err != nil {
 		e := ProcessSettingsSaveError
 		log.Error(e.errorMessage(err))
@@ -114,7 +114,8 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 }
 
 //nolint:dupl //its not duplicate
-func (ae *APIEnv) SaveExternalSystemSettings(w http.ResponseWriter, req *http.Request, versionID, systemID string) {
+func (ae *APIEnv) SaveExternalSystemSettings(
+	w http.ResponseWriter, req *http.Request, versionID, systemID string, params SaveExternalSystemSettingsParams) {
 	ctx, s := trace.StartSpan(req.Context(), "save_external_system_settings")
 	defer s.End()
 
@@ -131,7 +132,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	externalSystem := &entity.ExternalSystem{}
+	externalSystem := &entity.ExternalSystem{Id: systemID}
 	err = json.Unmarshal(b, externalSystem)
 	if err != nil {
 		e := ExternalSystemSettingsParseError
@@ -141,7 +142,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(w http.ResponseWriter, req *http.Re
 		return
 	}
 
-	err = ae.DB.SaveExternalSystemSettings(ctx, versionID, externalSystem)
+	err = ae.DB.SaveExternalSystemSettings(ctx, versionID, externalSystem, (*string)(params.SchemaFlag))
 	if err != nil {
 		e := ExternalSystemSettingsSaveError
 		log.Error(e.errorMessage(err))

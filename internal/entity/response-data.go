@@ -102,13 +102,13 @@ type ProcessSettingsWithExternalSystems struct {
 }
 
 type ProcessSettings struct {
-	Id          string `json:"id"`
+	Id          string `json:"version_id"`
 	EndSchema   string `json:"end_schema"`
 	StartSchema string `json:"start_schema"`
 }
 
 type ExternalSystem struct {
-	Id            string              `json:"id"`
+	Id            string              `json:"system_id"`
 	Name          string              `json:"name,omitempty"`
 	InputSchema   string              `json:"input_schema,omitempty"`
 	OutputSchema  string              `json:"output_schema,omitempty"`

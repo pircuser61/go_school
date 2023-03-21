@@ -949,7 +949,8 @@ func (_m *MockDB) GetBlocksOutputs(ctx context.Context, blockId string) (entity.
 	return nil, nil
 }
 
-func (_m *MockDB) SaveExternalSystemSettings(ctx context.Context, versionID string, settings *entity.ExternalSystem) error {
+func (_m *MockDB) SaveExternalSystemSettings(
+	ctx context.Context, versionID string, settings *entity.ExternalSystem, schemaFlag *string) error {
 	return nil
 }
 
@@ -973,7 +974,7 @@ func (_m *MockDB) GetVersionSettings(ctx context.Context, id string) (entity.Pro
 	return entity.ProcessSettings{}, nil
 }
 
-func (_m *MockDB) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings) error {
+func (_m *MockDB) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings, schemaFlag *string) error {
 	return nil
 }
 

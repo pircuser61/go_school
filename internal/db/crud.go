@@ -133,12 +133,20 @@ const (
 			$3, 
 			$4
 		)`
+
+	startSchema   = "start_schema"
+	endSchema     = "end_schema"
+	inputSchema   = "input_schema"
+	outputSchema  = "output_schema"
+	inputMapping  = "input_mapping"
+	outputMapping = "output_mapping"
 )
 
 var (
 	errCantFindPipelineVersion = errors.New("can't find pipeline version")
 	errCantFindTag             = errors.New("can't find tag")
 	errCantFindExternalSystem  = errors.New("can't find external system settings")
+	errUnkonwnSchemaFlag       = errors.New("unknown schema flag")
 )
 
 // TODO ErrNoRows ? Split file?
@@ -2706,20 +2714,46 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (enti
 	return processSettings, nil
 }
 
-func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings) error {
+func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_version_settings")
 	defer span.End()
 
-	// nolint:gocritic
-	// language=PostgreSQL
-	query := `
+	if schemaFlag == nil {
+		// nolint:gocritic
+		// language=PostgreSQL
+		query := `
 		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (version_id) DO UPDATE 
 			SET start_schema = excluded.start_schema, 
 				end_schema = excluded.end_schema`
 
-	_, err := db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema)
+		_, err := db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	var jsonSchema string
+	switch *schemaFlag {
+	case startSchema:
+		jsonSchema = settings.StartSchema
+	case endSchema:
+		jsonSchema = settings.EndSchema
+	default:
+		return errUnkonwnSchemaFlag
+	}
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := fmt.Sprintf(`INSERT INTO version_settings (id, version_id, %[1]s) 
+			VALUES ($1, $2, $3)
+			ON CONFLICT (version_id) DO UPDATE 
+				SET %[1]s = excluded.%[1]s`, *schemaFlag)
+
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), settings.Id, jsonSchema)
 	if err != nil {
 		return err
 	}
@@ -2792,27 +2826,42 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 	return externalSystemSettings, nil
 }
 
-func (db *PGCon) SaveExternalSystemSettings(ctx context.Context, versionID string, system *entity.ExternalSystem) error {
+func (db *PGCon) SaveExternalSystemSettings(
+	ctx context.Context, versionID string, system *entity.ExternalSystem, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
 	defer span.End()
 
+	args := []interface{}{versionID, system.Id}
+	var schemasForUpdate string
+	if schemaFlag != nil {
+		switch *schemaFlag {
+		case inputSchema:
+			schemasForUpdate = inputSchema + " = $3"
+			args = append(args, system.InputSchema)
+		case outputSchema:
+			schemasForUpdate = outputSchema + " = $3"
+			args = append(args, system.OutputSchema)
+		case inputMapping:
+			schemasForUpdate = inputMapping + " = $3"
+			args = append(args, system.InputMapping)
+		case outputMapping:
+			schemasForUpdate = outputMapping + " = $3"
+			args = append(args, system.OutputMapping)
+		default:
+			return errUnkonwnSchemaFlag
+		}
+	} else {
+		schemasForUpdate = "input_schema = $3, output_schema = $4, input_mapping = $5, output_mapping = $6"
+		args = append(args, system.InputSchema, system.OutputSchema, system.InputMapping, system.OutputMapping)
+	}
+
 	// nolint:gocritic
 	// language=PostgreSQL
-	query := `
-		UPDATE external_systems
-		SET input_schema = $3, output_schema = $4, input_mapping = $5, output_mapping = $6
-		WHERE version_id = $1 AND system_id = $2`
+	query := fmt.Sprintf(`UPDATE external_systems
+		SET %s
+		WHERE version_id = $1 AND system_id = $2`, schemasForUpdate)
 
-	commandTag, err := db.Connection.Exec(
-		ctx,
-		query,
-		versionID,
-		system.Id,
-		system.InputSchema,
-		system.OutputSchema,
-		system.InputMapping,
-		system.OutputMapping,
-	)
+	commandTag, err := db.Connection.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
