@@ -1260,7 +1260,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *stri
 		q = fmt.Sprintf("%s ORDER BY %s %s", q, "w.started_at", "DESC")
 	}
 
-	if filters.Page != nil {
+	if filters.Page != nil && filters.PerPage != nil {
 		q = fmt.Sprintf("%s OFFSET %d", q, *filters.Page**filters.PerPage)
 	}
 
