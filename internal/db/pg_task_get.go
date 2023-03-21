@@ -1261,7 +1261,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *stri
 	}
 
 	if filters.Page != nil {
-		q = fmt.Sprintf("%s OFFSET %d", q, *filters.Page)
+		q = fmt.Sprintf("%s OFFSET %d", q, *filters.Page**filters.PerPage)
 	}
 
 	if filters.PerPage != nil {
