@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE MATERIALIZED VIEW steps
+CREATE MATERIALIZED VIEW IF NOT EXISTS steps
 AS
 SELECT vs.id AS step_id,
     vs.step_type AS step_type,
@@ -56,9 +56,13 @@ COMMENT ON COLUMN steps.work_id
 
 COMMENT ON COLUMN steps.people
     IS 'Участники текущего блока из процесса.';
+
+SELECT cron.schedule('mv-steps-cron', '0 5 * * *', 'REFRESH MATERIALIZED VIEW steps WITH DATA');
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP MATERIALIZED VIEW steps;
+SELECT cron.unschedule('mv-steps-cron');
+
+DROP MATERIALIZED VIEW IF EXISTS steps;
 -- +goose StatementEnd
