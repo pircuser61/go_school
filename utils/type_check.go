@@ -8,7 +8,6 @@ import (
 type TypeValue interface {
 	GetType() string
 	GetProperties() map[string]interface{}
-	GetItems() []interface{}
 }
 
 const (
@@ -56,15 +55,14 @@ var typesHandlersMapping = map[string]typeHandler{
 	stringType:  simpleTypeHandler,
 	numberType:  simpleTypeHandler,
 	boolType:    simpleTypeHandler,
+	arrayType:   simpleTypeHandler,
 
-	arrayType:  nestedTypeHandler,
 	objectType: nestedTypeHandler,
 }
 
 type typeHandler func(variable interface{}, originalValue TypeValue) error
 
 var nestedTypesMapping = map[string]reflect.Kind{
-	arrayType:  reflect.Slice,
 	objectType: reflect.Map,
 }
 
@@ -75,30 +73,8 @@ func nestedTypeHandler(variable interface{}, originalValue TypeValue) error {
 		return fmt.Errorf("unexpected type of variable %v %T", variable, variable)
 	}
 
-	switch nestedType {
-	case reflect.Slice:
-		err := handleSlice(variable, originalValue)
-		if err != nil {
-			return err
-		}
-	case reflect.Map:
+	if nestedType == reflect.Map {
 		err := handleMap(variable, originalValue)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func handleSlice(variable interface{}, originalValue TypeValue) error {
-	variableObject := reflect.ValueOf(variable)
-	for i, item := range originalValue.GetItems() {
-		if i > variableObject.Len() {
-			return fmt.Errorf("unexpected length of variable %v", variable)
-		}
-
-		err := simpleTypeHandler(variableObject.Index(i).Interface(), item.(TypeValue))
 		if err != nil {
 			return err
 		}

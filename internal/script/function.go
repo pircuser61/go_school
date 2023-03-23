@@ -18,13 +18,19 @@ type MappingValue struct {
 	Description string `json:"description,omitempty"`
 	Type        string `json:"type"`
 
-	Format     string         `json:"format,omitempty"`
-	Default    interface{}    `json:"default,omitempty"`
-	Required   bool           `json:"required,omitempty"`
-	Items      []MappingParam `json:"items,omitempty"`
-	Properties MappingParam   `json:"properties,omitempty"`
+	Format     string             `json:"format,omitempty"`
+	Default    interface{}        `json:"default,omitempty"`
+	Required   bool               `json:"required,omitempty"`
+	Items      *MappingParamItems `json:"items,omitempty"`
+	Properties MappingParam       `json:"properties,omitempty"`
 
 	Value string `json:"value,omitempty"`
+}
+
+type MappingParamItems struct {
+	Items      *MappingParamItems `json:"items,omitempty"`
+	Properties MappingParam       `json:"properties,omitempty"`
+	Type       string             `json:"type,omitempty"`
 }
 
 func (m *MappingValue) GetType() string {
@@ -38,14 +44,6 @@ func (m *MappingValue) GetProperties() map[string]interface{} {
 		properties[k] = m.Properties[k]
 	}
 	return properties
-}
-
-func (m *MappingValue) GetItems() []interface{} {
-	items := make([]interface{}, 0)
-	for _, v := range m.Items {
-		items = append(items, v)
-	}
-	return items
 }
 
 type ExecutableFunctionParams struct {
@@ -129,12 +127,28 @@ func (m MappingParam) Validate() error {
 			return err
 		}
 
-		for _, item := range mappingValue.Items {
-			err = item.Validate()
+		if mappingValue.Items != nil {
+			err = mappingValue.Items.Validate()
 			if err != nil {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+func (m MappingParamItems) Validate() error {
+	if m.Type == "" {
+		return errors.New("type is required")
+	}
+
+	if m.Type == "array" && m.Items == nil {
+		return errors.New("items is required")
+	}
+
+	if m.Type == "object" && m.Properties == nil {
+		return errors.New("properties is required")
 	}
 
 	return nil
