@@ -6,10 +6,10 @@ SELECT
         w.id AS work_id,
         w.work_number AS application_id,
         p.name AS process_name,
-        ''::text AS process_sla,
+        '' AS process_sla,
         vs.step_type,
         vs.status,
-        (((v.content::json -> 'pipeline'::text) -> 'blocks'::text) -> vs.step_name::text) -> 'title'::text AS description,
+        (((v.content::json -> 'pipeline') -> 'blocks') -> vs.step_name) -> 'title' AS description,
         ( SELECT
             CASE
                 WHEN vs.step_type = 'approver' AND vs.content::json -> 'State' -> vs.step_name ->> 'approvers' != 'null'
@@ -17,11 +17,11 @@ SELECT
                 WHEN vs.step_type = 'execution' AND vs.content::json -> 'State' -> vs.step_name ->> 'executors' != 'null'
                     THEN array_to_string(ARRAY( SELECT json_object_keys(vs.content::json -> 'State' -> vs.step_name -> 'executors') AS keys), ',')
                 END AS "case") AS people,
-        ((((v.content::json -> 'pipeline'::text) -> 'blocks'::text) -> vs.step_name::text) -> 'params'::text) -> 'sla'::text AS block_sla,
+        ((((v.content::json -> 'pipeline') -> 'blocks') -> vs.step_name) -> 'params') -> 'sla' AS block_sla,
         vs."time" AS started_at,
         ( SELECT
             CASE
-                WHEN vs.status = 'finished'::text OR vs.status = 'no_success'::text THEN vs.updated_at
+                WHEN vs.status = 'finished' OR vs.status = 'no_success' THEN vs.updated_at
                 ELSE NULL::timestamp with time zone
                 END AS "case") AS finished_at,
         w.finished_at AS process_finished_at,
