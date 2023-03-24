@@ -18,6 +18,7 @@ import (
 const (
 	getFileByID        = "/api/herald/v1/file/%s"
 	getApplicationBody = "/api/herald/v1/application/%s/body"
+	getFileDescription = "/api/herald/v1/application/xlsx?id=%s"
 	dispositionHeader  = "Content-Disposition"
 )
 
@@ -112,5 +113,36 @@ func (s *Service) GetSchemaFieldsByApplication(ctx context.Context, applicationI
 }
 
 func (s *Service) GetFileDescriptionOfTask(ctx context.Context, workId string) (*email.Attachment, error) {
-	return &email.Attachment{}, nil
+	ctxLocal, span := trace.StartSpan(ctx, "get_file_description_of_task")
+	defer span.End()
+
+	reqURL := fmt.Sprintf("%s%s", s.SdURL, fmt.Sprintf(getFileDescription, workId))
+
+	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.Cli.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("got bad status code: %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	name := regexp.MustCompile(`^attachment; filename=`).ReplaceAllString(resp.Header.Get(dispositionHeader), "")
+	return &email.Attachment{
+		Name:    name,
+		Content: data,
+		Type:    email.EmbeddedAttachment,
+	}, nil
 }

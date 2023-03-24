@@ -234,7 +234,7 @@ func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
-func NewAppInitiatorStatusNotificationTpl(id, action, sdUrl string) Template {
+func NewAppInitiatorStatusNotificationTpl(id, action, description, sdUrl string) Template {
 	subject := fmt.Sprintf("Заявка %s %s", id, action)
 	textPart := `Уважаемый коллега, заявка {{.Id}} <b>{{.Action}}</b><br>`
 
@@ -248,17 +248,26 @@ func NewAppInitiatorStatusNotificationTpl(id, action, sdUrl string) Template {
 		textPart = `Уважаемый коллега, заявка {{.Id}} получена виза <b>Проинформирован</b><br>`
 	}
 
+	textPart += `Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>`
+
+	if description != "" {
+		textPart += `Текст заявки:<br><br>
+			<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`
+	}
+
 	return Template{
 		Subject: subject,
-		Text:    textPart + `Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>`,
+		Text:    textPart,
 		Variables: struct {
-			Id     string `json:"id"`
-			Link   string `json:"link"`
-			Action string `json:"action"`
+			Id          string `json:"id"`
+			Link        string `json:"link"`
+			Description string `json:"description"`
+			Action      string `json:"action"`
 		}{
-			Id:     id,
-			Link:   fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			Action: action,
+			Id:          id,
+			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Description: description,
+			Action:      action,
 		},
 	}
 }
@@ -312,24 +321,33 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
 	}
 
-	return Template{
-		Subject: fmt.Sprintf("Заявка %s ожидает %s", in.WorkNumber, actionName),
-		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
+	textPart := `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br/>
 				Срок {{.Action}} до {{.Deadline}}<br/>
-				{{.Buttons}}`,
+				{{.Buttons}}`
+
+	if in.Description != "" {
+		textPart = fmt.Sprintf("%s\n%s", textPart, `Текст заявки:<br/>
+<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`)
+	}
+
+	return Template{
+		Subject: fmt.Sprintf("Заявка %s ожидает %s", in.WorkNumber, actionName),
+		Text:    textPart,
 		Variables: struct {
-			Id       string
-			Link     string
-			Action   string
-			Deadline string
-			Buttons  string
+			Id          string
+			Link        string
+			Action      string
+			Description string
+			Deadline    string
+			Buttons     string
 		}{
-			Id:       in.WorkNumber,
-			Link:     fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
-			Action:   actionName,
-			Deadline: in.DeadLine,
-			Buttons:  buttons,
+			Id:          in.WorkNumber,
+			Link:        fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
+			Action:      actionName,
+			Description: in.Description,
+			Deadline:    in.DeadLine,
+			Buttons:     buttons,
 		},
 	}
 }
@@ -356,14 +374,19 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject = strings.ReplaceAll(actionSubject, " ", "")
 	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
 
-	return Template{
-		Subject: fmt.Sprintf("Заявка №%s назначена на Группу исполнителей", dto.WorkNumber),
-		Text: `Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b><br>
+	textPart := `Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b><br>
  Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
  <b>Действия с заявкой</b><br>
- {{.ActionBtn}}<br>
+ {{.ActionBtn}}<br>`
 
-<style>
+	if dto.Description != "" {
+		textPart += ` ------------ Описание ------------  </br>
+<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`
+	}
+
+	return Template{
+		Subject: fmt.Sprintf("Заявка №%s назначена на Группу исполнителей", dto.WorkNumber),
+		Text: textPart + `<style>
     p {
         font-family: Arial;
         font-size: 11px;
@@ -371,25 +394,32 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
     }
 </style>`,
 		Variables: struct {
-			Id        string
-			Link      string
-			ActionBtn string
+			Id          string
+			Link        string
+			Description string
+			ActionBtn   string
 		}{
-			Id:        dto.WorkNumber,
-			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			ActionBtn: actionBtn,
+			Id:          dto.WorkNumber,
+			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Description: dto.Description,
+			ActionBtn:   actionBtn,
 		},
 	}
 }
 
 func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
+	textPart := `Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
+ <b>Инициатор: </b>{{.Initiator}}</br>
+ <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>`
+
+	if dto.Description != "" {
+		textPart += `------------ Описание ------------  </br>
+<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`
+	}
+
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.WorkNumber, dto.ExecutorName),
-		Text: `Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
- <b>Инициатор: </b>{{.Initiator}}</br>
- <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>
-
-<style>
+		Text: textPart + `<style>
     p {
         font-family: Arial;
         font-size: 11px;
