@@ -87,7 +87,7 @@ UNION
                                                        'created_at',
                                                        events_approver.jsonb_extract_approver_log ->>
                                                        'created_at' -- TODO ask how to get it
-                                                   ) -- third point
+                                                   ) -- third point and sixth point
                                                when (events_approver.jsonb_extract_additional_info ->> 'type') = 'reply'
                                                    then jsonb_build_object(
                                                        'id', events_approver.id,
@@ -133,17 +133,6 @@ UNION
         (events_approver_as_jsonb.jsonb_object ->> 'created_at')    created_at
  from events_approver_as_jsonb
  where events_approver_as_jsonb.jsonb_object -> 'step_id' is not null
- union
- (select events_approver.id                                        step_id,
-         events_approver.jsonb_extract_approver_log ->> 'login'    "user",
-         events_approver.jsonb_extract_approver_log ->> 'log_type' log_type,
-         events_approver.jsonb_extract_approver_log ->>
-         'log_type'                                                event_body,
-         events_approver.jsonb_extract_approver_log ->>
-         'created_at'                                              created_at
-  from events_approver
-  where events_approver.jsonb_extract_approver_log ->> 'log_type' =
-        'additionalApproverDecision') -- sixth point, TODO check if this right coz mb not right fields
 )
 UNION
 -- node execution
