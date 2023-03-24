@@ -148,7 +148,6 @@ UNION
         'is_taken_in_work'                                               AS log_type,
         NULL                                                             AS event_body,
         (events_execution.jsonb_extract -> 'taken_in_work_at')::text     AS created_at
---     events_execution.jsonb_extract
  FROM events_execution
  WHERE events_execution.jsonb_extract ->> 'executors' != 'null'
    AND array_length(ARRAY(SELECT jsonb_object_keys(events_execution.jsonb_extract -> 'executors')), 1) = 1
@@ -164,7 +163,6 @@ UNION
                         THEN events_execution.jsonb_extract ->> 'decision_made_at'
                     ELSE updated_at::text
                     END AS "case")                                       AS created_at
---     events_execution.jsonb_extract
  FROM events_execution
  WHERE events_execution.jsonb_extract ->> 'executors' != 'null'
    AND array_length(ARRAY(SELECT jsonb_object_keys(events_execution.jsonb_extract -> 'executors')), 1) = 1
@@ -196,6 +194,9 @@ UNION
         NULL                                                                                       AS event_body,
         jsonb_array_elements(events_execution.jsonb_extract -> 'editing_app_log') ->> 'created_at' AS created_at
  FROM events_execution);
+
+GRANT SELECT ON TABLE events TO report;
+
 SELECT cron.schedule('mv-events-cron', '0 5 * * *', 'REFRESH MATERIALIZED VIEW events WITH DATA');
 -- +goose StatementEnd
 
