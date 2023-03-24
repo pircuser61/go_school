@@ -1023,7 +1023,7 @@ type MappingParamItems struct {
 	Properties *MappingParam `json:"properties,omitempty"`
 
 	// Тип элементов массива
-	Type *string `json:"type,omitempty"`
+	Type string `json:"type"`
 }
 
 // MonitoringBlockOutput defines model for MonitoringBlockOutput.
