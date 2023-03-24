@@ -576,11 +576,18 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		}
 	}
 
+	var description string
+	var emailAttachment []e.Attachment
+
 	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber)
-	if err != nil {
-		return err
+	if err == nil {
+		emailAttachment = append(emailAttachment, *descriptionFile)
+	} else {
+		description, err = gb.RunContext.makeNotificationDescription(gb.Name)
+		if err != nil {
+			return err
+		}
 	}
-	emailAttachment := []e.Attachment{*descriptionFile}
 
 	author, err := gb.RunContext.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
 	if err != nil {
@@ -595,6 +602,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		WorkNumber:   gb.RunContext.WorkNumber,
 		SdUrl:        gb.RunContext.Sender.SdAddress,
+		Description:  description,
 		ExecutorName: typedAuthor.GetFullName(),
 		Initiator:    gb.RunContext.Initiator,
 	})
@@ -610,15 +618,16 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	tpl = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
-			WorkNumber: gb.RunContext.WorkNumber,
-			Name:       gb.RunContext.WorkTitle,
-			Status:     string(StatusExecution),
-			Action:     statusToTaskAction[StatusExecution],
-			DeadLine:   ComputeDeadline(time.Now(), gb.State.SLA),
-			SdUrl:      gb.RunContext.Sender.SdAddress,
-			Mailto:     gb.RunContext.Sender.FetchEmail,
-			Login:      loginTakenInWork,
-			IsEditable: gb.State.GetIsEditable(),
+			WorkNumber:  gb.RunContext.WorkNumber,
+			Name:        gb.RunContext.WorkTitle,
+			Status:      string(StatusExecution),
+			Action:      statusToTaskAction[StatusExecution],
+			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA),
+			Description: description,
+			SdUrl:       gb.RunContext.Sender.SdAddress,
+			Mailto:      gb.RunContext.Sender.FetchEmail,
+			Login:       loginTakenInWork,
+			IsEditable:  gb.State.GetIsEditable(),
 
 			BlockID:                   BlockGoExecutionID,
 			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),

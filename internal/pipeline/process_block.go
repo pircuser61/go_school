@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -118,7 +119,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		return nil
 	}
 
-	err = runCtx.handleInitiatorNotification(ctx, bl.TypeID, taskHumanStatus)
+	err = runCtx.handleInitiatorNotification(ctx, name, bl.TypeID, taskHumanStatus)
 	if err != nil {
 		return err
 	}
@@ -366,8 +367,36 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 	})
 }
 
+func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (string, error) {
+	data, err := runCtx.Storage.GetApplicationData(runCtx.WorkNumber)
+	if err != nil {
+		return "", err
+	}
+	var descr string
+	if data != nil {
+		dataDescr, ok := data.Get("description")
+		if ok {
+			convDescr, convOk := dataDescr.(string)
+			if convOk {
+				descr = convDescr
+			}
+		}
+	}
+	additionalDescriptions, err := runCtx.Storage.GetAdditionalForms(runCtx.WorkNumber, nodeName)
+	if err != nil {
+		return "", err
+	}
+	for _, item := range additionalDescriptions {
+		if item == "" {
+			continue
+		}
+		descr = fmt.Sprintf("%s\n\n%s", descr, item)
+	}
+	return descr, nil
+}
+
 func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
-	stepType string, status TaskHumanStatus) error {
+	step, stepType string, status TaskHumanStatus) error {
 	const FormStepType = "form"
 
 	if runCtx.skipNotifications {
@@ -393,11 +422,18 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 		return nil
 	}
 
+	var description string
+	var emailAttachment []e.Attachment
+
 	descriptionFile, err := runCtx.ServiceDesc.GetFileDescriptionOfTask(ctx, runCtx.WorkNumber)
-	if err != nil {
-		return err
+	if err == nil {
+		emailAttachment = append(emailAttachment, *descriptionFile)
+	} else {
+		description, err = runCtx.makeNotificationDescription(step)
+		if err != nil {
+			return err
+		}
 	}
-	emailAttachment := []e.Attachment{*descriptionFile}
 
 	loginsToNotify := []string{runCtx.Initiator}
 
@@ -415,6 +451,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		runCtx.WorkNumber,
 		statusToTaskState[status],
+		description,
 		runCtx.Sender.SdAddress)
 
 	if sendErr := runCtx.Sender.SendNotification(ctx, emails, emailAttachment, tmpl); sendErr != nil {

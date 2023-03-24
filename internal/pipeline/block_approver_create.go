@@ -183,11 +183,18 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Approvers))
 
+	var description string
+	var emailAttachment []e.Attachment
+
 	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber)
-	if err != nil {
-		return err
+	if err == nil {
+		emailAttachment = append(emailAttachment, *descriptionFile)
+	} else {
+		description, err = gb.RunContext.makeNotificationDescription(gb.Name)
+		if err != nil {
+			return err
+		}
 	}
-	emailAttachment := []e.Attachment{*descriptionFile}
 
 	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
 	for i := range gb.State.ActionList {
@@ -207,17 +214,17 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 		emails[email] = mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
-				WorkNumber:      gb.RunContext.WorkNumber,
-				Name:            gb.RunContext.WorkTitle,
-				Status:          gb.State.ApproveStatusName,
-				Action:          statusToTaskAction[StatusApprovement],
-				DeadLine:        ComputeDeadline(time.Now(), gb.State.SLA),
-				SdUrl:           gb.RunContext.Sender.SdAddress,
-				Mailto:          gb.RunContext.Sender.FetchEmail,
-				Login:           login,
-				IsEditable:      gb.State.GetIsEditable(),
-				ApproverActions: actionsList,
-
+				WorkNumber:                gb.RunContext.WorkNumber,
+				Name:                      gb.RunContext.WorkTitle,
+				Status:                    gb.State.ApproveStatusName,
+				Action:                    statusToTaskAction[StatusApprovement],
+				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA),
+				SdUrl:                     gb.RunContext.Sender.SdAddress,
+				Mailto:                    gb.RunContext.Sender.FetchEmail,
+				Login:                     login,
+				IsEditable:                gb.State.GetIsEditable(),
+				ApproverActions:           actionsList,
+				Description:               description,
 				BlockID:                   BlockGoApproverID,
 				ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
