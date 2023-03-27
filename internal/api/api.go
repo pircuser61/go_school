@@ -1191,6 +1191,9 @@ type ProcessSettings struct {
 	// JSON-схема входных параметров пайплайна
 	StartSchema string `json:"start_schema"`
 
+	// Срок, в течении которого придет уведомлении о том, что пользователь повторно создал заявку. Указывается в часах.
+	UserProcessTimeout int `json:"user_process_timeout"`
+
 	// Id версии процесса
 	VersionId *string `json:"version_id,omitempty"`
 }

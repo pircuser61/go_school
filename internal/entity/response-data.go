@@ -102,9 +102,10 @@ type ProcessSettingsWithExternalSystems struct {
 }
 
 type ProcessSettings struct {
-	Id          string `json:"version_id"`
-	EndSchema   string `json:"end_schema"`
-	StartSchema string `json:"start_schema"`
+	Id                 string `json:"version_id"`
+	UserProcessTimeout int    `json:"user_process_timeout"`
+	EndSchema          string `json:"end_schema"`
+	StartSchema        string `json:"start_schema"`
 }
 
 type ExternalSystem struct {

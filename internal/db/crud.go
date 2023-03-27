@@ -2699,14 +2699,14 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (enti
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-	SELECT start_schema, end_schema
+	SELECT start_schema, end_schema, user_process_timeout
 	FROM version_settings
 	WHERE version_id = $1`
 
 	row := db.Connection.QueryRow(ctx, query, versionID)
 
 	processSettings := entity.ProcessSettings{Id: versionID}
-	err := row.Scan(&processSettings.StartSchema, &processSettings.EndSchema)
+	err := row.Scan(&processSettings.StartSchema, &processSettings.EndSchema, &processSettings.UserProcessTimeout)
 	if err != nil && err != pgx.ErrNoRows {
 		return processSettings, err
 	}
@@ -2722,13 +2722,14 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.Proce
 		// nolint:gocritic
 		// language=PostgreSQL
 		query := `
-		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO version_settings (id, version_id, start_schema, end_schema, user_process_timeout) 
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (version_id) DO UPDATE 
 			SET start_schema = excluded.start_schema, 
-				end_schema = excluded.end_schema`
+				end_schema = excluded.end_schema,
+				user_process_timeout = excluded.user_process_timeout`
 
-		_, err := db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema)
+		_, err := db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema, settings.UserProcessTimeout)
 		if err != nil {
 			return err
 		}
@@ -2887,4 +2888,8 @@ func (db *PGCon) RemoveExternalSystem(ctx context.Context, versionID, systemID s
 	}
 
 	return nil
+}
+
+func (db *PGCon) GetWorksForUserWithGivenTimeRange() {
+
 }
