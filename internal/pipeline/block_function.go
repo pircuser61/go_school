@@ -24,14 +24,15 @@ const (
 )
 
 type ExecutableFunction struct {
-	Name        string               `json:"name"`
-	Version     string               `json:"version"`
-	Mapping     script.MappingParam  `json:"mapping"`
-	Function    script.FunctionParam `json:"function"`
-	Async       bool                 `json:"async"`
-	HasAck      bool                 `json:"has_ack"`
-	HasResponse bool                 `json:"has_response"`
-	Contracts   string               `json:"contracts"`
+	Name           string               `json:"name"`
+	Version        string               `json:"version"`
+	Mapping        script.MappingParam  `json:"mapping"`
+	Function       script.FunctionParam `json:"function"`
+	Async          bool                 `json:"async"`
+	HasAck         bool                 `json:"has_ack"`
+	HasResponse    bool                 `json:"has_response"`
+	Contracts      string               `json:"contracts"`
+	WaitCorrectRes int                  `json:"waitCorrectRes"`
 }
 
 type FunctionStatus string
@@ -270,14 +271,15 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 	}
 
 	gb.State = &ExecutableFunction{
-		Name:        params.Name,
-		Version:     params.Version,
-		Mapping:     params.Mapping,
-		Function:    params.Function,
-		HasAck:      false,
-		HasResponse: false,
-		Async:       isAsync,
-		Contracts:   function.Contracts,
+		Name:           params.Name,
+		Version:        params.Version,
+		Mapping:        params.Mapping,
+		Function:       params.Function,
+		HasAck:         false,
+		HasResponse:    false,
+		Async:          isAsync,
+		Contracts:      function.Contracts,
+		WaitCorrectRes: params.WaitCorrectRes,
 	}
 
 	return nil

@@ -3458,10 +3458,14 @@ components:
           description: Used function version
         mapping:
           $ref: '#/components/schemas/MappingParam'
+        waitCorrectRes:
+          type: integer
+          description: Days to wait correct answer
       required:
         - name
         - version
         - mapping
+        - waitCorrectRes
 
     MappingParam:
       type: object
