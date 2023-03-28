@@ -751,7 +751,6 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		fakeSpan.End()
 
 		txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
-
 		if transactionErr != nil {
 			continue
 		}
@@ -999,6 +998,9 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 		}
 		if commitErr := txStorage.CommitTransaction(routineCtx); commitErr != nil {
 			log.WithError(commitErr).Error("couldn't set SLA breach")
+			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
+				log.Error(txErr)
+			}
 		}
 	}
 }
