@@ -1346,3 +1346,7 @@ func (m *MockDB) GetMeanTaskSolveTime(_ context.Context, _ string) ([]entity.Tas
 func (m *MockDB) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
 	return nil, errNotImplemented
 }
+
+func (m *MockDB) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login, versionID string) ([]*entity.EriusTask, error) {
+	return nil, errNotImplemented
+}
