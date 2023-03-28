@@ -8,6 +8,7 @@ import (
 	"github.com/iancoleman/orderedmap"
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"golang.org/x/net/context"
 )
 
 type DictionaryStorager interface {
@@ -198,4 +199,5 @@ type Database interface {
 	GetExternalSystemSettings(ctx c.Context, versionID string, systemID string) (e.ExternalSystem, error)
 	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
 	SaveExternalSystemSettings(ctx c.Context, versionID string, settings *e.ExternalSystem, schemaFlag *string) error
+	GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login, versionID string) ([]*e.EriusTask, error)
 }
