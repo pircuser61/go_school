@@ -760,6 +760,9 @@ type ExecutableFunctionParams struct {
 
 	// Used function version
 	Version string `json:"version"`
+
+	// Days to wait correct answer
+	WaitCorrectRes int `json:"waitCorrectRes"`
 }
 
 // Execution params

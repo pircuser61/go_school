@@ -47,10 +47,11 @@ func (m *MappingValue) GetProperties() map[string]interface{} {
 }
 
 type ExecutableFunctionParams struct {
-	Name     string        `json:"name"`
-	Version  string        `json:"version"`
-	Mapping  MappingParam  `json:"mapping"`
-	Function FunctionParam `json:"function"`
+	Name           string        `json:"name"`
+	Version        string        `json:"version"`
+	Mapping        MappingParam  `json:"mapping"`
+	Function       FunctionParam `json:"function"`
+	WaitCorrectRes int           `json:"waitCorrectRes"`
 }
 
 type FunctionParam struct {
