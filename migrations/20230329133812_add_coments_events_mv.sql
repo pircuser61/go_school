@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-COMMENT ON TABLE events IS 'Вывод всех событий по ноде построчно';
+COMMENT ON MATERIALIZED VIEW events IS 'Вывод всех событий по ноде построчно';
 COMMENT ON COLUMN events.step_id IS 'Уникальный номер каждого шага';
 COMMENT ON COLUMN events."user" IS 'Пользователь совершивший событие';
 COMMENT ON COLUMN events.log_type IS 'Указывает тип лога';
