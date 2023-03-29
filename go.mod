@@ -5,6 +5,7 @@ go 1.18
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1
 	github.com/Shopify/sarama v1.37.2
+	github.com/a-h/generate v0.0.0-20220105161013-96c14dfdfb60
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/deepmap/oapi-codegen v1.11.0
 	github.com/emersion/go-imap v1.2.1
