@@ -10,7 +10,7 @@ COMMENT ON COLUMN events.created_at IS 'Дата, когда событие по
 
 -- +goose Down
 -- +goose StatementBegin
-COMMENT ON TABLE events IS NULL ;
+COMMENT ON MATERIALIZED VIEW events IS NULL ;
 COMMENT ON COLUMN events.step_id IS NULL ;
 COMMENT ON COLUMN events."user" IS NULL ;
 COMMENT ON COLUMN events.log_type IS NULL ;
