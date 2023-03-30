@@ -1196,8 +1196,8 @@ type Params interface{}
 
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettings struct {
-	EndSchema   JSONSchema `json:"end_schema"`
-	StartSchema JSONSchema `json:"start_schema"`
+	EndSchema   *JSONSchema `json:"end_schema,omitempty"`
+	StartSchema *JSONSchema `json:"start_schema,omitempty"`
 
 	// Id версии процесса
 	VersionId *string `json:"version_id,omitempty"`

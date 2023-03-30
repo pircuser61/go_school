@@ -2832,9 +2832,6 @@ components:
           $ref: '#/components/schemas/JSONSchema'
         end_schema:
           $ref: '#/components/schemas/JSONSchema'
-      required:
-        - start_schema
-        - end_schema
 
     ExternalSystem:
       type: object

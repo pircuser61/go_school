@@ -24,15 +24,15 @@ const (
 )
 
 type ExecutableFunction struct {
-	Name           string               `json:"name"`
-	Version        string               `json:"version"`
-	Mapping        script.MappingParam  `json:"mapping"`
-	Function       script.FunctionParam `json:"function"`
-	Async          bool                 `json:"async"`
-	HasAck         bool                 `json:"has_ack"`
-	HasResponse    bool                 `json:"has_response"`
-	Contracts      string               `json:"contracts"`
-	WaitCorrectRes int                  `json:"waitCorrectRes"`
+	Name           string                      `json:"name"`
+	Version        string                      `json:"version"`
+	Mapping        script.JSONSchemaProperties `json:"mapping"`
+	Function       script.FunctionParam        `json:"function"`
+	Async          bool                        `json:"async"`
+	HasAck         bool                        `json:"has_ack"`
+	HasResponse    bool                        `json:"has_response"`
+	Contracts      string                      `json:"contracts"`
+	WaitCorrectRes int                         `json:"waitCorrectRes"`
 }
 
 type FunctionStatus string
@@ -197,7 +197,7 @@ func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
 			Params: &script.ExecutableFunctionParams{
 				Name:    "",
 				Version: "",
-				Mapping: script.MappingParam{},
+				Mapping: script.JSONSchemaProperties{},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
