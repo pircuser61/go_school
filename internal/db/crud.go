@@ -2890,33 +2890,29 @@ func (db *PGCon) RemoveExternalSystem(ctx context.Context, versionID, systemID s
 	return nil
 }
 
-const (
-	recipientSDFormKey = "recipient"
-)
-
 func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login, versionID string) ([]*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "get_works_for_user_with_given_time_range")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	query := fmt.Sprintf(`WITH works_cte as (select w.id work_id,
+	query := `WITH works_cte as (select w.id work_id,
                           w.author work_author,
-                          (vs.content -> 'State' -> vs.step_name -> 'application_body' -> %s ->>
+                          (vs.content -> 'State' -> vs.step_name -> 'application_body' -> 'recipient' ->>
                            'username') work_recipient,
-                          w.work_number work_number
+                          w.work_number work_number,
+                          w.started_at work_started
                    from works w
                             join variable_storage vs on w.id = vs.work_id
                    where vs.step_type = 'servicedesk_application'
                      and w.human_status in ('done', 'processing', 'approved', 'approvement', 'wait')
                      and w.started_at > now() - interval '1 hour' * $1
                      and w.version_id = $2
-                     and w.parent_work_id is null)
-				   select work_id, work_author, work_number
+                     and w.child_id is null)
+				   select work_id, work_author, work_number, work_started
 				   from works_cte
 				   where works_cte.work_recipient = $3
-				   or (works_cte.work_recipient is null and works_cte.work_author = $3)`,
-		recipientSDFormKey)
+				   or (works_cte.work_recipient is null and works_cte.work_author = $3)`
 
 	rows, queryErr := db.Connection.Query(ctx, query, hours, versionID, login)
 	if queryErr != nil {
@@ -2933,6 +2929,7 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours in
 			&work.ID,
 			&work.Author,
 			&work.WorkNumber,
+			&work.StartedAt,
 		)
 		if scanErr != nil {
 			return nil, scanErr

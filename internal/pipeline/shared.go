@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/iancoleman/orderedmap"
 	"github.com/pkg/errors"
 )
 
@@ -77,4 +78,26 @@ func getSliceFromMapOfStrings(source map[string]struct{}) []string {
 // nolint:deadcode,unused //used in tests
 func getStringAddress(s string) *string {
 	return &s
+}
+
+func getRecipientFromState(state *orderedmap.OrderedMap) string {
+	if state == nil {
+		return ""
+	}
+
+	var login string
+	if applicationBodyValue, ok := state.Get("application_body"); ok {
+		if applicationBody, ok := applicationBodyValue.(orderedmap.OrderedMap); ok {
+			if recipientValue, ok := applicationBody.Get("recipient"); ok {
+				if recipient, ok := recipientValue.(orderedmap.OrderedMap); ok {
+					if usernameValue, ok := recipient.Get("username"); ok {
+						if username, ok := usernameValue.(string); ok {
+							login = username
+						}
+					}
+				}
+			}
+		}
+	}
+	return login
 }

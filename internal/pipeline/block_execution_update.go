@@ -238,6 +238,43 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			return nil
 		}
 
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		sdBody, getDataErr := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
+		if getDataErr != nil {
+			return getDataErr
+		}
+
+		login := task.Author
+
+		recipient := getRecipientFromState(sdBody)
+
+		if recipient != "" {
+			login = recipient
+		}
+
+		lastWorksForUser := make([]*entity.EriusTask, 0)
+
+		if processSettings.UserProcessTimeout > 0 {
+			var getWorksErr error
+			lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+				processSettings.UserProcessTimeout,
+				login,
+				task.VersionID.String(),
+			)
+			if getWorksErr != nil {
+				return getWorksErr
+			}
+		}
+
 		err = gb.RunContext.Sender.SendNotification(
 			ctx,
 			emails,
@@ -246,6 +283,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
+				lastWorksForUser,
 			))
 		if err != nil {
 			return err
@@ -556,6 +594,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	return nil
 }
 
+// nolint:gocyclo // mb later
 func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
 	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
 	if err != nil {
@@ -599,12 +638,50 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return err
 	}
 
+	task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	sdBody, getDataErr := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
+	if getDataErr != nil {
+		return getDataErr
+	}
+
+	login := task.Author
+
+	recipient := getRecipientFromState(sdBody)
+
+	if recipient != "" {
+		login = recipient
+	}
+
+	lastWorksForUser := make([]*entity.EriusTask, 0)
+
+	if processSettings.UserProcessTimeout > 0 {
+		var getWorksErr error
+		lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+			processSettings.UserProcessTimeout,
+			login,
+			task.VersionID.String(),
+		)
+		if getWorksErr != nil {
+			return getWorksErr
+		}
+	}
+
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		WorkNumber:   gb.RunContext.WorkNumber,
 		SdUrl:        gb.RunContext.Sender.SdAddress,
 		Description:  description,
 		ExecutorName: typedAuthor.GetFullName(),
 		Initiator:    gb.RunContext.Initiator,
+		LastWorks:    lastWorksForUser,
 	})
 
 	if errSend := gb.RunContext.Sender.SendNotification(ctx, emails, emailAttachment, tpl); errSend != nil {

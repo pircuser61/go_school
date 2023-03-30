@@ -136,7 +136,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	return gb.handleNotifications(ctx)
 }
 
-//nolint:dupl // maybe later
+//nolint:dupl,gocyclo // maybe later
 func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	if gb.RunContext.skipNotifications {
 		return nil
@@ -168,6 +168,45 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	emails := make(map[string]mail.Template, 0)
 	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution)
+
+	task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	sdBody, getDataErr := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
+	if getDataErr != nil {
+		return getDataErr
+	}
+
+	login := task.Author
+
+	recipient := getRecipientFromState(sdBody)
+
+	if recipient != "" {
+		login = recipient
+	}
+
+	lastWorksForUser := make([]*entity.EriusTask, 0)
+
+	if processSettings.UserProcessTimeout > 0 {
+		var getWorksErr error
+		lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
+			ctx,
+			processSettings.UserProcessTimeout,
+			login,
+			task.VersionID.String(),
+		)
+		if getWorksErr != nil {
+			return getWorksErr
+		}
+	}
+
 	for _, login := range loginsToNotify {
 		email, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
@@ -184,6 +223,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Description: description,
 					Mailto:      gb.RunContext.Sender.FetchEmail,
 					Login:       login,
+					LastWorks:   lastWorksForUser,
 				},
 			)
 		} else {
