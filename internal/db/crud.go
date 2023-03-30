@@ -13,6 +13,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/google/uuid"
 
 	"github.com/lib/pq"
@@ -20,6 +22,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -1104,10 +1107,13 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 		pv.comment_rejected, 
 		pv.comment, 
 		pv.author, 
+		COALESCE(vs.start_schema, '{}'),
+		COALESCE(vs.end_schema, '{}'),
 		pph.date
 	FROM versions pv
 	JOIN pipelines p ON pv.pipeline_id = p.id
     LEFT JOIN pipeline_history pph ON pph.version_id = pv.id
+	LEFT JOIN version_settings vs on pv.id = vs.version_id
 	WHERE pv.id = $1 --is_deleted--
 	ORDER BY pph.date DESC 
 	LIMIT 1`
@@ -1132,10 +1138,11 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 			cm       string
 			d        *time.Time
 			ca       *time.Time
+			ss, es   string
 			a        string
 		)
 
-		err := rows.Scan(&vID, &s, &pID, &ca, &c, &cr, &cm, &a, &d)
+		err := rows.Scan(&vID, &s, &pID, &ca, &c, &cr, &cm, &a, &ss, &es, &d)
 		if err != nil {
 			return nil, err
 		}
@@ -1152,6 +1159,8 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 		p.Comment = cm
 		p.ApprovedAt = d
 		p.CreatedAt = ca
+		p.Settings.StartSchema = ss
+		p.Settings.EndSchema = es
 		p.Author = a
 
 		return &p, nil
@@ -1928,14 +1937,23 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 }
 
 func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
-) (entity.TaskSteps, error) {
+	action entity.TaskUpdateAction) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
 	defer span.End()
 
 	el := entity.TaskSteps{}
 
 	var notInStatuses []string
+
+	isAddInfoReq := slices.Contains([]entity.TaskUpdateAction{
+		entity.TaskUpdateActionRequestApproveInfo,
+		entity.TaskUpdateActionSLABreachRequestAddInfo,
+		entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, action)
+
+	// nolint:gocritic,goconst
 	if stepType == "form" {
+		notInStatuses = []string{"skipped"}
+	} else if (stepType == "execution" || stepType == "approver") && isAddInfoReq {
 		notInStatuses = []string{"skipped"}
 	} else {
 		notInStatuses = []string{"skipped", "finished"}
@@ -2341,6 +2359,8 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 		pv.comment_rejected,
 		pv.comment,
 		pv.author,
+		COALESCE(vs.start_schema, '{}'),
+		COALESCE(vs.end_schema, '{}'),
 		(SELECT MAX(date) FROM pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
 	FROM (
 			 SELECT servicedesk_node.id                                                                 AS pipeline_version_id,
@@ -2364,6 +2384,7 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 	) as servicedesk_node_params
 		LEFT JOIN versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
 		LEFT JOIN pipelines p ON pv.pipeline_id = p.id
+		LEFT JOIN version_settings vs on pv.id = vs.version_id
 	WHERE pv.status = 2 AND
 			pv.is_actual = TRUE AND
 			pv.pipeline_id = $1 AND
@@ -2389,10 +2410,11 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 			cm       string
 			d        *time.Time
 			ca       *time.Time
+			ss, es   string
 			a        string
 		)
 
-		err = rows.Scan(&vID, &s, &pID, &ca, &c, &cr, &cm, &a, &d)
+		err = rows.Scan(&vID, &s, &pID, &ca, &c, &cr, &cm, &a, &ss, &es, &d)
 		if err != nil {
 			return nil, err
 		}
@@ -2411,6 +2433,8 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 		p.Comment = cm
 		p.ApprovedAt = d
 		p.CreatedAt = ca
+		p.Settings.StartSchema = ss
+		p.Settings.EndSchema = es
 		p.Author = a
 
 		res = append(res, p)

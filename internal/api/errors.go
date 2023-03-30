@@ -104,6 +104,7 @@ const (
 	GetTasksForMonitoringError
 	GetTasksForMonitoringGetUserError
 	NoProcessNodesForMonitoringError
+	GetEntryPointOutputError
 )
 
 //nolint:dupl //its not duplicate
@@ -190,6 +191,7 @@ var errorText = map[Err]string{
 	ParseMailsError:                  "can`t parse mails",
 	GetMonitoringNodesError:          "can't get nodes for monitoring",
 	NoProcessNodesForMonitoringError: "can't find nodes for monitoring",
+	GetEntryPointOutputError:         "can't fill entry point output",
 }
 
 // JOKE.
@@ -278,6 +280,7 @@ var errorDescription = map[Err]string{
 	ParseMailsError:                  "Не удалось разобрать письма с действиями",
 	GetMonitoringNodesError:          "Ошибка при получени нод для мониторинга в базе данных",
 	NoProcessNodesForMonitoringError: "Не удалось найти ноды для мониторинга даного процесса",
+	GetEntryPointOutputError:         "Не удалось заполнить output стартовой ноды",
 }
 
 var errorStatus = map[Err]int{

@@ -218,6 +218,15 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		go func(wg *sync.WaitGroup, version entity.EriusScenario, ch chan *entity.RunResponse) {
 			defer wg.Done()
 
+			err = version.FillEntryPointOutput()
+			if err != nil {
+				e := GetEntryPointOutputError
+				log.Error(e.errorMessage(err))
+				_ = e.sendError(w)
+
+				return
+			}
+
 			v, execErr := ae.execVersion(ctx, &execVersionDTO{
 				version:  &version,
 				withStop: false,
@@ -430,6 +439,15 @@ func (ae *APIEnv) GetPipelineVersion(w http.ResponseWriter, req *http.Request, v
 	p, err := ae.DB.GetPipelineVersion(ctx, versionUUID, true)
 	if err != nil {
 		e := GetVersionError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = p.FillEntryPointOutput()
+	if err != nil {
+		e := GetEntryPointOutputError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 

@@ -2,8 +2,13 @@ package entity
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
+	"sort"
+	"strings"
 	"time"
 
+	"github.com/a-h/generate"
 	"github.com/google/uuid"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -51,6 +56,7 @@ type EriusScenario struct {
 	Name      string               `json:"name" example:"ScenarioName"`
 	Input     []EriusFunctionValue `json:"input,omitempty"`
 	Output    []EriusFunctionValue `json:"output,omitempty"`
+	Settings  ProcessSettings      `json:"process_settings"`
 	Pipeline  struct {
 		Entrypoint string               `json:"entrypoint"`
 		Blocks     map[string]EriusFunc `json:"blocks"`
@@ -173,4 +179,73 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 	}
 
 	return result
+}
+
+func (es EriusScenario) FillEntryPointOutput() (err error) {
+	if es.Settings.StartSchema == "" || es.Settings.StartSchema == "{}" {
+		return nil
+	}
+
+	now := time.Now().UnixNano()
+	path := fmt.Sprintf("%d.json", now)
+
+	err = os.WriteFile(path, []byte(es.Settings.StartSchema), 0600)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		removeErr := os.Remove(path)
+		if removeErr != nil {
+			err = removeErr
+		}
+	}()
+
+	schemas, err := generate.ReadInputFiles([]string{path}, false)
+	if err != nil {
+		return err
+	}
+
+	g := generate.New(schemas...)
+	if err = g.CreateTypes(); err != nil {
+		return err
+	}
+
+	mainObj, ok := g.Structs["Root"]
+	if !ok {
+		return err
+	}
+
+	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
+	entryPoint.Output = nil
+
+	for _, field := range mainObj.Fields {
+		var name string
+		var fieldType string
+
+		switch {
+		case field.Name == "Recipient":
+			fieldType = "SsoPerson"
+		case strings.HasPrefix(field.Type, "*"):
+			fieldType = "object"
+		default:
+			fieldType = field.Type
+		}
+
+		name = strings.ToLower(field.Name)
+
+		entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
+			Global: es.Pipeline.Entrypoint + "." + name,
+			Name:   name,
+			Type:   fieldType,
+		})
+	}
+
+	sort.Slice(entryPoint.Output, func(i, j int) bool {
+		return entryPoint.Output[i].Name < entryPoint.Output[j].Name
+	})
+
+	es.Pipeline.Blocks[es.Pipeline.Entrypoint] = entryPoint
+
+	return nil
 }
