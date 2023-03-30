@@ -243,6 +243,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					BlockID:                   BlockGoExecutionID,
 					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
+					LastWorks:                 lastWorksForUser,
 				})
 		}
 	}

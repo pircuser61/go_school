@@ -709,6 +709,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			BlockID:                   BlockGoExecutionID,
 			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 			ExecutionDecisionRejected: string(ExecutionDecisionRejected),
+			LastWorks:                 lastWorksForUser,
 		})
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, emailAttachment, tpl); sendErr != nil {

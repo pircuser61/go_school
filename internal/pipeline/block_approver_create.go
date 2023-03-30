@@ -204,6 +204,44 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		})
 	}
 
+	task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	sdBody, getDataErr := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
+	if getDataErr != nil {
+		return getDataErr
+	}
+
+	login := task.Author
+
+	recipient := getRecipientFromState(sdBody)
+
+	if recipient != "" {
+		login = recipient
+	}
+
+	lastWorksForUser := make([]*entity.EriusTask, 0)
+
+	if processSettings.UserProcessTimeout > 0 {
+		var getWorksErr error
+		lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
+			ctx,
+			processSettings.UserProcessTimeout,
+			login,
+			task.VersionID.String(),
+		)
+		if getWorksErr != nil {
+			return getWorksErr
+		}
+	}
+
 	emails := make(map[string]mail.Template, 0)
 	for _, login := range loginsToNotify {
 		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
@@ -228,6 +266,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				BlockID:                   BlockGoApproverID,
 				ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
 				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
+				LastWorks:                 lastWorksForUser,
 			})
 	}
 

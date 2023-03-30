@@ -51,14 +51,7 @@ type LastWorks []*LastWork
 func NewApprovementSLATpl(id, name, sdUrl, status string, lastWorks []*entity.EriusTask) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 
-	lastWorksTemplate := make(LastWorks, 0, len(lastWorks))
-
-	for _, task := range lastWorks {
-		lastWorksTemplate = append(lastWorksTemplate, &LastWork{
-			DaysAgo: int(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day)),
-			WorkURL: fmt.Sprintf(TaskUrlTemplate, sdUrl, task.WorkNumber),
-		})
-	}
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время %s", id, name, actionName),
@@ -82,14 +75,7 @@ func NewApprovementSLATpl(id, name, sdUrl, status string, lastWorks []*entity.Er
 func NewApprovementHalfSLATpl(id, name, sdUrl, status string, lastWorks []*entity.EriusTask) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
 
-	lastWorksTemplate := make(LastWorks, 0, len(lastWorks))
-
-	for _, task := range lastWorks {
-		lastWorksTemplate = append(lastWorksTemplate, &LastWork{
-			DaysAgo: int(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day)),
-			WorkURL: fmt.Sprintf(TaskUrlTemplate, sdUrl, task.WorkNumber),
-		})
-	}
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время %s", id, name, actionName),
@@ -139,14 +125,7 @@ func NewFormSLATpl(id, name, sdUrl string) Template {
 	}
 }
 func NewExecutiontHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTask) Template {
-	lastWorksTemplate := make(LastWorks, 0, len(lastWorks))
-
-	for _, task := range lastWorks {
-		lastWorksTemplate = append(lastWorksTemplate, &LastWork{
-			DaysAgo: int(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day)),
-			WorkURL: fmt.Sprintf(TaskUrlTemplate, sdUrl, task.WorkNumber),
-		})
-	}
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время исполнения", id, name),
@@ -165,14 +144,7 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTa
 }
 
 func NewFormDayHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTask) Template {
-	lastWorksTemplate := make(LastWorks, 0, len(lastWorks))
-
-	for _, task := range lastWorks {
-		lastWorksTemplate = append(lastWorksTemplate, &LastWork{
-			DaysAgo: int(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day)),
-			WorkURL: fmt.Sprintf(TaskUrlTemplate, sdUrl, task.WorkNumber),
-		})
-	}
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
@@ -363,7 +335,6 @@ const (
 
 func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 	actionName := getApprovementActionNameByStatus(in.Status, in.Action)
-
 	buttons := ""
 	if in.Status == statusExecution {
 		buttons = getExecutionButtons(
@@ -385,7 +356,10 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
 	}
 
-	textPart := `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
+	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
+
+	textPart := `{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}{{end}}
+				Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br/>
 				Срок {{.Action}} до {{.Deadline}}<br/>
 				{{.Buttons}}`
@@ -405,6 +379,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 			Description string
 			Deadline    string
 			Buttons     string
+			LastWorks   LastWorks
 		}{
 			Id:          in.WorkNumber,
 			Link:        fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
@@ -412,6 +387,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 			Description: in.Description,
 			Deadline:    in.DeadLine,
 			Buttons:     buttons,
+			LastWorks:   lastWorksTemplate,
 		},
 	}
 }
@@ -449,14 +425,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 <pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`
 	}
 
-	lastWorksTemplate := make(LastWorks, 0, len(dto.LastWorks))
-
-	for _, task := range dto.LastWorks {
-		lastWorksTemplate = append(lastWorksTemplate, &LastWork{
-			DaysAgo: int(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day)),
-			WorkURL: fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, task.WorkNumber),
-		})
-	}
+	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s назначена на Группу исполнителей", dto.WorkNumber),
@@ -494,14 +463,7 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 <pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`
 	}
 
-	lastWorksTemplate := make(LastWorks, 0, len(dto.LastWorks))
-
-	for _, task := range dto.LastWorks {
-		lastWorksTemplate = append(lastWorksTemplate, &LastWork{
-			DaysAgo: int(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day)),
-			WorkURL: fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, task.WorkNumber),
-		})
-	}
+	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.WorkNumber, dto.ExecutorName),
@@ -713,4 +675,16 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected, login 
 	}
 
 	return fmt.Sprintf("<b>Действия с заявкой</b><br> %s", strings.Join(buttons, ""))
+}
+
+func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdUrl string) LastWorks {
+	lastWorksTemplate := make(LastWorks, 0, len(lastWorks))
+
+	for _, task := range lastWorks {
+		lastWorksTemplate = append(lastWorksTemplate, &LastWork{
+			DaysAgo: int(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day)),
+			WorkURL: fmt.Sprintf(TaskUrlTemplate, sdUrl, task.WorkNumber),
+		})
+	}
+	return lastWorksTemplate
 }
