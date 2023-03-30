@@ -127,6 +127,11 @@ const (
 	IntegerOperandOperandTypeVariableOperand IntegerOperandOperandType = "variableOperand"
 )
 
+// Defines values for JSONSchemaType.
+const (
+	JSONSchemaTypeObject JSONSchemaType = "object"
+)
+
 // Defines values for MonitoringHistoryStatus.
 const (
 	MonitoringHistoryStatusFinished MonitoringHistoryStatus = "finished"
@@ -503,6 +508,18 @@ type ApproverUpdateParams struct {
 	Decision ApproverDecision `json:"decision"`
 }
 
+// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
+type ArrayItems struct {
+	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
+	Items *ArrayItems `json:"items,omitempty"`
+
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	Properties *JSONSchemaProperties `json:"properties,omitempty"`
+
+	// Тип элементов массива
+	Type string `json:"type"`
+}
+
 // BlockContextResponse defines model for BlockContextResponse.
 type BlockContextResponse struct {
 	// Ноды
@@ -752,8 +769,8 @@ type EriusVersionInfo struct {
 
 // Chosen function to be executed
 type ExecutableFunctionParams struct {
-	// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	Mapping MappingParam `json:"mapping"`
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	Mapping JSONSchemaProperties `json:"mapping"`
 
 	// Function name
 	Name string `json:"name"`
@@ -836,20 +853,13 @@ type ExecutorChangeParams struct {
 
 // ExternalSystem defines model for ExternalSystem.
 type ExternalSystem struct {
-	// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	InputMapping *MappingParam `json:"input_mapping,omitempty"`
-
-	// JSON-схема данных, которые отдаёт внешняя система
-	InputSchema *string `json:"input_schema,omitempty"`
+	InputMapping *JSONSchema `json:"input_mapping,omitempty"`
+	InputSchema  *JSONSchema `json:"input_schema,omitempty"`
 
 	// Название системы
-	Name string `json:"name"`
-
-	// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	OutputMapping *MappingParam `json:"output_mapping,omitempty"`
-
-	// JSON-схема данных, которые принимает внешняя система
-	OutputSchema *string `json:"output_schema,omitempty"`
+	Name          string      `json:"name"`
+	OutputMapping *JSONSchema `json:"output_mapping,omitempty"`
+	OutputSchema  *JSONSchema `json:"output_schema,omitempty"`
 
 	// Id внешней системы
 	SystemId string `json:"system_id"`
@@ -985,8 +995,18 @@ type IntegerOperandDataType string
 // IntegerOperandOperandType defines model for IntegerOperand.OperandType.
 type IntegerOperandOperandType string
 
-// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-type MappingParam struct {
+// JSONSchema defines model for JSONSchema.
+type JSONSchema struct {
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	Properties JSONSchemaProperties `json:"properties"`
+	Type       JSONSchemaType       `json:"type"`
+}
+
+// JSONSchemaType defines model for JSONSchema.Type.
+type JSONSchemaType string
+
+// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+type JSONSchemaProperties struct {
 	AdditionalProperties map[string]struct {
 		// Default value
 		Default *interface{} `json:"default,omitempty"`
@@ -998,10 +1018,10 @@ type MappingParam struct {
 		Format *string `json:"format,omitempty"`
 
 		// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
-		Items *MappingParamItems `json:"items,omitempty"`
+		Items *ArrayItems `json:"items,omitempty"`
 
-		// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-		Properties *MappingParam `json:"properties,omitempty"`
+		// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+		Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
 		// Is param required?
 		Required *bool `json:"required,omitempty"`
@@ -1015,18 +1035,6 @@ type MappingParam struct {
 		// Здесь хранится маппинг переменной, то место, откуда нужно взять значение переменной
 		Value *string `json:"value,omitempty"`
 	} `json:"-"`
-}
-
-// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
-type MappingParamItems struct {
-	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
-	Items *MappingParamItems `json:"items,omitempty"`
-
-	// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	Properties *MappingParam `json:"properties,omitempty"`
-
-	// Тип элементов массива
-	Type string `json:"type"`
 }
 
 // MonitoringBlockOutput defines model for MonitoringBlockOutput.
@@ -1188,11 +1196,8 @@ type Params interface{}
 
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettings struct {
-	// JSON-схема выходных параметров пайплайна
-	EndSchema string `json:"end_schema"`
-
-	// JSON-схема входных параметров пайплайна
-	StartSchema string `json:"start_schema"`
+	EndSchema   JSONSchema `json:"end_schema"`
+	StartSchema JSONSchema `json:"start_schema"`
 
 	// Id версии процесса
 	VersionId *string `json:"version_id,omitempty"`
@@ -2022,9 +2027,9 @@ func (a EriusFunc_Next) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for MappingParam. Returns the specified
+// Getter for additional properties for JSONSchemaProperties. Returns the specified
 // element and whether it was found
-func (a MappingParam) Get(fieldName string) (value struct {
+func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 	// Default value
 	Default *interface{} `json:"default,omitempty"`
 
@@ -2035,10 +2040,10 @@ func (a MappingParam) Get(fieldName string) (value struct {
 	Format *string `json:"format,omitempty"`
 
 	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
-	Items *MappingParamItems `json:"items,omitempty"`
+	Items *ArrayItems `json:"items,omitempty"`
 
-	// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	Properties *MappingParam `json:"properties,omitempty"`
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
 	// Is param required?
 	Required *bool `json:"required,omitempty"`
@@ -2058,8 +2063,8 @@ func (a MappingParam) Get(fieldName string) (value struct {
 	return
 }
 
-// Setter for additional properties for MappingParam
-func (a *MappingParam) Set(fieldName string, value struct {
+// Setter for additional properties for JSONSchemaProperties
+func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 	// Default value
 	Default *interface{} `json:"default,omitempty"`
 
@@ -2070,10 +2075,10 @@ func (a *MappingParam) Set(fieldName string, value struct {
 	Format *string `json:"format,omitempty"`
 
 	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
-	Items *MappingParamItems `json:"items,omitempty"`
+	Items *ArrayItems `json:"items,omitempty"`
 
-	// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-	Properties *MappingParam `json:"properties,omitempty"`
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
 	// Is param required?
 	Required *bool `json:"required,omitempty"`
@@ -2099,10 +2104,10 @@ func (a *MappingParam) Set(fieldName string, value struct {
 			Format *string `json:"format,omitempty"`
 
 			// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
-			Items *MappingParamItems `json:"items,omitempty"`
+			Items *ArrayItems `json:"items,omitempty"`
 
-			// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-			Properties *MappingParam `json:"properties,omitempty"`
+			// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+			Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
 			// Is param required?
 			Required *bool `json:"required,omitempty"`
@@ -2120,8 +2125,8 @@ func (a *MappingParam) Set(fieldName string, value struct {
 	a.AdditionalProperties[fieldName] = value
 }
 
-// Override default JSON handling for MappingParam to handle AdditionalProperties
-func (a *MappingParam) UnmarshalJSON(b []byte) error {
+// Override default JSON handling for JSONSchemaProperties to handle AdditionalProperties
+func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 	object := make(map[string]json.RawMessage)
 	err := json.Unmarshal(b, &object)
 	if err != nil {
@@ -2140,10 +2145,10 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 			Format *string `json:"format,omitempty"`
 
 			// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
-			Items *MappingParamItems `json:"items,omitempty"`
+			Items *ArrayItems `json:"items,omitempty"`
 
-			// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-			Properties *MappingParam `json:"properties,omitempty"`
+			// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+			Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
 			// Is param required?
 			Required *bool `json:"required,omitempty"`
@@ -2169,10 +2174,10 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 				Format *string `json:"format,omitempty"`
 
 				// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
-				Items *MappingParamItems `json:"items,omitempty"`
+				Items *ArrayItems `json:"items,omitempty"`
 
-				// Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
-				Properties *MappingParam `json:"properties,omitempty"`
+				// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+				Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
 				// Is param required?
 				Required *bool `json:"required,omitempty"`
@@ -2196,8 +2201,8 @@ func (a *MappingParam) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Override default JSON handling for MappingParam to handle AdditionalProperties
-func (a MappingParam) MarshalJSON() ([]byte, error) {
+// Override default JSON handling for JSONSchemaProperties to handle AdditionalProperties
+func (a JSONSchemaProperties) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 

@@ -2829,11 +2829,9 @@ components:
           description: Id версии процесса
           example: 916ad995-8d13-49fb-82ee-edd4f97649e2
         start_schema:
-          type: string
-          description: JSON-схема входных параметров пайплайна
+          $ref: '#/components/schemas/JSONSchema'
         end_schema:
-          type: string
-          description: JSON-схема выходных параметров пайплайна
+          $ref: '#/components/schemas/JSONSchema'
       required:
         - start_schema
         - end_schema
@@ -2850,15 +2848,13 @@ components:
           type: string
           description: Название системы
         input_schema:
-          type: string
-          description: JSON-схема данных, которые отдаёт внешняя система
+          $ref: '#/components/schemas/JSONSchema'
         output_schema:
-          type: string
-          description: JSON-схема данных, которые принимает внешняя система
+          $ref: '#/components/schemas/JSONSchema'
         input_mapping:
-          $ref: '#/components/schemas/MappingParam'
+          $ref: '#/components/schemas/JSONSchema'
         output_mapping:
-          $ref: '#/components/schemas/MappingParam'
+          $ref: '#/components/schemas/JSONSchema'
       required:
         - system_id
         - name
@@ -3457,7 +3453,7 @@ components:
           type: string
           description: Used function version
         mapping:
-          $ref: '#/components/schemas/MappingParam'
+          $ref: '#/components/schemas/JSONSchemaProperties'
         waitCorrectRes:
           type: integer
           description: Days to wait correct answer
@@ -3467,10 +3463,22 @@ components:
         - mapping
         - waitCorrectRes
 
-    MappingParam:
+    JSONSchema:
       type: object
-      description: Маппинг переменных. Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта,
-        а значение - это структура, которая описывает переменную(или поле объекта). 
+      properties:
+        type:
+          type: string
+          enum: [object]
+        properties:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+      required:
+        - type
+        - properties
+
+    JSONSchemaProperties:
+      type: object
+      description: Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта,
+        а значение - это структура, которая описывает переменную(или поле объекта).
         Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей).
         Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
       additionalProperties:
@@ -3499,9 +3507,9 @@ components:
             type: boolean
             description: Is param required?
           properties:
-            $ref: '#/components/schemas/MappingParam'
+            $ref: '#/components/schemas/JSONSchemaProperties'
           items:
-            $ref: '#/components/schemas/MappingParamItems'
+            $ref: '#/components/schemas/ArrayItems'
           value:
             type: string
             description: Здесь хранится маппинг переменной, то место, откуда нужно взять значение переменной
@@ -3510,9 +3518,9 @@ components:
           - title
           - type
 
-    MappingParamItems:
+    ArrayItems:
       type: object
-      description: Описание типа, который хранится в массиве. 
+      description: Описание типа, который хранится в массиве.
         Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов,
         которые хранятся в массиве.
         Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
@@ -3521,12 +3529,11 @@ components:
           type: string
           description: Тип элементов массива
         properties:
-          $ref: '#/components/schemas/MappingParam'
+          $ref: '#/components/schemas/JSONSchemaProperties'
         items:
-          $ref: '#/components/schemas/MappingParamItems'
+          $ref: '#/components/schemas/ArrayItems'
       required:
         - type
-
 
     RequestExecutionInfoType:
       type: string
