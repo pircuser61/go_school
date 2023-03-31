@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -25,6 +26,25 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 		return
 	}
+
+	uuidVersion, parseErr := uuid.Parse(versionID)
+	if parseErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(parseErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	pipeline, getPipelinerErr := ae.DB.GetPipeline(ctx, uuidVersion)
+	if getPipelinerErr != nil {
+		e := GetPipelineError
+		log.Error(e.errorMessage(getPipelinerErr))
+		_ = e.sendError(w)
+
+		return
+	}
+	processSettings.Name = pipeline.Name
 
 	externalSystemsIds, err := ae.DB.GetExternalSystemsIDs(ctx, versionID)
 	if err != nil {
@@ -96,14 +116,61 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 
 	processSettings.Id = versionID
 
-	err = ae.DB.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
-	if err != nil {
+	transaction, startTransactionErr := ae.DB.StartTransaction(ctx)
+
+	if startTransactionErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(startTransactionErr))
+		_ = e.sendError(w)
+
+		return
+	}
+	defer transaction.RollbackTransaction(ctx)
+
+	saveVersionErr := transaction.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
+	if saveVersionErr != nil {
 		e := ProcessSettingsSaveError
+		log.Error(e.errorMessage(saveVersionErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	canCreate, err := ae.DB.PipelineNameCreatable(ctx, processSettings.Name)
+	if err != nil {
+		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
 	}
+	if !canCreate {
+		e := PipelineNameUsed
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	uuidVersion, parseErr := uuid.Parse(versionID)
+	if parseErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(parseErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	saveNameErr := transaction.RenamePipeline(ctx, uuidVersion, processSettings.Name)
+	if saveNameErr != nil {
+		e := ProcessSettingsSaveError
+		log.Error(e.errorMessage(saveNameErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	_ = transaction.CommitTransaction(ctx)
 
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {

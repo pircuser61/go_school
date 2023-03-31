@@ -112,6 +112,7 @@ type ProcessSettings struct {
 	StartSchema        *script.JSONSchema `json:"start_schema"`
 	EndSchema          *script.JSONSchema `json:"end_schema"`
 	ResubmissionPeriod int                `json:"resubmission_period"`
+	Name               string             `json:"name"`
 }
 
 type ExternalSystem struct {

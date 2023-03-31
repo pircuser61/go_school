@@ -1198,6 +1198,9 @@ type Params interface{}
 type ProcessSettings struct {
 	EndSchema *JSONSchema `json:"end_schema,omitempty"`
 
+	// Новое имя сценария
+	Name string `json:"name"`
+
 	// Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
 	ResubmissionPeriod int         `json:"resubmission_period"`
 	StartSchema        *JSONSchema `json:"start_schema,omitempty"`
@@ -1541,15 +1544,6 @@ type Pipeline_Blocks struct {
 	AdditionalProperties map[string]EriusFunc `json:"-"`
 }
 
-// PipelineRename defines model for pipelineRename.
-type PipelineRename struct {
-	// ID сценария для переименования
-	Id string `json:"id"`
-
-	// Новое имя сценария
-	Name string `json:"name"`
-}
-
 // Tag status:
 //   - 1 - Draft
 //   - 2 - Approved
@@ -1658,9 +1652,6 @@ type CreatePipelineJSONBody EriusScenario
 
 // CopyPipelineJSONBody defines parameters for CopyPipeline.
 type CopyPipelineJSONBody EriusScenario
-
-// RenamePipelineJSONBody defines parameters for RenamePipeline.
-type RenamePipelineJSONBody PipelineRename
 
 // SearchPipelinesParams defines parameters for SearchPipelines.
 type SearchPipelinesParams struct {
@@ -1778,9 +1769,6 @@ type CreatePipelineJSONRequestBody CreatePipelineJSONBody
 
 // CopyPipelineJSONRequestBody defines body for CopyPipeline for application/json ContentType.
 type CopyPipelineJSONRequestBody CopyPipelineJSONBody
-
-// RenamePipelineJSONRequestBody defines body for RenamePipeline for application/json ContentType.
-type RenamePipelineJSONRequestBody RenamePipelineJSONBody
 
 // EditVersionJSONRequestBody defines body for EditVersion for application/json ContentType.
 type EditVersionJSONRequestBody EditVersionJSONBody
@@ -2542,9 +2530,6 @@ type ServerInterface interface {
 	// Creates copy of pipeline
 	// (POST /pipelines/copy)
 	CopyPipeline(w http.ResponseWriter, r *http.Request)
-	// Rename Pipeline
-	// (PUT /pipelines/name)
-	RenamePipeline(w http.ResponseWriter, r *http.Request)
 	// search list of pipelines
 	// (GET /pipelines/search)
 	SearchPipelines(w http.ResponseWriter, r *http.Request, params SearchPipelinesParams)
@@ -3170,21 +3155,6 @@ func (siw *ServerInterfaceWrapper) CopyPipeline(w http.ResponseWriter, r *http.R
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CopyPipeline(w, r)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// RenamePipeline operation middleware
-func (siw *ServerInterfaceWrapper) RenamePipeline(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RenamePipeline(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4460,9 +4430,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/copy", wrapper.CopyPipeline)
-	})
-	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/pipelines/name", wrapper.RenamePipeline)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/search", wrapper.SearchPipelines)
