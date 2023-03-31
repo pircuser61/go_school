@@ -1196,11 +1196,11 @@ type Params interface{}
 
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettings struct {
-	EndSchema JSONSchema `json:"end_schema"`
+	EndSchema *JSONSchema `json:"end_schema,omitempty"`
 
 	// Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
-	ResubmissionPeriod int        `json:"resubmission_period"`
-	StartSchema        JSONSchema `json:"start_schema"`
+	ResubmissionPeriod int         `json:"resubmission_period"`
+	StartSchema        *JSONSchema `json:"start_schema,omitempty"`
 
 	// Id версии процесса
 	VersionId *string `json:"version_id,omitempty"`

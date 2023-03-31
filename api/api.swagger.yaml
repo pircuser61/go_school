@@ -2837,8 +2837,6 @@ components:
           description: Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
 
       required:
-        - start_schema
-        - end_schema
         - resubmission_period
 
     ExternalSystem:
