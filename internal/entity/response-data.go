@@ -109,7 +109,7 @@ type ProcessSettingsWithExternalSystems struct {
 
 type ProcessSettings struct {
 	Id                 string `json:"version_id"`
-	UserProcessTimeout int    `json:"user_process_timeout"`
+	ResubmissionPeriod int    `json:"resubmission_period"`
 	EndSchema          string `json:"end_schema"`
 	StartSchema        string `json:"start_schema"`
 }

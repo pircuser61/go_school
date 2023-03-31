@@ -2834,14 +2834,14 @@ components:
         end_schema:
           type: string
           description: JSON-схема выходных параметров пайплайна
-        user_process_timeout:
+        resubmission_period:
           type: integer
-          description: Срок, в течении которого придет уведомлении о том, что пользователь повторно создал заявку. Указывается в часах.
+          description: Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
 
       required:
         - start_schema
         - end_schema
-        - user_process_timeout
+        - resubmission_period
 
     ExternalSystem:
       type: object

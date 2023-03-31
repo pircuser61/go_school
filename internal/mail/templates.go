@@ -2,6 +2,7 @@ package mail
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -682,7 +683,7 @@ func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdUrl string) LastWo
 
 	for _, task := range lastWorks {
 		lastWorksTemplate = append(lastWorksTemplate, &LastWork{
-			DaysAgo: int(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day)),
+			DaysAgo: int(math.Round(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day))),
 			WorkURL: fmt.Sprintf(TaskUrlTemplate, sdUrl, task.WorkNumber),
 		})
 	}

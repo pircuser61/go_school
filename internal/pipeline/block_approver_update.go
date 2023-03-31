@@ -141,14 +141,14 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			return getVersionErr
 		}
 
-		sdBody, getDataErr := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
+		taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 		if getDataErr != nil {
 			return getDataErr
 		}
 
 		login := task.Author
 
-		recipient := getRecipientFromState(sdBody)
+		recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
 
 		if recipient != "" {
 			login = recipient
@@ -156,11 +156,11 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 		lastWorksForUser := make([]*entity.EriusTask, 0)
 
-		if processSettings.UserProcessTimeout > 0 {
+		if processSettings.ResubmissionPeriod > 0 {
 			var getWorksErr error
 			lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
 				ctx,
-				processSettings.UserProcessTimeout,
+				processSettings.ResubmissionPeriod,
 				login,
 				task.VersionID.String(),
 			)
@@ -255,14 +255,14 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			return getVersionErr
 		}
 
-		sdBody, getDataErr := gb.RunContext.Storage.GetApplicationData(gb.RunContext.WorkNumber)
+		taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 		if getDataErr != nil {
 			return getDataErr
 		}
 
 		login := task.Author
 
-		recipient := getRecipientFromState(sdBody)
+		recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
 
 		if recipient != "" {
 			login = recipient
@@ -270,11 +270,11 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 
 		lastWorksForUser := make([]*entity.EriusTask, 0)
 
-		if processSettings.UserProcessTimeout > 0 {
+		if processSettings.ResubmissionPeriod > 0 {
 			var getWorksErr error
 			lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
 				ctx,
-				processSettings.UserProcessTimeout,
+				processSettings.ResubmissionPeriod,
 				login,
 				task.VersionID.String(),
 			)
