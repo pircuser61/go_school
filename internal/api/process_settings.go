@@ -84,8 +84,8 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	processSettings := &entity.ProcessSettings{Id: versionID}
-	err = json.Unmarshal(b, processSettings)
+	var processSettings entity.ProcessSettings
+	err = json.Unmarshal(b, &processSettings)
 	if err != nil {
 		e := ProcessSettingsParseError
 		log.Error(e.errorMessage(err))
@@ -93,6 +93,8 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 
 		return
 	}
+
+	processSettings.Id = versionID
 
 	err = ae.DB.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
 	if err != nil {
@@ -132,8 +134,8 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 		return
 	}
 
-	externalSystem := &entity.ExternalSystem{Id: systemID}
-	err = json.Unmarshal(b, externalSystem)
+	var externalSystem entity.ExternalSystem
+	err = json.Unmarshal(b, &externalSystem)
 	if err != nil {
 		e := ExternalSystemSettingsParseError
 		log.Error(e.errorMessage(err))
@@ -141,6 +143,8 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 
 		return
 	}
+
+	externalSystem.Id = systemID
 
 	err = ae.DB.SaveExternalSystemSettings(ctx, versionID, externalSystem, (*string)(params.SchemaFlag))
 	if err != nil {

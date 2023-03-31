@@ -108,18 +108,18 @@ type ProcessSettingsWithExternalSystems struct {
 }
 
 type ProcessSettings struct {
-	Id          string `json:"version_id"`
-	EndSchema   string `json:"end_schema"`
-	StartSchema string `json:"start_schema"`
+	Id          string             `json:"version_id"`
+	StartSchema *script.JSONSchema `json:"start_schema"`
+	EndSchema   *script.JSONSchema `json:"end_schema"`
 }
 
 type ExternalSystem struct {
-	Id            string              `json:"system_id"`
-	Name          string              `json:"name,omitempty"`
-	InputSchema   string              `json:"input_schema,omitempty"`
-	OutputSchema  string              `json:"output_schema,omitempty"`
-	InputMapping  script.MappingParam `json:"input_mapping,omitempty"`
-	OutputMapping script.MappingParam `json:"output_mapping,omitempty"`
+	Id            string             `json:"system_id"`
+	Name          string             `json:"name,omitempty"`
+	InputSchema   *script.JSONSchema `json:"input_schema,omitempty"`
+	OutputSchema  *script.JSONSchema `json:"output_schema,omitempty"`
+	InputMapping  *script.JSONSchema `json:"input_mapping,omitempty"`
+	OutputMapping *script.JSONSchema `json:"output_mapping,omitempty"`
 }
 
 type UsageResponse struct {
@@ -181,14 +181,21 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 }
 
 func (es EriusScenario) FillEntryPointOutput() (err error) {
-	if es.Settings.StartSchema == "" || es.Settings.StartSchema == "{}" {
+	if es.Settings.StartSchema == nil {
 		return nil
 	}
 
 	now := time.Now().UnixNano()
 	path := fmt.Sprintf("%d.json", now)
 
-	err = os.WriteFile(path, []byte(es.Settings.StartSchema), 0600)
+	var startSchema []byte
+	startSchema, err = json.Marshal(es.Settings.StartSchema)
+	if err != nil {
+		return err
+	}
+
+	// have to create file because a-h/generate package is able to work only with files
+	err = os.WriteFile(path, startSchema, 0600)
 	if err != nil {
 		return err
 	}

@@ -928,6 +928,10 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) RemoveObsoleteMapping(ctx context.Context, versionID string) error {
+	return nil
+}
+
 //nolint:lll // its ok here
 func (_m *MockDB) GetTasksForMonitoring(ctx context.Context, filters *entity.TasksForMonitoringFilters) (*entity.TasksForMonitoring, error) {
 	return &entity.TasksForMonitoring{}, nil
@@ -950,7 +954,7 @@ func (_m *MockDB) GetBlocksOutputs(ctx context.Context, blockId string) (entity.
 }
 
 func (_m *MockDB) SaveExternalSystemSettings(
-	ctx context.Context, versionID string, settings *entity.ExternalSystem, schemaFlag *string) error {
+	ctx context.Context, versionID string, settings entity.ExternalSystem, schemaFlag *string) error {
 	return nil
 }
 
@@ -974,7 +978,7 @@ func (_m *MockDB) GetVersionSettings(ctx context.Context, id string) (entity.Pro
 	return entity.ProcessSettings{}, nil
 }
 
-func (_m *MockDB) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings, schemaFlag *string) error {
+func (_m *MockDB) SaveVersionSettings(ctx context.Context, settings entity.ProcessSettings, schemaFlag *string) error {
 	return nil
 }
 
