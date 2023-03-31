@@ -11,33 +11,38 @@ const (
 	emptyString = `""`
 )
 
-type MappingParam map[string]MappingValue
+type JSONSchema struct {
+	Type       string               `json:"type"`
+	Properties JSONSchemaProperties `json:"properties"`
+}
 
-type MappingValue struct {
+type JSONSchemaProperties map[string]JSONSchemaPropertiesValue
+
+type JSONSchemaPropertiesValue struct {
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
 	Type        string `json:"type"`
 
-	Format     string             `json:"format,omitempty"`
-	Default    interface{}        `json:"default,omitempty"`
-	Required   bool               `json:"required,omitempty"`
-	Items      *MappingParamItems `json:"items,omitempty"`
-	Properties MappingParam       `json:"properties,omitempty"`
+	Format     string               `json:"format,omitempty"`
+	Default    interface{}          `json:"default,omitempty"`
+	Required   bool                 `json:"required,omitempty"`
+	Items      *ArrayItems          `json:"items,omitempty"`
+	Properties JSONSchemaProperties `json:"properties,omitempty"`
 
 	Value string `json:"value,omitempty"`
 }
 
-type MappingParamItems struct {
-	Items      *MappingParamItems `json:"items,omitempty"`
-	Properties MappingParam       `json:"properties,omitempty"`
-	Type       string             `json:"type,omitempty"`
+type ArrayItems struct {
+	Items      *ArrayItems          `json:"items,omitempty"`
+	Properties JSONSchemaProperties `json:"properties,omitempty"`
+	Type       string               `json:"type,omitempty"`
 }
 
-func (m *MappingValue) GetType() string {
+func (m *JSONSchemaPropertiesValue) GetType() string {
 	return m.Type
 }
 
-func (m *MappingValue) GetProperties() map[string]interface{} {
+func (m *JSONSchemaPropertiesValue) GetProperties() map[string]interface{} {
 	properties := make(map[string]interface{})
 
 	for k := range m.Properties {
@@ -47,11 +52,11 @@ func (m *MappingValue) GetProperties() map[string]interface{} {
 }
 
 type ExecutableFunctionParams struct {
-	Name           string        `json:"name"`
-	Version        string        `json:"version"`
-	Mapping        MappingParam  `json:"mapping"`
-	Function       FunctionParam `json:"function"`
-	WaitCorrectRes int           `json:"waitCorrectRes"`
+	Name           string               `json:"name"`
+	Version        string               `json:"version"`
+	Mapping        JSONSchemaProperties `json:"mapping"`
+	Function       FunctionParam        `json:"function"`
+	WaitCorrectRes int                  `json:"waitCorrectRes"`
 }
 
 type FunctionParam struct {
@@ -116,7 +121,7 @@ func (a *ExecutableFunctionParams) Validate() error {
 	return nil
 }
 
-func (m MappingParam) Validate() error {
+func (m JSONSchemaProperties) Validate() error {
 	for key := range m {
 		mappingValue := m[key]
 		if mappingValue.Type == "" || mappingValue.Description == "" {
@@ -139,7 +144,7 @@ func (m MappingParam) Validate() error {
 	return nil
 }
 
-func (m MappingParamItems) Validate() error {
+func (m ArrayItems) Validate() error {
 	if m.Type == "" {
 		return errors.New("type is required")
 	}

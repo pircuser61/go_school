@@ -580,6 +580,24 @@ func NewRequestAddInfoSLABreached(id, sdUrl string) Template {
 	}
 }
 
+func NewInvalidFunctionResp(id, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("По заявке №%s не удалось получить обратную связь от внешней системы", id),
+		Text: `Уважаемый коллега, по заявке №{{.Id}} 
+				не удалось получить обратную связь от внешней системы. 
+				Попробуйте создать заявку повторно. 
+				Если ошибка возникает снова, необходимо обратиться в техническую поддержку <br>
+				Заявка доступна по <a href={{.Link}}>ссылке</a></br>`,
+		Variables: struct {
+			Id   string
+			Link string
+		}{
+			Id:   id,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
 func getApprovementActionNameByStatus(status, defaultActionName string) (res string) {
 	switch status {
 	case script.SettingStatusApprovement:

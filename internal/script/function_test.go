@@ -49,7 +49,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 	type fields struct {
 		Name    string
 		Version string
-		Mapping MappingParam
+		Mapping JSONSchemaProperties
 	}
 	tests := []struct {
 		name    string
@@ -61,7 +61,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			fields: fields{
 				Name:    "executable_function_0",
 				Version: versionExample,
-				Mapping: MappingParam{
+				Mapping: JSONSchemaProperties{
 					"param1": {
 						Description: "param1 name",
 						Type:        "string",
@@ -75,7 +75,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 					"param3": {
 						Description: "param4 name",
 						Type:        "object",
-						Properties: MappingParam{
+						Properties: JSONSchemaProperties{
 							"param3.1": {
 								Description: "param3.1 name",
 								Type:        "string",
@@ -85,7 +85,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 							"param3.2": {
 								Description: "param3.2 name",
 								Type:        "array",
-								Items: &MappingParamItems{
+								Items: &ArrayItems{
 									Type: "number",
 								},
 								Value: "form_0.d",
@@ -101,7 +101,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			fields: fields{
 				Name:    "executable_function_0",
 				Version: versionExample,
-				Mapping: MappingParam{
+				Mapping: JSONSchemaProperties{
 					"param1": {
 						Description: "param1 name",
 						Type:        "string",
@@ -115,7 +115,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 					"param3": {
 						Description: "param4 name",
 						Type:        "object",
-						Properties: MappingParam{
+						Properties: JSONSchemaProperties{
 							"param3.1": {
 								Description: "param3.1 name",
 								Type:        "string",
@@ -125,7 +125,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 							"param3.2": {
 								Description: "param3.2 name",
 								Type:        "",
-								Items: &MappingParamItems{
+								Items: &ArrayItems{
 									Type: "number",
 								},
 								Value: "form_0.d",
@@ -141,11 +141,11 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			fields: fields{
 				Name:    "executable_function_0",
 				Version: versionExample,
-				Mapping: MappingParam{
+				Mapping: JSONSchemaProperties{
 					"param3": {
 						Description: "param4 name",
 						Type:        "object",
-						Properties: MappingParam{
+						Properties: JSONSchemaProperties{
 							"param3.1": {
 								Description: "param3.1 name",
 								Type:        "string",
@@ -155,7 +155,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 							"param3.2": {
 								Description: "param3.2 name",
 								Type:        "array",
-								Items: &MappingParamItems{
+								Items: &ArrayItems{
 									Type: "array",
 								},
 								Value: "form_0.d",
@@ -171,11 +171,11 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			fields: fields{
 				Name:    "executable_function_0",
 				Version: versionExample,
-				Mapping: MappingParam{
+				Mapping: JSONSchemaProperties{
 					"param3": {
 						Description: "param4 name",
 						Type:        "object",
-						Properties: MappingParam{
+						Properties: JSONSchemaProperties{
 							"param3.1": {
 								Description: "param3.1 name",
 								Type:        "string",
@@ -185,7 +185,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 							"param3.2": {
 								Description: "param3.2 name",
 								Type:        "array",
-								Items: &MappingParamItems{
+								Items: &ArrayItems{
 									Type: "object",
 								},
 								Value: "form_0.d",
@@ -201,7 +201,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			fields: fields{
 				Name:    "",
 				Version: versionExample,
-				Mapping: MappingParam{},
+				Mapping: JSONSchemaProperties{},
 			},
 			wantErr: errors.New("got no function name or version"),
 		},
@@ -222,7 +222,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 }
 
 func TestMappingParam_Validate(t *testing.T) {
-	unmarshaledMappingParam := MappingParam{}
+	unmarshaledMappingParam := JSONSchemaProperties{}
 	err := json.Unmarshal([]byte(jsonMappingString), &unmarshaledMappingParam)
 	assert.Nil(t, err)
 

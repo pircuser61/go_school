@@ -1,17 +1,25 @@
 package pipeline
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"time"
+
+	"github.com/google/uuid"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"github.com/pkg/errors"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type FunctionRetryPolicy string
@@ -24,15 +32,15 @@ const (
 )
 
 type ExecutableFunction struct {
-	Name           string               `json:"name"`
-	Version        string               `json:"version"`
-	Mapping        script.MappingParam  `json:"mapping"`
-	Function       script.FunctionParam `json:"function"`
-	Async          bool                 `json:"async"`
-	HasAck         bool                 `json:"has_ack"`
-	HasResponse    bool                 `json:"has_response"`
-	Contracts      string               `json:"contracts"`
-	WaitCorrectRes int                  `json:"waitCorrectRes"`
+	Name           string                      `json:"name"`
+	Version        string                      `json:"version"`
+	Mapping        script.JSONSchemaProperties `json:"mapping"`
+	Function       script.FunctionParam        `json:"function"`
+	Async          bool                        `json:"async"`
+	HasAck         bool                        `json:"has_ack"`
+	HasResponse    bool                        `json:"has_response"`
+	Contracts      string                      `json:"contracts"`
+	WaitCorrectRes int                         `json:"waitCorrectRes"`
 }
 
 type FunctionStatus string
@@ -90,7 +98,9 @@ func (gb *ExecutableFunctionBlock) GetState() interface{} {
 }
 
 //nolint:gocyclo //its ok here
-func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, error) {
+func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
+	log := logger.GetLogger(ctx)
+
 	if gb.RunContext.UpdateData != nil {
 		var updateDataParams FunctionUpdateParams
 		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateDataParams)
@@ -131,9 +141,34 @@ func (gb *ExecutableFunctionBlock) Update(ctx context.Context) (interface{}, err
 			}
 		}
 	} else {
-		taskStep, err := gb.RunContext.Storage.GetTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
-		if err != nil {
-			return nil, err
+		taskStep, errTask := gb.RunContext.Storage.GetTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+		if errTask != nil {
+			return nil, errTask
+		}
+
+		if gb.State.Async {
+			isFirstStart, firstStart, errFirstStart := gb.isFirstStart(ctx, gb.RunContext.TaskID, gb.Name)
+			if errFirstStart != nil {
+				return nil, errFirstStart
+			}
+
+			// эта функция уже запускалась и время ожидания корректного ответа закончилось
+			if !isFirstStart && firstStart != nil && !isTimeToRetry(firstStart.Time, gb.State.WaitCorrectRes) {
+				em, errEmail := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
+				if errEmail != nil {
+					log.WithField("login", gb.RunContext.Initiator).Error(errEmail)
+				}
+
+				emails := []string{em}
+
+				tpl := mail.NewInvalidFunctionResp(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+				errSend := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+				if errSend != nil {
+					log.WithField("emails", emails).Error(errSend)
+				}
+
+				return nil, gb.cancelPipeline(ctx)
+			}
 		}
 
 		executableFunctionMapping := gb.State.Mapping
@@ -197,7 +232,7 @@ func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
 			Params: &script.ExecutableFunctionParams{
 				Name:    "",
 				Version: "",
-				Mapping: script.MappingParam{},
+				Mapping: script.JSONSchemaProperties{},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -260,7 +295,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "invalid executable function parameters")
 	}
 
-	function, err := gb.RunContext.FunctionStore.GetFunction(context.Background(), params.Function.FunctionId)
+	function, err := gb.RunContext.FunctionStore.GetFunction(c.Background(), params.Function.FunctionId)
 	if err != nil {
 		return err
 	}
@@ -291,4 +326,46 @@ func (gb *ExecutableFunctionBlock) changeCurrentState() {
 		return
 	}
 	gb.State.HasResponse = true
+}
+
+// nolint:dupl // another action
+func (gb *ExecutableFunctionBlock) cancelPipeline(ctx c.Context) error {
+	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+		return stopErr
+	}
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
+		return stopErr
+	}
+
+	return nil
+}
+
+func isTimeToRetry(createdAt time.Time, waitInDays int) bool {
+	return time.Now().After(createdAt.AddDate(0, 0, waitInDays))
+}
+
+func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workId uuid.UUID, sName string) (bool, *entity.Step, error) {
+	countRunFunc := 0
+
+	steps, err := gb.RunContext.Storage.GetTaskSteps(ctx, workId)
+	if err != nil {
+		return false, nil, err
+	}
+
+	var firstRun *entity.Step
+
+	sort.Slice(steps, func(i, j int) bool {
+		return steps[i].Time.Before(steps[j].Time)
+	})
+
+	for i := range steps {
+		if steps[i].Name == sName {
+			countRunFunc++
+			if firstRun == nil {
+				firstRun = steps[i]
+			}
+		}
+	}
+
+	return countRunFunc > 1, firstRun, nil
 }

@@ -1694,6 +1694,20 @@ func (_m *MockedDatabase) RemoveExternalSystem(ctx context.Context, versionID st
 	return r0
 }
 
+// RemoveObsoleteMapping provides a mock function with given fields: ctx, id
+func (_m *MockedDatabase) RemoveObsoleteMapping(ctx context.Context, id string) error {
+	ret := _m.Called(ctx, id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // RemovePipelineTags provides a mock function with given fields: ctx, id
 func (_m *MockedDatabase) RemovePipelineTags(ctx context.Context, id uuid.UUID) error {
 	ret := _m.Called(ctx, id)
@@ -1765,11 +1779,11 @@ func (_m *MockedDatabase) RollbackVersion(ctx context.Context, pipelineID uuid.U
 }
 
 // SaveExternalSystemSettings provides a mock function with given fields: ctx, versionID, settings, schemaFlag
-func (_m *MockedDatabase) SaveExternalSystemSettings(ctx context.Context, versionID string, settings *entity.ExternalSystem, schemaFlag *string) error {
+func (_m *MockedDatabase) SaveExternalSystemSettings(ctx context.Context, versionID string, settings entity.ExternalSystem, schemaFlag *string) error {
 	ret := _m.Called(ctx, versionID, settings, schemaFlag)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *entity.ExternalSystem, *string) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, entity.ExternalSystem, *string) error); ok {
 		r0 = rf(ctx, versionID, settings, schemaFlag)
 	} else {
 		r0 = ret.Error(0)
@@ -1812,11 +1826,11 @@ func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepR
 }
 
 // SaveVersionSettings provides a mock function with given fields: ctx, settings, schemaFlag
-func (_m *MockedDatabase) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings, schemaFlag *string) error {
+func (_m *MockedDatabase) SaveVersionSettings(ctx context.Context, settings entity.ProcessSettings, schemaFlag *string) error {
 	ret := _m.Called(ctx, settings, schemaFlag)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.ProcessSettings, *string) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, entity.ProcessSettings, *string) error); ok {
 		r0 = rf(ctx, settings, schemaFlag)
 	} else {
 		r0 = ret.Error(0)

@@ -50,16 +50,16 @@ func TestBlockFunction_Update(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				State: &ExecutableFunction{
-					Mapping: script.MappingParam{
-						"mktu": script.MappingValue{
+					Mapping: script.JSONSchemaProperties{
+						"mktu": script.JSONSchemaPropertiesValue{
 							Type:  "array",
 							Value: "servicedesk_application_0.application_body.klassi_mktu",
 						},
-						"name": script.MappingValue{
+						"name": script.JSONSchemaPropertiesValue{
 							Type:  "string",
 							Value: "servicedesk_application_0.application_body.neiming",
 						},
-						"username": script.MappingValue{
+						"username": script.JSONSchemaPropertiesValue{
 							Type:  "string",
 							Value: "servicedesk_application_0.application_body.recipient.fullname",
 						},
@@ -108,16 +108,16 @@ func TestBlockFunction_Update(t *testing.T) {
 			fields: fields{
 				Name: stepName,
 				State: &ExecutableFunction{
-					Mapping: script.MappingParam{
-						"mktu": script.MappingValue{
+					Mapping: script.JSONSchemaProperties{
+						"mktu": script.JSONSchemaPropertiesValue{
 							Type:  "array",
 							Value: "servicedesk_application_0.application_body.klassi_mktu",
 						},
-						"name": script.MappingValue{
+						"name": script.JSONSchemaPropertiesValue{
 							Type:  "number",
 							Value: "servicedesk_application_0.application_body.neiming",
 						},
-						"username": script.MappingValue{
+						"username": script.JSONSchemaPropertiesValue{
 							Type:  "string",
 							Value: "servicedesk_application_0.application_body.recipient.fullname",
 						},

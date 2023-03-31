@@ -25,6 +25,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -1138,7 +1139,7 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 			cm       string
 			d        *time.Time
 			ca       *time.Time
-			ss, es   string
+			ss, es   *script.JSONSchema
 			a        string
 		)
 
@@ -2410,7 +2411,7 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 			cm       string
 			d        *time.Time
 			ca       *time.Time
-			ss, es   string
+			ss, es   *script.JSONSchema
 			a        string
 		)
 
@@ -2738,9 +2739,14 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (enti
 	return processSettings, nil
 }
 
-func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.ProcessSettings, schemaFlag *string) error {
+func (db *PGCon) SaveVersionSettings(ctx context.Context, settings entity.ProcessSettings, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_version_settings")
 	defer span.End()
+
+	var (
+		commandTag pgconn.CommandTag
+		err        error
+	)
 
 	if schemaFlag == nil {
 		// nolint:gocritic
@@ -2752,35 +2758,36 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings *entity.Proce
 			SET start_schema = excluded.start_schema, 
 				end_schema = excluded.end_schema,
 				resubmission_period = excluded.resubmission_period`
-
-		_, err := db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema, settings.ResubmissionPeriod)
+		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema, settings.ResubmissionPeriod)
 		if err != nil {
 			return err
 		}
+	} else {
+		var jsonSchema *script.JSONSchema
+		switch *schemaFlag {
+		case startSchema:
+			jsonSchema = settings.StartSchema
+		case endSchema:
+			jsonSchema = settings.EndSchema
+		default:
+			return errUnkonwnSchemaFlag
+		}
 
-		return nil
-	}
-
-	var jsonSchema string
-	switch *schemaFlag {
-	case startSchema:
-		jsonSchema = settings.StartSchema
-	case endSchema:
-		jsonSchema = settings.EndSchema
-	default:
-		return errUnkonwnSchemaFlag
-	}
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	query := fmt.Sprintf(`INSERT INTO version_settings (id, version_id, %[1]s) 
+		// nolint:gocritic
+		// language=PostgreSQL
+		query := fmt.Sprintf(`INSERT INTO version_settings (id, version_id, %[1]s) 
 			VALUES ($1, $2, $3)
 			ON CONFLICT (version_id) DO UPDATE 
 				SET %[1]s = excluded.%[1]s`, *schemaFlag)
 
-	_, err := db.Connection.Exec(ctx, query, uuid.New(), settings.Id, jsonSchema)
-	if err != nil {
-		return err
+		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, jsonSchema)
+		if err != nil {
+			return err
+		}
+	}
+
+	if commandTag.RowsAffected() != 0 {
+		_ = db.RemoveObsoleteMapping(ctx, settings.Id)
 	}
 
 	return nil
@@ -2852,7 +2859,7 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 }
 
 func (db *PGCon) SaveExternalSystemSettings(
-	ctx context.Context, versionID string, system *entity.ExternalSystem, schemaFlag *string) error {
+	ctx context.Context, versionID string, system entity.ExternalSystem, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
 	defer span.End()
 
@@ -2907,6 +2914,24 @@ func (db *PGCon) RemoveExternalSystem(ctx context.Context, versionID, systemID s
 	query := `DELETE FROM external_systems WHERE version_id = $1 AND system_id = $2`
 
 	_, err := db.Connection.Exec(ctx, query, versionID, systemID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) RemoveObsoleteMapping(ctx context.Context, versionID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_remove_obsolete_mapping")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `UPDATE external_systems
+		SET input_mapping = NULL, output_mapping = NULL
+		WHERE version_id = $1`
+
+	_, err := db.Connection.Exec(ctx, query, versionID)
 	if err != nil {
 		return err
 	}
