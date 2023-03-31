@@ -263,7 +263,7 @@ LOOP:
 
 	pb.Body = strings.Replace(body, "\n", " ", -1)
 	pb.Body = strings.Replace(pb.Body, "\t", "", -1)
-	pb.Body = regexp.MustCompile(`(\*\*\*.+НИЖЕ\*\*\*)`).ReplaceAllString(pb.Body, "")
+	pb.Body = regexp.MustCompile(`(^\*\*\*.+НИЖЕ\*\*\*)`).ReplaceAllString(pb.Body, "")
 	pb.Body = regexp.MustCompile(`(\*\*\*ОБЩИЙ.+40МБ\*\*\*)`).ReplaceAllString(pb.Body, "")
 	pb.Body = regexp.MustCompile(`(\[cid:image.+\])`).ReplaceAllString(pb.Body, "")
 	pb.Body = strings.TrimSpace(pb.Body)

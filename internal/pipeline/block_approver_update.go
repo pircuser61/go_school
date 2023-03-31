@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
@@ -274,7 +272,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
+func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Context) error {
 	const fn = "pipeline.approver.handleBreachedDayBeforeSLARequestAddInfo"
 
 	if !gb.State.CheckDayBeforeSLARequestInfo {
@@ -308,7 +306,7 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.
 }
 
 //nolint:dupl // dont duplicate
-func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
+func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error {
 	const fn = "pipeline.approver.HandleBreachedSLARequestAddInfo"
 	var comment = "заявка автоматически перенесена в архив по истечении 3 дней"
 
