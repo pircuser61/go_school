@@ -2758,7 +2758,14 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings entity.Proces
 			SET start_schema = excluded.start_schema, 
 				end_schema = excluded.end_schema,
 				resubmission_period = excluded.resubmission_period`
-		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema, settings.ResubmissionPeriod)
+		commandTag, err = db.Connection.Exec(ctx,
+			query,
+			uuid.New(),
+			settings.Id,
+			settings.StartSchema,
+			settings.EndSchema,
+			settings.ResubmissionPeriod,
+		)
 		if err != nil {
 			return err
 		}
