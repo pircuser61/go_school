@@ -1108,8 +1108,8 @@ func (db *PGCon) GetPipelineVersion(c context.Context, id uuid.UUID, checkNotDel
 		pv.comment_rejected, 
 		pv.comment, 
 		pv.author, 
-		COALESCE(vs.start_schema, '{}'),
-		COALESCE(vs.end_schema, '{}'),
+		vs.start_schema,
+		vs.end_schema,
 		pph.date
 	FROM versions pv
 	JOIN pipelines p ON pv.pipeline_id = p.id
@@ -2360,8 +2360,8 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 		pv.comment_rejected,
 		pv.comment,
 		pv.author,
-		COALESCE(vs.start_schema, '{}'),
-		COALESCE(vs.end_schema, '{}'),
+		vs.start_schema,
+		vs.end_schema,
 		(SELECT MAX(date) FROM pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
 	FROM (
 			 SELECT servicedesk_node.id                                                                 AS pipeline_version_id,
