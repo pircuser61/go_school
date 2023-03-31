@@ -2927,9 +2927,7 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours in
                           w.work_number work_number,
                           w.started_at work_started
                    from works w
-                            join variable_storage vs on w.id = vs.work_id
-                   where vs.step_type = 'servicedesk_application'
-                     and w.human_status in ('done', 'processing', 'approved', 'approvement', 'wait')
+                     where w.human_status in ('done', 'processing', 'approved', 'approvement', 'wait')
                      and w.started_at > now() - interval '1 hour' * $1
                      and w.version_id = $2
                      and w.child_id is null)
