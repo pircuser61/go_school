@@ -4,8 +4,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/iancoleman/orderedmap"
 	"github.com/pkg/errors"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 type UpdateData struct {
