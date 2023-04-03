@@ -3468,6 +3468,10 @@ components:
           enum: [object]
         properties:
           $ref: '#/components/schemas/JSONSchemaProperties'
+        required:
+          type: array
+          items:
+            type: string
       required:
         - type
         - properties
@@ -3501,8 +3505,10 @@ components:
               - type: boolean
             description: Default value
           required:
-            type: boolean
-            description: Is param required?
+            type: array
+            items:
+              type: string
+            description: Required fields for type = object
           properties:
             $ref: '#/components/schemas/JSONSchemaProperties'
           items:

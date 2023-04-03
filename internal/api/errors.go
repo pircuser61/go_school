@@ -55,6 +55,7 @@ const (
 	TagDeleteError
 	TagParseError
 	TagDetachError
+	TokenParseError
 	GetProcessSettingsError
 	GetExternalSystemsError
 	GetExternalSystemSettingsError
@@ -65,6 +66,8 @@ const (
 	ExternalSystemSettingsParseError
 	ExternalSystemAddingError
 	ExternalSystemRemoveError
+	JSONValidationError
+	JSONSchemaMarshalError
 	ModuleFindError
 	PipelineIsNotDraft
 	SchedulerClientFailed
@@ -145,6 +148,7 @@ var errorText = map[Err]string{
 	TagDeleteError:                   "can't delete tag",
 	TagParseError:                    "can't pars tag data",
 	TagDetachError:                   "can't detaсh tags from pipeline",
+	TokenParseError:                  "cant't parse token",
 	GetProcessSettingsError:          "can't get process settings",
 	GetExternalSystemsError:          "can't get external systems",
 	GetExternalSystemSettingsError:   "can't get external system settings",
@@ -155,6 +159,8 @@ var errorText = map[Err]string{
 	ExternalSystemSettingsParseError: "can't parse external systems settings data",
 	ExternalSystemAddingError:        "can't add external system to version",
 	ExternalSystemRemoveError:        "can't remove external system from the list",
+	JSONValidationError:              "failed to validate JSON",
+	JSONSchemaMarshalError:           "failed to marshal JSON schema",
 	ModuleFindError:                  "can't find module",
 	SchedulerClientFailed:            "scheduler client failed",
 	NetworkMonitorClientFailed:       "network monitor client failed",
@@ -234,6 +240,7 @@ var errorDescription = map[Err]string{
 	TagDeleteError:                   "Не удалось удалить информацию о теге",
 	TagParseError:                    "Не удалось разбрать информацию о теге",
 	TagDetachError:                   "Не удалось открепить тег от сценария",
+	TokenParseError:                  "Не удалось разобрать токен",
 	GetProcessSettingsError:          "Не удалось получить настройки процесса",
 	GetExternalSystemsError:          "Не удалось получить подключенные внешние системы",
 	GetExternalSystemSettingsError:   "Не удалось получить настройки внешней системы",
@@ -244,6 +251,8 @@ var errorDescription = map[Err]string{
 	ExternalSystemSettingsParseError: "Не удалось получить данные из тела запроса",
 	ExternalSystemAddingError:        "Не удалось подключить внешнюю систему к версии процесса",
 	ExternalSystemRemoveError:        "Не удалось удалить внешнюю систему из списка подключенных",
+	JSONValidationError:              "Не удалось валидировать JSON",
+	JSONSchemaMarshalError:           "Не удалось преобразовать JSON-схему",
 	ModuleFindError:                  "Не удалось найти функцию",
 	SchedulerClientFailed:            "Ошибка клиента планировщика",
 	NetworkMonitorClientFailed:       "Ошибка клиента сетевого мониторинга",

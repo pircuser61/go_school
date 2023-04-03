@@ -999,6 +999,7 @@ type IntegerOperandOperandType string
 type JSONSchema struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	Properties JSONSchemaProperties `json:"properties"`
+	Required   *[]string            `json:"required,omitempty"`
 	Type       JSONSchemaType       `json:"type"`
 }
 
@@ -1023,8 +1024,8 @@ type JSONSchemaProperties struct {
 		// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 		Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-		// Is param required?
-		Required *bool `json:"required,omitempty"`
+		// Required fields if type = object
+		Required *[]string `json:"required,omitempty"`
 
 		// Title of param
 		Title string `json:"title"`
@@ -2045,8 +2046,8 @@ func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-	// Is param required?
-	Required *bool `json:"required,omitempty"`
+	// Required fields if type = object
+	Required *[]string `json:"required,omitempty"`
 
 	// Title of param
 	Title string `json:"title"`
@@ -2080,8 +2081,8 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-	// Is param required?
-	Required *bool `json:"required,omitempty"`
+	// Required fields if type = object
+	Required *[]string `json:"required,omitempty"`
 
 	// Title of param
 	Title string `json:"title"`
@@ -2109,8 +2110,8 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 			// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 			Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-			// Is param required?
-			Required *bool `json:"required,omitempty"`
+			// Required fields if type = object
+			Required *[]string `json:"required,omitempty"`
 
 			// Title of param
 			Title string `json:"title"`
@@ -2150,8 +2151,8 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 			// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 			Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-			// Is param required?
-			Required *bool `json:"required,omitempty"`
+			// Required fields if type = object
+			Required *[]string `json:"required,omitempty"`
 
 			// Title of param
 			Title string `json:"title"`
@@ -2179,8 +2180,8 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 				// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 				Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-				// Is param required?
-				Required *bool `json:"required,omitempty"`
+				// Required fields if type = object
+				Required *[]string `json:"required,omitempty"`
 
 				// Title of param
 				Title string `json:"title"`

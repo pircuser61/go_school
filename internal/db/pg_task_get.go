@@ -661,7 +661,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 
 	computedActions, actionsErr := db.computeActions(ctx, delegators, actions, actionsMap, et.Author)
 	if actionsErr != nil {
-		return nil, err
+		return nil, actionsErr
 	}
 
 	et.Actions = computedActions

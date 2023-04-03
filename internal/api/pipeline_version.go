@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -14,6 +15,12 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/iancoleman/orderedmap"
+
+	"github.com/xeipuuv/gojsonschema"
+
+	"github.com/golang-jwt/jwt/v4"
+
+	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -164,6 +171,18 @@ type runVersionsByPipelineIDRequest struct {
 	IsTestApplication bool                  `json:"is_test_application"`
 }
 
+type azpClaims struct {
+	AZP string `json:"azp"`
+}
+
+func (mc azpClaims) Valid() error {
+	if mc.AZP != "" {
+		return nil
+	}
+	return &PipelinerError{TokenParseError}
+}
+
+//nolint:gocyclo //its ok here
 func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "run_versions_by_pipeline_id")
 	defer s.End()
@@ -175,6 +194,31 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	tokenString := r.Header.Get(AuthorizationHeader)
+	claims := &azpClaims{}
+	token, _ := jwt.ParseWithClaims(strings.TrimPrefix(tokenString, "Bearer "), claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(""), nil
+	})
+
+	if token == nil || token.Claims == nil || token.Claims.Valid() != nil {
+		e := TokenParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	system, err := ae.Integrations.Cli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
+		ClientId: claims.AZP,
+	})
+	if err != nil {
+		e := GetExternalSystemsError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -218,10 +262,70 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		go func(wg *sync.WaitGroup, version entity.EriusScenario, ch chan *entity.RunResponse) {
 			defer wg.Done()
 
-			err = version.FillEntryPointOutput()
+			externalSystem, execErr := ae.DB.GetExternalSystemSettings(ctx, version.VersionID.String(), system.Integration.IntegrationId)
+			if execErr != nil {
+				e := GetExternalSystemSettingsError
+				log.Error(e.errorMessage(execErr))
+				_ = e.sendError(w)
+
+				return
+			}
+
+			inputSchema, execErr := json.Marshal(externalSystem.InputSchema)
+			if execErr != nil {
+				e := JSONSchemaMarshalError
+				log.Error(e.errorMessage(execErr))
+				_ = e.sendError(w)
+
+				return
+			}
+
+			// JSON schema of the data that the external system wants to send
+			inputSchemaString := string(inputSchema)
+
+			startSchema, execErr := json.Marshal(version.Settings.StartSchema)
+			if execErr != nil {
+				e := JSONSchemaMarshalError
+				log.Error(e.errorMessage(execErr))
+				_ = e.sendError(w)
+
+				return
+			}
+
+			// JSON schema of the data the process wants to receive
+			startSchemaString := string(startSchema)
+
+			execErr = validateApplicationBody(req.ApplicationBody, inputSchemaString)
+			if execErr != nil {
+				e := JSONValidationError
+				log.Error(e.errorMessage(execErr))
+				_ = e.sendError(w)
+
+				return
+			}
+
+			var mappedApplicationBody orderedmap.OrderedMap
+			if externalSystem.InputMapping == nil || inputSchemaString == startSchemaString {
+				// mapping is not needed
+				mappedApplicationBody = req.ApplicationBody
+			} else {
+				// need mapping
+				mappedApplicationBody = req.ApplicationBody
+			}
+
+			execErr = validateApplicationBody(mappedApplicationBody, startSchemaString)
+			if err != nil {
+				e := JSONValidationError
+				log.Error(e.errorMessage(execErr))
+				_ = e.sendError(w)
+
+				return
+			}
+
+			execErr = version.FillEntryPointOutput()
 			if err != nil {
 				e := GetEntryPointOutputError
-				log.Error(e.errorMessage(err))
+				log.Error(e.errorMessage(execErr))
 				_ = e.sendError(w)
 
 				return
@@ -235,7 +339,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 				runCtx: entity.TaskRunContext{
 					InitialApplication: entity.InitialApplication{
 						Description:       req.Description,
-						ApplicationBody:   req.ApplicationBody,
+						ApplicationBody:   mappedApplicationBody,
 						Keys:              req.Keys,
 						AttachmentFields:  req.AttachmentFields,
 						IsTestApplication: req.IsTestApplication,
@@ -825,4 +929,33 @@ func toDbSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelin
 		Limit:        *in.PerPage,
 		Offset:       (*in.Page * *in.PerPage) - *in.PerPage,
 	}
+}
+
+func validateApplicationBody(applicationBody orderedmap.OrderedMap, JSONSchema string) error {
+	apBody, err := applicationBody.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	loader := gojsonschema.NewStringLoader(JSONSchema)
+	schema, err := gojsonschema.NewSchema(loader)
+	if err != nil {
+		return err
+	}
+
+	documentLoader := gojsonschema.NewStringLoader(string(apBody))
+	result, err := schema.Validate(documentLoader)
+	if err != nil {
+		return err
+	}
+
+	if !result.Valid() {
+		var errorMsg string
+		for _, resultError := range result.Errors() {
+			errorMsg += resultError.String() + "; "
+		}
+		return errors.New(errorMsg)
+	}
+
+	return nil
 }
