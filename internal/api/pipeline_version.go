@@ -696,7 +696,8 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		return nil, e, err
 	}
 
-	if err = ep.CreateTask(processCtx, &pipeline.CreateTaskDTO{
+	// use ctx as we need userinfo
+	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
 		Author:     dto.userName,
 		IsDebug:    false,
 		Params:     parameters,
