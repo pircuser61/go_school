@@ -2724,10 +2724,14 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (enti
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-	SELECT start_schema, end_schema, resubmission_period, p.name
-	FROM version_settings 
-	    join versions v on version_settings.version_id = v.id 
-	    join pipelines p on v.pipeline_id = p.id
+	SELECT start_schema, end_schema, resubmission_period,
+	       (select p.name from pipelines p where p.id = 
+	                                             (select pipeline_id from versions v where v.id = 
+	                                                                              (select version_id from version_settings vs where vs.id = version_settings.id
+	                                                                                                                          )
+	                                                                        )
+	                                       ) name
+	FROM version_settings
 	WHERE version_id = $1`
 
 	row := db.Connection.QueryRow(ctx, query, versionID)
