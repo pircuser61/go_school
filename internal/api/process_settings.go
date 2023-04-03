@@ -1,13 +1,11 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 
 	"github.com/google/uuid"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -127,16 +125,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 
 		return
 	}
-	defer func(transaction db.Database, ctx context.Context) {
-		rollbackErr := transaction.RollbackTransaction(ctx)
-		if rollbackErr != nil {
-			e := UnknownError
-			log.Error(e.errorMessage(rollbackErr))
-			_ = e.sendError(w)
-
-			return
-		}
-	}(transaction, ctx)
+	defer transaction.RollbackTransaction(ctx)
 
 	saveVersionErr := transaction.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
 	if saveVersionErr != nil {
