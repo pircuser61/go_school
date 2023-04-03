@@ -6,10 +6,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 
+	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
@@ -270,15 +272,14 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 	log := logger.GetLogger(ctx)
 
 	b, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
 
 	if err != nil {
 		e := RequestReadError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
-
 		return
 	}
+	defer req.Body.Close()
 
 	var processSettings entity.ProcessSettings
 	err = json.Unmarshal(b, &processSettings)

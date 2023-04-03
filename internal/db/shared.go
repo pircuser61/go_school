@@ -7,11 +7,7 @@ import (
 
 func IsUniqueConstraintError(err error) bool {
 	if pgerr, ok := err.(*pgconn.PgError); ok {
-		if pgerr.Code == pgerrcode.UniqueViolation { // 23505 code - unique constraint violation
-			return true
-		} else {
-			return false
-		}
+		return pgerr.Code == pgerrcode.UniqueViolation
 	} else {
 		return false
 	}
