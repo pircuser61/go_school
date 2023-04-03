@@ -16,6 +16,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/jackc/pgconn v1.13.0
+	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/lib/pq v1.10.7
 	github.com/minio/minio-go/v7 v7.0.7
@@ -79,6 +80,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
+	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.1 // indirect

@@ -1355,3 +1355,7 @@ func (m *MockDB) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 func (m *MockDB) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login, versionID string) ([]*entity.EriusTask, error) {
 	return nil, errNotImplemented
 }
+
+func (m *MockDB) SaveVersionMainSettings(ctx context.Context, params entity.ProcessSettings) error {
+	return nil
+}

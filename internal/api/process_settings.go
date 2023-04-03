@@ -1,10 +1,13 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 
+	"github.com/google/uuid"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -260,6 +263,95 @@ func (ae *APIEnv) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Re
 	}
 }
 
-func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Request, versionID string) {
+	ctx, s := trace.StartSpan(req.Context(), "save_version_main_settings")
+	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(req.Body)
+	defer req.Body.Close()
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var processSettings entity.ProcessSettings
+	err = json.Unmarshal(b, &processSettings)
+	if err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	processSettings.Id = versionID
+
+	transaction, transactionCreateErr := ae.DB.StartTransaction(ctx)
+	if transactionCreateErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(transactionCreateErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	defer func(transaction db.Database, ctx context.Context) {
+		_ = transaction.RollbackTransaction(ctx)
+	}(transaction, ctx)
+
+	saveVersionErr := transaction.SaveVersionMainSettings(ctx, processSettings)
+	if saveVersionErr != nil {
+		e := ProcessSettingsSaveError
+		log.Error(e.errorMessage(saveVersionErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	parsedUUID, parseErr := uuid.Parse(versionID)
+	if parseErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(parseErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	pipeline, getPipelineErr := transaction.GetPipeline(ctx, parsedUUID)
+
+	if getPipelineErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(getPipelineErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	renamePipelineErr := transaction.RenamePipeline(ctx, pipeline.ID, processSettings.Name)
+
+	if renamePipelineErr != nil {
+		e := PipelineCreateError
+		if db.IsUniqueConstraintError(renamePipelineErr) {
+			e = PipelineNameUsed
+		}
+		log.Error(e.errorMessage(renamePipelineErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, nil)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }

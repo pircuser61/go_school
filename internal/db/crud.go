@@ -816,33 +816,6 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersion
 	return nil
 }
 
-func (db *PGCon) PipelineNameCreatable(c context.Context, name string) (bool, error) {
-	c, span := trace.StartSpan(c, "pg_pipeline_name_creatable")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `
-	SELECT count(name) AS count
-	FROM pipelines
-	WHERE name = $1`
-
-	row := db.Connection.QueryRow(c, q, name)
-
-	count := 0
-
-	err := row.Scan(&count)
-	if err != nil {
-		return false, err
-	}
-
-	if count != 0 {
-		return false, nil
-	}
-
-	return true, nil
-}
-
 func (db *PGCon) CreateTag(c context.Context,
 	e *entity.EriusTagInfo, author string) (*entity.EriusTagInfo, error) {
 	c, span := trace.StartSpan(c, "pg_create_tag")
@@ -2799,6 +2772,25 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings entity.Proces
 
 	if commandTag.RowsAffected() != 0 {
 		_ = db.RemoveObsoleteMapping(ctx, settings.Id)
+	}
+
+	return nil
+}
+
+func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params entity.ProcessSettings) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_version_main_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `INSERT INTO version_settings (id, version_id, resubmission_period) 
+			VALUES ($1, $2, $3)
+			ON CONFLICT (version_id) DO UPDATE 
+			SET resubmission_period = excluded.resubmission_period`
+
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.Id, params.ResubmissionPeriod)
+	if err != nil {
+		return err
 	}
 
 	return nil

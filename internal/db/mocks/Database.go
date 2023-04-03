@@ -1632,30 +1632,6 @@ func (_m *MockedDatabase) Ping(ctx context.Context) error {
 	return r0
 }
 
-// PipelineNameCreatable provides a mock function with given fields: ctx, name
-func (_m *MockedDatabase) PipelineNameCreatable(ctx context.Context, name string) (bool, error) {
-	ret := _m.Called(ctx, name)
-
-	var r0 bool
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
-		return rf(ctx, name)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) bool); ok {
-		r0 = rf(ctx, name)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // PipelineRemovable provides a mock function with given fields: ctx, id
 func (_m *MockedDatabase) PipelineRemovable(ctx context.Context, id uuid.UUID) (bool, error) {
 	ret := _m.Called(ctx, id)
@@ -1823,6 +1799,20 @@ func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepR
 	}
 
 	return r0, r1, r2
+}
+
+// SaveVersionMainSettings provides a mock function with given fields: ctx, settings
+func (_m *MockedDatabase) SaveVersionMainSettings(ctx context.Context, settings entity.ProcessSettings) error {
+	ret := _m.Called(ctx, settings)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, entity.ProcessSettings) error); ok {
+		r0 = rf(ctx, settings)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // SaveVersionSettings provides a mock function with given fields: ctx, settings, schemaFlag

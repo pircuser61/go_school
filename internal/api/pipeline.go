@@ -61,26 +61,12 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 
-	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !canCreate {
-		e := PipelineNameUsed
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
 	if err != nil {
 		e := PipelineCreateError
+		if db.IsUniqueConstraintError(err) {
+			e = PipelineNameUsed
+		}
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -146,26 +132,12 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	p.VersionID = uuid.New()
 	p.Name = fmt.Sprintf("%s - %s", p.Name, copyPostfix)
 
-	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !canCreate {
-		e := PipelineNameUsed
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
 	if err != nil {
 		e := PipelineCreateError
+		if db.IsUniqueConstraintError(err) {
+			e = PipelineNameUsed
+		}
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
