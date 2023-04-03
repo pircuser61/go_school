@@ -213,7 +213,8 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 	}
 
 	g := generate.New(schemas...)
-	if err = g.CreateTypes(); err != nil {
+	err = g.CreateTypes()
+	if err != nil {
 		return err
 	}
 

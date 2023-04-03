@@ -171,17 +171,6 @@ type runVersionsByPipelineIDRequest struct {
 	IsTestApplication bool                  `json:"is_test_application"`
 }
 
-type azpClaims struct {
-	AZP string `json:"azp"`
-}
-
-func (mc azpClaims) Valid() error {
-	if mc.AZP != "" {
-		return nil
-	}
-	return &PipelinerError{TokenParseError}
-}
-
 //nolint:gocyclo //its ok here
 func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "run_versions_by_pipeline_id")
@@ -200,14 +189,9 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	tokenString := r.Header.Get(AuthorizationHeader)
-	claims := &azpClaims{}
-	token, _ := jwt.ParseWithClaims(strings.TrimPrefix(tokenString, "Bearer "), claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(""), nil
-	})
-
-	if token == nil || token.Claims == nil || token.Claims.Valid() != nil {
-		e := TokenParseError
+	clientID, err := ae.getClietIDFromToken(r.Header.Get(AuthorizationHeader))
+	if err != nil {
+		e := GetClientIDError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -215,7 +199,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 
 	system, err := ae.Integrations.Cli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
-		ClientId: claims.AZP,
+		ClientId: clientID,
 	})
 	if err != nil {
 		e := GetExternalSystemsError
@@ -931,13 +915,37 @@ func toDbSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelin
 	}
 }
 
-func validateApplicationBody(applicationBody orderedmap.OrderedMap, JSONSchema string) error {
+type azpClaims struct {
+	AZP string `json:"azp"`
+}
+
+func (mc azpClaims) Valid() error {
+	if mc.AZP != "" {
+		return nil
+	}
+	return &PipelinerError{GetClientIDError}
+}
+
+func (ae *APIEnv) getClietIDFromToken(token string) (string, error) {
+	claims := &azpClaims{}
+	parsed, _ := jwt.ParseWithClaims(strings.TrimPrefix(token, "Bearer "), claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(""), nil
+	})
+
+	if parsed == nil || parsed.Claims == nil || parsed.Claims.Valid() != nil {
+		return "", &PipelinerError{TokenParseError}
+	}
+
+	return claims.AZP, nil
+}
+
+func validateApplicationBody(applicationBody orderedmap.OrderedMap, jsonSchema string) error {
 	apBody, err := applicationBody.MarshalJSON()
 	if err != nil {
 		return err
 	}
 
-	loader := gojsonschema.NewStringLoader(JSONSchema)
+	loader := gojsonschema.NewStringLoader(jsonSchema)
 	schema, err := gojsonschema.NewSchema(loader)
 	if err != nil {
 		return err

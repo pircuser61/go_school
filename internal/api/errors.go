@@ -60,6 +60,7 @@ const (
 	GetExternalSystemsError
 	GetExternalSystemSettingsError
 	GetExternalSystemsNamesError
+	GetClientIDError
 	ProcessSettingsSaveError
 	ProcessSettingsParseError
 	ExternalSystemSettingsSaveError
@@ -153,6 +154,7 @@ var errorText = map[Err]string{
 	GetExternalSystemsError:          "can't get external systems",
 	GetExternalSystemSettingsError:   "can't get external system settings",
 	GetExternalSystemsNamesError:     "can't get system names",
+	GetClientIDError:                 "can't get ClientID",
 	ProcessSettingsSaveError:         "can't save process settings",
 	ProcessSettingsParseError:        "can't parse process settings data",
 	ExternalSystemSettingsSaveError:  "can't save external system settings",
@@ -245,6 +247,7 @@ var errorDescription = map[Err]string{
 	GetExternalSystemsError:          "Не удалось получить подключенные внешние системы",
 	GetExternalSystemSettingsError:   "Не удалось получить настройки внешней системы",
 	GetExternalSystemsNamesError:     "Не удалось получить названия внешних систем",
+	GetClientIDError:                 "Не удалось получить CliendID",
 	ProcessSettingsSaveError:         "Не удалось сохранить настройки процесса",
 	ProcessSettingsParseError:        "Не удалось получить данные из тела запроса",
 	ExternalSystemSettingsSaveError:  "Не удалось сохранить настройки внешней системы",
