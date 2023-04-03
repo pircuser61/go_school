@@ -2694,7 +2694,7 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (enti
 	ctx, span := trace.StartSpan(ctx, "pg_get_version_settings")
 	defer span.End()
 
-	// nolint:gocritic
+	// nolint:gocritic,lll
 	// language=PostgreSQL
 	query := `
 	SELECT start_schema, end_schema, resubmission_period,
