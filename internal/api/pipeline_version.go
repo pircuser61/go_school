@@ -746,11 +746,6 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		return nil, e, err
 	}
 	if err = txStorage.CommitTransaction(processCtx); err != nil {
-		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-			log.WithField("funcName", "CommitTransaction").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
 		e := PipelineRunError
 		return nil, e, err
 	}

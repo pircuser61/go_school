@@ -814,9 +814,6 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		}
 
 		if err = txStorage.CommitTransaction(processCtx); err != nil {
-			log.WithField("funcName", "CommitTransaction").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(err)
 			log.WithError(err).Error("couldn't update block")
 			continue
 		}
@@ -1008,11 +1005,6 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if commitErr := txStorage.CommitTransaction(processCtx); commitErr != nil {
-			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-				log.WithField("funcName", "CommitTransaction").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
 			log.WithError(commitErr).Error("couldn't set SLA breach")
 		}
 	}
@@ -1112,11 +1104,6 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 
 	log.Info("trying to commit transaction")
 	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "CommitTransaction").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
 		log.WithError(commitErr).Error("couldn't commit transaction")
 		return commitErr
 	}
