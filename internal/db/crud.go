@@ -790,8 +790,8 @@ func (db *PGCon) CreateVersion(c context.Context,
 
 func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersionID, oldVersionID uuid.UUID) error {
 	qCopyPrevSettings := `
-	INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
-		SELECT uuid_generate_v4(), $1, start_schema, end_schema 
+	INSERT INTO version_settings (id, version_id, start_schema, end_schema, resubmission_period) 
+		SELECT uuid_generate_v4(), $1, start_schema, end_schema, resubmission_period
 		FROM version_settings 
 		WHERE version_id = $2
 	`
@@ -1040,8 +1040,7 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		pv.pipeline_id, 
 		pv.content, 
 		pv.comment,
-		pv.author,
-		p.name
+		pv.author
 	FROM versions pv
 	JOIN pipelines p ON p.id = pv.pipeline_id
 	JOIN pipeline_history pph ON pph.version_id = pv.id
@@ -1064,10 +1063,9 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 			content  string
 			cm       string
 			author   string
-			name     string
 		)
 
-		err = rows.Scan(&vID, &s, &pID, &content, &cm, &author, &name)
+		err = rows.Scan(&vID, &s, &pID, &content, &cm, &author)
 		if err != nil {
 			return nil, err
 		}
@@ -1081,7 +1079,6 @@ func (db *PGCon) GetPipeline(c context.Context, id uuid.UUID) (*entity.EriusScen
 		p.ID = pID
 		p.Status = s
 		p.Comment = cm
-		p.Name = name
 
 		if p.Author == "" {
 			p.Author = author
@@ -2758,7 +2755,7 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings entity.Proces
 		// language=PostgreSQL
 		query := `
 		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (version_id) DO UPDATE 
 			SET start_schema = excluded.start_schema, 
 				end_schema = excluded.end_schema`

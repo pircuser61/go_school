@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/google/uuid"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -26,25 +25,6 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 		return
 	}
-
-	uuidVersion, parseErr := uuid.Parse(versionID)
-	if parseErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(parseErr))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	pipeline, getPipelinerErr := ae.DB.GetPipeline(ctx, uuidVersion)
-	if getPipelinerErr != nil {
-		e := GetPipelineError
-		log.Error(e.errorMessage(getPipelinerErr))
-		_ = e.sendError(w)
-
-		return
-	}
-	processSettings.Name = pipeline.Name
 
 	externalSystemsIds, err := ae.DB.GetExternalSystemsIDs(ctx, versionID)
 	if err != nil {
