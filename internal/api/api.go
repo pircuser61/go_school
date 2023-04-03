@@ -1164,6 +1164,12 @@ type MonitoringTasksPage struct {
 	Total int `json:"total"`
 }
 
+// NameExists defines model for NameExists.
+type NameExists struct {
+	// Существует ли имя
+	Exists bool `json:"exists"`
+}
+
 // Notification params
 type NotificationParams struct {
 	// Emails to get notifications
@@ -1655,6 +1661,15 @@ type CreatePipelineJSONBody EriusScenario
 
 // CopyPipelineJSONBody defines parameters for CopyPipeline.
 type CopyPipelineJSONBody EriusScenario
+
+// PipelineNameExistsParams defines parameters for PipelineNameExists.
+type PipelineNameExistsParams struct {
+	// Pipeline Name
+	Name string `json:"name"`
+
+	// Check for not deleted pipelines
+	CheckNotDeleted bool `json:"checkNotDeleted"`
+}
 
 // SearchPipelinesParams defines parameters for SearchPipelines.
 type SearchPipelinesParams struct {
@@ -2539,6 +2554,9 @@ type ServerInterface interface {
 	// Creates copy of pipeline
 	// (POST /pipelines/copy)
 	CopyPipeline(w http.ResponseWriter, r *http.Request)
+	// Check if name of pipeline exists
+	// (GET /pipelines/name-exists)
+	PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams)
 	// search list of pipelines
 	// (GET /pipelines/search)
 	SearchPipelines(w http.ResponseWriter, r *http.Request, params SearchPipelinesParams)
@@ -3190,6 +3208,54 @@ func (siw *ServerInterfaceWrapper) CopyPipeline(w http.ResponseWriter, r *http.R
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CopyPipeline(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// PipelineNameExists operation middleware
+func (siw *ServerInterfaceWrapper) PipelineNameExists(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PipelineNameExistsParams
+
+	// ------------- Required query parameter "name" -------------
+	if paramValue := r.URL.Query().Get("name"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "name"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "name", r.URL.Query(), &params.Name)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "checkNotDeleted" -------------
+	if paramValue := r.URL.Query().Get("checkNotDeleted"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "checkNotDeleted"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "checkNotDeleted", r.URL.Query(), &params.CheckNotDeleted)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "checkNotDeleted", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PipelineNameExists(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4468,6 +4534,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/copy", wrapper.CopyPipeline)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/pipelines/name-exists", wrapper.PipelineNameExists)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/search", wrapper.SearchPipelines)

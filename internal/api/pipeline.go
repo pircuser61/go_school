@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/labstack/gommon/log"
 
 	"github.com/pkg/errors"
 
@@ -468,4 +469,30 @@ func scenarioUsage(ctx context.Context, pipelineStorager db.PipelineStorager, id
 	}
 
 	return res, nil
+}
+
+func (ae *APIEnv) PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams) {
+	ctx, span := trace.StartSpan(r.Context(), "pipeline_name_exists")
+	defer span.End()
+
+	nameExists, checkNameExistsErr := ae.DB.CheckPipelineNameExists(ctx, params.Name, params.CheckNotDeleted)
+
+	if checkNameExistsErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(checkNameExistsErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	sendResponseErr := sendResponse(w, http.StatusOK, NameExists{
+		Exists: *nameExists,
+	})
+	if sendResponseErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(sendResponseErr))
+		_ = e.sendError(w)
+
+		return
+	}
 }

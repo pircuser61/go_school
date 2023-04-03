@@ -1357,5 +1357,9 @@ func (m *MockDB) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours in
 }
 
 func (m *MockDB) SaveVersionMainSettings(ctx context.Context, params entity.ProcessSettings) error {
-	return nil
+	return errNotImplemented
+}
+
+func (m *MockDB) CheckPipelineNameExists(ctx context.Context, name string, checkNotDeleted bool) (*bool, error) {
+	return nil, errNotImplemented
 }

@@ -2992,3 +2992,31 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours in
 
 	return works, nil
 }
+
+func (db *PGCon) CheckPipelineNameExists(ctx context.Context, name string, checkNotDeleted bool) (*bool, error) {
+	c, span := trace.StartSpan(ctx, "check_pipeline_name_exists")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	qVersion := `
+	select exists(
+	    select 1 from pipelines where name = $1 --is_deleted--
+	    )`
+
+	if checkNotDeleted {
+		qVersion = strings.Replace(qVersion, "--is_deleted--", "AND pipelines.deleted_at IS NULL", 1)
+	}
+
+	row := db.Connection.QueryRow(c, qVersion, name)
+
+	var pipelineNameExists bool
+
+	scanErr := row.Scan(&pipelineNameExists)
+
+	if scanErr != nil {
+		return nil, scanErr
+	}
+
+	return &pipelineNameExists, nil
+}

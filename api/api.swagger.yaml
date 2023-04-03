@@ -408,6 +408,51 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: pipeline
+  /pipelines/name-exists:
+    get:
+      tags:
+        - pipeline
+      summary: Check if name of pipeline exists
+      description: Проверка на существование имении сценария
+      operationId: pipeline-name-exists
+      parameters:
+        - name: name
+          in: query
+          description: Pipeline Name
+          required: true
+          schema:
+            type: string
+        - name: checkNotDeleted
+          in: query
+          description: Check for not deleted pipelines
+          required: true
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NameExists'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/{pipelineID}:
     get:
       tags:
@@ -4615,3 +4660,11 @@ components:
         - type
         - description
         - value
+    NameExists:
+      type: object
+      properties:
+        exists:
+          type: boolean
+          description: Существует ли имя
+      required:
+        - exists

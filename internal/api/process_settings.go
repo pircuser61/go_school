@@ -7,10 +7,10 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
@@ -323,7 +323,7 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	pipeline, getPipelineErr := transaction.GetPipeline(ctx, parsedUUID)
+	pipeline, getPipelineErr := transaction.GetPipelineVersion(ctx, parsedUUID, true)
 
 	if getPipelineErr != nil {
 		e := UnknownError
@@ -346,6 +346,14 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	commitErr := transaction.CommitTransaction(ctx)
+	if commitErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(commitErr))
+		_ = e.sendError(w)
+
+		return
+	}
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		e := UnknownError
