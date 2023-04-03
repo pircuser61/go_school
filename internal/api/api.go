@@ -1641,6 +1641,9 @@ type GetTasksForMonitoringParamsSortOrder string
 // GetTasksForMonitoringParamsStatus defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParamsStatus string
 
+// SaveVersionMainSettingsJSONBody defines parameters for SaveVersionMainSettings.
+type SaveVersionMainSettingsJSONBody ProcessSettings
+
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
 	// Show my pipelines only
@@ -1763,6 +1766,9 @@ type SetApplicationJSONRequestBody SetApplicationJSONBody
 
 // StartDebugTaskJSONRequestBody defines body for StartDebugTask for application/json ContentType.
 type StartDebugTaskJSONRequestBody StartDebugTaskJSONBody
+
+// SaveVersionMainSettingsJSONRequestBody defines body for SaveVersionMainSettings for application/json ContentType.
+type SaveVersionMainSettingsJSONRequestBody SaveVersionMainSettingsJSONBody
 
 // CreatePipelineJSONRequestBody defines body for CreatePipeline for application/json ContentType.
 type CreatePipelineJSONRequestBody CreatePipelineJSONBody
@@ -2521,6 +2527,9 @@ type ServerInterface interface {
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Save process main settings
+	// (POST /pipeline/version/{versionID}/settings/main)
+	SaveVersionMainSettings(w http.ResponseWriter, r *http.Request, versionID string)
 	// Get list of pipelines
 	// (GET /pipelines)
 	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
@@ -3094,6 +3103,32 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *h
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMonitoringTask(w, r, workNumber)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SaveVersionMainSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveVersionMainSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveVersionMainSettings(w, r, versionID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4421,6 +4456,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipeline/version/{versionID}/settings/main", wrapper.SaveVersionMainSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines", wrapper.ListPipelines)

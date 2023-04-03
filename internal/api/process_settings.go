@@ -116,18 +116,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 
 	processSettings.Id = versionID
 
-	transaction, startTransactionErr := ae.DB.StartTransaction(ctx)
-
-	if startTransactionErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(startTransactionErr))
-		_ = e.sendError(w)
-
-		return
-	}
-	defer transaction.RollbackTransaction(ctx)
-
-	saveVersionErr := transaction.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
+	saveVersionErr := ae.DB.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
 	if saveVersionErr != nil {
 		e := ProcessSettingsSaveError
 		log.Error(e.errorMessage(saveVersionErr))
@@ -135,42 +124,6 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 
 		return
 	}
-
-	canCreate, err := ae.DB.PipelineNameCreatable(ctx, processSettings.Name)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	if !canCreate {
-		e := PipelineNameUsed
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	uuidVersion, parseErr := uuid.Parse(versionID)
-	if parseErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(parseErr))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	saveNameErr := transaction.RenamePipeline(ctx, uuidVersion, processSettings.Name)
-	if saveNameErr != nil {
-		e := ProcessSettingsSaveError
-		log.Error(e.errorMessage(saveNameErr))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	_ = transaction.CommitTransaction(ctx)
 
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
@@ -325,4 +278,8 @@ func (ae *APIEnv) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Re
 
 		return
 	}
+}
+
+func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+
 }

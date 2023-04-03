@@ -1067,6 +1067,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipeline/version/{versionID}/settings/main:
+    post:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Save process main settings
+      description: Сохранить основные настройки процесса
+      operationId: save-version-main-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified Main Process Settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/version/{versionID}/system:
     post:
       tags:

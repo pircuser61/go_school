@@ -2755,19 +2755,17 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings entity.Proces
 		// nolint:gocritic
 		// language=PostgreSQL
 		query := `
-		INSERT INTO version_settings (id, version_id, start_schema, end_schema, resubmission_period) 
+		INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (version_id) DO UPDATE 
 			SET start_schema = excluded.start_schema, 
-				end_schema = excluded.end_schema,
-				resubmission_period = excluded.resubmission_period`
+				end_schema = excluded.end_schema`
 		commandTag, err = db.Connection.Exec(ctx,
 			query,
 			uuid.New(),
 			settings.Id,
 			settings.StartSchema,
 			settings.EndSchema,
-			settings.ResubmissionPeriod,
 		)
 		if err != nil {
 			return err
