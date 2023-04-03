@@ -682,7 +682,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("mainFuncName", "updateTaskInternal")
 
 	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
@@ -751,7 +751,6 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		fakeSpan.End()
 
 		txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
-
 		if transactionErr != nil {
 			continue
 		}
@@ -759,7 +758,9 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		storage, getErr := txStorage.GetVariableStorageForStep(processCtx, dbTask.ID, item.Name)
 		if getErr != nil {
 			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-				log.Error(txErr)
+				log.WithField("funcName", "GetVariableStorageForStep").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
 			}
 			log.WithError(getErr).Error("couldn't get block to update")
 			continue
@@ -792,7 +793,9 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
 		if !ok {
 			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-				log.Error(txErr)
+				log.WithField("funcName", "get block by name").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
 			}
 			log.WithError(errors.New("couldn't get block from pipeline")).
 				Error("couldn't get block to update")
@@ -802,16 +805,18 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		blockErr := pipeline.ProcessBlock(processCtx, item.Name, &blockFunc, runCtx, true)
 		if blockErr != nil {
 			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-				log.Error(txErr)
+				log.WithField("funcName", "ProcessBlock").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
 			}
 			log.WithError(blockErr).Error("couldn't update block")
 			continue
 		}
 
 		if err = txStorage.CommitTransaction(processCtx); err != nil {
-			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-				log.Error(txErr)
-			}
+			log.WithField("funcName", "CommitTransaction").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(err)
 			log.WithError(err).Error("couldn't update block")
 			continue
 		}
@@ -939,10 +944,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 
 //nolint:gocyclo,staticcheck //its ok here
 func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
-	ctx, s := trace.StartSpan(r.Context(), "update_task")
-	defer s.End()
+	ctx, span := trace.StartSpan(r.Context(), "check_breach_sla")
+	defer span.End()
 
-	log := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx).WithField("mainFuncName", "CheckBreachSLA")
 
 	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)
 	if err != nil {
@@ -953,15 +958,18 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	spCtx := span.SpanContext()
 	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
 	routineCtx = logger.WithLogger(routineCtx, log)
-	// in goroutine so we can return 202?
+	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_check_breach_sla", spCtx)
+	fakeSpan.End()
+
 	for _, item := range steps {
 		log = log.WithFields(map[string]interface{}{
 			"taskID":   item.TaskID,
 			"stepName": item.StepName,
 		})
-		txStorage, transactionErr := ae.DB.StartTransaction(routineCtx)
+		txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
 		if transactionErr != nil {
 			log.WithError(transactionErr).Error("couldn't set SLA breach")
 			continue
@@ -989,22 +997,29 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		blockErr := pipeline.ProcessBlock(routineCtx, item.StepName, item.BlockData, runCtx, true)
+		blockErr := pipeline.ProcessBlock(processCtx, item.StepName, item.BlockData, runCtx, true)
 		if blockErr != nil {
 			log.WithError(blockErr).Error("couldn't set SLA breach")
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
-				log.Error(txErr)
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+				log.WithField("funcName", "ProcessBlock").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
 			}
 			continue
 		}
-		if commitErr := txStorage.CommitTransaction(routineCtx); commitErr != nil {
+		if commitErr := txStorage.CommitTransaction(processCtx); commitErr != nil {
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+				log.WithField("funcName", "CommitTransaction").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
 			log.WithError(commitErr).Error("couldn't set SLA breach")
 		}
 	}
 }
 
 func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
-	log := ae.Log.WithField("step_id", message.TaskID)
+	log := ae.Log.WithField("step_id", message.TaskID).WithField("mainFuncName", "FunctionReturnHandler")
 	ctx = logger.WithLogger(ctx, log)
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
@@ -1012,28 +1027,23 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		return transactionErr
 	}
 
-	anyErr := false
-
-	defer func(txStorage db.Database, ctx c.Context) {
-		if !anyErr {
-			return
-		}
-		log.Info("rollbackTx")
-		txErr := txStorage.RollbackTransaction(ctx)
-		if txErr != nil {
-			log.Error(txErr)
-		}
-	}(txStorage, ctx)
-
 	if message.Err != "" {
-		anyErr = true
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "message has err").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		log.Error(message.Err)
 		return nil
 	}
 
 	step, err := ae.DB.GetTaskStepById(ctx, message.TaskID)
 	if err != nil {
-		anyErr = true
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "GetTaskStepById").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		log.Error(err)
 		return nil
 	}
@@ -1049,7 +1059,11 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 
 	mapping, err := json.Marshal(functionMapping)
 	if err != nil {
-		anyErr = true
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "marshal mapping").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		log.Error(err)
 		return nil
 	}
@@ -1076,21 +1090,33 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)
 	if err != nil {
-		anyErr = true
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "GetBlockDataFromVersion").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		log.WithError(err).Error("couldn't get block to update")
 		return nil
 	}
 
 	blockErr := pipeline.ProcessBlock(ctx, step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
-		anyErr = true
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "ProcessBlock").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		log.WithError(blockErr).Error("couldn't update block")
 		return nil
 	}
 
 	log.Info("trying to commit transaction")
 	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-		anyErr = true
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "CommitTransaction").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		log.WithError(commitErr).Error("couldn't commit transaction")
 		return commitErr
 	}
