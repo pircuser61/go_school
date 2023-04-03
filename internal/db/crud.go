@@ -2727,14 +2727,16 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (enti
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-	SELECT start_schema, end_schema, resubmission_period
-	FROM version_settings
+	SELECT start_schema, end_schema, resubmission_period, p.name
+	FROM version_settings 
+	    join versions v on version_settings.version_id = v.id 
+	    join pipelines p on v.pipeline_id = p.id
 	WHERE version_id = $1`
 
 	row := db.Connection.QueryRow(ctx, query, versionID)
 
 	processSettings := entity.ProcessSettings{Id: versionID}
-	err := row.Scan(&processSettings.StartSchema, &processSettings.EndSchema, &processSettings.ResubmissionPeriod)
+	err := row.Scan(&processSettings.StartSchema, &processSettings.EndSchema, &processSettings.ResubmissionPeriod, &processSettings.Name)
 	if err != nil && err != pgx.ErrNoRows {
 		return processSettings, err
 	}
