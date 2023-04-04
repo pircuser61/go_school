@@ -89,7 +89,7 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		return nil, err
 	}
 	if unmErr := json.Unmarshal(bytes, &appBody); unmErr != nil {
-		return nil, err
+		return nil, unmErr
 	}
 
 	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)

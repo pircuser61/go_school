@@ -2,6 +2,9 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
+
+	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -9,15 +12,25 @@ import (
 )
 
 const (
-	keyOutputWorkNumber = "workNumber"
+	keyOutputWorkNumber          = "workNumber"
+	keyOutputApplicationDesc     = "description"
+	keyOutputApplication         = "application_body"
+	keyOutputApplicationExecutor = "executor"
 )
 
+type StartApplicationData struct {
+	Description     string                 `json:"description"`
+	ApplicationBody map[string]interface{} `json:"application_body"`
+}
+
 type GoStartBlock struct {
-	Name       string
-	Title      string
-	Input      map[string]string
-	Output     map[string]string
-	Sockets    []script.Socket
+	Name    string
+	Title   string
+	Input   map[string]string
+	Output  map[string]string
+	Sockets []script.Socket
+	State   *StartApplicationData
+
 	RunContext *BlockRunContext
 }
 
@@ -53,8 +66,44 @@ func (gb *GoStartBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoStartBlock) Update(_ context.Context) (interface{}, error) {
+func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
+	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't get task run context")
+	}
+
+	var appBody map[string]interface{}
+	bytes, err := data.InitialApplication.ApplicationBody.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	if unmErr := json.Unmarshal(bytes, &appBody); unmErr != nil {
+		return nil, unmErr
+	}
+
+	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return nil, err
+	}
+
 	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputWorkNumber], gb.RunContext.WorkNumber)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApplicationExecutor], personData)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApplicationDesc], data.InitialApplication.Description)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApplication], appBody)
+
+	gb.State = &StartApplicationData{
+		ApplicationBody: appBody,
+	}
+	gb.State.Description = data.InitialApplication.Description
+
+	var stateBytes []byte
+	stateBytes, err = json.Marshal(gb.State)
+	if err != nil {
+		return nil, err
+	}
+
+	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
 	return nil, nil
 }
 
