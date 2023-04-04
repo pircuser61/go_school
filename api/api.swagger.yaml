@@ -434,7 +434,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NameExists'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NameExists'
+                  status_code:
+                    type: integer
+
         400:
           description: Bad Request
           content:
