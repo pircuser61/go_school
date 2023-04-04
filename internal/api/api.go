@@ -1164,6 +1164,12 @@ type MonitoringTasksPage struct {
 	Total int `json:"total"`
 }
 
+// NameExists defines model for NameExists.
+type NameExists struct {
+	// Существует ли имя
+	Exists bool `json:"exists"`
+}
+
 // Notification params
 type NotificationParams struct {
 	// Emails to get notifications
@@ -1196,8 +1202,14 @@ type Params interface{}
 
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettings struct {
-	EndSchema   *JSONSchema `json:"end_schema,omitempty"`
-	StartSchema *JSONSchema `json:"start_schema,omitempty"`
+	EndSchema *JSONSchema `json:"end_schema,omitempty"`
+
+	// Новое имя сценария
+	Name string `json:"name"`
+
+	// Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
+	ResubmissionPeriod int         `json:"resubmission_period"`
+	StartSchema        *JSONSchema `json:"start_schema,omitempty"`
 
 	// Id версии процесса
 	VersionId *string `json:"version_id,omitempty"`
@@ -1538,15 +1550,6 @@ type Pipeline_Blocks struct {
 	AdditionalProperties map[string]EriusFunc `json:"-"`
 }
 
-// PipelineRename defines model for pipelineRename.
-type PipelineRename struct {
-	// ID сценария для переименования
-	Id string `json:"id"`
-
-	// Новое имя сценария
-	Name string `json:"name"`
-}
-
 // Tag status:
 //   - 1 - Draft
 //   - 2 - Approved
@@ -1644,6 +1647,9 @@ type GetTasksForMonitoringParamsSortOrder string
 // GetTasksForMonitoringParamsStatus defines parameters for GetTasksForMonitoring.
 type GetTasksForMonitoringParamsStatus string
 
+// SaveVersionMainSettingsJSONBody defines parameters for SaveVersionMainSettings.
+type SaveVersionMainSettingsJSONBody ProcessSettings
+
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
 	// Show my pipelines only
@@ -1656,8 +1662,14 @@ type CreatePipelineJSONBody EriusScenario
 // CopyPipelineJSONBody defines parameters for CopyPipeline.
 type CopyPipelineJSONBody EriusScenario
 
-// RenamePipelineJSONBody defines parameters for RenamePipeline.
-type RenamePipelineJSONBody PipelineRename
+// PipelineNameExistsParams defines parameters for PipelineNameExists.
+type PipelineNameExistsParams struct {
+	// Pipeline Name
+	Name string `json:"name"`
+
+	// Check for not deleted pipelines
+	CheckNotDeleted bool `json:"checkNotDeleted"`
+}
 
 // SearchPipelinesParams defines parameters for SearchPipelines.
 type SearchPipelinesParams struct {
@@ -1770,14 +1782,14 @@ type SetApplicationJSONRequestBody SetApplicationJSONBody
 // StartDebugTaskJSONRequestBody defines body for StartDebugTask for application/json ContentType.
 type StartDebugTaskJSONRequestBody StartDebugTaskJSONBody
 
+// SaveVersionMainSettingsJSONRequestBody defines body for SaveVersionMainSettings for application/json ContentType.
+type SaveVersionMainSettingsJSONRequestBody SaveVersionMainSettingsJSONBody
+
 // CreatePipelineJSONRequestBody defines body for CreatePipeline for application/json ContentType.
 type CreatePipelineJSONRequestBody CreatePipelineJSONBody
 
 // CopyPipelineJSONRequestBody defines body for CopyPipeline for application/json ContentType.
 type CopyPipelineJSONRequestBody CopyPipelineJSONBody
-
-// RenamePipelineJSONRequestBody defines body for RenamePipeline for application/json ContentType.
-type RenamePipelineJSONRequestBody RenamePipelineJSONBody
 
 // EditVersionJSONRequestBody defines body for EditVersion for application/json ContentType.
 type EditVersionJSONRequestBody EditVersionJSONBody
@@ -2530,6 +2542,9 @@ type ServerInterface interface {
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
+	// Save process main settings
+	// (POST /pipeline/version/{versionID}/settings/main)
+	SaveVersionMainSettings(w http.ResponseWriter, r *http.Request, versionID string)
 	// Get list of pipelines
 	// (GET /pipelines)
 	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
@@ -2539,9 +2554,9 @@ type ServerInterface interface {
 	// Creates copy of pipeline
 	// (POST /pipelines/copy)
 	CopyPipeline(w http.ResponseWriter, r *http.Request)
-	// Rename Pipeline
-	// (PUT /pipelines/name)
-	RenamePipeline(w http.ResponseWriter, r *http.Request)
+	// Check if name of pipeline exists
+	// (GET /pipelines/name-exists)
+	PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams)
 	// search list of pipelines
 	// (GET /pipelines/search)
 	SearchPipelines(w http.ResponseWriter, r *http.Request, params SearchPipelinesParams)
@@ -3115,6 +3130,32 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTask(w http.ResponseWriter, r *h
 	handler(w, r.WithContext(ctx))
 }
 
+// SaveVersionMainSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveVersionMainSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveVersionMainSettings(w, r, versionID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // ListPipelines operation middleware
 func (siw *ServerInterfaceWrapper) ListPipelines(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -3176,12 +3217,45 @@ func (siw *ServerInterfaceWrapper) CopyPipeline(w http.ResponseWriter, r *http.R
 	handler(w, r.WithContext(ctx))
 }
 
-// RenamePipeline operation middleware
-func (siw *ServerInterfaceWrapper) RenamePipeline(w http.ResponseWriter, r *http.Request) {
+// PipelineNameExists operation middleware
+func (siw *ServerInterfaceWrapper) PipelineNameExists(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PipelineNameExistsParams
+
+	// ------------- Required query parameter "name" -------------
+	if paramValue := r.URL.Query().Get("name"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "name"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "name", r.URL.Query(), &params.Name)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "checkNotDeleted" -------------
+	if paramValue := r.URL.Query().Get("checkNotDeleted"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "checkNotDeleted"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "checkNotDeleted", r.URL.Query(), &params.CheckNotDeleted)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "checkNotDeleted", Err: err})
+		return
+	}
+
 	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RenamePipeline(w, r)
+		siw.Handler.PipelineNameExists(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4450,6 +4524,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipeline/version/{versionID}/settings/main", wrapper.SaveVersionMainSettings)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines", wrapper.ListPipelines)
 	})
 	r.Group(func(r chi.Router) {
@@ -4459,7 +4536,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/pipelines/copy", wrapper.CopyPipeline)
 	})
 	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/pipelines/name", wrapper.RenamePipeline)
+		r.Get(options.BaseURL+"/pipelines/name-exists", wrapper.PipelineNameExists)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/search", wrapper.SearchPipelines)

@@ -10,11 +10,14 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/labstack/gommon/log"
+
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -61,26 +64,12 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 
-	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !canCreate {
-		e := PipelineNameUsed
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
 	if err != nil {
 		e := PipelineCreateError
+		if db.IsUniqueConstraintError(err) {
+			e = PipelineNameUsed
+		}
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -146,26 +135,12 @@ func (ae *APIEnv) CopyPipeline(w http.ResponseWriter, req *http.Request) {
 	p.VersionID = uuid.New()
 	p.Name = fmt.Sprintf("%s - %s", p.Name, copyPostfix)
 
-	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if !canCreate {
-		e := PipelineNameUsed
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
 	if err != nil {
 		e := PipelineCreateError
+		if db.IsUniqueConstraintError(err) {
+			e = PipelineNameUsed
+		}
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -440,77 +415,6 @@ func (ae *APIEnv) GetPipelineVersions(w http.ResponseWriter, req *http.Request, 
 	}
 }
 
-func (ae *APIEnv) RenamePipeline(w http.ResponseWriter, req *http.Request) {
-	ctx, s := trace.StartSpan(req.Context(), "rename_pipeline")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	b, err := io.ReadAll(req.Body)
-	defer func() {
-		_ = req.Body.Close()
-	}()
-
-	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	p := PipelineRename{}
-
-	err = json.Unmarshal(b, &p)
-	if err != nil {
-		e := PipelineRenameParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	id, err := uuid.Parse(p.Id)
-	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	canCreate, err := ae.DB.PipelineNameCreatable(ctx, p.Name)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	if !canCreate {
-		e := PipelineNameUsed
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	err = ae.DB.RenamePipeline(ctx, id, p.Name)
-	if err != nil {
-		e := PipelineRenameError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	err = sendResponse(w, http.StatusOK, nil)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
 // listPipelines выбирает версии сценария с признаком Draft,
 // разрешенные для данного пользователя
 //
@@ -567,4 +471,30 @@ func scenarioUsage(ctx context.Context, pipelineStorager db.PipelineStorager, id
 	}
 
 	return res, nil
+}
+
+func (ae *APIEnv) PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams) {
+	ctx, span := trace.StartSpan(r.Context(), "pipeline_name_exists")
+	defer span.End()
+
+	nameExists, checkNameExistsErr := ae.DB.CheckPipelineNameExists(ctx, params.Name, params.CheckNotDeleted)
+
+	if checkNameExistsErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(checkNameExistsErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	sendResponseErr := sendResponse(w, http.StatusOK, NameExists{
+		Exists: *nameExists,
+	})
+	if sendResponseErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(sendResponseErr))
+		_ = e.sendError(w)
+
+		return
+	}
 }

@@ -2,10 +2,14 @@ package mail
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
+	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -34,38 +38,60 @@ type ExecutorNotifTemplate struct {
 	BlockID      string
 	Mailto       string
 	Login        string
+	LastWorks    []*entity.EriusTask
 }
 
-func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
+type LastWork struct {
+	DaysAgo int    `json:"days_ago"`
+	WorkURL string `json:"work_url"`
+}
+
+type LastWorks []*LastWork
+
+//nolint:dupl // not duplicate
+func NewApprovementSLATpl(id, name, sdUrl, status string, lastWorks []*entity.EriusTask) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
+
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
+
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время %s", id, name, actionName),
-		Text:    "Истекло время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}\n{{end}}" +
+			"Истекло время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
-			Name       string `json:"name"`
-			Link       string `json:"link"`
-			ActionName string `json:"actionName"`
+			Name       string    `json:"name"`
+			Link       string    `json:"link"`
+			ActionName string    `json:"actionName"`
+			LastWorks  LastWorks `json:"last_works"`
 		}{
 			Name:       name,
 			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 			ActionName: actionName,
+			LastWorks:  lastWorksTemplate,
 		},
 	}
 }
 
-func NewApprovementHalfSLATpl(id, name, sdUrl, status string) Template {
+//nolint:dupl // not duplicate
+func NewApprovementHalfSLATpl(id, name, sdUrl, status string, lastWorks []*entity.EriusTask) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
+
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
+
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время %s", id, name, actionName),
-		Text:    "Истекает время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}\n{{end}}" +
+			"Истекает время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
-			Name       string `json:"name"`
-			Link       string `json:"link"`
-			ActionName string `json:"actionName"`
+			Name       string    `json:"name"`
+			Link       string    `json:"link"`
+			ActionName string    `json:"actionName"`
+			LastWorks  LastWorks `json:"last_works"`
 		}{
 			Name:       name,
 			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 			ActionName: actionName,
+			LastWorks:  lastWorksTemplate,
 		},
 	}
 }
@@ -99,34 +125,43 @@ func NewFormSLATpl(id, name, sdUrl string) Template {
 		},
 	}
 }
+func NewExecutiontHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTask) Template {
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
 
-func NewExecutiontHalfSLATpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время исполнения", id, name),
-		Text:    "Истекает время исполнения заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}\n{{end}}" +
+			"Истекает время исполнения заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Name      string    `json:"name"`
+			Link      string    `json:"link"`
+			LastWorks LastWorks `json:"last_works"`
 		}{
-			Name: name,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Name:      name,
+			Link:      fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			LastWorks: lastWorksTemplate,
 		},
 	}
 }
 
-func NewFormDayHalfSLATpl(id, name, sdUrl string) Template {
+func NewFormDayHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTask) Template {
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
+
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
-		Text: "Уважаемый коллега, время предоставления информации по {{.Name}} заявке № {{.Id}} истекает " +
+		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}\n{{end}}" +
+			"Уважаемый коллега, время предоставления информации по {{.Name}} заявке № {{.Id}} истекает " +
 			"\nДля просмотра перейдите по <a href={{.Link}}>заявке</a>",
 		Variables: struct {
-			Name string `json:"name"`
-			Id   string `json:"id"`
-			Link string `json:"link"`
+			Name      string    `json:"name"`
+			Id        string    `json:"id"`
+			Link      string    `json:"link"`
+			LastWorks LastWorks `json:"last_works"`
 		}{
-			Name: name,
-			Id:   id,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Name:      name,
+			Id:        id,
+			Link:      fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			LastWorks: lastWorksTemplate,
 		},
 	}
 }
@@ -291,6 +326,8 @@ type NewAppPersonStatusTpl struct {
 	ApproverActions []Action
 
 	IsEditable bool
+
+	LastWorks []*entity.EriusTask
 }
 
 const (
@@ -299,7 +336,6 @@ const (
 
 func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 	actionName := getApprovementActionNameByStatus(in.Status, in.Action)
-
 	buttons := ""
 	if in.Status == statusExecution {
 		buttons = getExecutionButtons(
@@ -321,7 +357,10 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
 	}
 
-	textPart := `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
+	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
+
+	textPart := `{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}{{end}}
+				Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br/>
 				Срок {{.Action}} до {{.Deadline}}<br/>
 				{{.Buttons}}`
@@ -341,6 +380,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 			Description string
 			Deadline    string
 			Buttons     string
+			LastWorks   LastWorks
 		}{
 			Id:          in.WorkNumber,
 			Link:        fmt.Sprintf(TaskUrlTemplate, in.SdUrl, in.WorkNumber),
@@ -348,6 +388,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 			Description: in.Description,
 			Deadline:    in.DeadLine,
 			Buttons:     buttons,
+			LastWorks:   lastWorksTemplate,
 		},
 	}
 }
@@ -374,7 +415,8 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject = strings.ReplaceAll(actionSubject, " ", "")
 	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
 
-	textPart := `Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b><br>
+	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}
+{{end}}Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b><br>
  Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
  <b>Действия с заявкой</b><br>
  {{.ActionBtn}}<br>`
@@ -383,6 +425,8 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		textPart += ` ------------ Описание ------------  </br>
 <pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`
 	}
+
+	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s назначена на Группу исполнителей", dto.WorkNumber),
@@ -398,17 +442,20 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 			Link        string
 			Description string
 			ActionBtn   string
+			LastWorks   LastWorks
 		}{
 			Id:          dto.WorkNumber,
 			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Description: dto.Description,
 			ActionBtn:   actionBtn,
+			LastWorks:   lastWorksTemplate,
 		},
 	}
 }
 
 func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
-	textPart := `Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
+	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}
+{{end}}Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
  <b>Инициатор: </b>{{.Initiator}}</br>
  <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>`
 
@@ -416,6 +463,8 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 		textPart += `------------ Описание ------------  </br>
 <pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`
 	}
+
+	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s взята в работу пользователем %s", dto.WorkNumber, dto.ExecutorName),
@@ -427,15 +476,17 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
     }
 </style>`,
 		Variables: struct {
-			Id        string `json:"id"`
-			Executor  string `json:"executor"`
-			Link      string `json:"link"`
-			Initiator string `json:"initiator"`
+			Id        string    `json:"id"`
+			Executor  string    `json:"executor"`
+			Link      string    `json:"link"`
+			Initiator string    `json:"initiator"`
+			LastWorks LastWorks `json:"last_works"`
 		}{
 			Id:        dto.WorkNumber,
 			Executor:  dto.ExecutorName,
 			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
 			Initiator: dto.Initiator,
+			LastWorks: lastWorksTemplate,
 		},
 	}
 }
@@ -643,4 +694,16 @@ func getExecutionButtons(workNumber, mailto, blockId, executed, rejected, login 
 	}
 
 	return fmt.Sprintf("<b>Действия с заявкой</b><br> %s", strings.Join(buttons, ""))
+}
+
+func getLastWorksForTemplate(lastWorks []*entity.EriusTask, sdUrl string) LastWorks {
+	lastWorksTemplate := make(LastWorks, 0, len(lastWorks))
+
+	for _, task := range lastWorks {
+		lastWorksTemplate = append(lastWorksTemplate, &LastWork{
+			DaysAgo: int(math.Round(utils.GetDateUnitNumBetweenDates(task.StartedAt, time.Now(), utils.Day))),
+			WorkURL: fmt.Sprintf(TaskUrlTemplate, sdUrl, task.WorkNumber),
+		})
+	}
+	return lastWorksTemplate
 }

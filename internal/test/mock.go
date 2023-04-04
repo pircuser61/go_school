@@ -1351,3 +1351,15 @@ func (m *MockDB) GetMeanTaskSolveTime(_ context.Context, _ string) ([]entity.Tas
 func (m *MockDB) GetTaskForMonitoring(ctx context.Context, workNumber string) ([]entity.MonitoringTaskNode, error) {
 	return nil, errNotImplemented
 }
+
+func (m *MockDB) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login, versionID string) ([]*entity.EriusTask, error) {
+	return nil, errNotImplemented
+}
+
+func (m *MockDB) SaveVersionMainSettings(ctx context.Context, params entity.ProcessSettings) error {
+	return errNotImplemented
+}
+
+func (m *MockDB) CheckPipelineNameExists(ctx context.Context, name string, checkNotDeleted bool) (*bool, error) {
+	return nil, errNotImplemented
+}

@@ -408,6 +408,51 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: pipeline
+  /pipelines/name-exists:
+    get:
+      tags:
+        - pipeline
+      summary: Check if name of pipeline exists
+      description: Проверка на существование имении сценария
+      operationId: pipeline-name-exists
+      parameters:
+        - name: name
+          in: query
+          description: Pipeline Name
+          required: true
+          schema:
+            type: string
+        - name: checkNotDeleted
+          in: query
+          description: Check for not deleted pipelines
+          required: true
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NameExists'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/{pipelineID}:
     get:
       tags:
@@ -1067,6 +1112,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipeline/version/{versionID}/settings/main:
+    post:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Save process main settings
+      description: Сохранить основные настройки процесса
+      operationId: save-version-main-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified Main Process Settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/version/{versionID}/system:
     post:
       tags:
@@ -1273,46 +1365,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/name:
-    put:
-      tags:
-        - pipeline
-      summary: Rename Pipeline
-      description: Изменить имя черновика
-      operationId: rename-pipeline
-      requestBody:
-        description: New name
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/pipelineRename'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-      x-codegen-request-body-name: draft
 
   /pipelines/search:
     get:
@@ -2832,6 +2884,16 @@ components:
           $ref: '#/components/schemas/JSONSchema'
         end_schema:
           $ref: '#/components/schemas/JSONSchema'
+        name:
+          type: string
+          description: Новое имя сценария
+        resubmission_period:
+          type: integer
+          description: Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
+
+      required:
+        - name
+        - resubmission_period
 
     ExternalSystem:
       type: object
@@ -4598,3 +4660,11 @@ components:
         - type
         - description
         - value
+    NameExists:
+      type: object
+      properties:
+        exists:
+          type: boolean
+          description: Существует ли имя
+      required:
+        - exists
