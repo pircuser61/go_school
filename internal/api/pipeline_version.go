@@ -20,6 +20,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 
+	"github.com/jackc/pgx/v4"
+
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -189,26 +191,6 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	clientID, err := ae.getClietIDFromToken(r.Header.Get(AuthorizationHeader))
-	if err != nil {
-		e := GetClientIDError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	system, err := ae.Integrations.Cli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
-		ClientId: clientID,
-	})
-	if err != nil {
-		e := GetExternalSystemsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	req := &runVersionsByPipelineIDRequest{}
 
 	err = json.Unmarshal(body, req)
@@ -246,70 +228,30 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		go func(wg *sync.WaitGroup, version entity.EriusScenario, ch chan *entity.RunResponse) {
 			defer wg.Done()
 
-			externalSystem, execErr := ae.DB.GetExternalSystemSettings(ctx, version.VersionID.String(), system.Integration.IntegrationId)
-			if execErr != nil {
-				e := GetExternalSystemSettingsError
-				log.Error(e.errorMessage(execErr))
-				_ = e.sendError(w)
-
-				return
-			}
-
-			inputSchema, execErr := json.Marshal(externalSystem.InputSchema)
-			if execErr != nil {
-				e := JSONSchemaMarshalError
-				log.Error(e.errorMessage(execErr))
-				_ = e.sendError(w)
-
-				return
-			}
-
-			// JSON schema of the data that the external system wants to send
-			inputSchemaString := string(inputSchema)
-
-			startSchema, execErr := json.Marshal(version.Settings.StartSchema)
-			if execErr != nil {
-				e := JSONSchemaMarshalError
-				log.Error(e.errorMessage(execErr))
-				_ = e.sendError(w)
-
-				return
-			}
-
-			// JSON schema of the data the process wants to receive
-			startSchemaString := string(startSchema)
-
-			execErr = validateApplicationBody(req.ApplicationBody, inputSchemaString)
-			if execErr != nil {
-				e := JSONValidationError
-				log.Error(e.errorMessage(execErr))
+			var clientID string
+			clientID, err = ae.getClietIDFromToken(r.Header.Get(AuthorizationHeader))
+			if err != nil {
+				e := GetClientIDError
+				log.Error(e.errorMessage(err))
 				_ = e.sendError(w)
 
 				return
 			}
 
 			var mappedApplicationBody orderedmap.OrderedMap
-			if externalSystem.InputMapping == nil || inputSchemaString == startSchemaString {
-				// mapping is not needed
-				mappedApplicationBody = req.ApplicationBody
-			} else {
-				// need mapping
-				mappedApplicationBody = req.ApplicationBody
-			}
-
-			execErr = validateApplicationBody(mappedApplicationBody, startSchemaString)
+			mappedApplicationBody, err = ae.processMappings(ctx, clientID, version, req.ApplicationBody)
 			if err != nil {
-				e := JSONValidationError
-				log.Error(e.errorMessage(execErr))
+				e := MappingError
+				log.Error(e.errorMessage(err))
 				_ = e.sendError(w)
 
 				return
 			}
 
-			execErr = version.FillEntryPointOutput()
+			err = version.FillEntryPointOutput()
 			if err != nil {
 				e := GetEntryPointOutputError
-				log.Error(e.errorMessage(execErr))
+				log.Error(e.errorMessage(err))
 				_ = e.sendError(w)
 
 				return
@@ -321,12 +263,14 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 				w:        w,
 				req:      r,
 				runCtx: entity.TaskRunContext{
+					ClientID: clientID,
 					InitialApplication: entity.InitialApplication{
-						Description:       req.Description,
-						ApplicationBody:   mappedApplicationBody,
-						Keys:              req.Keys,
-						AttachmentFields:  req.AttachmentFields,
-						IsTestApplication: req.IsTestApplication,
+						Description:               req.Description,
+						ApplicationBody:           mappedApplicationBody,
+						Keys:                      req.Keys,
+						AttachmentFields:          req.AttachmentFields,
+						IsTestApplication:         req.IsTestApplication,
+						ApplicationBodyFromSystem: req.ApplicationBody,
 					},
 				},
 			})
@@ -360,6 +304,70 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 
 		return
 	}
+}
+
+func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
+	version entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+	system, err := ae.Integrations.Cli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
+		ClientId: clientID,
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "system not found") { // TODO: delete
+			return applicationBody, nil
+		}
+
+		return orderedmap.OrderedMap{}, err
+	}
+
+	externalSystem, err := ae.DB.GetExternalSystemSettings(ctx, version.VersionID.String(), system.Integration.IntegrationId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) { // TODO: delete
+			return applicationBody, nil
+		}
+
+		return orderedmap.OrderedMap{}, err
+	}
+
+	if externalSystem.InputSchema == nil && version.Settings.StartSchema == nil { // TODO: delete
+		return applicationBody, nil
+	}
+
+	inputSchema, err := json.Marshal(externalSystem.InputSchema)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	// JSON schema of the data that the external system wants to send
+	inputSchemaString := string(inputSchema)
+
+	startSchema, err := json.Marshal(version.Settings.StartSchema)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	// JSON schema of the data the process wants to receive
+	startSchemaString := string(startSchema)
+
+	err = validateApplicationBody(applicationBody, inputSchemaString)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	var mappedApplicationBody orderedmap.OrderedMap
+	if externalSystem.InputMapping == nil || inputSchemaString == startSchemaString {
+		// mapping is not needed
+		return applicationBody, nil
+	} else {
+		// need mapping
+		mappedApplicationBody = applicationBody // TODO: add mapping
+	}
+
+	err = validateApplicationBody(mappedApplicationBody, startSchemaString)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	return mappedApplicationBody, nil
 }
 
 type runNewVersionsByPrevVersionRequest struct {

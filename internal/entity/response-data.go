@@ -182,6 +182,11 @@ func ConvertSocket(sockets []Socket) []script.Socket {
 	return result
 }
 
+const (
+	KeyOutputWorkNumber           = "workNumber"
+	KeyOutputApplicationInitiator = "initiator"
+)
+
 func (es EriusScenario) FillEntryPointOutput() (err error) {
 	if es.Settings.StartSchema == nil {
 		return nil
@@ -227,6 +232,18 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 
 	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
 	entryPoint.Output = nil
+
+	entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
+		Global: es.Pipeline.Entrypoint + "." + KeyOutputWorkNumber,
+		Name:   KeyOutputWorkNumber,
+		Type:   "string",
+	})
+
+	entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
+		Global: es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
+		Name:   KeyOutputApplicationInitiator,
+		Type:   "SsoPerson",
+	})
 
 	for _, field := range mainObj.Fields {
 		var name string

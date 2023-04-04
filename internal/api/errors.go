@@ -67,8 +67,7 @@ const (
 	ExternalSystemSettingsParseError
 	ExternalSystemAddingError
 	ExternalSystemRemoveError
-	JSONValidationError
-	JSONSchemaMarshalError
+	MappingError
 	ModuleFindError
 	PipelineIsNotDraft
 	SchedulerClientFailed
@@ -161,8 +160,7 @@ var errorText = map[Err]string{
 	ExternalSystemSettingsParseError: "can't parse external systems settings data",
 	ExternalSystemAddingError:        "can't add external system to version",
 	ExternalSystemRemoveError:        "can't remove external system from the list",
-	JSONValidationError:              "failed to validate JSON",
-	JSONSchemaMarshalError:           "failed to marshal JSON schema",
+	MappingError:                     "error occurred during data mapping",
 	ModuleFindError:                  "can't find module",
 	SchedulerClientFailed:            "scheduler client failed",
 	NetworkMonitorClientFailed:       "network monitor client failed",
@@ -254,8 +252,7 @@ var errorDescription = map[Err]string{
 	ExternalSystemSettingsParseError: "Не удалось получить данные из тела запроса",
 	ExternalSystemAddingError:        "Не удалось подключить внешнюю систему к версии процесса",
 	ExternalSystemRemoveError:        "Не удалось удалить внешнюю систему из списка подключенных",
-	JSONValidationError:              "Не удалось валидировать JSON",
-	JSONSchemaMarshalError:           "Не удалось преобразовать JSON-схему",
+	MappingError:                     "Произошла ошибка во время маппинга данных",
 	ModuleFindError:                  "Не удалось найти функцию",
 	SchedulerClientFailed:            "Ошибка клиента планировщика",
 	NetworkMonitorClientFailed:       "Ошибка клиента сетевого мониторинга",
