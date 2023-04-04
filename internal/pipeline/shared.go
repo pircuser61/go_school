@@ -5,6 +5,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
+	"github.com/iancoleman/orderedmap"
 )
 
 type UpdateData struct {
@@ -77,4 +79,23 @@ func getSliceFromMapOfStrings(source map[string]struct{}) []string {
 // nolint:deadcode,unused //used in tests
 func getStringAddress(s string) *string {
 	return &s
+}
+
+func getRecipientFromState(applicationBody *orderedmap.OrderedMap) string {
+	if applicationBody == nil {
+		return ""
+	}
+
+	var login string
+	if recipientValue, ok := applicationBody.Get("recipient"); ok {
+		if recipient, ok := recipientValue.(orderedmap.OrderedMap); ok {
+			if usernameValue, ok := recipient.Get("username"); ok {
+				if username, ok := usernameValue.(string); ok {
+					login = username
+				}
+			}
+		}
+	}
+
+	return login
 }

@@ -128,12 +128,52 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
+
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+		if getDataErr != nil {
+			return getDataErr
+		}
+
+		login := task.Author
+
+		recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
+
+		if recipient != "" {
+			login = recipient
+		}
+
+		lastWorksForUser := make([]*entity.EriusTask, 0)
+
+		if processSettings.ResubmissionPeriod > 0 {
+			var getWorksErr error
+			lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
+				ctx,
+				processSettings.ResubmissionPeriod,
+				login,
+				task.VersionID.String(),
+			)
+			if getWorksErr != nil {
+				return getWorksErr
+			}
+		}
+
 		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
 				gb.State.ApproveStatusName,
+				lastWorksForUser,
 			),
 		)
 		if err != nil {
@@ -156,7 +196,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	return nil
 }
 
-//nolint:dupl //its not duplicate
+//nolint:dupl,gocyclo //its not duplicate
 func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 	const fn = "pipeline.approver.handleHalfBreachedSLA"
 
@@ -202,12 +242,52 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 		if len(emails) == 0 {
 			return nil
 		}
+
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+		if getDataErr != nil {
+			return getDataErr
+		}
+
+		login := task.Author
+
+		recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
+
+		if recipient != "" {
+			login = recipient
+		}
+
+		lastWorksForUser := make([]*entity.EriusTask, 0)
+
+		if processSettings.ResubmissionPeriod > 0 {
+			var getWorksErr error
+			lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
+				ctx,
+				processSettings.ResubmissionPeriod,
+				login,
+				task.VersionID.String(),
+			)
+			if getWorksErr != nil {
+				return getWorksErr
+			}
+		}
+
 		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementHalfSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
 				gb.State.ApproveStatusName,
+				lastWorksForUser,
 			),
 		)
 		if err != nil {

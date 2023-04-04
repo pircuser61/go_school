@@ -790,8 +790,8 @@ func (db *PGCon) CreateVersion(c context.Context,
 
 func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersionID, oldVersionID uuid.UUID) error {
 	qCopyPrevSettings := `
-	INSERT INTO version_settings (id, version_id, start_schema, end_schema) 
-		SELECT uuid_generate_v4(), $1, start_schema, end_schema 
+	INSERT INTO version_settings (id, version_id, start_schema, end_schema, resubmission_period) 
+		SELECT uuid_generate_v4(), $1, start_schema, end_schema, resubmission_period
 		FROM version_settings 
 		WHERE version_id = $2
 	`
@@ -814,33 +814,6 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersion
 	}
 
 	return nil
-}
-
-func (db *PGCon) PipelineNameCreatable(c context.Context, name string) (bool, error) {
-	c, span := trace.StartSpan(c, "pg_pipeline_name_creatable")
-	defer span.End()
-
-	// nolint:gocritic
-	// language=PostgreSQL
-	q := `
-	SELECT count(name) AS count
-	FROM pipelines
-	WHERE name = $1`
-
-	row := db.Connection.QueryRow(c, q, name)
-
-	count := 0
-
-	err := row.Scan(&count)
-	if err != nil {
-		return false, err
-	}
-
-	if count != 0 {
-		return false, nil
-	}
-
-	return true, nil
 }
 
 func (db *PGCon) CreateTag(c context.Context,
@@ -2721,17 +2694,23 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (enti
 	ctx, span := trace.StartSpan(ctx, "pg_get_version_settings")
 	defer span.End()
 
-	// nolint:gocritic
+	// nolint:gocritic,lll
 	// language=PostgreSQL
 	query := `
-	SELECT start_schema, end_schema
+	SELECT start_schema, end_schema, resubmission_period,
+	       (select p.name from pipelines p where p.id = 
+	                                             (select pipeline_id from versions v where v.id = 
+	                                                                              (select version_id from version_settings vs where vs.id = version_settings.id
+	                                                                                                                          )
+	                                                                        )
+	                                       ) "name"
 	FROM version_settings
 	WHERE version_id = $1`
 
 	row := db.Connection.QueryRow(ctx, query, versionID)
 
 	processSettings := entity.ProcessSettings{Id: versionID}
-	err := row.Scan(&processSettings.StartSchema, &processSettings.EndSchema)
+	err := row.Scan(&processSettings.StartSchema, &processSettings.EndSchema, &processSettings.ResubmissionPeriod, &processSettings.Name)
 	if err != nil && err != pgx.ErrNoRows {
 		return processSettings, err
 	}
@@ -2757,8 +2736,13 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings entity.Proces
 		ON CONFLICT (version_id) DO UPDATE 
 			SET start_schema = excluded.start_schema, 
 				end_schema = excluded.end_schema`
-
-		commandTag, err = db.Connection.Exec(ctx, query, uuid.New(), settings.Id, settings.StartSchema, settings.EndSchema)
+		commandTag, err = db.Connection.Exec(ctx,
+			query,
+			uuid.New(),
+			settings.Id,
+			settings.StartSchema,
+			settings.EndSchema,
+		)
 		if err != nil {
 			return err
 		}
@@ -2788,6 +2772,25 @@ func (db *PGCon) SaveVersionSettings(ctx context.Context, settings entity.Proces
 
 	if commandTag.RowsAffected() != 0 {
 		_ = db.RemoveObsoleteMapping(ctx, settings.Id)
+	}
+
+	return nil
+}
+
+func (db *PGCon) SaveVersionMainSettings(ctx context.Context, params entity.ProcessSettings) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_version_main_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `INSERT INTO version_settings (id, version_id, resubmission_period) 
+			VALUES ($1, $2, $3)
+			ON CONFLICT (version_id) DO UPDATE 
+			SET resubmission_period = excluded.resubmission_period`
+
+	_, err := db.Connection.Exec(ctx, query, uuid.New(), params.Id, params.ResubmissionPeriod)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -2937,4 +2940,83 @@ func (db *PGCon) RemoveObsoleteMapping(ctx context.Context, versionID string) er
 	}
 
 	return nil
+}
+
+func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login, versionID string) ([]*entity.EriusTask, error) {
+	ctx, span := trace.StartSpan(ctx, "get_works_for_user_with_given_time_range")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `WITH works_cte as (select w.id work_id,
+                          w.author work_author,
+                          (w.run_context -> 'initial_application' -> 'application_body' -> 'recipient' ->>
+                           'username') work_recipient,
+                          w.work_number work_number,
+                          w.started_at work_started
+                   from works w
+                     where w.human_status in ('done', 'processing', 'approved', 'approvement', 'wait')
+                     and w.started_at > now() - interval '1 hour' * $1
+                     and w.version_id = $2
+                     and w.child_id is null)
+				   select work_id, work_author, work_number, work_started
+				   from works_cte
+				   where works_cte.work_recipient = $3
+				   or (works_cte.work_recipient is null and works_cte.work_author = $3)`
+
+	rows, queryErr := db.Connection.Query(ctx, query, hours, versionID, login)
+	if queryErr != nil {
+		return nil, queryErr
+	}
+	defer rows.Close()
+
+	works := make([]*entity.EriusTask, 0)
+
+	for rows.Next() {
+		var work entity.EriusTask
+
+		scanErr := rows.Scan(
+			&work.ID,
+			&work.Author,
+			&work.WorkNumber,
+			&work.StartedAt,
+		)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return works, nil
+}
+
+func (db *PGCon) CheckPipelineNameExists(ctx context.Context, name string, checkNotDeleted bool) (*bool, error) {
+	c, span := trace.StartSpan(ctx, "check_pipeline_name_exists")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	qVersion := `
+	select exists(
+	    select 1 from pipelines where name = $1 --is_deleted--
+	    )`
+
+	if checkNotDeleted {
+		qVersion = strings.Replace(qVersion, "--is_deleted--", "AND pipelines.deleted_at IS NULL", 1)
+	}
+
+	row := db.Connection.QueryRow(c, qVersion, name)
+
+	var pipelineNameExists bool
+
+	scanErr := row.Scan(&pipelineNameExists)
+
+	if scanErr != nil {
+		return nil, scanErr
+	}
+
+	return &pipelineNameExists, nil
 }

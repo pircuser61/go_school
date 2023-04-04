@@ -177,7 +177,6 @@ type Database interface {
 	AttachTag(ctx c.Context, id uuid.UUID, p *e.EriusTagInfo) error
 	DetachTag(ctx c.Context, id uuid.UUID, p *e.EriusTagInfo) error
 	RemovePipelineTags(ctx c.Context, id uuid.UUID) error
-	PipelineNameCreatable(ctx c.Context, name string) (bool, error)
 	SwitchRejected(ctx c.Context, versionID uuid.UUID, comment, author string) error
 	GetRejectedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	RollbackVersion(ctx c.Context, pipelineID, versionID uuid.UUID) error
@@ -192,6 +191,7 @@ type Database interface {
 	GetTasksForMonitoring(ctx c.Context, filters *e.TasksForMonitoringFilters) (*e.TasksForMonitoring, error)
 
 	SaveVersionSettings(ctx c.Context, settings e.ProcessSettings, schemaFlag *string) error
+	SaveVersionMainSettings(ctx c.Context, settings e.ProcessSettings) error
 	GetVersionSettings(ctx c.Context, versionID string) (e.ProcessSettings, error)
 	AddExternalSystemToVersion(ctx c.Context, versionID string, systemID string) error
 	GetExternalSystemsIDs(ctx c.Context, versionID string) ([]uuid.UUID, error)
@@ -199,4 +199,6 @@ type Database interface {
 	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
 	SaveExternalSystemSettings(ctx c.Context, versionID string, settings e.ExternalSystem, schemaFlag *string) error
 	RemoveObsoleteMapping(ctx c.Context, id string) error
+	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, versionID string) ([]*e.EriusTask, error)
+	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)
 }

@@ -1,13 +1,18 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 
 	"go.opencensus.io/trace"
 
+	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
@@ -96,10 +101,10 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 
 	processSettings.Id = versionID
 
-	err = ae.DB.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
-	if err != nil {
+	saveVersionErr := ae.DB.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
+	if saveVersionErr != nil {
 		e := ProcessSettingsSaveError
-		log.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(saveVersionErr))
 		_ = e.sendError(w)
 
 		return
@@ -250,6 +255,106 @@ func (ae *APIEnv) AddExternalSystemToVersion(w http.ResponseWriter, req *http.Re
 		return
 	}
 
+	err = sendResponse(w, http.StatusOK, nil)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Request, versionID string) {
+	ctx, s := trace.StartSpan(req.Context(), "save_version_main_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(req.Body)
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer req.Body.Close()
+
+	var processSettings entity.ProcessSettings
+	err = json.Unmarshal(b, &processSettings)
+	if err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	processSettings.Id = versionID
+
+	transaction, transactionCreateErr := ae.DB.StartTransaction(ctx)
+	if transactionCreateErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(transactionCreateErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	defer func(transaction db.Database, ctx context.Context) {
+		_ = transaction.RollbackTransaction(ctx)
+	}(transaction, ctx)
+
+	saveVersionErr := transaction.SaveVersionMainSettings(ctx, processSettings)
+	if saveVersionErr != nil {
+		e := ProcessSettingsSaveError
+		log.Error(e.errorMessage(saveVersionErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	parsedUUID, parseErr := uuid.Parse(versionID)
+	if parseErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(parseErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	pipeline, getPipelineErr := transaction.GetPipelineVersion(ctx, parsedUUID, true)
+
+	if getPipelineErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(getPipelineErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	renamePipelineErr := transaction.RenamePipeline(ctx, pipeline.ID, processSettings.Name)
+
+	if renamePipelineErr != nil {
+		e := PipelineCreateError
+		if db.IsUniqueConstraintError(renamePipelineErr) {
+			e = PipelineNameUsed
+		}
+		log.Error(e.errorMessage(renamePipelineErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	commitErr := transaction.CommitTransaction(ctx)
+	if commitErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(commitErr))
+		_ = e.sendError(w)
+
+		return
+	}
 	err = sendResponse(w, http.StatusOK, nil)
 	if err != nil {
 		e := UnknownError
