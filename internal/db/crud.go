@@ -2703,7 +2703,7 @@ func (db *PGCon) GetVersionSettings(ctx context.Context, versionID string) (enti
 	                                                                              (select version_id from version_settings vs where vs.id = version_settings.id
 	                                                                                                                          )
 	                                                                        )
-	                                       ) name
+	                                       ) "name"
 	FROM version_settings
 	WHERE version_id = $1`
 
