@@ -3,13 +3,11 @@ package pipeline
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-)
-
-const (
-	keyOutputWorkNumber = "workNumber"
 )
 
 type GoStartBlock struct {
@@ -53,8 +51,28 @@ func (gb *GoStartBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoStartBlock) Update(_ context.Context) (interface{}, error) {
-	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputWorkNumber], gb.RunContext.WorkNumber)
+func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
+	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't get task run context")
+	}
+
+	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
+	if err != nil {
+		return nil, err
+	}
+
+	for k := range gb.Output {
+		val, ok := data.InitialApplication.ApplicationBody.Get(k)
+		if !ok {
+			continue
+		}
+		gb.RunContext.VarStore.SetValue(gb.Output[k], val)
+	}
+
+	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputWorkNumber], gb.RunContext.WorkNumber)
+	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationInitiator], personData)
+
 	return nil, nil
 }
 
@@ -66,9 +84,14 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 		Inputs:    nil,
 		Outputs: []script.FunctionValueModel{
 			{
-				Name:    keyOutputWorkNumber,
+				Name:    entity.KeyOutputWorkNumber,
 				Type:    "string",
 				Comment: "work number",
+			},
+			{
+				Name:    entity.KeyOutputApplicationInitiator,
+				Type:    "SsoPerson",
+				Comment: "task initiator",
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},

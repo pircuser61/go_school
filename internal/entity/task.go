@@ -204,13 +204,15 @@ type NeededNotif struct {
 }
 
 type InitialApplication struct {
-	Description       string                `json:"description"`
-	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
-	AttachmentFields  []string              `json:"attachment_fields"`
-	Keys              map[string]string     `json:"keys"`
-	IsTestApplication bool                  `json:"is_test_application"`
+	Description               string                `json:"description"`
+	ApplicationBody           orderedmap.OrderedMap `json:"application_body"`
+	AttachmentFields          []string              `json:"attachment_fields"`
+	Keys                      map[string]string     `json:"keys"`
+	IsTestApplication         bool                  `json:"is_test_application"`
+	ApplicationBodyFromSystem orderedmap.OrderedMap `json:"application_body_from_system"`
 }
 
 type TaskRunContext struct {
+	ClientID           string             `json:"client_id"`
 	InitialApplication InitialApplication `json:"initial_application"`
 }

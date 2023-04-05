@@ -55,16 +55,19 @@ const (
 	TagDeleteError
 	TagParseError
 	TagDetachError
+	TokenParseError
 	GetProcessSettingsError
 	GetExternalSystemsError
 	GetExternalSystemSettingsError
 	GetExternalSystemsNamesError
+	GetClientIDError
 	ProcessSettingsSaveError
 	ProcessSettingsParseError
 	ExternalSystemSettingsSaveError
 	ExternalSystemSettingsParseError
 	ExternalSystemAddingError
 	ExternalSystemRemoveError
+	MappingError
 	ModuleFindError
 	PipelineIsNotDraft
 	SchedulerClientFailed
@@ -145,16 +148,19 @@ var errorText = map[Err]string{
 	TagDeleteError:                   "can't delete tag",
 	TagParseError:                    "can't pars tag data",
 	TagDetachError:                   "can't detaсh tags from pipeline",
+	TokenParseError:                  "cant't parse token",
 	GetProcessSettingsError:          "can't get process settings",
 	GetExternalSystemsError:          "can't get external systems",
 	GetExternalSystemSettingsError:   "can't get external system settings",
 	GetExternalSystemsNamesError:     "can't get system names",
+	GetClientIDError:                 "can't get ClientID",
 	ProcessSettingsSaveError:         "can't save process settings",
 	ProcessSettingsParseError:        "can't parse process settings data",
 	ExternalSystemSettingsSaveError:  "can't save external system settings",
 	ExternalSystemSettingsParseError: "can't parse external systems settings data",
 	ExternalSystemAddingError:        "can't add external system to version",
 	ExternalSystemRemoveError:        "can't remove external system from the list",
+	MappingError:                     "error occurred during data mapping",
 	ModuleFindError:                  "can't find module",
 	SchedulerClientFailed:            "scheduler client failed",
 	NetworkMonitorClientFailed:       "network monitor client failed",
@@ -234,16 +240,19 @@ var errorDescription = map[Err]string{
 	TagDeleteError:                   "Не удалось удалить информацию о теге",
 	TagParseError:                    "Не удалось разбрать информацию о теге",
 	TagDetachError:                   "Не удалось открепить тег от сценария",
+	TokenParseError:                  "Не удалось разобрать токен",
 	GetProcessSettingsError:          "Не удалось получить настройки процесса",
 	GetExternalSystemsError:          "Не удалось получить подключенные внешние системы",
 	GetExternalSystemSettingsError:   "Не удалось получить настройки внешней системы",
 	GetExternalSystemsNamesError:     "Не удалось получить названия внешних систем",
+	GetClientIDError:                 "Не удалось получить CliendID",
 	ProcessSettingsSaveError:         "Не удалось сохранить настройки процесса",
 	ProcessSettingsParseError:        "Не удалось получить данные из тела запроса",
 	ExternalSystemSettingsSaveError:  "Не удалось сохранить настройки внешней системы",
 	ExternalSystemSettingsParseError: "Не удалось получить данные из тела запроса",
 	ExternalSystemAddingError:        "Не удалось подключить внешнюю систему к версии процесса",
 	ExternalSystemRemoveError:        "Не удалось удалить внешнюю систему из списка подключенных",
+	MappingError:                     "Произошла ошибка во время маппинга данных",
 	ModuleFindError:                  "Не удалось найти функцию",
 	SchedulerClientFailed:            "Ошибка клиента планировщика",
 	NetworkMonitorClientFailed:       "Ошибка клиента сетевого мониторинга",

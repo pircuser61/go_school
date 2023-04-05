@@ -361,6 +361,8 @@ github.com/gogo/protobuf v1.3.0/go.mod h1:SlYgWuQ5SjCEi6WLHjHCa1yvBfUnHcTbrrZtXP
 github.com/gogo/protobuf v1.3.1/go.mod h1:SlYgWuQ5SjCEi6WLHjHCa1yvBfUnHcTbrrZtXPKa29o=
 github.com/gogo/protobuf v1.3.2/go.mod h1:P1XiOD3dCwIKUDQYPy72D8LYyHL2YPYrpS2s69NZV8Q=
 github.com/golang-jwt/jwt v3.2.2+incompatible/go.mod h1:8pz2t5EyA70fFQQSrl6XZXzqecmYZeUEB8OUGHkxJ+I=
+github.com/golang-jwt/jwt/v4 v4.5.0 h1:7cYmW1XlMY7h7ii7UhUyChSgS5wUJEnm9uZVTGqOWzg=
+github.com/golang-jwt/jwt/v4 v4.5.0/go.mod h1:m21LjoU+eqJr34lmDMbreY2eSTRJ1cv77w39/MY0Ch0=
 github.com/golang-migrate/migrate/v4 v4.11.0/go.mod h1:nqbpDbckcYjsCD5I8q5+NI9Tkk7SVcmaF40Ax1eAWhg=
 github.com/golang-migrate/migrate/v4 v4.14.1/go.mod h1:l7Ks0Au6fYHuUIxUhQ0rcVX1uLlJg54C/VvW7tvxSz0=
 github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe/go.mod h1:8vg3r2VgvsThLBIFL93Qb5yWzgyZWhEmBwUJWevAkK0=
@@ -1039,7 +1041,11 @@ github.com/xanzy/go-gitlab v0.15.0/go.mod h1:8zdQa/ri1dfn8eS3Ir1SyfvOKlw7WBJ8DVT
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=
 github.com/xdg/stringprep v1.0.0/go.mod h1:Jhud4/sHMO4oL310DaZAKk9ZaJ08SJfe+sJh0HrGL1Y=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
+github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb h1:zGWFAtiMcyryUHoUjUJX0/lt1H2+i2Ka2n+D3DImSNo=
+github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
+github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 h1:EzJWgHovont7NscjpAxXsDA8S8BMYve8Y5+7cuRE7R0=
 github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:GwrjFmJcFw6At/Gs6z4yjiIwzuJ1/+UwLxMQDVQXShQ=
+github.com/xeipuuv/gojsonschema v1.2.0 h1:LhYJRs+L4fBtjZUfuSZIKGeVu0QRy8e5Xi7D17UxZ74=
 github.com/xeipuuv/gojsonschema v1.2.0/go.mod h1:anYRn/JVcOK2ZgGU+IjEV4nwlhoK5sQluxsYJ78Id3Y=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
@@ -1075,8 +1081,8 @@ gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXUjJYRgJO4doHbs+ZVOEvKUgIE=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3/go.mod h1:s5ymK5liDXfZRBcLNOFZr+YleyYBNCUCUhzr6ddtJuo=
-gitlab.services.mts.ru/jocasta/integrations v1.2.0-alpha.1 h1:b6iOxkOkNVONpHD/eSaBLd4vjSleO18cf2rHsoDC8VU=
-gitlab.services.mts.ru/jocasta/integrations v1.2.0-alpha.1/go.mod h1:X+VNZqxelQwGlSS2VE5arW2y9qnE1RcOy2urvLufdNk=
+gitlab.services.mts.ru/jocasta/integrations v1.4.0-alpha.1 h1:tx/42gGYNK9wgW9iZleds5ECAH4YXIW3hSS2EBSxJ4o=
+gitlab.services.mts.ru/jocasta/integrations v1.4.0-alpha.1/go.mod h1:X+VNZqxelQwGlSS2VE5arW2y9qnE1RcOy2urvLufdNk=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.1 h1:+cqIlLRKbmJmBwzGsvdtwzXkUaui8KhVg1spmsbfHS8=
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.1/go.mod h1:yXp0u760CmAViHEQ6ZgIRZl/fO7oblf98t3N1O+IYac=
 gitlab.services.mts.ru/libs/logger v1.1.1 h1:xgBDjr2p/s0mS8YE4VY4IAFDOWLnNU38jHKK8Zqrof4=

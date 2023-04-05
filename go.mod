@@ -13,6 +13,7 @@ require (
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/render v1.0.1
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.3.0
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/jackc/pgconn v1.13.0
@@ -28,6 +29,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/swag v1.7.0
+	github.com/xeipuuv/gojsonschema v1.2.0
 	gitlab.services.mts.ru/abp/mail/pkg v1.18.7
 	gitlab.services.mts.ru/abp/myosotis v1.4.4
 	gitlab.services.mts.ru/erius/monitoring v0.1.0
@@ -36,7 +38,7 @@ require (
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.0
 	gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
-	gitlab.services.mts.ru/jocasta/integrations v1.2.0-alpha.1
+	gitlab.services.mts.ru/jocasta/integrations v1.4.0-alpha.1
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
 	gitlab.services.mts.ru/prodboard/infra v0.0.12
 	go.opencensus.io v0.24.0
@@ -121,6 +123,8 @@ require (
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
+	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
+	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	gitlab.services.mts.ru/libs/logger v1.1.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.5.0 // indirect

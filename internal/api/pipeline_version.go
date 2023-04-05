@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -14,6 +15,14 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/iancoleman/orderedmap"
+
+	"github.com/xeipuuv/gojsonschema"
+
+	"github.com/golang-jwt/jwt/v4"
+
+	"github.com/jackc/pgx/v4"
+
+	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -164,6 +173,7 @@ type runVersionsByPipelineIDRequest struct {
 	IsTestApplication bool                  `json:"is_test_application"`
 }
 
+//nolint:gocyclo //its ok here
 func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "run_versions_by_pipeline_id")
 	defer s.End()
@@ -218,6 +228,26 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		go func(wg *sync.WaitGroup, version entity.EriusScenario, ch chan *entity.RunResponse) {
 			defer wg.Done()
 
+			var clientID string
+			clientID, err = ae.getClietIDFromToken(r.Header.Get(AuthorizationHeader))
+			if err != nil {
+				e := GetClientIDError
+				log.Error(e.errorMessage(err))
+				_ = e.sendError(w)
+
+				return
+			}
+
+			var mappedApplicationBody orderedmap.OrderedMap
+			mappedApplicationBody, err = ae.processMappings(ctx, clientID, version, req.ApplicationBody)
+			if err != nil {
+				e := MappingError
+				log.Error(e.errorMessage(err))
+				_ = e.sendError(w)
+
+				return
+			}
+
 			err = version.FillEntryPointOutput()
 			if err != nil {
 				e := GetEntryPointOutputError
@@ -233,12 +263,14 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 				w:        w,
 				req:      r,
 				runCtx: entity.TaskRunContext{
+					ClientID: clientID,
 					InitialApplication: entity.InitialApplication{
-						Description:       req.Description,
-						ApplicationBody:   req.ApplicationBody,
-						Keys:              req.Keys,
-						AttachmentFields:  req.AttachmentFields,
-						IsTestApplication: req.IsTestApplication,
+						Description:               req.Description,
+						ApplicationBody:           mappedApplicationBody,
+						Keys:                      req.Keys,
+						AttachmentFields:          req.AttachmentFields,
+						IsTestApplication:         req.IsTestApplication,
+						ApplicationBodyFromSystem: req.ApplicationBody,
 					},
 				},
 			})
@@ -272,6 +304,70 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 
 		return
 	}
+}
+
+func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
+	version entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+	system, err := ae.Integrations.Cli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
+		ClientId: clientID,
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "system not found") { // TODO: delete
+			return applicationBody, nil
+		}
+
+		return orderedmap.OrderedMap{}, err
+	}
+
+	externalSystem, err := ae.DB.GetExternalSystemSettings(ctx, version.VersionID.String(), system.Integration.IntegrationId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) { // TODO: delete
+			return applicationBody, nil
+		}
+
+		return orderedmap.OrderedMap{}, err
+	}
+
+	if externalSystem.InputSchema == nil && version.Settings.StartSchema == nil { // TODO: delete
+		return applicationBody, nil
+	}
+
+	inputSchema, err := json.Marshal(externalSystem.InputSchema)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	// JSON schema of the data that the external system wants to send
+	inputSchemaString := string(inputSchema)
+
+	startSchema, err := json.Marshal(version.Settings.StartSchema)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	// JSON schema of the data the process wants to receive
+	startSchemaString := string(startSchema)
+
+	err = validateApplicationBody(applicationBody, inputSchemaString)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	var mappedApplicationBody orderedmap.OrderedMap
+	if externalSystem.InputMapping == nil || inputSchemaString == startSchemaString {
+		// mapping is not needed
+		return applicationBody, nil
+	} else {
+		// need mapping
+		mappedApplicationBody = applicationBody // TODO: add mapping
+	}
+
+	err = validateApplicationBody(mappedApplicationBody, startSchemaString)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	return mappedApplicationBody, nil
 }
 
 type runNewVersionsByPrevVersionRequest struct {
@@ -825,4 +921,57 @@ func toDbSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelin
 		Limit:        *in.PerPage,
 		Offset:       (*in.Page * *in.PerPage) - *in.PerPage,
 	}
+}
+
+type azpClaims struct {
+	AZP string `json:"azp"`
+}
+
+func (mc azpClaims) Valid() error {
+	if mc.AZP != "" {
+		return nil
+	}
+	return &PipelinerError{GetClientIDError}
+}
+
+func (ae *APIEnv) getClietIDFromToken(token string) (string, error) {
+	claims := &azpClaims{}
+	parsed, _ := jwt.ParseWithClaims(strings.TrimPrefix(token, "Bearer "), claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(""), nil
+	})
+
+	if parsed == nil || parsed.Claims == nil || parsed.Claims.Valid() != nil {
+		return "", &PipelinerError{TokenParseError}
+	}
+
+	return claims.AZP, nil
+}
+
+func validateApplicationBody(applicationBody orderedmap.OrderedMap, jsonSchema string) error {
+	apBody, err := applicationBody.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	loader := gojsonschema.NewStringLoader(jsonSchema)
+	schema, err := gojsonschema.NewSchema(loader)
+	if err != nil {
+		return err
+	}
+
+	documentLoader := gojsonschema.NewStringLoader(string(apBody))
+	result, err := schema.Validate(documentLoader)
+	if err != nil {
+		return err
+	}
+
+	if !result.Valid() {
+		var errorMsg string
+		for _, resultError := range result.Errors() {
+			errorMsg += resultError.String() + "; "
+		}
+		return errors.New(errorMsg)
+	}
+
+	return nil
 }

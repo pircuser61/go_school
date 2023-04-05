@@ -14,6 +14,7 @@ const (
 type JSONSchema struct {
 	Type       string               `json:"type"`
 	Properties JSONSchemaProperties `json:"properties"`
+	Required   []string             `json:"required,omitempty"`
 }
 
 type JSONSchemaProperties map[string]JSONSchemaPropertiesValue
@@ -25,7 +26,7 @@ type JSONSchemaPropertiesValue struct {
 
 	Format     string               `json:"format,omitempty"`
 	Default    interface{}          `json:"default,omitempty"`
-	Required   bool                 `json:"required,omitempty"`
+	Required   []string             `json:"required,omitempty"`
 	Items      *ArrayItems          `json:"items,omitempty"`
 	Properties JSONSchemaProperties `json:"properties,omitempty"`
 
