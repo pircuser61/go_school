@@ -368,19 +368,9 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 }
 
 func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (string, error) {
-	data, err := runCtx.Storage.GetApplicationData(runCtx.WorkNumber)
+	descr, err := runCtx.Storage.GetApplicationData(runCtx.WorkNumber)
 	if err != nil {
 		return "", err
-	}
-	var descr string
-	if data != nil {
-		dataDescr, ok := data.Get("description")
-		if ok {
-			convDescr, convOk := dataDescr.(string)
-			if convOk {
-				descr = convDescr
-			}
-		}
 	}
 	additionalDescriptions, err := runCtx.Storage.GetAdditionalForms(runCtx.WorkNumber, nodeName)
 	if err != nil {

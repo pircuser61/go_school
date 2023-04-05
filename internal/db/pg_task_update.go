@@ -3,11 +3,8 @@ package db
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 
 	"golang.org/x/net/context"
-
-	"github.com/iancoleman/orderedmap"
 
 	"github.com/pkg/errors"
 
@@ -128,23 +125,6 @@ func (db *PGCon) UpdateTaskBlocksData(ctx c.Context, dto *UpdateTaskBlocksDataRe
 		WHERE id = $1`
 
 	_, err = db.Connection.Exec(ctx, query, dto.Id, activeBlocks, skippedBlocks, notifiedBlocks, prevUpdateStatusBlocks)
-	return err
-}
-
-func (db *PGCon) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
-	q := `
-		UPDATE variable_storage 
-			SET content = JSONB_SET(content, '{State,servicedesk_application_0}', '%s')
-		WHERE work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL) AND
-			step_type IN ('servicedesk_application', 'execution')`
-
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	q = fmt.Sprintf(q, string(bytes))
-	_, err = db.Connection.Exec(c.Background(), q, workNumber)
 	return err
 }
 
