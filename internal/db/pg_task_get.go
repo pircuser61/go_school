@@ -297,11 +297,11 @@ func (db *PGCon) GetApplicationData(workNumber string) (string, error) {
 	const q = `
 	SELECT coalesce(w.run_context -> 'initial_application' ->> 'description',
                 coalesce(vs.content -> 'State' -> 'servicedesk_application_0' ->> 'description', ''))
-FROM variable_storage vs
-         join works w on vs.work_id = w.id
-WHERE vs.step_type = 'servicedesk_application'
-  AND w.work_number = $1
-  AND w.child_id IS NULL`
+FROM works w
+    LEFT JOIN variable_storage vs
+        ON w.id = vs.work_id AND vs.step_type = 'servicedesk_application'
+WHERE w.work_number = $1
+    AND w.child_id IS NULL`
 
 	var descr string
 	if err := db.Connection.QueryRow(c.Background(), q, workNumber).Scan(&descr); err != nil {
