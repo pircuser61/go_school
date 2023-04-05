@@ -12,8 +12,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/iancoleman/orderedmap"
-
 	"github.com/lib/pq"
 
 	"github.com/pkg/errors"
@@ -147,7 +145,8 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
             		THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
         		ELSE p.name
     		END,
-			COALESCE(descr.description, ''),
+			COALESCE(w.run_context -> 'initial_application' ->> 'description',
+                COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
 			count(*) over() as total,
 			w.rate,
@@ -294,18 +293,21 @@ WHERE id = (SELECT version_id FROM works WHERE work_number = $2)`
 	return id, nil
 }
 
-func (db *PGCon) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
+func (db *PGCon) GetApplicationData(workNumber string) (string, error) {
 	const q = `
-	SELECT content->'State'->'servicedesk_application_0'
-		FROM variable_storage 
-	WHERE step_type = 'servicedesk_application' 
-	AND work_id = (SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL) `
+	SELECT coalesce(w.run_context -> 'initial_application' ->> 'description',
+                coalesce(vs.content -> 'State' -> 'servicedesk_application_0' ->> 'description', ''))
+FROM variable_storage vs
+         join works w on vs.work_id = w.id
+WHERE vs.step_type = 'servicedesk_application'
+  AND w.work_number = $1
+  AND w.child_id IS NULL`
 
-	var data *orderedmap.OrderedMap
-	if err := db.Connection.QueryRow(c.Background(), q, workNumber).Scan(&data); err != nil {
-		return nil, err
+	var descr string
+	if err := db.Connection.QueryRow(c.Background(), q, workNumber).Scan(&descr); err != nil {
+		return "", err
 	}
-	return data, nil
+	return descr, nil
 }
 
 //nolint:gocritic //filters
@@ -593,7 +595,8 @@ func (db *PGCon) GetTask(
             		THEN concat(p.name, ' (ТЕСТОВАЯ ЗАЯВКА)')
         		ELSE p.name
     		END,
-			COALESCE(descr.description, ''),
+			COALESCE(w.run_context -> 'initial_application' ->> 'description',
+                COALESCE(descr.description, '')),
 			COALESCE(descr.blueprint_id, ''),
 			w.rate,
 			w.rate_comment,

@@ -783,6 +783,11 @@ func (db *PGCon) CreateVersion(c context.Context,
 		if err != nil {
 			return err
 		}
+	} else {
+		err = db.SaveVersionSettings(c, entity.ProcessSettings{Id: p.VersionID.String(), ResubmissionPeriod: 0}, nil)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -2324,46 +2329,24 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
 	// nolint:gocritic
 	// language=PostgreSQL
 	const query = `
-	SELECT
-		pv.id,
-		pv.status,
-		pv.pipeline_id,
-		pv.created_at,
-		pv.content,
-		pv.comment_rejected,
-		pv.comment,
-		pv.author,
-		vs.start_schema,
-		vs.end_schema,
-		(SELECT MAX(date) FROM pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
-	FROM (
-			 SELECT servicedesk_node.id                                                                 AS pipeline_version_id,
-					servicedesk_node.blocks -> servicedesk_node.nextNode ->> 'type_id'                  AS type_id,
-					servicedesk_node.blocks -> servicedesk_node.nextNode -> 'params' ->> 'blueprint_id' AS blueprint_id
-			 FROM (
-					  SELECT id, blocks, nextNode
-					  FROM (
-							   SELECT id,
-									  pipeline.blocks                                                               as blocks,
-									  jsonb_array_elements_text(pipeline.blocks -> pipeline.entrypoint #> '{next,default}') as nextNode
-							   FROM (
-										SELECT id,
-											   content -> 'pipeline' #> '{blocks}'    as blocks,
-											   content -> 'pipeline' ->> 'entrypoint' as entrypoint
-										FROM versions
-									) as pipeline
-						   ) as next_from_start
-					  WHERE next_from_start.nextNode LIKE 'servicedesk_application%'
-				  ) as servicedesk_node
-	) as servicedesk_node_params
-		LEFT JOIN versions pv ON pv.id = servicedesk_node_params.pipeline_version_id
-		LEFT JOIN pipelines p ON pv.pipeline_id = p.id
-		LEFT JOIN version_settings vs on pv.id = vs.version_id
-	WHERE pv.status = 2 AND
-			pv.is_actual = TRUE AND
-			pv.pipeline_id = $1 AND
-	        p.deleted_at IS NULL AND
-			servicedesk_node_params.type_id = 'servicedesk_application';
+	SELECT pv.id,
+       pv.status,
+       pv.pipeline_id,
+       pv.created_at,
+       pv.content,
+       pv.comment_rejected,
+       pv.comment,
+       pv.author,
+       vs.start_schema,
+       vs.end_schema,
+       (SELECT MAX(date) FROM pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
+FROM versions pv
+         LEFT JOIN pipelines p ON pv.pipeline_id = p.id
+         LEFT JOIN version_settings vs on pv.id = vs.version_id
+WHERE pv.status = 2
+  AND pv.is_actual = TRUE
+  AND pv.pipeline_id = $1
+  AND p.deleted_at IS NULL
 `
 
 	rows, err := db.Connection.Query(c, query, pID)
