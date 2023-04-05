@@ -411,11 +411,6 @@ type AllUsageResponse_Pipelines struct {
 	AdditionalProperties map[string][]string `json:"-"`
 }
 
-// Application defines model for Application.
-type Application struct {
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
 // ApproveActionNamesResponse defines model for ApproveActionNamesResponse.
 type ApproveActionNamesResponse struct {
 	// approve action id
@@ -485,10 +480,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   - user - Single user
-//   - group - Approver group ID
-//   - head - Receiver's head
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -822,9 +817,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//   - user - Single user
-//   - group - Execution group ID
-//   - from_schema - Selected by initiator
+//  * user - Single user
+//  * group - Execution group ID
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -901,9 +896,9 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   - User - Single user
-//   - Initiator - Process initiator
-//   - From_schema - Selected by initiator
+//   * User - Single user
+//   * Initiator - Process initiator
+//   * From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -1429,17 +1424,17 @@ type Action struct {
 }
 
 // Approver decision:
-//   - approved - Согласовать
-//   - rejected - Отклонить
+//  * approved - Согласовать
+//  * rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//   - approve - Согласовать
-//   - reject - Отклонить
-//   - viewed - Ознакомлен
-//   - informed - Проинформирован
-//   - sign - Подписать
-//   - confirm - Утвердить
+//  * approve - Согласовать
+//  * reject - Отклонить
+//  * viewed - Ознакомлен
+//  * informed - Проинформирован
+//  * sign - Подписать
+//  * confirm - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1519,8 +1514,8 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
-//   - executed - executor executed block
-//   - rejected - executor rejected block
+//  * executed - executor executed block
+//  * rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1551,11 +1546,11 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
-//   - 1 - Draft
-//   - 2 - Approved
-//   - 3 - Deleted
-//   - 4 - Rejected
-//   - 5 - On approve
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1602,9 +1597,6 @@ type VariableOperand struct {
 
 // RateApplicationJSONBody defines parameters for RateApplication.
 type RateApplicationJSONBody RateApplicationRequest
-
-// SetApplicationJSONBody defines parameters for SetApplication.
-type SetApplicationJSONBody Application
 
 // StartDebugTaskJSONBody defines parameters for StartDebugTask.
 type StartDebugTaskJSONBody DebugRunRequest
@@ -1776,9 +1768,6 @@ type UpdateTaskJSONBody TaskUpdate
 // RateApplicationJSONRequestBody defines body for RateApplication for application/json ContentType.
 type RateApplicationJSONRequestBody RateApplicationJSONBody
 
-// SetApplicationJSONRequestBody defines body for SetApplication for application/json ContentType.
-type SetApplicationJSONRequestBody SetApplicationJSONBody
-
 // StartDebugTaskJSONRequestBody defines body for StartDebugTask for application/json ContentType.
 type StartDebugTaskJSONRequestBody StartDebugTaskJSONBody
 
@@ -1868,59 +1857,6 @@ func (a *AllUsageResponse_Pipelines) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for AllUsageResponse_Pipelines to handle AdditionalProperties
 func (a AllUsageResponse_Pipelines) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for Application. Returns the specified
-// element and whether it was found
-func (a Application) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for Application
-func (a *Application) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for Application to handle AdditionalProperties
-func (a *Application) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for Application to handle AdditionalProperties
-func (a Application) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -2497,12 +2433,6 @@ type ServerInterface interface {
 	// rate application
 	// (POST /application/rate/{workNumber})
 	RateApplication(w http.ResponseWriter, r *http.Request, workNumber string)
-	// get application
-	// (GET /application/{workNumber})
-	GetApplication(w http.ResponseWriter, r *http.Request, workNumber string)
-	// set application
-	// (POST /application/{workNumber})
-	SetApplication(w http.ResponseWriter, r *http.Request, workNumber string)
 	// Check if any steps breached SLA
 	// (GET /cron/sla)
 	CheckBreachSLA(w http.ResponseWriter, r *http.Request)
@@ -2693,58 +2623,6 @@ func (siw *ServerInterfaceWrapper) RateApplication(w http.ResponseWriter, r *htt
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RateApplication(w, r, workNumber)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// GetApplication operation middleware
-func (siw *ServerInterfaceWrapper) GetApplication(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "workNumber" -------------
-	var workNumber string
-
-	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetApplication(w, r, workNumber)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// SetApplication operation middleware
-func (siw *ServerInterfaceWrapper) SetApplication(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "workNumber" -------------
-	var workNumber string
-
-	err = runtime.BindStyledParameter("simple", false, "workNumber", chi.URLParam(r, "workNumber"), &workNumber)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workNumber", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SetApplication(w, r, workNumber)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4477,12 +4355,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/application/rate/{workNumber}", wrapper.RateApplication)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/application/{workNumber}", wrapper.GetApplication)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/application/{workNumber}", wrapper.SetApplication)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/cron/sla", wrapper.CheckBreachSLA)

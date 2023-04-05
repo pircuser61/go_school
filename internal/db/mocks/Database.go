@@ -381,19 +381,19 @@ func (_m *MockedDatabase) GetAllTags(ctx context.Context) ([]entity.EriusTagInfo
 }
 
 // GetApplicationData provides a mock function with given fields: workNumber
-func (_m *MockedDatabase) GetApplicationData(workNumber string) (*orderedmap.OrderedMap, error) {
+func (_m *MockedDatabase) GetApplicationData(workNumber string) (string, error) {
 	ret := _m.Called(workNumber)
 
-	var r0 *orderedmap.OrderedMap
+	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*orderedmap.OrderedMap, error)); ok {
+	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
 		return rf(workNumber)
 	}
-	if rf, ok := ret.Get(0).(func(string) *orderedmap.OrderedMap); ok {
+	if rf, ok := ret.Get(0).(func(string) string); ok {
 		r0 = rf(workNumber)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*orderedmap.OrderedMap)
+			r0 = ret.Get(0).(string)
 		}
 	}
 
