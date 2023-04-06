@@ -43,7 +43,6 @@ type Pipeliner struct {
 	Remedy                string              `yaml:"remedy"`
 	FaaS                  string              `yaml:"faas"`
 	RunEnv                RunEnv              `yaml:"run_env"`
-	Swag                  SwaggerGeneral      `yaml:"swagger"`
 	Monitoring            monconf.Monitoring  `yaml:"monitoring"`
 	AuthBaseURL           *URL                `yaml:"auth"`
 	SchedulerBaseURL      *URL                `yaml:"scheduler"`
@@ -71,13 +70,6 @@ type RunEnv struct {
 	KafkaAddress      string `yaml:"kafka_address,omitempty"`
 	PipelinesRunQueue string `yaml:"pipelines_run_queue,omitempty"`
 	FunctionsRunQueue string `yaml:"functions_run_queue,omitempty"`
-}
-
-type SwaggerGeneral struct {
-	BasePath string `yaml:"base_path"`
-	Version  string `yaml:"version"`
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
 }
 
 type Database struct {
