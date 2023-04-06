@@ -22,7 +22,6 @@ import (
 	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/cmd/pipeliner/docs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -235,8 +234,6 @@ func main() {
 
 	metrics.Pusher = push.New(cfg.Push.URL, cfg.Push.Job).Gatherer(metrics.Registry)
 
-	initSwagger(cfg)
-
 	monitoring.Setup(cfg.Monitoring.Addr, &http.Client{Timeout: cfg.Monitoring.Timeout.Duration})
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
@@ -252,10 +249,4 @@ func main() {
 	stop := <-sgnl
 	s.Stop(ctx)
 	log.WithField("signal", stop).Info("stopping")
-}
-
-func initSwagger(cfg *configs.Pipeliner) {
-	docs.SwaggerInfo.BasePath = cfg.Swag.BasePath
-	docs.SwaggerInfo.Version = cfg.Swag.Version
-	docs.SwaggerInfo.Host = cfg.Swag.Host + cfg.Swag.Port
 }
