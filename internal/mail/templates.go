@@ -56,7 +56,7 @@ func NewApprovementSLATpl(id, name, sdUrl, status string, lastWorks []*entity.Er
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время %s", id, name, actionName),
-		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}\n{{end}}" +
+		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
 			"Истекло время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
 			Name       string    `json:"name"`
@@ -80,7 +80,7 @@ func NewApprovementHalfSLATpl(id, name, sdUrl, status string, lastWorks []*entit
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время %s", id, name, actionName),
-		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}\n{{end}}" +
+		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
 			"Истекает время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
 			Name       string    `json:"name"`
@@ -130,7 +130,7 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTa
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время исполнения", id, name),
-		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}\n{{end}}" +
+		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
 			"Истекает время исполнения заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
 			Name      string    `json:"name"`
@@ -149,7 +149,7 @@ func NewFormDayHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTask)
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
-		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}\n{{end}}" +
+		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
 			"Уважаемый коллега, время предоставления информации по {{.Name}} заявке № {{.Id}} истекает " +
 			"\nДля просмотра перейдите по <a href={{.Link}}>заявке</a>",
 		Variables: struct {
@@ -491,23 +491,28 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	}
 }
 
-func NewAddApproversTpl(id, name, sdUrl, status string) Template {
+func NewAddApproversTpl(id, name, sdUrl, status string, lastWorks []*entity.EriusTask) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
+
+	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
-		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.ActionName}}.</b><br>
+		Text: `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}{{end}}
+				Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.ActionName}}.</b><br>
 				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
-			Id         string `json:"id"`
-			Name       string `json:"name"`
-			Link       string `json:"link"`
-			ActionName string `json:"actionName"`
+			Id         string    `json:"id"`
+			Name       string    `json:"name"`
+			Link       string    `json:"link"`
+			ActionName string    `json:"actionName"`
+			LastWorks  LastWorks `json:"last_works"`
 		}{
 			Id:         id,
 			Name:       name,
 			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 			ActionName: actionName,
+			LastWorks:  lastWorksTemplate,
 		},
 	}
 }
