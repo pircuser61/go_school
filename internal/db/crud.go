@@ -2938,8 +2938,7 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours in
                           w.work_number work_number,
                           w.started_at work_started
                    from works w
-                     where w.human_status in ('done', 'processing', 'approved', 'approvement', 'wait')
-                     and w.started_at > now() - interval '1 hour' * $1
+                     where w.started_at > now() - interval '1 hour' * $1
                      and w.version_id = $2
                      and w.child_id is null)
 				   select work_id, work_author, work_number, work_started
@@ -2967,6 +2966,7 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours in
 		if scanErr != nil {
 			return nil, scanErr
 		}
+		works = append(works, &work)
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {

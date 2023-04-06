@@ -774,12 +774,50 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 
 	emails = utils.UniqueStrings(emails)
 
+	task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	if getVersionErr != nil {
+		return getVersionErr
+	}
+
+	taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	if getDataErr != nil {
+		return getDataErr
+	}
+
+	login := task.Author
+
+	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
+
+	if recipient != "" {
+		login = recipient
+	}
+
+	lastWorksForUser := make([]*entity.EriusTask, 0)
+
+	if processSettings.ResubmissionPeriod > 0 {
+		var getWorksErr error
+		lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+			processSettings.ResubmissionPeriod,
+			login,
+			task.VersionID.String(),
+		)
+		if getWorksErr != nil {
+			return getWorksErr
+		}
+	}
+
 	for i := range emails {
 		tpl := mail.NewAddApproversTpl(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.WorkTitle,
 			gb.RunContext.Sender.SdAddress,
 			gb.State.ApproveStatusName,
+			lastWorksForUser,
 		)
 
 		err = gb.RunContext.Sender.SendNotification(ctx, []string{emails[i]}, files, tpl)
