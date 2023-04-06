@@ -359,7 +359,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
 
-	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}{{end}}
+	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}
 				Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br/>
 				Срок {{.Action}} до {{.Deadline}}<br/>
@@ -415,7 +415,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject = strings.ReplaceAll(actionSubject, " ", "")
 	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
 
-	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}
+	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>
 {{end}}Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b><br>
  Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
  <b>Действия с заявкой</b><br>
@@ -454,7 +454,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 }
 
 func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
-	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}
+	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>
 {{end}}Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
  <b>Инициатор: </b>{{.Initiator}}</br>
  <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>`
@@ -498,7 +498,7 @@ func NewAddApproversTpl(id, name, sdUrl, status string, lastWorks []*entity.Eriu
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
-		Text: `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}{{end}}
+		Text: `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}
 				Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.ActionName}}.</b><br>
 				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {

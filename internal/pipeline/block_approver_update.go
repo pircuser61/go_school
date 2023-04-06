@@ -161,6 +161,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 				processSettings.ResubmissionPeriod,
 				login,
 				task.VersionID.String(),
+				gb.RunContext.WorkNumber,
 			)
 			if getWorksErr != nil {
 				return getWorksErr
@@ -275,6 +276,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 				processSettings.ResubmissionPeriod,
 				login,
 				task.VersionID.String(),
+				gb.RunContext.WorkNumber,
 			)
 			if getWorksErr != nil {
 				return getWorksErr
@@ -805,6 +807,7 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 			processSettings.ResubmissionPeriod,
 			login,
 			task.VersionID.String(),
+			gb.RunContext.WorkNumber,
 		)
 		if getWorksErr != nil {
 			return getWorksErr
