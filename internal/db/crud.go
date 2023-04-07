@@ -227,7 +227,11 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 	return versionHistoryList, nil
 }
 
-func (db *PGCon) GetPipelinesWithLatestVersion(c context.Context, authorLogin string, publishedPipelines bool, page, perPage *int, filter string) ([]entity.EriusScenarioInfo, error) {
+func (db *PGCon) GetPipelinesWithLatestVersion(c context.Context,
+	authorLogin string,
+	publishedPipelines bool,
+	page, perPage *int,
+	filter string) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipelines_with_latest_version")
 	defer span.End()
 

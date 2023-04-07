@@ -1078,7 +1078,11 @@ func (m *MockDB) GetPipelineTasks(c context.Context, id uuid.UUID) (*entity.Eriu
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetPipelinesWithLatestVersion(ctx context.Context, authorLogin string, publishedPipelines bool, page, perPage *int, filter string) ([]entity.EriusScenarioInfo, error) {
+func (m *MockDB) GetPipelinesWithLatestVersion(ctx context.Context,
+	authorLogin string,
+	publishedPipelines bool,
+	page, perPage *int,
+	filter string) ([]entity.EriusScenarioInfo, error) {
 	return nil, nil
 }
 
