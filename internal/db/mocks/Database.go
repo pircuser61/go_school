@@ -10,8 +10,6 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	orderedmap "github.com/iancoleman/orderedmap"
-
 	store "gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	time "time"
@@ -392,9 +390,7 @@ func (_m *MockedDatabase) GetApplicationData(workNumber string) (string, error) 
 	if rf, ok := ret.Get(0).(func(string) string); ok {
 		r0 = rf(workNumber)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(string)
-		}
+		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(string) error); ok {
@@ -1028,25 +1024,25 @@ func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, dto *db.Se
 	return r0, r1
 }
 
-// GetPipelinesWithLatestVersion provides a mock function with given fields: ctx, author
-func (_m *MockedDatabase) GetPipelinesWithLatestVersion(ctx context.Context, author string) ([]entity.EriusScenarioInfo, error) {
-	ret := _m.Called(ctx, author)
+// GetPipelinesWithLatestVersion provides a mock function with given fields: c, author, filter, page, perPage
+func (_m *MockedDatabase) GetPipelinesWithLatestVersion(c context.Context, author string, filter string, page int, perPage int) ([]entity.EriusScenarioInfo, error) {
+	ret := _m.Called(c, author, filter, page, perPage)
 
 	var r0 []entity.EriusScenarioInfo
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]entity.EriusScenarioInfo, error)); ok {
-		return rf(ctx, author)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, int, int) ([]entity.EriusScenarioInfo, error)); ok {
+		return rf(c, author, filter, page, perPage)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.EriusScenarioInfo); ok {
-		r0 = rf(ctx, author)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, int, int) []entity.EriusScenarioInfo); ok {
+		r0 = rf(c, author, filter, page, perPage)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]entity.EriusScenarioInfo)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, author)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, int, int) error); ok {
+		r1 = rf(c, author, filter, page, perPage)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1862,20 +1858,6 @@ func (_m *MockedDatabase) SendTaskToArchive(ctx context.Context, taskID uuid.UUI
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
 		r0 = rf(ctx, taskID)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// SetApplicationData provides a mock function with given fields: workNumber, data
-func (_m *MockedDatabase) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
-	ret := _m.Called(workNumber, data)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, *orderedmap.OrderedMap) error); ok {
-		r0 = rf(workNumber, data)
 	} else {
 		r0 = ret.Error(0)
 	}

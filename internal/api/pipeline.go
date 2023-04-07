@@ -424,6 +424,7 @@ func (ae *APIEnv) listPipelines(ctx context.Context, myPipelines bool) ([]entity
 	defer s.End()
 
 	authorLogin := ""
+	page := 0
 
 	if myPipelines {
 		userFromContext, err := user.GetUserInfoFromCtx(ctx)

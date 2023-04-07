@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/net/context"
+
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -144,7 +146,7 @@ type Database interface {
 	CommitTransaction(ctx c.Context) error
 	RollbackTransaction(ctx c.Context) error
 
-	GetPipelinesWithLatestVersion(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
+	GetPipelinesWithLatestVersion(c context.Context, author, filter string, page, perPage int) ([]e.EriusScenarioInfo, error)
 	GetApprovedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	GetVersionsByStatus(ctx c.Context, status int, author string) ([]e.EriusScenarioInfo, error)
 	GetDraftVersions(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)

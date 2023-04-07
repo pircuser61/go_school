@@ -274,7 +274,7 @@ paths:
             default: 0
         - name: filter
           in: query
-          description: Фильтр по work_number, наименованию процесса, логину инициатора
+          description: Фильтр по имени pipeline
           schema:
             type: string
       responses:
