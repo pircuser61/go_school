@@ -2931,7 +2931,6 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(
 	login,
 	versionID,
 	excludeWorkNumber string) ([]*entity.EriusTask, error) {
-
 	ctx, span := trace.StartSpan(ctx, "get_works_for_user_with_given_time_range")
 	defer span.End()
 
