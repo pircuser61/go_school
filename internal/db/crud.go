@@ -2925,7 +2925,13 @@ func (db *PGCon) RemoveObsoleteMapping(ctx context.Context, versionID string) er
 	return nil
 }
 
-func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login, versionID, excludeWorkNumber string) ([]*entity.EriusTask, error) {
+func (db *PGCon) GetWorksForUserWithGivenTimeRange(
+	ctx context.Context,
+	hours int,
+	login,
+	versionID,
+	excludeWorkNumber string) ([]*entity.EriusTask, error) {
+
 	ctx, span := trace.StartSpan(ctx, "get_works_for_user_with_given_time_range")
 	defer span.End()
 

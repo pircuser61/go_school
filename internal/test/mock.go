@@ -1346,7 +1346,12 @@ func (m *MockDB) GetTaskForMonitoring(ctx context.Context, workNumber string) ([
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login, versionID, excludeWorkNumber string) ([]*entity.EriusTask, error) {
+func (m *MockDB) GetWorksForUserWithGivenTimeRange(
+	ctx context.Context,
+	hours int,
+	login,
+	versionID,
+	excludeWorkNumber string) ([]*entity.EriusTask, error) {
 	return nil, errNotImplemented
 }
 
