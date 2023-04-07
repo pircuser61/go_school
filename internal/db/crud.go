@@ -274,9 +274,9 @@ WHERE pp.deleted_at IS NULL
 	}
 
 	if publishedPipelines {
-		q = strings.ReplaceAll(q, "---versions_status---", "(1, 3)")
+		q = strings.ReplaceAll(q, "---versions_status---", "(2)")
 	} else {
-		q = strings.ReplaceAll(q, "---versions_status---", "(3)")
+		q = strings.ReplaceAll(q, "---versions_status---", "(1, 3)")
 	}
 
 	q = fmt.Sprintf("%s ORDER BY created_at", q)
