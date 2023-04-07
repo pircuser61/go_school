@@ -359,8 +359,8 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
 
-	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}
-				Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
+	textPart := `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
+				{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br/>
 				Срок {{.Action}} до {{.Deadline}}<br/>
 				{{.Buttons}}`
@@ -498,8 +498,8 @@ func NewAddApproversTpl(id, name, sdUrl, status string, lastWorks []*entity.Eriu
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
-		Text: `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}
-				Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.ActionName}}.</b><br>
+		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.ActionName}}.</b><br>
+				{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}
 				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
 			Id         string    `json:"id"`
