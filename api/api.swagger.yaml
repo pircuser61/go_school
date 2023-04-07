@@ -262,6 +262,12 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: is_published
+          in: query
+          description: Show published pipelines only
+          required: false
+          schema:
+            type: boolean
         - name: per_page
           in: query
           schema:

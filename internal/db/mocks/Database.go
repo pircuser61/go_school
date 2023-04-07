@@ -1024,25 +1024,25 @@ func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, dto *db.Se
 	return r0, r1
 }
 
-// GetPipelinesWithLatestVersion provides a mock function with given fields: c, author, filter, page, perPage
-func (_m *MockedDatabase) GetPipelinesWithLatestVersion(c context.Context, author string, filter string, page int, perPage int) ([]entity.EriusScenarioInfo, error) {
-	ret := _m.Called(c, author, filter, page, perPage)
+// GetPipelinesWithLatestVersion provides a mock function with given fields: ctx, authorLogin, publishedPipelines, page, perPage, filter
+func (_m *MockedDatabase) GetPipelinesWithLatestVersion(ctx context.Context, authorLogin string, publishedPipelines bool, page *int, perPage *int, filter string) ([]entity.EriusScenarioInfo, error) {
+	ret := _m.Called(ctx, authorLogin, publishedPipelines, page, perPage, filter)
 
 	var r0 []entity.EriusScenarioInfo
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, int, int) ([]entity.EriusScenarioInfo, error)); ok {
-		return rf(c, author, filter, page, perPage)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool, *int, *int, string) ([]entity.EriusScenarioInfo, error)); ok {
+		return rf(ctx, authorLogin, publishedPipelines, page, perPage, filter)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, int, int) []entity.EriusScenarioInfo); ok {
-		r0 = rf(c, author, filter, page, perPage)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool, *int, *int, string) []entity.EriusScenarioInfo); ok {
+		r0 = rf(ctx, authorLogin, publishedPipelines, page, perPage, filter)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]entity.EriusScenarioInfo)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, int, int) error); ok {
-		r1 = rf(c, author, filter, page, perPage)
+	if rf, ok := ret.Get(1).(func(context.Context, string, bool, *int, *int, string) error); ok {
+		r1 = rf(ctx, authorLogin, publishedPipelines, page, perPage, filter)
 	} else {
 		r1 = ret.Error(1)
 	}

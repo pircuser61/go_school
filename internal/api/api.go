@@ -1646,11 +1646,14 @@ type SaveVersionMainSettingsJSONBody ProcessSettings
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
 	// Show my pipelines only
-	My      *bool `json:"my,omitempty"`
-	PerPage *int  `json:"per_page,omitempty"`
-	Page    *int  `json:"page,omitempty"`
+	My *bool `json:"my,omitempty"`
 
-	// Фильтр по work_number, наименованию процесса, логину инициатора
+	// Show published pipelines only
+	IsPublished *bool `json:"is_published,omitempty"`
+	PerPage     *int  `json:"per_page,omitempty"`
+	Page        *int  `json:"page,omitempty"`
+
+	// Фильтр по имени pipeline
 	Filter *string `json:"filter,omitempty"`
 }
 
@@ -3057,6 +3060,17 @@ func (siw *ServerInterfaceWrapper) ListPipelines(w http.ResponseWriter, r *http.
 	err = runtime.BindQueryParameter("form", true, false, "my", r.URL.Query(), &params.My)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "my", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "is_published" -------------
+	if paramValue := r.URL.Query().Get("is_published"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "is_published", r.URL.Query(), &params.IsPublished)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "is_published", Err: err})
 		return
 	}
 
