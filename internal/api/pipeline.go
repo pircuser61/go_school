@@ -223,11 +223,11 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request, params
 	filter := ""
 
 	if params.Page != nil {
-		page = *params.Page
+		page = *params.Page - 1
 	}
 
 	if params.PerPage != nil {
-		page = *params.PerPage
+		perPage = *params.PerPage
 	}
 
 	if params.Filter != nil {

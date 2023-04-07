@@ -254,11 +254,10 @@ WHERE pp.deleted_at IS NULL
     SELECT MAX(updated_at)
     FROM versions pv2
     WHERE pv.pipeline_id = pv2.pipeline_id
-      AND pv2.status NOT IN ---versions_status--
+      AND pv2.status NOT IN ---versions_status---
 )
   ---author---
-  
-ORDER BY created_at;`
+`
 
 	if authorLogin != "" {
 		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+authorLogin+"'")
@@ -276,11 +275,13 @@ ORDER BY created_at;`
 		q = strings.ReplaceAll(q, "---versions_status---", "(3)")
 	}
 
+	q = fmt.Sprintf("%s ORDER BY created_at", q)
+
 	if page != nil && perPage != nil {
 		q = fmt.Sprintf("%s OFFSET %d", q, *page**perPage)
 	}
 
-	if page != nil {
+	if perPage != nil {
 		q = fmt.Sprintf("%s LIMIT %d", q, *perPage)
 	}
 
