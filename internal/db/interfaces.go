@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -197,6 +198,6 @@ type Database interface {
 	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
 	SaveExternalSystemSettings(ctx c.Context, versionID string, settings e.ExternalSystem, schemaFlag *string) error
 	RemoveObsoleteMapping(ctx c.Context, id string) error
-	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, versionID string) ([]*e.EriusTask, error)
+	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, versionID, excludeWorkNumber string) ([]*e.EriusTask, error)
 	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)
 }

@@ -236,6 +236,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			processSettings.ResubmissionPeriod,
 			login,
 			task.VersionID.String(),
+			gb.RunContext.WorkNumber,
 		)
 		if getWorksErr != nil {
 			return getWorksErr

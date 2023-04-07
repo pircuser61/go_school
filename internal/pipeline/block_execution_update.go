@@ -269,6 +269,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 				processSettings.ResubmissionPeriod,
 				login,
 				task.VersionID.String(),
+				gb.RunContext.WorkNumber,
 			)
 			if getWorksErr != nil {
 				return getWorksErr
@@ -669,6 +670,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			processSettings.ResubmissionPeriod,
 			login,
 			task.VersionID.String(),
+			gb.RunContext.WorkNumber,
 		)
 		if getWorksErr != nil {
 			return getWorksErr

@@ -2925,7 +2925,12 @@ func (db *PGCon) RemoveObsoleteMapping(ctx context.Context, versionID string) er
 	return nil
 }
 
-func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login, versionID string) ([]*entity.EriusTask, error) {
+func (db *PGCon) GetWorksForUserWithGivenTimeRange(
+	ctx context.Context,
+	hours int,
+	login,
+	versionID,
+	excludeWorkNumber string) ([]*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "get_works_for_user_with_given_time_range")
 	defer span.End()
 
@@ -2940,13 +2945,14 @@ func (db *PGCon) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours in
                    from works w
                      where w.started_at > now() - interval '1 hour' * $1
                      and w.version_id = $2
+                     and w.work_number != $3
                      and w.child_id is null)
 				   select work_id, work_author, work_number, work_started
 				   from works_cte
-				   where works_cte.work_recipient = $3
-				   or (works_cte.work_recipient is null and works_cte.work_author = $3)`
+				   where works_cte.work_recipient = $4
+				   or (works_cte.work_recipient is null and works_cte.work_author = $4)`
 
-	rows, queryErr := db.Connection.Query(ctx, query, hours, versionID, login)
+	rows, queryErr := db.Connection.Query(ctx, query, hours, versionID, excludeWorkNumber, login)
 	if queryErr != nil {
 		return nil, queryErr
 	}

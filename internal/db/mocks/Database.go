@@ -10,8 +10,6 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	orderedmap "github.com/iancoleman/orderedmap"
-
 	store "gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 
 	time "time"
@@ -392,9 +390,7 @@ func (_m *MockedDatabase) GetApplicationData(workNumber string) (string, error) 
 	if rf, ok := ret.Get(0).(func(string) string); ok {
 		r0 = rf(workNumber)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(string)
-		}
+		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(string) error); ok {
@@ -1618,25 +1614,25 @@ func (_m *MockedDatabase) GetWorkedVersions(ctx context.Context) ([]entity.Erius
 	return r0, r1
 }
 
-// GetWorksForUserWithGivenTimeRange provides a mock function with given fields: ctx, hours, login, versionID
-func (_m *MockedDatabase) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login string, versionID string) ([]*entity.EriusTask, error) {
-	ret := _m.Called(ctx, hours, login, versionID)
+// GetWorksForUserWithGivenTimeRange provides a mock function with given fields: ctx, hours, login, versionID, excludeWorkNumber
+func (_m *MockedDatabase) GetWorksForUserWithGivenTimeRange(ctx context.Context, hours int, login string, versionID string, excludeWorkNumber string) ([]*entity.EriusTask, error) {
+	ret := _m.Called(ctx, hours, login, versionID, excludeWorkNumber)
 
 	var r0 []*entity.EriusTask
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, string, string) ([]*entity.EriusTask, error)); ok {
-		return rf(ctx, hours, login, versionID)
+	if rf, ok := ret.Get(0).(func(context.Context, int, string, string, string) ([]*entity.EriusTask, error)); ok {
+		return rf(ctx, hours, login, versionID, excludeWorkNumber)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int, string, string) []*entity.EriusTask); ok {
-		r0 = rf(ctx, hours, login, versionID)
+	if rf, ok := ret.Get(0).(func(context.Context, int, string, string, string) []*entity.EriusTask); ok {
+		r0 = rf(ctx, hours, login, versionID, excludeWorkNumber)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*entity.EriusTask)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, int, string, string) error); ok {
-		r1 = rf(ctx, hours, login, versionID)
+	if rf, ok := ret.Get(1).(func(context.Context, int, string, string, string) error); ok {
+		r1 = rf(ctx, hours, login, versionID, excludeWorkNumber)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1862,20 +1858,6 @@ func (_m *MockedDatabase) SendTaskToArchive(ctx context.Context, taskID uuid.UUI
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
 		r0 = rf(ctx, taskID)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// SetApplicationData provides a mock function with given fields: workNumber, data
-func (_m *MockedDatabase) SetApplicationData(workNumber string, data *orderedmap.OrderedMap) error {
-	ret := _m.Called(workNumber, data)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, *orderedmap.OrderedMap) error); ok {
-		r0 = rf(workNumber, data)
 	} else {
 		r0 = ret.Error(0)
 	}
