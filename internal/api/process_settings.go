@@ -101,6 +101,15 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 
 	processSettings.Id = versionID
 
+	err = processSettings.Validate()
+	if err != nil {
+		e := JSONSchemaValidationError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	saveVersionErr := ae.DB.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
 	if saveVersionErr != nil {
 		e := ProcessSettingsSaveError
@@ -150,6 +159,15 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 	}
 
 	externalSystem.Id = systemID
+
+	err = externalSystem.Validate()
+	if err != nil {
+		e := JSONSchemaValidationError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 
 	err = ae.DB.SaveExternalSystemSettings(ctx, versionID, externalSystem, (*string)(params.SchemaFlag))
 	if err != nil {

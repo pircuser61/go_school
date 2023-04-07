@@ -1,7 +1,6 @@
 package script
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
@@ -9,41 +8,6 @@ import (
 )
 
 const versionExample = "916ad995-8d13-49fb-82ee-edd4f97649e2"
-const jsonMappingString = `
-	{
-		"param1": {
-			"description": "param1 name",
-			"type":"string",
-			"value":"form_0.a"
-		},
-		"param2": {
-			"description": "param2 name",
-			"type": "boolean",
-			"value": "form_0.b"
-		},
-		"param3": {
-			"description": "param4 name",
-			"type": "object",
-			"properties": {
-				"param3.1": {
-					"description": "param3.1 name",
-					"type": "string",
-					"format":"date-time",
-					"value":"form_0.c"
-				},
-				"param3.2": {
-					"description": "param3.2 name",
-					"type": "array",
-					"items": {
-						"type":"number"
-					},
-					"value":"form_0.d"
-				}
-			}
-		}
-	}
-
-`
 
 func TestExecutableFunctionParams_Validate(t *testing.T) {
 	type fields struct {
@@ -134,7 +98,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errors.New("type and description are required"),
+			wantErr: errors.New("type is required"),
 		},
 		{
 			name: "Tests of method Validate, missing items case",
@@ -221,11 +185,142 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 	}
 }
 
-func TestMappingParam_Validate(t *testing.T) {
-	unmarshaledMappingParam := JSONSchemaProperties{}
-	err := json.Unmarshal([]byte(jsonMappingString), &unmarshaledMappingParam)
-	assert.Nil(t, err)
+func TestJSONSchema_Validate(t *testing.T) {
+	type fields struct {
+		Type       string
+		Properties JSONSchemaProperties
+		Required   []string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "success case",
+			fields: fields{
+				Type: "object",
+				Properties: JSONSchemaProperties{
+					"param1": JSONSchemaPropertiesValue{
+						Type:  "string",
+						Value: "start_0.A",
+					},
+				},
+				Required: []string{"param1"},
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "wrong type, error case",
+			fields: fields{
+				Type: "string",
+				Properties: JSONSchemaProperties{
+					"param1": JSONSchemaPropertiesValue{
+						Type:  "string",
+						Value: "start_0.A",
+					},
+				},
+				Required: []string{"param1"},
+			},
+			wantErr: assert.Error,
+		},
+		{
+			name: "missing required property, error case",
+			fields: fields{
+				Type: "string",
+				Properties: JSONSchemaProperties{
+					"param2": JSONSchemaPropertiesValue{
+						Type:  "string",
+						Value: "start_0.A",
+					},
+				},
+				Required: []string{"param1"},
+			},
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			js := &JSONSchema{
+				Type:       tt.fields.Type,
+				Properties: tt.fields.Properties,
+				Required:   tt.fields.Required,
+			}
+			tt.wantErr(t, js.Validate(), fmt.Sprintf("Validate()"))
+		})
+	}
+}
 
-	err = unmarshaledMappingParam.Validate()
-	assert.Nil(t, err)
+func TestJSONSchemaProperties_Validate1(t *testing.T) {
+	tests := []struct {
+		name       string
+		properties JSONSchemaProperties
+		wantErr    assert.ErrorAssertionFunc
+	}{
+		{
+			name: "success case",
+			properties: map[string]JSONSchemaPropertiesValue{
+				"param1": {
+					Description: "param1 name",
+					Type:        "string",
+					Value:       "form_0.a",
+				},
+				"param2": {
+					Description: "param2 name",
+					Type:        "boolean",
+					Value:       "form_0.b",
+				},
+				"param3": {
+					Description: "param4 name",
+					Type:        "object",
+					Properties: JSONSchemaProperties{
+						"param3-1": {
+							Description: "param3-1 name",
+							Type:        "string",
+							Format:      "date-time",
+							Value:       "form_0.c",
+						},
+						"param3-2": {
+							Description: "param3-2 name",
+							Type:        "array",
+							Items: &ArrayItems{
+								Type: "number",
+							},
+							Value: "form_0.d",
+						},
+					},
+				},
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "error case",
+			properties: map[string]JSONSchemaPropertiesValue{
+				"param1": {
+					Description: "param1 name",
+					Type:        "object",
+					Properties: JSONSchemaProperties{
+						"param2": {
+							Type: "object",
+							Properties: JSONSchemaProperties{
+								"param1": {
+									Description: "param3-1 name",
+									Type:        "string",
+									Format:      "date-time",
+									Value:       "form_0.a",
+								},
+							},
+						},
+					},
+					Value: "form_0.e",
+				},
+			},
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.wantErr(t, tt.properties.Validate(), fmt.Sprintf("Validate()"))
+		})
+	}
 }
