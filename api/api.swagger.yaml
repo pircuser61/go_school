@@ -262,6 +262,21 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: filter
+          in: query
+          description: Фильтр по work_number, наименованию процесса, логину инициатора
+          schema:
+            type: string
       responses:
         200:
           description: OK

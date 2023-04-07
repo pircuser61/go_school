@@ -227,7 +227,7 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 	return versionHistoryList, nil
 }
 
-func (db *PGCon) GetPipelinesWithLatestVersion(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
+func (db *PGCon) GetPipelinesWithLatestVersion(c context.Context, author string, page in) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipelines_with_latest_version")
 	defer span.End()
 
@@ -257,9 +257,8 @@ WHERE pp.deleted_at IS NULL
       AND pv2.status NOT IN (3, 4)
 )
   ---author---
+  
 ORDER BY created_at;`
-
-	fmt.Println("author: ", author)
 
 	if author != "" {
 		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")

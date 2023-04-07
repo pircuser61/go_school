@@ -480,10 +480,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -817,9 +817,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
-//  * from_schema - Selected by initiator
+//   - user - Single user
+//   - group - Execution group ID
+//   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -896,9 +896,9 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   * User - Single user
-//   * Initiator - Process initiator
-//   * From_schema - Selected by initiator
+//   - User - Single user
+//   - Initiator - Process initiator
+//   - From_schema - Selected by initiator
 type FormExecutorType string
 
 // Form params
@@ -1019,7 +1019,7 @@ type JSONSchemaProperties struct {
 		// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 		Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-		// Required fields if type = object
+		// Required fields for type = object
 		Required *[]string `json:"required,omitempty"`
 
 		// Title of param
@@ -1425,17 +1425,17 @@ type Action struct {
 }
 
 // Approver decision:
-//  * approved - Согласовать
-//  * rejected - Отклонить
+//   - approved - Согласовать
+//   - rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//  * approve - Согласовать
-//  * reject - Отклонить
-//  * viewed - Ознакомлен
-//  * informed - Проинформирован
-//  * sign - Подписать
-//  * confirm - Утвердить
+//   - approve - Согласовать
+//   - reject - Отклонить
+//   - viewed - Ознакомлен
+//   - informed - Проинформирован
+//   - sign - Подписать
+//   - confirm - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1515,8 +1515,8 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1547,11 +1547,11 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1646,7 +1646,12 @@ type SaveVersionMainSettingsJSONBody ProcessSettings
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
 	// Show my pipelines only
-	My *bool `json:"my,omitempty"`
+	My      *bool `json:"my,omitempty"`
+	PerPage *int  `json:"per_page,omitempty"`
+	Page    *int  `json:"page,omitempty"`
+
+	// Фильтр по work_number, наименованию процесса, логину инициатора
+	Filter *string `json:"filter,omitempty"`
 }
 
 // CreatePipelineJSONBody defines parameters for CreatePipeline.
@@ -1994,7 +1999,7 @@ func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-	// Required fields if type = object
+	// Required fields for type = object
 	Required *[]string `json:"required,omitempty"`
 
 	// Title of param
@@ -2029,7 +2034,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-	// Required fields if type = object
+	// Required fields for type = object
 	Required *[]string `json:"required,omitempty"`
 
 	// Title of param
@@ -2058,7 +2063,7 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 			// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 			Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-			// Required fields if type = object
+			// Required fields for type = object
 			Required *[]string `json:"required,omitempty"`
 
 			// Title of param
@@ -2099,7 +2104,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 			// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 			Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-			// Required fields if type = object
+			// Required fields for type = object
 			Required *[]string `json:"required,omitempty"`
 
 			// Title of param
@@ -2128,7 +2133,7 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 				// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 				Properties *JSONSchemaProperties `json:"properties,omitempty"`
 
-				// Required fields if type = object
+				// Required fields for type = object
 				Required *[]string `json:"required,omitempty"`
 
 				// Title of param
@@ -3052,6 +3057,39 @@ func (siw *ServerInterfaceWrapper) ListPipelines(w http.ResponseWriter, r *http.
 	err = runtime.BindQueryParameter("form", true, false, "my", r.URL.Query(), &params.My)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "my", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "per_page" -------------
+	if paramValue := r.URL.Query().Get("per_page"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "per_page", r.URL.Query(), &params.PerPage)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "per_page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+	if paramValue := r.URL.Query().Get("page"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "page", r.URL.Query(), &params.Page)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "filter" -------------
+	if paramValue := r.URL.Query().Get("filter"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "filter", r.URL.Query(), &params.Filter)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filter", Err: err})
 		return
 	}
 
