@@ -105,14 +105,6 @@ type ApproverEditingApp struct {
 	DelegateFor string    `json:"delegate_for"`
 }
 
-type RequestApproverInfoLog struct {
-	Approver    string             `json:"approver"`
-	Comment     string             `json:"comment"`
-	Attachments []string           `json:"attachments"`
-	Type        AdditionalInfoType `json:"type"`
-	CreatedAt   time.Time          `json:"created_at"`
-}
-
 type AdditionalInfoType string
 
 const (
@@ -160,11 +152,10 @@ type ApproverData struct {
 	ApprovementRule     script.ApprovementRule `json:"approvementRule,omitempty"`
 	ApproverLog         []ApproverLogEntry     `json:"approver_log,omitempty"`
 
-	IsEditable             bool                     `json:"is_editable"`
-	RepeatPrevDecision     bool                     `json:"repeat_prev_decision"`
-	EditingApp             *ApproverEditingApp      `json:"editing_app,omitempty"`
-	EditingAppLog          []ApproverEditingApp     `json:"editing_app_log,omitempty"`
-	RequestApproverInfoLog []RequestApproverInfoLog `json:"request_approver_info_log,omitempty"`
+	IsEditable         bool                 `json:"is_editable"`
+	RepeatPrevDecision bool                 `json:"repeat_prev_decision"`
+	EditingApp         *ApproverEditingApp  `json:"editing_app,omitempty"`
+	EditingAppLog      []ApproverEditingApp `json:"editing_app_log,omitempty"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 

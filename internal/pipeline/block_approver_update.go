@@ -510,13 +510,11 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return linkErr
 		}
 
-		if len(gb.State.RequestApproverInfoLog) > 0 {
-			workHours := getWorkHoursBetweenDates(
-				gb.State.RequestApproverInfoLog[len(gb.State.RequestApproverInfoLog)-1].CreatedAt,
-				time.Now(),
-			)
-			gb.State.IncreaseSLA(workHours)
-		}
+		workHours := getWorkHoursBetweenDates(
+			gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt,
+			time.Now(),
+		)
+		gb.State.IncreaseSLA(workHours)
 
 		err := gb.notificateNewInfoRecieved(ctx)
 		if err != nil {
