@@ -961,6 +961,9 @@ func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
 	loginsToNotify := []string{gb.RunContext.Initiator}
+	for login := range gb.State.Approvers {
+		loginsToNotify = append(loginsToNotify, login)
+	}
 
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
@@ -974,8 +977,8 @@ func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
 	}
 
 	tpl := mail.NewRequestApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 
+	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
