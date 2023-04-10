@@ -108,9 +108,9 @@ const (
 
 	FunctionParamsTypeNotification FunctionParamsType = "notification"
 
-	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
+	FunctionParamsTypePlaceholder FunctionParamsType = "placeholder"
 
-	FunctionParamsTypeTask FunctionParamsType = "task"
+	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
 )
 
 // Defines values for IntegerOperandDataType.

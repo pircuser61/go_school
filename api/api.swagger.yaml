@@ -4403,7 +4403,7 @@ components:
             - notification
             - form
             - if
-            - task
+            - placeholder
         params:
           $ref: '#/components/schemas/Params'
       required:
