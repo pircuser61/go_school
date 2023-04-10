@@ -145,7 +145,11 @@ type Database interface {
 	CommitTransaction(ctx c.Context) error
 	RollbackTransaction(ctx c.Context) error
 
-	GetPipelinesWithLatestVersion(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)
+	GetPipelinesWithLatestVersion(ctx c.Context,
+		authorLogin string,
+		publishedPipelines bool,
+		page, perPage *int,
+		filter string) ([]e.EriusScenarioInfo, error)
 	GetApprovedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	GetVersionsByStatus(ctx c.Context, status int, author string) ([]e.EriusScenarioInfo, error)
 	GetDraftVersions(ctx c.Context, author string) ([]e.EriusScenarioInfo, error)

@@ -262,6 +262,29 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: is_published
+          in: query
+          description: Show published pipelines only
+          required: false
+          schema:
+            type: boolean
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 1
+        - name: filter
+          in: query
+          description: Фильтр по имени pipeline
+          schema:
+            type: string
       responses:
         200:
           description: OK

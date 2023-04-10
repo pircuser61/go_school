@@ -227,7 +227,11 @@ func parseRowsVersionHistoryList(c context.Context, rows pgx.Rows) ([]entity.Eri
 	return versionHistoryList, nil
 }
 
-func (db *PGCon) GetPipelinesWithLatestVersion(c context.Context, author string) ([]entity.EriusScenarioInfo, error) {
+func (db *PGCon) GetPipelinesWithLatestVersion(c context.Context,
+	authorLogin string,
+	publishedPipelines bool,
+	page, perPage *int,
+	filter string) ([]entity.EriusScenarioInfo, error) {
 	c, span := trace.StartSpan(c, "pg_get_pipelines_with_latest_version")
 	defer span.End()
 
@@ -254,15 +258,35 @@ WHERE pp.deleted_at IS NULL
     SELECT MAX(updated_at)
     FROM versions pv2
     WHERE pv.pipeline_id = pv2.pipeline_id
-      AND pv2.status NOT IN (3, 4)
+      AND pv2.status NOT IN ---versions_status---
 )
   ---author---
-ORDER BY created_at;`
+`
 
-	fmt.Println("author: ", author)
+	if authorLogin != "" {
+		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+authorLogin+"'")
+	}
 
-	if author != "" {
-		q = strings.ReplaceAll(q, "---author---", "AND pv.author='"+author+"'")
+	if filter != "" {
+		escapeFilter := strings.Replace(filter, "_", "!_", -1)
+		escapeFilter = strings.Replace(escapeFilter, "%", "!%", -1)
+		q = fmt.Sprintf(`%s AND (pp.name ILIKE '%%%s%%' ESCAPE '!')`, q, escapeFilter)
+	}
+
+	if publishedPipelines {
+		q = strings.ReplaceAll(q, "---versions_status---", "(1, 3)")
+	} else {
+		q = strings.ReplaceAll(q, "---versions_status---", "(3)")
+	}
+
+	q = fmt.Sprintf("%s ORDER BY created_at", q)
+
+	if page != nil && perPage != nil {
+		q = fmt.Sprintf("%s OFFSET %d", q, *page**perPage)
+	}
+
+	if perPage != nil {
+		q = fmt.Sprintf("%s LIMIT %d", q, *perPage)
 	}
 
 	rows, err := db.Connection.Query(c, q)

@@ -217,8 +217,24 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request, params
 	log := logger.GetLogger(ctx)
 
 	myPipelines := params.My != nil && *params.My
+	publishedPipelines := params.IsPublished != nil && *params.IsPublished
+	page := 1
+	perPage := 10
+	filter := ""
 
-	pipelines, err := ae.listPipelines(ctx, myPipelines)
+	if params.Page != nil && *params.Page > 0 {
+		page = *params.Page - 1
+	}
+
+	if params.PerPage != nil && *params.PerPage > 0 {
+		perPage = *params.PerPage
+	}
+
+	if params.Filter != nil {
+		filter = *params.Filter
+	}
+
+	pipelines, err := ae.listPipelines(ctx, myPipelines, publishedPipelines, page, perPage, filter)
 	if err != nil {
 		_ = err.sendError(w)
 
@@ -419,7 +435,11 @@ func (ae *APIEnv) GetPipelineVersions(w http.ResponseWriter, req *http.Request, 
 // разрешенные для данного пользователя
 //
 //nolint:dupl //diff logic
-func (ae *APIEnv) listPipelines(ctx context.Context, myPipelines bool) ([]entity.EriusScenarioInfo, *PipelinerError) {
+func (ae *APIEnv) listPipelines(ctx context.Context,
+	myPipelines,
+	publishedPipelines bool,
+	page, perPage int,
+	filter string) ([]entity.EriusScenarioInfo, *PipelinerError) {
 	ctx, s := trace.StartSpan(ctx, "list_drafts")
 	defer s.End()
 
@@ -434,7 +454,7 @@ func (ae *APIEnv) listPipelines(ctx context.Context, myPipelines bool) ([]entity
 		authorLogin = userFromContext.Username
 	}
 
-	drafts, err := ae.DB.GetPipelinesWithLatestVersion(ctx, authorLogin)
+	drafts, err := ae.DB.GetPipelinesWithLatestVersion(ctx, authorLogin, publishedPipelines, &page, &perPage, filter)
 	if err != nil {
 		return []entity.EriusScenarioInfo{}, &PipelinerError{GetAllDraftsError}
 	}

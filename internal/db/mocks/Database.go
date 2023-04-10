@@ -1024,25 +1024,25 @@ func (_m *MockedDatabase) GetPipelinesByNameOrId(ctx context.Context, dto *db.Se
 	return r0, r1
 }
 
-// GetPipelinesWithLatestVersion provides a mock function with given fields: ctx, author
-func (_m *MockedDatabase) GetPipelinesWithLatestVersion(ctx context.Context, author string) ([]entity.EriusScenarioInfo, error) {
-	ret := _m.Called(ctx, author)
+// GetPipelinesWithLatestVersion provides a mock function with given fields: ctx, authorLogin, publishedPipelines, page, perPage, filter
+func (_m *MockedDatabase) GetPipelinesWithLatestVersion(ctx context.Context, authorLogin string, publishedPipelines bool, page *int, perPage *int, filter string) ([]entity.EriusScenarioInfo, error) {
+	ret := _m.Called(ctx, authorLogin, publishedPipelines, page, perPage, filter)
 
 	var r0 []entity.EriusScenarioInfo
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]entity.EriusScenarioInfo, error)); ok {
-		return rf(ctx, author)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool, *int, *int, string) ([]entity.EriusScenarioInfo, error)); ok {
+		return rf(ctx, authorLogin, publishedPipelines, page, perPage, filter)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.EriusScenarioInfo); ok {
-		r0 = rf(ctx, author)
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool, *int, *int, string) []entity.EriusScenarioInfo); ok {
+		r0 = rf(ctx, authorLogin, publishedPipelines, page, perPage, filter)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]entity.EriusScenarioInfo)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, author)
+	if rf, ok := ret.Get(1).(func(context.Context, string, bool, *int, *int, string) error); ok {
+		r1 = rf(ctx, authorLogin, publishedPipelines, page, perPage, filter)
 	} else {
 		r1 = ret.Error(1)
 	}
