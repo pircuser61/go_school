@@ -3,12 +3,15 @@ package script
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 )
 
 const (
 	timeLayout  = `"2006-01-02 15:04:05.000000 -0700 MST"`
+	timeLayout2 = `"2006-01-02 15:04:05.000 -0700 MST"`
 	emptyString = `""`
+	object      = "object"
 )
 
 type JSONSchema struct {
@@ -39,15 +42,15 @@ type ArrayItems struct {
 	Type       string               `json:"type,omitempty"`
 }
 
-func (m *JSONSchemaPropertiesValue) GetType() string {
-	return m.Type
+func (jspv *JSONSchemaPropertiesValue) GetType() string {
+	return jspv.Type
 }
 
-func (m *JSONSchemaPropertiesValue) GetProperties() map[string]interface{} {
+func (jspv *JSONSchemaPropertiesValue) GetProperties() map[string]interface{} {
 	properties := make(map[string]interface{})
 
-	for k := range m.Properties {
-		properties[k] = m.Properties[k]
+	for k := range jspv.Properties {
+		properties[k] = jspv.Properties[k]
 	}
 	return properties
 }
@@ -122,22 +125,59 @@ func (a *ExecutableFunctionParams) Validate() error {
 	return nil
 }
 
-func (m JSONSchemaProperties) Validate() error {
-	for key := range m {
-		mappingValue := m[key]
-		if mappingValue.Type == "" || mappingValue.Description == "" {
-			return errors.New("type and description are required")
+func (js *JSONSchema) Validate() error {
+	if js == nil {
+		return nil
+	}
+
+	if js.Type != object {
+		return errors.New(`schema type must be "object"`)
+	}
+
+	for _, s := range js.Required {
+		_, ok := js.Properties[s]
+		if !ok {
+			return fmt.Errorf("%s is required", s)
+		}
+	}
+
+	err := js.Properties.Validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (properties JSONSchemaProperties) Validate() error {
+	for name, property := range properties {
+		if property.Type == "" {
+			return errors.New("type is required")
 		}
 
-		err := mappingValue.Properties.Validate()
+		err := property.Properties.Validate()
 		if err != nil {
 			return err
 		}
 
-		if mappingValue.Items != nil {
-			err = mappingValue.Items.Validate()
+		if property.Items != nil {
+			err = property.Items.Validate()
 			if err != nil {
 				return err
+			}
+		}
+
+		for _, name := range property.Required {
+			_, ok := property.Properties[name]
+			if !ok {
+				return fmt.Errorf("%s is required", name)
+			}
+		}
+
+		if property.Value != "" {
+			hasInnerMapping := property.Properties.checkInnerFieldsHasMapping()
+			if hasInnerMapping {
+				return fmt.Errorf("object %s must either be mapped or must have inner field mappings, but not both", name)
 			}
 		}
 	}
@@ -145,17 +185,46 @@ func (m JSONSchemaProperties) Validate() error {
 	return nil
 }
 
-func (m ArrayItems) Validate() error {
-	if m.Type == "" {
+func (properties JSONSchemaProperties) checkInnerFieldsHasMapping() bool {
+	for _, property := range properties {
+		if property.Value != "" {
+			return true
+		}
+
+		hasInnerMapping := property.Properties.checkInnerFieldsHasMapping()
+		if hasInnerMapping {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (ai ArrayItems) Validate() error {
+	if ai.Type == "" {
 		return errors.New("type is required")
 	}
 
-	if m.Type == "array" && m.Items == nil {
-		return errors.New("items is required")
+	if ai.Type == "array" {
+		if ai.Items == nil {
+			return errors.New("items is required")
+		} else {
+			err := ai.Items.Validate()
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	if m.Type == "object" && m.Properties == nil {
-		return errors.New("properties is required")
+	if ai.Type == object {
+		if ai.Properties == nil {
+			return errors.New("properties is required")
+		} else {
+			err := ai.Properties.Validate()
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -167,11 +236,20 @@ func (ft *functionTime) UnmarshalJSON(b []byte) error {
 	}
 
 	parsedTime, err := time.Parse(timeLayout, string(b))
+	if err == nil {
+		*ft = functionTime(parsedTime)
+		return nil
+	}
+
+	parsedTime, err = time.Parse(timeLayout2, string(b))
+	if err == nil {
+		*ft = functionTime(parsedTime)
+		return nil
+	}
+
+	err = json.Unmarshal(b, &parsedTime)
 	if err != nil {
-		err = json.Unmarshal(b, &parsedTime)
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	*ft = functionTime(parsedTime)

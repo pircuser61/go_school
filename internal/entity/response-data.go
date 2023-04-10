@@ -124,6 +124,44 @@ type ExternalSystem struct {
 	OutputMapping *script.JSONSchema `json:"output_mapping,omitempty"`
 }
 
+func (es ProcessSettings) Validate() error {
+	err := es.StartSchema.Validate()
+	if err != nil {
+		return err
+	}
+
+	err = es.EndSchema.Validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (es ExternalSystem) Validate() error {
+	err := es.InputSchema.Validate()
+	if err != nil {
+		return err
+	}
+
+	err = es.OutputSchema.Validate()
+	if err != nil {
+		return err
+	}
+
+	err = es.InputMapping.Validate()
+	if err != nil {
+		return err
+	}
+
+	err = es.OutputMapping.Validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type UsageResponse struct {
 	Name      string   `json:"name"` // Имя блока
 	Used      bool     `json:"used"`
@@ -254,6 +292,8 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 			fieldType = "SsoPerson"
 		case strings.HasPrefix(field.Type, "*"):
 			fieldType = "object"
+		case field.Type == "float64":
+			fieldType = "number"
 		default:
 			fieldType = field.Type
 		}
