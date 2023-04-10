@@ -11,11 +11,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
-type PlaceholderData struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
 type GoPlaceholderBlock struct {
 	Name    string
 	Title   string
@@ -23,7 +18,8 @@ type GoPlaceholderBlock struct {
 	Output  map[string]string
 	Sockets []script.Socket
 
-	State *PlaceholderData
+	PlaceholderName        string `json:"name"`
+	PlaceholderDescription string `json:"description"`
 
 	RunContext *BlockRunContext
 }
@@ -36,6 +32,13 @@ func (gb *GoPlaceholderBlock) Model() script.FunctionModel {
 		Inputs:    nil,
 		Outputs:   nil,
 		Sockets:   []script.Socket{script.DefaultSocket},
+		Params: &script.FunctionParams{
+			Type: BlockPlaceholderID,
+			Params: &script.PlaceholderParams{
+				Name:        "",
+				Description: "",
+			},
+		},
 	}
 }
 
@@ -113,20 +116,11 @@ func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRu
 		b.Output[v.Name] = v.Global
 	}
 
-	var params script.PlaceholderParams
-	err := json.Unmarshal(ef.Params, &params)
+	err := json.Unmarshal(ef.Params, &b)
 	if err != nil {
 		return nil, errors.Wrap(err, "can not get placeholder parameters")
 	}
 
-	if err = params.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid placeholder parameters")
-	}
-
-	b.State = &PlaceholderData{
-		Name:        params.Name,
-		Description: params.Description,
-	}
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	return b, nil
