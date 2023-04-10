@@ -1060,6 +1060,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     step.WorkID,
 		WorkNumber: step.WorkNumber,
+		Initiator:  step.Initiator,
 		VarStore:   storage,
 
 		Storage:       ae.DB,

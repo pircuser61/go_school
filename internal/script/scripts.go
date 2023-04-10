@@ -2,6 +2,7 @@ package script
 
 import (
 	"github.com/google/uuid"
+	"github.com/iancoleman/orderedmap"
 )
 
 type ShapeEntity struct {
@@ -73,4 +74,23 @@ func GetShapes() ([]ShapeEntity, error) {
 	}
 
 	return shapes, nil
+}
+
+func OrderedMapToMap(om orderedmap.OrderedMap) map[string]interface{} {
+	m := make(map[string]interface{})
+	for _, key := range om.Keys() {
+		value, _ := om.Get(key)
+		m[key] = value
+	}
+
+	return m
+}
+
+func MapToOrderedMap(m map[string]interface{}) orderedmap.OrderedMap {
+	om := orderedmap.New()
+	for key, value := range m {
+		om.Set(key, value)
+	}
+
+	return *om
 }
