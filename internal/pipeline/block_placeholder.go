@@ -2,11 +2,19 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
+
+	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
+
+type PlaceholderData struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
 
 type GoPlaceholderBlock struct {
 	Name    string
@@ -14,6 +22,8 @@ type GoPlaceholderBlock struct {
 	Input   map[string]string
 	Output  map[string]string
 	Sockets []script.Socket
+
+	State *PlaceholderData
 
 	RunContext *BlockRunContext
 }
@@ -85,8 +95,8 @@ func (gb *GoPlaceholderBlock) Update(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoTestBlock {
-	b := &GoTestBlock{
+func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoPlaceholderBlock, error) {
+	b := &GoPlaceholderBlock{
 		Name:       name,
 		Title:      ef.Title,
 		Input:      map[string]string{},
@@ -102,5 +112,22 @@ func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRu
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
 	}
-	return b
+
+	var params script.PlaceholderParams
+	err := json.Unmarshal(ef.Params, &params)
+	if err != nil {
+		return nil, errors.Wrap(err, "can not get placeholder parameters")
+	}
+
+	if err = params.Validate(); err != nil {
+		return nil, errors.Wrap(err, "invalid placeholder parameters")
+	}
+
+	b.State = &PlaceholderData{
+		Name:        params.Name,
+		Description: params.Description,
+	}
+	b.RunContext.VarStore.AddStep(b.Name)
+
+	return b, nil
 }
