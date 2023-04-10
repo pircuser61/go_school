@@ -29,24 +29,25 @@ import (
 )
 
 type APIEnv struct {
-	Log                  logger.Logger
-	DB                   db.Database
-	Remedy               string
-	FaaS                 string
-	SchedulerClient      scheduler.Client
-	NetworkMonitorClient netmon.Client
-	HTTPClient           *http.Client
-	Statistic            *statistic.Statistic
-	Mail                 *mail.Service
-	Kafka                *kafka.Service
-	People               *people.Service
-	ServiceDesc          *servicedesc.Service
-	FunctionStore        *functions.Service
-	HumanTasks           *human_tasks.Service
-	MailFetcher          mail_fetcher.Service
-	Minio                *file.Service
-	Integrations         *integrations.Service
-	HrGate               *hrgate.Service
+	Log                     logger.Logger
+	DB                      db.Database
+	Remedy                  string
+	FaaS                    string
+	SchedulerClient         scheduler.Client
+	NetworkMonitorClient    netmon.Client
+	HTTPClient              *http.Client
+	Statistic               *statistic.Statistic
+	Mail                    *mail.Service
+	Kafka                   *kafka.Service
+	People                  *people.Service
+	ServiceDesc             *servicedesc.Service
+	FunctionStore           *functions.Service
+	HumanTasks              *human_tasks.Service
+	MailFetcher             mail_fetcher.Service
+	Minio                   *file.Service
+	Integrations            *integrations.Service
+	HrGate                  *hrgate.Service
+	IncludePlaceholderBlock bool
 }
 
 type ServerParam struct {
