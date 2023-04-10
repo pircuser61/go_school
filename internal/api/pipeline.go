@@ -218,15 +218,15 @@ func (ae *APIEnv) ListPipelines(w http.ResponseWriter, req *http.Request, params
 
 	myPipelines := params.My != nil && *params.My
 	publishedPipelines := params.IsPublished != nil && *params.IsPublished
-	page := 0
+	page := 1
 	perPage := 10
 	filter := ""
 
-	if params.Page != nil {
+	if params.Page != nil && *params.Page > 0 {
 		page = *params.Page - 1
 	}
 
-	if params.PerPage != nil {
+	if params.PerPage != nil && *params.PerPage > 0 {
 		perPage = *params.PerPage
 	}
 

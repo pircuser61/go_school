@@ -278,6 +278,7 @@ paths:
           schema:
             type: integer
             default: 0
+            minimum: 0
         - name: filter
           in: query
           description: Фильтр по имени pipeline
