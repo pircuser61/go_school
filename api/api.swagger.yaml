@@ -3894,6 +3894,7 @@ components:
         - $ref: '#/components/schemas/NotificationParams'
         - $ref: "#/components/schemas/ConditionParams"
         - $ref: "#/components/schemas/FormParams"
+        - $ref: "#/components/schemas/TaskParams"
 
     ConditionGroup:
       type: object
@@ -4187,6 +4188,16 @@ components:
         - repeat_prev_decision
         - is_editable
 
+    TaskParams:
+      type: object
+      description: Task params
+      properties:
+        description:
+          type: string
+          description: New task description
+      required:
+        - description
+
     FormParams:
       type: object
       description: Form params
@@ -4392,6 +4403,7 @@ components:
             - notification
             - form
             - if
+            - task
         params:
           $ref: '#/components/schemas/Params'
       required:
