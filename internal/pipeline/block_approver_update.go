@@ -960,7 +960,7 @@ func (gb *GoApproverBlock) notificateNewInfoRecieved(ctx c.Context) error {
 func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
-	loginsToNotify := []string{gb.RunContext.Initiator}
+	loginsToNotify := make([]string, 0)
 	for login := range gb.State.Approvers {
 		loginsToNotify = append(loginsToNotify, login)
 	}
