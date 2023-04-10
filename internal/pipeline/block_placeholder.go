@@ -2,9 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"encoding/json"
-
-	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -17,9 +14,6 @@ type GoPlaceholderBlock struct {
 	Input   map[string]string
 	Output  map[string]string
 	Sockets []script.Socket
-
-	PlaceholderName        string `json:"name"`
-	PlaceholderDescription string `json:"description"`
 
 	RunContext *BlockRunContext
 }
@@ -114,11 +108,6 @@ func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRu
 
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
-	}
-
-	err := json.Unmarshal(ef.Params, &b)
-	if err != nil {
-		return nil, errors.Wrap(err, "can not get placeholder parameters")
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
