@@ -1198,6 +1198,12 @@ type NumberOperandOperandType string
 // Block constant params
 type Params interface{}
 
+// Placeholder block params
+type PlaceholderParams struct {
+	// New task description
+	Description string `json:"description"`
+}
+
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettings struct {
 	EndSchema *JSONSchema `json:"end_schema,omitempty"`
@@ -1378,12 +1384,6 @@ type StringOperandOperandType string
 // TaskMeanSolveTime defines model for TaskMeanSolveTime.
 type TaskMeanSolveTime struct {
 	MeanWorkHours float32 `json:"meanWorkHours"`
-}
-
-// Task params
-type TaskParams struct {
-	// New task description
-	Description string `json:"description"`
 }
 
 // TaskUpdate defines model for TaskUpdate.

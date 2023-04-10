@@ -3894,7 +3894,7 @@ components:
         - $ref: '#/components/schemas/NotificationParams'
         - $ref: "#/components/schemas/ConditionParams"
         - $ref: "#/components/schemas/FormParams"
-        - $ref: "#/components/schemas/TaskParams"
+        - $ref: "#/components/schemas/PlaceholderParams"
 
     ConditionGroup:
       type: object
@@ -4188,9 +4188,9 @@ components:
         - repeat_prev_decision
         - is_editable
 
-    TaskParams:
+    PlaceholderParams:
       type: object
-      description: Task params
+      description: Placeholder block params
       properties:
         description:
           type: string
