@@ -1202,6 +1202,9 @@ type Params interface{}
 type PlaceholderParams struct {
 	// New task description
 	Description string `json:"description"`
+
+	// New task name
+	Name string `json:"name"`
 }
 
 // Настройки старта версии пайплайна(процесса)

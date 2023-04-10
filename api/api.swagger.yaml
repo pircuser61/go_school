@@ -4192,10 +4192,14 @@ components:
       type: object
       description: Placeholder block params
       properties:
+        name:
+          type: string
+          description: New task name
         description:
           type: string
           description: New task description
       required:
+        - name
         - description
 
     FormParams:
