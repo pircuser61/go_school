@@ -1,7 +1,10 @@
 package script
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
+	"github.com/iancoleman/orderedmap"
 )
 
 type ShapeEntity struct {
@@ -73,4 +76,34 @@ func GetShapes() ([]ShapeEntity, error) {
 	}
 
 	return shapes, nil
+}
+
+func OrderedMapToMap(om orderedmap.OrderedMap) (map[string]interface{}, error) {
+	data, err := om.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	var m map[string]interface{}
+	err = json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+func MapToOrderedMap(m map[string]interface{}) (orderedmap.OrderedMap, error) {
+	om := orderedmap.New()
+	data, err := json.Marshal(m)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	err = json.Unmarshal(data, &om)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	return *om, nil
 }

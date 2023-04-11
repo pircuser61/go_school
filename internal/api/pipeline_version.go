@@ -16,8 +16,6 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
-	"github.com/xeipuuv/gojsonschema"
-
 	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/jackc/pgx/v4"
@@ -29,6 +27,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -359,7 +358,26 @@ func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
 		return applicationBody, nil
 	} else {
 		// need mapping
-		mappedApplicationBody = applicationBody // TODO: add mapping
+		var mappedData map[string]interface{}
+		appBody, errMap := script.OrderedMapToMap(applicationBody)
+		if errMap != nil {
+			return orderedmap.OrderedMap{}, err
+		}
+
+		mappedData, err = script.MapData(
+			externalSystem.InputMapping.Properties,
+			appBody,
+			externalSystem.InputMapping.Required,
+			nil,
+		)
+		if err != nil {
+			return orderedmap.OrderedMap{}, err
+		}
+
+		mappedApplicationBody, err = script.MapToOrderedMap(mappedData)
+		if err != nil {
+			return orderedmap.OrderedMap{}, err
+		}
 	}
 
 	err = validateApplicationBody(mappedApplicationBody, startSchemaString)
@@ -965,24 +983,9 @@ func validateApplicationBody(applicationBody orderedmap.OrderedMap, jsonSchema s
 		return err
 	}
 
-	loader := gojsonschema.NewStringLoader(jsonSchema)
-	schema, err := gojsonschema.NewSchema(loader)
+	err = script.ValidateJSONByJSONSchema(string(apBody), jsonSchema)
 	if err != nil {
 		return err
-	}
-
-	documentLoader := gojsonschema.NewStringLoader(string(apBody))
-	result, err := schema.Validate(documentLoader)
-	if err != nil {
-		return err
-	}
-
-	if !result.Valid() {
-		var errorMsg string
-		for _, resultError := range result.Errors() {
-			errorMsg += resultError.String() + "; "
-		}
-		return errors.New(errorMsg)
 	}
 
 	return nil
