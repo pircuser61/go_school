@@ -248,10 +248,10 @@ func TestMapData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := MapData(tt.args.mapping, tt.args.input, tt.args.required, tt.args.pathToRoot)
-			if !tt.wantErr(t, err, fmt.Sprintf("MapData2(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.pathToRoot)) {
+			if !tt.wantErr(t, err, fmt.Sprintf("MapData(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.pathToRoot)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "MapData2(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.pathToRoot)
+			assert.Equalf(t, tt.want, got, "MapData(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.pathToRoot)
 		})
 	}
 }

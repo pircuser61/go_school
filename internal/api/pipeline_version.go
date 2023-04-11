@@ -359,9 +359,14 @@ func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
 	} else {
 		// need mapping
 		var mappedData map[string]interface{}
+		appBody, errMap := script.OrderedMapToMap(applicationBody)
+		if errMap != nil {
+			return orderedmap.OrderedMap{}, err
+		}
+
 		mappedData, err = script.MapData(
 			externalSystem.InputMapping.Properties,
-			script.OrderedMapToMap(applicationBody),
+			appBody,
 			externalSystem.InputMapping.Required,
 			nil,
 		)
@@ -369,7 +374,10 @@ func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
 			return orderedmap.OrderedMap{}, err
 		}
 
-		mappedApplicationBody = script.MapToOrderedMap(mappedData)
+		mappedApplicationBody, err = script.MapToOrderedMap(mappedData)
+		if err != nil {
+			return orderedmap.OrderedMap{}, err
+		}
 	}
 
 	err = validateApplicationBody(mappedApplicationBody, startSchemaString)

@@ -1,6 +1,8 @@
 package script
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
 	"github.com/iancoleman/orderedmap"
 )
@@ -76,21 +78,32 @@ func GetShapes() ([]ShapeEntity, error) {
 	return shapes, nil
 }
 
-func OrderedMapToMap(om orderedmap.OrderedMap) map[string]interface{} {
-	m := make(map[string]interface{})
-	for _, key := range om.Keys() {
-		value, _ := om.Get(key)
-		m[key] = value
+func OrderedMapToMap(om orderedmap.OrderedMap) (map[string]interface{}, error) {
+	data, err := om.MarshalJSON()
+	if err != nil {
+		return nil, err
 	}
 
-	return m
+	var m map[string]interface{}
+	err = json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
 
-func MapToOrderedMap(m map[string]interface{}) orderedmap.OrderedMap {
+func MapToOrderedMap(m map[string]interface{}) (orderedmap.OrderedMap, error) {
 	om := orderedmap.New()
-	for key, value := range m {
-		om.Set(key, value)
+	data, err := json.Marshal(m)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
 	}
 
-	return *om
+	err = json.Unmarshal(data, &om)
+	if err != nil {
+		return orderedmap.OrderedMap{}, err
+	}
+
+	return *om, nil
 }

@@ -271,17 +271,17 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
 	entryPoint.Output = nil
 
-	entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
-		Global: es.Pipeline.Entrypoint + "." + KeyOutputWorkNumber,
-		Name:   KeyOutputWorkNumber,
-		Type:   "string",
-	})
-
-	entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
-		Global: es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
-		Name:   KeyOutputApplicationInitiator,
-		Type:   "SsoPerson",
-	})
+	entryPoint.Output = append(
+		entryPoint.Output,
+		EriusFunctionValue{
+			Global: es.Pipeline.Entrypoint + "." + KeyOutputWorkNumber,
+			Name:   KeyOutputWorkNumber,
+			Type:   "string",
+		}, EriusFunctionValue{
+			Global: es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
+			Name:   KeyOutputApplicationInitiator,
+			Type:   "SsoPerson",
+		})
 
 	for _, field := range mainObj.Fields {
 		var name string
