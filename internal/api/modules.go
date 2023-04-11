@@ -38,9 +38,12 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		(&pipeline.GoWaitForAllInputsBlock{}).Model(),
 		(&pipeline.ExecutableFunctionBlock{}).Model(),
 		(&pipeline.GoNotificationBlock{}).Model(),
+		(&pipeline.GoPlaceholderBlock{}).Model(),
 		(&pipeline.GoStartBlock{}).Model(),
 		(&pipeline.GoEndBlock{}).Model(),
 	}
+
+	eriusFunctionsReturn := make([]script.FunctionModel, 0, len(eriusFunctions))
 
 	for i := range eriusFunctions {
 		switch eriusFunctions[i].ID {
@@ -71,7 +74,14 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			eriusFunctions[i].Title = WaitForAllImputsBase
 		case BeginParallelTask:
 			eriusFunctions[i].Title = BeginParallelTask
+		case pipeline.BlockPlaceholderID:
+			if !ae.IncludePlaceholderBlock {
+				continue
+			}
+			eriusFunctions[i].Title = "Задача"
+		case "":
 		}
+		eriusFunctionsReturn = append(eriusFunctionsReturn, eriusFunctions[i])
 	}
 
 	eriusShapes, err := script.GetShapes()
@@ -83,7 +93,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, entity.EriusFunctionList{Functions: eriusFunctions, Shapes: eriusShapes})
+	err = sendResponse(w, http.StatusOK, entity.EriusFunctionList{Functions: eriusFunctionsReturn, Shapes: eriusShapes})
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))

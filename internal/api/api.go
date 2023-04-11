@@ -108,6 +108,8 @@ const (
 
 	FunctionParamsTypeNotification FunctionParamsType = "notification"
 
+	FunctionParamsTypePlaceholder FunctionParamsType = "placeholder"
+
 	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
 )
 
@@ -1195,6 +1197,15 @@ type NumberOperandOperandType string
 
 // Block constant params
 type Params interface{}
+
+// Placeholder block params
+type PlaceholderParams struct {
+	// New task description
+	Description string `json:"description"`
+
+	// New task name
+	Name string `json:"name"`
+}
 
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettings struct {
