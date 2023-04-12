@@ -2373,7 +2373,6 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
 	  AND pv.is_actual = TRUE
 	  AND pv.pipeline_id = $1
 	  AND p.deleted_at IS NULL
-	LIMIT 1
 `
 	res := &entity.EriusScenario{}
 
