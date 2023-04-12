@@ -3,12 +3,10 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strings"
-	"sync"
-
-	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 
@@ -163,7 +161,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID
 	})
 }
 
-type runVersionsByPipelineIDRequest struct {
+type runVersionByPipelineIDRequest struct {
 	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
 	Description       string                `json:"description"`
 	PipelineId        string                `json:"pipeline_id"`
@@ -174,7 +172,7 @@ type runVersionsByPipelineIDRequest struct {
 
 //nolint:gocyclo //its ok here
 func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
-	ctx, s := trace.StartSpan(r.Context(), "run_versions_by_pipeline_id")
+	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -190,10 +188,9 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	req := &runVersionsByPipelineIDRequest{}
+	req := &runVersionByPipelineIDRequest{}
 
-	err = json.Unmarshal(body, req)
-	if err != nil {
+	if err = json.Unmarshal(body, req); err != nil {
 		e := BodyParseError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -203,13 +200,13 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 
 	if req.PipelineId == "" {
 		e := ValidationError
-		log.Error(e.errorMessage(errors.New("PipelineID is empty")))
+		log.Error(e.errorMessage(errors.New("pipelineID is empty")))
 		_ = e.sendError(w)
 
 		return
 	}
 
-	versions, err := ae.DB.GetVersionsByPipelineID(ctx, req.PipelineId)
+	version, err := ae.DB.GetVersionByPipelineID(ctx, req.PipelineId)
 	if err != nil {
 		e := GetVersionsByBlueprintIdError
 		log.Error(e.errorMessage(err))
@@ -218,85 +215,66 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(len(versions))
-	respChan := make(chan *entity.RunResponse, len(versions))
-
-	for i := range versions {
-		j := i
-		go func(wg *sync.WaitGroup, version entity.EriusScenario, ch chan *entity.RunResponse) {
-			defer wg.Done()
-
-			var clientID string
-			clientID, err = ae.getClietIDFromToken(r.Header.Get(AuthorizationHeader))
-			if err != nil {
-				e := GetClientIDError
-				log.Error(e.errorMessage(err))
-				_ = e.sendError(w)
-
-				return
-			}
-
-			var mappedApplicationBody orderedmap.OrderedMap
-			mappedApplicationBody, err = ae.processMappings(ctx, clientID, version, req.ApplicationBody)
-			if err != nil {
-				e := MappingError
-				log.Error(e.errorMessage(err))
-				_ = e.sendError(w)
-
-				return
-			}
-
-			err = version.FillEntryPointOutput()
-			if err != nil {
-				e := GetEntryPointOutputError
-				log.Error(e.errorMessage(err))
-				_ = e.sendError(w)
-
-				return
-			}
-
-			v, execErr := ae.execVersion(ctx, &execVersionDTO{
-				version:  &version,
-				withStop: false,
-				w:        w,
-				req:      r,
-				runCtx: entity.TaskRunContext{
-					ClientID: clientID,
-					InitialApplication: entity.InitialApplication{
-						Description:               req.Description,
-						ApplicationBody:           mappedApplicationBody,
-						Keys:                      req.Keys,
-						AttachmentFields:          req.AttachmentFields,
-						IsTestApplication:         req.IsTestApplication,
-						ApplicationBodyFromSystem: req.ApplicationBody,
-					},
-				},
-			})
-			if execErr != nil {
-				log.Error(execErr)
-				return
-			}
-
-			if v == nil {
-				log.Error("run_versions_by_pipeline_id execution error")
-				return
-			}
-			ch <- v
-		}(&wg, versions[j], respChan)
-	}
-
-	wg.Wait()
-	close(respChan)
-
-	runVersions := make([]*entity.RunResponse, 0, len(versions))
-	for i := range respChan {
-		v := i
-		runVersions = append(runVersions, v)
-	}
-
-	err = sendResponse(w, http.StatusOK, runVersions)
+	var clientID string
+	clientID, err = ae.getClietIDFromToken(r.Header.Get(AuthorizationHeader))
 	if err != nil {
+		e := GetClientIDError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var mappedApplicationBody orderedmap.OrderedMap
+	mappedApplicationBody, err = ae.processMappings(ctx, clientID, *version, req.ApplicationBody)
+	if err != nil {
+		e := MappingError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = version.FillEntryPointOutput(); err != nil {
+		e := GetEntryPointOutputError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	v, execErr := ae.execVersion(ctx, &execVersionDTO{
+		version:  version,
+		withStop: false,
+		w:        w,
+		req:      r,
+		runCtx: entity.TaskRunContext{
+			ClientID: clientID,
+			InitialApplication: entity.InitialApplication{
+				Description:               req.Description,
+				ApplicationBody:           mappedApplicationBody,
+				Keys:                      req.Keys,
+				AttachmentFields:          req.AttachmentFields,
+				IsTestApplication:         req.IsTestApplication,
+				ApplicationBodyFromSystem: req.ApplicationBody,
+			},
+		},
+	})
+	if execErr != nil {
+		e := PipelineExecutionError
+		log.Error(e.errorMessage(execErr))
+		_ = e.sendError(w)
+		return
+	}
+
+	if v == nil {
+		e := PipelineExecutionError
+		log.Error(e.errorMessage(errors.New("run_version_by_pipeline_id execution error")))
+		_ = e.sendError(w)
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, version); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)

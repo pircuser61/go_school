@@ -2348,8 +2348,8 @@ func (db *PGCon) GetVersionByWorkNumber(c context.Context, workNumber string) (*
 	return res, nil
 }
 
-func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entity.EriusScenario, error) {
-	c, span := trace.StartSpan(c, "pg_get_versions_by_blueprint_id")
+func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*entity.EriusScenario, error) {
+	c, span := trace.StartSpan(c, "pg_get_version_by_pipeline_id")
 	defer span.End()
 
 	// nolint:gocritic
@@ -2366,29 +2366,30 @@ func (db *PGCon) GetVersionsByPipelineID(c context.Context, pID string) ([]entit
        vs.start_schema,
        vs.end_schema,
        (SELECT MAX(date) FROM pipeline_history WHERE pipeline_id = pv.pipeline_id) AS last_approve
-FROM versions pv
-         LEFT JOIN pipelines p ON pv.pipeline_id = p.id
-         LEFT JOIN version_settings vs on pv.id = vs.version_id
-WHERE pv.status = 2
-  AND pv.is_actual = TRUE
-  AND pv.pipeline_id = $1
-  AND p.deleted_at IS NULL
+	FROM versions pv
+			 LEFT JOIN pipelines p ON pv.pipeline_id = p.id
+			 LEFT JOIN version_settings vs on pv.id = vs.version_id
+	WHERE pv.status = 2
+	  AND pv.is_actual = TRUE
+	  AND pv.pipeline_id = $1
+	  AND p.deleted_at IS NULL
+	LIMIT 1
 `
 
-	rows, err := db.Connection.Query(c, query, pID)
+	rows, err := db.Connection.Query(c, query, pipelineID)
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
 
-	res := make([]entity.EriusScenario, 0)
+	res := &entity.EriusScenario{}
 
 	if rows.Next() {
 		var (
 			vID, pID uuid.UUID
 			s        int
-			c        string
+			content  string
 			cr       string
 			cm       string
 			d        *time.Time
@@ -2397,30 +2398,24 @@ WHERE pv.status = 2
 			a        string
 		)
 
-		err = rows.Scan(&vID, &s, &pID, &ca, &c, &cr, &cm, &a, &ss, &es, &d)
-		if err != nil {
+		if err = rows.Scan(&vID, &s, &pID, &ca, &content, &cr, &cm, &a, &ss, &es, &d); err != nil {
 			return nil, err
 		}
 
-		p := entity.EriusScenario{}
-
-		err = json.Unmarshal([]byte(c), &p)
-		if err != nil {
+		if err = json.Unmarshal([]byte(content), res); err != nil {
 			return nil, err
 		}
 
-		p.VersionID = vID
-		p.ID = pID
-		p.Status = s
-		p.CommentRejected = cr
-		p.Comment = cm
-		p.ApprovedAt = d
-		p.CreatedAt = ca
-		p.Settings.StartSchema = ss
-		p.Settings.EndSchema = es
-		p.Author = a
-
-		res = append(res, p)
+		res.VersionID = vID
+		res.ID = pID
+		res.Status = s
+		res.CommentRejected = cr
+		res.Comment = cm
+		res.ApprovedAt = d
+		res.CreatedAt = ca
+		res.Settings.StartSchema = ss
+		res.Settings.EndSchema = es
+		res.Author = a
 	}
 
 	return res, nil

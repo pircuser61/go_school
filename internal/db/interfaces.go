@@ -183,7 +183,7 @@ type Database interface {
 	SwitchRejected(ctx c.Context, versionID uuid.UUID, comment, author string) error
 	GetRejectedVersions(ctx c.Context) ([]e.EriusScenarioInfo, error)
 	RollbackVersion(ctx c.Context, pipelineID, versionID uuid.UUID) error
-	GetVersionsByPipelineID(ctx c.Context, blueprintID string) ([]e.EriusScenario, error)
+	GetVersionByPipelineID(ctx c.Context, pipelineId string) (*e.EriusScenario, error)
 	GetVersionByWorkNumber(ctx c.Context, workNumber string) (*e.EriusScenario, error)
 	GetPipelinesByNameOrId(ctx c.Context, dto *SearchPipelineRequest) ([]e.SearchPipeline, error)
 

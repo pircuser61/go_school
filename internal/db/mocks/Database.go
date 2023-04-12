@@ -1537,24 +1537,24 @@ func (_m *MockedDatabase) GetVersionTasks(ctx context.Context, versionID uuid.UU
 }
 
 // GetVersionsByPipelineID provides a mock function with given fields: ctx, blueprintID
-func (_m *MockedDatabase) GetVersionsByPipelineID(ctx context.Context, blueprintID string) ([]entity.EriusScenario, error) {
-	ret := _m.Called(ctx, blueprintID)
+func (_m *MockedDatabase) GetVersionByPipelineID(ctx context.Context, pipelineID string) (*entity.EriusScenario, error) {
+	ret := _m.Called(ctx, pipelineID)
 
-	var r0 []entity.EriusScenario
+	var r0 *entity.EriusScenario
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]entity.EriusScenario, error)); ok {
-		return rf(ctx, blueprintID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*entity.EriusScenario, error)); ok {
+		return rf(ctx, pipelineID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.EriusScenario); ok {
-		r0 = rf(ctx, blueprintID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *entity.EriusScenario); ok {
+		r0 = rf(ctx, pipelineID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.EriusScenario)
+			r0 = ret.Get(0).(*entity.EriusScenario)
 		}
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, blueprintID)
+		r1 = rf(ctx, pipelineID)
 	} else {
 		r1 = ret.Error(1)
 	}
