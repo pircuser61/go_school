@@ -627,9 +627,10 @@ type Action struct {
 
 func getButton(to, subject, title string) string {
 	subject = strings.ReplaceAll(subject, " ", "")
+	title = strings.ReplaceAll(title, " ", "%20")
 	return "<a href='mailto:" + to +
 		"?subject=" + subject +
-		"&body=***КОММЕНТАРИЙ НИЖЕ***%0D%0A%0D%0A***ОБЩИЙ РАЗМЕР ВЛОЖЕНИЙ НЕ БОЛЕЕ 40МБ***' target='_blank'>" + title +
+		"&body=***КОММЕНТАРИЙ%20НИЖЕ***%0D%0A%0D%0A***ОБЩИЙ%20РАЗМЕР%20ВЛОЖЕНИЙ%20НЕ%20БОЛЕЕ%2040МБ***' target='_blank'>" + title +
 		"</a><br>"
 }
 
