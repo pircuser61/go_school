@@ -125,7 +125,7 @@ require (
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/getsentry/raven-go v0.2.0 // indirect
-	github.com/getsentry/sentry-go v0.11.0 // indirect
+	github.com/getsentry/sentry-go v0.20.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
