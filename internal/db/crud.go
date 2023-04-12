@@ -2097,7 +2097,8 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		vs.content, 
 		COALESCE(vs.break_points, '{}') AS break_points, 
 		vs.has_error,
-		vs.status
+		vs.status,
+		w.author
 	FROM variable_storage vs 
 	JOIN works w
 	ON vs.work_id = w.id
@@ -2117,6 +2118,7 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		&s.BreakPoints,
 		&s.HasError,
 		&s.Status,
+		&s.Initiator,
 	)
 	if err != nil {
 		return nil, err

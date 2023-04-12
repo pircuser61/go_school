@@ -3917,6 +3917,7 @@ components:
         - $ref: '#/components/schemas/NotificationParams'
         - $ref: "#/components/schemas/ConditionParams"
         - $ref: "#/components/schemas/FormParams"
+        - $ref: "#/components/schemas/PlaceholderParams"
 
     ConditionGroup:
       type: object
@@ -4210,6 +4211,20 @@ components:
         - repeat_prev_decision
         - is_editable
 
+    PlaceholderParams:
+      type: object
+      description: Placeholder block params
+      properties:
+        name:
+          type: string
+          description: New task name
+        description:
+          type: string
+          description: New task description
+      required:
+        - name
+        - description
+
     FormParams:
       type: object
       description: Form params
@@ -4415,6 +4430,7 @@ components:
             - notification
             - form
             - if
+            - placeholder
         params:
           $ref: '#/components/schemas/Params'
       required:

@@ -962,7 +962,9 @@ func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
 
 	loginsToNotify := make([]string, 0)
 	for login := range gb.State.Approvers {
-		loginsToNotify = append(loginsToNotify, login)
+		if login != gb.RunContext.UpdateData.ByLogin {
+			loginsToNotify = append(loginsToNotify, login)
+		}
 	}
 
 	emails := make([]string, 0, len(loginsToNotify))

@@ -241,6 +241,8 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 		return createExecutableFunctionBlock(name, ef, runCtx)
 	case BlockGoFormID:
 		return createGoFormBlock(ctx, name, ef, runCtx)
+	case BlockPlaceholderID:
+		return createGoPlaceholderBlock(name, ef, runCtx), nil
 	}
 
 	return nil, errors.New("unknown go-block type: " + ef.TypeID)

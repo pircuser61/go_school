@@ -25,6 +25,7 @@ type Step struct {
 	BreakPoints []string                   `json:"-"`
 	HasError    bool                       `json:"has_error"`
 	Status      string                     `json:"status"`
+	Initiator   string                     `json:"initiator"`
 	UpdatedAt   *time.Time                 `json:"updated_at"`
 }
 

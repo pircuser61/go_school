@@ -173,24 +173,27 @@ func main() {
 		return
 	}
 
+	includePlaceholderBlock := cfg.IncludePlaceholderBlock
+
 	APIEnv := &api.APIEnv{
-		Log:             log,
-		DB:              &dbConn,
-		Remedy:          cfg.Remedy,
-		FaaS:            cfg.FaaS,
-		SchedulerClient: schedulerClient,
-		HTTPClient:      httpClient,
-		Statistic:       stat,
-		Mail:            mailService,
-		Kafka:           kafkaService,
-		People:          peopleService,
-		ServiceDesc:     serviceDescService,
-		FunctionStore:   functionsService,
-		HumanTasks:      humanTasksService,
-		MailFetcher:     mailFetcher,
-		Minio:           fileService,
-		Integrations:    integrationsService,
-		HrGate:          hrgateService,
+		Log:                     log,
+		DB:                      &dbConn,
+		Remedy:                  cfg.Remedy,
+		FaaS:                    cfg.FaaS,
+		SchedulerClient:         schedulerClient,
+		HTTPClient:              httpClient,
+		Statistic:               stat,
+		Mail:                    mailService,
+		Kafka:                   kafkaService,
+		People:                  peopleService,
+		ServiceDesc:             serviceDescService,
+		FunctionStore:           functionsService,
+		HumanTasks:              humanTasksService,
+		MailFetcher:             mailFetcher,
+		Minio:                   fileService,
+		Integrations:            integrationsService,
+		HrGate:                  hrgateService,
+		IncludePlaceholderBlock: includePlaceholderBlock,
 	}
 
 	serverParam := api.ServerParam{

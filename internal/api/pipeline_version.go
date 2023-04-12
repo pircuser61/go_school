@@ -16,8 +16,6 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
-	"github.com/xeipuuv/gojsonschema"
-
 	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/jackc/pgx/v4"
@@ -29,6 +27,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -359,7 +358,26 @@ func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
 		return applicationBody, nil
 	} else {
 		// need mapping
-		mappedApplicationBody = applicationBody // TODO: add mapping
+		var mappedData map[string]interface{}
+		appBody, errMap := script.OrderedMapToMap(applicationBody)
+		if errMap != nil {
+			return orderedmap.OrderedMap{}, err
+		}
+
+		mappedData, err = script.MapData(
+			externalSystem.InputMapping.Properties,
+			appBody,
+			externalSystem.InputMapping.Required,
+			nil,
+		)
+		if err != nil {
+			return orderedmap.OrderedMap{}, err
+		}
+
+		mappedApplicationBody, err = script.MapToOrderedMap(mappedData)
+		if err != nil {
+			return orderedmap.OrderedMap{}, err
+		}
 	}
 
 	err = validateApplicationBody(mappedApplicationBody, startSchemaString)
@@ -753,20 +771,23 @@ type execVersionInternalDTO struct {
 }
 
 func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
-	ctxLocal, span := trace.StartSpan(ctx, "exec_version_internal")
+	_, span := trace.StartSpan(ctx, "exec_version_internal")
 	defer span.End()
 
-	log := logger.GetLogger(ctxLocal)
+	log := logger.GetLogger(ctx).WithField("mainFuncName", "execVersionInternal")
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctxLocal)
+	spCtx := span.SpanContext()
+	// nolint:staticcheck //its ok here
+	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
+	routineCtx = logger.WithLogger(routineCtx, log)
+	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_processing", spCtx)
+	fakeSpan.End()
+
+	txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
 	if transactionErr != nil {
 		e := PipelineRunError
 		return nil, e, transactionErr
 	}
-	defer txStorage.RollbackTransaction(ctxLocal) // nolint:errcheck // rollback err
-
-	//nolint:staticcheck // поправить потом
-	ctx = c.WithValue(ctxLocal, XRequestIDHeader, dto.reqID)
 
 	ep := pipeline.ExecutablePipeline{}
 	ep.PipelineID = dto.p.ID
@@ -798,10 +819,16 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	parameters, err := json.Marshal(pipelineVars)
 	if err != nil {
+		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+			log.WithField("funcName", "marshal vars").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		e := PipelineRunError
 		return nil, e, err
 	}
 
+	// use ctx as we need userinfo
 	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
 		Author:     dto.userName,
 		IsDebug:    false,
@@ -809,6 +836,11 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		WorkNumber: dto.workNumber,
 		RunCtx:     dto.runCtx,
 	}); err != nil {
+		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+			log.WithField("funcName", "CreateTask").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		e := PipelineRunError
 		return nil, e, err
 	}
@@ -835,20 +867,18 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
-	spCtx := span.SpanContext()
-	// nolint:staticcheck //its ok here
-	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-	routineCtx = logger.WithLogger(routineCtx, log)
-	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_processing", spCtx)
-	fakeSpan.End()
-
 	err = pipeline.ProcessBlock(processCtx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
+		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+			log.WithField("funcName", "RollbackTransaction").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		variableStorage.AddError(err)
 		e := PipelineRunError
 		return nil, e, err
 	}
-	if err = txStorage.CommitTransaction(routineCtx); err != nil {
+	if err = txStorage.CommitTransaction(processCtx); err != nil {
 		e := PipelineRunError
 		return nil, e, err
 	}
@@ -953,24 +983,9 @@ func validateApplicationBody(applicationBody orderedmap.OrderedMap, jsonSchema s
 		return err
 	}
 
-	loader := gojsonschema.NewStringLoader(jsonSchema)
-	schema, err := gojsonschema.NewSchema(loader)
+	err = script.ValidateJSONByJSONSchema(string(apBody), jsonSchema)
 	if err != nil {
 		return err
-	}
-
-	documentLoader := gojsonschema.NewStringLoader(string(apBody))
-	result, err := schema.Validate(documentLoader)
-	if err != nil {
-		return err
-	}
-
-	if !result.Valid() {
-		var errorMsg string
-		for _, resultError := range result.Errors() {
-			errorMsg += resultError.String() + "; "
-		}
-		return errors.New(errorMsg)
 	}
 
 	return nil
