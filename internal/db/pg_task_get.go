@@ -359,9 +359,9 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		 counts AS (SELECT
 						work_id,
 						COUNT(form_and_sd_application_body) AS form_and_sd_count,
-						SUM(coalesce(jsonb_array_length(additional_info_attachments), 0)) AS additional_attachment_count,
-						SUM(coalesce(jsonb_array_length(approver_log_attachments),0)) AS additional_approvers_count,
-						SUM(coalesce(jsonb_array_length(editing_app_log_attachments),0)) AS rework_count
+						SUM(coalesce(jsonb_array_length(NULLIF(additional_info_attachments, 'null')), 0)) AS additional_attachment_count,
+						SUM(coalesce(jsonb_array_length(NULLIF(approver_log_attachments, 'null')), 0)) AS additional_approvers_count,
+						SUM(coalesce(jsonb_array_length(NULLIF(editing_app_log_attachments, 'null')), 0)) AS rework_count
 					FROM data
 					WHERE value(form_and_sd_application_body)::text LIKE '"attachment:%%'
 					   OR additional_info_attachments IS NOT NULL
@@ -396,6 +396,11 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		}
 
 		attachmentsToTasks[taskID] = attachmentsCount
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 
 	for i := range tasks.Tasks {
