@@ -65,7 +65,7 @@ func (gb *GoApproverBlock) isApprovementBaseFinished(login string) bool {
 }
 
 func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
-	if gb.State.Decision != nil || gb.State.IsRevoked {
+	if gb.State.Decision != nil || gb.State.IsRevoked || gb.State.EditingApp != nil {
 		return []MemberAction{}
 	}
 	for i := 0; i < len(gb.State.ApproverLog); i++ {
@@ -98,7 +98,7 @@ func (gb *GoApproverBlock) isApprovementAddFinished(a *AdditionalApprover) bool 
 }
 
 func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []MemberAction {
-	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != nil {
+	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != nil || gb.State.EditingApp != nil {
 		return []MemberAction{}
 	}
 	return []MemberAction{{
