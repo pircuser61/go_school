@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"flag"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,8 +17,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
-	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
 	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
@@ -83,13 +80,6 @@ func main() {
 	schedulerClient, err := scheduler.NewClient(cfg.SchedulerBaseURL.URL, httpClient)
 	if err != nil {
 		log.WithError(err).Error("can't create scheduler client")
-
-		return
-	}
-
-	networkMonitoringClient, err := netmon.NewClient(cfg.NetworkMonitorBaseURL.URL, httpClient)
-	if err != nil {
-		log.WithError(err).Error("can't create network monitoring client")
 
 		return
 	}
@@ -184,24 +174,23 @@ func main() {
 	}
 
 	APIEnv := &api.APIEnv{
-		Log:                  log,
-		DB:                   &dbConn,
-		Remedy:               cfg.Remedy,
-		FaaS:                 cfg.FaaS,
-		SchedulerClient:      schedulerClient,
-		NetworkMonitorClient: networkMonitoringClient,
-		HTTPClient:           httpClient,
-		Statistic:            stat,
-		Mail:                 mailService,
-		Kafka:                kafkaService,
-		People:               peopleService,
-		ServiceDesc:          serviceDescService,
-		FunctionStore:        functionsService,
-		HumanTasks:           humanTasksService,
-		MailFetcher:          mailFetcher,
-		Minio:                fileService,
-		Integrations:         integrationsService,
-		HrGate:               hrgateService,
+		Log:             log,
+		DB:              &dbConn,
+		Remedy:          cfg.Remedy,
+		FaaS:            cfg.FaaS,
+		SchedulerClient: schedulerClient,
+		HTTPClient:      httpClient,
+		Statistic:       stat,
+		Mail:            mailService,
+		Kafka:           kafkaService,
+		People:          peopleService,
+		ServiceDesc:     serviceDescService,
+		FunctionStore:   functionsService,
+		HumanTasks:      humanTasksService,
+		MailFetcher:     mailFetcher,
+		Minio:           fileService,
+		Integrations:    integrationsService,
+		HrGate:          hrgateService,
 	}
 
 	serverParam := api.ServerParam{
@@ -233,8 +222,6 @@ func main() {
 	metrics.InitMetricsAuth()
 
 	metrics.Pusher = push.New(cfg.Push.URL, cfg.Push.Job).Gatherer(metrics.Registry)
-
-	monitoring.Setup(cfg.Monitoring.Addr, &http.Client{Timeout: cfg.Monitoring.Timeout.Duration})
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
 	s.Run(ctx)
