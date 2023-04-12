@@ -17,8 +17,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -76,13 +74,6 @@ func main() {
 	}
 
 	httpClient := httpclient.HTTPClient(cfg.HTTPClientConfig)
-
-	schedulerClient, err := scheduler.NewClient(cfg.SchedulerBaseURL.URL, httpClient)
-	if err != nil {
-		log.WithError(err).Error("can't create scheduler client")
-
-		return
-	}
 
 	ssoService, err := sso.NewService(cfg.SSO, httpClient)
 	if err != nil {
@@ -180,7 +171,6 @@ func main() {
 		DB:                      &dbConn,
 		Remedy:                  cfg.Remedy,
 		FaaS:                    cfg.FaaS,
-		SchedulerClient:         schedulerClient,
 		HTTPClient:              httpClient,
 		Statistic:               stat,
 		Mail:                    mailService,
