@@ -61,7 +61,6 @@ require (
 	github.com/evalphobia/logrus_sentry v0.8.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/getsentry/raven-go v0.2.0 // indirect
-	github.com/getsentry/sentry-go v0.20.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
