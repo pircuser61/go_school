@@ -1536,7 +1536,7 @@ func (_m *MockedDatabase) GetVersionTasks(ctx context.Context, versionID uuid.UU
 	return r0, r1
 }
 
-// GetVersionsByPipelineID provides a mock function with given fields: ctx, blueprintID
+// GetVersionByPipelineID provides a mock function with given fields: ctx, blueprintID
 func (_m *MockedDatabase) GetVersionByPipelineID(ctx context.Context, pipelineID string) (*entity.EriusScenario, error) {
 	ret := _m.Called(ctx, pipelineID)
 

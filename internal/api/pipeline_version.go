@@ -275,7 +275,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err = sendResponse(w, http.StatusOK, version); err != nil {
+	if err = sendResponse(w, http.StatusOK, []entity.EriusScenario{*version}); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
