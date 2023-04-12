@@ -2375,48 +2375,39 @@ func (db *PGCon) GetVersionByPipelineID(c context.Context, pipelineID string) (*
 	  AND p.deleted_at IS NULL
 	LIMIT 1
 `
+	res := &entity.EriusScenario{}
 
-	rows, err := db.Connection.Query(c, query, pipelineID)
+	var (
+		vID, pID uuid.UUID
+		s        int
+		content  string
+		cr       string
+		cm       string
+		d        *time.Time
+		ca       *time.Time
+		ss, es   *script.JSONSchema
+		a        string
+	)
+
+	err := db.Connection.QueryRow(c, query, pipelineID).Scan(&vID, &s, &pID, &ca, &content, &cr, &cm, &a, &ss, &es, &d)
 	if err != nil {
 		return nil, err
 	}
 
-	defer rows.Close()
-
-	res := &entity.EriusScenario{}
-
-	if rows.Next() {
-		var (
-			vID, pID uuid.UUID
-			s        int
-			content  string
-			cr       string
-			cm       string
-			d        *time.Time
-			ca       *time.Time
-			ss, es   *script.JSONSchema
-			a        string
-		)
-
-		if err = rows.Scan(&vID, &s, &pID, &ca, &content, &cr, &cm, &a, &ss, &es, &d); err != nil {
-			return nil, err
-		}
-
-		if err = json.Unmarshal([]byte(content), res); err != nil {
-			return nil, err
-		}
-
-		res.VersionID = vID
-		res.ID = pID
-		res.Status = s
-		res.CommentRejected = cr
-		res.Comment = cm
-		res.ApprovedAt = d
-		res.CreatedAt = ca
-		res.Settings.StartSchema = ss
-		res.Settings.EndSchema = es
-		res.Author = a
+	if err = json.Unmarshal([]byte(content), res); err != nil {
+		return nil, err
 	}
+
+	res.VersionID = vID
+	res.ID = pID
+	res.Status = s
+	res.CommentRejected = cr
+	res.Comment = cm
+	res.ApprovedAt = d
+	res.CreatedAt = ca
+	res.Settings.StartSchema = ss
+	res.Settings.EndSchema = es
+	res.Author = a
 
 	return res, nil
 }
