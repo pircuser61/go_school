@@ -599,8 +599,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	if err != nil {
 		return err
 	}
-
-	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
+	executors := getSliceFromMapOfStrings(gb.State.Executors)
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
 	emails := make([]string, 0, len(loginsToNotify))
 	for login := range logins {
@@ -615,9 +615,14 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	}
 
 	var description string
+	var asOtherLogin string
 	var emailAttachment []e.Attachment
 
-	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber)
+	if len(executors) > 0 {
+		asOtherLogin = executors[0]
+	}
+
+	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber, asOtherLogin)
 	if err == nil {
 		emailAttachment = append(emailAttachment, *descriptionFile)
 	} else {

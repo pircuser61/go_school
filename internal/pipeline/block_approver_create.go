@@ -181,12 +181,18 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 	delegates = delegates.FilterByType("approvement")
 
-	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Approvers))
+	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
 
 	var description string
+	var asOtherLogin string
 	var emailAttachment []e.Attachment
 
-	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber)
+	if len(approvers) > 0 {
+		asOtherLogin = approvers[0]
+	}
+
+	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber, asOtherLogin)
 	if err == nil {
 		emailAttachment = append(emailAttachment, *descriptionFile)
 	} else {
