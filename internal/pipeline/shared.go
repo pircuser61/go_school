@@ -1,12 +1,13 @@
 package pipeline
 
 import (
+	"encoding/json"
+	"reflect"
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
-
 	"github.com/iancoleman/orderedmap"
+	"github.com/pkg/errors"
 )
 
 type UpdateData struct {
@@ -29,14 +30,20 @@ func getVariable(variables map[string]interface{}, key string) interface{} {
 
 	newVariables, ok := variable.(map[string]interface{})
 	if !ok {
-		return nil
+		newVariables = structToMap(variable)
+		if newVariables == nil {
+			return nil
+		}
 	}
 
 	currK := variableMemberNames[2]
 	for i := 2; i < len(variableMemberNames)-1; i++ {
 		newVariables, ok = newVariables[currK].(map[string]interface{})
 		if !ok {
-			return nil
+			newVariables = structToMap(variable)
+			if newVariables == nil {
+				return nil
+			}
 		}
 		currK = variableMemberNames[i+1]
 	}
@@ -98,4 +105,24 @@ func getRecipientFromState(applicationBody *orderedmap.OrderedMap) string {
 	}
 
 	return login
+}
+
+func structToMap(variable interface{}) map[string]interface{} {
+	variableType := reflect.TypeOf(variable)
+	if !(variableType.Kind() == reflect.Struct ||
+		(variableType.Kind() == reflect.Pointer && variableType.Elem().Kind() == reflect.Struct)) {
+		return nil
+	}
+
+	bytes, err := json.Marshal(variable)
+	if err != nil {
+		return nil
+	}
+
+	res := make(map[string]interface{})
+	if unmErr := json.Unmarshal(bytes, &res); unmErr != nil {
+		return nil
+	}
+
+	return res
 }
