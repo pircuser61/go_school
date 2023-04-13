@@ -417,7 +417,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 	var description string
 	var emailAttachment []e.Attachment
 
-	descriptionFile, err := runCtx.ServiceDesc.GetFileDescriptionOfTask(ctx, runCtx.WorkNumber)
+	descriptionFile, err := runCtx.ServiceDesc.GetFileDescriptionOfTask(ctx, runCtx.WorkNumber, runCtx.Initiator)
 	if err == nil {
 		emailAttachment = append(emailAttachment, *descriptionFile)
 	} else {

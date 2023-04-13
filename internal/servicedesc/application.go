@@ -9,7 +9,6 @@ import (
 	"regexp"
 
 	"github.com/iancoleman/orderedmap"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
@@ -20,6 +19,7 @@ const (
 	getApplicationBody = "/api/herald/v1/application/%s/body"
 	getFileDescription = "/api/herald/v1/application/xlsx?id=%s"
 	dispositionHeader  = "Content-Disposition"
+	AsOtherHeader      = "X-As-Other"
 )
 
 func (s *Service) getAttachment(ctx context.Context, id string) (email.Attachment, error) {
@@ -112,7 +112,7 @@ func (s *Service) GetSchemaFieldsByApplication(ctx context.Context, applicationI
 	return res, nil
 }
 
-func (s *Service) GetFileDescriptionOfTask(ctx context.Context, workId string) (*email.Attachment, error) {
+func (s *Service) GetFileDescriptionOfTask(ctx context.Context, workId, login string) (*email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_file_description_of_task")
 	defer span.End()
 
@@ -121,6 +121,10 @@ func (s *Service) GetFileDescriptionOfTask(ctx context.Context, workId string) (
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(login) > 0 {
+		req.Header.Add(AsOtherHeader, login)
 	}
 
 	resp, err := s.Cli.Do(req)
