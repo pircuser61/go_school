@@ -503,9 +503,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	}
 
 	if updateParams.ReqType == RequestInfoAnswer {
-		_, executorExists := gb.State.Executors[updateParams.ExecutorLogin]
-
-		if executorExists {
+		if gb.RunContext.UpdateData.ByLogin != gb.RunContext.Initiator {
 			return NewUserIsNotPartOfProcessErr()
 		}
 
