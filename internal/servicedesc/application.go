@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	"github.com/iancoleman/orderedmap"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
@@ -115,6 +116,12 @@ func (s *Service) GetSchemaFieldsByApplication(ctx context.Context, applicationI
 func (s *Service) GetFileDescriptionOfTask(ctx context.Context, workId, login string) (*email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_file_description_of_task")
 	defer span.End()
+
+	log := logger.GetLogger(ctx)
+	log.WithFields(map[string]interface{}{
+		"workId": workId,
+		"login":  login,
+	}).Info("GetFileDescriptionOfTask debug")
 
 	reqURL := fmt.Sprintf("%s%s", s.SdURL, fmt.Sprintf(getFileDescription, workId))
 
