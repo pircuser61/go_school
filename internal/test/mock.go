@@ -1286,7 +1286,7 @@ func (m *MockDB) RollbackVersion(c context.Context, pipelineID, versionID uuid.U
 	return errNotImplemented
 }
 
-func (m *MockDB) GetVersionsByPipelineID(c context.Context, pipelineID string) ([]entity.EriusScenario, error) {
+func (m *MockDB) GetVersionByPipelineID(c context.Context, pipelineID string) (*entity.EriusScenario, error) {
 	return nil, errNotImplemented
 }
 
