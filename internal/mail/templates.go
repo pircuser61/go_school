@@ -49,25 +49,20 @@ type LastWork struct {
 type LastWorks []*LastWork
 
 //nolint:dupl // not duplicate
-func NewApprovementSLATpl(id, name, sdUrl, status string, lastWorks []*entity.EriusTask) Template {
+func NewApprovementSLATpl(id, name, sdUrl, status string) Template {
 	actionName := getApprovementActionNameByStatus(status, defaultApprovementActionName)
-
-	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекло время %s", id, name, actionName),
-		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
-			"Истекло время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Text:    "Истекло время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
-			Name       string    `json:"name"`
-			Link       string    `json:"link"`
-			ActionName string    `json:"actionName"`
-			LastWorks  LastWorks `json:"last_works"`
+			Name       string `json:"name"`
+			Link       string `json:"link"`
+			ActionName string `json:"actionName"`
 		}{
 			Name:       name,
 			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 			ActionName: actionName,
-			LastWorks:  lastWorksTemplate,
 		},
 	}
 }
