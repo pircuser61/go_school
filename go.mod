@@ -22,7 +22,6 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/minio/minio-go/v7 v7.0.51
 	github.com/pkg/errors v0.9.1
-	github.com/pressly/goose v2.7.0+incompatible
 	github.com/pressly/goose/v3 v3.7.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
@@ -86,6 +85,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
+	github.com/makasim/sentryhook v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
