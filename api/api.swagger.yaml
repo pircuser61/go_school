@@ -559,44 +559,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
-  /pipelines/{pipelineID}/scheduler-tasks:
-    post:
-      tags:
-        - pipeline
-      summary: Active scheduler tasks
-      description: Наличие у сценария активных заданий в шедулере
-      operationId: list-scheduler-tasks
-      parameters:
-        - name: pipelineID
-          in: path
-          description: Pipeline ID
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/SchedulerTasksResponse'
-                  status_code:
-                    type: integer
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /pipelines/{pipelineID}/tags:
     get:
       tags:
@@ -3182,15 +3144,6 @@ components:
         - status
         - output
         - errors
-
-    SchedulerTasksResponse:
-      type: object
-      properties:
-        result:
-          type: boolean
-          description: If active tasks exist
-      required:
-        - result
 
     Step:
       type: object

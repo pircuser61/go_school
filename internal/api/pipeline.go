@@ -18,12 +18,15 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
+const statusRunned = "runned"
 const copyPostfix = "копия"
 
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
@@ -517,4 +520,8 @@ func (ae *APIEnv) PipelineNameExists(w http.ResponseWriter, r *http.Request, par
 
 		return
 	}
+}
+
+func (ae *APIEnv) ServePrometheus() http.Handler {
+	return promhttp.Handler()
 }

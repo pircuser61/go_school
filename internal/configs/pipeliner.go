@@ -17,8 +17,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-
-	monconf "gitlab.services.mts.ru/erius/monitoring/pkg/configs"
 )
 
 const (
@@ -43,7 +41,6 @@ type Pipeliner struct {
 	Remedy                  string              `yaml:"remedy"`
 	FaaS                    string              `yaml:"faas"`
 	RunEnv                  RunEnv              `yaml:"run_env"`
-	Monitoring              monconf.Monitoring  `yaml:"monitoring"`
 	AuthBaseURL             *URL                `yaml:"auth"`
 	SchedulerBaseURL        *URL                `yaml:"scheduler"`
 	NetworkMonitorBaseURL   *URL                `yaml:"network_monitor"`

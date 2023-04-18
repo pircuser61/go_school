@@ -10,8 +10,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/abp/myosotis/observability"
-	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
-	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
@@ -33,8 +31,6 @@ type APIEnv struct {
 	DB                      db.Database
 	Remedy                  string
 	FaaS                    string
-	SchedulerClient         scheduler.Client
-	NetworkMonitorClient    netmon.Client
 	HTTPClient              *http.Client
 	Statistic               *statistic.Statistic
 	Mail                    *mail.Service

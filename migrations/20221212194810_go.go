@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pressly/goose"
+	"github.com/pressly/goose/v3"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )

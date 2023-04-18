@@ -1308,12 +1308,6 @@ type RunVersionsByPipelineIdRequest_Keys struct {
 // ScenarioVersionInfoList defines model for ScenarioVersionInfoList.
 type ScenarioVersionInfoList []EriusVersionInfo
 
-// SchedulerTasksResponse defines model for SchedulerTasksResponse.
-type SchedulerTasksResponse struct {
-	// If active tasks exist
-	Result bool `json:"result"`
-}
-
 // SD Application params
 type SdApplicationParams struct {
 	// Template application ID
@@ -2546,9 +2540,6 @@ type ServerInterface interface {
 	// Get pipeline
 	// (GET /pipelines/{pipelineID})
 	GetPipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
-	// Active scheduler tasks
-	// (POST /pipelines/{pipelineID}/scheduler-tasks)
-	ListSchedulerTasks(w http.ResponseWriter, r *http.Request, pipelineID string)
 	// Get Pipeline Tags
 	// (GET /pipelines/{pipelineID}/tags)
 	GetPipelineTags(w http.ResponseWriter, r *http.Request, pipelineID string)
@@ -3627,32 +3618,6 @@ func (siw *ServerInterfaceWrapper) GetPipeline(w http.ResponseWriter, r *http.Re
 	handler(w, r.WithContext(ctx))
 }
 
-// ListSchedulerTasks operation middleware
-func (siw *ServerInterfaceWrapper) ListSchedulerTasks(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "pipelineID" -------------
-	var pipelineID string
-
-	err = runtime.BindStyledParameter("simple", false, "pipelineID", chi.URLParam(r, "pipelineID"), &pipelineID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pipelineID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListSchedulerTasks(w, r, pipelineID)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
 // GetPipelineTags operation middleware
 func (siw *ServerInterfaceWrapper) GetPipelineTags(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -4512,9 +4477,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/{pipelineID}", wrapper.GetPipeline)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/pipelines/{pipelineID}/scheduler-tasks", wrapper.ListSchedulerTasks)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines/{pipelineID}/tags", wrapper.GetPipelineTags)

@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"flag"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,10 +16,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/push"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-
-	"gitlab.services.mts.ru/erius/monitoring/pkg/pipeliner/monitoring"
-	netmon "gitlab.services.mts.ru/erius/network-monitor-client"
-	scheduler "gitlab.services.mts.ru/erius/scheduler_client"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/configs"
@@ -79,20 +74,6 @@ func main() {
 	}
 
 	httpClient := httpclient.HTTPClient(cfg.HTTPClientConfig)
-
-	schedulerClient, err := scheduler.NewClient(cfg.SchedulerBaseURL.URL, httpClient)
-	if err != nil {
-		log.WithError(err).Error("can't create scheduler client")
-
-		return
-	}
-
-	networkMonitoringClient, err := netmon.NewClient(cfg.NetworkMonitorBaseURL.URL, httpClient)
-	if err != nil {
-		log.WithError(err).Error("can't create network monitoring client")
-
-		return
-	}
 
 	ssoService, err := sso.NewService(cfg.SSO, httpClient)
 	if err != nil {
@@ -190,8 +171,6 @@ func main() {
 		DB:                      &dbConn,
 		Remedy:                  cfg.Remedy,
 		FaaS:                    cfg.FaaS,
-		SchedulerClient:         schedulerClient,
-		NetworkMonitorClient:    networkMonitoringClient,
 		HTTPClient:              httpClient,
 		Statistic:               stat,
 		Mail:                    mailService,
@@ -236,8 +215,6 @@ func main() {
 	metrics.InitMetricsAuth()
 
 	metrics.Pusher = push.New(cfg.Push.URL, cfg.Push.Job).Gatherer(metrics.Registry)
-
-	monitoring.Setup(cfg.Monitoring.Addr, &http.Client{Timeout: cfg.Monitoring.Timeout.Duration})
 
 	s := server.NewServer(ctx, log, kafkaService, &serverParam)
 	s.Run(ctx)
