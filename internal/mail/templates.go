@@ -75,8 +75,9 @@ func NewApprovementHalfSLATpl(id, name, sdUrl, status string, lastWorks []*entit
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время %s", id, name, actionName),
-		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
-			"Истекает время {{.ActionName}} заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Text: "Истекает время {{.ActionName}} заявки {{.Name}}<br>" +
+			"{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
+			"Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
 			Name       string    `json:"name"`
 			Link       string    `json:"link"`
@@ -125,8 +126,9 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTa
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке %s %s истекает время исполнения", id, name),
-		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
-			"Истекает время исполнения заявки {{.Name}}<br>Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
+		Text: "Истекает время исполнения заявки {{.Name}}<br>" +
+			"{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
+			"Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>",
 		Variables: struct {
 			Name      string    `json:"name"`
 			Link      string    `json:"link"`
@@ -139,24 +141,20 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTa
 	}
 }
 
-func NewFormDayHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTask) Template {
-	lastWorksTemplate := getLastWorksForTemplate(lastWorks, sdUrl)
+func NewFormDayHalfSLATpl(id, name, sdUrl string) Template {
 
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s %s истекает время предоставления информации", id, name),
-		Text: "{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}" +
-			"Уважаемый коллега, время предоставления информации по {{.Name}} заявке № {{.Id}} истекает " +
+		Text: "Уважаемый коллега, время предоставления информации по {{.Name}} заявке № {{.Id}} истекает " +
 			"\nДля просмотра перейдите по <a href={{.Link}}>заявке</a>",
 		Variables: struct {
-			Name      string    `json:"name"`
-			Id        string    `json:"id"`
-			Link      string    `json:"link"`
-			LastWorks LastWorks `json:"last_works"`
+			Name string `json:"name"`
+			Id   string `json:"id"`
+			Link string `json:"link"`
 		}{
-			Name:      name,
-			Id:        id,
-			Link:      fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			LastWorks: lastWorksTemplate,
+			Name: name,
+			Id:   id,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 		},
 	}
 }
