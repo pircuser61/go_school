@@ -725,7 +725,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 
 	var steps entity.TaskSteps
 	for _, blockType := range blockTypes {
-		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType, in.Action)
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType)
 		if stepErr != nil {
 			e := GetTaskError
 			return errors.New(e.errorMessage(nil))

@@ -121,28 +121,28 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 
 //nolint:dupl //Need here
 func (gb *GoApproverBlock) Deadlines() []Deadline {
-	if gb.State.IsRevoked {
+	if gb.State.IsRevoked || gb.State.Decision != nil {
 		return []Deadline{}
 	}
 
 	deadlines := make([]Deadline, 0, 2)
 
-	if gb.State.Decision != nil && len(gb.State.AddInfo) > 0 &&
-		gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
-		if gb.State.CheckDayBeforeSLARequestInfo {
-			deadlines = append(deadlines, Deadline{
-				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8),
-				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
-			})
-		}
-
-		deadlines = append(deadlines, Deadline{
-			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8),
-			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
-		})
-
-		return deadlines
-	}
+	//if gb.State.Decision != nil && len(gb.State.AddInfo) > 0 &&
+	//	gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
+	//	if gb.State.CheckDayBeforeSLARequestInfo {
+	//		deadlines = append(deadlines, Deadline{
+	//			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8),
+	//			Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
+	//		})
+	//	}
+	//
+	//	deadlines = append(deadlines, Deadline{
+	//		Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8),
+	//		Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
+	//	})
+	//
+	//	return deadlines
+	//}
 
 	if gb.State.CheckSLA {
 		if !gb.State.SLAChecked {
