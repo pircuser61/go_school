@@ -13,8 +13,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/google/uuid"
 
 	"github.com/lib/pq"
@@ -1939,8 +1937,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 	return nil, nil
 }
 
-func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
-	action entity.TaskUpdateAction) (entity.TaskSteps, error) {
+func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
 	defer span.End()
 
@@ -1948,16 +1945,16 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 
 	var notInStatuses []string
 
-	isAddInfoReq := slices.Contains([]entity.TaskUpdateAction{
-		entity.TaskUpdateActionRequestApproveInfo,
-		entity.TaskUpdateActionSLABreachRequestAddInfo,
-		entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, action)
+	//isAddInfoReq := slices.Contains([]entity.TaskUpdateAction{
+	//	entity.TaskUpdateActionRequestApproveInfo,
+	//	entity.TaskUpdateActionSLABreachRequestAddInfo,
+	//	entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, action)
 
 	// nolint:gocritic,goconst
 	if stepType == "form" {
 		notInStatuses = []string{"skipped"}
-	} else if (stepType == "execution" || stepType == "approver") && isAddInfoReq {
-		notInStatuses = []string{"skipped"}
+		//} else if (stepType == "execution" || stepType == "approver") && isAddInfoReq {
+		//	notInStatuses = []string{"skipped"}
 	} else {
 		notInStatuses = []string{"skipped", "finished"}
 	}
