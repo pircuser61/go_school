@@ -123,7 +123,6 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 func (gb *GoApproverBlock) Deadlines() []Deadline {
 	if gb.State.IsRevoked || gb.State.Decision != nil {
 		return []Deadline{}
-
 	}
 
 	deadlines := make([]Deadline, 0, 2)
