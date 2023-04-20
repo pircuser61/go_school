@@ -93,28 +93,28 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 
 //nolint:dupl //Need here
 func (gb *GoExecutionBlock) Deadlines() []Deadline {
-	if gb.State.IsRevoked || gb.State.Decision != nil {
+	if gb.State.IsRevoked {
 		return []Deadline{}
 	}
 
 	deadlines := make([]Deadline, 0, 2)
 
-	//if gb.State.Decision != nil && len(gb.State.RequestExecutionInfoLogs) > 0 &&
-	//	gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
-	//	if gb.State.CheckDayBeforeSLARequestInfo {
-	//		deadlines = append(deadlines, Deadline{
-	//			Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 2*8),
-	//			Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
-	//		})
-	//	}
-	//
-	//	deadlines = append(deadlines, Deadline{
-	//		Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 3*8),
-	//		Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
-	//	})
-	//
-	//	return deadlines
-	//}
+	if gb.State.Decision != nil && len(gb.State.RequestExecutionInfoLogs) > 0 &&
+		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
+		if gb.State.CheckDayBeforeSLARequestInfo {
+			deadlines = append(deadlines, Deadline{
+				Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 2*8),
+				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
+			})
+		}
+
+		deadlines = append(deadlines, Deadline{
+			Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 3*8),
+			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
+		})
+
+		return deadlines
+	}
 
 	if gb.State.CheckSLA {
 		if !gb.State.SLAChecked {
