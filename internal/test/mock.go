@@ -1065,7 +1065,8 @@ func (m *MockDB) GetTaskStepsToWait(_ context.Context, _, _ string) ([]string, e
 	return nil, nil
 }
 
-func (m *MockDB) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string) (entity.TaskSteps, error) {
+func (m *MockDB) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
+	action entity.TaskUpdateAction) (entity.TaskSteps, error) {
 	return nil, errNotImplemented
 }
 
