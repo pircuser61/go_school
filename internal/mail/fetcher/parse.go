@@ -255,7 +255,7 @@ LOOP:
 						Error(errors.Wrap(errRead, "can`t read body"))
 					break LOOP
 				}
-				body += string(b)
+				body += regexp.MustCompile(`(\[.+\])`).ReplaceAllString(string(b), "")
 			}
 			break LOOP
 		}
