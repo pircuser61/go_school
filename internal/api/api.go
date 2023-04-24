@@ -923,6 +923,9 @@ type FormParams struct {
 	// Hide executor from initiator
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	Mapping *JSONSchemaProperties `json:"mapping,omitempty"`
+
 	// form template id
 	SchemaId *string `json:"schema_id,omitempty"`
 

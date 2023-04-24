@@ -2704,6 +2704,7 @@ components:
       required:
         - name
         - id
+
     EriusScenario:
       type: object
       description: A single scenario with all content
@@ -4208,6 +4209,8 @@ components:
         hide_executor_from_initiator:
           type: boolean
           description: Hide executor from initiator
+        mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
       required:
         - sla
         - check_sla
