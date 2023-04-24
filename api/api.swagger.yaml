@@ -4205,11 +4205,15 @@ components:
           description: List of accessibility properties for forms
           items:
             $ref: '#/components/schemas/FormsAccessibility'
+        hide_executor_from_initiator:
+          type: boolean
+          description: Hide executor from initiator
       required:
         - sla
         - check_sla
         - blueprint_id
         - blueprint_name
+        - hide_executor_from_initiator
 
     FormExecutorType:
       type: string
