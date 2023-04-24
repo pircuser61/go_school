@@ -27,6 +27,7 @@ type FormParams struct {
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`
+	AutoFill                  bool                 `json:"auto_fill"`
 }
 
 func (a *FormParams) Validate() error {
