@@ -255,18 +255,17 @@ LOOP:
 						Error(errors.Wrap(errRead, "can`t read body"))
 					break LOOP
 				}
-				body += string(b)
+				body += regexp.MustCompile(`(\[.+\])`).ReplaceAllString(string(b), "")
 			}
 			break LOOP
 		}
 	}
 
-	pb.Body = strings.Replace(body, "\t", "", -1)
+	pb.Body = strings.Replace(body, "\n", " ", -1)
+	pb.Body = strings.Replace(pb.Body, "\t", "", -1)
 	pb.Body = regexp.MustCompile(`(^\*\*\*.+НИЖЕ\*\*\*)`).ReplaceAllString(pb.Body, "")
 	pb.Body = regexp.MustCompile(`(\*{3}ОБЩИЙ.+40МБ\*{3})`).ReplaceAllString(pb.Body, "")
 	pb.Body = regexp.MustCompile(`(\[cid:image.+\])`).ReplaceAllString(pb.Body, "")
-	pb.Body = regexp.MustCompile(`(\[.+\])`).ReplaceAllString(pb.Body, "")
-	pb.Body = strings.Replace(pb.Body, "\n", " ", -1)
 	pb.Body = strings.TrimSpace(pb.Body)
 
 	return &pb
