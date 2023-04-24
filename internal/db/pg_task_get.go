@@ -173,19 +173,28 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
 	}
 
 	if filters.SelectAs != nil {
-		q = fmt.Sprintf(
-			"%s %s",
-			getUniqueActions(
-				*filters.SelectAs,
-				delegations),
-			q)
+		q = fmt.Sprintf(getUniqueActions(*filters.SelectAs, delegations), q)
 	} else {
-		q = fmt.Sprintf(
-			"%s %s",
-			getUniqueActions(
-				"",
-				delegations),
-			q)
+		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
+	}
+
+	if filters.InitiatorLogins != nil && len(*filters.InitiatorLogins) > 0 {
+		args = append(args, filters.InitiatorLogins)
+		q = fmt.Sprintf("%s AND w.author = ANY($%d)", q, len(args))
+	}
+
+	if filters.ProcessingLogins != nil && len(*filters.ProcessingLogins) > 0 {
+		args = append(args, filters.ProcessingLogins)
+		args = append(args, filters.ProcessingLogins)
+		args = append(args, filters.ProcessingLogins)
+		args = append(args, filters.ProcessingLogins)
+		q = fmt.Sprintf(`%s AND v.status NOT IN('finished', 'cancel', 'no_success')
+			(
+				(step_type = 'approver' and content -> 'State' -> step_name -> 'approvers' ? $%d) OR
+				(step_type = 'execution' and content -> 'State' -> step_name -> 'executors' ? $%d) OR
+				(step_type = 'form' and content -> 'State' -> step_name -> 'executors' ? $%d)
+			) AND 
+			w.author = ANY($%d)`, q, len(args), len(args))
 	}
 
 	if filters.TaskIDs != nil {
@@ -398,8 +407,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		attachmentsToTasks[taskID] = attachmentsCount
 	}
 
-	err = rows.Err()
-	if err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 

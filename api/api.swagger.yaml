@@ -1771,6 +1771,35 @@ paths:
           schema:
             type: boolean
           description: filter for attachments
+        - name: initiatorLogins
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter for initiators
+        - name: processingLogins
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter in process by logins
+        - name: processingGroupIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter in process by groups ids
+        - name: executorTypeAssigned
+          in: query
+          schema:
+            type: string
+            enum:
+              - assigned_by_someone
+              - assigned_someone
+          description: filter type assigned
       responses:
         200:
           description: OK

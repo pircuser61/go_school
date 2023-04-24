@@ -131,6 +131,11 @@ type GetTaskParams struct {
 	Status         *string     `json:"status"`
 	Receiver       *string     `json:"receiver"`
 	HasAttachments *bool       `json:"hasAttachments"`
+
+	InitiatorLogins      *[]string `json:"initiatorLogins"`
+	ProcessingLogins     *[]string `json:"processingLogins"`
+	ProcessingGroupIds   *[]string `json:"processingGroupIds"`
+	ExecutorTypeAssigned *string   `json:"executorTypeAssigned"`
 }
 
 type TimePeriod struct {
