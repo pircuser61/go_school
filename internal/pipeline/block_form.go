@@ -47,6 +47,8 @@ type FormData struct {
 	CheckSLA       bool `json:"check_sla"`
 	SLAChecked     bool `json:"sla_checked"`
 	HalfSLAChecked bool `json:"half_sla_checked"`
+
+	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 }
 
 type GoFormBlock struct {
