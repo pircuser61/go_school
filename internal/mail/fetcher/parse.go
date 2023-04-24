@@ -256,6 +256,7 @@ LOOP:
 					break LOOP
 				}
 				body += regexp.MustCompile(`(\[.+\])`).ReplaceAllString(string(b), "")
+				body = regexp.MustCompile(`(\*{3}.+\*{3})`).ReplaceAllString(body, "")
 			}
 			break LOOP
 		}
@@ -263,9 +264,6 @@ LOOP:
 
 	pb.Body = strings.Replace(body, "\n", " ", -1)
 	pb.Body = strings.Replace(pb.Body, "\t", "", -1)
-	pb.Body = regexp.MustCompile(`(^\*\*\*.+НИЖЕ\*\*\*)`).ReplaceAllString(pb.Body, "")
-	pb.Body = regexp.MustCompile(`(\*{3}ОБЩИЙ.+40МБ\*{3})`).ReplaceAllString(pb.Body, "")
-	pb.Body = regexp.MustCompile(`(\[cid:image.+\])`).ReplaceAllString(pb.Body, "")
 	pb.Body = strings.TrimSpace(pb.Body)
 
 	return &pb
