@@ -2704,6 +2704,7 @@ components:
       required:
         - name
         - id
+
     EriusScenario:
       type: object
       description: A single scenario with all content
@@ -4208,12 +4209,18 @@ components:
         hide_executor_from_initiator:
           type: boolean
           description: Hide executor from initiator
+        mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        auto_fill:
+          type: boolean
+          description: Auto filling form from prev block output
       required:
         - sla
         - check_sla
         - blueprint_id
         - blueprint_name
         - hide_executor_from_initiator
+        - auto_fill
 
     FormExecutorType:
       type: string
