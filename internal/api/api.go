@@ -905,6 +905,9 @@ type FormExecutorType string
 
 // Form params
 type FormParams struct {
+	// Auto filling form from prev block output
+	AutoFill bool `json:"auto_fill"`
+
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
 
