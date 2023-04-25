@@ -1278,7 +1278,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipelines/version/{versionID}/system/{systemID}/output:
+  /pipelines/version/{versionID}/system/{systemID}/endRoutes:
     put:
       tags:
         - pipeline
