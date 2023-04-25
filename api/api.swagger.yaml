@@ -1308,7 +1308,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExternalSystem'
+              $ref: '#/components/schemas/EndSystemSettings'
         required: true
       responses:
         200:
