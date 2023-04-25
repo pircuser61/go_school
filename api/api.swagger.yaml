@@ -1278,7 +1278,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
+  /pipelines/version/{versionID}/system/endSettings:
+    put:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Save external systems settings for end of process
+      description: Сохранить настройки внешней системы по завершению пайплайна
+      operationId: save-external-system-end-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified ending settings
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExternalSystem'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/search:
     get:
       tags:
@@ -2828,6 +2876,8 @@ components:
           $ref: '#/components/schemas/JSONSchema'
         output_mapping:
           $ref: '#/components/schemas/JSONSchema'
+        output_settings:
+          $ref: '#/components/schemas/EndSystemSettings'
       required:
         - system_id
         - name
@@ -3504,6 +3554,21 @@ components:
           $ref: '#/components/schemas/ArrayItems'
       required:
         - type
+
+    EndSystemSettings:
+      type: object
+      properties:
+        microservice_name:
+          type: string
+        URL:
+          type: string
+        method:
+          type: string
+          enum: ["POST"]
+      required:
+        - microservice_name
+        - URL
+        - method
 
     RequestExecutionInfoType:
       type: string
