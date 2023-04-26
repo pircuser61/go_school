@@ -2835,18 +2835,22 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-	SELECT input_schema, output_schema, input_mapping, output_mapping
+	SELECT input_schema, output_schema, input_mapping, output_mapping,
+	microservice_id,ending_url,sending_method
 	FROM external_systems
 	WHERE version_id = $1 AND system_id = $2`
 
 	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
 
-	externalSystemSettings := entity.ExternalSystem{Id: systemID}
+	externalSystemSettings := entity.ExternalSystem{Id: systemID, OutputSettings: &entity.EndSystemSettings{}}
 	err := row.Scan(
 		&externalSystemSettings.InputSchema,
 		&externalSystemSettings.OutputSchema,
 		&externalSystemSettings.InputMapping,
 		&externalSystemSettings.OutputMapping,
+		&externalSystemSettings.OutputSettings.MicroserviceId,
+		&externalSystemSettings.OutputSettings.URL,
+		&externalSystemSettings.OutputSettings.Method,
 	)
 	if err != nil {
 		return externalSystemSettings, err
@@ -3019,4 +3023,23 @@ func (db *PGCon) CheckPipelineNameExists(ctx context.Context, name string, check
 	}
 
 	return &pipelineNameExists, nil
+}
+
+func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, systemID string, s entity.EndSystemSettings) (err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_update_ending_system_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	UPDATE external_systems
+	SET (microservice_id,ending_url,sending_method) = ($1,$2,$3)
+	WHERE version_id = $4 AND system_id = $5`
+
+	_, err = db.Connection.Exec(ctx, query, s.MicroserviceId, s.URL, s.Method, versionID, systemID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

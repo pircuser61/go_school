@@ -204,4 +204,5 @@ type Database interface {
 	RemoveObsoleteMapping(ctx c.Context, id string) error
 	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, versionID, excludeWorkNumber string) ([]*e.EriusTask, error)
 	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)
+	UpdateEndingSystemSettings(ctx c.Context, versionID, systemID string, settings e.EndSystemSettings) (err error)
 }

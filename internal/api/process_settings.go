@@ -51,9 +51,19 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 	externalSystems := make([]entity.ExternalSystem, 0, len(externalSystemsIds))
 	for _, id := range externalSystemsIds {
+		externalSystemSettings, err := ae.DB.GetExternalSystemSettings(ctx, versionID, id.String())
+		if err != nil {
+			e := GetExternalSystemSettingsError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+		validateEndingSettings(&externalSystemSettings)
 		externalSystems = append(externalSystems, entity.ExternalSystem{
-			Id:   id.String(),
-			Name: systemsNames[id.String()],
+			Id:             id.String(),
+			Name:           systemsNames[id.String()],
+			OutputSettings: externalSystemSettings.OutputSettings,
 		})
 	}
 
@@ -227,6 +237,7 @@ func (ae *APIEnv) GetExternalSystemSettings(w http.ResponseWriter, req *http.Req
 
 		return
 	}
+	validateEndingSettings(&externalSystemSettings)
 
 	if err := sendResponse(w, http.StatusOK, externalSystemSettings); err != nil {
 		e := UnknownError
@@ -380,5 +391,79 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 		_ = e.sendError(w)
 
 		return
+	}
+}
+
+func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string) {
+	ctx, s := trace.StartSpan(r.Context(), "save_system_ending_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer r.Body.Close()
+
+	var systemSettings EndSystemSettings
+	err = json.Unmarshal(b, &systemSettings)
+	if err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	if systemSettings.Method == "" || systemSettings.URL == "" || systemSettings.MicroserviceId == "" {
+		e := ValidationEndingSystemSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	err = ae.DB.UpdateEndingSystemSettings(ctx, versionID, systemID, entity.EndSystemSettings{
+		URL:            systemSettings.URL,
+		Method:         string(systemSettings.Method),
+		MicroserviceId: systemSettings.MicroserviceId,
+	})
+	if err != nil {
+		e := UpdateEndingSystemSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func (ae *APIEnv) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string) {
+	ctx, s := trace.StartSpan(r.Context(), "delete_system_ending_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	err := ae.DB.UpdateEndingSystemSettings(ctx, versionID, systemID, entity.EndSystemSettings{
+		URL:            "",
+		Method:         "",
+		MicroserviceId: "",
+	})
+	if err != nil {
+		e := UpdateEndingSystemSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func validateEndingSettings(s *entity.ExternalSystem) {
+	if s.OutputSettings.MicroserviceId == "" ||
+		s.OutputSettings.URL == "" ||
+		s.OutputSettings.Method == "" {
+		s.OutputSettings = nil
 	}
 }
