@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/pkg/errors"
 	"net/http"
 	"time"
 
@@ -77,7 +78,7 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 
 	if formState == nil {
 		e := GetFormsChangelogError
-		log.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(errors.New("no history for form node"))) //
 		_ = e.sendError(w)
 
 		return

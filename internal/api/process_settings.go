@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io"
 	"net/http"
 
@@ -401,7 +402,6 @@ func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.R
 	log := logger.GetLogger(ctx)
 
 	b, err := io.ReadAll(r.Body)
-
 	if err != nil {
 		e := RequestReadError
 		log.Error(e.errorMessage(err))
@@ -421,7 +421,7 @@ func (ae *APIEnv) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.R
 	}
 	if systemSettings.Method == "" || systemSettings.URL == "" || systemSettings.MicroserviceId == "" {
 		e := ValidationEndingSystemSettingsError
-		log.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(errors.New("Error while validating systemSettings")))
 		_ = e.sendError(w)
 
 		return

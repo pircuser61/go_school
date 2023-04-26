@@ -2836,7 +2836,7 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 	// language=PostgreSQL
 	query := `
 	SELECT input_schema, output_schema, input_mapping, output_mapping,
-	microservice_id,ending_url,sending_method
+	microservice_id, ending_url, sending_method
 	FROM external_systems
 	WHERE version_id = $1 AND system_id = $2`
 
@@ -3033,7 +3033,7 @@ func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 	// language=PostgreSQL
 	query := `
 	UPDATE external_systems
-	SET (microservice_id,ending_url,sending_method) = ($1,$2,$3)
+	SET (microservice_id, ending_url, sending_method) = ($1, $2, $3)
 	WHERE version_id = $4 AND system_id = $5`
 
 	_, err = db.Connection.Exec(ctx, query, s.MicroserviceId, s.URL, s.Method, versionID, systemID)

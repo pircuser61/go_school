@@ -215,7 +215,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
 	if tErr != nil {
 		e := GetDelegationsError
-		log.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(tErr))
 		_ = e.sendError(w)
 
 		return

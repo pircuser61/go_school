@@ -111,6 +111,7 @@ const (
 	GetEntryPointOutputError
 	UpdateEndingSystemSettingsError
 	ValidationEndingSystemSettingsError
+	SearchingForPipelinesUsageError
 )
 
 //nolint:dupl //its not duplicate
@@ -204,6 +205,7 @@ var errorText = map[Err]string{
 	GetEntryPointOutputError:            "can't fill entry point output",
 	UpdateEndingSystemSettingsError:     "can't update ending system settings",
 	ValidationEndingSystemSettingsError: "not enough data to update ending settings",
+	SearchingForPipelinesUsageError:     "can't find usages of pipeline",
 }
 
 // JOKE.
@@ -299,6 +301,7 @@ var errorDescription = map[Err]string{
 	GetEntryPointOutputError:            "Не удалось заполнить output стартовой ноды",
 	UpdateEndingSystemSettingsError:     "Не удалось обновить настройки завершения процесса в системе",
 	ValidationEndingSystemSettingsError: "Ошибка при валидации параметров для обновления настроек системы",
+	SearchingForPipelinesUsageError:     "Ошибка при поиске использования пайплайна",
 }
 
 var errorStatus = map[Err]int{
