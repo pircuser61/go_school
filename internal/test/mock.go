@@ -1367,6 +1367,7 @@ func (m *MockDB) CheckPipelineNameExists(ctx context.Context, name string, check
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) UpdateEndingSystemSettings(ctx context.Context, versionID, systemID string, settings entity.EndSystemSettings) (err error) {
+func (m *MockDB) UpdateEndingSystemSettings(ctx context.Context, versionID, systemID string,
+	settings entity.EndSystemSettings) (err error) {
 	return errNotImplemented
 }
