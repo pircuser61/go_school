@@ -2,11 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"net/http"
 	"time"
 
 	"go.opencensus.io/trace"
+
+	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -78,7 +79,7 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 
 	if formState == nil {
 		e := GetFormsChangelogError
-		log.Error(e.errorMessage(errors.New("no history for form node"))) //
+		log.Error(e.errorMessage(errors.New("no history for form node")))
 		_ = e.sendError(w)
 
 		return

@@ -3,13 +3,15 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"github.com/pkg/errors"
+
 	"io"
 	"net/http"
 
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
+
+	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
