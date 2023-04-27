@@ -1187,7 +1187,6 @@ func (ae *APIEnv) hideExecutorsFromInitiator(steps entity.TaskSteps) error {
 				return marshalErr
 			}
 			currentStep.State[currentStep.Name] = data
-
 		}
 	}
 
