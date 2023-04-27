@@ -106,7 +106,7 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 			Executor:        &changelog.Executor,
 		}
 
-		if ui.Username == dbTask.Author {
+		if ui.Username == dbTask.Author && !formData.HideExecutorFromInitiator {
 			result[i].Executor = utils.GetAddressOfValue(hiddenUserLogin)
 		}
 

@@ -226,7 +226,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	if dbTask.Author == ui.Username {
+	if dbTask.Author == ui.Username { // If initiator equals to user who made request
 		hideErr := ae.hideExecutorsFromInitiator(dbTask.Steps)
 		if hideErr != nil {
 			e := UnknownError
