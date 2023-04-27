@@ -11,6 +11,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams) {
@@ -104,6 +105,11 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 			ApplicationBody: &changelog.ApplicationBody,
 			Executor:        &changelog.Executor,
 		}
+
+		if ui.Username == dbTask.Author {
+			result[i].Executor = utils.GetAddressOfValue(hiddenUserLogin)
+		}
+
 	}
 
 	err = sendResponse(w, http.StatusOK, result)
