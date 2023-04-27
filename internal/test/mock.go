@@ -1366,3 +1366,8 @@ func (m *MockDB) SaveVersionMainSettings(ctx context.Context, params entity.Proc
 func (m *MockDB) CheckPipelineNameExists(ctx context.Context, name string, checkNotDeleted bool) (*bool, error) {
 	return nil, errNotImplemented
 }
+
+func (m *MockDB) UpdateEndingSystemSettings(ctx context.Context, versionID, systemID string,
+	settings entity.EndSystemSettings) (err error) {
+	return errNotImplemented
+}

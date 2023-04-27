@@ -7,6 +7,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
@@ -77,7 +79,7 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 
 	if formState == nil {
 		e := GetFormsChangelogError
-		log.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(errors.New("no history for form node")))
 		_ = e.sendError(w)
 
 		return

@@ -116,12 +116,19 @@ type ProcessSettings struct {
 }
 
 type ExternalSystem struct {
-	Id            string             `json:"system_id"`
-	Name          string             `json:"name,omitempty"`
-	InputSchema   *script.JSONSchema `json:"input_schema,omitempty"`
-	OutputSchema  *script.JSONSchema `json:"output_schema,omitempty"`
-	InputMapping  *script.JSONSchema `json:"input_mapping,omitempty"`
-	OutputMapping *script.JSONSchema `json:"output_mapping,omitempty"`
+	Id             string             `json:"system_id"`
+	Name           string             `json:"name,omitempty"`
+	InputSchema    *script.JSONSchema `json:"input_schema,omitempty"`
+	OutputSchema   *script.JSONSchema `json:"output_schema,omitempty"`
+	InputMapping   *script.JSONSchema `json:"input_mapping,omitempty"`
+	OutputMapping  *script.JSONSchema `json:"output_mapping,omitempty"`
+	OutputSettings *EndSystemSettings `json:"output_settings,omitempty"`
+}
+
+type EndSystemSettings struct {
+	URL            string `json:"URL"`
+	Method         string `json:"method"`
+	MicroserviceId string `json:"microservice_id"`
 }
 
 func (es ProcessSettings) Validate() error {
