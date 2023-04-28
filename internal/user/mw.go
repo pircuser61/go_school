@@ -25,6 +25,10 @@ func GetUserInfoFromCtx(ctx context.Context) (*sso.UserInfo, error) {
 }
 
 func GetEffectiveUserInfoFromCtx(ctx context.Context) (*sso.UserInfo, error) {
+	return &sso.UserInfo{
+		Username: "rapetrin1",
+	}, nil
+
 	// first check if we use other userinfo
 	uii := ctx.Value(asOtherUserInfoCtx{})
 	if uii != nil {

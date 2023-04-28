@@ -360,3 +360,5 @@ main
 .build/
 
 api/api.go
+
+config.yaml

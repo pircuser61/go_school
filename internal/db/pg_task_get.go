@@ -125,7 +125,7 @@ func getUniqueActions(as string, logins []string) string {
 }
 
 //nolint:gocritic,gocyclo //filters
-func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q string, args []interface{}) {
+func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, delegations []string) (q string, args []interface{}, err error) {
 	// nolint:gocritic
 	// language=PostgreSQL
 	q = `
@@ -168,51 +168,32 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
 		WHERE w.child_id IS NULL`
 
 	order := "ASC"
-	if filters.Order != nil {
-		order = *filters.Order
+	if fl.Order != nil {
+		order = *fl.Order
 	}
 
-	if filters.SelectAs != nil {
-		q = fmt.Sprintf(getUniqueActions(*filters.SelectAs, delegations), q)
+	if fl.SelectAs != nil {
+		q = fmt.Sprintf(getUniqueActions(*fl.SelectAs, delegations), q)
 	} else {
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
 	}
 
-	if filters.InitiatorLogins != nil && len(*filters.InitiatorLogins) > 0 {
-		args = append(args, filters.InitiatorLogins)
-		q = fmt.Sprintf("%s AND w.author = ANY($%d)", q, len(args))
-	}
-
-	if filters.ProcessingLogins != nil && len(*filters.ProcessingLogins) > 0 {
-		args = append(args, filters.ProcessingLogins)
-		args = append(args, filters.ProcessingLogins)
-		args = append(args, filters.ProcessingLogins)
-		args = append(args, filters.ProcessingLogins)
-		q = fmt.Sprintf(`%s AND v.status NOT IN('finished', 'cancel', 'no_success')
-			(
-				(step_type = 'approver' and content -> 'State' -> step_name -> 'approvers' ? $%d) OR
-				(step_type = 'execution' and content -> 'State' -> step_name -> 'executors' ? $%d) OR
-				(step_type = 'form' and content -> 'State' -> step_name -> 'executors' ? $%d)
-			) AND 
-			w.author = ANY($%d)`, q, len(args), len(args))
-	}
-
-	if filters.TaskIDs != nil {
-		args = append(args, filters.TaskIDs)
+	if fl.TaskIDs != nil {
+		args = append(args, fl.TaskIDs)
 		q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", q, len(args))
 	}
-	if filters.Name != nil {
-		name := strings.Replace(*filters.Name, "_", "!_", -1)
+	if fl.Name != nil {
+		name := strings.Replace(*fl.Name, "_", "!_", -1)
 		name = strings.Replace(name, "%", "!%", -1)
 		args = append(args, name)
 		q = fmt.Sprintf("%s AND p.name ILIKE $%d ESCAPE '!' || '%%'", q, len(args))
 	}
-	if filters.Created != nil {
-		args = append(args, time.Unix(int64(filters.Created.Start), 0).UTC(), time.Unix(int64(filters.Created.End), 0).UTC())
+	if fl.Created != nil {
+		args = append(args, time.Unix(int64(fl.Created.Start), 0).UTC(), time.Unix(int64(fl.Created.End), 0).UTC())
 		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
 	}
-	if filters.Archived != nil {
-		switch *filters.Archived {
+	if fl.Archived != nil {
+		switch *fl.Archived {
 		case true:
 			q = fmt.Sprintf("%s AND (w.archived = true OR (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days')", q)
 		case false:
@@ -221,33 +202,138 @@ func compileGetTasksQuery(filters entity.TaskFilter, delegations []string) (q st
 		}
 	}
 
-	if filters.ForCarousel != nil && *filters.ForCarousel {
+	if fl.ForCarousel != nil && *fl.ForCarousel {
 		q = fmt.Sprintf("%s AND ((w.human_status='done' AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days')", q)
 		q = fmt.Sprintf("%s OR w.human_status = 'wait')", q)
 	}
 
-	if filters.Status != nil {
-		q = fmt.Sprintf("%s AND (w.human_status IN (%s))", q, *filters.Status)
+	if fl.Status != nil {
+		q = fmt.Sprintf("%s AND (w.human_status IN (%s))", q, *fl.Status)
 	}
 
-	if filters.Receiver != nil {
-		args = append(args, *filters.Receiver)
+	if fl.Receiver != nil {
+		args = append(args, *fl.Receiver)
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
+	}
+
+	if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
+		args = append(args, *fl.InitiatorLogins)
+		q = fmt.Sprintf("%s AND w.author = ANY($%d)", q, len(args))
+	}
+
+	workIds, err := db.getWorkIdsByFilters(ctx, &fl)
+	if err != nil {
+		return q, args, err
+	}
+
+	if len(workIds) > 0 {
+		args = append(args, workIds)
+		q = fmt.Sprintf("%s AND w.id IN ($%d)", q, len(args))
 	}
 
 	if order != "" {
 		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
 	}
 
-	if filters.Offset != nil {
-		args = append(args, *filters.Offset)
+	if fl.Offset != nil {
+		args = append(args, *fl.Offset)
 		q = fmt.Sprintf("%s\n OFFSET $%d", q, len(args))
 	}
 
-	if filters.Limit != nil {
-		args = append(args, *filters.Limit)
+	if fl.Limit != nil {
+		args = append(args, *fl.Limit)
 		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
 	}
+
+	return q, args, nil
+}
+
+func (db *PGCon) getWorkIdsByFilters(ctx c.Context, fl *entity.TaskFilter) ([]string, error) {
+	if fl == nil {
+		return []string{}, nil
+	}
+
+	if fl.ProcessingLogins == nil && fl.ProcessingGroupIds == nil && fl.ExecutorTypeAssigned == nil {
+		return []string{}, nil
+	}
+
+	q := `SELECT DISTINCT work_id 
+			FROM variable_storage
+			WHERE work_id IS NOT NULL AND vs.status = 'running' `
+
+	args := make([]interface{}, 0)
+
+	q = addAssignType(q, fl.CurrentUser, fl.ExecutorTypeAssigned)
+	q, args = addProcessingLogins(q, args, fl.ProcessingLogins)
+	q, args = addProcessingGroups(q, args, fl.ProcessingGroupIds)
+
+	rows, err := db.Connection.Query(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	workId := ""
+	workIds := make([]string, 0)
+	for rows.Next() {
+		err = rows.Scan(&workId)
+		if err != nil {
+			return []string{}, err
+		}
+		workIds = append(workIds, workId)
+	}
+
+	return workIds, err
+}
+
+func addAssignType(q, login string, typeAssign *string) string {
+	if typeAssign == nil {
+		return q
+	}
+
+	if *typeAssign == "assigned_by_someone" {
+		q = fmt.Sprintf(`%s AND step_type = 'execution' 
+			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"new_login": "%s"]'`,
+			q,
+			login,
+		)
+	}
+
+	if *typeAssign == "assigned_someone" {
+		q = fmt.Sprintf(`%s AND step_type = 'execution' 
+			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"old_login": "%s"]'`,
+			q,
+			login,
+		)
+	}
+
+	return q
+}
+
+func addProcessingLogins(q string, args []interface{}, logins *[]string) (string, []interface{}) {
+	if logins == nil || len(*logins) == 0 {
+		return q, args
+	}
+
+	args = append(args, *logins)
+	q = fmt.Sprintf(`%s AND
+		(
+			(step_type = 'approver' AND content -> 'State' -> step_name -> 'approvers' = ANY($%d)) OR
+			(step_type = 'execution' AND content -> 'State' -> step_name -> 'executors' = ANY($%d)) OR
+			(step_type = 'form' AND content -> 'State' -> step_name -> 'executors' = ANY($%d))
+		)`, q, len(args), len(args), len(args))
+
+	return q, args
+}
+
+func addProcessingGroups(q string, args []interface{}, groupIds *[]string) (string, []interface{}) {
+	if groupIds == nil || len(*groupIds) == 0 {
+		return q, args
+	}
+
+	args = append(args, *groupIds)
+	q = fmt.Sprintf(`%s AND step_type = 'execution'
+		AND content -> 'State' -> step_name -> 'executors_group_id' = ANY($%d)`, q, len(args))
 
 	return q, args
 }
@@ -324,7 +410,10 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
-	q, args := compileGetTasksQuery(filters, delegations)
+	q, args, err := db.compileGetTasksQuery(ctx, filters, delegations)
+	if err != nil {
+		return nil, err
+	}
 
 	tasks, err := db.getTasks(ctx, &filters, delegations, q, args)
 	if err != nil {

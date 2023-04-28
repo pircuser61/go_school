@@ -321,7 +321,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		return
 	}
 
-	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
+	/*delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
 	if err != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(err))
@@ -340,11 +340,16 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		}
 	} else {
 		delegations = delegations[:0]
+	}*/
+
+	/*getDelegatesFor := []string{filters.CurrentUser}
+	if filters.ProcessingLogins != nil {
+		getDelegatesFor = append(getDelegatesFor, *filters.ProcessingLogins...)
 	}
 
-	users := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
+	users := delegations.GetUserInArrayWithDelegators(getDelegatesFor)*/
 
-	resp, err := ae.DB.GetTasks(ctx, filters, users)
+	resp, err := ae.DB.GetTasks(ctx, filters, []string{})
 	if err != nil {
 		e := GetTasksError
 		log.Error(e.errorMessage(err))
