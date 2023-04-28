@@ -131,7 +131,7 @@ func getUniqueActions(as string, logins []string) string {
 }
 
 //nolint:gocritic,gocyclo //filters
-func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, delegations []string) (q string, args []interface{}, err error) {
+func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}, err error) {
 	// nolint:gocritic
 	// language=PostgreSQL
 	q = `
@@ -229,9 +229,9 @@ func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, deleg
 	if varStorage != "" {
 		q = fmt.Sprintf("%s %s", varStorage, q)
 		q = fmt.Sprintf("%s AND w.status = 1 AND w.id = ANY($%d)", q, len(args))
-		strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id", 1)
+		q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id", 1)
 	} else {
-		strings.Replace(q, "[join_variable_storage]", "", 1)
+		q = strings.Replace(q, "[join_variable_storage]", "", 1)
 	}
 
 	if order != "" {
@@ -397,7 +397,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
-	q, args, err := db.compileGetTasksQuery(ctx, filters, delegations)
+	q, args, err := compileGetTasksQuery(filters, delegations)
 	if err != nil {
 		return nil, err
 	}
