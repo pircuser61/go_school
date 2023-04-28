@@ -163,6 +163,7 @@ func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, deleg
 		JOIN pipelines p ON p.id = v.pipeline_id
 		JOIN work_status ws ON w.status = ws.id
 		JOIN unique_actions ua ON ua.work_id = w.id
+		[join_variable_storage]
 		LEFT JOIN LATERAL (
 			SELECT work_id, 
 				content::json->'State'->step_name->>'description' description,
@@ -224,14 +225,13 @@ func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, deleg
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
 	}
 
-	workIds, err := db.getWorkIdsByFilters(ctx, &fl)
-	if err != nil {
-		return q, args, err
-	}
-
-	if len(workIds) > 0 {
-		args = append(args, workIds)
+	varStorage := getProcessingSteps(&fl)
+	if varStorage != "" {
+		q = fmt.Sprintf("%s %s", varStorage, q)
 		q = fmt.Sprintf("%s AND w.status = 1 AND w.id = ANY($%d)", q, len(args))
+		strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id", 1)
+	} else {
+		strings.Replace(q, "[join_variable_storage]", "", 1)
 	}
 
 	if order != "" {
@@ -251,42 +251,25 @@ func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, deleg
 	return q, args, nil
 }
 
-func (db *PGCon) getWorkIdsByFilters(ctx c.Context, fl *entity.TaskFilter) ([]string, error) {
+func getProcessingSteps(fl *entity.TaskFilter) string {
 	if fl == nil {
-		return []string{}, nil
+		return ""
 	}
 
 	if fl.ProcessingLogins == nil && fl.ProcessingGroupIds == nil && fl.ExecutorTypeAssigned == nil {
-		return []string{}, nil
+		return ""
 	}
 
-	q := `SELECT DISTINCT work_id 
-			FROM variable_storage
-			WHERE work_id IS NOT NULL AND status = 'running' `
-
-	args := make([]interface{}, 0)
+	q := `WITH var_storage as (
+		SELECT work_id FROM variable_storage 
+		WHERE work_id IS NOT NULL AND status = 'running'
+	)`
 
 	q = addAssignType(q, fl.CurrentUser, fl.ExecutorTypeAssigned)
-	q, args = addProcessingLogins(q, args, fl.ProcessingLogins)
-	q, args = addProcessingGroups(q, args, fl.ProcessingGroupIds)
+	q = addProcessingLogins(q, fl.ProcessingLogins)
+	q = addProcessingGroups(q, fl.ProcessingGroupIds)
 
-	rows, err := db.Connection.Query(ctx, q, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	workId := ""
-	workIds := make([]string, 0)
-	for rows.Next() {
-		err = rows.Scan(&workId)
-		if err != nil {
-			return []string{}, err
-		}
-		workIds = append(workIds, workId)
-	}
-
-	return workIds, err
+	return q
 }
 
 func addAssignType(q, login string, typeAssign *string) string {
@@ -303,7 +286,7 @@ func addAssignType(q, login string, typeAssign *string) string {
 	}
 
 	if *typeAssign == entity.AssignedByMe {
-		q = fmt.Sprintf(`%s AND step_type IN('execution', 'approver)' 
+		q = fmt.Sprintf(`%s AND step_type = 'execution' 
 			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"old_login": "%s"}]'`,
 			q,
 			login,
@@ -313,32 +296,33 @@ func addAssignType(q, login string, typeAssign *string) string {
 	return q
 }
 
-func addProcessingLogins(q string, args []interface{}, logins *[]string) (string, []interface{}) {
+func addProcessingLogins(q string, logins *[]string) string {
 	if logins == nil || len(*logins) == 0 {
-		return q, args
+		return q
 	}
 
-	args = append(args, *logins)
-	q = fmt.Sprintf(`%s AND
+	return fmt.Sprintf(`%s AND step_type IN('execution', 'approver', 'form') AND 
 		(
-			(step_type = 'approver' AND content -> 'State' -> step_name -> 'approvers' = ANY($%d)) OR
-			(step_type = 'execution' AND content -> 'State' -> step_name -> 'executors' = ANY($%d)) OR
-			(step_type = 'form' AND content -> 'State' -> step_name -> 'executors' = ANY($%d))
-		)`, q, len(args), len(args), len(args))
-
-	return q, args
+			(step_type = 'approver' AND content -> 'State' -> step_name -> 'approvers' = ANY %s) OR
+			(step_type = 'execution' AND content -> 'State' -> step_name -> 'executors' = ANY %s) OR
+			(step_type = 'form' AND content -> 'State' -> step_name -> 'executors' = ANY %s)
+		)`, q, *logins, *logins, *logins)
 }
 
-func addProcessingGroups(q string, args []interface{}, groupIds *[]string) (string, []interface{}) {
+func addProcessingGroups(q string, groupIds *[]string) string {
 	if groupIds == nil || len(*groupIds) == 0 {
-		return q, args
+		return q
 	}
 
-	args = append(args, *groupIds)
-	q = fmt.Sprintf(`%s AND step_type = 'execution'
-		AND content -> 'State' -> step_name -> 'executors_group_id' = ANY($%d)`, q, len(args))
-
-	return q, args
+	return fmt.Sprintf(`%s AND step_type IN('execution', 'approver') 
+		AND (
+			(step_type = 'execution' AND content -> 'State' -> step_name -> 'executors_group_id' = ANY %s) OR 
+			(step_type = 'approver' AND content -> 'State' -> step_name -> 'approvers_group_id' = ANY %s)
+		)`,
+		q,
+		*groupIds,
+		*groupIds,
+	)
 }
 
 func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, error) {
