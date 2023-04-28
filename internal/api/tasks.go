@@ -230,7 +230,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		hideErr := ae.hideExecutorsFromInitiator(dbTask.Steps)
 		if hideErr != nil {
 			e := UnknownError
-			log.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(hideErr))
 			_ = e.sendError(w)
 
 			return
