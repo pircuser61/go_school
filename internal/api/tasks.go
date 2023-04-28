@@ -349,7 +349,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 	users := delegations.GetUserInArrayWithDelegators(getDelegatesFor)*/
 
-	resp, err := ae.DB.GetTasks(ctx, filters, []string{})
+	resp, err := ae.DB.GetTasks(ctx, filters, []string{"rapetrin1"})
 	if err != nil {
 		e := GetTasksError
 		log.Error(e.errorMessage(err))

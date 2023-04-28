@@ -115,6 +115,12 @@ func getUniqueActions(as string, logins []string) string {
 		return uniqueActionsByRole(loginsIn, "form", false)
 	case "finished_form_executor":
 		return uniqueActionsByRole(loginsIn, "form", true)
+	case "initiators":
+		return fmt.Sprintf(`WITH unique_actions AS (
+			SELECT id AS work_id, '{}' AS actions
+			FROM works
+			WHERE status = 1 AND author IN %s AND child_id IS NULL
+		)`, loginsIn)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
     SELECT id AS work_id, '{}' AS actions
@@ -172,11 +178,15 @@ func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, deleg
 		order = *fl.Order
 	}
 
-	if fl.SelectAs != nil {
+	if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
+		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
+	} else if fl.SelectAs != nil {
 		q = fmt.Sprintf(getUniqueActions(*fl.SelectAs, delegations), q)
 	} else {
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
 	}
+
+	fmt.Println(q)
 
 	if fl.TaskIDs != nil {
 		args = append(args, fl.TaskIDs)
@@ -216,19 +226,16 @@ func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, deleg
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
 	}
 
-	if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
-		args = append(args, *fl.InitiatorLogins)
-		q = fmt.Sprintf("%s AND w.author = ANY($%d)", q, len(args))
-	}
-
 	workIds, err := db.getWorkIdsByFilters(ctx, &fl)
 	if err != nil {
 		return q, args, err
 	}
 
+	fmt.Println(strings.Join(workIds, ", "))
+
 	if len(workIds) > 0 {
 		args = append(args, workIds)
-		q = fmt.Sprintf("%s AND w.id IN ($%d)", q, len(args))
+		q = fmt.Sprintf("%s AND w.status = 1 AND w.id = ANY($%d)", q, len(args))
 	}
 
 	if order != "" {
@@ -259,7 +266,7 @@ func (db *PGCon) getWorkIdsByFilters(ctx c.Context, fl *entity.TaskFilter) ([]st
 
 	q := `SELECT DISTINCT work_id 
 			FROM variable_storage
-			WHERE work_id IS NOT NULL AND vs.status = 'running' `
+			WHERE work_id IS NOT NULL AND status = 'running' `
 
 	args := make([]interface{}, 0)
 
@@ -293,7 +300,7 @@ func addAssignType(q, login string, typeAssign *string) string {
 
 	if *typeAssign == "assigned_by_someone" {
 		q = fmt.Sprintf(`%s AND step_type = 'execution' 
-			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"new_login": "%s"]'`,
+			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"new_login": "%s"}]'`,
 			q,
 			login,
 		)
@@ -301,7 +308,7 @@ func addAssignType(q, login string, typeAssign *string) string {
 
 	if *typeAssign == "assigned_someone" {
 		q = fmt.Sprintf(`%s AND step_type = 'execution' 
-			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"old_login": "%s"]'`,
+			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"old_login": "%s"}]'`,
 			q,
 			login,
 		)
@@ -412,11 +419,13 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 
 	q, args, err := db.compileGetTasksQuery(ctx, filters, delegations)
 	if err != nil {
+		fmt.Println("ERROR IN compileGetTasksQuery")
 		return nil, err
 	}
 
 	tasks, err := db.getTasks(ctx, &filters, delegations, q, args)
 	if err != nil {
+		fmt.Println("ERROR IN getTasks")
 		return nil, err
 	}
 

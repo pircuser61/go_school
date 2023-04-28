@@ -101,7 +101,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Error("can't create mail service")
 
-		//return
+		return
 	}
 
 	stat, err := statistic.InitStatistic()
@@ -138,7 +138,7 @@ func main() {
 	mailFetcher, err := mail_fetcher.NewService(cfg.MailFetcher)
 	if err != nil {
 		log.WithError(err).Error("can't create mail fetcher service")
-		//return
+		return
 	}
 
 	integrationsService, err := integrations.NewService(cfg.Integrations)
