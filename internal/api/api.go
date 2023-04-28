@@ -67,6 +67,11 @@ const (
 	DateOperandOperandTypeVariableOperand DateOperandOperandType = "variableOperand"
 )
 
+// Defines values for EndSystemSettingsMethod.
+const (
+	EndSystemSettingsMethodPOST EndSystemSettingsMethod = "POST"
+)
+
 // Defines values for ExecutionParamsType.
 const (
 	ExecutionParamsTypeFromSchema ExecutionParamsType = "from_schema"
@@ -610,6 +615,16 @@ type DebugRunRequest struct {
 	WorkNumber  string   `json:"work_number"`
 }
 
+// EndSystemSettings defines model for EndSystemSettings.
+type EndSystemSettings struct {
+	URL            string                  `json:"URL"`
+	Method         EndSystemSettingsMethod `json:"method"`
+	MicroserviceId string                  `json:"microservice_id"`
+}
+
+// EndSystemSettingsMethod defines model for EndSystemSettings.Method.
+type EndSystemSettingsMethod string
+
 // EriusFunc defines model for EriusFunc.
 type EriusFunc struct {
 	// Block type (language)
@@ -854,9 +869,10 @@ type ExternalSystem struct {
 	InputSchema  *JSONSchema `json:"input_schema,omitempty"`
 
 	// Название системы
-	Name          string      `json:"name"`
-	OutputMapping *JSONSchema `json:"output_mapping,omitempty"`
-	OutputSchema  *JSONSchema `json:"output_schema,omitempty"`
+	Name           string             `json:"name"`
+	OutputMapping  *JSONSchema        `json:"output_mapping,omitempty"`
+	OutputSchema   *JSONSchema        `json:"output_schema,omitempty"`
+	OutputSettings *EndSystemSettings `json:"output_settings,omitempty"`
 
 	// Id внешней системы
 	SystemId string `json:"system_id"`
@@ -905,6 +921,9 @@ type FormExecutorType string
 
 // Form params
 type FormParams struct {
+	// Auto filling form from prev block output
+	AutoFill bool `json:"auto_fill"`
+
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
 
@@ -919,6 +938,12 @@ type FormParams struct {
 
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
+
+	// Hide executor from initiator
+	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
+
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	Mapping *JSONSchemaProperties `json:"mapping,omitempty"`
 
 	// form template id
 	SchemaId *string `json:"schema_id,omitempty"`
@@ -1725,6 +1750,9 @@ type SaveExternalSystemSettingsParams struct {
 // SaveExternalSystemSettingsParamsSchemaFlag defines parameters for SaveExternalSystemSettings.
 type SaveExternalSystemSettingsParamsSchemaFlag string
 
+// SaveExternalSystemEndSettingsJSONBody defines parameters for SaveExternalSystemEndSettings.
+type SaveExternalSystemEndSettingsJSONBody EndSystemSettings
+
 // RunNewVersionByPrevVersionJSONBody defines parameters for RunNewVersionByPrevVersion.
 type RunNewVersionByPrevVersionJSONBody RunNewVersionByPrevVersionRequest
 
@@ -1823,6 +1851,9 @@ type AddExternalSystemToVersionJSONRequestBody AddExternalSystemToVersionJSONBod
 
 // SaveExternalSystemSettingsJSONRequestBody defines body for SaveExternalSystemSettings for application/json ContentType.
 type SaveExternalSystemSettingsJSONRequestBody SaveExternalSystemSettingsJSONBody
+
+// SaveExternalSystemEndSettingsJSONRequestBody defines body for SaveExternalSystemEndSettings for application/json ContentType.
+type SaveExternalSystemEndSettingsJSONRequestBody SaveExternalSystemEndSettingsJSONBody
 
 // RunNewVersionByPrevVersionJSONRequestBody defines body for RunNewVersionByPrevVersion for application/json ContentType.
 type RunNewVersionByPrevVersionJSONRequestBody RunNewVersionByPrevVersionJSONBody
@@ -2549,6 +2580,12 @@ type ServerInterface interface {
 	// Save external system settings
 	// (PUT /pipelines/version/{versionID}/system/{systemID})
 	SaveExternalSystemSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string, params SaveExternalSystemSettingsParams)
+	// delete external systems settings for end of process
+	// (DELETE /pipelines/version/{versionID}/system/{systemID}/endRoutes)
+	DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
+	// Save external systems settings for end of process
+	// (PUT /pipelines/version/{versionID}/system/{systemID}/endRoutes)
+	SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
 	// Delete Pipeline
 	// (DELETE /pipelines/{pipelineID})
 	DeletePipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
@@ -3581,6 +3618,76 @@ func (siw *ServerInterfaceWrapper) SaveExternalSystemSettings(w http.ResponseWri
 	handler(w, r.WithContext(ctx))
 }
 
+// DeleteExternalSystemEndSettings operation middleware
+func (siw *ServerInterfaceWrapper) DeleteExternalSystemEndSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteExternalSystemEndSettings(w, r, versionID, systemID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SaveExternalSystemEndSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveExternalSystemEndSettings(w, r, versionID, systemID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // DeletePipeline operation middleware
 func (siw *ServerInterfaceWrapper) DeletePipeline(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -4530,6 +4637,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}", wrapper.SaveExternalSystemSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}/endRoutes", wrapper.DeleteExternalSystemEndSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}/endRoutes", wrapper.SaveExternalSystemEndSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/pipelines/{pipelineID}", wrapper.DeletePipeline)

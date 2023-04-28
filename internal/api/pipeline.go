@@ -269,6 +269,13 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipel
 	}
 
 	childPipelines, err := scenarioUsage(ctx, ae.DB, id)
+	if err != nil {
+		e := SearchingForPipelinesUsageError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 	if len(childPipelines) > 0 {
 		e := ScenarioIsUsedInOtherError
 		log.Error(e.errorMessage(err))

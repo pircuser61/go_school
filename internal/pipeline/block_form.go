@@ -47,6 +47,10 @@ type FormData struct {
 	CheckSLA       bool `json:"check_sla"`
 	SLAChecked     bool `json:"sla_checked"`
 	HalfSLAChecked bool `json:"half_sla_checked"`
+
+	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
+
+	Mapping script.JSONSchemaProperties `json:"mapping"`
 }
 
 type GoFormBlock struct {
@@ -179,6 +183,7 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 			Type: BlockGoFormID,
 			Params: &script.FormParams{
 				FormsAccessibility: []script.FormAccessibility{},
+				Mapping:            script.JSONSchemaProperties{},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -247,6 +252,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		FormExecutorType:   params.FormExecutorType,
 		ApplicationBody:    map[string]interface{}{},
 		FormsAccessibility: params.FormsAccessibility,
+		Mapping:            params.Mapping,
 	}
 
 	switch gb.State.FormExecutorType {

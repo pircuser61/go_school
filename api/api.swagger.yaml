@@ -1278,7 +1278,112 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-
+  /pipelines/version/{versionID}/system/{systemID}/endRoutes:
+    put:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Save external systems settings for end of process
+      description: Сохранить настройки внешней системы по завершению пайплайна
+      operationId: save-external-system-end-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: systemID
+          in: path
+          description: system ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      requestBody:
+        description: Modified ending settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndSystemSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+    delete:
+      tags:
+        - pipeline
+        - process_settings
+      summary: delete external systems settings for end of process
+      description: Удалить настройки внешней системы по завершению пайплайна
+      operationId: delete-external-system-end-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: systemID
+          in: path
+          description: system ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/search:
     get:
       tags:
@@ -2733,6 +2838,7 @@ components:
       required:
         - name
         - id
+
     EriusScenario:
       type: object
       description: A single scenario with all content
@@ -2856,6 +2962,8 @@ components:
           $ref: '#/components/schemas/JSONSchema'
         output_mapping:
           $ref: '#/components/schemas/JSONSchema'
+        output_settings:
+          $ref: '#/components/schemas/EndSystemSettings'
       required:
         - system_id
         - name
@@ -3532,6 +3640,23 @@ components:
           $ref: '#/components/schemas/ArrayItems'
       required:
         - type
+
+    EndSystemSettings:
+      type: object
+      properties:
+        microservice_id:
+          type: string
+          format: uuid
+          example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        URL:
+          type: string
+        method:
+          type: string
+          enum: ["POST"]
+      required:
+        - microservice_id
+        - URL
+        - method
 
     RequestExecutionInfoType:
       type: string
@@ -4234,11 +4359,21 @@ components:
           description: List of accessibility properties for forms
           items:
             $ref: '#/components/schemas/FormsAccessibility'
+        hide_executor_from_initiator:
+          type: boolean
+          description: Hide executor from initiator
+        mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        auto_fill:
+          type: boolean
+          description: Auto filling form from prev block output
       required:
         - sla
         - check_sla
         - blueprint_id
         - blueprint_name
+        - hide_executor_from_initiator
+        - auto_fill
 
     FormExecutorType:
       type: string

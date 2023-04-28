@@ -176,7 +176,7 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 	}
 	if len(nodes) == 0 {
 		e := NoProcessNodesForMonitoringError
-		log.Error(e.errorMessage(err))
+		log.Error(e.errorMessage(errors.New("No process nodes for monitoring")))
 		_ = e.sendError(w)
 		return
 	}

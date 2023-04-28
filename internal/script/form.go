@@ -18,13 +18,16 @@ const (
 )
 
 type FormParams struct {
-	SchemaId           string              `json:"schema_id"`
-	SLA                int                 `json:"sla"`
-	CheckSLA           bool                `json:"check_sla"`
-	SchemaName         string              `json:"schema_name"`
-	Executor           string              `json:"executor"`
-	FormExecutorType   FormExecutorType    `json:"form_executor_type"`
-	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
+	SchemaId                  string               `json:"schema_id"`
+	SLA                       int                  `json:"sla"`
+	CheckSLA                  bool                 `json:"check_sla"`
+	SchemaName                string               `json:"schema_name"`
+	Executor                  string               `json:"executor"`
+	FormExecutorType          FormExecutorType     `json:"form_executor_type"`
+	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
+	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
+	Mapping                   JSONSchemaProperties `json:"mapping"`
+	AutoFill                  bool                 `json:"auto_fill"`
 }
 
 func (a *FormParams) Validate() error {
