@@ -186,8 +186,6 @@ func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, deleg
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
 	}
 
-	fmt.Println(q)
-
 	if fl.TaskIDs != nil {
 		args = append(args, fl.TaskIDs)
 		q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", q, len(args))
@@ -230,8 +228,6 @@ func (db *PGCon) compileGetTasksQuery(ctx c.Context, fl entity.TaskFilter, deleg
 	if err != nil {
 		return q, args, err
 	}
-
-	fmt.Println(strings.Join(workIds, ", "))
 
 	if len(workIds) > 0 {
 		args = append(args, workIds)
@@ -419,13 +415,11 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 
 	q, args, err := db.compileGetTasksQuery(ctx, filters, delegations)
 	if err != nil {
-		fmt.Println("ERROR IN compileGetTasksQuery")
 		return nil, err
 	}
 
 	tasks, err := db.getTasks(ctx, &filters, delegations, q, args)
 	if err != nil {
-		fmt.Println("ERROR IN getTasks")
 		return nil, err
 	}
 
