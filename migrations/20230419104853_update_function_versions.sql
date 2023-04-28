@@ -1,3 +1,8 @@
+-- +goose Up
+-- +goose StatementBegin
+
+-- !!! Необходимо подставить тэги в зависимости от стенда на котором запускается миграция !!! --
+
 CREATE OR REPLACE FUNCTION update_function_versions()
 
     RETURNS void
@@ -213,3 +218,4 @@ SELECT * FROM update_function_versions();
 
 
 DROP FUNCTION update_function_versions;
+-- +goose StatementEnd
