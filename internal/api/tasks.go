@@ -321,7 +321,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		return
 	}
 
-	/*delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, filters.CurrentUser)
 	if err != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(err))
@@ -340,16 +340,16 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		}
 	} else {
 		delegations = delegations[:0]
-	}*/
+	}
 
-	/*getDelegatesFor := []string{filters.CurrentUser}
+	getDelegatesFor := []string{filters.CurrentUser}
 	if filters.ProcessingLogins != nil {
 		getDelegatesFor = append(getDelegatesFor, *filters.ProcessingLogins...)
 	}
 
-	users := delegations.GetUserInArrayWithDelegators(getDelegatesFor)*/
+	users := delegations.GetUserInArrayWithDelegators(getDelegatesFor)
 
-	resp, err := ae.DB.GetTasks(ctx, filters, []string{"rapetrin1"})
+	resp, err := ae.DB.GetTasks(ctx, filters, users)
 	if err != nil {
 		e := GetTasksError
 		log.Error(e.errorMessage(err))
@@ -370,6 +370,15 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
 	var filters entity.TaskFilter
 
+	var typeAssigned *string
+	if p.ExecutorTypeAssigned != nil {
+		at := string(*p.ExecutorTypeAssigned)
+		typeAssigned = &at
+		if *typeAssigned != entity.AssignedToMe && *typeAssigned != entity.AssignedByMe {
+			return filters, errors.New("invalid value in typeAssigned filter")
+		}
+	}
+
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
 	if err != nil {
 		return filters, err
@@ -379,26 +388,22 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
 
 	filters.GetTaskParams = entity.GetTaskParams{
-		Name:               p.Name,
-		Created:            p.Created.toEntity(),
-		Order:              p.Order,
-		Limit:              &limit,
-		Offset:             &offset,
-		TaskIDs:            p.TaskIDs,
-		SelectAs:           p.SelectAs,
-		Archived:           p.Archived,
-		ForCarousel:        p.ForCarousel,
-		Status:             statusToEntity(p.Status),
-		Receiver:           p.Receiver,
-		HasAttachments:     p.HasAttachments,
-		InitiatorLogins:    p.InitiatorLogins,
-		ProcessingLogins:   p.ProcessingLogins,
-		ProcessingGroupIds: p.ProcessingGroupIds,
-	}
-
-	if p.ExecutorTypeAssigned != nil {
-		typeAssigned := string(*p.ExecutorTypeAssigned)
-		filters.GetTaskParams.ExecutorTypeAssigned = &typeAssigned
+		Name:                 p.Name,
+		Created:              p.Created.toEntity(),
+		Order:                p.Order,
+		Limit:                &limit,
+		Offset:               &offset,
+		TaskIDs:              p.TaskIDs,
+		SelectAs:             p.SelectAs,
+		Archived:             p.Archived,
+		ForCarousel:          p.ForCarousel,
+		Status:               statusToEntity(p.Status),
+		Receiver:             p.Receiver,
+		HasAttachments:       p.HasAttachments,
+		InitiatorLogins:      p.InitiatorLogins,
+		ProcessingLogins:     p.ProcessingLogins,
+		ProcessingGroupIds:   p.ProcessingGroupIds,
+		ExecutorTypeAssigned: typeAssigned,
 	}
 
 	return filters, nil

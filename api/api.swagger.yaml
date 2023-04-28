@@ -1902,8 +1902,8 @@ paths:
           schema:
             type: string
             enum:
-              - assigned_by_someone
-              - assigned_someone
+              - assigned_to_me
+              - assigned_by_me
           description: filter type assigned
       responses:
         200:

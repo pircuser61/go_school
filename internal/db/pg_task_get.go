@@ -294,7 +294,7 @@ func addAssignType(q, login string, typeAssign *string) string {
 		return q
 	}
 
-	if *typeAssign == "assigned_by_someone" {
+	if *typeAssign == entity.AssignedToMe {
 		q = fmt.Sprintf(`%s AND step_type = 'execution' 
 			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"new_login": "%s"}]'`,
 			q,
@@ -302,8 +302,8 @@ func addAssignType(q, login string, typeAssign *string) string {
 		)
 	}
 
-	if *typeAssign == "assigned_someone" {
-		q = fmt.Sprintf(`%s AND step_type = 'execution' 
+	if *typeAssign == entity.AssignedByMe {
+		q = fmt.Sprintf(`%s AND step_type IN('execution', 'approver)' 
 			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"old_login": "%s"}]'`,
 			q,
 			login,
