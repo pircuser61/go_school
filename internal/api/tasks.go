@@ -1171,16 +1171,17 @@ func (ae *APIEnv) hideExecutorsFromInitiator(steps entity.TaskSteps) error {
 				return unmarshalErr
 			}
 
-			if formBlock.HideExecutorFromInitiator {
-				formBlock.Executors = map[string]struct{}{
-					hiddenUserLogin: {},
-				}
-				formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+			if !formBlock.HideExecutorFromInitiator {
+				continue
+			}
+			formBlock.Executors = map[string]struct{}{
+				hiddenUserLogin: {},
+			}
+			formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
 
-				for historyIdx := range formBlock.ChangesLog {
-					formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
-					formBlock.ChangesLog[historyIdx].DelegateFor = hiddenUserLogin
-				}
+			for historyIdx := range formBlock.ChangesLog {
+				formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
+				formBlock.ChangesLog[historyIdx].DelegateFor = hiddenUserLogin
 			}
 			data, marshalErr := json.Marshal(formBlock)
 			if marshalErr != nil {
