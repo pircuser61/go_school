@@ -29,14 +29,17 @@ import (
 
 func Test_createGoFormBlock(t *testing.T) {
 	const (
-		name       = "form_0"
-		title      = "Форма"
-		global1    = "form_0.executor"
-		global2    = "form_0.application_body"
-		schemaId   = "c77be97a-f978-46d3-aa03-ab72663f2b74"
-		schemaName = "название формы"
-		executor   = "executor"
+		name         = "form_0"
+		title        = "Форма"
+		global1      = "form_0.executor"
+		global2      = "form_0.application_body"
+		schemaId     = "c77be97a-f978-46d3-aa03-ab72663f2b74"
+		schemaName   = "название формы"
+		executor     = "executor"
+		autoFillUser = "auto_fill"
 	)
+
+	timeNow := time.Now()
 
 	next := []entity.Socket{
 		{
@@ -217,7 +220,122 @@ func Test_createGoFormBlock(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "success_auto_fill",
+			args: args{
+				name: name,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoFormID,
+					Title:     title,
+					Input: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Output: []entity.EriusFunctionValue{
+						{
+							Name:   keyOutputFormExecutor,
+							Type:   "string",
+							Global: global1,
+						},
+						{
+							Name:   keyOutputFormBody,
+							Type:   "string",
+							Global: global2,
+						},
+					},
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.FormParams{
+							SchemaId:         schemaId,
+							SchemaName:       schemaName,
+							Executor:         executor,
+							FormExecutorType: script.FormExecutorTypeUser,
+							Mapping: script.JSONSchemaProperties{
+								"a": script.JSONSchemaPropertiesValue{
+									Type:  "number",
+									Value: "sd.form_0.a",
+								},
+								"b": script.JSONSchemaPropertiesValue{
+									Type:  "number",
+									Value: "sd.form_0.b",
+								},
+							},
+							AutoFill: true,
+						})
+
+						return r
+					}(),
+					Sockets: next,
+				},
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("sd.form_0", map[string]interface{}{
+							"a": 100,
+							"b": 200,
+						})
+						return s
+					}(),
+				},
+			},
+			want: &GoFormBlock{
+				Name:  name,
+				Title: title,
+				Input: map[string]string{
+					"foo": "bar",
+				},
+				Output: map[string]string{
+					keyOutputFormExecutor: global1,
+					keyOutputFormBody:     global2,
+				},
+				State: &FormData{
+					FormExecutorType: script.FormExecutorTypeUser,
+					SchemaId:         schemaId,
+					SchemaName:       schemaName,
+					Executors:        map[string]struct{}{executor: {}},
+					ApplicationBody: map[string]interface{}{
+						"a": 100,
+						"b": 200,
+					},
+					IsFilled: true,
+					AutoFill: true,
+					Mapping: script.JSONSchemaProperties{
+						"a": script.JSONSchemaPropertiesValue{
+							Type:  "number",
+							Value: "sd.form_0.a",
+						},
+						"b": script.JSONSchemaPropertiesValue{
+							Type:  "number",
+							Value: "sd.form_0.b",
+						},
+					},
+					ActualExecutor: func(s string) *string {
+						return &s
+					}(autoFillUser),
+					ChangesLog: []ChangesLogItem{
+						{
+							ApplicationBody: map[string]interface{}{
+								"a": 100,
+								"b": 200,
+							},
+							CreatedAt:   timeNow,
+							Executor:    autoFillUser,
+							DelegateFor: "",
+						},
+					},
+					IsRevoked:          false,
+					Description:        "",
+					FormsAccessibility: nil,
+				},
+				Sockets: entity.ConvertSocket(next),
+			},
+			wantErr: assert.NoError,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
@@ -233,6 +351,9 @@ func Test_createGoFormBlock(t *testing.T) {
 			got, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
 			if got != nil {
 				got.RunContext = nil
+				if got.State != nil && len(got.State.ChangesLog) > 0 {
+					got.State.ChangesLog[0].CreatedAt = timeNow
+				}
 			}
 
 			if !tt.wantErr(t, err, "createGoFormBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil) {

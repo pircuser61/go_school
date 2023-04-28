@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -19,6 +19,8 @@ const (
 )
 
 const formFillFormAction = "fill_form"
+
+const AutoFillUser = "auto_fill"
 
 type ChangesLogItem struct {
 	Description     string                 `json:"description"`
@@ -50,7 +52,8 @@ type FormData struct {
 
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
-	Mapping script.JSONSchemaProperties `json:"mapping"`
+	Mapping  script.JSONSchemaProperties `json:"mapping"`
+	AutoFill bool                        `json:"auto_fill"`
 }
 
 type GoFormBlock struct {
@@ -253,6 +256,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		ApplicationBody:    map[string]interface{}{},
 		FormsAccessibility: params.FormsAccessibility,
 		Mapping:            params.Mapping,
+		AutoFill:           params.AutoFill,
 	}
 
 	switch gb.State.FormExecutorType {
@@ -283,7 +287,53 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		gb.State.Executors = resolvedEntities
 	}
 
+	if gb.State.AutoFill {
+		if err = gb.handleAutoFillForm(); err != nil {
+			return err
+		}
+	}
+
 	return gb.handleNotifications(ctx)
+}
+
+func (gb *GoFormBlock) handleAutoFillForm() error {
+	variables, err := getVariables(gb.RunContext.VarStore)
+	if err != nil {
+		return err
+	}
+
+	formMapping := make(map[string]interface{})
+
+	for k := range gb.State.Mapping {
+		varPath := gb.State.Mapping[k]
+
+		variableValue := getVariable(variables, varPath.Value)
+
+		formMapping[k] = variableValue
+	}
+
+	gb.State.ApplicationBody = formMapping
+
+	personData := &servicedesc.SsoPerson{
+		Username: AutoFillUser,
+	}
+
+	gb.State.ChangesLog = append([]ChangesLogItem{
+		{
+			ApplicationBody: formMapping,
+			CreatedAt:       time.Now(),
+			Executor:        personData.Username,
+			DelegateFor:     "",
+		},
+	}, gb.State.ChangesLog...)
+
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormExecutor], personData)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputFormBody], gb.State.ApplicationBody)
+
+	gb.State.ActualExecutor = &personData.Username
+	gb.State.IsFilled = true
+
+	return nil
 }
 
 func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
