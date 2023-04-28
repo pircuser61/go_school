@@ -201,6 +201,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 				Contracts:       gb.State.Contracts,
 				RetryPolicy:     string(SimpleFunctionRetryPolicy),
 				FunctionName:    gb.State.Name,
+				FunctionVersion: gb.State.Version,
 			})
 
 			if err != nil {

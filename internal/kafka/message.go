@@ -7,6 +7,7 @@ type RunnerOutMessage struct {
 	FunctionMapping map[string]interface{} `json:"function_mapping"`
 	Contracts       string                 `json:"contracts"`
 	FunctionName    string                 `json:"function_name"`
+	FunctionVersion string                 `json:"function_version"`
 	RetryPolicy     string                 `json:"retry_policy"`
 }
 
