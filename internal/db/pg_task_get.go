@@ -131,7 +131,7 @@ func getUniqueActions(as string, logins []string) string {
 }
 
 //nolint:gocritic,gocyclo //filters
-func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}, err error) {
+func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string, args []interface{}) {
 	// nolint:gocritic
 	// language=PostgreSQL
 	q = `
@@ -248,7 +248,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
 	}
 
-	return q, args, nil
+	return q, args
 }
 
 func getProcessingSteps(fl *entity.TaskFilter) string {
@@ -397,10 +397,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	ctx, span := trace.StartSpan(ctx, "db.pg_get_tasks")
 	defer span.End()
 
-	q, args, err := compileGetTasksQuery(filters, delegations)
-	if err != nil {
-		return nil, err
-	}
+	q, args := compileGetTasksQuery(filters, delegations)
 
 	tasks, err := db.getTasks(ctx, &filters, delegations, q, args)
 	if err != nil {
