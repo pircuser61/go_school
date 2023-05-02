@@ -23,6 +23,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
@@ -121,6 +122,12 @@ func getUniqueActions(as string, logins []string) string {
 			FROM works
 			WHERE status = 1 AND author IN %s AND child_id IS NULL
 		)`, loginsIn)
+	case "none":
+		return fmt.Sprintf(`WITH unique_actions AS (
+			SELECT id AS work_id, '{}' AS actions
+			FROM works
+			WHERE status = 1 AND child_id IS NULL
+		)`)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
     SELECT id AS work_id, '{}' AS actions
@@ -135,6 +142,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	// nolint:gocritic
 	// language=PostgreSQL
 	q = `
+		[with_variable_storage]
 		SELECT 
 			w.id,
 			w.started_at,
@@ -179,7 +187,9 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		order = *fl.Order
 	}
 
-	if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
+	if fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil || fl.ExecutorTypeAssigned != nil {
+		q = fmt.Sprintf("%s %s", getUniqueActions("none", []string{}), q)
+	} else if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
 		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
 	} else if fl.SelectAs != nil {
 		q = fmt.Sprintf(getUniqueActions(*fl.SelectAs, delegations), q)
@@ -225,12 +235,13 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
 	}
 
-	varStorage := getProcessingSteps(&fl)
+	varStorage := getProcessingSteps(&fl, delegations)
 	if varStorage != "" {
-		q = fmt.Sprintf("%s %s", varStorage, q)
-		q = fmt.Sprintf("%s AND w.status = 1 AND w.id = ANY($%d)", q, len(args))
-		q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id", 1)
+		q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
+		q = fmt.Sprintf("%s AND w.status = 1", q)
+		q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
 	} else {
+		q = strings.Replace(q, "[with_variable_storage]", "", 1)
 		q = strings.Replace(q, "[join_variable_storage]", "", 1)
 	}
 
@@ -251,7 +262,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	return q, args
 }
 
-func getProcessingSteps(fl *entity.TaskFilter) string {
+func getProcessingSteps(fl *entity.TaskFilter, delegations []string) string {
 	if fl == nil {
 		return ""
 	}
@@ -260,14 +271,15 @@ func getProcessingSteps(fl *entity.TaskFilter) string {
 		return ""
 	}
 
-	q := `WITH var_storage as (
-		SELECT work_id FROM variable_storage 
-		WHERE work_id IS NOT NULL AND status = 'running'
-	)`
+	q := `, var_storage as (
+		SELECT DISTINCT work_id FROM variable_storage 
+		WHERE work_id IS NOT NULL AND status = 'running'`
 
 	q = addAssignType(q, fl.CurrentUser, fl.ExecutorTypeAssigned)
-	q = addProcessingLogins(q, fl.ProcessingLogins)
+	q = addProcessingLogins(q, fl.ProcessingLogins, delegations)
 	q = addProcessingGroups(q, fl.ProcessingGroupIds)
+
+	q += ")"
 
 	return q
 }
@@ -296,17 +308,26 @@ func addAssignType(q, login string, typeAssign *string) string {
 	return q
 }
 
-func addProcessingLogins(q string, logins *[]string) string {
+func addProcessingLogins(q string, logins *[]string, delegations []string) string {
 	if logins == nil || len(*logins) == 0 {
 		return q
 	}
 
+	ls := *logins
+	ls = append(ls, delegations...)
+
+	ls = utils.UniqueStrings(ls)
+
 	return fmt.Sprintf(`%s AND step_type IN('execution', 'approver', 'form') AND 
 		(
-			(step_type = 'approver' AND content -> 'State' -> step_name -> 'approvers' = ANY %s) OR
-			(step_type = 'execution' AND content -> 'State' -> step_name -> 'executors' = ANY %s) OR
-			(step_type = 'form' AND content -> 'State' -> step_name -> 'executors' = ANY %s)
-		)`, q, *logins, *logins, *logins)
+			(step_type = 'approver' AND content -> 'State' -> step_name -> 'approvers' ?| '%s') OR
+			(step_type = 'execution' AND content -> 'State' -> step_name -> 'executors' ?| '%s') OR
+			(step_type = 'form' AND content -> 'State' -> step_name -> 'executors' ?| '%s')
+		)`, q,
+		"{"+strings.Join(ls, ",")+"}",
+		"{"+strings.Join(ls, ",")+"}",
+		"{"+strings.Join(ls, ",")+"}",
+	)
 }
 
 func addProcessingGroups(q string, groupIds *[]string) string {
@@ -314,14 +335,19 @@ func addProcessingGroups(q string, groupIds *[]string) string {
 		return q
 	}
 
+	ids := *groupIds
+	for i := range ids {
+		ids[i] = fmt.Sprintf("'%s'", ids[i])
+	}
+
 	return fmt.Sprintf(`%s AND step_type IN('execution', 'approver') 
 		AND (
-			(step_type = 'execution' AND content -> 'State' -> step_name -> 'executors_group_id' = ANY %s) OR 
-			(step_type = 'approver' AND content -> 'State' -> step_name -> 'approvers_group_id' = ANY %s)
+			(step_type = 'execution' AND content -> 'State' -> step_name ->> 'executors_group_id'::varchar IN(%s)) OR 
+			(step_type = 'approver' AND content -> 'State' -> step_name ->> 'approvers_group_id'::varchar IN(%s))
 		)`,
 		q,
-		*groupIds,
-		*groupIds,
+		strings.Join(ids, ","),
+		strings.Join(ids, ","),
 	)
 }
 

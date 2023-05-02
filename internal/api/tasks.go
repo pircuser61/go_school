@@ -347,6 +347,10 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		getDelegatesFor = append(getDelegatesFor, *filters.ProcessingLogins...)
 	}
 
+	if filters.InitiatorLogins != nil {
+		getDelegatesFor = append(getDelegatesFor, *filters.InitiatorLogins...)
+	}
+
 	users := delegations.GetUserInArrayWithDelegators(getDelegatesFor)
 
 	resp, err := ae.DB.GetTasks(ctx, filters, users)
