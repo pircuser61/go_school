@@ -123,11 +123,11 @@ func getUniqueActions(as string, logins []string) string {
 			WHERE status = 1 AND author IN %s AND child_id IS NULL
 		)`, loginsIn)
 	case "none":
-		return fmt.Sprintf(`WITH unique_actions AS (
+		return `WITH unique_actions AS (
 			SELECT id AS work_id, '{}' AS actions
 			FROM works
 			WHERE status = 1 AND child_id IS NULL
-		)`)
+		)`
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
     SELECT id AS work_id, '{}' AS actions
