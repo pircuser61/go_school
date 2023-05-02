@@ -1802,7 +1802,22 @@ type GetTasksParams struct {
 
 	// filter for attachments
 	HasAttachments *bool `json:"hasAttachments,omitempty"`
+
+	// filter for initiators
+	InitiatorLogins *[]string `json:"initiatorLogins,omitempty"`
+
+	// filter in process by logins
+	ProcessingLogins *[]string `json:"processingLogins,omitempty"`
+
+	// filter in process by groups ids
+	ProcessingGroupIds *[]string `json:"processingGroupIds,omitempty"`
+
+	// filter type assigned
+	ExecutorTypeAssigned *GetTasksParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
 }
+
+// GetTasksParamsExecutorTypeAssigned defines parameters for GetTasks.
+type GetTasksParamsExecutorTypeAssigned string
 
 // UpdateTaskJSONBody defines parameters for UpdateTask.
 type UpdateTaskJSONBody TaskUpdate
@@ -4141,6 +4156,50 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "hasAttachments", r.URL.Query(), &params.HasAttachments)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "hasAttachments", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "initiatorLogins" -------------
+	if paramValue := r.URL.Query().Get("initiatorLogins"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "initiatorLogins", r.URL.Query(), &params.InitiatorLogins)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "initiatorLogins", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "processingLogins" -------------
+	if paramValue := r.URL.Query().Get("processingLogins"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "processingLogins", r.URL.Query(), &params.ProcessingLogins)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingLogins", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "processingGroupIds" -------------
+	if paramValue := r.URL.Query().Get("processingGroupIds"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "processingGroupIds", r.URL.Query(), &params.ProcessingGroupIds)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingGroupIds", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "executorTypeAssigned" -------------
+	if paramValue := r.URL.Query().Get("executorTypeAssigned"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "executorTypeAssigned", r.URL.Query(), &params.ExecutorTypeAssigned)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "executorTypeAssigned", Err: err})
 		return
 	}
 

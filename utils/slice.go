@@ -4,10 +4,10 @@ import (
 	"strings"
 )
 
-func UniqueStrings(intSlice []string) []string {
+func UniqueStrings(inSlice []string) []string {
 	keys := make(map[string]bool)
-	list := make([]string, 0, len(intSlice))
-	for _, entry := range intSlice {
+	list := make([]string, 0, len(inSlice))
+	for _, entry := range inSlice {
 		if _, value := keys[entry]; !value {
 			keys[entry] = true
 			list = append(list, entry)

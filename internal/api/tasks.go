@@ -22,10 +22,8 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -346,6 +344,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		_ = e.sendError(w)
 		return
 	}
+
 	if filters.SelectAs != nil {
 		switch *filters.SelectAs {
 		case "approver", "finished_approver":
@@ -359,9 +358,18 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		delegations = delegations[:0]
 	}
 
-	currentUserAndDelegates := delegations.GetUserInArrayWithDelegators([]string{filters.CurrentUser})
+	getDelegatesFor := []string{filters.CurrentUser}
+	if filters.ProcessingLogins != nil {
+		getDelegatesFor = append(getDelegatesFor, *filters.ProcessingLogins...)
+	}
 
-	resp, err := ae.DB.GetTasks(ctx, filters, currentUserAndDelegates)
+	if filters.InitiatorLogins != nil {
+		getDelegatesFor = append(getDelegatesFor, *filters.InitiatorLogins...)
+	}
+
+	users := delegations.GetUserInArrayWithDelegators(getDelegatesFor)
+
+	resp, err := ae.DB.GetTasks(ctx, filters, users)
 	if err != nil {
 		e := GetTasksError
 		log.Error(e.errorMessage(err))
@@ -382,6 +390,15 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) {
 	var filters entity.TaskFilter
 
+	var typeAssigned *string
+	if p.ExecutorTypeAssigned != nil {
+		at := string(*p.ExecutorTypeAssigned)
+		typeAssigned = &at
+		if *typeAssigned != entity.AssignedToMe && *typeAssigned != entity.AssignedByMe {
+			return filters, errors.New("invalid value in typeAssigned filter")
+		}
+	}
+
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
 	if err != nil {
 		return filters, err
@@ -391,18 +408,22 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 	limit, offset := parseLimitOffsetWithDefault(p.Limit, p.Offset)
 
 	filters.GetTaskParams = entity.GetTaskParams{
-		Name:           p.Name,
-		Created:        p.Created.toEntity(),
-		Order:          p.Order,
-		Limit:          &limit,
-		Offset:         &offset,
-		TaskIDs:        p.TaskIDs,
-		SelectAs:       p.SelectAs,
-		Archived:       p.Archived,
-		ForCarousel:    p.ForCarousel,
-		Status:         statusToEntity(p.Status),
-		Receiver:       p.Receiver,
-		HasAttachments: p.HasAttachments,
+		Name:                 p.Name,
+		Created:              p.Created.toEntity(),
+		Order:                p.Order,
+		Limit:                &limit,
+		Offset:               &offset,
+		TaskIDs:              p.TaskIDs,
+		SelectAs:             p.SelectAs,
+		Archived:             p.Archived,
+		ForCarousel:          p.ForCarousel,
+		Status:               statusToEntity(p.Status),
+		Receiver:             p.Receiver,
+		HasAttachments:       p.HasAttachments,
+		InitiatorLogins:      p.InitiatorLogins,
+		ProcessingLogins:     p.ProcessingLogins,
+		ProcessingGroupIds:   p.ProcessingGroupIds,
+		ExecutorTypeAssigned: typeAssigned,
 	}
 
 	return filters, nil
@@ -954,182 +975,6 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 	}
 
 	return []string{}
-}
-
-//nolint:gocyclo,staticcheck //its ok here
-func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
-	ctx, span := trace.StartSpan(r.Context(), "check_breach_sla")
-	defer span.End()
-
-	log := logger.GetLogger(ctx).WithField("mainFuncName", "CheckBreachSLA")
-
-	steps, err := ae.DB.GetBlocksBreachedSLA(ctx)
-	if err != nil {
-		e := UpdateBlockError
-		log.Error(e.errorMessage(errors.New("couldn't get steps")))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	spCtx := span.SpanContext()
-	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-	routineCtx = logger.WithLogger(routineCtx, log)
-	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_check_breach_sla", spCtx)
-	fakeSpan.End()
-
-	for _, item := range steps {
-		log = log.WithFields(map[string]interface{}{
-			"taskID":   item.TaskID,
-			"stepName": item.StepName,
-		})
-		txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
-		if transactionErr != nil {
-			log.WithError(transactionErr).Error("couldn't set SLA breach")
-			continue
-		}
-		// goroutines?
-		runCtx := &pipeline.BlockRunContext{
-			TaskID:     item.TaskID,
-			WorkNumber: item.WorkNumber,
-			WorkTitle:  item.WorkTitle,
-			Initiator:  item.Initiator,
-			Storage:    txStorage,
-			VarStore:   item.VarStore,
-
-			Sender:        ae.Mail,
-			Kafka:         ae.Kafka,
-			People:        ae.People,
-			ServiceDesc:   ae.ServiceDesc,
-			FunctionStore: ae.FunctionStore,
-			HumanTasks:    ae.HumanTasks,
-			Integrations:  ae.Integrations,
-			FaaS:          ae.FaaS,
-
-			UpdateData: &script.BlockUpdateData{
-				Action: string(item.Action),
-			},
-		}
-
-		blockErr := pipeline.ProcessBlock(processCtx, item.StepName, item.BlockData, runCtx, true)
-		if blockErr != nil {
-			log.WithError(blockErr).Error("couldn't set SLA breach")
-			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-				log.WithField("funcName", "ProcessBlock").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-			continue
-		}
-		if commitErr := txStorage.CommitTransaction(processCtx); commitErr != nil {
-			log.WithError(commitErr).Error("couldn't set SLA breach")
-			if txErr := txStorage.RollbackTransaction(routineCtx); txErr != nil {
-				log.Error(txErr)
-			}
-		}
-	}
-}
-
-func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMessage) error {
-	log := ae.Log.WithField("step_id", message.TaskID).WithField("mainFuncName", "FunctionReturnHandler")
-	ctx = logger.WithLogger(ctx, log)
-
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
-	if transactionErr != nil {
-		return transactionErr
-	}
-
-	if message.Err != "" {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "message has err").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		log.Error(message.Err)
-		return nil
-	}
-
-	step, err := ae.DB.GetTaskStepById(ctx, message.TaskID)
-	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "GetTaskStepById").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		log.Error(err)
-		return nil
-	}
-
-	storage := &store.VariableStore{
-		State:  step.State,
-		Values: step.Storage,
-		Steps:  step.Steps,
-		Errors: step.Errors,
-	}
-
-	functionMapping := pipeline.FunctionUpdateParams{Mapping: message.FunctionMapping}
-
-	mapping, err := json.Marshal(functionMapping)
-	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "marshal mapping").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		log.Error(err)
-		return nil
-	}
-
-	runCtx := &pipeline.BlockRunContext{
-		TaskID:     step.WorkID,
-		WorkNumber: step.WorkNumber,
-		Initiator:  step.Initiator,
-		VarStore:   storage,
-
-		Storage:       ae.DB,
-		Sender:        ae.Mail,
-		Kafka:         ae.Kafka,
-		People:        ae.People,
-		ServiceDesc:   ae.ServiceDesc,
-		FunctionStore: ae.FunctionStore,
-		HumanTasks:    ae.HumanTasks,
-		Integrations:  ae.Integrations,
-		FaaS:          ae.FaaS,
-
-		UpdateData: &script.BlockUpdateData{
-			Parameters: mapping,
-		},
-	}
-
-	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)
-	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "GetBlockDataFromVersion").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		log.WithError(err).Error("couldn't get block to update")
-		return nil
-	}
-
-	blockErr := pipeline.ProcessBlock(ctx, step.Name, blockFunc, runCtx, true)
-	if blockErr != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "ProcessBlock").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		log.WithError(blockErr).Error("couldn't update block")
-		return nil
-	}
-
-	log.Info("trying to commit transaction")
-	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
-		log.WithError(commitErr).Error("couldn't commit transaction")
-		return commitErr
-	}
-
-	return nil
 }
 
 func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request, pipelineId string) {
