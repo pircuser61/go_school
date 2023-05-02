@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -247,16 +248,17 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		Executors: map[string]struct{}{
 			params.Executor: {},
 		},
-		SchemaId:           params.SchemaId,
-		SLA:                params.SLA,
-		CheckSLA:           params.CheckSLA,
-		SchemaName:         params.SchemaName,
-		ChangesLog:         make([]ChangesLogItem, 0),
-		FormExecutorType:   params.FormExecutorType,
-		ApplicationBody:    map[string]interface{}{},
-		FormsAccessibility: params.FormsAccessibility,
-		Mapping:            params.Mapping,
-		AutoFill:           params.AutoFill,
+		SchemaId:                  params.SchemaId,
+		SLA:                       params.SLA,
+		CheckSLA:                  params.CheckSLA,
+		SchemaName:                params.SchemaName,
+		ChangesLog:                make([]ChangesLogItem, 0),
+		FormExecutorType:          params.FormExecutorType,
+		ApplicationBody:           map[string]interface{}{},
+		FormsAccessibility:        params.FormsAccessibility,
+		Mapping:                   params.Mapping,
+		AutoFill:                  params.AutoFill,
+		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
 	}
 
 	switch gb.State.FormExecutorType {
