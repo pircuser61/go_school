@@ -595,16 +595,18 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 
 // nolint:gocyclo // mb later
 func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+	executors := getSliceFromMapOfStrings(gb.State.Executors)
+
+	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if err != nil {
 		return err
 	}
-	executors := getSliceFromMapOfStrings(gb.State.Executors)
-	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
-	emails := make([]string, 0, len(loginsToNotify))
-	for login, _ := range logins {
-		if login != gb.RunContext.UpdateData.ByLogin {
+	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
+	executors = append(executors, loginsToNotify...)
+	emails := make([]string, 0, len(executors))
+	for _, login := range executors {
+		if login != loginTakenInWork {
 			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
 				return emailErr
