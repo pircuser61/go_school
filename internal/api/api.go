@@ -92,6 +92,8 @@ const (
 
 // Defines values for FormExecutorType.
 const (
+	FormExecutorTypeAutoFill FormExecutorType = "auto_fill"
+
 	FormExecutorTypeFromSchema FormExecutorType = "from_schema"
 
 	FormExecutorTypeInitiator FormExecutorType = "initiator"
@@ -917,6 +919,7 @@ type FormChangelogItem struct {
 //   - User - Single user
 //   - Initiator - Process initiator
 //   - From_schema - Selected by initiator
+//   - Auto_Fill - Auto Fill form by system
 type FormExecutorType string
 
 // Form params
@@ -931,6 +934,7 @@ type FormParams struct {
 	//   * User - Single user
 	//   * Initiator - Process initiator
 	//   * From_schema - Selected by initiator
+	//   * Auto_Fill - Auto Fill form by system
 	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
 
 	// List of accessibility properties for forms
