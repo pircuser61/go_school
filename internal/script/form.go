@@ -12,9 +12,10 @@ func (f FormExecutorType) String() string {
 }
 
 const (
-	FormExecutorTypeUser       FormExecutorType = "user"
-	FormExecutorTypeInitiator  FormExecutorType = "initiator"
-	FormExecutorTypeFromSchema FormExecutorType = "from_schema"
+	FormExecutorTypeUser         FormExecutorType = "user"
+	FormExecutorTypeInitiator    FormExecutorType = "initiator"
+	FormExecutorTypeFromSchema   FormExecutorType = "from_schema"
+	FormExecutorTypeAutoFillUser FormExecutorType = "auto_fill"
 )
 
 type FormParams struct {
@@ -27,7 +28,6 @@ type FormParams struct {
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`
-	AutoFill                  bool                 `json:"auto_fill"`
 }
 
 func (a *FormParams) Validate() error {
