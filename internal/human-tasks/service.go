@@ -17,6 +17,7 @@ const (
 	FromLoginFilter  = "fromLogin"
 	FromLoginsFilter = "fromLogins"
 	ToLoginFilter    = "toLogin"
+	ToLoginsFilter   = "toLogins"
 )
 
 type Service struct {
@@ -94,6 +95,30 @@ func (s *Service) GetDelegationsToLogin(ctx c.Context, login string) (d Delegati
 	var req = &delegationht.GetDelegationsRequest{
 		FilterBy: ToLoginFilter,
 		ToLogin:  login,
+	}
+
+	res, err := s.getDelegationsInternal(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (s *Service) GetDelegationsToLogins(ctx c.Context, logins []string) (d Delegations, err error) {
+	var sb strings.Builder
+
+	for i, login := range logins {
+		sb.WriteString(login)
+
+		if i < len(logins)-1 {
+			sb.WriteString(",")
+		}
+	}
+
+	var req = &delegationht.GetDelegationsRequest{
+		FilterBy: ToLoginsFilter,
+		ToLogins: sb.String(),
 	}
 
 	res, err := s.getDelegationsInternal(ctx, req)
