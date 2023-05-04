@@ -259,6 +259,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
 	}
 
+	fmt.Println(q)
+
 	return q, args
 }
 
