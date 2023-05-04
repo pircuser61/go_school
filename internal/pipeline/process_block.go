@@ -531,16 +531,18 @@ func sendEndingMapping(ctx c.Context, clientId string, data *entity.EndProcessDa
 	if auth.AuthType == "oAuth" {
 		bearer := "Bearer " + auth.Token
 		req.Header.Add("Authorization", bearer)
-		_, err := runCtx.Integrations.Cli.Do(req)
+		resp, err := runCtx.Integrations.Cli.Do(req)
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 	} else {
 		req.SetBasicAuth(auth.Login, auth.Password)
-		_, err := runCtx.Integrations.Cli.Do(req)
+		resp, err := runCtx.Integrations.Cli.Do(req)
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 	}
 	return nil
 }
