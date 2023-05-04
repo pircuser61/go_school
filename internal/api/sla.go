@@ -69,7 +69,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		blockErr := pipeline.ProcessBlock(processCtx, item.StepName, item.BlockData, runCtx, true)
+		blockErr := pipeline.ProcessBlockLogic(processCtx, item.StepName, item.BlockData, runCtx, true)
 		if blockErr != nil {
 			log.WithError(blockErr).Error("couldn't set SLA breach")
 			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {

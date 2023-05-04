@@ -1371,3 +1371,6 @@ func (m *MockDB) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 	settings entity.EndSystemSettings) (err error) {
 	return errNotImplemented
 }
+func (m *MockDB) GetTaskInWorkTime(ctx context.Context, workNumber string) (*entity.TaskCompletionInterval, error) {
+	return nil, errNotImplemented
+}

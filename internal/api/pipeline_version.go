@@ -286,7 +286,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 
 func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
 	version entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
-	system, err := ae.Integrations.Cli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
+	system, err := ae.Integrations.RpcIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId: clientID,
 	})
 	if err != nil {
@@ -846,7 +846,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
-	err = pipeline.ProcessBlock(processCtx, ep.EntryPoint, &blockData, runCtx, false)
+	err = pipeline.ProcessBlockLogic(processCtx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 			log.WithField("funcName", "RollbackTransaction").

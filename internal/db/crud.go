@@ -3043,3 +3043,28 @@ func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 
 	return nil
 }
+
+func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*entity.TaskCompletionInterval, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_in_work_time")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT started_at, finished_at
+	FROM works
+	WHERE work_number = $1`
+
+	row := db.Connection.QueryRow(ctx, query, workNumber)
+
+	interval := entity.TaskCompletionInterval{}
+	err := row.Scan(
+		&interval.StartedAt,
+		&interval.FinishedAt,
+	)
+	if err != nil {
+		return &entity.TaskCompletionInterval{}, err
+	}
+
+	return &interval, nil
+}

@@ -843,7 +843,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 			continue
 		}
 
-		blockErr := pipeline.ProcessBlock(processCtx, item.Name, &blockFunc, runCtx, true)
+		blockErr := pipeline.ProcessBlockLogic(processCtx, item.Name, &blockFunc, runCtx, true)
 		if blockErr != nil {
 			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 				log.WithField("funcName", "ProcessBlock").

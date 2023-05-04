@@ -1,9 +1,11 @@
 package pipeline
 
 import (
+	"bytes"
 	c "context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -59,7 +61,7 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 }
 
 //nolint:gocyclo //todo: need to decompose
-func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
+func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
 	ctx, s := trace.StartSpan(ctx, "process_block")
 	defer s.End()
 
@@ -140,7 +142,7 @@ func ProcessBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 			err = blockErr
 			return
 		}
-		err = ProcessBlock(ctx, b, blockData, runCtx.Copy(), false)
+		err = processBlock(ctx, b, blockData, runCtx.Copy(), false)
 		if err != nil {
 			return
 		}
@@ -450,5 +452,95 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 		return sendErr
 	}
 
+	return nil
+}
+
+func ProcessBlockLogic(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
+	pErr := processBlock(ctx, name, bl, runCtx, manual)
+	if pErr != nil {
+		return pErr
+	}
+	status, err := runCtx.Storage.GetTaskStatus(ctx, runCtx.TaskID)
+	if err != nil {
+		return err
+	}
+
+	if status == 2 || status == 4 {
+		version, versErr := runCtx.Storage.GetVersionByWorkNumber(ctx, runCtx.WorkNumber)
+		if versErr != nil {
+			return versErr
+		}
+		systemsIds, sysIdErr := runCtx.Storage.GetExternalSystemsIDs(ctx, version.VersionID.String())
+		if sysIdErr != nil {
+			return sysIdErr
+		}
+		context, contextErr := runCtx.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
+		if contextErr != nil {
+			return contextErr
+		}
+		systemsNames, namesErr := runCtx.Integrations.GetSystemsNames(ctx, systemsIds)
+		if namesErr != nil {
+			return namesErr
+		}
+		for key, val := range systemsNames {
+			if val == context.ClientID {
+				systemSettings, sysErr := runCtx.Storage.GetExternalSystemSettings(ctx, version.VersionID.String(), key)
+				if sysErr != nil {
+					return sysErr
+				}
+				if systemSettings.OutputSettings.Method == "" ||
+					systemSettings.OutputSettings.URL == "" ||
+					systemSettings.OutputSettings.MicroserviceId == "" {
+					return nil
+				}
+				taskTime, timeErr := runCtx.Storage.GetTaskInWorkTime(ctx, runCtx.WorkNumber)
+				if timeErr != nil {
+					return timeErr
+				}
+				sendingErr := sendEndingMapping(ctx, val, &entity.EndProcessData{
+					Id:         runCtx.TaskID.String(),
+					VersionId:  version.VersionID.String(),
+					StartedAt:  taskTime.StartedAt.String(),
+					FinishedAt: taskTime.FinishedAt.String(),
+					Status:     string(rune(status)),
+				}, runCtx, systemSettings.OutputSettings)
+				if sendingErr != nil {
+					return sendingErr
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func sendEndingMapping(ctx c.Context, clientId string, data *entity.EndProcessData,
+	runCtx *BlockRunContext, settings *entity.EndSystemSettings) (err error) {
+	auth, authErr := runCtx.Integrations.FillAuth(ctx, clientId)
+	if authErr != nil {
+		return authErr
+	}
+	body, jsonErr := json.Marshal(data)
+	if jsonErr != nil {
+		return jsonErr
+	}
+	req, reqErr := http.NewRequest(settings.Method, settings.URL, bytes.NewBuffer(body))
+	if reqErr != nil {
+		return reqErr
+	}
+	if auth.AuthType == "oAuth" {
+		bearer := "Bearer " + auth.Token
+		req.Header.Add("Authorization", bearer)
+		_, err := runCtx.Integrations.Cli.Do(req)
+		if err != nil {
+			return err
+		}
+	} else {
+		req.SetBasicAuth(auth.Login, auth.Password)
+		_, err := runCtx.Integrations.Cli.Do(req)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
