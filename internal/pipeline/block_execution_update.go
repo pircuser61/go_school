@@ -603,7 +603,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
 
 	emails := make([]string, 0, len(loginsToNotify))
-	for login := range logins {
+	for login, _ := range logins {
 		if login != gb.RunContext.UpdateData.ByLogin {
 			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 			if emailErr != nil {

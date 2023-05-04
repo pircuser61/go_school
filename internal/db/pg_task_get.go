@@ -275,7 +275,7 @@ func getProcessingSteps(fl *entity.TaskFilter, delegations []string) string {
 
 	q := `, var_storage as (
 		SELECT DISTINCT work_id FROM variable_storage 
-		WHERE work_id IS NOT NULL AND status = 'running'`
+		WHERE work_id IS NOT NULL AND status IN ('running', 'wait', 'processing')`
 
 	q = addAssignType(q, fl.CurrentUser, fl.ExecutorTypeAssigned)
 	q = addProcessingLogins(q, fl.ProcessingLogins, delegations)
