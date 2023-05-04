@@ -343,15 +343,32 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 	}
 
 	getDelegatesFor := []string{filters.CurrentUser}
-	if filters.ProcessingLogins != nil {
-		getDelegatesFor = append(getDelegatesFor, *filters.ProcessingLogins...)
-	}
-
-	if filters.InitiatorLogins != nil {
-		getDelegatesFor = append(getDelegatesFor, *filters.InitiatorLogins...)
-	}
 
 	users := delegations.GetUserInArrayWithDelegators(getDelegatesFor)
+
+	if filters.ProcessingLogins != nil && len(*filters.ProcessingLogins) > 0 {
+		delegations, err = ae.HumanTasks.GetDelegationsByLogins(ctx, *filters.ProcessingLogins)
+		if err != nil {
+			e := GetDelegationsError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+			return
+		}
+
+		users = delegations.GetUserInArrayWithDelegators(*filters.ProcessingLogins)
+	}
+
+	if filters.InitiatorLogins != nil && len(*filters.InitiatorLogins) > 0 {
+		delegations, err = ae.HumanTasks.GetDelegationsByLogins(ctx, *filters.InitiatorLogins)
+		if err != nil {
+			e := GetDelegationsError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+			return
+		}
+
+		users = append(users, delegations.GetUserInArrayWithDelegators(*filters.InitiatorLogins)...)
+	}
 
 	resp, err := ae.DB.GetTasks(ctx, filters, users)
 	if err != nil {
