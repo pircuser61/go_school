@@ -53,8 +53,7 @@ type FormData struct {
 
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
-	Mapping  script.JSONSchemaProperties `json:"mapping"`
-	AutoFill bool                        `json:"auto_fill"`
+	Mapping script.JSONSchemaProperties `json:"mapping"`
 }
 
 type GoFormBlock struct {
@@ -257,7 +256,6 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		ApplicationBody:           map[string]interface{}{},
 		FormsAccessibility:        params.FormsAccessibility,
 		Mapping:                   params.Mapping,
-		AutoFill:                  params.AutoFill,
 		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
 	}
 
@@ -287,9 +285,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 
 		gb.State.Executors = resolvedEntities
-	}
-
-	if gb.State.AutoFill {
+	case script.FormExecutorTypeAutoFillUser:
 		if err = gb.handleAutoFillForm(); err != nil {
 			return err
 		}

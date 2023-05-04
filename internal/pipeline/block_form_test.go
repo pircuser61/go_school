@@ -29,14 +29,13 @@ import (
 
 func Test_createGoFormBlock(t *testing.T) {
 	const (
-		name         = "form_0"
-		title        = "Форма"
-		global1      = "form_0.executor"
-		global2      = "form_0.application_body"
-		schemaId     = "c77be97a-f978-46d3-aa03-ab72663f2b74"
-		schemaName   = "название формы"
-		executor     = "executor"
-		autoFillUser = "auto_fill"
+		name       = "form_0"
+		title      = "Форма"
+		global1    = "form_0.executor"
+		global2    = "form_0.application_body"
+		schemaId   = "c77be97a-f978-46d3-aa03-ab72663f2b74"
+		schemaName = "название формы"
+		executor   = "executor"
 	)
 
 	timeNow := time.Now()
@@ -251,7 +250,7 @@ func Test_createGoFormBlock(t *testing.T) {
 							SchemaId:         schemaId,
 							SchemaName:       schemaName,
 							Executor:         executor,
-							FormExecutorType: script.FormExecutorTypeUser,
+							FormExecutorType: script.FormExecutorTypeAutoFillUser,
 							Mapping: script.JSONSchemaProperties{
 								"a": script.JSONSchemaPropertiesValue{
 									Type:  "number",
@@ -262,7 +261,6 @@ func Test_createGoFormBlock(t *testing.T) {
 									Value: "sd.form_0.b",
 								},
 							},
-							AutoFill: true,
 						})
 
 						return r
@@ -292,7 +290,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					keyOutputFormBody:     global2,
 				},
 				State: &FormData{
-					FormExecutorType: script.FormExecutorTypeUser,
+					FormExecutorType: script.FormExecutorTypeAutoFillUser,
 					SchemaId:         schemaId,
 					SchemaName:       schemaName,
 					Executors:        map[string]struct{}{executor: {}},
@@ -301,7 +299,6 @@ func Test_createGoFormBlock(t *testing.T) {
 						"b": 200,
 					},
 					IsFilled: true,
-					AutoFill: true,
 					Mapping: script.JSONSchemaProperties{
 						"a": script.JSONSchemaPropertiesValue{
 							Type:  "number",
@@ -314,7 +311,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					},
 					ActualExecutor: func(s string) *string {
 						return &s
-					}(autoFillUser),
+					}("auto_fill"),
 					ChangesLog: []ChangesLogItem{
 						{
 							ApplicationBody: map[string]interface{}{
@@ -322,7 +319,7 @@ func Test_createGoFormBlock(t *testing.T) {
 								"b": 200,
 							},
 							CreatedAt:   timeNow,
-							Executor:    autoFillUser,
+							Executor:    "auto_fill",
 							DelegateFor: "",
 						},
 					},
