@@ -240,9 +240,6 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = strings.Replace(q, "[with_variable_storage]", varStorage, 1)
 		q = fmt.Sprintf("%s AND w.status = 1", q)
 		q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
-	} else {
-		q = strings.Replace(q, "[with_variable_storage]", "", 1)
-		q = strings.Replace(q, "[join_variable_storage]", "", 1)
 	}
 
 	if order != "" {
@@ -259,7 +256,8 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s\n LIMIT $%d", q, len(args))
 	}
 
-	fmt.Println(q)
+	q = strings.Replace(q, "[with_variable_storage]", "", 1)
+	q = strings.Replace(q, "[join_variable_storage]", "", 1)
 
 	return q, args
 }
