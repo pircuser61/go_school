@@ -38,6 +38,8 @@ func Test_createGoFormBlock(t *testing.T) {
 		executor   = "executor"
 	)
 
+	timeNow := time.Now()
+
 	next := []entity.Socket{
 		{
 			Id:           DefaultSocketID,
@@ -217,7 +219,120 @@ func Test_createGoFormBlock(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "success_auto_fill",
+			args: args{
+				name: name,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoFormID,
+					Title:     title,
+					Input: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Output: []entity.EriusFunctionValue{
+						{
+							Name:   keyOutputFormExecutor,
+							Type:   "string",
+							Global: global1,
+						},
+						{
+							Name:   keyOutputFormBody,
+							Type:   "string",
+							Global: global2,
+						},
+					},
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.FormParams{
+							SchemaId:         schemaId,
+							SchemaName:       schemaName,
+							Executor:         executor,
+							FormExecutorType: script.FormExecutorTypeAutoFillUser,
+							Mapping: script.JSONSchemaProperties{
+								"a": script.JSONSchemaPropertiesValue{
+									Type:  "number",
+									Value: "sd.form_0.a",
+								},
+								"b": script.JSONSchemaPropertiesValue{
+									Type:  "number",
+									Value: "sd.form_0.b",
+								},
+							},
+						})
+
+						return r
+					}(),
+					Sockets: next,
+				},
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("sd.form_0", map[string]interface{}{
+							"a": 100,
+							"b": 200,
+						})
+						return s
+					}(),
+				},
+			},
+			want: &GoFormBlock{
+				Name:  name,
+				Title: title,
+				Input: map[string]string{
+					"foo": "bar",
+				},
+				Output: map[string]string{
+					keyOutputFormExecutor: global1,
+					keyOutputFormBody:     global2,
+				},
+				State: &FormData{
+					FormExecutorType: script.FormExecutorTypeAutoFillUser,
+					SchemaId:         schemaId,
+					SchemaName:       schemaName,
+					Executors:        map[string]struct{}{executor: {}},
+					ApplicationBody: map[string]interface{}{
+						"a": 100,
+						"b": 200,
+					},
+					IsFilled: true,
+					Mapping: script.JSONSchemaProperties{
+						"a": script.JSONSchemaPropertiesValue{
+							Type:  "number",
+							Value: "sd.form_0.a",
+						},
+						"b": script.JSONSchemaPropertiesValue{
+							Type:  "number",
+							Value: "sd.form_0.b",
+						},
+					},
+					ActualExecutor: func(s string) *string {
+						return &s
+					}("auto_fill"),
+					ChangesLog: []ChangesLogItem{
+						{
+							ApplicationBody: map[string]interface{}{
+								"a": 100,
+								"b": 200,
+							},
+							CreatedAt:   timeNow,
+							Executor:    "auto_fill",
+							DelegateFor: "",
+						},
+					},
+					IsRevoked:          false,
+					Description:        "",
+					FormsAccessibility: nil,
+				},
+				Sockets: entity.ConvertSocket(next),
+			},
+			wantErr: assert.NoError,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
@@ -233,6 +348,9 @@ func Test_createGoFormBlock(t *testing.T) {
 			got, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
 			if got != nil {
 				got.RunContext = nil
+				if got.State != nil && len(got.State.ChangesLog) > 0 {
+					got.State.ChangesLog[0].CreatedAt = timeNow
+				}
 			}
 
 			if !tt.wantErr(t, err, "createGoFormBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil) {

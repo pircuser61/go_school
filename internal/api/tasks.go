@@ -28,6 +28,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	hiddenUserLogin = "hidden_user"
+)
+
 type eriusTaskResponse struct {
 	ID               uuid.UUID              `json:"id"`
 	VersionID        uuid.UUID              `json:"version_id"`
@@ -211,12 +215,24 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	dbTask.Steps = steps
 
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
+
 	if tErr != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(tErr))
 		_ = e.sendError(w)
 
 		return
+	}
+
+	if dbTask.Author == ui.Username { // If initiator equals to user who made request
+		hideErr := ae.hideExecutorsFromInitiator(dbTask.Steps)
+		if hideErr != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(hideErr))
+			_ = e.sendError(w)
+
+			return
+		}
 	}
 
 	resp := &eriusTaskResponse{}
@@ -987,4 +1003,41 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 
 		return
 	}
+}
+
+func (ae *APIEnv) hideExecutorsFromInitiator(steps entity.TaskSteps) error {
+	for stepIndex := range steps {
+		currentStep := steps[stepIndex]
+		if currentStep.State == nil {
+			continue
+		}
+		switch currentStep.Type {
+		case pipeline.BlockGoFormID:
+			var formBlock pipeline.FormData
+			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
+			if unmarshalErr != nil {
+				return unmarshalErr
+			}
+
+			if !formBlock.HideExecutorFromInitiator {
+				continue
+			}
+			formBlock.Executors = map[string]struct{}{
+				hiddenUserLogin: {},
+			}
+			formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+
+			for historyIdx := range formBlock.ChangesLog {
+				formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
+				formBlock.ChangesLog[historyIdx].DelegateFor = hiddenUserLogin
+			}
+			data, marshalErr := json.Marshal(formBlock)
+			if marshalErr != nil {
+				return marshalErr
+			}
+			currentStep.State[currentStep.Name] = data
+		}
+	}
+
+	return nil
 }

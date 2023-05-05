@@ -4364,16 +4364,12 @@ components:
           description: Hide executor from initiator
         mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
-        auto_fill:
-          type: boolean
-          description: Auto filling form from prev block output
       required:
         - sla
         - check_sla
         - blueprint_id
         - blueprint_name
         - hide_executor_from_initiator
-        - auto_fill
 
     FormExecutorType:
       type: string
@@ -4381,11 +4377,13 @@ components:
         - user
         - initiator
         - from_schema
+        - auto_fill
       description: >
         Form executor type:
           * User - Single user
           * Initiator - Process initiator
           * From_schema - Selected by initiator
+          * Auto_Fill - Auto Fill form by system
 
     ApproverType:
       type: string
