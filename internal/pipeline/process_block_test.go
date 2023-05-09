@@ -462,7 +462,7 @@ func TestProcessBlock(t *testing.T) {
 			if blockErr != nil {
 				t.Fatal(blockErr)
 			}
-			if procErr := ProcessBlockLogic(context.Background(), tt.fields.Entrypoint, entrypointData,
+			if procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Entrypoint, entrypointData,
 				tt.fields.RunContext, false); procErr != nil {
 				t.Fatal(procErr)
 			}
@@ -472,7 +472,7 @@ func TestProcessBlock(t *testing.T) {
 					t.Fatal(updateErr)
 				}
 				tt.fields.RunContext.UpdateData = &params
-				if procErr := ProcessBlockLogic(context.Background(), name, blockData,
+				if procErr := ProcessBlockWithEndMapping(context.Background(), name, blockData,
 					tt.fields.RunContext, true); procErr != nil {
 					t.Fatal(procErr)
 				}

@@ -455,62 +455,79 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 	return nil
 }
 
-func ProcessBlockLogic(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
+func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
+	ctx, s := trace.StartSpan(ctx, "process_block_with_end_mapping")
+	defer s.End()
+	log := logger.GetLogger(ctx)
+
 	pErr := processBlock(ctx, name, bl, runCtx, manual)
 	if pErr != nil {
 		return pErr
 	}
 	status, err := runCtx.Storage.GetTaskStatus(ctx, runCtx.TaskID)
 	if err != nil {
-		return err
+		log.WithError(err)
+		return nil
 	}
 
-	if status == 2 || status == 4 {
-		version, versErr := runCtx.Storage.GetVersionByWorkNumber(ctx, runCtx.WorkNumber)
-		if versErr != nil {
-			return versErr
-		}
-		systemsIds, sysIdErr := runCtx.Storage.GetExternalSystemsIDs(ctx, version.VersionID.String())
-		if sysIdErr != nil {
-			return sysIdErr
-		}
-		context, contextErr := runCtx.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
-		if contextErr != nil {
-			return contextErr
-		}
-		systemsNames, namesErr := runCtx.Integrations.GetSystemsNames(ctx, systemsIds)
-		if namesErr != nil {
-			return namesErr
-		}
-		for key, val := range systemsNames {
-			if val == context.ClientID {
-				systemSettings, sysErr := runCtx.Storage.GetExternalSystemSettings(ctx, version.VersionID.String(), key)
-				if sysErr != nil {
-					return sysErr
-				}
-				if systemSettings.OutputSettings.Method == "" ||
-					systemSettings.OutputSettings.URL == "" ||
-					systemSettings.OutputSettings.MicroserviceId == "" {
-					return nil
-				}
-				taskTime, timeErr := runCtx.Storage.GetTaskInWorkTime(ctx, runCtx.WorkNumber)
-				if timeErr != nil {
-					return timeErr
-				}
-				sendingErr := sendEndingMapping(ctx, val, &entity.EndProcessData{
-					Id:         runCtx.TaskID.String(),
-					VersionId:  version.VersionID.String(),
-					StartedAt:  taskTime.StartedAt.String(),
-					FinishedAt: taskTime.FinishedAt.String(),
-					Status:     string(rune(status)),
-				}, runCtx, systemSettings.OutputSettings)
-				if sendingErr != nil {
-					return sendingErr
-				}
+	if status != 2 && status != 4 {
+		return nil
+	}
+
+	endErr := processBlockEnd(ctx, status, runCtx)
+	if endErr != nil {
+		log.WithError(err)
+	}
+	return nil
+}
+
+func processBlockEnd(ctx c.Context, status int, runCtx *BlockRunContext) (err error) {
+	ctx, s := trace.StartSpan(ctx, "process_block_end")
+	defer s.End()
+
+	version, versErr := runCtx.Storage.GetVersionByWorkNumber(ctx, runCtx.WorkNumber)
+	if versErr != nil {
+		return versErr
+	}
+	systemsIds, sysIdErr := runCtx.Storage.GetExternalSystemsIDs(ctx, version.VersionID.String())
+	if sysIdErr != nil {
+		return sysIdErr
+	}
+	context, contextErr := runCtx.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
+	if contextErr != nil {
+		return contextErr
+	}
+	systemsNames, namesErr := runCtx.Integrations.GetSystemsNames(ctx, systemsIds)
+	if namesErr != nil {
+		return namesErr
+	}
+	for key, val := range systemsNames {
+		if val == context.ClientID {
+			systemSettings, sysErr := runCtx.Storage.GetExternalSystemSettings(ctx, version.VersionID.String(), key)
+			if sysErr != nil {
+				return sysErr
+			}
+			if systemSettings.OutputSettings.Method == "" ||
+				systemSettings.OutputSettings.URL == "" ||
+				systemSettings.OutputSettings.MicroserviceId == "" {
+				return nil
+			}
+			taskTime, timeErr := runCtx.Storage.GetTaskInWorkTime(ctx, runCtx.WorkNumber)
+			if timeErr != nil {
+				return timeErr
+			}
+			sendingErr := sendEndingMapping(ctx, val, &entity.EndProcessData{
+				Id:         runCtx.TaskID.String(),
+				VersionId:  version.VersionID.String(),
+				StartedAt:  taskTime.StartedAt.String(),
+				FinishedAt: taskTime.FinishedAt.String(),
+				Status:     string(rune(status)),
+			}, runCtx, systemSettings.OutputSettings)
+			if sendingErr != nil {
+				return sendingErr
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -535,14 +552,14 @@ func sendEndingMapping(ctx c.Context, clientId string, data *entity.EndProcessDa
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		resp.Body.Close()
 	} else {
 		req.SetBasicAuth(auth.Login, auth.Password)
 		resp, err := runCtx.Integrations.Cli.Do(req)
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		resp.Body.Close()
 	}
 	return nil
 }

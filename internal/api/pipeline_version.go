@@ -846,7 +846,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
-	err = pipeline.ProcessBlockLogic(processCtx, ep.EntryPoint, &blockData, runCtx, false)
+	err = pipeline.ProcessBlockWithEndMapping(processCtx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
 			log.WithField("funcName", "RollbackTransaction").
