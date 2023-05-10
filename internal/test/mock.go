@@ -1318,6 +1318,10 @@ func (m *MockDB) GetTaskStatus(_ context.Context, _ uuid.UUID) (int, error) {
 	return -1, errNotImplemented
 }
 
+func (m *MockDB) GetTaskStatusWithReadableString(_ context.Context, _ uuid.UUID) (int, string, error) {
+	return -1, "", errNotImplemented
+}
+
 func (m *MockDB) GetVariableStorageForStep(_ context.Context, _ uuid.UUID, _ string) (*store.VariableStore, error) {
 	return nil, errNotImplemented
 }
@@ -1370,4 +1374,7 @@ func (m *MockDB) CheckPipelineNameExists(ctx context.Context, name string, check
 func (m *MockDB) UpdateEndingSystemSettings(ctx context.Context, versionID, systemID string,
 	settings entity.EndSystemSettings) (err error) {
 	return errNotImplemented
+}
+func (m *MockDB) GetTaskInWorkTime(ctx context.Context, workNumber string) (*entity.TaskCompletionInterval, error) {
+	return nil, errNotImplemented
 }

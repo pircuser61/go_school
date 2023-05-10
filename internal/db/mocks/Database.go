@@ -1061,6 +1061,29 @@ func (_m *MockedDatabase) GetTaskFormSchemaID(workNumber string, formID string) 
 	return r0, r1
 }
 
+// GetTaskInWorkTime provides a mock function with given fields: ctx, workNumber
+func (_m *MockedDatabase) GetTaskInWorkTime(ctx context.Context, workNumber string) (*entity.TaskCompletionInterval, error) {
+	ret := _m.Called(ctx, workNumber)
+
+	var r0 *entity.TaskCompletionInterval
+	if rf, ok := ret.Get(0).(func(context.Context, string) *entity.TaskCompletionInterval); ok {
+		r0 = rf(ctx, workNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.TaskCompletionInterval)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, workNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetTaskRunContext provides a mock function with given fields: ctx, workNumber
 func (_m *MockedDatabase) GetTaskRunContext(ctx context.Context, workNumber string) (entity.TaskRunContext, error) {
 	ret := _m.Called(ctx, workNumber)
@@ -1101,6 +1124,34 @@ func (_m *MockedDatabase) GetTaskStatus(ctx context.Context, taskID uuid.UUID) (
 	}
 
 	return r0, r1
+}
+
+// GetTaskStatusWithReadableString provides a mock function with given fields: ctx, taskID
+func (_m *MockedDatabase) GetTaskStatusWithReadableString(ctx context.Context, taskID uuid.UUID) (int, string, error) {
+	ret := _m.Called(ctx, taskID)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) int); ok {
+		r0 = rf(ctx, taskID)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	var r1 string
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) string); ok {
+		r1 = rf(ctx, taskID)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(context.Context, uuid.UUID) error); ok {
+		r2 = rf(ctx, taskID)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // GetTaskStepById provides a mock function with given fields: ctx, id

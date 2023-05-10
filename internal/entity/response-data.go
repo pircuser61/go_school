@@ -131,6 +131,14 @@ type EndSystemSettings struct {
 	MicroserviceId string `json:"microservice_id"`
 }
 
+type EndProcessData struct {
+	Id         string `json:"id"`
+	VersionId  string `json:"version_id"`
+	StartedAt  string `json:"started_at"`
+	FinishedAt string `json:"finished_at"`
+	Status     string `json:"status"`
+}
+
 func (es ProcessSettings) Validate() error {
 	err := es.StartSchema.Validate()
 	if err != nil {

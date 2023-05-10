@@ -2,6 +2,7 @@ package integrations
 
 import (
 	c "context"
+	"net/http"
 
 	"github.com/google/uuid"
 
@@ -11,11 +12,14 @@ import (
 	"go.opencensus.io/plugin/ocgrpc"
 
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
+	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
 )
 
 type Service struct {
-	C   *grpc.ClientConn
-	Cli integration_v1.IntegrationServiceClient
+	C          *grpc.ClientConn
+	RpcIntCli  integration_v1.IntegrationServiceClient
+	RpcMicrCli microservice_v1.MicroserviceServiceClient
+	Cli        *http.Client
 }
 
 func NewService(cfg Config) (*Service, error) {
@@ -26,11 +30,13 @@ func NewService(cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := integration_v1.NewIntegrationServiceClient(conn)
-
+	clientInt := integration_v1.NewIntegrationServiceClient(conn)
+	clientMic := microservice_v1.NewMicroserviceServiceClient(conn)
 	return &Service{
-		C:   conn,
-		Cli: client,
+		C:          conn,
+		RpcIntCli:  clientInt,
+		RpcMicrCli: clientMic,
+		Cli:        &http.Client{},
 	}, nil
 }
 
@@ -40,7 +46,7 @@ func (s *Service) GetSystemsNames(ctx c.Context, systemIDs []uuid.UUID) (map[str
 		ids = append(ids, systemID.String())
 	}
 
-	res, err := s.Cli.GetIntegrationsNamesByIds(ctx, &integration_v1.GetIntegrationsNamesByIdsRequest{Ids: ids})
+	res, err := s.RpcIntCli.GetIntegrationsNamesByIds(ctx, &integration_v1.GetIntegrationsNamesByIdsRequest{Ids: ids})
 	if err != nil {
 		return nil, err
 	}

@@ -33,6 +33,11 @@ func makeStorage() *mocks.MockedDatabase {
 		uuid.UUID{},
 	).Return(1, nil)
 
+	res.On("GetTaskStatusWithReadableString",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		uuid.UUID{},
+	).Return(1, "running", nil)
+
 	res.On("UpdateTaskStatus",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		uuid.UUID{},
@@ -462,7 +467,7 @@ func TestProcessBlock(t *testing.T) {
 			if blockErr != nil {
 				t.Fatal(blockErr)
 			}
-			if procErr := ProcessBlock(context.Background(), tt.fields.Entrypoint, entrypointData,
+			if procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Entrypoint, entrypointData,
 				tt.fields.RunContext, false); procErr != nil {
 				t.Fatal(procErr)
 			}
@@ -472,7 +477,7 @@ func TestProcessBlock(t *testing.T) {
 					t.Fatal(updateErr)
 				}
 				tt.fields.RunContext.UpdateData = &params
-				if procErr := ProcessBlock(context.Background(), name, blockData,
+				if procErr := ProcessBlockWithEndMapping(context.Background(), name, blockData,
 					tt.fields.RunContext, true); procErr != nil {
 					t.Fatal(procErr)
 				}

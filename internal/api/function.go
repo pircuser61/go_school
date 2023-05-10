@@ -96,7 +96,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		return nil
 	}
 
-	blockErr := pipeline.ProcessBlock(ctx, step.Name, blockFunc, runCtx, true)
+	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, step.Name, blockFunc, runCtx, true)
 	if blockErr != nil {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "ProcessBlock").
