@@ -3,12 +3,9 @@ package mail
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
-
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
 )
 
 type userFromSD struct {
@@ -133,19 +130,6 @@ func makeDescriptionFromJSON(data orderedmap.OrderedMap) string {
 		res.WriteString("\n")
 	}
 	return res.String()
-}
-
-func CompileAttachments(body string, attachments map[string][]email.Attachment) string {
-	for k, aa := range attachments {
-		names := make([]string, 0, len(aa))
-		for _, a := range aa {
-			names = append(names, a.Name)
-		}
-		newAttachment := fmt.Sprintf(`<p>%s: %s</p><br>`, k, strings.Join(names, ", "))
-		body = regexp.MustCompile(
-			fmt.Sprintf(`<p>%s: [^<]+</p><br>`, k)).ReplaceAllString(body, newAttachment)
-	}
-	return body
 }
 
 func MakeDescription(data orderedmap.OrderedMap) string {

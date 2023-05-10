@@ -3,9 +3,10 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"log"
-
+	"fmt"
 	"github.com/pkg/errors"
+	"log"
+	"sort"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
@@ -81,8 +82,15 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	for k := range attachments {
 		files = append(files, attachments[k]...)
 	}
-	text = mail.CompileAttachments(text, attachments)
+
+	files, skippedFiles := sortAndFilterAttachments(files)
+
 	text = mail.SwapKeys(text, body.InitialApplication.Keys)
+
+	for i := range skippedFiles {
+		text = fmt.Sprintf("%s <p>%d. %s</p>", text, i, skippedFiles[i])
+	}
+
 	text = mail.AddStyles(text)
 	return text, files, nil
 }
@@ -120,6 +128,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 	if err != nil {
 		return nil, errors.New("couldn't compile notification text")
 	}
+
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, files, mail.Template{
 		Subject:   gb.State.Subject,
 		Text:      text,
@@ -187,4 +196,26 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	return b, nil
+}
+
+func sortAndFilterAttachments(files []email.Attachment) (res []email.Attachment, skippedFiles []string) {
+	const attachmentsLimitMB = 40
+	var limitCounter float64
+	skippedFiles = make([]string, 0)
+
+	sort.Slice(files, func(i, j int) bool {
+		return len(files[i].Content) < len(files[j].Content)
+	})
+
+	res = make([]email.Attachment, 0, len(files))
+	for i := range files {
+		limitCounter += float64(len(files[i].Content) / 1024 / 1024)
+		if limitCounter <= attachmentsLimitMB {
+			res = append(res, files[i])
+		} else {
+			skippedFiles = append(skippedFiles, files[i].Name)
+		}
+	}
+
+	return res, skippedFiles
 }
