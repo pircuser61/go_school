@@ -464,24 +464,24 @@ func ProcessBlockWithEndMapping(ctx c.Context, name string, bl *entity.EriusFunc
 	if pErr != nil {
 		return pErr
 	}
-	status, err := runCtx.Storage.GetTaskStatus(ctx, runCtx.TaskID)
+	intStatus, stringStatus, err := runCtx.Storage.GetTaskStatusWithReadableString(ctx, runCtx.TaskID)
 	if err != nil {
 		log.WithError(err)
 		return nil
 	}
 
-	if status != 2 && status != 4 {
+	if intStatus != 2 && intStatus != 4 {
 		return nil
 	}
 
-	endErr := processBlockEnd(ctx, status, runCtx)
+	endErr := processBlockEnd(ctx, stringStatus, runCtx)
 	if endErr != nil {
 		log.WithError(err)
 	}
 	return nil
 }
 
-func processBlockEnd(ctx c.Context, status int, runCtx *BlockRunContext) (err error) {
+func processBlockEnd(ctx c.Context, status string, runCtx *BlockRunContext) (err error) {
 	ctx, s := trace.StartSpan(ctx, "process_block_end")
 	defer s.End()
 
@@ -521,7 +521,7 @@ func processBlockEnd(ctx c.Context, status int, runCtx *BlockRunContext) (err er
 				VersionId:  version.VersionID.String(),
 				StartedAt:  taskTime.StartedAt.String(),
 				FinishedAt: taskTime.FinishedAt.String(),
-				Status:     getStringWorkStatusByInt(status),
+				Status:     status,
 			}, runCtx, systemSettings.OutputSettings)
 			if sendingErr != nil {
 				return sendingErr
@@ -562,20 +562,4 @@ func sendEndingMapping(ctx c.Context, clientId string, data *entity.EndProcessDa
 		resp.Body.Close()
 	}
 	return nil
-}
-
-func getStringWorkStatusByInt(intStatus int) (stringStatus string) {
-	switch intStatus {
-	case 1:
-		return "run"
-	case 2:
-		return "finished"
-	case 3:
-		return "error"
-	case 4:
-		return "stopped"
-	case 5:
-		return "created"
-	}
-	return ""
 }

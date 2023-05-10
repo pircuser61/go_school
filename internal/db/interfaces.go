@@ -44,6 +44,7 @@ type TaskStorager interface {
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error
 	GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error)
+	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error
 	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)

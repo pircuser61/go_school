@@ -1318,6 +1318,10 @@ func (m *MockDB) GetTaskStatus(_ context.Context, _ uuid.UUID) (int, error) {
 	return -1, errNotImplemented
 }
 
+func (m *MockDB) GetTaskStatusWithReadableString(_ context.Context, _ uuid.UUID) (int, string, error) {
+	return -1, "", errNotImplemented
+}
+
 func (m *MockDB) GetVariableStorageForStep(_ context.Context, _ uuid.UUID, _ string) (*store.VariableStore, error) {
 	return nil, errNotImplemented
 }

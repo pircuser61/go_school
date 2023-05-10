@@ -1126,6 +1126,34 @@ func (_m *MockedDatabase) GetTaskStatus(ctx context.Context, taskID uuid.UUID) (
 	return r0, r1
 }
 
+// GetTaskStatusWithReadableString provides a mock function with given fields: ctx, taskID
+func (_m *MockedDatabase) GetTaskStatusWithReadableString(ctx context.Context, taskID uuid.UUID) (int, string, error) {
+	ret := _m.Called(ctx, taskID)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) int); ok {
+		r0 = rf(ctx, taskID)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	var r1 string
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) string); ok {
+		r1 = rf(ctx, taskID)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(context.Context, uuid.UUID) error); ok {
+		r2 = rf(ctx, taskID)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // GetTaskStepById provides a mock function with given fields: ctx, id
 func (_m *MockedDatabase) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
 	ret := _m.Called(ctx, id)
