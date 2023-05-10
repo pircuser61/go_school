@@ -620,21 +620,11 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	}
 
 	var description string
-	var asOtherLogin string
 	var emailAttachment []e.Attachment
 
-	if len(executors) > 0 {
-		asOtherLogin = executors[0]
-	}
-
-	descriptionFile, err := gb.RunContext.ServiceDesc.GetFileDescriptionOfTask(ctx, gb.RunContext.WorkNumber, asOtherLogin)
-	if err == nil {
-		emailAttachment = append(emailAttachment, *descriptionFile)
-	} else {
-		description, err = gb.RunContext.makeNotificationDescription(gb.Name)
-		if err != nil {
-			return err
-		}
+	description, err = gb.RunContext.makeNotificationDescription(gb.Name)
+	if err != nil {
+		return err
 	}
 
 	author, err := gb.RunContext.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
