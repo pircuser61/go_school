@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"log"
 	"sort"
+
+	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
