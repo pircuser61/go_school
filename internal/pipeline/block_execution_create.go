@@ -111,22 +111,22 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 
 		gb.RunContext.Delegations = delegations
 	case script.ExecutionTypeGroup:
-		executorsGroup, errGroup := gb.RunContext.ServiceDesc.GetExecutorsGroup(ctx, params.ExecutorsGroupID)
+		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.ExecutorsGroupID)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get executors group with id: "+params.ExecutorsGroupID)
 		}
 
-		if len(executorsGroup.People) == 0 {
+		if len(workGroup.People) == 0 {
 			//nolint:goimports // bugged golint
 			return errors.New("zero executors in group: " + params.ExecutorsGroupID)
 		}
 
 		gb.State.Executors = make(map[string]struct{})
-		for i := range executorsGroup.People {
-			gb.State.Executors[executorsGroup.People[i].Login] = struct{}{}
+		for i := range workGroup.People {
+			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
 		}
 		gb.State.ExecutorsGroupID = params.ExecutorsGroupID
-		gb.State.ExecutorsGroupName = executorsGroup.GroupName
+		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
 
 	// maybe we should notify the executor
