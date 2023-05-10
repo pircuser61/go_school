@@ -7,27 +7,32 @@ import (
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
 
 type Service struct {
 	HrGateUrl             string
 	DefaultCalendarUnitId *uuid.UUID
-	Cli                   *http.Client
+	Cli                   *ClientWithResponses
 }
 
 func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
-	newCli := &http.Client{}
-
+	httpClient := &http.Client{}
 	tr := TransportForHrGate{
 		transport: ochttp.Transport{
-			Base:        newCli.Transport,
+			Base:        httpClient.Transport,
 			Propagation: observability.NewHTTPFormat(),
 		},
 		sso:   ssoS,
 		scope: cfg.Scope,
 	}
-	newCli.Transport = &tr
+	httpClient.Transport = &tr
+
+	newCli, createClientErr := NewClientWithResponses(cfg.HrGateUrl, WithHTTPClient(httpClient), WithBaseURL(cfg.HrGateUrl))
+	if createClientErr != nil {
+		return nil, createClientErr
+	}
 
 	s := &Service{
 		Cli:       newCli,
