@@ -576,7 +576,6 @@ func getStringWorkStatusByInt(intStatus int) (stringStatus string) {
 		return "stopped"
 	case 5:
 		return "created"
-
 	}
 	return ""
 }
