@@ -33,6 +33,11 @@ func makeStorage() *mocks.MockedDatabase {
 		uuid.UUID{},
 	).Return(1, nil)
 
+	res.On("GetTaskStatusWithReadableString",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		uuid.UUID{},
+	).Return(1, "running", nil)
+
 	res.On("UpdateTaskStatus",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		uuid.UUID{},
