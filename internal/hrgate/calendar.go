@@ -14,6 +14,7 @@ const (
 	totalHeader  = "total"
 	offsetHeader = "offset"
 	limitHeader  = "limit"
+	defaultLogin = "voronin"
 )
 
 func handleHeaders(hh http.Header) (total, offset, limit int, err error) {
@@ -115,4 +116,30 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	}
 
 	return response.JSON200, err
+}
+
+func (s *Service) FillDefaultUnitId(ctx context.Context) error {
+	ctx, span := trace.StartSpan(ctx, "hrgate.fill_default_unit_id")
+	defer span.End()
+	employee, err := s.GetEmployeeByLogin(ctx, defaultLogin)
+	if err != nil {
+		return err
+	}
+
+	if employee.OrganizationId == nil {
+		return fmt.Errorf("cant get organization id by login: %s", defaultLogin)
+	}
+
+	organization, err := s.GetOrganizationById(ctx, *employee.OrganizationId)
+	if err != nil {
+		return err
+	}
+
+	if organization.Unit == nil {
+		return fmt.Errorf("cant get ogranization unit id by login: %s", defaultLogin)
+	}
+
+	s.DefaultCalendarUnitId = (*string)(&organization.Unit.Id)
+
+	return nil
 }

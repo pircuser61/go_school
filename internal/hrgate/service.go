@@ -3,7 +3,6 @@ package hrgate
 import (
 	"net/http"
 
-	"github.com/google/uuid"
 	"go.opencensus.io/plugin/ochttp"
 
 	"gitlab.services.mts.ru/abp/myosotis/observability"
@@ -13,7 +12,7 @@ import (
 
 type Service struct {
 	HrGateUrl             string
-	DefaultCalendarUnitId *uuid.UUID
+	DefaultCalendarUnitId *string
 	Cli                   *ClientWithResponses
 }
 
