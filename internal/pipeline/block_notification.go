@@ -87,8 +87,11 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 
 	text = mail.SwapKeys(text, body.InitialApplication.Keys)
 
-	for i := range skippedFiles {
-		text = fmt.Sprintf("%s <p>%d. %s</p>", text, i, skippedFiles[i])
+	if len(skippedFiles) > 0 {
+		text = fmt.Sprintf("%s <p>%s</p>", text, "Список файлов, которые не были доставлены в нотификацию:")
+		for i := range skippedFiles {
+			text = fmt.Sprintf("%s <p>%d. %s</p>", text, i, skippedFiles[i])
+		}
 	}
 
 	text = mail.AddStyles(text)
