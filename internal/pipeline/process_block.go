@@ -521,7 +521,7 @@ func processBlockEnd(ctx c.Context, status int, runCtx *BlockRunContext) (err er
 				VersionId:  version.VersionID.String(),
 				StartedAt:  taskTime.StartedAt.String(),
 				FinishedAt: taskTime.FinishedAt.String(),
-				Status:     string(rune(status)),
+				Status:     getStringWorkStatusByInt(status),
 			}, runCtx, systemSettings.OutputSettings)
 			if sendingErr != nil {
 				return sendingErr
@@ -562,4 +562,21 @@ func sendEndingMapping(ctx c.Context, clientId string, data *entity.EndProcessDa
 		resp.Body.Close()
 	}
 	return nil
+}
+
+func getStringWorkStatusByInt(intStatus int) (stringStatus string) {
+	switch intStatus {
+	case 1:
+		return "run"
+	case 2:
+		return "finished"
+	case 3:
+		return "error"
+	case 4:
+		return "stopped"
+	case 5:
+		return "created"
+
+	}
+	return ""
 }
