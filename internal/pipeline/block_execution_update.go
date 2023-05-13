@@ -605,10 +605,12 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return err
 	}
 
+	delegates = delegates.FilterByType("execution")
+
 	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
-	executors = append(executors, loginsToNotify...)
+
 	emails := make([]string, 0, len(executors))
-	for _, login := range executors {
+	for _, login := range loginsToNotify {
 		if login != loginTakenInWork {
 			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
