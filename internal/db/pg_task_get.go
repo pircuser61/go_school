@@ -1222,7 +1222,6 @@ func (db *PGCon) GetMeanTaskSolveTime(ctx c.Context, pipelineId string) (
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
-		rows.Close()
 		return nil, rowsErr
 	}
 

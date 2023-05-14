@@ -4,82 +4,19 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
+	"sort"
+	"time"
 
 	"go.opencensus.io/trace"
 )
 
 const (
-	limit        = 500
-	totalHeader  = "total"
-	offsetHeader = "offset"
-	limitHeader  = "limit"
+	limit = 100
+
 	defaultLogin = "voronin"
 )
 
-func handleHeaders(hh http.Header) (total, offset, limit int, err error) {
-	currTotal := hh.Get(totalHeader)
-	total, err = strconv.Atoi(currTotal)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	currOffset := hh.Get(offsetHeader)
-	offset, err = strconv.Atoi(currOffset)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	currLimit := hh.Get(limitHeader)
-	limit, err = strconv.Atoi(currLimit)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	return
-}
-
-func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Employee, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
-	defer span.End()
-
-	response, err := s.Cli.GetEmployeesWithResponse(ctx, &GetEmployeesParams{
-		Logins: &[]string{username},
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("invalid response code: %d", response.StatusCode())
-	}
-	if len(*response.JSON200) == 0 {
-		return nil, fmt.Errorf("cant get employee by login")
-	}
-
-	return &(*response.JSON200)[0], err
-
-}
-
-func (s *Service) GetOrganizationById(ctx context.Context, organizationId string) (*Organization, error) {
-	ctx, span := trace.StartSpan(ctx, "hrgate.get_organization_by_id")
-	defer span.End()
-
-	response, err := s.Cli.GetOrganizationsIdWithResponse(ctx, UUIDPathObjectID(organizationId))
-
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("invalid response code: %d", response.StatusCode())
-	}
-
-	return response.JSON200, nil
-}
-
-func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) (*[]Calendar, error) {
+func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
 
@@ -90,32 +27,69 @@ func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) 
 	}
 
 	if response.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("invalid response code: %d", response.StatusCode())
+		return nil, fmt.Errorf("invalid response code on getting calendars: %d", response.StatusCode())
 	}
 	if len(*response.JSON200) == 0 {
 		return nil, fmt.Errorf("cant get calendars by unit ids")
 	}
 
-	return response.JSON200, err
+	return *response.JSON200, err
 }
-func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*[]CalendarDay, error) {
+func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
 	defer span.End()
 
-	response, err := s.Cli.GetCalendarDaysWithResponse(ctx, params)
+	res := CalendarDays{
+		Holidays:    make([]int64, 0),
+		Weekend:     make([]int64, 0),
+		PreHolidays: make([]int64, 0),
+		WorkDay:     make([]int64, 0),
+	}
 
+	resp, err := s.Cli.GetCalendarDaysWithResponse(ctx, params)
 	if err != nil {
 		return nil, err
 	}
-
-	if response.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("invalid response code: %d", response.StatusCode())
-	}
-	if len(*response.JSON200) == 0 {
-		return nil, fmt.Errorf("cant get calendar days")
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("invalid code on getting calendar days: %d", resp.StatusCode())
 	}
 
-	return response.JSON200, err
+	for i := range *resp.JSON200 {
+		d := (*resp.JSON200)[i]
+		if d.DayType != nil {
+			if d.Date.Weekday() == time.Saturday || d.Date.Weekday() == time.Sunday {
+				res.Weekend = append(res.Weekend, d.Date.Unix())
+			} else {
+				switch *d.DayType {
+				case CalendarDayTypePreHoliday:
+					res.PreHolidays = append(res.PreHolidays, d.Date.Unix())
+				case CalendarDayTypeHoliday:
+					res.Holidays = append(res.Holidays, d.Date.Unix())
+				case CalendarDayTypeWorkday:
+					res.WorkDay = append(res.WorkDay, d.Date.Unix())
+				default:
+					return nil, fmt.Errorf("unknown day type: %s", *d.DayType)
+				}
+			}
+		} else {
+			res.WorkDay = append(res.WorkDay, d.Date.Unix())
+		}
+	}
+
+	sort.Slice(res.Holidays, func(i, j int) bool {
+		return res.Holidays[i] < res.Holidays[j]
+	})
+	sort.Slice(res.Weekend, func(i, j int) bool {
+		return res.Weekend[i] < res.Weekend[j]
+	})
+	sort.Slice(res.WorkDay, func(i, j int) bool {
+		return res.WorkDay[i] < res.WorkDay[j]
+	})
+	sort.Slice(res.PreHolidays, func(i, j int) bool {
+		return res.PreHolidays[i] < res.PreHolidays[j]
+	})
+
+	return &res, nil
 }
 
 func (s *Service) FillDefaultUnitId(ctx context.Context) error {
@@ -142,4 +116,33 @@ func (s *Service) FillDefaultUnitId(ctx context.Context) error {
 	s.DefaultCalendarUnitId = (*string)(&organization.Unit.Id)
 
 	return nil
+}
+
+func (s *Service) GetDefaultUnitId() (string, error) {
+	if s.DefaultCalendarUnitId == nil {
+		return "", fmt.Errorf("cant get default unit id, struct field is empty")
+	}
+
+	return *s.DefaultCalendarUnitId, nil
+}
+
+func (s *Service) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar")
+	defer span.End()
+
+	unitId, getDefaultUnitIdErr := s.GetDefaultUnitId()
+	if getDefaultUnitIdErr != nil {
+		return nil, getDefaultUnitIdErr
+	}
+
+	calendars, getCalendarsErr := s.GetCalendars(ctx, &GetCalendarsParams{
+		QueryFilters: nil,
+		UnitIDs:      &UnitIDs{unitId},
+	})
+
+	if getCalendarsErr != nil {
+		return nil, getCalendarsErr
+	}
+
+	return &calendars[0], nil
 }

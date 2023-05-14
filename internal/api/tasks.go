@@ -21,6 +21,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -993,6 +994,34 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 		_ = e.sendError(w)
 		return
 	}
+
+	unitId, getDefaultUnitIdErr := ae.HrGate.GetDefaultUnitId()
+	if getDefaultUnitIdErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(getDefaultUnitIdErr))
+		_ = e.sendError(w)
+		return
+	}
+
+	calendars, getCalendarsErr := ae.HrGate.GetCalendars(ctx, &hrgate.GetCalendarsParams{
+		QueryFilters: nil,
+		UnitIDs:      &hrgate.UnitIDs{unitId},
+	})
+
+	if getCalendarsErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(getCalendarsErr))
+		_ = e.sendError(w)
+		return
+	}
+
+	calendarDays, err := ae.HrGate.GetCalendarDays(ctx, hrgate.GetCalendarDaysParams{
+		QueryFilters: &hrgate.QueryFilters{
+			OrderBy:     nil,
+			WithDeleted: utils.GetAddressOfValue(false),
+		},
+		Calendar: &hrgate.IDsList{string((*calendars)[0].Id)},
+	})
 
 	var mean = pipeline.ComputeMeanTaskCompletionTime(taskTimeIntervals)
 
