@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -29,16 +30,23 @@ func IsContainsInSlice(value string, in []string) bool {
 	return false
 }
 
-func FindMin[arrEl any, K []arrEl](arr K, less func(a, b arrEl) bool) (min arrEl) {
+func FindMin[arrEl any, K []arrEl](arr K, less func(a, b arrEl) bool) (min arrEl, err error) {
+	if len(arr) == 0 {
+		return min, fmt.Errorf("length of array is %d", len(arr))
+	}
 	sortedSlice := make(K, len(arr))
 	copy(sortedSlice, arr)
 	slices.SortFunc(sortedSlice, less)
-	return sortedSlice[0]
+	return sortedSlice[0], nil
 }
 
-func FindMax[arrEl any, K []arrEl](arr K, less func(a, b arrEl) bool) (max arrEl) {
+func FindMax[arrEl any, K []arrEl](arr K, less func(a, b arrEl) bool) (max arrEl, err error) {
+	if len(arr) == 0 {
+		return max, fmt.Errorf("length of array is %d", len(arr))
+	}
+
 	sortedSlice := make(K, len(arr))
 	copy(sortedSlice, arr)
 	slices.SortFunc(sortedSlice, less)
-	return sortedSlice[len(sortedSlice)-1]
+	return sortedSlice[len(sortedSlice)-1], nil
 }

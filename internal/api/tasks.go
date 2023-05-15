@@ -1010,14 +1010,28 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	minIntervalTime := utils.FindMin(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
+	minIntervalTime, err := utils.FindMin(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
 		return a.StartedAt.Unix() < b.StartedAt.Unix()
 	})
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
 	minIntervalTime.StartedAt = minIntervalTime.StartedAt.Add(-time.Hour * 24 * 7)
 
-	maxIntervalTime := utils.FindMax(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
+	maxIntervalTime, err := utils.FindMax(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
 		return a.StartedAt.Unix() < b.StartedAt.Unix()
 	})
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
 	maxIntervalTime.FinishedAt = minIntervalTime.FinishedAt.Add(time.Hour * 24 * 7) // just taking more time
 
 	calendarDays, getCalendarDaysErr := ae.HrGate.GetCalendarDays(ctx, &hrgate.GetCalendarDaysParams{
