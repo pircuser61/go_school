@@ -5,6 +5,7 @@ import (
 	c "context"
 	"encoding/json"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -1013,13 +1014,17 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	minIntervalTime := utils.FindMin(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
 		return a.StartedAt.Unix() < b.StartedAt.Unix()
 	})
+	minIntervalTime.StartedAt = minIntervalTime.StartedAt.Add(-time.Hour * 24 * 7)
+
 	maxIntervalTime := utils.FindMax(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
 		return a.StartedAt.Unix() < b.StartedAt.Unix()
 	})
+	maxIntervalTime.FinishedAt = minIntervalTime.FinishedAt.Add(time.Hour * 24 * 7) // just taking more time
 
 	calendarDays, getCalendarDaysErr := ae.HrGate.GetCalendarDays(ctx, &hrgate.GetCalendarDaysParams{
 		QueryFilters: &hrgate.QueryFilters{
 			WithDeleted: utils.GetAddressOfValue(false),
+			Limit:       utils.GetAddressOfValue(int(math.Ceil(utils.GetDateUnitNumBetweenDates(minIntervalTime.StartedAt, maxIntervalTime.FinishedAt, utils.Day)))),
 		},
 		Calendar: &hrgate.IDsList{string(calendars[0].Id)},
 		DateFrom: &openapi_types.Date{Time: minIntervalTime.StartedAt},
