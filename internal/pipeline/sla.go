@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -32,6 +33,10 @@ func getWorkHoursBetweenDates(from, to time.Time) (workHours int) {
 	}
 
 	return workHours
+}
+
+func getPreHolidayHoursBetweenDates(from, to time.Time) (workHours int) {
+	return getWorkHoursBetweenDates(from, to) - 1
 }
 
 func beforeWorkingHours(t time.Time) bool {
@@ -85,12 +90,13 @@ func ComputeMaxDate(start time.Time, sla float32) time.Time {
 	return deadline
 }
 
-func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval) (
+func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval, calendarDays hrgate.CalendarDays) (
 	result script.TaskSolveTime) {
 	var taskIntervalsCnt = len(taskIntervals)
 
 	var totalHours = 0
 	for _, interval := range taskIntervals {
+
 		totalHours += getWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt)
 	}
 

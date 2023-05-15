@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
@@ -987,7 +988,7 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 
 	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineId)
 
-	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineId)
+	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineId) // it returns ordered by created_at
 	if intervalsErr != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(intervalsErr))
@@ -995,13 +996,7 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	unitId, getDefaultUnitIdErr := ae.HrGate.GetDefaultUnitId()
-	if getDefaultUnitIdErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(getDefaultUnitIdErr))
-		_ = e.sendError(w)
-		return
-	}
+	unitId := ae.HrGate.GetDefaultUnitId()
 
 	calendars, getCalendarsErr := ae.HrGate.GetCalendars(ctx, &hrgate.GetCalendarsParams{
 		QueryFilters: nil,
@@ -1015,15 +1010,29 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	calendarDays, err := ae.HrGate.GetCalendarDays(ctx, hrgate.GetCalendarDaysParams{
-		QueryFilters: &hrgate.QueryFilters{
-			OrderBy:     nil,
-			WithDeleted: utils.GetAddressOfValue(false),
-		},
-		Calendar: &hrgate.IDsList{string((*calendars)[0].Id)},
+	minIntervalTime := utils.FindMin(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
+		return a.StartedAt.Unix() < b.StartedAt.Unix()
+	})
+	maxIntervalTime := utils.FindMax(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
+		return a.StartedAt.Unix() < b.StartedAt.Unix()
 	})
 
-	var mean = pipeline.ComputeMeanTaskCompletionTime(taskTimeIntervals)
+	calendarDays, getCalendarDaysErr := ae.HrGate.GetCalendarDays(ctx, &hrgate.GetCalendarDaysParams{
+		QueryFilters: &hrgate.QueryFilters{
+			WithDeleted: utils.GetAddressOfValue(false),
+		},
+		Calendar: &hrgate.IDsList{string(calendars[0].Id)},
+		DateFrom: &openapi_types.Date{Time: minIntervalTime.StartedAt},
+		DateTo:   &openapi_types.Date{Time: maxIntervalTime.FinishedAt},
+	})
+	if getCalendarDaysErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(getCalendarDaysErr))
+		_ = e.sendError(w)
+		return
+	}
+
+	var mean = pipeline.ComputeMeanTaskCompletionTime(taskTimeIntervals, *calendarDays)
 
 	if err := sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: mean.MeanWorkHours}); err != nil {
 		e := UnknownError

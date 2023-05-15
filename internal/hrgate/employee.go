@@ -8,6 +8,10 @@ import (
 	"go.opencensus.io/trace"
 )
 
+const (
+	defaultLogin = "voronin"
+)
+
 func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Employee, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_employee_by_login")
 	defer span.End()

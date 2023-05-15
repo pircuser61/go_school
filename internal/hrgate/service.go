@@ -2,6 +2,7 @@ package hrgate
 
 import (
 	"net/http"
+	"time"
 
 	"go.opencensus.io/plugin/ochttp"
 
@@ -13,6 +14,7 @@ import (
 type Service struct {
 	HrGateUrl             string
 	DefaultCalendarUnitId *string
+	Location              time.Location
 	Cli                   *ClientWithResponses
 }
 
@@ -33,9 +35,15 @@ func NewService(cfg Config, ssoS *sso.Service) (*Service, error) {
 		return nil, createClientErr
 	}
 
+	location, getLocationErr := time.LoadLocation("Europe/Moscow")
+	if getLocationErr != nil {
+		return nil, getLocationErr
+	}
+
 	s := &Service{
 		Cli:       newCli,
 		HrGateUrl: cfg.HrGateUrl,
+		Location:  *location,
 	}
 
 	return s, nil
@@ -54,4 +62,8 @@ func (t *TransportForHrGate) RoundTrip(req *http.Request) (*http.Response, error
 	}
 
 	return t.transport.RoundTrip(req)
+}
+
+func (s *Service) GetLocation() time.Location {
+	return s.Location
 }

@@ -12,8 +12,6 @@ import (
 
 const (
 	limit = 100
-
-	defaultLogin = "voronin"
 )
 
 func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
@@ -118,22 +116,16 @@ func (s *Service) FillDefaultUnitId(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) GetDefaultUnitId() (string, error) {
-	if s.DefaultCalendarUnitId == nil {
-		return "", fmt.Errorf("cant get default unit id, struct field is empty")
-	}
+func (s *Service) GetDefaultUnitId() string {
 
-	return *s.DefaultCalendarUnitId, nil
+	return *s.DefaultCalendarUnitId
 }
 
 func (s *Service) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar")
 	defer span.End()
 
-	unitId, getDefaultUnitIdErr := s.GetDefaultUnitId()
-	if getDefaultUnitIdErr != nil {
-		return nil, getDefaultUnitIdErr
-	}
+	unitId := s.GetDefaultUnitId()
 
 	calendars, getCalendarsErr := s.GetCalendars(ctx, &GetCalendarsParams{
 		QueryFilters: nil,

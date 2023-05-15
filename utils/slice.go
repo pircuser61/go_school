@@ -2,6 +2,8 @@ package utils
 
 import (
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 func UniqueStrings(inSlice []string) []string {
@@ -25,4 +27,18 @@ func IsContainsInSlice(value string, in []string) bool {
 	}
 
 	return false
+}
+
+func FindMin[arrEl any, K []arrEl](arr K, less func(a, b arrEl) bool) (min arrEl) {
+	sortedSlice := make(K, len(arr))
+	copy(sortedSlice, arr)
+	slices.SortFunc(sortedSlice, less)
+	return sortedSlice[0]
+}
+
+func FindMax[arrEl any, K []arrEl](arr K, less func(a, b arrEl) bool) (max arrEl) {
+	sortedSlice := make(K, len(arr))
+	copy(sortedSlice, arr)
+	slices.SortFunc(sortedSlice, less)
+	return sortedSlice[len(sortedSlice)-1]
 }
