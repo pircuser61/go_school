@@ -11,6 +11,7 @@ const (
 	limitHeader  = "limit"
 )
 
+//nolint:deadcode // will be used in future
 func handleHeaders(hh http.Header) (total, offset, limit int, err error) {
 	currTotal := hh.Get(totalHeader)
 	total, err = strconv.Atoi(currTotal)

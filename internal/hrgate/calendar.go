@@ -9,10 +9,6 @@ import (
 	"go.opencensus.io/trace"
 )
 
-const (
-	limit = 100
-)
-
 func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
@@ -63,7 +59,6 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 			default:
 				return nil, fmt.Errorf("unknown day type: %s", *d.DayType)
 			}
-
 		} else {
 			res.WorkDay = append(res.WorkDay, d.Date.Unix())
 		}
@@ -109,7 +104,6 @@ func (s *Service) FillDefaultUnitId(ctx context.Context) error {
 }
 
 func (s *Service) GetDefaultUnitId() string {
-
 	return *s.DefaultCalendarUnitId
 }
 

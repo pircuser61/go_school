@@ -1037,7 +1037,8 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	calendarDays, getCalendarDaysErr := ae.HrGate.GetCalendarDays(ctx, &hrgate.GetCalendarDaysParams{
 		QueryFilters: &hrgate.QueryFilters{
 			WithDeleted: utils.GetAddressOfValue(false),
-			Limit:       utils.GetAddressOfValue(int(math.Ceil(utils.GetDateUnitNumBetweenDates(minIntervalTime.StartedAt, maxIntervalTime.FinishedAt, utils.Day)))),
+			Limit: utils.GetAddressOfValue(int(math.Ceil(utils.GetDateUnitNumBetweenDates(minIntervalTime.StartedAt,
+				maxIntervalTime.FinishedAt, utils.Day)))),
 		},
 		Calendar: &hrgate.IDsList{string(calendars[0].Id)},
 		DateFrom: &openapi_types.Date{Time: minIntervalTime.StartedAt},

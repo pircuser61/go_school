@@ -32,5 +32,4 @@ func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Emp
 	}
 
 	return &(*response.JSON200)[0], err
-
 }
