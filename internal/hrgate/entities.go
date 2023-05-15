@@ -10,7 +10,7 @@ type CalendarDays struct {
 	Holidays    []int64 `json:"holidays"`
 	PreHolidays []int64 `json:"pre_holidays"`
 	WorkDay     []int64 `json:"work_day"`
-	Weekend     []int64 `json:"weekend"`
+	// No weekend needs because we check it in other places of code
 }
 
 func (cd *CalendarDays) GetDayType(dayTime time.Time) CalendarDayType { // it takes unix time, and we need it to convert to unix time at 00:00 am of day
@@ -24,8 +24,6 @@ func (cd *CalendarDays) GetDayType(dayTime time.Time) CalendarDayType { // it ta
 		return CalendarDayTypeHoliday
 	} else if slices.Contains(cd.PreHolidays, unixTime) {
 		return CalendarDayTypePreHoliday
-	} else if slices.Contains(cd.Weekend, unixTime) {
-		return CalendarDayTypeWeekend
 	} else {
 		return CalendarDayTypeWorkday
 	}

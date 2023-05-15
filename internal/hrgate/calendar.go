@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"time"
 
 	"go.opencensus.io/trace"
 )
@@ -39,7 +38,6 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 
 	res := CalendarDays{
 		Holidays:    make([]int64, 0),
-		Weekend:     make([]int64, 0),
 		PreHolidays: make([]int64, 0),
 		WorkDay:     make([]int64, 0),
 	}
@@ -55,20 +53,17 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	for i := range *resp.JSON200 {
 		d := (*resp.JSON200)[i]
 		if d.DayType != nil {
-			if d.Date.Weekday() == time.Saturday || d.Date.Weekday() == time.Sunday {
-				res.Weekend = append(res.Weekend, d.Date.Unix())
-			} else {
-				switch *d.DayType {
-				case CalendarDayTypePreHoliday:
-					res.PreHolidays = append(res.PreHolidays, d.Date.Unix())
-				case CalendarDayTypeHoliday:
-					res.Holidays = append(res.Holidays, d.Date.Unix())
-				case CalendarDayTypeWorkday:
-					res.WorkDay = append(res.WorkDay, d.Date.Unix())
-				default:
-					return nil, fmt.Errorf("unknown day type: %s", *d.DayType)
-				}
+			switch *d.DayType {
+			case CalendarDayTypePreHoliday:
+				res.PreHolidays = append(res.PreHolidays, d.Date.Unix())
+			case CalendarDayTypeHoliday:
+				res.Holidays = append(res.Holidays, d.Date.Unix())
+			case CalendarDayTypeWorkday:
+				res.WorkDay = append(res.WorkDay, d.Date.Unix())
+			default:
+				return nil, fmt.Errorf("unknown day type: %s", *d.DayType)
 			}
+
 		} else {
 			res.WorkDay = append(res.WorkDay, d.Date.Unix())
 		}
@@ -76,9 +71,6 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 
 	sort.Slice(res.Holidays, func(i, j int) bool {
 		return res.Holidays[i] < res.Holidays[j]
-	})
-	sort.Slice(res.Weekend, func(i, j int) bool {
-		return res.Weekend[i] < res.Weekend[j]
 	})
 	sort.Slice(res.WorkDay, func(i, j int) bool {
 		return res.WorkDay[i] < res.WorkDay[j]

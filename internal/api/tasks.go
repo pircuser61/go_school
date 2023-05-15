@@ -1000,8 +1000,7 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	unitId := ae.HrGate.GetDefaultUnitId()
 
 	calendars, getCalendarsErr := ae.HrGate.GetCalendars(ctx, &hrgate.GetCalendarsParams{
-		QueryFilters: nil,
-		UnitIDs:      &hrgate.UnitIDs{unitId},
+		UnitIDs: &hrgate.UnitIDs{unitId},
 	})
 
 	if getCalendarsErr != nil {
