@@ -120,21 +120,21 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		}
 	case script.ApproverTypeHead:
 	case script.ApproverTypeGroup:
-		approversGroup, errGroup := gb.RunContext.ServiceDesc.GetApproversGroup(ctx, params.ApproversGroupID)
+		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.ApproversGroupID)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get approvers group with id: "+params.ApproversGroupID)
 		}
 
-		if len(approversGroup.People) == 0 {
+		if len(workGroup.People) == 0 {
 			return errors.New("zero approvers in group: " + params.ApproversGroupID)
 		}
 
 		gb.State.Approvers = make(map[string]struct{})
-		for i := range approversGroup.People {
-			gb.State.Approvers[approversGroup.People[i].Login] = struct{}{}
+		for i := range workGroup.People {
+			gb.State.Approvers[workGroup.People[i].Login] = struct{}{}
 		}
 		gb.State.ApproversGroupID = params.ApproversGroupID
-		gb.State.ApproversGroupName = approversGroup.GroupName
+		gb.State.ApproversGroupName = workGroup.GroupName
 	case script.ApproverTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
