@@ -475,6 +475,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 		workHours := getWorkHoursBetweenDates(
 			gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt,
 			time.Now(),
+			nil,
 		)
 		gb.State.IncreaseSLA(workHours)
 

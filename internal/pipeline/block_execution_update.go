@@ -511,6 +511,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 			workHours := getWorkHoursBetweenDates(
 				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
 				time.Now(),
+				nil,
 			)
 			gb.State.IncreaseSLA(workHours)
 		}
@@ -586,6 +587,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	workHours := getWorkHoursBetweenDates(
 		gb.RunContext.currBlockStartTime,
 		time.Now(),
+		nil,
 	)
 	gb.State.IncreaseSLA(workHours)
 

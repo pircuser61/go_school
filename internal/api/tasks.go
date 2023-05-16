@@ -986,7 +986,7 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 
 	log := logger.GetLogger(ctx).WithField("pipelineId", pipelineId)
 
-	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineId)
+	taskTimeIntervals, intervalsErr := ae.DB.GetMeanTaskSolveTime(ctx, pipelineId) // it returns ordered by created_at
 	if intervalsErr != nil {
 		e := GetTaskError
 		log.Error(e.errorMessage(intervalsErr))
@@ -994,7 +994,15 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	var mean = pipeline.ComputeMeanTaskCompletionTime(taskTimeIntervals)
+	calendarDays, err := ae.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx, taskTimeIntervals)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	var mean = pipeline.ComputeMeanTaskCompletionTime(taskTimeIntervals, *calendarDays)
 
 	if err := sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: mean.MeanWorkHours}); err != nil {
 		e := UnknownError

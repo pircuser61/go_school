@@ -1,42 +1,31 @@
 package hrgate
 
-import "github.com/google/uuid"
+import (
+	"time"
 
-type Employee struct {
-	Id             uuid.UUID `json:"id"`
-	Email          string    `json:"email"`
-	Login          string    `json:"login"`
-	OrganizationId uuid.UUID `json:"organizationId"`
-	Phone          string    `json:"phone"`
-	Primary        bool      `json:"primary"`
+	"golang.org/x/exp/slices"
+)
+
+type CalendarDays struct {
+	Holidays    []int64 `json:"holidays"`
+	PreHolidays []int64 `json:"pre_holidays"`
+	WorkDay     []int64 `json:"work_day"`
+	// No weekend needs because we check it in other places of code
 }
 
-type Employees []*Employee
+func (cd *CalendarDays) GetDayType(dayTime time.Time) CalendarDayType {
+	// it takes unix time, and we need it to convert to unix time at 00:00 am of day
+	if cd == nil {
+		return CalendarDayTypeWorkday
+	}
 
-type Organization struct {
-	Id   uuid.UUID `json:"id"`
-	Unit struct {
-		Id         uuid.UUID `json:"id"`
-		Title      string    `json:"title"`
-		UnitTypeId uuid.UUID `json:"unitTypeId"`
-	} `json:"unit"`
-}
-
-type Calendar struct {
-	Id              uuid.UUID `json:"id"`
-	HolidayCalendar string    `json:"holidayCalendar"`
-	Primary         bool      `json:"primary"`
-	UnitID          uuid.UUID `json:"unitID"`
-	WeekType        string    `json:"weekType"`
-}
-
-type Calendars []*Calendar
-
-type CalendarDay struct {
-	Id         uuid.UUID `json:"id"`
-	CalendarId uuid.UUID `json:"calendarId"`
-	Date       string    `json:"date"`
-	DayType    string    `json:"dayType"`
-}
-
-type CalendarDays []*CalendarDay
+	year, month, day := dayTime.Date()
+	unixTime := time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Unix() // because calendar days returned at timezone
+	if slices.Contains(cd.Holidays, unixTime) {
+		return CalendarDayTypeHoliday
+	} else if slices.Contains(cd.PreHolidays, unixTime) {
+		return CalendarDayTypePreHoliday
+	} else {
+		return CalendarDayTypeWorkday
+	}
+} // remake it using map[int64]CalendarDayType
