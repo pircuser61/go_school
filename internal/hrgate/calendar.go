@@ -131,7 +131,9 @@ func (s *Service) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
 	return &calendars[0], nil
 }
 
-func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(ctx context.Context, taskTimeIntervals []entity.TaskCompletionInterval) (*CalendarDays, error) {
+func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
+	ctx context.Context,
+	taskTimeIntervals []entity.TaskCompletionInterval) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals")
 	defer span.End()
 
