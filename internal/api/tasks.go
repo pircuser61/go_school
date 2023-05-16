@@ -5,12 +5,10 @@ import (
 	c "context"
 	"encoding/json"
 	"io"
-	"math"
 	"net/http"
 	"strings"
 	"time"
 
-	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
@@ -23,7 +21,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -997,56 +994,10 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	unitId := ae.HrGate.GetDefaultUnitId()
-
-	calendars, getCalendarsErr := ae.HrGate.GetCalendars(ctx, &hrgate.GetCalendarsParams{
-		UnitIDs: &hrgate.UnitIDs{unitId},
-	})
-
-	if getCalendarsErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(getCalendarsErr))
-		_ = e.sendError(w)
-		return
-	}
-
-	minIntervalTime, err := utils.FindMin(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
-		return a.StartedAt.Unix() < b.StartedAt.Unix()
-	})
+	calendarDays, err := ae.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx, taskTimeIntervals)
 	if err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-
-	minIntervalTime.StartedAt = minIntervalTime.StartedAt.Add(-time.Hour * 24 * 7)
-
-	maxIntervalTime, err := utils.FindMax(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
-		return a.StartedAt.Unix() < b.StartedAt.Unix()
-	})
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-
-	maxIntervalTime.FinishedAt = minIntervalTime.FinishedAt.Add(time.Hour * 24 * 7) // just taking more time
-
-	calendarDays, getCalendarDaysErr := ae.HrGate.GetCalendarDays(ctx, &hrgate.GetCalendarDaysParams{
-		QueryFilters: &hrgate.QueryFilters{
-			WithDeleted: utils.GetAddressOfValue(false),
-			Limit: utils.GetAddressOfValue(int(math.Ceil(utils.GetDateUnitNumBetweenDates(minIntervalTime.StartedAt,
-				maxIntervalTime.FinishedAt, utils.Day)))),
-		},
-		Calendar: &hrgate.IDsList{string(calendars[0].Id)},
-		DateFrom: &openapi_types.Date{Time: minIntervalTime.StartedAt},
-		DateTo:   &openapi_types.Date{Time: maxIntervalTime.FinishedAt},
-	})
-	if getCalendarDaysErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(getCalendarDaysErr))
 		_ = e.sendError(w)
 		return
 	}

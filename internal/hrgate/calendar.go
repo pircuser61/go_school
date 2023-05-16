@@ -3,10 +3,16 @@ package hrgate
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
+	"time"
 
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
@@ -123,4 +129,53 @@ func (s *Service) GetDefaultCalendar(ctx context.Context) (*Calendar, error) {
 	}
 
 	return &calendars[0], nil
+}
+
+func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(ctx context.Context, taskTimeIntervals []entity.TaskCompletionInterval) (*CalendarDays, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_default_calendar_days_for_given_time_intervals")
+	defer span.End()
+
+	unitId := s.GetDefaultUnitId()
+
+	calendars, getCalendarsErr := s.GetCalendars(ctx, &GetCalendarsParams{
+		UnitIDs: &UnitIDs{unitId},
+	})
+
+	if getCalendarsErr != nil {
+		return nil, getCalendarsErr
+	}
+
+	minIntervalTime, err := utils.FindMin(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
+		return a.StartedAt.Unix() < b.StartedAt.Unix()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	minIntervalTime.StartedAt = minIntervalTime.StartedAt.Add(-time.Hour * 24 * 7)
+
+	maxIntervalTime, err := utils.FindMax(taskTimeIntervals, func(a, b entity.TaskCompletionInterval) bool {
+		return a.StartedAt.Unix() < b.StartedAt.Unix()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	maxIntervalTime.FinishedAt = minIntervalTime.FinishedAt.Add(time.Hour * 24 * 7) // just taking more time
+
+	calendarDays, getCalendarDaysErr := s.GetCalendarDays(ctx, &GetCalendarDaysParams{
+		QueryFilters: &QueryFilters{
+			WithDeleted: utils.GetAddressOfValue(false),
+			Limit: utils.GetAddressOfValue(int(math.Ceil(utils.GetDateUnitNumBetweenDates(minIntervalTime.StartedAt,
+				maxIntervalTime.FinishedAt, utils.Day)))),
+		},
+		Calendar: &IDsList{string(calendars[0].Id)},
+		DateFrom: &openapi_types.Date{Time: minIntervalTime.StartedAt},
+		DateTo:   &openapi_types.Date{Time: maxIntervalTime.FinishedAt},
+	})
+	if getCalendarDaysErr != nil {
+		return nil, err
+	}
+
+	return calendarDays, nil
 }
