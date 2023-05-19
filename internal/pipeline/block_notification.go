@@ -60,10 +60,12 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	if err != nil {
 		return "", nil, err
 	}
+
 	typedAuthor, err := author.ToSSOUserTyped()
 	if err != nil {
 		return "", nil, err
 	}
+
 	text := mail.MakeBodyHeader(typedAuthor.Username, typedAuthor.Attributes.FullName,
 		gb.RunContext.Sender.GetApplicationLink(gb.RunContext.WorkNumber), gb.State.Text)
 
@@ -71,14 +73,17 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	if err != nil {
 		return "", nil, err
 	}
+
 	descr := mail.MakeDescription(body.InitialApplication.ApplicationBody)
 	text = mail.WrapDescription(text, descr)
 
 	aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody, body.InitialApplication.AttachmentFields)
-	attachments, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, aa)
+
+	attachments, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, aa, gb.RunContext.WorkNumber)
 	if err != nil {
 		return "", nil, err
 	}
+
 	files := make([]email.Attachment, 0)
 	for k := range attachments {
 		files = append(files, attachments[k]...)
@@ -113,6 +118,7 @@ func (gb *GoNotificationBlock) GetState() interface{} {
 
 func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) {
 	emails := make([]string, 0, len(gb.State.People)+len(gb.State.Emails))
+
 	for _, person := range gb.State.People {
 		emailAddr := ""
 		emailAddr, err := gb.RunContext.People.GetUserEmail(ctx, person)

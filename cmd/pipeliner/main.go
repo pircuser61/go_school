@@ -152,6 +152,7 @@ func main() {
 		log.WithError(err).Error("can't create hrgate service")
 		return
 	}
+
 	err = hrgateService.FillDefaultUnitId(ctx)
 	if err != nil {
 		log.WithError(err).Error("cant fill default unit id")
