@@ -16,18 +16,18 @@ import (
 )
 
 const (
-	getFileByID        = "/api/herald/v1/file/%s"
-	getApplicationBody = "/api/herald/v1/application/%s/body"
-	getFileDescription = "/api/herald/v1/application/xlsx?id=%s"
-	dispositionHeader  = "Content-Disposition"
-	AsOtherHeader      = "X-As-Other"
+	getFileApplicationById = "/api/herald/v1/application/%s/file/%s"
+	getApplicationBody     = "/api/herald/v1/application/%s/body"
+	getFileDescription     = "/api/herald/v1/application/xlsx?id=%s"
+	dispositionHeader      = "Content-Disposition"
+	AsOtherHeader          = "X-As-Other"
 )
 
-func (s *Service) getAttachment(ctx context.Context, id string) (email.Attachment, error) {
+func (s *Service) getAttachment(ctx context.Context, workNumber, fileId string) (email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachment")
 	defer span.End()
 
-	reqURL := fmt.Sprintf("%s%s", s.SdURL, fmt.Sprintf(getFileByID, id))
+	reqURL := fmt.Sprintf("%s%s", s.SdURL, fmt.Sprintf(getFileApplicationById, workNumber, fileId))
 
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
@@ -56,7 +56,10 @@ func (s *Service) getAttachment(ctx context.Context, id string) (email.Attachmen
 	}, nil
 }
 
-func (s *Service) GetAttachments(ctx context.Context, attachments map[string][]string) (map[string][]email.Attachment, error) {
+func (s *Service) GetAttachments(
+	ctx context.Context,
+	attachments map[string][]string,
+	workNumber string) (map[string][]email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachments")
 	defer span.End()
 
@@ -66,7 +69,7 @@ func (s *Service) GetAttachments(ctx context.Context, attachments map[string][]s
 		aa := attachments[k]
 		files := make([]email.Attachment, 0, len(aa))
 		for _, a := range aa {
-			file, err := s.getAttachment(ctxLocal, a)
+			file, err := s.getAttachment(ctxLocal, workNumber, a)
 			if err != nil {
 				return nil, err
 			}
