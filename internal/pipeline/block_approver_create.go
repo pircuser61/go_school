@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -136,30 +137,38 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		gb.State.ApproversGroupID = params.ApproversGroupID
 		gb.State.ApproversGroupName = workGroup.GroupName
 	case script.ApproverTypeFromSchema:
+
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return grabStorageErr
 		}
 
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
-			variableStorage,
-			map[string]struct{}{
-				params.Approver: {},
-			},
-		)
-		if resolveErr != nil {
-			return resolveErr
+		approversFromSchema := make(map[string]struct{})
+
+		approversVars := strings.Split(params.Approver, ";")
+		for i := range approversVars {
+			resolvedEntities, resolveErr := resolveValuesFromVariables(
+				variableStorage,
+				map[string]struct{}{
+					approversVars[i]: {},
+				},
+			)
+			if resolveErr != nil {
+				return resolveErr
+			}
+
+			for approverLogin := range resolvedEntities {
+				approversFromSchema[approverLogin] = struct{}{}
+			}
 		}
 
-		gb.State.Approvers = resolvedEntities
+		gb.State.Approvers = approversFromSchema
 
 		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Approvers))
 		if htErr != nil {
 			return htErr
 		}
-		delegations = delegations.FilterByType("approvement")
-
-		gb.RunContext.Delegations = delegations
+		gb.RunContext.Delegations = delegations.FilterByType("approvement")
 	}
 
 	gb.RunContext.VarStore.AddStep(gb.Name)
