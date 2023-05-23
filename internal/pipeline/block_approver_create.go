@@ -169,10 +169,6 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 			return htErr
 		}
 		gb.RunContext.Delegations = delegations.FilterByType("approvement")
-
-		if len(approversVars) > 1 {
-			gb.State.Type = script.ApproverTypeGroup
-		}
 	}
 
 	gb.RunContext.VarStore.AddStep(gb.Name)
