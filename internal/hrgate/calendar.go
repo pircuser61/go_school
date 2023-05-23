@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"sort"
 	"time"
 
 	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
@@ -95,16 +94,6 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 			res.WorkDay = append(res.WorkDay, d.Date.Unix())
 		}
 	}
-
-	sort.Slice(res.Holidays, func(i, j int) bool {
-		return res.Holidays[i] < res.Holidays[j]
-	})
-	sort.Slice(res.WorkDay, func(i, j int) bool {
-		return res.WorkDay[i] < res.WorkDay[j]
-	})
-	sort.Slice(res.PreHolidays, func(i, j int) bool {
-		return res.PreHolidays[i] < res.PreHolidays[j]
-	})
 
 	return &res, nil
 }
