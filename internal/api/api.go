@@ -96,6 +96,8 @@ const (
 
 	FormExecutorTypeFromSchema FormExecutorType = "from_schema"
 
+	FormExecutorTypeGroup FormExecutorType = "group"
+
 	FormExecutorTypeInitiator FormExecutorType = "initiator"
 
 	FormExecutorTypeUser FormExecutorType = "user"
@@ -917,6 +919,7 @@ type FormChangelogItem struct {
 
 // Form executor type:
 //   - User - Single user
+//   - group - Form group ID
 //   - Initiator - Process initiator
 //   - From_schema - Selected by initiator
 //   - Auto_Fill - Auto Fill form by system
@@ -932,10 +935,14 @@ type FormParams struct {
 
 	// Form executor type:
 	//   * User - Single user
+	//   * group - Form group ID
 	//   * Initiator - Process initiator
 	//   * From_schema - Selected by initiator
 	//   * Auto_Fill - Auto Fill form by system
 	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
+
+	// Form group id in SD
+	FormGroupId *string `json:"form_group_id,omitempty"`
 
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
