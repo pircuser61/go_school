@@ -79,7 +79,7 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 
 	aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody, body.InitialApplication.AttachmentFields)
 
-	attachments, err := gb.RunContext.ServiceDesc.GetAttachments(ctx, aa, gb.RunContext.WorkNumber)
+	attachments, err := gb.RunContext.FileRegistry.GetAttachments(ctx, aa)
 	if err != nil {
 		return "", nil, err
 	}

@@ -723,11 +723,7 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 		emails = append(emails, approverEmail)
 	}
 
-	attachFiles, err := gb.RunContext.ServiceDesc.GetAttachments(
-		ctx,
-		map[string][]string{"Ids": attachsId},
-		gb.RunContext.WorkNumber,
-	)
+	attachFiles, err := gb.RunContext.FileRegistry.GetAttachments(ctx, map[string][]string{"Ids": attachsId})
 	if err != nil {
 		return err
 	}
@@ -836,11 +832,11 @@ func (gb *GoApproverBlock) notificateDecisionMadeByAdditionalApprover(ctx c.Cont
 		gb.RunContext.Sender.SdAddress,
 	)
 
-	attachmentFiles, err := gb.RunContext.ServiceDesc.GetAttachments(
+	attachmentFiles, err := gb.RunContext.FileRegistry.GetAttachments(
 		ctx,
 		map[string][]string{"Ids": latestDecisonLog.Attachments},
-		gb.RunContext.WorkNumber,
 	)
+
 	if err != nil {
 		return err
 	}
