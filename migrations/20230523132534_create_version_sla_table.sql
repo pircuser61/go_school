@@ -10,7 +10,7 @@ create table if not exists version_sla
     sla integer not null default 0
 );
 insert into version_sla(id,version_id, author, created_at, work_type,sla)
-select uuid_generate_v4() ,id,author,now(),'8/5',1
+select uuid_generate_v4() ,id,author,now(),'8/5',40
        from versions;
 
 -- +goose StatementEnd
