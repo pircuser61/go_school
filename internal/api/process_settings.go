@@ -469,3 +469,7 @@ func validateEndingSettings(s *entity.ExternalSystem) {
 		s.OutputSettings = nil
 	}
 }
+
+func (ae *APIEnv) SaveVersionSlaSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+
+}
