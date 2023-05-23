@@ -693,6 +693,8 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 gitlab.services.mts.ru/abp/mail/pkg v1.18.7 h1:nYFvcN3dzqgrfvlVV75Uc4WV/V/ASG7ulWqDgxDWPZM=
 gitlab.services.mts.ru/abp/mail/pkg v1.18.7/go.mod h1:YE2ngC0lCO90yQG+eeT8F6343VuR1pi/VuxvqTLDwYE=
+gitlab.services.mts.ru/abp/mail/pkg v1.19.0 h1:DNccIRhUuijQYAq3v9gnY5AC7xi51UjHixHYudxFOXU=
+gitlab.services.mts.ru/abp/mail/pkg v1.19.0/go.mod h1:YE2ngC0lCO90yQG+eeT8F6343VuR1pi/VuxvqTLDwYE=
 gitlab.services.mts.ru/abp/myosotis v1.4.4 h1:De8ST0tK1aZKnVFvOd1a3FReloOh3hl6G34so5e1Vcs=
 gitlab.services.mts.ru/abp/myosotis v1.4.4/go.mod h1:x1TTaEJ+kgNbCkQViA5eWgnNLAprspL6qJWJWkhVZFE=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.0 h1:DmTJ2VB1EJ9zQZtsIUCjMD/edTwHtCSqEc88Z3uMz0Y=

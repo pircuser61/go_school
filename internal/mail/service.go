@@ -66,11 +66,13 @@ type Service struct {
 // nolint:gocritic // it's more comfortable to work with config as a value
 func NewService(c Config) (*Service, error) {
 	cfg := &broker.Config{
-		Broker:   broker.Kind(c.Broker),
-		Host:     c.Host,
-		Port:     c.Port,
-		Database: c.Database,
-		Queue:    c.Queue,
+		Broker:       broker.Kind(c.Broker),
+		Host:         c.Host,
+		Port:         c.Port,
+		Database:     c.Database,
+		Queue:        c.Queue,
+		ReadTimeout:  c.ReadTimeout,
+		WriteTimeout: c.WriteTimeout,
 	}
 
 	client, err := mailclient.NewClient(cfg)

@@ -209,7 +209,7 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 }
 
 func sortAndFilterAttachments(files []email.Attachment) (res []email.Attachment, skippedFiles []string) {
-	const attachmentsLimitMB = 40
+	const attachmentsLimitMB = 35
 	var limitCounter float64
 	skippedFiles = make([]string, 0)
 
