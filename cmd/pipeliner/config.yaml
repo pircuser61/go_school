@@ -41,6 +41,8 @@ mail:
     name: "Service Desk"
     email: "servicedesk_noreply@mts.ru"
   sd_address: "https://dev.servicedesk.mts.ru"
+  read_timeout: '10s'
+  write_timeout: '25s'
 
 kafka:
   brokers:

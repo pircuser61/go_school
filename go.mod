@@ -27,7 +27,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.8.2
 	github.com/xeipuuv/gojsonschema v1.2.0
-	gitlab.services.mts.ru/abp/mail/pkg v1.18.7
+	gitlab.services.mts.ru/abp/mail/pkg v1.19.0
 	gitlab.services.mts.ru/abp/myosotis v1.4.4
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.0
 	gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2
