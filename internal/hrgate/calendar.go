@@ -64,9 +64,7 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	defer span.End()
 
 	res := CalendarDays{
-		Holidays:    make([]int64, 0),
-		PreHolidays: make([]int64, 0),
-		WorkDay:     make([]int64, 0),
+		CalendarMap: make(map[int64]CalendarDayType),
 	}
 
 	resp, err := s.Cli.GetCalendarDaysWithResponse(ctx, params)
@@ -80,18 +78,9 @@ func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysPa
 	for i := range *resp.JSON200 {
 		d := (*resp.JSON200)[i]
 		if d.DayType != nil {
-			switch *d.DayType {
-			case CalendarDayTypePreHoliday:
-				res.PreHolidays = append(res.PreHolidays, d.Date.Unix())
-			case CalendarDayTypeHoliday:
-				res.Holidays = append(res.Holidays, d.Date.Unix())
-			case CalendarDayTypeWorkday:
-				res.WorkDay = append(res.WorkDay, d.Date.Unix())
-			default:
-				return nil, fmt.Errorf("unknown day type: %s", *d.DayType)
-			}
+			res.CalendarMap[d.Date.Unix()] = *d.DayType
 		} else {
-			res.WorkDay = append(res.WorkDay, d.Date.Unix())
+			res.CalendarMap[d.Date.Unix()] = CalendarDayTypeWorkday
 		}
 	}
 
