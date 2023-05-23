@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	defaultLogin = "voronin"
+	defaultLogin = "gvshestako"
 )
 
 func (s *Service) GetEmployeeByLogin(ctx context.Context, username string) (*Employee, error) {

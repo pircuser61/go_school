@@ -15,6 +15,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	RussianFederation = "Российская Федерация"
+)
+
 func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) ([]Calendar, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendars")
 	defer span.End()
@@ -34,6 +38,28 @@ func (s *Service) GetCalendars(ctx context.Context, params *GetCalendarsParams) 
 
 	return *response.JSON200, err
 }
+
+func (s *Service) GetPrimaryRussianFederationCalendarOrFirst(ctx context.Context, params *GetCalendarsParams) (*Calendar, error) {
+	ctx, span := trace.StartSpan(ctx, "hrgate.get_primary_calendar_or_first")
+	defer span.End()
+
+	calendars, getCalendarsErr := s.GetCalendars(ctx, params)
+
+	if getCalendarsErr != nil {
+		return nil, getCalendarsErr
+	}
+
+	for calendarIdx := range calendars {
+		calendar := calendars[calendarIdx]
+
+		if calendar.Primary != nil && *calendar.Primary && calendar.HolidayCalendar == RussianFederation {
+			return &calendar, nil
+		}
+	}
+
+	return &calendars[0], nil
+}
+
 func (s *Service) GetCalendarDays(ctx context.Context, params *GetCalendarDaysParams) (*CalendarDays, error) {
 	ctx, span := trace.StartSpan(ctx, "hrgate.get_calendar_days")
 	defer span.End()
@@ -139,7 +165,7 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 
 	unitId := s.GetDefaultUnitId()
 
-	calendars, getCalendarsErr := s.GetCalendars(ctx, &GetCalendarsParams{
+	calendar, getCalendarsErr := s.GetPrimaryRussianFederationCalendarOrFirst(ctx, &GetCalendarsParams{
 		UnitIDs: &UnitIDs{unitId},
 	})
 
@@ -171,7 +197,7 @@ func (s *Service) GetDefaultCalendarDaysForGivenTimeIntervals(
 			Limit: utils.GetAddressOfValue(int(math.Ceil(utils.GetDateUnitNumBetweenDates(minIntervalTime.StartedAt,
 				maxIntervalTime.FinishedAt, utils.Day)))),
 		},
-		Calendar: &IDsList{string(calendars[0].Id)},
+		Calendar: &IDsList{string(calendar.Id)},
 		DateFrom: &openapi_types.Date{Time: minIntervalTime.StartedAt},
 		DateTo:   &openapi_types.Date{Time: maxIntervalTime.FinishedAt},
 	})
