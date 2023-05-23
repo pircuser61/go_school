@@ -1271,17 +1271,11 @@ type ProcessSettingsWithExternalSystems struct {
 
 // Настройки sla версии пайплайна(процесса)
 type ProcessSlaSettings struct {
-	// Настройки sla
-	Sla struct {
-		// количество дней
-		Days int `json:"days"`
-
-		// количество часов
-		Hours int `json:"hours"`
-	} `json:"sla"`
+	// SLA в рабочих часах
+	Sla int `json:"sla"`
 
 	// Рабочий режим
-	WorkType *ProcessSlaSettingsWorkType `json:"work_type,omitempty"`
+	WorkType ProcessSlaSettingsWorkType `json:"work_type"`
 }
 
 // Рабочий режим
