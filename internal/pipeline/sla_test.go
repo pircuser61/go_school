@@ -212,48 +212,32 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 				from: time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC),
 				to:   time.Date(2022, 07, 18, 15, 30, 0, 0, time.UTC),
 				calendarDays: &hrgate.CalendarDays{
-					Holidays: nil,
-					PreHolidays: []int64{time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC).Unix(),
-						time.Date(2022, 07, 17, 0, 0, 0, 0, time.UTC).Unix(),
-						time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(),
-					},
-					WorkDay: nil,
+					CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 17, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
 				},
 			},
 			wantWorkHours: 8,
 		},
 		{
-			name: "work days eq 0 at holidays days",
+			name: "work hours eq 0 at holidays days",
 			fields: fields{
 				from: time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC),
 				to:   time.Date(2022, 07, 21, 15, 30, 0, 0, time.UTC),
 				calendarDays: &hrgate.CalendarDays{
-					Holidays: []int64{time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(),
-						time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(),
-						time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(),
-						time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(),
-					},
+					CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday},
 				},
 			},
 			wantWorkHours: 0,
 		},
 		{
-			name: "work days eq 0 at holidays, preholidays days",
+			name: "work days with preholidays and holidays days",
 			fields: fields{
 				from: time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC),
 				to:   time.Date(2022, 07, 21, 15, 30, 0, 0, time.UTC),
 				calendarDays: &hrgate.CalendarDays{
-					Holidays: []int64{
-						time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(),
-						time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(),
-					},
-					PreHolidays: []int64{
-						time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(),
-						time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(),
-					},
+					CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
 				},
 			},
-			wantWorkHours: 16,
+			wantWorkHours: 8,
 		},
 	}
 	for _, tt := range tests {
