@@ -303,9 +303,11 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 
 func Test_createGoApproverBlock(t *testing.T) {
 	const (
-		example = "example"
-		title   = "title"
-		login   = "login1"
+		example             = "example"
+		title               = "title"
+		login               = "login1"
+		approversFromSchema = "a.var1;b.var2;var3"
+		approverGroupId     = "uuid13456"
 	)
 
 	next := []entity.Socket{
@@ -358,6 +360,56 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Output:    nil,
 					Params:    []byte("{}"),
 					Sockets:   next,
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid approvement rule for many approvers from schema",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoApproverID,
+					Title:     title,
+					Input:     nil,
+					Output:    nil,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ApproverParams{
+							Type:            script.ApproverTypeFromSchema,
+							Approver:        approversFromSchema,
+							SLA:             1,
+							ApprovementRule: "",
+						})
+
+						return r
+					}(),
+					Sockets: next,
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid approvement rule for group",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoApproverID,
+					Title:     title,
+					Input:     nil,
+					Output:    nil,
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ApproverParams{
+							Type:             script.ApproverTypeGroup,
+							ApproversGroupID: approverGroupId,
+							SLA:              1,
+							ApprovementRule:  "",
+						})
+
+						return r
+					}(),
+					Sockets: next,
 				},
 			},
 			want:    nil,

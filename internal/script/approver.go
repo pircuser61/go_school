@@ -3,6 +3,7 @@ package script
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type ApproverType string
@@ -74,8 +75,18 @@ func (a *ApproverParams) Validate() error {
 		return fmt.Errorf("unknown approver type: %s", a.Type)
 	}
 
+	if a.Type == ApproverTypeFromSchema &&
+		len(strings.Split(a.Approver, ";")) > 1 &&
+		a.ApprovementRule == "" {
+		return errors.New("approvement rule is empty")
+	}
+
 	if a.Type == ApproverTypeGroup && a.ApproversGroupID == "" {
-		return errors.New("empty ApproversGroupID")
+		return errors.New("approvers group id is empty")
+	}
+
+	if a.Type == ApproverTypeGroup && a.ApprovementRule == "" {
+		return errors.New("approvement rule is empty")
 	}
 
 	if a.CheckSLA && a.SLA <= 0 {
@@ -83,7 +94,7 @@ func (a *ApproverParams) Validate() error {
 	}
 
 	if a.IsEditable && a.CheckReworkSLA && a.ReworkSLA < 16 {
-		return fmt.Errorf("invalid Rework SLA: %d", a.SLA)
+		return fmt.Errorf("invalid rework SLA: %d", a.SLA)
 	}
 
 	return nil

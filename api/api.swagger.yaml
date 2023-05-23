@@ -4408,6 +4408,7 @@ components:
         approver:
           type: string
           description: Approver value (depends on type)
+          example: a.var1;b.var2;c.var3 (format for many approvers from schema)
         approvementRule:
           $ref: '#/components/schemas/ApprovementRule'
         forms_accessibility:
