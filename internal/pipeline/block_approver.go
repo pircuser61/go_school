@@ -57,7 +57,7 @@ func (gb *GoApproverBlock) isApprovementBaseFinished(login string) bool {
 	}
 	for i := 0; i < len(gb.State.ApproverLog); i++ {
 		log := gb.State.ApproverLog[i]
-		if log.Login == login && log.LogType == ApproverLogDecision {
+		if (log.Login == login || log.DelegateFor == login) && log.LogType == ApproverLogDecision {
 			return true
 		}
 	}
@@ -70,7 +70,7 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	}
 	for i := 0; i < len(gb.State.ApproverLog); i++ {
 		log := gb.State.ApproverLog[i]
-		if log.Login == login && log.LogType == ApproverLogDecision {
+		if (log.Login == login || log.DelegateFor == login) && log.LogType == ApproverLogDecision {
 			return []MemberAction{}
 		}
 	}
