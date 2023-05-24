@@ -56,11 +56,12 @@ func (jspv *JSONSchemaPropertiesValue) GetProperties() map[string]interface{} {
 }
 
 type ExecutableFunctionParams struct {
-	Name           string               `json:"name"`
-	Version        string               `json:"version"`
-	Mapping        JSONSchemaProperties `json:"mapping"`
-	Function       FunctionParam        `json:"function"`
-	WaitCorrectRes int                  `json:"waitCorrectRes"`
+	Name           string                 `json:"name"`
+	Version        string                 `json:"version"`
+	Mapping        JSONSchemaProperties   `json:"mapping"`
+	Function       FunctionParam          `json:"function"`
+	WaitCorrectRes int                    `json:"waitCorrectRes"`
+	Constants      map[string]interface{} `json:"constants"`
 }
 
 type FunctionParam struct {
