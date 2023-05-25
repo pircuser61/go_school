@@ -183,12 +183,18 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 		functionMapping := make(map[string]interface{})
 
+		for varKey := range variables {
+			if constantVal, exists := constants[varKey]; exists {
+				functionMapping[varKey] = constantVal
+				break
+			}
+		}
+
 		for k := range executableFunctionMapping {
 			v := executableFunctionMapping[k]
 
-			if constant, exists := constants[v.Value]; exists {
-				functionMapping[k] = constant
-				break
+			if _, exists := constants[v.Value]; exists {
+				continue
 			}
 
 			variable := getVariable(variables, v.Value)
