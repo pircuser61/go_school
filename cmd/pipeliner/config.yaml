@@ -116,4 +116,5 @@ minio:
   bucket_name: "jocasta-attachments"
 
 file_registry:
-  url: 'http://dev.jocasta.mts-corp.ru'
+  rest: 'file-registry:8000'
+  grpc: 'file-registry:90'

@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -79,17 +80,22 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 
 	aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody, body.InitialApplication.AttachmentFields)
 
-	attachments, err := gb.RunContext.FileRegistry.GetAttachments(ctx, aa)
+	attachmentsInfo, err := gb.RunContext.FileRegistry.GetAttachmentsInfo(ctx, aa)
 	if err != nil {
 		return "", nil, err
 	}
 
-	files := make([]email.Attachment, 0)
-	for k := range attachments {
-		files = append(files, attachments[k]...)
+	filesInfo := make([]file_registry.FileInfo, 0)
+	for k := range attachmentsInfo {
+		filesInfo = append(filesInfo, attachmentsInfo[k]...)
 	}
 
-	files, skippedFiles := sortAndFilterAttachments(files)
+	requiredFiles, skippedFiles := sortAndFilterAttachments(filesInfo)
+
+	files, err := gb.RunContext.FileRegistry.GetAttachments(ctx, requiredFiles)
+	if err != nil {
+		return "", nil, err
+	}
 
 	text = mail.SwapKeys(text, body.InitialApplication.Keys)
 
@@ -208,24 +214,24 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 	return b, nil
 }
 
-func sortAndFilterAttachments(files []email.Attachment) (res []email.Attachment, skippedFiles []string) {
+func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []string, skippedFiles []string) {
 	const attachmentsLimitMB = 35
 	var limitCounter float64
 	skippedFiles = make([]string, 0)
 
 	sort.Slice(files, func(i, j int) bool {
-		return len(files[i].Content) < len(files[j].Content)
+		return files[i].Size < files[j].Size
 	})
 
-	res = make([]email.Attachment, 0, len(files))
+	requiredFiles = make([]string, 0, len(files))
 	for i := range files {
-		limitCounter += float64(len(files[i].Content) / 1024 / 1024)
+		limitCounter += float64(files[i].Size) / 1024 / 1024
 		if limitCounter <= attachmentsLimitMB {
-			res = append(res, files[i])
+			requiredFiles = append(requiredFiles, files[i].FileId) // store fileIDs to get files later
 		} else {
-			skippedFiles = append(skippedFiles, files[i].Name)
+			skippedFiles = append(skippedFiles, files[i].Name) // store file names to use them in notification
 		}
 	}
 
-	return res, skippedFiles
+	return requiredFiles, skippedFiles
 }

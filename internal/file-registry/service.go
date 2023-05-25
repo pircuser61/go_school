@@ -7,9 +7,15 @@ import (
 	"net/http"
 	"regexp"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
+
+	fileregistry "gitlab.services.mts.ru/jocasta/file-registry/pkg/proto/gen/file-registry/v1"
 )
 
 const (
@@ -18,29 +24,85 @@ const (
 )
 
 type Service struct {
-	Cli *http.Client
-	URL string
+	restCli *http.Client
+	restURL string
+
+	c       *grpc.ClientConn
+	grpcCLi fileregistry.FileServiceClient
 }
 
 func NewService(cfg Config) (*Service, error) {
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{})}
+	conn, err := grpc.Dial(cfg.GRPC, opts...)
+	if err != nil {
+		return nil, err
+	}
+	client := fileregistry.NewFileServiceClient(conn)
+
 	return &Service{
-		Cli: &http.Client{},
-		URL: cfg.URL,
+		restCli: &http.Client{},
+		restURL: cfg.REST,
+		grpcCLi: client,
 	}, nil
+}
+
+func (s *Service) getAttachmentInfo(ctx context.Context, fileId string) (FileInfo, error) {
+	_, span := trace.StartSpan(ctx, "get_attachment_info")
+	defer span.End()
+
+	res, err := s.grpcCLi.GetFileInfoById(ctx,
+		&fileregistry.GetFileInfoRequest{
+			FileId: fileId,
+		},
+	)
+
+	if err != nil {
+		return FileInfo{}, err
+	}
+
+	return FileInfo{
+		FileId:    res.FileId,
+		Name:      res.Name,
+		CreatedAt: res.CreatedAt,
+		Size:      res.Size,
+	}, nil
+}
+
+func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string][]string) (map[string][]FileInfo, error) {
+	ctxLocal, span := trace.StartSpan(ctx, "get_attachments_info")
+	defer span.End()
+
+	res := make(map[string][]FileInfo)
+
+	for k := range attachments {
+		aa := attachments[k]
+		filesInfo := make([]FileInfo, 0, len(aa))
+		for _, a := range aa {
+			fileInfo, err := s.getAttachmentInfo(ctxLocal, a)
+			if err != nil {
+				return nil, err
+			}
+			filesInfo = append(filesInfo, fileInfo)
+		}
+		res[k] = filesInfo
+	}
+	return res, nil
 }
 
 func (s *Service) getAttachment(ctx context.Context, fileId string) (email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachment")
 	defer span.End()
 
-	reqURL := s.URL + getFileById + fileId
+	reqURL := s.restURL + getFileById + fileId
 
 	req, err := http.NewRequestWithContext(ctxLocal, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return email.Attachment{}, err
 	}
 
-	resp, err := s.Cli.Do(req)
+	resp, err := s.restCli.Do(req)
 	if err != nil {
 		return email.Attachment{}, err
 	}
@@ -64,23 +126,19 @@ func (s *Service) getAttachment(ctx context.Context, fileId string) (email.Attac
 	}, nil
 }
 
-func (s *Service) GetAttachments(ctx context.Context, attachments map[string][]string) (map[string][]email.Attachment, error) {
+func (s *Service) GetAttachments(ctx context.Context, attachments []string) ([]email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachments")
 	defer span.End()
 
-	res := make(map[string][]email.Attachment)
+	res := make([]email.Attachment, 0, len(attachments))
 
-	for k := range attachments {
-		aa := attachments[k]
-		files := make([]email.Attachment, 0, len(aa))
-		for _, a := range aa {
-			file, err := s.getAttachment(ctxLocal, a)
-			if err != nil {
-				return nil, err
-			}
-			files = append(files, file)
+	for i := range attachments {
+		a := attachments[i]
+		file, err := s.getAttachment(ctxLocal, a)
+		if err != nil {
+			return nil, err
 		}
-		res[k] = files
+		res = append(res, file)
 	}
 	return res, nil
 }

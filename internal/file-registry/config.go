@@ -1,5 +1,6 @@
 package file_registry
 
 type Config struct {
-	URL string `yaml:"url"`
+	REST string `yaml:"rest"`
+	GRPC string `yaml:"grpc"`
 }
