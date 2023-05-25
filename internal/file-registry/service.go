@@ -42,6 +42,7 @@ func NewService(cfg Config) (*Service, error) {
 	client := fileregistry.NewFileServiceClient(conn)
 
 	return &Service{
+		c:       conn,
 		restCli: &http.Client{},
 		restURL: cfg.REST,
 		grpcCLi: client,
