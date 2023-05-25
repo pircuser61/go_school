@@ -86,7 +86,6 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-
 	}
 
 	var stateBytes []byte
