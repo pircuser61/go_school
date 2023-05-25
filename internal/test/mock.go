@@ -151,11 +151,11 @@ var (
 			},
 		},
 		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+			Entrypoint string            `json:"entrypoint"`
+			Blocks     entity.BlocksType `json:"blocks"`
 		}{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -250,11 +250,11 @@ var (
 			},
 		},
 		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+			Entrypoint string            `json:"entrypoint"`
+			Blocks     entity.BlocksType `json:"blocks"`
 		}{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -349,11 +349,11 @@ var (
 		},
 		Output: []entity.EriusFunctionValue{},
 		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+			Entrypoint string            `json:"entrypoint"`
+			Blocks     entity.BlocksType `json:"blocks"`
 		}{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -459,11 +459,11 @@ var (
 			},
 		},
 		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+			Entrypoint string            `json:"entrypoint"`
+			Blocks     entity.BlocksType `json:"blocks"`
 		}{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -549,11 +549,11 @@ var (
 		HasDraft:  false,
 		Name:      "ForInForPipeline",
 		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+			Entrypoint string            `json:"entrypoint"`
+			Blocks     entity.BlocksType `json:"blocks"`
 		}{
 			Entrypoint: "MasGen1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"MasGen1": {
 					BlockType: script.TypePython3,
 					Title:     "MasGen",
@@ -669,11 +669,11 @@ var (
 		Input:     nil,
 		Output:    nil,
 		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+			Entrypoint string            `json:"entrypoint"`
+			Blocks     entity.BlocksType `json:"blocks"`
 		}{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -791,11 +791,11 @@ var (
 		Input:     nil,
 		Output:    nil,
 		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+			Entrypoint string            `json:"entrypoint"`
+			Blocks     entity.BlocksType `json:"blocks"`
 		}{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -880,11 +880,11 @@ var (
 		Input:     nil,
 		Output:    nil,
 		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
+			Entrypoint string            `json:"entrypoint"`
+			Blocks     entity.BlocksType `json:"blocks"`
 		}{
 			Entrypoint: "ngsa",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"ngsa": {
 					BlockType: script.TypeInternal,
 					Title:     "ngsa-send-alarm",

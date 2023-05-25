@@ -112,6 +112,7 @@ const (
 	UpdateEndingSystemSettingsError
 	ValidationEndingSystemSettingsError
 	SearchingForPipelinesUsageError
+	PipelineValidateError
 )
 
 //nolint:dupl //its not duplicate
@@ -206,6 +207,7 @@ var errorText = map[Err]string{
 	UpdateEndingSystemSettingsError:     "can't update ending system settings",
 	ValidationEndingSystemSettingsError: "not enough data to update ending settings",
 	SearchingForPipelinesUsageError:     "can't find usages of pipeline",
+	PipelineValidateError:               "invalid pipeline schema",
 }
 
 // JOKE.
@@ -302,6 +304,7 @@ var errorDescription = map[Err]string{
 	UpdateEndingSystemSettingsError:     "Не удалось обновить настройки завершения процесса в системе",
 	ValidationEndingSystemSettingsError: "Ошибка при валидации параметров для обновления настроек системы",
 	SearchingForPipelinesUsageError:     "Ошибка при поиске использования пайплайна",
+	PipelineValidateError:               "Невалидная схема пайплайна",
 }
 
 var errorStatus = map[Err]int{
@@ -317,6 +320,7 @@ var errorStatus = map[Err]int{
 	BlockNotFoundError:        http.StatusBadRequest,
 	BodyParseError:            http.StatusBadRequest,
 	ValidationError:           http.StatusBadRequest,
+	PipelineValidateError:     http.StatusBadRequest,
 }
 
 type httpError struct {

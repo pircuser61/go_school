@@ -594,6 +594,13 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate() {
+		e := PipelineValidateError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
 	if err != nil {
 		e := UnknownError

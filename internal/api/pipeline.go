@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-
 	"github.com/labstack/gommon/log"
 
 	"github.com/pkg/errors"
@@ -66,6 +65,13 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
+
+	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate() {
+		e := PipelineValidateError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
 
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
 	if err != nil {
