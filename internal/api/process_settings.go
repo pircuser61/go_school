@@ -35,7 +35,7 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 		return
 	}
 
-	processSettings.SlaSettings, err = ae.DB.GetSlaVersionSettings(ctx, versionID)
+	slaSettings, err := ae.DB.GetSlaVersionSettings(ctx, versionID)
 	if err != nil {
 		e := GetProcessSlaSettingsError
 		log.Error(e.errorMessage(err))
@@ -43,6 +43,8 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 		return
 	}
+	processSettings.SLA = slaSettings.Sla
+	processSettings.WorkType = slaSettings.WorkType
 
 	externalSystemsIds, err := ae.DB.GetExternalSystemsIDs(ctx, versionID)
 	if err != nil {
@@ -183,7 +185,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 
 	externalSystem.Id = systemID
 
-	err = externalSystem.Validate()
+	err = externalSystem.ValidateSchemas()
 	if err != nil {
 		e := JSONSchemaValidationError
 		log.Error(e.errorMessage(err))
@@ -357,7 +359,7 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	isValid := validateSlaSettings(processSettings.SlaSettings)
+	isValid := processSettings.ValidateSLA()
 	if !isValid {
 		e := ValidationSlaProcessSettingsError
 		log.Error(e.errorMessage(errors.New("Error while validating SlaSettings")))
@@ -376,8 +378,8 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 
 	saveVersionSLAErr := transaction.SaveSlaVersionSettings(ctx, versionID, entity.SlaVersionSettings{
 		Author:   userFromContext.Username,
-		WorkType: processSettings.SlaSettings.WorkType,
-		Sla:      processSettings.SlaSettings.Sla,
+		WorkType: processSettings.WorkType,
+		Sla:      processSettings.SLA,
 	})
 	if saveVersionSLAErr != nil {
 		e := ProcessSettingsSaveError
@@ -508,11 +510,4 @@ func validateEndingSettings(s *entity.ExternalSystem) {
 		s.OutputSettings.Method == "" {
 		s.OutputSettings = nil
 	}
-}
-
-func validateSlaSettings(s entity.SlaVersionSettings) bool {
-	if (s.WorkType == "8/5" || s.WorkType == "24/7" || s.WorkType == "12/5") && s.Sla > 0 {
-		return true
-	}
-	return false
 }

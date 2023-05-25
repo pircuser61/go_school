@@ -64,7 +64,7 @@ func TestApproverParams_Validate(t *testing.T) {
 				CheckSLA:   true,
 			}
 			if err := a.Validate(); (err != nil) != tt.wantErr {
-				t.Errorf("%v Validate()", a)
+				t.Errorf("%v ValidateSchemas()", a)
 			}
 		})
 	}
