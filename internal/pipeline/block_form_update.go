@@ -82,7 +82,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill
 		}
-	case string(entity.TaskUpdateActionFormExecutorStartWork):
+	case string(entity.TaskUpdateActionExecutorStartWork):
 		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
