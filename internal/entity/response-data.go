@@ -142,7 +142,15 @@ type ProcessSettings struct {
 	EndSchema          *script.JSONSchema `json:"end_schema"`
 	ResubmissionPeriod int                `json:"resubmission_period"`
 	Name               string             `json:"name"`
-	SlaSettings        SlaVersionSettings `json:"sla_settings"`
+	SLA                int                `json:"sla"`
+	WorkType           string             `json:"work_type"`
+}
+
+func (ps *ProcessSettings) ValidateSLA() bool {
+	if (ps.WorkType == "8/5" || ps.WorkType == "24/7" || ps.WorkType == "12/5") && ps.SLA > 0 {
+		return true
+	}
+	return false
 }
 
 type ExternalSystem struct {
@@ -175,13 +183,13 @@ type EndProcessData struct {
 	Status     string `json:"status"`
 }
 
-func (es ProcessSettings) Validate() error {
-	err := es.StartSchema.Validate()
+func (ps ProcessSettings) Validate() error {
+	err := ps.StartSchema.Validate()
 	if err != nil {
 		return err
 	}
 
-	err = es.EndSchema.Validate()
+	err = ps.EndSchema.Validate()
 	if err != nil {
 		return err
 	}
@@ -189,7 +197,7 @@ func (es ProcessSettings) Validate() error {
 	return nil
 }
 
-func (es ExternalSystem) Validate() error {
+func (es ExternalSystem) ValidateSchemas() error {
 	err := es.InputSchema.Validate()
 	if err != nil {
 		return err

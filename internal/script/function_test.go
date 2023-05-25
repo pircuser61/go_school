@@ -21,7 +21,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "Tests of method Validate, success case",
+			name: "Tests of method ValidateSchemas, success case",
 			fields: fields{
 				Name:    "executable_function_0",
 				Version: versionExample,
@@ -61,7 +61,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name: "Tests of method Validate, missing type case",
+			name: "Tests of method ValidateSchemas, missing type case",
 			fields: fields{
 				Name:    "executable_function_0",
 				Version: versionExample,
@@ -101,7 +101,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			wantErr: errors.New("type is required"),
 		},
 		{
-			name: "Tests of method Validate, missing items case",
+			name: "Tests of method ValidateSchemas, missing items case",
 			fields: fields{
 				Name:    "executable_function_0",
 				Version: versionExample,
@@ -131,7 +131,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			wantErr: errors.New("items is required"),
 		},
 		{
-			name: "Tests of method Validate, missing properties case",
+			name: "Tests of method ValidateSchemas, missing properties case",
 			fields: fields{
 				Name:    "executable_function_0",
 				Version: versionExample,
@@ -161,7 +161,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 			wantErr: errors.New("properties is required"),
 		},
 		{
-			name: "Tests of method Validate, missing name case",
+			name: "Tests of method ValidateSchemas, missing name case",
 			fields: fields{
 				Name:    "",
 				Version: versionExample,
@@ -180,7 +180,7 @@ func TestExecutableFunctionParams_Validate(t *testing.T) {
 
 			err := a.Validate()
 			assert.Equal(t, tt.wantErr, err,
-				fmt.Sprintf("Incorrect result. Validate() method. Expect error %v, got %v", tt.wantErr, err))
+				fmt.Sprintf("Incorrect result. ValidateSchemas() method. Expect error %v, got %v", tt.wantErr, err))
 		})
 	}
 }
@@ -246,7 +246,7 @@ func TestJSONSchema_Validate(t *testing.T) {
 				Properties: tt.fields.Properties,
 				Required:   tt.fields.Required,
 			}
-			tt.wantErr(t, js.Validate(), fmt.Sprintf("Validate()"))
+			tt.wantErr(t, js.Validate(), fmt.Sprintf("ValidateSchemas()"))
 		})
 	}
 }
@@ -320,7 +320,7 @@ func TestJSONSchemaProperties_Validate1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.wantErr(t, tt.properties.Validate(), fmt.Sprintf("Validate()"))
+			tt.wantErr(t, tt.properties.Validate(), fmt.Sprintf("ValidateSchemas()"))
 		})
 	}
 }
