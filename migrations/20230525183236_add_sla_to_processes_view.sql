@@ -32,13 +32,13 @@ SELECT
     w.human_status AS process_status,
     w.rate,
     w.rate_comment,
-    vs.work_type,
-    vs.sla
+    vsla.work_type,
+    vsla.sla
 FROM works w
          LEFT JOIN variable_storage vs ON vs.work_id = w.id
          LEFT JOIN versions v ON v.id = w.version_id
          LEFT JOIN pipelines p ON p.id = v.pipeline_id
-         LEFT JOIN version_sla vs ON v.id = w.version_id
+         LEFT JOIN version_sla vsla ON vsla.version_id = w.version_id
 WHERE w.child_id IS NULL;
 
 
