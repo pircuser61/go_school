@@ -81,6 +81,11 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill
 		}
+	case string(entity.TaskUpdateActionFormExecutorStartWork):
+		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+
 	}
 
 	var stateBytes []byte
@@ -241,4 +246,44 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 	gb.State.HalfSLAChecked = true
 
 	return nil
+}
+
+func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
+	if gb.State.IsTakenInWork {
+		return nil
+	}
+	var currentLogin = gb.RunContext.UpdateData.ByLogin
+	_, executorFound := gb.State.Executors[currentLogin]
+
+	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
+	if !(executorFound || isDelegate) {
+		return NewUserIsNotPartOfProcessErr()
+	}
+
+	executorLogins := make(map[string]struct{}, 0)
+	for i := range gb.State.Executors {
+		executorLogins[i] = gb.State.Executors[i]
+	}
+
+	gb.State.Executors = map[string]struct{}{
+		gb.RunContext.UpdateData.ByLogin: {},
+	}
+
+	gb.State.IsTakenInWork = true
+	workHours := getWorkHoursBetweenDates(
+		gb.RunContext.currBlockStartTime,
+		time.Now(),
+		nil,
+	)
+	gb.State.IncreaseSLA(workHours)
+
+	//if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
+	//	return nil
+	//}
+
+	return nil
+}
+
+func (a *FormData) IncreaseSLA(addSla int) {
+	a.SLA += addSla
 }

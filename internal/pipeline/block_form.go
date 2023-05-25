@@ -32,15 +32,18 @@ type ChangesLogItem struct {
 }
 
 type FormData struct {
-	FormExecutorType script.FormExecutorType `json:"form_executor_type"`
-	SchemaId         string                  `json:"schema_id"`
-	SchemaName       string                  `json:"schema_name"`
-	Executors        map[string]struct{}     `json:"executors"`
-	Description      string                  `json:"description"`
-	ApplicationBody  map[string]interface{}  `json:"application_body"`
-	IsFilled         bool                    `json:"is_filled"`
-	ActualExecutor   *string                 `json:"actual_executor,omitempty"`
-	ChangesLog       []ChangesLogItem        `json:"changes_log"`
+	FormExecutorType       script.FormExecutorType `json:"form_executor_type"`
+	FormGroupId            string                  `json:"form_group_id"`
+	FormExecutorsGroupName string                  `json:"form_executors_group_name"`
+	SchemaId               string                  `json:"schema_id"`
+	SchemaName             string                  `json:"schema_name"`
+	Executors              map[string]struct{}     `json:"executors"`
+	Description            string                  `json:"description"`
+	ApplicationBody        map[string]interface{}  `json:"application_body"`
+	IsFilled               bool                    `json:"is_filled"`
+	IsTakenInWork          bool                    `json:"is_taken_in_work"`
+	ActualExecutor         *string                 `json:"actual_executor,omitempty"`
+	ChangesLog             []ChangesLogItem        `json:"changes_log"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
@@ -289,6 +292,23 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		if err = gb.handleAutoFillForm(); err != nil {
 			return err
 		}
+	case script.FormExecutorTypeGroup:
+		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.FormGroupId)
+		if errGroup != nil {
+			return errors.Wrap(errGroup, "can`t get form group with id: "+params.FormGroupId)
+		}
+
+		if len(workGroup.People) == 0 {
+			//nolint:goimports // bugged golint
+			return errors.New("zero form executors in group: " + params.FormGroupId)
+		}
+
+		gb.State.Executors = make(map[string]struct{})
+		for i := range workGroup.People {
+			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
+		}
+		gb.State.FormGroupId = params.FormGroupId
+		gb.State.FormExecutorsGroupName = workGroup.GroupName
 	}
 
 	return gb.handleNotifications(ctx)
