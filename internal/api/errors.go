@@ -112,6 +112,8 @@ const (
 	UpdateEndingSystemSettingsError
 	ValidationEndingSystemSettingsError
 	SearchingForPipelinesUsageError
+	ValidationSlaProcessSettingsError
+	GetProcessSlaSettingsError
 	PipelineValidateError
 )
 
@@ -207,6 +209,8 @@ var errorText = map[Err]string{
 	UpdateEndingSystemSettingsError:     "can't update ending system settings",
 	ValidationEndingSystemSettingsError: "not enough data to update ending settings",
 	SearchingForPipelinesUsageError:     "can't find usages of pipeline",
+	ValidationSlaProcessSettingsError:   "wrong data for version SLA settings",
+	GetProcessSlaSettingsError:          "can't get sla settings for process",
 	PipelineValidateError:               "invalid pipeline schema",
 }
 
@@ -304,6 +308,8 @@ var errorDescription = map[Err]string{
 	UpdateEndingSystemSettingsError:     "Не удалось обновить настройки завершения процесса в системе",
 	ValidationEndingSystemSettingsError: "Ошибка при валидации параметров для обновления настроек системы",
 	SearchingForPipelinesUsageError:     "Ошибка при поиске использования пайплайна",
+	ValidationSlaProcessSettingsError:   "Ошибка при валидации параметров SLA процесса",
+	GetProcessSlaSettingsError:          "Ошибка при получении параметров SLA процесса",
 	PipelineValidateError:               "Невалидная схема пайплайна",
 }
 
