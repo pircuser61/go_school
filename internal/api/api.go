@@ -792,6 +792,9 @@ type EriusVersionInfo struct {
 
 // Chosen function to be executed
 type ExecutableFunctionParams struct {
+	// Constant values for function parameters (key of object is variable name)
+	Constants map[string]interface{} `json:"constants"`
+
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	Mapping JSONSchemaProperties `json:"mapping"`
 
@@ -935,6 +938,9 @@ type FormExecutorType string
 type FormParams struct {
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
+
+	// Constant values for function parameters (key of object is variable name)
+	Constants *map[string]interface{} `json:"constants,omitempty"`
 
 	// Executor value
 	Executor *string `json:"executor,omitempty"`

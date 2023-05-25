@@ -3626,11 +3626,15 @@ components:
         waitCorrectRes:
           type: integer
           description: Days to wait correct answer
+        constants:
+          type: object
+          description: Constant values for function parameters (key of object is variable name)
       required:
         - name
         - version
         - mapping
         - waitCorrectRes
+        - constants
 
     JSONSchema:
       type: object
@@ -4433,6 +4437,9 @@ components:
           description: Hide executor from initiator
         mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
+        constants:
+          type: object
+          description: Constant values for function parameters (key of object is variable name)
       required:
         - sla
         - check_sla
