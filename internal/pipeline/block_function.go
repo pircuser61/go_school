@@ -174,7 +174,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 		executableFunctionMapping := gb.State.Mapping
 
-		//get constants := gb.State.Constants
+		constants := gb.State.Constants
 
 		variables, err := getVariables(gb.RunContext.VarStore)
 		if err != nil {
@@ -185,12 +185,16 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 		for k := range executableFunctionMapping {
 			v := executableFunctionMapping[k]
+
+			if constant, exists := constants[v.Value]; exists {
+				functionMapping[k] = constant
+				break
+			}
+
 			variable := getVariable(variables, v.Value)
 			if variable == nil {
 				return nil, fmt.Errorf("cant fill function mapping with value: %s = %v", k, v.Value)
 			}
-
-			// use here constants
 
 			if checkErr := utils.CheckVariableType(variable, &v); checkErr != nil {
 				return nil, checkErr
