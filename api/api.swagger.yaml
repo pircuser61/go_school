@@ -1072,55 +1072,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
-  /pipeline/version/{versionID}/settings/sla:
-    post:
-      tags:
-        - pipeline
-        - process_settings
-      summary: Save process sla settings
-      description: Сохранить настройки sla процесса
-      operationId: save-version-sla-settings
-      parameters:
-        - name: versionID
-          in: path
-          description: Version ID
-          required: true
-          schema:
-            type: string
-            description: Id версии процесса
-            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
-      requestBody:
-        description: Modified Main Process Settings
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProcessSlaSettings'
-        required: true
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpResponse'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/httpError'
   /pipelines/version/{versionID}/system:
     post:
       tags:
@@ -2987,16 +2938,6 @@ components:
         resubmission_period:
           type: integer
           description: Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
-        sla_settings:
-          $ref: '#/components/schemas/ProcessSlaSettings'
-      required:
-        - name
-        - resubmission_period
-
-    ProcessSlaSettings:
-      type: object
-      description: Настройки sla версии пайплайна(процесса)
-      properties:
         sla:
           type: integer
           description: SLA в рабочих часах
@@ -3009,6 +2950,9 @@ components:
             - 8/5
             - 12/5
       required:
+        - version_id
+        - name
+        - resubmission_period
         - sla
         - work_type
 
@@ -3641,7 +3585,7 @@ components:
       properties:
         type:
           type: string
-          enum: [object]
+          enum: [ object ]
         properties:
           $ref: '#/components/schemas/JSONSchemaProperties'
         required:
@@ -3725,7 +3669,7 @@ components:
           type: string
         method:
           type: string
-          enum: ["POST"]
+          enum: [ "POST" ]
       required:
         - microservice_id
         - URL
@@ -4422,8 +4366,8 @@ components:
           description: form sla
           minimum: 1
         check_sla:
-            type: boolean
-            description: Is active SLA
+          type: boolean
+          description: Is active SLA
         schema_name:
           type: string
           description: form template id name
@@ -4708,7 +4652,7 @@ components:
           description: "Статус ноды"
         node_id:
           type: string
-          description:  "id ноды в заявке"
+          description: "id ноды в заявке"
         real_name:
           type: string
           description: "читаемое имя ноды"

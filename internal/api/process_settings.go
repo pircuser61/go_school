@@ -35,7 +35,7 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 		return
 	}
 
-	processSettings.SLaSettings, err = ae.DB.GetSlaVersionSettings(ctx, versionID)
+	processSettings.SlaSettings, err = ae.DB.GetSlaVersionSettings(ctx, versionID)
 	if err != nil {
 		e := GetProcessSlaSettingsError
 		log.Error(e.errorMessage(err))
@@ -357,6 +357,36 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	isValid := validateSlaSettings(processSettings.SlaSettings)
+	if !isValid {
+		e := ValidationSlaProcessSettingsError
+		log.Error(e.errorMessage(errors.New("Error while validating SlaSettings")))
+		_ = e.sendError(w)
+
+		return
+	}
+	userFromContext, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := GetUserinfoErr
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	saveVersionSLAErr := transaction.SaveSlaVersionSettings(ctx, versionID, entity.SlaVersionSettings{
+		Author:   userFromContext.Username,
+		WorkType: processSettings.SlaSettings.WorkType,
+		Sla:      processSettings.SlaSettings.Sla,
+	})
+	if saveVersionSLAErr != nil {
+		e := ProcessSettingsSaveError
+		log.Error(e.errorMessage(saveVersionSLAErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	parsedUUID, parseErr := uuid.Parse(versionID)
 	if parseErr != nil {
 		e := UnknownError
@@ -480,61 +510,7 @@ func validateEndingSettings(s *entity.ExternalSystem) {
 	}
 }
 
-func (ae *APIEnv) SaveVersionSlaSettings(w http.ResponseWriter, r *http.Request, versionID string) {
-	ctx, s := trace.StartSpan(r.Context(), "save_version_sla_settings")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-	defer r.Body.Close()
-
-	var slaSettings ProcessSlaSettings
-	err = json.Unmarshal(b, &slaSettings)
-	if err != nil {
-		e := ProcessSettingsParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	isValid := validateSlaSettings(&slaSettings)
-	if !isValid {
-		e := ValidationSlaProcessSettingsError
-		log.Error(e.errorMessage(errors.New("Error while validating SlaSettings")))
-		_ = e.sendError(w)
-
-		return
-	}
-	userFromContext, err := user.GetUserInfoFromCtx(ctx)
-	if err != nil {
-		e := GetUserinfoErr
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	err = ae.DB.SaveSlaVersionSettings(ctx, versionID, entity.SlaVersionSettings{
-		Author:   userFromContext.Username,
-		WorkType: string(slaSettings.WorkType),
-		Sla:      slaSettings.Sla,
-	})
-	if err != nil {
-		e := UpdateEndingSystemSettingsError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
-func validateSlaSettings(s *ProcessSlaSettings) bool {
+func validateSlaSettings(s entity.SlaVersionSettings) bool {
 	if (s.WorkType == "8/5" || s.WorkType == "24/7" || s.WorkType == "12/5") && s.Sla > 0 {
 		return true
 	}

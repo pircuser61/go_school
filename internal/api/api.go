@@ -175,13 +175,13 @@ const (
 	NumberOperandOperandTypeVariableOperand NumberOperandOperandType = "variableOperand"
 )
 
-// Defines values for ProcessSlaSettingsWorkType.
+// Defines values for ProcessSettingsWorkType.
 const (
-	ProcessSlaSettingsWorkTypeN125 ProcessSlaSettingsWorkType = "12/5"
+	ProcessSettingsWorkTypeN125 ProcessSettingsWorkType = "12/5"
 
-	ProcessSlaSettingsWorkTypeN247 ProcessSlaSettingsWorkType = "24/7"
+	ProcessSettingsWorkTypeN247 ProcessSettingsWorkType = "24/7"
 
-	ProcessSlaSettingsWorkTypeN85 ProcessSlaSettingsWorkType = "8/5"
+	ProcessSettingsWorkTypeN85 ProcessSettingsWorkType = "8/5"
 )
 
 // Defines values for RequestExecutionInfoType.
@@ -498,10 +498,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   - user - Single user
-//   - group - Approver group ID
-//   - head - Receiver's head
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -848,9 +848,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//   - user - Single user
-//   - group - Execution group ID
-//   - from_schema - Selected by initiator
+//  * user - Single user
+//  * group - Execution group ID
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -928,10 +928,10 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   - User - Single user
-//   - Initiator - Process initiator
-//   - From_schema - Selected by initiator
-//   - Auto_Fill - Auto Fill form by system
+//   * User - Single user
+//   * Initiator - Process initiator
+//   * From_schema - Selected by initiator
+//   * Auto_Fill - Auto Fill form by system
 type FormExecutorType string
 
 // Form params
@@ -1258,13 +1258,19 @@ type ProcessSettings struct {
 	// Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
 	ResubmissionPeriod int `json:"resubmission_period"`
 
-	// Настройки sla версии пайплайна(процесса)
-	SlaSettings *ProcessSlaSettings `json:"sla_settings,omitempty"`
-	StartSchema *JSONSchema         `json:"start_schema,omitempty"`
+	// SLA в рабочих часах
+	Sla         int         `json:"sla"`
+	StartSchema *JSONSchema `json:"start_schema,omitempty"`
 
 	// Id версии процесса
-	VersionId *string `json:"version_id,omitempty"`
+	VersionId string `json:"version_id"`
+
+	// Рабочий режим
+	WorkType ProcessSettingsWorkType `json:"work_type"`
 }
+
+// Рабочий режим
+type ProcessSettingsWorkType string
 
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettingsWithExternalSystems struct {
@@ -1274,18 +1280,6 @@ type ProcessSettingsWithExternalSystems struct {
 	// Настройки старта версии пайплайна(процесса)
 	ProcessSettings ProcessSettings `json:"process_settings"`
 }
-
-// Настройки sla версии пайплайна(процесса)
-type ProcessSlaSettings struct {
-	// SLA в рабочих часах
-	Sla int `json:"sla"`
-
-	// Рабочий режим
-	WorkType ProcessSlaSettingsWorkType `json:"work_type"`
-}
-
-// Рабочий режим
-type ProcessSlaSettingsWorkType string
 
 // RateApplicationRequest defines model for RateApplicationRequest.
 type RateApplicationRequest struct {
@@ -1486,17 +1480,17 @@ type Action struct {
 }
 
 // Approver decision:
-//   - approved - Согласовать
-//   - rejected - Отклонить
+//  * approved - Согласовать
+//  * rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//   - approve - Согласовать
-//   - reject - Отклонить
-//   - viewed - Ознакомлен
-//   - informed - Проинформирован
-//   - sign - Подписать
-//   - confirm - Утвердить
+//  * approve - Согласовать
+//  * reject - Отклонить
+//  * viewed - Ознакомлен
+//  * informed - Проинформирован
+//  * sign - Подписать
+//  * confirm - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1576,8 +1570,8 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
-//   - executed - executor executed block
-//   - rejected - executor rejected block
+//  * executed - executor executed block
+//  * rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1608,11 +1602,11 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
-//   - 1 - Draft
-//   - 2 - Approved
-//   - 3 - Deleted
-//   - 4 - Rejected
-//   - 5 - On approve
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
@@ -1703,9 +1697,6 @@ type GetTasksForMonitoringParamsStatus string
 
 // SaveVersionMainSettingsJSONBody defines parameters for SaveVersionMainSettings.
 type SaveVersionMainSettingsJSONBody ProcessSettings
-
-// SaveVersionSlaSettingsJSONBody defines parameters for SaveVersionSlaSettings.
-type SaveVersionSlaSettingsJSONBody ProcessSlaSettings
 
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
@@ -1864,9 +1855,6 @@ type StartDebugTaskJSONRequestBody StartDebugTaskJSONBody
 
 // SaveVersionMainSettingsJSONRequestBody defines body for SaveVersionMainSettings for application/json ContentType.
 type SaveVersionMainSettingsJSONRequestBody SaveVersionMainSettingsJSONBody
-
-// SaveVersionSlaSettingsJSONRequestBody defines body for SaveVersionSlaSettings for application/json ContentType.
-type SaveVersionSlaSettingsJSONRequestBody SaveVersionSlaSettingsJSONBody
 
 // CreatePipelineJSONRequestBody defines body for CreatePipeline for application/json ContentType.
 type CreatePipelineJSONRequestBody CreatePipelineJSONBody
@@ -2572,9 +2560,6 @@ type ServerInterface interface {
 	// Save process main settings
 	// (POST /pipeline/version/{versionID}/settings/main)
 	SaveVersionMainSettings(w http.ResponseWriter, r *http.Request, versionID string)
-	// Save process sla settings
-	// (POST /pipeline/version/{versionID}/settings/sla)
-	SaveVersionSlaSettings(w http.ResponseWriter, r *http.Request, versionID string)
 	// Get list of pipelines
 	// (GET /pipelines)
 	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
@@ -3128,32 +3113,6 @@ func (siw *ServerInterfaceWrapper) SaveVersionMainSettings(w http.ResponseWriter
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SaveVersionMainSettings(w, r, versionID)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
-// SaveVersionSlaSettings operation middleware
-func (siw *ServerInterfaceWrapper) SaveVersionSlaSettings(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "versionID" -------------
-	var versionID string
-
-	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SaveVersionSlaSettings(w, r, versionID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4658,9 +4617,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipeline/version/{versionID}/settings/main", wrapper.SaveVersionMainSettings)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/pipeline/version/{versionID}/settings/sla", wrapper.SaveVersionSlaSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines", wrapper.ListPipelines)
