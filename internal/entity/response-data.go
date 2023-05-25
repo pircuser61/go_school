@@ -10,6 +10,7 @@ import (
 
 	"github.com/a-h/generate"
 	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -48,6 +49,34 @@ type EriusTagInfo struct {
 	IsMarker bool      `json:"isMarker"`
 }
 
+type BlocksType map[string]EriusFunc
+
+const (
+	BlockGoStartName = "start"
+	BlockGoEndName   = "end"
+)
+
+//nolint:gosimple // new logic will be added later
+func (bt *BlocksType) Validate() bool {
+	if !bt.ValidateEndExists() {
+		return false
+	}
+	return true
+}
+
+func (bt *BlocksType) ValidateEndExists() bool {
+	return bt.blockTypeExists(BlockGoStartName) && bt.blockTypeExists(BlockGoEndName)
+}
+
+func (bt *BlocksType) blockTypeExists(blockType string) bool {
+	for _, block := range *bt {
+		if block.TypeID == blockType {
+			return true
+		}
+	}
+	return false
+}
+
 type EriusScenario struct {
 	ID        uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
 	VersionID uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
@@ -58,8 +87,8 @@ type EriusScenario struct {
 	Output    []EriusFunctionValue `json:"output,omitempty"`
 	Settings  ProcessSettings      `json:"process_settings"`
 	Pipeline  struct {
-		Entrypoint string               `json:"entrypoint"`
-		Blocks     map[string]EriusFunc `json:"blocks"`
+		Entrypoint string     `json:"entrypoint"`
+		Blocks     BlocksType `json:"blocks"`
 	} `json:"pipeline"`
 	CreatedAt       *time.Time     `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
 	ApprovedAt      *time.Time     `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
