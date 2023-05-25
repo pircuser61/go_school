@@ -17,6 +17,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
@@ -28,6 +29,15 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 	processSettings, err := ae.DB.GetVersionSettings(ctx, versionID)
 	if err != nil {
 		e := GetProcessSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	processSettings.SLaSettings, err = ae.DB.GetSlaVersionSettings(ctx, versionID)
+	if err != nil {
+		e := GetProcessSlaSettingsError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
@@ -471,5 +481,62 @@ func validateEndingSettings(s *entity.ExternalSystem) {
 }
 
 func (ae *APIEnv) SaveVersionSlaSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+	ctx, s := trace.StartSpan(r.Context(), "save_version_sla_settings")
+	defer s.End()
 
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer r.Body.Close()
+
+	var slaSettings ProcessSlaSettings
+	err = json.Unmarshal(b, &slaSettings)
+	if err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	isValid := validateSlaSettings(&slaSettings)
+	if !isValid {
+		e := ValidationSlaProcessSettingsError
+		log.Error(e.errorMessage(errors.New("Error while validating SlaSettings")))
+		_ = e.sendError(w)
+
+		return
+	}
+	userFromContext, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := GetUserinfoErr
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	err = ae.DB.SaveSlaVersionSettings(ctx, versionID, entity.SlaVersionSettings{
+		Author:   userFromContext.Username,
+		WorkType: string(slaSettings.WorkType),
+		Sla:      slaSettings.Sla,
+	})
+	if err != nil {
+		e := UpdateEndingSystemSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+func validateSlaSettings(s *ProcessSlaSettings) bool {
+	if (s.WorkType == "8/5" || s.WorkType == "24/7" || s.WorkType == "12/5") && s.Sla > 0 {
+		return true
+	}
+	return false
 }

@@ -812,6 +812,14 @@ func (db *PGCon) CreateVersion(c context.Context,
 		if err != nil {
 			return err
 		}
+		err = db.SaveSlaVersionSettings(c, p.VersionID.String(), entity.SlaVersionSettings{
+			Author:   author,
+			WorkType: "8/5",
+			Sla:      40,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -838,6 +846,20 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersion
 	`
 
 	_, err = db.Connection.Exec(c, qCopyExternalSystems, newVersionID, oldVersionID)
+	if err != nil {
+		return err
+	}
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	qCopyPrevSlaSettings := `
+	INSERT INTO version_sla (id, version_id, author,created_at,work_type,sla) 
+		SELECT uuid_generate_v4(), $1, author, now(), work_type, sla
+		FROM version_sla 
+		WHERE version_id = $2;
+	`
+
+	_, err = db.Connection.Exec(c, qCopyPrevSlaSettings, newVersionID, oldVersionID)
 	if err != nil {
 		return err
 	}
@@ -3069,4 +3091,46 @@ func (db *PGCon) GetTaskInWorkTime(ctx context.Context, workNumber string) (*ent
 	}
 
 	return &interval, nil
+}
+
+func (db *PGCon) SaveSlaVersionSettings(ctx context.Context, versionID string, s entity.SlaVersionSettings) (err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_save_sla_version_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	INSERT INTO version_sla (id, version_id, author,created_at,work_type,sla)
+	VALUES ( $1, $2, $3, now(), $4, $5)`
+
+	_, err = db.Connection.Exec(ctx, query, uuid.New(), versionID, s.Author, s.WorkType, s.Sla)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s *entity.SlaVersionSettings, err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_sla_version_settings")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT  author,work_type,sla
+	FROM version_sla
+	WHERE version_id = $1`
+
+	row := db.Connection.QueryRow(ctx, query, versionID)
+	slaSettings := entity.SlaVersionSettings{}
+	err = row.Scan(
+		&slaSettings.Author,
+		&slaSettings.WorkType,
+		&slaSettings.Sla,
+	)
+	if err != nil {
+		return &entity.SlaVersionSettings{}, err
+	}
+	return &slaSettings, nil
 }
