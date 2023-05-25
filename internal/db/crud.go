@@ -3111,7 +3111,7 @@ func (db *PGCon) SaveSlaVersionSettings(ctx context.Context, versionID string, s
 	return nil
 }
 
-func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s *entity.SlaVersionSettings, err error) {
+func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s entity.SlaVersionSettings, err error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_sla_version_settings")
 	defer span.End()
 
@@ -3130,7 +3130,7 @@ func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s
 		&slaSettings.Sla,
 	)
 	if err != nil {
-		return &entity.SlaVersionSettings{}, err
+		return entity.SlaVersionSettings{}, err
 	}
-	return &slaSettings, nil
+	return slaSettings, nil
 }

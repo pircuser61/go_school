@@ -208,5 +208,5 @@ type Database interface {
 	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)
 	UpdateEndingSystemSettings(ctx c.Context, versionID, systemID string, settings e.EndSystemSettings) (err error)
 	SaveSlaVersionSettings(ctx c.Context, versionID string, s e.SlaVersionSettings) (err error)
-	GetSlaVersionSettings(ctx c.Context, versionID string) (s *e.SlaVersionSettings, err error)
+	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
 }

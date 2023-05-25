@@ -972,15 +972,15 @@ func (_m *MockedDatabase) GetRejectedVersions(ctx context.Context) ([]entity.Eri
 }
 
 // GetSlaVersionSettings provides a mock function with given fields: ctx, versionID
-func (_m *MockedDatabase) GetSlaVersionSettings(ctx context.Context, versionID string) (*entity.SlaVersionSettings, error) {
+func (_m *MockedDatabase) GetSlaVersionSettings(ctx context.Context, versionID string) (entity.SlaVersionSettings, error) {
 	ret := _m.Called(ctx, versionID)
 
-	var r0 *entity.SlaVersionSettings
-	if rf, ok := ret.Get(0).(func(context.Context, string) *entity.SlaVersionSettings); ok {
+	var r0 entity.SlaVersionSettings
+	if rf, ok := ret.Get(0).(func(context.Context, string) entity.SlaVersionSettings); ok {
 		r0 = rf(ctx, versionID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.SlaVersionSettings)
+			r0 = ret.Get(0).(entity.SlaVersionSettings)
 		}
 	}
 
