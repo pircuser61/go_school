@@ -193,7 +193,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 		for k := range executableFunctionMapping {
 			v := executableFunctionMapping[k]
 
-			if _, exists := constants[v.Value]; exists {
+			if _, exists := functionMapping[k]; exists {
 				continue
 			}
 
