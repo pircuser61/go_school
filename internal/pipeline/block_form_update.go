@@ -277,9 +277,9 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 	)
 	gb.State.IncreaseSLA(workHours)
 
-	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
-		return nil
-	}
+	//if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
+	//	return nil
+	//}
 
 	return nil
 }
