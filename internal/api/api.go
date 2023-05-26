@@ -177,6 +177,15 @@ const (
 	NumberOperandOperandTypeVariableOperand NumberOperandOperandType = "variableOperand"
 )
 
+// Defines values for ProcessSettingsWorkType.
+const (
+	ProcessSettingsWorkTypeN125 ProcessSettingsWorkType = "12/5"
+
+	ProcessSettingsWorkTypeN247 ProcessSettingsWorkType = "24/7"
+
+	ProcessSettingsWorkTypeN85 ProcessSettingsWorkType = "8/5"
+)
+
 // Defines values for RequestExecutionInfoType.
 const (
 	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
@@ -787,6 +796,9 @@ type EriusVersionInfo struct {
 
 // Chosen function to be executed
 type ExecutableFunctionParams struct {
+	// Constant values for function parameters (key of object is variable name)
+	Constants map[string]interface{} `json:"constants"`
+
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	Mapping JSONSchemaProperties `json:"mapping"`
 
@@ -931,6 +943,9 @@ type FormExecutorType string
 type FormParams struct {
 	// Is active SLA
 	CheckSla bool `json:"check_sla"`
+
+	// Constant values for function parameters (key of object is variable name)
+	Constants *map[string]interface{} `json:"constants,omitempty"`
 
 	// Executor value
 	Executor *string `json:"executor,omitempty"`
@@ -1250,12 +1265,21 @@ type ProcessSettings struct {
 	Name string `json:"name"`
 
 	// Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
-	ResubmissionPeriod int         `json:"resubmission_period"`
-	StartSchema        *JSONSchema `json:"start_schema,omitempty"`
+	ResubmissionPeriod int `json:"resubmission_period"`
+
+	// SLA в рабочих часах
+	Sla         int         `json:"sla"`
+	StartSchema *JSONSchema `json:"start_schema,omitempty"`
 
 	// Id версии процесса
-	VersionId *string `json:"version_id,omitempty"`
+	VersionId string `json:"version_id"`
+
+	// Рабочий режим
+	WorkType ProcessSettingsWorkType `json:"work_type"`
 }
+
+// Рабочий режим
+type ProcessSettingsWorkType string
 
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettingsWithExternalSystems struct {

@@ -41,6 +41,7 @@ type ExecutableFunction struct {
 	HasResponse    bool                        `json:"has_response"`
 	Contracts      string                      `json:"contracts"`
 	WaitCorrectRes int                         `json:"waitCorrectRes"`
+	Constants      map[string]interface{}      `json:"constants"`
 }
 
 type FunctionStatus string
@@ -173,6 +174,8 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 		executableFunctionMapping := gb.State.Mapping
 
+		//get constants := gb.State.Constants
+
 		variables, err := getVariables(gb.RunContext.VarStore)
 		if err != nil {
 			return nil, err
@@ -186,6 +189,8 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			if variable == nil {
 				return nil, fmt.Errorf("cant fill function mapping with value: %s = %v", k, v.Value)
 			}
+
+			// use here constants
 
 			if checkErr := utils.CheckVariableType(variable, &v); checkErr != nil {
 				return nil, checkErr
@@ -316,6 +321,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		Async:          isAsync,
 		Contracts:      function.Contracts,
 		WaitCorrectRes: params.WaitCorrectRes,
+		Constants:      params.Constants,
 	}
 
 	return nil

@@ -971,6 +971,29 @@ func (_m *MockedDatabase) GetRejectedVersions(ctx context.Context) ([]entity.Eri
 	return r0, r1
 }
 
+// GetSlaVersionSettings provides a mock function with given fields: ctx, versionID
+func (_m *MockedDatabase) GetSlaVersionSettings(ctx context.Context, versionID string) (entity.SlaVersionSettings, error) {
+	ret := _m.Called(ctx, versionID)
+
+	var r0 entity.SlaVersionSettings
+	if rf, ok := ret.Get(0).(func(context.Context, string) entity.SlaVersionSettings); ok {
+		r0 = rf(ctx, versionID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(entity.SlaVersionSettings)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, versionID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetTag provides a mock function with given fields: ctx, e
 func (_m *MockedDatabase) GetTag(ctx context.Context, e *entity.EriusTagInfo) (*entity.EriusTagInfo, error) {
 	ret := _m.Called(ctx, e)
@@ -1660,6 +1683,20 @@ func (_m *MockedDatabase) SaveExternalSystemSettings(ctx context.Context, versio
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, entity.ExternalSystem, *string) error); ok {
 		r0 = rf(ctx, versionID, settings, schemaFlag)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SaveSlaVersionSettings provides a mock function with given fields: ctx, versionID, s
+func (_m *MockedDatabase) SaveSlaVersionSettings(ctx context.Context, versionID string, s entity.SlaVersionSettings) error {
+	ret := _m.Called(ctx, versionID, s)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, entity.SlaVersionSettings) error); ok {
+		r0 = rf(ctx, versionID, s)
 	} else {
 		r0 = ret.Error(0)
 	}
