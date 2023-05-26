@@ -255,6 +255,37 @@ func TestBlockFunction_Update(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "test constant value priority",
+			fields: fields{
+				RunContext: &BlockRunContext{
+					TaskID:            workId,
+					skipNotifications: true,
+					skipProduce:       true,
+					VarStore:          store.NewStore(),
+				},
+				State: &ExecutableFunction{
+					HasResponse: true,
+					Function: script.FunctionParam{
+						Output: `{"name": {"type": "string"}}`,
+					},
+					Constants: map[string]interface{}{"name": "name from constant", "user.userName": "testLogin"},
+				},
+			},
+			args: args{
+				data: &script.BlockUpdateData{
+					ByLogin: "example",
+					Action:  string(entity.TaskUpdateActionExecution),
+					Parameters: json.RawMessage(`{
+						"mapping": {
+							"name": "example"
+						}
+					}`),
+				},
+				ctx: context.Background(),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, test := range tests {
