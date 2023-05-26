@@ -313,3 +313,180 @@ func TestValidation_IsolationNode(t *testing.T) {
 		})
 	}
 }
+
+func TestValidation_SocketFilled(t *testing.T) {
+	tests := []struct {
+		Name      string
+		Ef        entity.EriusScenario
+		WantValid bool
+	}{
+		{
+			Name: "test socket filled all sockets filled",
+			Ef: entity.EriusScenario{
+				Pipeline: struct {
+					Entrypoint string            `json:"entrypoint"`
+					Blocks     entity.BlocksType `json:"blocks"`
+				}{
+					Blocks: entity.BlocksType{
+						"start_0": {
+							TypeID: "start",
+							Sockets: []entity.Socket{
+								{
+									Id: "approved",
+								},
+							},
+							Next: map[string][]string{
+								"approved": {"end_0"},
+							},
+						},
+						"end_0": {
+							TypeID: "end",
+						},
+					},
+				},
+			},
+			WantValid: true,
+		},
+		{
+			Name: "test socket filled missing next field",
+			Ef: entity.EriusScenario{
+				Pipeline: struct {
+					Entrypoint string            `json:"entrypoint"`
+					Blocks     entity.BlocksType `json:"blocks"`
+				}{
+					Blocks: entity.BlocksType{
+						"start_0": {
+							TypeID: "start",
+							Sockets: []entity.Socket{
+								{
+									Id: "approved",
+								},
+								{
+									Id: "rejected",
+								},
+							},
+							Next: map[string][]string{
+								"approved": {"end_0"},
+							},
+						},
+						"end_0": {
+							TypeID: "end",
+						},
+					},
+				},
+			},
+			WantValid: false,
+		},
+		{
+			Name: "test socket filled missing socket field",
+			Ef: entity.EriusScenario{
+				Pipeline: struct {
+					Entrypoint string            `json:"entrypoint"`
+					Blocks     entity.BlocksType `json:"blocks"`
+				}{
+					Blocks: entity.BlocksType{
+						"start_0": {
+							TypeID: "start",
+							Sockets: []entity.Socket{
+								{
+									Id: "approved",
+								},
+							},
+							Next: map[string][]string{
+								"approved": {"end_0"},
+								"rejected": {"start_0"},
+							},
+						},
+						"end_0": {
+							TypeID: "end",
+						},
+					},
+				},
+			},
+			WantValid: false,
+		},
+		{
+			Name: "test socket filled empty next array",
+			Ef: entity.EriusScenario{
+				Pipeline: struct {
+					Entrypoint string            `json:"entrypoint"`
+					Blocks     entity.BlocksType `json:"blocks"`
+				}{
+					Blocks: entity.BlocksType{
+						"start_0": {
+							TypeID: "start",
+							Sockets: []entity.Socket{
+								{
+									Id: "approved",
+								},
+							},
+							Next: map[string][]string{
+								"approved": {},
+							},
+						},
+						"end_0": {
+							TypeID: "end",
+						},
+					},
+				},
+			},
+			WantValid: false,
+		},
+		{
+			Name: "test socket filled empty next",
+			Ef: entity.EriusScenario{
+				Pipeline: struct {
+					Entrypoint string            `json:"entrypoint"`
+					Blocks     entity.BlocksType `json:"blocks"`
+				}{
+					Blocks: entity.BlocksType{
+						"start_0": {
+							TypeID: "start",
+							Sockets: []entity.Socket{
+								{
+									Id: "approved",
+								},
+							},
+							Next: map[string][]string{},
+						},
+						"end_0": {
+							TypeID: "end",
+						},
+					},
+				},
+			},
+			WantValid: false,
+		},
+		{
+			Name: "test socket filled empty sockets",
+			Ef: entity.EriusScenario{
+				Pipeline: struct {
+					Entrypoint string            `json:"entrypoint"`
+					Blocks     entity.BlocksType `json:"blocks"`
+				}{
+					Blocks: entity.BlocksType{
+						"start_0": {
+							TypeID:  "start",
+							Sockets: []entity.Socket{},
+							Next: map[string][]string{
+								"approved": {"end_0"},
+							},
+						},
+						"end_0": {
+							TypeID: "end",
+						},
+					},
+				},
+			},
+			WantValid: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsSocketsFilled() {
+				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
+			}
+		})
+	}
+}

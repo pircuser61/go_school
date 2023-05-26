@@ -65,6 +65,10 @@ func (bt *BlocksType) Validate() bool {
 		return false
 	}
 
+	if !bt.IsSocketsFilled() {
+		return false
+	}
+
 	return true
 }
 
@@ -83,6 +87,29 @@ func (bt *BlocksType) IsPipelineComplete() bool {
 	relatedNodesNum := bt.countRelatedNodesIds(startNode)
 
 	return len(nodesIds) == relatedNodesNum
+}
+
+func (bt *BlocksType) IsSocketsFilled() bool {
+	for _, b := range *bt {
+		if len(b.Next) != len(b.Sockets) {
+			return false
+		}
+
+		nextNames := make(map[string]bool)
+		for n, v := range b.Next {
+			if len(v) == 0 {
+				continue
+			}
+			nextNames[n] = true
+		}
+
+		for _, s := range b.Sockets {
+			if !nextNames[s.Id] {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (bt *BlocksType) blockTypeExists(blockType string) bool {
