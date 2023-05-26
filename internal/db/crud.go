@@ -3100,7 +3100,7 @@ func (db *PGCon) SaveSlaVersionSettings(ctx context.Context, versionID string, s
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-	INSERT INTO version_sla (id, version_id, author,created_at,work_type,sla)
+	INSERT INTO version_sla (id, version_id, author, created_at, work_type, sla)
 	VALUES ( $1, $2, $3, now(), $4, $5)`
 
 	_, err = db.Connection.Exec(ctx, query, uuid.New(), versionID, s.Author, s.WorkType, s.Sla)
@@ -3118,9 +3118,10 @@ func (db *PGCon) GetSlaVersionSettings(ctx context.Context, versionID string) (s
 	// nolint:gocritic
 	// language=PostgreSQL
 	query := `
-	SELECT  author,work_type,sla
+	SELECT author, work_type, sla
 	FROM version_sla
-	WHERE version_id = $1`
+	WHERE version_id = $1
+	ORDER BY created_at DESC`
 
 	row := db.Connection.QueryRow(ctx, query, versionID)
 	slaSettings := entity.SlaVersionSettings{}
