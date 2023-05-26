@@ -10,7 +10,6 @@ import (
 
 	"github.com/a-h/generate"
 	"github.com/google/uuid"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -56,25 +55,85 @@ const (
 	BlockGoEndName   = "end"
 )
 
-//nolint:gosimple // new logic will be added later
 func (bt *BlocksType) Validate() bool {
-	if !bt.ValidateEndExists() {
+	if !bt.EndExists() {
 		return false
 	}
+
+	if !bt.IsPipelineComplete() {
+		return false
+	}
+
 	return true
 }
 
-func (bt *BlocksType) ValidateEndExists() bool {
+func (bt *BlocksType) EndExists() bool {
 	return bt.blockTypeExists(BlockGoStartName) && bt.blockTypeExists(BlockGoEndName)
 }
 
+func (bt *BlocksType) IsPipelineComplete() bool {
+	startNode := bt.getNodeByType(BlockGoStartName)
+
+	if startNode == nil {
+		return false
+	}
+
+	nodesIds := bt.getNodesIds()
+	relatedNodesNum := bt.countRelatedNodesIds(startNode)
+
+	return len(nodesIds) == relatedNodesNum
+}
+
 func (bt *BlocksType) blockTypeExists(blockType string) bool {
-	for _, block := range *bt {
-		if block.TypeID == blockType {
-			return true
+	return bt.getNodeByType(blockType) != nil
+}
+
+func (bt *BlocksType) getNodeByType(blockType string) *EriusFunc {
+	for _, b := range *bt {
+		if b.TypeID == blockType {
+			return &b
 		}
 	}
-	return false
+	return nil
+}
+
+func (bt *BlocksType) getNodesIds() (res []string) {
+	for k := range *bt {
+		res = append(res, k)
+	}
+	return res
+}
+
+func (bt *BlocksType) countRelatedNodesIds(startNode *EriusFunc) (res int) {
+	nodes := make([]*EriusFunc, 0)
+	visited := make(map[*EriusFunc]bool)
+
+	currentNode := startNode
+
+	for {
+		visited[currentNode] = true
+
+		res++
+
+		for _, s := range currentNode.Sockets {
+			for _, blockId := range s.NextBlockIds {
+				socketNode := (*bt)[blockId]
+
+				if !visited[&socketNode] {
+					nodes = append(nodes, &socketNode)
+				}
+			}
+		}
+
+		if len(nodes) == 0 {
+			break
+		}
+
+		currentNode = nodes[0]
+		nodes = nodes[1:]
+	}
+
+	return res
 }
 
 type EriusScenario struct {
