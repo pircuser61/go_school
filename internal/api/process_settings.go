@@ -399,7 +399,6 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 	}
 
 	pipeline, getPipelineErr := transaction.GetPipelineVersion(ctx, parsedUUID, true)
-
 	if getPipelineErr != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(getPipelineErr))
@@ -409,7 +408,6 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 	}
 
 	renamePipelineErr := transaction.RenamePipeline(ctx, pipeline.ID, processSettings.Name)
-
 	if renamePipelineErr != nil {
 		e := PipelineCreateError
 		if db.IsUniqueConstraintError(renamePipelineErr) {
