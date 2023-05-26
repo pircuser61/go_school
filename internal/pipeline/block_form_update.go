@@ -246,7 +246,7 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
+func (gb *GoFormBlock) formExecutorStartWork(_ c.Context) (err error) {
 	if gb.State.IsTakenInWork {
 		return nil
 	}
