@@ -3358,6 +3358,7 @@ components:
             - approver_send_edit_app
             - executor_send_edit_app
             - add_approvers
+            - form_executor_start_work
         parameters:
           type: object
           description: Task update params
@@ -4381,6 +4382,9 @@ components:
           description: Hide executor from initiator
         mapping:
           $ref: '#/components/schemas/JSONSchemaProperties'
+        form_group_id:
+          type: string
+          description: Form group id in SD
         constants:
           type: object
           description: Constant values for function parameters (key of object is variable name)
@@ -4395,12 +4399,14 @@ components:
       type: string
       enum:
         - user
+        - group
         - initiator
         - from_schema
         - auto_fill
       description: >
         Form executor type:
           * User - Single user
+          * group - Form group ID
           * Initiator - Process initiator
           * From_schema - Selected by initiator
           * Auto_Fill - Auto Fill form by system

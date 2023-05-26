@@ -16,6 +16,7 @@ const (
 	FormExecutorTypeInitiator    FormExecutorType = "initiator"
 	FormExecutorTypeFromSchema   FormExecutorType = "from_schema"
 	FormExecutorTypeAutoFillUser FormExecutorType = "auto_fill"
+	FormExecutorTypeGroup        FormExecutorType = "group"
 )
 
 type FormParams struct {
@@ -25,6 +26,7 @@ type FormParams struct {
 	SchemaName                string               `json:"schema_name"`
 	Executor                  string               `json:"executor"`
 	FormExecutorType          FormExecutorType     `json:"form_executor_type"`
+	FormGroupId               string               `json:"form_group_id"`
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`

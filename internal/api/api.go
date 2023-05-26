@@ -96,6 +96,8 @@ const (
 
 	FormExecutorTypeFromSchema FormExecutorType = "from_schema"
 
+	FormExecutorTypeGroup FormExecutorType = "group"
+
 	FormExecutorTypeInitiator FormExecutorType = "initiator"
 
 	FormExecutorTypeUser FormExecutorType = "user"
@@ -252,6 +254,8 @@ const (
 	TaskUpdateActionExecutorStartWork TaskUpdateAction = "executor_start_work"
 
 	TaskUpdateActionFillForm TaskUpdateAction = "fill_form"
+
+	TaskUpdateActionFormExecutorStartWork TaskUpdateAction = "form_executor_start_work"
 
 	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
 
@@ -498,10 +502,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -848,9 +852,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
-//  * from_schema - Selected by initiator
+//   - user - Single user
+//   - group - Execution group ID
+//   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -928,10 +932,11 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   * User - Single user
-//   * Initiator - Process initiator
-//   * From_schema - Selected by initiator
-//   * Auto_Fill - Auto Fill form by system
+//   - User - Single user
+//   - group - Form group ID
+//   - Initiator - Process initiator
+//   - From_schema - Selected by initiator
+//   - Auto_Fill - Auto Fill form by system
 type FormExecutorType string
 
 // Form params
@@ -947,10 +952,14 @@ type FormParams struct {
 
 	// Form executor type:
 	//   * User - Single user
+	//   * group - Form group ID
 	//   * Initiator - Process initiator
 	//   * From_schema - Selected by initiator
 	//   * Auto_Fill - Auto Fill form by system
 	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
+
+	// Form group id in SD
+	FormGroupId *string `json:"form_group_id,omitempty"`
 
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
@@ -1480,17 +1489,17 @@ type Action struct {
 }
 
 // Approver decision:
-//  * approved - Согласовать
-//  * rejected - Отклонить
+//   - approved - Согласовать
+//   - rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//  * approve - Согласовать
-//  * reject - Отклонить
-//  * viewed - Ознакомлен
-//  * informed - Проинформирован
-//  * sign - Подписать
-//  * confirm - Утвердить
+//   - approve - Согласовать
+//   - reject - Отклонить
+//   - viewed - Ознакомлен
+//   - informed - Проинформирован
+//   - sign - Подписать
+//   - confirm - Утвердить
 type ApproverDecision string
 
 // Block type (language)
@@ -1570,8 +1579,8 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1602,11 +1611,11 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Task human readable status
