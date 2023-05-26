@@ -3345,6 +3345,7 @@ components:
             - approver_send_edit_app
             - executor_send_edit_app
             - add_approvers
+            - form_executor_start_work
         parameters:
           type: object
           description: Task update params

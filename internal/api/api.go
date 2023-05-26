@@ -246,6 +246,8 @@ const (
 
 	TaskUpdateActionFillForm TaskUpdateAction = "fill_form"
 
+	TaskUpdateActionFormExecutorStartWork TaskUpdateAction = "form_executor_start_work"
+
 	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
 
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
