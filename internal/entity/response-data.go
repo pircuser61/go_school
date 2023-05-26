@@ -10,6 +10,7 @@ import (
 
 	"github.com/a-h/generate"
 	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -106,21 +107,20 @@ func (bt *BlocksType) getNodesIds() (res []string) {
 
 func (bt *BlocksType) countRelatedNodesIds(startNode *EriusFunc) (res int) {
 	nodes := make([]*EriusFunc, 0)
-	visited := make(map[*EriusFunc]bool)
+	visited := make(map[string]bool)
 
 	currentNode := startNode
+	res++
 
 	for {
-		visited[currentNode] = true
-
-		res++
-
 		for _, s := range currentNode.Sockets {
 			for _, blockId := range s.NextBlockIds {
 				socketNode := (*bt)[blockId]
 
-				if !visited[&socketNode] {
+				if !visited[blockId] {
+					visited[blockId] = true
 					nodes = append(nodes, &socketNode)
+					res++
 				}
 			}
 		}
