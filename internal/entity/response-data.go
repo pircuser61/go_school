@@ -54,6 +54,7 @@ type BlocksType map[string]EriusFunc
 const (
 	BlockGoStartName = "start"
 	BlockGoEndName   = "end"
+	BlockSDName      = "servicedesk_application"
 )
 
 func (bt *BlocksType) Validate() bool {
@@ -66,6 +67,10 @@ func (bt *BlocksType) Validate() bool {
 	}
 
 	if !bt.IsSocketsFilled() {
+		return false
+	}
+
+	if !bt.IsSdBlueprintFilled() {
 		return false
 	}
 
@@ -110,6 +115,21 @@ func (bt *BlocksType) IsSocketsFilled() bool {
 		}
 	}
 	return true
+}
+
+func (bt *BlocksType) IsSdBlueprintFilled() bool {
+	sdNode := bt.getNodeByType(BlockSDName)
+	if sdNode == nil {
+		return true
+	}
+
+	var params script.SdApplicationParams
+	err := json.Unmarshal(sdNode.Params, &params)
+	if err != nil {
+		return false
+	}
+
+	return len(params.BlueprintID) > 0
 }
 
 func (bt *BlocksType) blockTypeExists(blockType string) bool {
