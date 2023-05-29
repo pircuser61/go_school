@@ -256,35 +256,60 @@ func TestBlockFunction_Update(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "test constant value priority",
+			name: "test use value from constant",
 			fields: fields{
+				Name: stepName,
+				State: &ExecutableFunction{
+					Mapping: script.JSONSchemaProperties{
+						"mktu.code": script.JSONSchemaPropertiesValue{
+							Type:  "string",
+							Value: "servicedesk_application_0.application_body.class_mktu_code",
+						},
+						"name": script.JSONSchemaPropertiesValue{
+							Type:  "string",
+							Value: "servicedesk_application_0.application_body.short_name",
+						},
+					},
+					Constants: map[string]interface{}{
+						"mktu.code": "code_from_constant",
+					},
+				},
 				RunContext: &BlockRunContext{
 					TaskID:            workId,
 					skipNotifications: true,
 					skipProduce:       true,
-					VarStore:          store.NewStore(),
-				},
-				State: &ExecutableFunction{
-					HasResponse: true,
-					Function: script.FunctionParam{
-						Output: `{"name": {"type": "string"}}`,
-					},
-					Constants: map[string]interface{}{"name": "name from constant", "user.userName": "testLogin"},
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("servicedesk_application_0.application_body", map[string]interface{}{
+							"short_name": "test name",
+							"recipient": map[string]interface{}{
+								"fullname": "Egor Jopov",
+							},
+						})
+						return s
+					}(),
+					Storage: func() db.Database {
+						res := &mocks.MockedDatabase{}
+
+						res.On("GetTaskStepByName",
+							mock.MatchedBy(func(ctx context.Context) bool { return true }),
+							workId,
+							stepName,
+						).Return(
+							&entity.Step{
+								ID: uuid.New(),
+							}, nil,
+						)
+
+						return res
+					}(),
 				},
 			},
 			args: args{
-				data: &script.BlockUpdateData{
-					ByLogin: "example",
-					Action:  string(entity.TaskUpdateActionExecution),
-					Parameters: json.RawMessage(`{
-						"mapping": {
-							"name": "example"
-						}
-					}`),
-				},
-				ctx: context.Background(),
+				ctx:  context.Background(),
+				data: nil,
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 
@@ -303,7 +328,7 @@ func TestBlockFunction_Update(t *testing.T) {
 			test.fields.RunContext.UpdateData = test.args.data
 			_, err := efb.Update(test.args.ctx)
 
-			assert.Equalf(t, test.wantErr, err != nil, fmt.Sprintf("Update(%v)", test.args.ctx))
+			assert.Equalf(t, test.wantErr, err != nil, fmt.Sprintf("Update(%+v)", test.args.ctx))
 		})
 	}
 }

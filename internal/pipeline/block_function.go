@@ -183,15 +183,15 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 		functionMapping := make(map[string]interface{})
 
 		if gb.State.Constants != nil {
-			for paramName := range gb.State.Constants {
-				paramParts := strings.Split(paramName, ".")
-				if len(paramParts) > 1 {
-					functionMapping[paramParts[0]], err = createMapsByKeyParts(paramParts[1:], gb.State.Constants[paramName])
+			for keyName := range gb.State.Constants {
+				keyParts := strings.Split(keyName, ".")
+				if len(keyParts) > 1 {
+					functionMapping[keyParts[0]], err = createMapsByKeyParts(keyParts[1:], gb.State.Constants[keyName])
 					if err != nil {
 						return nil, err
 					}
 				} else {
-					functionMapping[paramName] = gb.State.Constants[paramName]
+					functionMapping[keyName] = gb.State.Constants[keyName]
 				}
 			}
 		}
@@ -199,8 +199,15 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 		for k := range executableFunctionMapping {
 			v := executableFunctionMapping[k]
 
-			if _, exists := functionMapping[k]; exists {
-				continue
+			paramParts := strings.Split(k, ".")
+			if len(paramParts) > 1 {
+				if _, exists := functionMapping[paramParts[0]]; exists {
+					continue
+				}
+			} else {
+				if _, exists := functionMapping[k]; exists {
+					continue
+				}
 			}
 
 			variable := getVariable(variables, v.Value)
@@ -212,7 +219,6 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 				return nil, checkErr
 			}
 
-			paramParts := strings.Split(k, ".")
 			if len(paramParts) > 1 {
 				functionMapping[paramParts[0]], err = createMapsByKeyParts(paramParts[1:], variable)
 				if err != nil {
