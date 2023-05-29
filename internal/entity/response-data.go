@@ -132,6 +132,34 @@ func (bt *BlocksType) IsSdBlueprintFilled() bool {
 	return len(params.BlueprintID) > 0
 }
 
+func (bt *BlocksType) addDefaultStartNode() {
+	(*bt)["start_0"] = EriusFunc{
+		X:      0,
+		Y:      0,
+		TypeID: BlockGoStartName,
+		Title:  "Начало",
+		Output: []EriusFunctionValue{
+			{
+				Name:   "workNumber",
+				Type:   "string",
+				Global: "start_0.workNumber",
+			},
+			{
+				Name:   "initiator",
+				Type:   "SsoPerson",
+				Global: "start_0.initiator",
+			},
+		},
+		Sockets: []Socket{
+			{
+				Id:         "default",
+				Title:      "Выход по умолчанию",
+				ActionType: "",
+			},
+		},
+	}
+}
+
 func (bt *BlocksType) blockTypeExists(blockType string) bool {
 	return bt.getNodeByType(blockType) != nil
 }
@@ -183,25 +211,33 @@ func (bt *BlocksType) countRelatedNodesIds(startNode *EriusFunc) (res int) {
 	return res
 }
 
+type PipelineType struct {
+	Entrypoint string     `json:"entrypoint"`
+	Blocks     BlocksType `json:"blocks"`
+}
+
+func (p *PipelineType) FillEmptyPipeline() {
+	p.Blocks.addDefaultStartNode()
+	p.Entrypoint = "start_0"
+}
+
+// nolint
 type EriusScenario struct {
-	ID        uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	VersionID uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	Status    int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
-	HasDraft  bool                 `json:"hasDraft,omitempty"`
-	Name      string               `json:"name" example:"ScenarioName"`
-	Input     []EriusFunctionValue `json:"input,omitempty"`
-	Output    []EriusFunctionValue `json:"output,omitempty"`
-	Settings  ProcessSettings      `json:"process_settings"`
-	Pipeline  struct {
-		Entrypoint string     `json:"entrypoint"`
-		Blocks     BlocksType `json:"blocks"`
-	} `json:"pipeline"`
-	CreatedAt       *time.Time     `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	ApprovedAt      *time.Time     `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	Author          string         `json:"author" example:"testAuthor"`
-	Tags            []EriusTagInfo `json:"tags"`
-	Comment         string         `json:"comment"`
-	CommentRejected string         `json:"comment_rejected"`
+	ID              uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	VersionID       uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	Status          int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+	HasDraft        bool                 `json:"hasDraft,omitempty"`
+	Name            string               `json:"name" example:"ScenarioName"`
+	Input           []EriusFunctionValue `json:"input,omitempty"`
+	Output          []EriusFunctionValue `json:"output,omitempty"`
+	Settings        ProcessSettings      `json:"process_settings"`
+	Pipeline        PipelineType         `json:"pipeline"`
+	CreatedAt       *time.Time           `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt      *time.Time           `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author          string               `json:"author" example:"testAuthor"`
+	Tags            []EriusTagInfo       `json:"tags"`
+	Comment         string               `json:"comment"`
+	CommentRejected string               `json:"comment_rejected"`
 }
 
 type EriusFunctionList struct {

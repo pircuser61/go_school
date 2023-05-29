@@ -18,10 +18,7 @@ var (
 		return entity.EriusScenario{
 			ID:   uuid.MustParse("5238e070-46e0-4f7d-ae3b-1a4eea0d608f"),
 			Name: "test",
-			Pipeline: struct {
-				Entrypoint string            `json:"entrypoint"`
-				Blocks     entity.BlocksType `json:"blocks"`
-			}{
+			Pipeline: entity.PipelineType{
 				Blocks: entity.BlocksType{
 					"block": {
 						BlockType: script.TypeScenario,
@@ -36,10 +33,7 @@ var (
 		return entity.EriusScenario{
 			ID:   uuid.MustParse("5238e070-46e0-4f7d-ae3b-1a4eea0d608f"),
 			Name: "test2",
-			Pipeline: struct {
-				Entrypoint string            `json:"entrypoint"`
-				Blocks     entity.BlocksType `json:"blocks"`
-			}{
+			Pipeline: entity.PipelineType{
 				Blocks: entity.BlocksType{
 					"block": {
 						BlockType: script.TypeScenario,

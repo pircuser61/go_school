@@ -150,10 +150,7 @@ var (
 				Global: "Block3.Output",
 			},
 		},
-		Pipeline: struct {
-			Entrypoint string            `json:"entrypoint"`
-			Blocks     entity.BlocksType `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
 			Blocks: entity.BlocksType{
 				"Block1": {
@@ -249,10 +246,7 @@ var (
 				Global: "IfPipeline.Output",
 			},
 		},
-		Pipeline: struct {
-			Entrypoint string            `json:"entrypoint"`
-			Blocks     entity.BlocksType `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
 			Blocks: entity.BlocksType{
 				"Block1": {
@@ -348,10 +342,7 @@ var (
 			},
 		},
 		Output: []entity.EriusFunctionValue{},
-		Pipeline: struct {
-			Entrypoint string            `json:"entrypoint"`
-			Blocks     entity.BlocksType `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
 			Blocks: entity.BlocksType{
 				"Block1": {
@@ -458,10 +449,7 @@ var (
 				Global: "Block2.Output",
 			},
 		},
-		Pipeline: struct {
-			Entrypoint string            `json:"entrypoint"`
-			Blocks     entity.BlocksType `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
 			Blocks: entity.BlocksType{
 				"Block1": {
@@ -548,10 +536,7 @@ var (
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "ForInForPipeline",
-		Pipeline: struct {
-			Entrypoint string            `json:"entrypoint"`
-			Blocks     entity.BlocksType `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "MasGen1",
 			Blocks: entity.BlocksType{
 				"MasGen1": {
@@ -668,10 +653,7 @@ var (
 		Name:      "StringsEqualPipeline",
 		Input:     nil,
 		Output:    nil,
-		Pipeline: struct {
-			Entrypoint string            `json:"entrypoint"`
-			Blocks     entity.BlocksType `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
 			Blocks: entity.BlocksType{
 				"Block1": {
@@ -790,10 +772,7 @@ var (
 		Name:      "ConnectorPipeline",
 		Input:     nil,
 		Output:    nil,
-		Pipeline: struct {
-			Entrypoint string            `json:"entrypoint"`
-			Blocks     entity.BlocksType `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
 			Blocks: entity.BlocksType{
 				"Block1": {
@@ -879,10 +858,7 @@ var (
 		Name:      "ngsa",
 		Input:     nil,
 		Output:    nil,
-		Pipeline: struct {
-			Entrypoint string            `json:"entrypoint"`
-			Blocks     entity.BlocksType `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "ngsa",
 			Blocks: entity.BlocksType{
 				"ngsa": {
