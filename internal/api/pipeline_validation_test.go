@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"testing"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -485,6 +486,67 @@ func TestValidation_SocketFilled(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsSocketsFilled() {
+				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
+			}
+		})
+	}
+}
+
+func TestValidation_SdBlueprintFilled(t *testing.T) {
+	tests := []struct {
+		Name      string
+		Ef        entity.EriusScenario
+		WantValid bool
+	}{
+		{
+			Name: "test sd blueprint id filled id filled",
+			Ef: entity.EriusScenario{
+				Pipeline: struct {
+					Entrypoint string            `json:"entrypoint"`
+					Blocks     entity.BlocksType `json:"blocks"`
+				}{
+					Blocks: entity.BlocksType{
+						"servicedesk_application_0": {
+							TypeID: "servicedesk_application",
+							Params: func() json.RawMessage {
+								r, _ := json.Marshal(&script.SdApplicationParams{
+									BlueprintID: "59d1a7e6-011d-11ed-b7f9-baa4bc97ef20",
+								})
+								return r
+							}(),
+						},
+					},
+				},
+			},
+			WantValid: true,
+		},
+		{
+			Name: "test sd blueprint id filled id not filled",
+			Ef: entity.EriusScenario{
+				Pipeline: struct {
+					Entrypoint string            `json:"entrypoint"`
+					Blocks     entity.BlocksType `json:"blocks"`
+				}{
+					Blocks: entity.BlocksType{
+						"servicedesk_application_0": {
+							TypeID: "servicedesk_application",
+							Params: func() json.RawMessage {
+								r, _ := json.Marshal(&script.SdApplicationParams{
+									BlueprintID: "",
+								})
+								return r
+							}(),
+						},
+					},
+				},
+			},
+			WantValid: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled() {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
