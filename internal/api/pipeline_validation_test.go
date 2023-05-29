@@ -17,10 +17,7 @@ func TestValidation_EndExists(t *testing.T) {
 		{
 			Name: "test valid blocks with end block",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -36,10 +33,7 @@ func TestValidation_EndExists(t *testing.T) {
 		{
 			Name: "test invalid block without end block",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -72,10 +66,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 		{
 			Name: "test valid blocks all blocks related",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -105,10 +96,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 		{
 			Name: "test invalid blocks start block unrelated",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -148,10 +136,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 		{
 			Name: "test invalid blocks approver block unrelated",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -191,10 +176,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 		{
 			Name: "test invalid blocks all blocks unrelated",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -234,10 +216,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 		{
 			Name: "test invalid blocks cycle + unrelated",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -324,10 +303,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 		{
 			Name: "test socket filled all sockets filled",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -351,10 +327,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 		{
 			Name: "test socket filled missing next field",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -381,10 +354,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 		{
 			Name: "test socket filled missing socket field",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -409,10 +379,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 		{
 			Name: "test socket filled empty next array",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -436,10 +403,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 		{
 			Name: "test socket filled empty next",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID: "start",
@@ -461,10 +425,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 		{
 			Name: "test socket filled empty sockets",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"start_0": {
 							TypeID:  "start",
@@ -501,10 +462,7 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 		{
 			Name: "test sd blueprint id filled id filled",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"servicedesk_application_0": {
 							TypeID: "servicedesk_application",
@@ -523,10 +481,7 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 		{
 			Name: "test sd blueprint id filled id not filled",
 			Ef: entity.EriusScenario{
-				Pipeline: struct {
-					Entrypoint string            `json:"entrypoint"`
-					Blocks     entity.BlocksType `json:"blocks"`
-				}{
+				Pipeline: entity.PipelineType{
 					Blocks: entity.BlocksType{
 						"servicedesk_application_0": {
 							TypeID: "servicedesk_application",
