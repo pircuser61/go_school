@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -174,8 +175,6 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 		executableFunctionMapping := gb.State.Mapping
 
-		//get constants := gb.State.Constants
-
 		variables, err := getVariables(gb.RunContext.VarStore)
 		if err != nil {
 			return nil, err
@@ -183,20 +182,51 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 		functionMapping := make(map[string]interface{})
 
+		if gb.State.Constants != nil {
+			for keyName := range gb.State.Constants {
+				keyParts := strings.Split(keyName, ".")
+				if len(keyParts) > 1 {
+					functionMapping[keyParts[0]], err = createMapsByKeyParts(keyParts[1:], gb.State.Constants[keyName])
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					functionMapping[keyName] = gb.State.Constants[keyName]
+				}
+			}
+		}
+
 		for k := range executableFunctionMapping {
 			v := executableFunctionMapping[k]
+
+			paramParts := strings.Split(k, ".")
+			if len(paramParts) > 1 {
+				if _, exists := functionMapping[paramParts[0]]; exists {
+					continue
+				}
+			} else {
+				if _, exists := functionMapping[k]; exists {
+					continue
+				}
+			}
+
 			variable := getVariable(variables, v.Value)
 			if variable == nil {
 				return nil, fmt.Errorf("cant fill function mapping with value: %s = %v", k, v.Value)
 			}
 
-			// use here constants
-
 			if checkErr := utils.CheckVariableType(variable, &v); checkErr != nil {
 				return nil, checkErr
 			}
 
-			functionMapping[k] = variable
+			if len(paramParts) > 1 {
+				functionMapping[paramParts[0]], err = createMapsByKeyParts(paramParts[1:], variable)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				functionMapping[k] = variable
+			}
 		}
 
 		if !gb.RunContext.skipProduce {
@@ -224,6 +254,30 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	return nil, nil
+}
+
+func createMapsByKeyParts(parts []string, value interface{}) (map[string]interface{}, error) {
+	res := make(map[string]interface{})
+	currMap := res
+	for i := range parts {
+		key := parts[i]
+		if i == len(parts)-1 {
+			currMap[key] = value
+			break
+		}
+		newCurrMap, ok := currMap[key]
+		if !ok {
+			newCurrMap = make(map[string]interface{})
+			currMap[key] = newCurrMap
+		}
+		convNewCurrMap, ok := newCurrMap.(map[string]interface{})
+		if !ok {
+			return nil, errors.New("can`t assert newCurrMap to map[string]interface{}")
+		}
+		currMap = convNewCurrMap
+	}
+
+	return res, nil
 }
 
 func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
