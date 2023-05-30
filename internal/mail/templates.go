@@ -210,6 +210,10 @@ func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
+func NewFormExecutionNeedTakeInWorkTpl() Template {
+	return Template{}
+}
+
 func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),
