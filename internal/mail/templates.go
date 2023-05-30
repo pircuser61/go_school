@@ -611,6 +611,24 @@ func NewInvalidFunctionResp(id, sdUrl string) Template {
 	}
 }
 
+func NewFormExecutionTakenInWorkTpl(workNumber, workTitle, namePerson, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
+		Text:    "Уважаемый коллега, заявка № {{.Id}} {{.Name}} взята в работу {{.NamePerson}}<br>Для просмотра перейдите по {{.Link}}",
+		Variables: struct {
+			Id         string `json:"id"`
+			Name       string `json:"name"`
+			NamePerson string `json:"name_person"`
+			Link       string `json:"link"`
+		}{
+			Id:         workNumber,
+			Name:       workTitle,
+			NamePerson: namePerson,
+			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+		},
+	}
+}
+
 func getApprovementActionNameByStatus(status, defaultActionName string) (res string) {
 	switch status {
 	case script.SettingStatusApprovement:
