@@ -328,24 +328,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return emailErr
 	}
 
-	tpl = mail.NewAppPersonStatusNotificationTpl(
-		&mail.NewAppPersonStatusTpl{
-			WorkNumber:  gb.RunContext.WorkNumber,
-			Name:        gb.RunContext.WorkTitle,
-			Status:      string(StatusExecution),
-			Action:      statusToTaskAction[StatusExecution],
-			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA),
-			Description: description,
-			SdUrl:       gb.RunContext.Sender.SdAddress,
-			Mailto:      gb.RunContext.Sender.FetchEmail,
-			Login:       loginTakenInWork,
-			IsEditable:  gb.State.GetIsEditable(),
-
-			BlockID:                   BlockGoExecutionID,
-			ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
-			ExecutionDecisionRejected: string(ExecutionDecisionRejected),
-			LastWorks:                 lastWorksForUser,
-		})
+	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {
 		return sendErr
