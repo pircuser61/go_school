@@ -347,7 +347,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return emailErr
 	}
 
-	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress, ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA))
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {
 		return sendErr
