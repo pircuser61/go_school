@@ -376,15 +376,13 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		if isGroupExecutors {
-			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress, ComputeDeadline(time.Now(), gb.State.SLA))
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress)
-
 		}
-
 	}
 
 	if len(emails) == 0 {
@@ -396,7 +394,5 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			return sendErr
 		}
 	}
-
 	return nil
-
 }

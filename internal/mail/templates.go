@@ -210,18 +210,22 @@ func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
-func NewFormExecutionNeedTakeInWorkTpl(workNumber, workTitle, sdUrl string) Template {
+func NewFormExecutionNeedTakeInWorkTpl(workNumber, workTitle, sdUrl, deadline string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
-		Text:    "Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо предоставить информацию.<br>Для просмотра полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>Срок предоставления информации заявки: ЧЧ.ММ и ДД.ММ.ГГ ЧЧ.ММ", //todo deadline
+		Text: `Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо предоставить информацию.<br>
+					Для просмотра полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
+					Срок предоставления информации заявки: {{.Deadline}}`,
 		Variables: struct {
-			Id   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Id       string `json:"id"`
+			Name     string `json:"name"`
+			Link     string `json:"link"`
+			Deadline string `json:"deadline"`
 		}{
-			Id:   workNumber,
-			Name: workTitle,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+			Id:       workNumber,
+			Name:     workTitle,
+			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+			Deadline: deadline,
 		},
 	}
 }
@@ -629,21 +633,23 @@ func NewFormExecutionTakenInWorkTpl(workNumber, workTitle, namePerson, sdUrl str
 	}
 }
 
-func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl string) Template {
+func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, deadline string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
 		Text: `Уважаемый коллега, по заявке № {{.Id}} {{.Name}} 
 					вам необходимо предоставить информацию.<br>
 					Для просмотра и заполнения полей заявки перейдите по <ссылке><br>
-					Срок предоставления информации заявки: ЧЧ.ММ и ДД.ММ.ГГ ЧЧ.ММ`,
+					Срок предоставления информации заявки: {{.Deadline}}`,
 		Variables: struct {
-			Id   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Id       string `json:"id"`
+			Name     string `json:"name"`
+			Link     string `json:"link"`
+			Deadline string `json:"deadline"`
 		}{
-			Id:   workNumber,
-			Name: workTitle,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+			Id:       workNumber,
+			Name:     workTitle,
+			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+			Deadline: deadline,
 		},
 	}
 }
