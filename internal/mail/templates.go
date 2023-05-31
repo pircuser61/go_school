@@ -210,6 +210,26 @@ func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
+func NewFormExecutionNeedTakeInWorkTpl(workNumber, workTitle, sdUrl, deadline string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
+		Text: `Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо предоставить информацию.<br>
+					Для просмотра полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
+					Срок предоставления информации заявки: {{.Deadline}}`,
+		Variables: struct {
+			Id       string `json:"id"`
+			Name     string `json:"name"`
+			Link     string `json:"link"`
+			Deadline string `json:"deadline"`
+		}{
+			Id:       workNumber,
+			Name:     workTitle,
+			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+			Deadline: deadline,
+		},
+	}
+}
+
 func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),
@@ -591,6 +611,61 @@ func NewInvalidFunctionResp(id, sdUrl string) Template {
 		}{
 			Id:   id,
 			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+		},
+	}
+}
+
+func NewFormExecutionTakenInWorkTpl(workNumber, workTitle, namePerson, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
+		Text:    "Уважаемый коллега, заявка № {{.Id}} {{.Name}} взята в работу {{.NamePerson}}<br>Для просмотра перейдите по {{.Link}}",
+		Variables: struct {
+			Id         string `json:"id"`
+			Name       string `json:"name"`
+			NamePerson string `json:"name_person"`
+			Link       string `json:"link"`
+		}{
+			Id:         workNumber,
+			Name:       workTitle,
+			NamePerson: namePerson,
+			Link:       fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+		},
+	}
+}
+
+func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, deadline string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
+		Text: `Уважаемый коллега, по заявке № {{.Id}} {{.Name}} 
+					вам необходимо предоставить информацию.<br>
+					Для просмотра и заполнения полей заявки перейдите по <ссылке><br>
+					Срок предоставления информации заявки: {{.Deadline}}`,
+		Variables: struct {
+			Id       string `json:"id"`
+			Name     string `json:"name"`
+			Link     string `json:"link"`
+			Deadline string `json:"deadline"`
+		}{
+			Id:       workNumber,
+			Name:     workTitle,
+			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+			Deadline: deadline,
+		},
+	}
+}
+
+func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
+		Text:    "Уважаемый коллега, заявка №{{.Id}} {{.Name}} отозвана<br>Для просмотра перейдите по {{.Link}}",
+		Variables: struct {
+			Id   string `json:"id"`
+			Name string `json:"name"`
+			Link string `json:"link"`
+		}{
+			Id:   workNumber,
+			Name: workTitle,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
 		},
 	}
 }

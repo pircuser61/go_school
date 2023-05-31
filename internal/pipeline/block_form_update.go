@@ -31,6 +31,8 @@ func (a *updateFillFormParams) Validate() error {
 
 // nolint:dupl // another action
 func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
+	l := logger.GetLogger(ctx)
+
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	var initiator = gb.RunContext.Initiator
 
@@ -52,6 +54,19 @@ func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
+	if gb.State.FormExecutorType == script.FormExecutorTypeGroup {
+		em := mail.NewRejectPipelineGroupTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+		userEmail, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
+		if getEmailErr != nil {
+			l.WithField("login", gb.RunContext.Initiator).WithError(getEmailErr).Warning("couldn't get email")
+			return nil
+		}
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{userEmail}, nil, em); sendErr != nil {
+			return sendErr
+		}
+	}
+
 	return nil
 }
 
@@ -246,7 +261,7 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoFormBlock) formExecutorStartWork(_ c.Context) (err error) {
+func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 	if gb.State.IsTakenInWork {
 		return nil
 	}
@@ -275,9 +290,9 @@ func (gb *GoFormBlock) formExecutorStartWork(_ c.Context) (err error) {
 	)
 	gb.State.IncreaseSLA(workHours)
 
-	//if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
-	//	return nil
-	//}
+	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
+		return nil
+	}
 
 	return nil
 }
@@ -288,4 +303,59 @@ func (a *FormData) IncreaseSLA(addSla int) {
 
 func (a *FormData) GetIsEditable() bool {
 	return !a.IsTakenInWork
+}
+
+func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
+	executors := getSliceFromMapOfStrings(logins)
+
+	emails := make([]string, 0, len(executors))
+	for _, login := range executors {
+		if login != loginTakenInWork {
+			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+			if emailErr != nil {
+				return emailErr
+			}
+
+			emails = append(emails, email)
+		}
+	}
+
+	formExecutorSSOPerson, getUserErr := gb.RunContext.People.GetUser(ctx, loginTakenInWork)
+
+	if getUserErr != nil {
+		return getUserErr
+	}
+
+	typedSSOPerson, convertErr := formExecutorSSOPerson.ToUserinfo()
+
+	if convertErr != nil {
+		return convertErr
+	}
+
+	tpl := mail.NewFormExecutionTakenInWorkTpl(gb.RunContext.WorkNumber,
+		gb.RunContext.WorkTitle,
+		typedSSOPerson.FullName,
+		gb.RunContext.Sender.SdAddress,
+	)
+
+	if errSend := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); errSend != nil {
+		return errSend
+	}
+
+	emailTakenInWork, emailErr := gb.RunContext.People.GetUserEmail(ctx, loginTakenInWork)
+	if emailErr != nil {
+		return emailErr
+	}
+
+	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
+		gb.RunContext.WorkTitle,
+		gb.RunContext.Sender.SdAddress,
+		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA),
+	)
+
+	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {
+		return sendErr
+	}
+
+	return nil
 }
