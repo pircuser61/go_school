@@ -632,7 +632,10 @@ func NewFormExecutionTakenInWorkTpl(workNumber, workTitle, namePerson, sdUrl str
 func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
-		Text:    "Уважаемый коллега, по заявке № {{.Id}} {{.Name}} вам необходимо предоставить информацию.<br>Для просмотра и заполнения полей заявки перейдите по <ссылке><br>Срок предоставления информации заявки: ЧЧ.ММ и ДД.ММ.ГГ ЧЧ.ММ", // todo deadline
+		Text: `Уважаемый коллега, по заявке № {{.Id}} {{.Name}} 
+					вам необходимо предоставить информацию.<br>
+					Для просмотра и заполнения полей заявки перейдите по <ссылке><br>
+					Срок предоставления информации заявки: ЧЧ.ММ и ДД.ММ.ГГ ЧЧ.ММ`,
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`

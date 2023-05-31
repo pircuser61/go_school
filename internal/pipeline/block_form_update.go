@@ -332,7 +332,11 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return convertErr
 	}
 
-	tpl := mail.NewFormExecutionTakenInWorkTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, typedSSOPerson.FullName, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewFormExecutionTakenInWorkTpl(gb.RunContext.WorkNumber,
+		gb.RunContext.WorkTitle,
+		typedSSOPerson.FullName,
+		gb.RunContext.Sender.SdAddress,
+	)
 
 	if errSend := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); errSend != nil {
 		return errSend
