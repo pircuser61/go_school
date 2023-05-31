@@ -645,6 +645,22 @@ func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl str
 	}
 }
 
+func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
+		Text:    "Уважаемый коллега, заявка №{{.Id}} {{.Name}} отозвана<br>Для просмотра перейдите по {{.Link}}",
+		Variables: struct {
+			Id   string `json:"id"`
+			Name string `json:"name"`
+			Link string `json:"link"`
+		}{
+			Id:   workNumber,
+			Name: workTitle,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+		},
+	}
+}
+
 func getApprovementActionNameByStatus(status, defaultActionName string) (res string) {
 	switch status {
 	case script.SettingStatusApprovement:

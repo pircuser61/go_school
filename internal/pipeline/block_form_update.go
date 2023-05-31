@@ -31,6 +31,8 @@ func (a *updateFillFormParams) Validate() error {
 
 // nolint:dupl // another action
 func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
+	l := logger.GetLogger(ctx)
+
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	var initiator = gb.RunContext.Initiator
 
@@ -52,6 +54,19 @@ func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
+	if gb.State.FormExecutorType == script.FormExecutorTypeGroup {
+		em := mail.NewRejectPipelineGroupTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+		userEmail, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
+		if getEmailErr != nil {
+			l.WithField("login", gb.RunContext.Initiator).WithError(getEmailErr).Warning("couldn't get email")
+			return nil
+		}
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{userEmail}, nil, em); sendErr != nil {
+			return sendErr
+		}
+	}
+
 	return nil
 }
 
