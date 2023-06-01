@@ -856,7 +856,8 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersion
 	INSERT INTO version_sla (id, version_id, author,created_at,work_type,sla) 
 		SELECT uuid_generate_v4(), $1, author, now(), work_type, sla
 		FROM version_sla 
-		WHERE version_id = $2;
+		WHERE version_id = $2
+		ORDER BY created_at DESC LIMIT 1;
 	`
 
 	_, err = db.Connection.Exec(c, qCopyPrevSlaSettings, newVersionID, oldVersionID)
