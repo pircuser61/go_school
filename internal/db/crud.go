@@ -2840,8 +2840,7 @@ func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([
 	query := `
 	SELECT array_agg(system_id)
 	FROM external_systems
-	WHERE version_id = $1
-	ORDER BY created_at DESC LIMIT 1`
+	WHERE version_id = $1`
 
 	row := db.Connection.QueryRow(ctx, query, versionID)
 
