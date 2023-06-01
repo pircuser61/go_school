@@ -169,6 +169,7 @@ const (
 	TaskUpdateActionAddApprovers               TaskUpdateAction = "add_approvers"
 	TaskUpdateActionDayBeforeSLARequestAddInfo TaskUpdateAction = "day_before_sla_request_add_info"
 	TaskUpdateActionSLABreachRequestAddInfo    TaskUpdateAction = "sla_breach_request_add_info"
+	TaskUpdateActionFormExecutorStartWork      TaskUpdateAction = "form_executor_start_work"
 )
 
 var (
@@ -185,6 +186,7 @@ var (
 		TaskUpdateActionRequestApproveInfo:    {},
 		TaskUpdateActionRequestFillForm:       {},
 		TaskUpdateActionAddApprovers:          {},
+		TaskUpdateActionFormExecutorStartWork: {},
 	}
 )
 

@@ -17,6 +17,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
@@ -33,6 +34,17 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 
 		return
 	}
+
+	slaSettings, err := ae.DB.GetSlaVersionSettings(ctx, versionID)
+	if err != nil {
+		e := GetProcessSlaSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+	processSettings.SLA = slaSettings.Sla
+	processSettings.WorkType = slaSettings.WorkType
 
 	externalSystemsIds, err := ae.DB.GetExternalSystemsIDs(ctx, versionID)
 	if err != nil {
@@ -173,7 +185,7 @@ func (ae *APIEnv) SaveExternalSystemSettings(
 
 	externalSystem.Id = systemID
 
-	err = externalSystem.Validate()
+	err = externalSystem.ValidateSchemas()
 	if err != nil {
 		e := JSONSchemaValidationError
 		log.Error(e.errorMessage(err))
@@ -347,6 +359,36 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	isValid := processSettings.ValidateSLA()
+	if !isValid {
+		e := ValidationSlaProcessSettingsError
+		log.Error(e.errorMessage(errors.New("Error while validating SlaSettings")))
+		_ = e.sendError(w)
+
+		return
+	}
+	userFromContext, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := GetUserinfoErr
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	saveVersionSLAErr := transaction.SaveSlaVersionSettings(ctx, versionID, entity.SlaVersionSettings{
+		Author:   userFromContext.Username,
+		WorkType: processSettings.WorkType,
+		Sla:      processSettings.SLA,
+	})
+	if saveVersionSLAErr != nil {
+		e := ProcessSettingsSaveError
+		log.Error(e.errorMessage(saveVersionSLAErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
 	parsedUUID, parseErr := uuid.Parse(versionID)
 	if parseErr != nil {
 		e := UnknownError
@@ -357,7 +399,6 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 	}
 
 	pipeline, getPipelineErr := transaction.GetPipelineVersion(ctx, parsedUUID, true)
-
 	if getPipelineErr != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(getPipelineErr))
@@ -367,7 +408,6 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 	}
 
 	renamePipelineErr := transaction.RenamePipeline(ctx, pipeline.ID, processSettings.Name)
-
 	if renamePipelineErr != nil {
 		e := PipelineCreateError
 		if db.IsUniqueConstraintError(renamePipelineErr) {

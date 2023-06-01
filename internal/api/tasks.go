@@ -977,6 +977,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 		return []string{pipeline.BlockGoApproverID}
 	}
 
+	if action == entity.TaskUpdateActionFormExecutorStartWork {
+		return []string{pipeline.BlockGoFormID}
+	}
+
 	return []string{}
 }
 

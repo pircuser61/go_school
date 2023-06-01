@@ -150,12 +150,9 @@ var (
 				Global: "Block3.Output",
 			},
 		},
-		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -249,12 +246,9 @@ var (
 				Global: "IfPipeline.Output",
 			},
 		},
-		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -348,12 +342,9 @@ var (
 			},
 		},
 		Output: []entity.EriusFunctionValue{},
-		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -458,12 +449,9 @@ var (
 				Global: "Block2.Output",
 			},
 		},
-		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -548,12 +536,9 @@ var (
 		Status:    db.StatusApproved,
 		HasDraft:  false,
 		Name:      "ForInForPipeline",
-		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "MasGen1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"MasGen1": {
 					BlockType: script.TypePython3,
 					Title:     "MasGen",
@@ -668,12 +653,9 @@ var (
 		Name:      "StringsEqualPipeline",
 		Input:     nil,
 		Output:    nil,
-		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -790,12 +772,9 @@ var (
 		Name:      "ConnectorPipeline",
 		Input:     nil,
 		Output:    nil,
-		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "Block1",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"Block1": {
 					BlockType: script.TypePython3,
 					Title:     "Block1",
@@ -879,12 +858,9 @@ var (
 		Name:      "ngsa",
 		Input:     nil,
 		Output:    nil,
-		Pipeline: struct {
-			Entrypoint string                      `json:"entrypoint"`
-			Blocks     map[string]entity.EriusFunc `json:"blocks"`
-		}{
+		Pipeline: entity.PipelineType{
 			Entrypoint: "ngsa",
-			Blocks: map[string]entity.EriusFunc{
+			Blocks: entity.BlocksType{
 				"ngsa": {
 					BlockType: script.TypeInternal,
 					Title:     "ngsa-send-alarm",
@@ -1377,4 +1353,12 @@ func (m *MockDB) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 }
 func (m *MockDB) GetTaskInWorkTime(ctx context.Context, workNumber string) (*entity.TaskCompletionInterval, error) {
 	return nil, errNotImplemented
+}
+
+func (m *MockDB) SaveSlaVersionSettings(ctx context.Context, versionID string, s entity.SlaVersionSettings) (err error) {
+	return errNotImplemented
+}
+
+func (m *MockDB) GetSlaVersionSettings(ctx context.Context, versionID string) (s entity.SlaVersionSettings, err error) {
+	return entity.SlaVersionSettings{}, errNotImplemented
 }

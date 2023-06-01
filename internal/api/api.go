@@ -96,6 +96,8 @@ const (
 
 	FormExecutorTypeFromSchema FormExecutorType = "from_schema"
 
+	FormExecutorTypeGroup FormExecutorType = "group"
+
 	FormExecutorTypeInitiator FormExecutorType = "initiator"
 
 	FormExecutorTypeUser FormExecutorType = "user"
@@ -175,6 +177,15 @@ const (
 	NumberOperandOperandTypeVariableOperand NumberOperandOperandType = "variableOperand"
 )
 
+// Defines values for ProcessSettingsWorkType.
+const (
+	ProcessSettingsWorkTypeN125 ProcessSettingsWorkType = "12/5"
+
+	ProcessSettingsWorkTypeN247 ProcessSettingsWorkType = "24/7"
+
+	ProcessSettingsWorkTypeN85 ProcessSettingsWorkType = "8/5"
+)
+
 // Defines values for RequestExecutionInfoType.
 const (
 	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
@@ -243,6 +254,8 @@ const (
 	TaskUpdateActionExecutorStartWork TaskUpdateAction = "executor_start_work"
 
 	TaskUpdateActionFillForm TaskUpdateAction = "fill_form"
+
+	TaskUpdateActionFormExecutorStartWork TaskUpdateAction = "form_executor_start_work"
 
 	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
 
@@ -920,6 +933,7 @@ type FormChangelogItem struct {
 
 // Form executor type:
 //   - User - Single user
+//   - group - Form group ID
 //   - Initiator - Process initiator
 //   - From_schema - Selected by initiator
 //   - Auto_Fill - Auto Fill form by system
@@ -938,10 +952,14 @@ type FormParams struct {
 
 	// Form executor type:
 	//   * User - Single user
+	//   * group - Form group ID
 	//   * Initiator - Process initiator
 	//   * From_schema - Selected by initiator
 	//   * Auto_Fill - Auto Fill form by system
 	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
+
+	// Form group id in SD
+	FormGroupId *string `json:"form_group_id,omitempty"`
 
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
@@ -1247,12 +1265,21 @@ type ProcessSettings struct {
 	Name string `json:"name"`
 
 	// Срок, в течении которого придет уведомление о том, что пользователь повторно создал заявку. Указывается в часах.
-	ResubmissionPeriod int         `json:"resubmission_period"`
-	StartSchema        *JSONSchema `json:"start_schema,omitempty"`
+	ResubmissionPeriod int `json:"resubmission_period"`
+
+	// SLA в рабочих часах
+	Sla         int         `json:"sla"`
+	StartSchema *JSONSchema `json:"start_schema,omitempty"`
 
 	// Id версии процесса
-	VersionId *string `json:"version_id,omitempty"`
+	VersionId string `json:"version_id"`
+
+	// Рабочий режим
+	WorkType ProcessSettingsWorkType `json:"work_type"`
 }
+
+// Рабочий режим
+type ProcessSettingsWorkType string
 
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettingsWithExternalSystems struct {

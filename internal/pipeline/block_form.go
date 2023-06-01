@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -32,15 +34,18 @@ type ChangesLogItem struct {
 }
 
 type FormData struct {
-	FormExecutorType script.FormExecutorType `json:"form_executor_type"`
-	SchemaId         string                  `json:"schema_id"`
-	SchemaName       string                  `json:"schema_name"`
-	Executors        map[string]struct{}     `json:"executors"`
-	Description      string                  `json:"description"`
-	ApplicationBody  map[string]interface{}  `json:"application_body"`
-	IsFilled         bool                    `json:"is_filled"`
-	ActualExecutor   *string                 `json:"actual_executor,omitempty"`
-	ChangesLog       []ChangesLogItem        `json:"changes_log"`
+	FormExecutorType       script.FormExecutorType `json:"form_executor_type"`
+	FormGroupId            string                  `json:"form_group_id"`
+	FormExecutorsGroupName string                  `json:"form_executors_group_name"`
+	SchemaId               string                  `json:"schema_id"`
+	SchemaName             string                  `json:"schema_name"`
+	Executors              map[string]struct{}     `json:"executors"`
+	Description            string                  `json:"description"`
+	ApplicationBody        map[string]interface{}  `json:"application_body"`
+	IsFilled               bool                    `json:"is_filled"`
+	IsTakenInWork          bool                    `json:"is_taken_in_work"`
+	ActualExecutor         *string                 `json:"actual_executor,omitempty"`
+	ChangesLog             []ChangesLogItem        `json:"changes_log"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
@@ -289,6 +294,23 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		if err = gb.handleAutoFillForm(); err != nil {
 			return err
 		}
+	case script.FormExecutorTypeGroup:
+		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.FormGroupId)
+		if errGroup != nil {
+			return errors.Wrap(errGroup, "can`t get form group with id: "+params.FormGroupId)
+		}
+
+		if len(workGroup.People) == 0 {
+			//nolint:goimports // bugged golint
+			return errors.New("zero form executors in group: " + params.FormGroupId)
+		}
+
+		gb.State.Executors = make(map[string]struct{})
+		for i := range workGroup.People {
+			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
+		}
+		gb.State.FormGroupId = params.FormGroupId
+		gb.State.FormExecutorsGroupName = workGroup.GroupName
 	}
 
 	return gb.handleNotifications(ctx)
@@ -335,28 +357,46 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 }
 
 func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
+	l := logger.GetLogger(ctx)
+
 	if gb.RunContext.skipNotifications {
 		return nil
 	}
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
+	isGroupExecutors := gb.State.FormExecutorType == script.FormExecutorTypeGroup
+	var emailAttachment []e.Attachment
 
-	var emails = make([]string, 0, len(executors))
+	var emails = make(map[string]mail.Template, 0)
 	for _, login := range executors {
-		em, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
-		if emailErr != nil {
+		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		if getUserEmailErr != nil {
+			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
-		emails = append(emails, em)
+
+		if isGroupExecutors {
+			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Sender.SdAddress,
+				ComputeDeadline(time.Now(), gb.State.SLA),
+			)
+		} else {
+			emails[em] = mail.NewRequestFormExecutionInfoTpl(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Sender.SdAddress)
+		}
 	}
 
 	if len(emails) == 0 {
 		return nil
 	}
 
-	return gb.RunContext.Sender.SendNotification(ctx, emails, nil,
-		mail.NewRequestFormExecutionInfoTpl(
-			gb.RunContext.WorkNumber,
-			gb.RunContext.WorkTitle,
-			gb.RunContext.Sender.SdAddress))
+	for i := range emails {
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
+			return sendErr
+		}
+	}
+	return nil
 }

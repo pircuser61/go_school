@@ -75,6 +75,10 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	if len(p.Pipeline.Blocks) == 0 {
+		p.Pipeline.FillEmptyPipeline()
+	}
+
 	ui, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
 		log.WithError(err).Error("user failed")
@@ -591,6 +595,13 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
+		return
+	}
+
+	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate() {
+		e := PipelineValidateError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
 		return
 	}
 

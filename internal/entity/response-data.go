@@ -10,6 +10,7 @@ import (
 
 	"github.com/a-h/generate"
 	"github.com/google/uuid"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -48,25 +49,195 @@ type EriusTagInfo struct {
 	IsMarker bool      `json:"isMarker"`
 }
 
+type BlocksType map[string]EriusFunc
+
+const (
+	BlockGoStartName = "start"
+	BlockGoEndName   = "end"
+	BlockSDName      = "servicedesk_application"
+)
+
+func (bt *BlocksType) Validate() bool {
+	if !bt.EndExists() {
+		return false
+	}
+
+	if !bt.IsPipelineComplete() {
+		return false
+	}
+
+	if !bt.IsSocketsFilled() {
+		return false
+	}
+
+	if !bt.IsSdBlueprintFilled() {
+		return false
+	}
+
+	return true
+}
+
+func (bt *BlocksType) EndExists() bool {
+	return bt.blockTypeExists(BlockGoStartName) && bt.blockTypeExists(BlockGoEndName)
+}
+
+func (bt *BlocksType) IsPipelineComplete() bool {
+	startNode := bt.getNodeByType(BlockGoStartName)
+
+	if startNode == nil {
+		return false
+	}
+
+	nodesIds := bt.getNodesIds()
+	relatedNodesNum := bt.countRelatedNodesIds(startNode)
+
+	return len(nodesIds) == relatedNodesNum
+}
+
+func (bt *BlocksType) IsSocketsFilled() bool {
+	for _, b := range *bt {
+		if len(b.Next) != len(b.Sockets) {
+			return false
+		}
+
+		nextNames := make(map[string]bool)
+		for n, v := range b.Next {
+			if len(v) == 0 {
+				continue
+			}
+			nextNames[n] = true
+		}
+
+		for _, s := range b.Sockets {
+			if !nextNames[s.Id] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (bt *BlocksType) IsSdBlueprintFilled() bool {
+	sdNode := bt.getNodeByType(BlockSDName)
+	if sdNode == nil {
+		return true
+	}
+
+	var params script.SdApplicationParams
+	err := json.Unmarshal(sdNode.Params, &params)
+	if err != nil {
+		return false
+	}
+
+	return len(params.BlueprintID) > 0
+}
+
+func (bt *BlocksType) addDefaultStartNode() {
+	(*bt)["start_0"] = EriusFunc{
+		X:      0,
+		Y:      0,
+		TypeID: BlockGoStartName,
+		Title:  "Начало",
+		Output: []EriusFunctionValue{
+			{
+				Name:   "workNumber",
+				Type:   "string",
+				Global: "start_0.workNumber",
+			},
+			{
+				Name:   "initiator",
+				Type:   "SsoPerson",
+				Global: "start_0.initiator",
+			},
+		},
+		Sockets: []Socket{
+			{
+				Id:         "default",
+				Title:      "Выход по умолчанию",
+				ActionType: "",
+			},
+		},
+	}
+}
+
+func (bt *BlocksType) blockTypeExists(blockType string) bool {
+	return bt.getNodeByType(blockType) != nil
+}
+
+func (bt *BlocksType) getNodeByType(blockType string) *EriusFunc {
+	for _, b := range *bt {
+		if b.TypeID == blockType {
+			return &b
+		}
+	}
+	return nil
+}
+
+func (bt *BlocksType) getNodesIds() (res []string) {
+	for k := range *bt {
+		res = append(res, k)
+	}
+	return res
+}
+
+func (bt *BlocksType) countRelatedNodesIds(startNode *EriusFunc) (res int) {
+	nodes := make([]*EriusFunc, 0)
+	visited := make(map[string]bool)
+
+	currentNode := startNode
+	res++
+
+	for {
+		for _, s := range currentNode.Sockets {
+			for _, blockId := range s.NextBlockIds {
+				socketNode := (*bt)[blockId]
+
+				if !visited[blockId] {
+					visited[blockId] = true
+					nodes = append(nodes, &socketNode)
+					res++
+				}
+			}
+		}
+
+		if len(nodes) == 0 {
+			break
+		}
+
+		currentNode = nodes[0]
+		nodes = nodes[1:]
+	}
+
+	return res
+}
+
+type PipelineType struct {
+	Entrypoint string     `json:"entrypoint"`
+	Blocks     BlocksType `json:"blocks"`
+}
+
+func (p *PipelineType) FillEmptyPipeline() {
+	p.Blocks.addDefaultStartNode()
+	p.Entrypoint = "start_0"
+}
+
+// nolint
 type EriusScenario struct {
-	ID        uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	VersionID uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
-	Status    int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
-	HasDraft  bool                 `json:"hasDraft,omitempty"`
-	Name      string               `json:"name" example:"ScenarioName"`
-	Input     []EriusFunctionValue `json:"input,omitempty"`
-	Output    []EriusFunctionValue `json:"output,omitempty"`
-	Settings  ProcessSettings      `json:"process_settings"`
-	Pipeline  struct {
-		Entrypoint string               `json:"entrypoint"`
-		Blocks     map[string]EriusFunc `json:"blocks"`
-	} `json:"pipeline"`
-	CreatedAt       *time.Time     `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	ApprovedAt      *time.Time     `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
-	Author          string         `json:"author" example:"testAuthor"`
-	Tags            []EriusTagInfo `json:"tags"`
-	Comment         string         `json:"comment"`
-	CommentRejected string         `json:"comment_rejected"`
+	ID              uuid.UUID            `json:"id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	VersionID       uuid.UUID            `json:"version_id" example:"916ad995-8d13-49fb-82ee-edd4f97649e2" format:"uuid"`
+	Status          int                  `json:"status" enums:"1,2,3,4,5"` // 1 - Draft, 2 - Approved, 3 - Deleted, 4 - Rejected, 5 - On Approve
+	HasDraft        bool                 `json:"hasDraft,omitempty"`
+	Name            string               `json:"name" example:"ScenarioName"`
+	Input           []EriusFunctionValue `json:"input,omitempty"`
+	Output          []EriusFunctionValue `json:"output,omitempty"`
+	Settings        ProcessSettings      `json:"process_settings"`
+	Pipeline        PipelineType         `json:"pipeline"`
+	CreatedAt       *time.Time           `json:"created_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	ApprovedAt      *time.Time           `json:"approved_at" example:"2020-07-16T17:10:25.112704+03:00"`
+	Author          string               `json:"author" example:"testAuthor"`
+	Tags            []EriusTagInfo       `json:"tags"`
+	Comment         string               `json:"comment"`
+	CommentRejected string               `json:"comment_rejected"`
 }
 
 type EriusFunctionList struct {
@@ -113,6 +284,15 @@ type ProcessSettings struct {
 	EndSchema          *script.JSONSchema `json:"end_schema"`
 	ResubmissionPeriod int                `json:"resubmission_period"`
 	Name               string             `json:"name"`
+	SLA                int                `json:"sla"`
+	WorkType           string             `json:"work_type"`
+}
+
+func (ps *ProcessSettings) ValidateSLA() bool {
+	if (ps.WorkType == "8/5" || ps.WorkType == "24/7" || ps.WorkType == "12/5") && ps.SLA > 0 {
+		return true
+	}
+	return false
 }
 
 type ExternalSystem struct {
@@ -131,6 +311,12 @@ type EndSystemSettings struct {
 	MicroserviceId string `json:"microservice_id"`
 }
 
+type SlaVersionSettings struct {
+	Author   string `json:"author"`
+	WorkType string `json:"work_type"`
+	Sla      int    `json:"sla"`
+}
+
 type EndProcessData struct {
 	Id         string `json:"id"`
 	VersionId  string `json:"version_id"`
@@ -139,13 +325,13 @@ type EndProcessData struct {
 	Status     string `json:"status"`
 }
 
-func (es ProcessSettings) Validate() error {
-	err := es.StartSchema.Validate()
+func (ps ProcessSettings) Validate() error {
+	err := ps.StartSchema.Validate()
 	if err != nil {
 		return err
 	}
 
-	err = es.EndSchema.Validate()
+	err = ps.EndSchema.Validate()
 	if err != nil {
 		return err
 	}
@@ -153,7 +339,7 @@ func (es ProcessSettings) Validate() error {
 	return nil
 }
 
-func (es ExternalSystem) Validate() error {
+func (es ExternalSystem) ValidateSchemas() error {
 	err := es.InputSchema.Validate()
 	if err != nil {
 		return err

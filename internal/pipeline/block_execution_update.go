@@ -563,6 +563,8 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations human_
 }
 
 func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
+	log := logger.GetLogger(ctx)
+
 	if gb.State.IsTakenInWork {
 		return nil
 	}
@@ -584,15 +586,12 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	}
 
 	gb.State.IsTakenInWork = true
-	workHours := getWorkHoursBetweenDates(
-		gb.RunContext.currBlockStartTime,
-		time.Now(),
-		nil,
-	)
+	workHours := getWorkHoursBetweenDates(gb.RunContext.currBlockStartTime, time.Now(), nil)
 	gb.State.IncreaseSLA(workHours)
 
 	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
-		return nil
+		log.Error(err)
+		return err
 	}
 
 	return nil
@@ -600,7 +599,10 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 
 // nolint:gocyclo // mb later
 func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
+	log := logger.GetLogger(ctx)
+
 	executors := getSliceFromMapOfStrings(logins)
+	log.WithField("func", "emailGroupExecutors").WithField("logins", logins)
 
 	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if err != nil {
@@ -622,6 +624,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			emails = append(emails, email)
 		}
 	}
+
+	log.WithField("func", "emailGroupExecutors").WithField("emails", emails)
 
 	var description string
 	var emailAttachment []e.Attachment
@@ -686,6 +690,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		ExecutorName: typedAuthor.GetFullName(),
 		Initiator:    gb.RunContext.Initiator,
 		LastWorks:    lastWorksForUser,
+		Mailto:       gb.RunContext.Sender.FetchEmail,
 	})
 
 	if errSend := gb.RunContext.Sender.SendNotification(ctx, emails, emailAttachment, tpl); errSend != nil {
