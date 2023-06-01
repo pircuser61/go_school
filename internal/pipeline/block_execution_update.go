@@ -563,6 +563,8 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations human_
 }
 
 func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
+	log := logger.GetLogger(ctx)
+
 	if gb.State.IsTakenInWork {
 		return nil
 	}
@@ -584,15 +586,12 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	}
 
 	gb.State.IsTakenInWork = true
-	workHours := getWorkHoursBetweenDates(
-		gb.RunContext.currBlockStartTime,
-		time.Now(),
-		nil,
-	)
+	workHours := getWorkHoursBetweenDates(gb.RunContext.currBlockStartTime, time.Now(), nil)
 	gb.State.IncreaseSLA(workHours)
 
 	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
-		return nil
+		log.Error(err)
+		return err
 	}
 
 	return nil
