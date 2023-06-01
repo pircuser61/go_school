@@ -488,11 +488,11 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
     }
 </style>`,
 		Variables: struct {
-			Id          string    `json:"id"`
-			Executor    string    `json:"executor"`
-			Link        string    `json:"link"`
-			Initiator   string    `json:"initiator"`
-			LastWorks   LastWorks `json:"last_works"`
+			Id          string
+			Executor    string
+			Link        string
+			Initiator   string
+			LastWorks   LastWorks
 			Description string
 		}{
 			Id:          dto.WorkNumber,
