@@ -468,17 +468,19 @@ func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
     }
 </style>`,
 		Variables: struct {
-			Id        string    `json:"id"`
-			Executor  string    `json:"executor"`
-			Link      string    `json:"link"`
-			Initiator string    `json:"initiator"`
-			LastWorks LastWorks `json:"last_works"`
+			Id          string    `json:"id"`
+			Executor    string    `json:"executor"`
+			Link        string    `json:"link"`
+			Initiator   string    `json:"initiator"`
+			LastWorks   LastWorks `json:"last_works"`
+			Description string
 		}{
-			Id:        dto.WorkNumber,
-			Executor:  dto.ExecutorName,
-			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			Initiator: dto.Initiator,
-			LastWorks: lastWorksTemplate,
+			Id:          dto.WorkNumber,
+			Executor:    dto.ExecutorName,
+			Link:        fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Initiator:   dto.Initiator,
+			LastWorks:   lastWorksTemplate,
+			Description: dto.Description,
 		},
 	}
 }
