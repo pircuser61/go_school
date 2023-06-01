@@ -600,7 +600,10 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 
 // nolint:gocyclo // mb later
 func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
+	log := logger.GetLogger(ctx)
+
 	executors := getSliceFromMapOfStrings(logins)
+	log.WithField("func", "emailGroupExecutors").WithField("logins", logins)
 
 	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if err != nil {
@@ -622,6 +625,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			emails = append(emails, email)
 		}
 	}
+
+	log.WithField("func", "emailGroupExecutors").WithField("emails", emails)
 
 	var description string
 	var emailAttachment []e.Attachment
@@ -686,6 +691,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		ExecutorName: typedAuthor.GetFullName(),
 		Initiator:    gb.RunContext.Initiator,
 		LastWorks:    lastWorksForUser,
+		Mailto:       gb.RunContext.Sender.FetchEmail,
 	})
 
 	if errSend := gb.RunContext.Sender.SendNotification(ctx, emails, emailAttachment, tpl); errSend != nil {
