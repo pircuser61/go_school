@@ -67,7 +67,7 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays) bool {
 	return false
 }
 
-func ComputeMaxDate(start time.Time, sla float32) time.Time {
+func ComputeMaxDate(start time.Time, sla float32, calendarDays *hrgate.CalendarDays) time.Time {
 	// SLA in hours
 	// Convert to minutes
 	deadline := start.UTC()
@@ -75,7 +75,7 @@ func ComputeMaxDate(start time.Time, sla float32) time.Time {
 	slaDur := time.Minute * time.Duration(slaInMinutes)
 
 	for slaDur > 0 {
-		if notWorkingHours(deadline, nil) {
+		if notWorkingHours(deadline, calendarDays) {
 			datesDay := deadline.AddDate(0, 0, 1)                // default = next day
 			if beforeWorkingHours(deadline, workingHoursStart) { // but in case it's now early in the morning...
 				datesDay = deadline
@@ -113,11 +113,11 @@ func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval
 }
 
 func CheckBreachSLA(start, current time.Time, sla int) bool {
-	deadline := ComputeMaxDate(start, float32(sla))
+	deadline := ComputeMaxDate(start, float32(sla), nil)
 
 	return current.UTC().After(deadline)
 }
 
-func ComputeDeadline(start time.Time, sla int) string {
-	return ComputeMaxDate(start, float32(sla)).Format(ddmmyyFormat)
+func ComputeDeadline(start time.Time, sla int, calendarDays *hrgate.CalendarDays) string {
+	return ComputeMaxDate(start, float32(sla), calendarDays).Format(ddmmyyFormat)
 }

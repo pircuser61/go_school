@@ -15,6 +15,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 )
@@ -702,13 +703,15 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return emailErr
 	}
 
+	var calendarDays *hrgate.CalendarDays
+	//todo
 	tpl = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
 			WorkNumber:  gb.RunContext.WorkNumber,
 			Name:        gb.RunContext.WorkTitle,
 			Status:      string(StatusExecution),
 			Action:      statusToTaskAction[StatusExecution],
-			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA),
+			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, calendarDays),
 			Description: description,
 			SdUrl:       gb.RunContext.Sender.SdAddress,
 			Mailto:      gb.RunContext.Sender.FetchEmail,

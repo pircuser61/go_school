@@ -11,6 +11,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -347,10 +348,12 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return emailErr
 	}
 
+	var calendarDays *hrgate.CalendarDays
+	//todo
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle,
 		gb.RunContext.Sender.SdAddress,
-		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA),
+		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, calendarDays),
 	)
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {

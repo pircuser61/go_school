@@ -10,6 +10,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -111,10 +112,13 @@ func (gb *GoFormBlock) Deadlines() []Deadline {
 
 	deadlines := make([]Deadline, 0, 2)
 
+	var calendarDays *hrgate.CalendarDays
+	//todo
+
 	if gb.State.CheckSLA {
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), calendarDays),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -122,7 +126,7 @@ func (gb *GoFormBlock) Deadlines() []Deadline {
 
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, calendarDays),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
@@ -384,6 +388,9 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	var emailAttachment []e.Attachment
 
 	var emails = make(map[string]mail.Template, 0)
+	var calendarDays *hrgate.CalendarDays
+	//todo
+
 	for _, login := range executors {
 		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
@@ -395,7 +402,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
-				ComputeDeadline(time.Now(), gb.State.SLA),
+				ComputeDeadline(time.Now(), gb.State.SLA, calendarDays),
 			)
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
