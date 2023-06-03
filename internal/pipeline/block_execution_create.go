@@ -129,6 +129,21 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
 
+	if params.WorkType != nil {
+		gb.State.WorkType = *params.WorkType
+	} else {
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+		gb.State.WorkType = processSettings.WorkType
+	}
+
 	// maybe we should notify the executor
 	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifErr != nil {
 		return notifErr

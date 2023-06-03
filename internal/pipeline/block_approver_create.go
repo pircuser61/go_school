@@ -173,6 +173,21 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 	gb.RunContext.VarStore.AddStep(gb.Name)
 
+	if params.WorkType != nil {
+		gb.State.WorkType = *params.WorkType
+	} else {
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+		gb.State.WorkType = processSettings.WorkType
+	}
+
 	return gb.handleNotifications(ctx)
 }
 

@@ -51,10 +51,11 @@ type FormData struct {
 
 	IsRevoked bool `json:"is_revoked"`
 
-	SLA            int  `json:"sla"`
-	CheckSLA       bool `json:"check_sla"`
-	SLAChecked     bool `json:"sla_checked"`
-	HalfSLAChecked bool `json:"half_sla_checked"`
+	SLA            int    `json:"sla"`
+	CheckSLA       bool   `json:"check_sla"`
+	SLAChecked     bool   `json:"sla_checked"`
+	HalfSLAChecked bool   `json:"half_sla_checked"`
+	WorkType       string `json:"work_type"`
 
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
@@ -311,6 +312,21 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 		gb.State.FormGroupId = params.FormGroupId
 		gb.State.FormExecutorsGroupName = workGroup.GroupName
+	}
+
+	if params.WorkType != nil {
+		gb.State.WorkType = *params.WorkType
+	} else {
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+		gb.State.WorkType = processSettings.WorkType
 	}
 
 	return gb.handleNotifications(ctx)
