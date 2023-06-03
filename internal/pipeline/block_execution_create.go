@@ -137,11 +137,11 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 			return getVersionErr
 		}
 
-		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
-		gb.State.WorkType = processSettings.WorkType
+		gb.State.WorkType = processSLASettings.WorkType
 	}
 
 	// maybe we should notify the executor

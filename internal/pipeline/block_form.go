@@ -322,11 +322,11 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			return getVersionErr
 		}
 
-		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
-		gb.State.WorkType = processSettings.WorkType
+		gb.State.WorkType = processSLASettings.WorkType
 	}
 
 	return gb.handleNotifications(ctx)
