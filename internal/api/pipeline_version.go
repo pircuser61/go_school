@@ -598,6 +598,10 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if len(p.Pipeline.Blocks) == 0 {
+		p.Pipeline.FillEmptyPipeline()
+	}
+
 	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate() {
 		e := PipelineValidateError
 		log.Error(e.errorMessage(err))
