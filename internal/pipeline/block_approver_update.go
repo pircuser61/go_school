@@ -10,8 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/abp/mail/pkg/email"
-
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -723,18 +721,9 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 		emails = append(emails, approverEmail)
 	}
 
-	attachFiles, err := gb.RunContext.ServiceDesc.GetAttachments(
-		ctx,
-		map[string][]string{"Ids": attachsId},
-		gb.RunContext.WorkNumber,
-	)
+	files, err := gb.RunContext.FileRegistry.GetAttachments(ctx, attachsId)
 	if err != nil {
 		return err
-	}
-
-	files := make([]email.Attachment, 0)
-	for k := range attachFiles {
-		files = append(files, attachFiles[k]...)
 	}
 
 	emails = utils.UniqueStrings(emails)
@@ -836,18 +825,13 @@ func (gb *GoApproverBlock) notificateDecisionMadeByAdditionalApprover(ctx c.Cont
 		gb.RunContext.Sender.SdAddress,
 	)
 
-	attachmentFiles, err := gb.RunContext.ServiceDesc.GetAttachments(
+	files, err := gb.RunContext.FileRegistry.GetAttachments(
 		ctx,
-		map[string][]string{"Ids": latestDecisonLog.Attachments},
-		gb.RunContext.WorkNumber,
+		latestDecisonLog.Attachments,
 	)
+
 	if err != nil {
 		return err
-	}
-
-	files := make([]email.Attachment, 0)
-	for k := range attachmentFiles {
-		files = append(files, attachmentFiles[k]...)
 	}
 
 	err = gb.RunContext.Sender.SendNotification(ctx, emailsToNotify, files, tpl)

@@ -495,6 +495,8 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 			fieldType = "object"
 		case field.Type == "float64":
 			fieldType = "number"
+		case field.Type == "bool":
+			fieldType = "boolean"
 		default:
 			fieldType = field.Type
 		}
