@@ -77,6 +77,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
+		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
@@ -600,6 +601,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
+		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 
 	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate() {
