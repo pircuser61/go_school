@@ -2,13 +2,10 @@ package entity
 
 import (
 	"encoding/json"
-	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/a-h/generate"
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -431,44 +428,6 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 		return nil
 	}
 
-	now := time.Now().UnixNano()
-	path := fmt.Sprintf("%d.json", now)
-
-	var startSchema []byte
-	startSchema, err = json.Marshal(es.Settings.StartSchema)
-	if err != nil {
-		return err
-	}
-
-	// have to create file because a-h/generate package is able to work only with files
-	err = os.WriteFile(path, startSchema, 0600)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		removeErr := os.Remove(path)
-		if removeErr != nil {
-			err = removeErr
-		}
-	}()
-
-	schemas, err := generate.ReadInputFiles([]string{path}, false)
-	if err != nil {
-		return err
-	}
-
-	g := generate.New(schemas...)
-	err = g.CreateTypes()
-	if err != nil {
-		return err
-	}
-
-	mainObj, ok := g.Structs["Root"]
-	if !ok {
-		return err
-	}
-
 	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
 	entryPoint.Output = nil
 
@@ -484,24 +443,18 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 			Type:   "SsoPerson",
 		})
 
-	for _, field := range mainObj.Fields {
-		var name string
-		var fieldType string
+	for propertyName, property := range es.Settings.StartSchema.Properties {
+		name := strings.ToLower(propertyName)
 
-		switch {
-		case field.Name == "Recipient":
+		fieldType := property.Type
+
+		if property.Format == "ssoperson" || name == "recipient" {
 			fieldType = "SsoPerson"
-		case strings.HasPrefix(field.Type, "*"):
-			fieldType = "object"
-		case field.Type == "float64":
-			fieldType = "number"
-		case field.Type == "bool":
-			fieldType = "boolean"
-		default:
-			fieldType = field.Type
 		}
 
-		name = strings.ToLower(field.Name)
+		if property.Format == "file" {
+			fieldType = "File"
+		}
 
 		entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
 			Global: es.Pipeline.Entrypoint + "." + name,
