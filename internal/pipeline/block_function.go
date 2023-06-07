@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -173,60 +172,21 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			}
 		}
 
-		executableFunctionMapping := gb.State.Mapping
-
-		variables, err := getVariables(gb.RunContext.VarStore)
+		variablesWithFullNames, err := getVariables(gb.RunContext.VarStore)
 		if err != nil {
 			return nil, err
 		}
 
-		functionMapping := make(map[string]interface{})
+		variables := gb.deleteNodeNamesFromVariables(variablesWithFullNames)
 
-		if gb.State.Constants != nil {
-			for keyName := range gb.State.Constants {
-				keyParts := strings.Split(keyName, ".")
-				if len(keyParts) > 1 {
-					functionMapping[keyParts[0]], err = createMapsByKeyParts(keyParts[1:], gb.State.Constants[keyName])
-					if err != nil {
-						return nil, err
-					}
-				} else {
-					functionMapping[keyName] = gb.State.Constants[keyName]
-				}
-			}
+		functionMapping, err := script.MapData(gb.State.Mapping, variables, nil, 1)
+		if err != nil {
+			return nil, err
 		}
 
-		for k := range executableFunctionMapping {
-			v := executableFunctionMapping[k]
-
-			paramParts := strings.Split(k, ".")
-			if len(paramParts) > 1 {
-				if _, exists := functionMapping[paramParts[0]]; exists {
-					continue
-				}
-			} else {
-				if _, exists := functionMapping[k]; exists {
-					continue
-				}
-			}
-
-			variable := getVariable(variables, v.Value)
-			if variable == nil {
-				return nil, fmt.Errorf("cant fill function mapping with value: %s = %v", k, v.Value)
-			}
-
-			if checkErr := utils.CheckVariableType(variable, &v); checkErr != nil {
-				return nil, checkErr
-			}
-
-			if len(paramParts) > 1 {
-				functionMapping[paramParts[0]], err = createMapsByKeyParts(paramParts[1:], variable)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				functionMapping[k] = variable
-			}
+		err = gb.fillMapWithConstants(functionMapping)
+		if err != nil {
+			return nil, err
 		}
 
 		if !gb.RunContext.skipProduce {
@@ -256,28 +216,33 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func createMapsByKeyParts(parts []string, value interface{}) (map[string]interface{}, error) {
-	res := make(map[string]interface{})
-	currMap := res
-	for i := range parts {
-		key := parts[i]
-		if i == len(parts)-1 {
-			currMap[key] = value
-			break
+func (gb *ExecutableFunctionBlock) fillMapWithConstants(functionMapping map[string]interface{}) error {
+	for keyName, value := range gb.State.Constants {
+		keyParts := strings.Split(keyName, ".")
+		currMap := functionMapping
+
+		for i, part := range keyParts {
+			if i == len(keyParts)-1 {
+				currMap[part] = value
+				break
+			}
+
+			newCurrMap, ok := currMap[part]
+			if !ok {
+				newCurrMap = make(map[string]interface{})
+				currMap[part] = newCurrMap
+			}
+
+			convNewCurrMap, ok := newCurrMap.(map[string]interface{})
+			if !ok {
+				return errors.New("can`t assert newCurrMap to map[string]interface{}")
+			}
+
+			currMap = convNewCurrMap
 		}
-		newCurrMap, ok := currMap[key]
-		if !ok {
-			newCurrMap = make(map[string]interface{})
-			currMap[key] = newCurrMap
-		}
-		convNewCurrMap, ok := newCurrMap.(map[string]interface{})
-		if !ok {
-			return nil, errors.New("can`t assert newCurrMap to map[string]interface{}")
-		}
-		currMap = convNewCurrMap
 	}
 
-	return res, nil
+	return nil
 }
 
 func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
@@ -429,4 +394,15 @@ func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workId uuid.UUID,
 	}
 
 	return countRunFunc > 1, firstRun, nil
+}
+
+func (gb *ExecutableFunctionBlock) deleteNodeNamesFromVariables(variablesWithFullNames map[string]interface{}) map[string]interface{} {
+	variables := make(map[string]interface{}, len(variablesWithFullNames))
+	for name, variable := range variablesWithFullNames {
+		keyParts := strings.Split(name, ".")
+		nameWithoutNode := strings.Join(keyParts[1:], ".")
+		variables[nameWithoutNode] = variable
+	}
+
+	return variables
 }
