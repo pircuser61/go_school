@@ -62,7 +62,6 @@ type ExecutionData struct {
 	IsTakenInWork               bool `json:"is_taken_in_work"`
 	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
 
-	IsRevoked          bool `json:"is_revoked"`
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 

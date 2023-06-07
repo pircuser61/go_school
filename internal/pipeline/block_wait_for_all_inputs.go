@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -13,7 +12,6 @@ import (
 type SyncData struct {
 	IncomingBlockIds []string `json:"incoming_block_ids"`
 	Done             bool     `json:"done"`
-	IsRevoked        bool     `json:"is_revoked"`
 }
 
 type GoWaitForAllInputsBlock struct {
@@ -41,9 +39,6 @@ func (gb *GoWaitForAllInputsBlock) UpdateManual() bool {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked {
-		return StatusCancel
-	}
 	if gb.State.Done {
 		return StatusFinished
 	}
@@ -51,7 +46,7 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked {
+	if gb.State != nil {
 		return StatusRevoke
 	}
 	return ""
@@ -70,10 +65,6 @@ func (gb *GoWaitForAllInputsBlock) GetState() interface{} {
 }
 
 func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, error) {
-	data := gb.RunContext.UpdateData
-	if data != nil && data.Action == string(entity.TaskUpdateActionCancelApp) {
-		return nil, gb.formCancelPipeline(ctx)
-	}
 	// TODO ???
 	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
 	if err != nil {
@@ -156,24 +147,5 @@ func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
 		return err
 	}
 	gb.State = &SyncData{IncomingBlockIds: steps}
-	return nil
-}
-
-// nolint:dupl // another block
-func (gb *GoWaitForAllInputsBlock) formCancelPipeline(ctx context.Context) (err error) {
-	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
-		return stopErr
-	}
-	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
-		return stopErr
-	}
-
-	stateBytes, err := json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 	return nil
 }

@@ -43,10 +43,6 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.changeExecutor(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
 	case string(entity.TaskUpdateActionRequestExecutionInfo):
 		if errUpdate := gb.updateRequestInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
@@ -725,25 +721,6 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return sendErr
 	}
 
-	return nil
-}
-
-// nolint:dupl // another action
-func (gb *GoExecutionBlock) cancelPipeline(ctx c.Context) error {
-	var currentLogin = gb.RunContext.UpdateData.ByLogin
-	var initiator = gb.RunContext.Initiator
-
-	if currentLogin != initiator {
-		return NewUserIsNotPartOfProcessErr()
-	}
-
-	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
-		return stopErr
-	}
-	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
-		return stopErr
-	}
 	return nil
 }
 

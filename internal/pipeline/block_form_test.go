@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	dbMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -211,7 +210,6 @@ func Test_createGoFormBlock(t *testing.T) {
 					IsFilled:           false,
 					ActualExecutor:     nil,
 					ChangesLog:         []ChangesLogItem{},
-					IsRevoked:          false,
 					Description:        "",
 					FormsAccessibility: nil,
 				},
@@ -323,7 +321,6 @@ func Test_createGoFormBlock(t *testing.T) {
 							DelegateFor: "",
 						},
 					},
-					IsRevoked:          false,
 					Description:        "",
 					FormsAccessibility: nil,
 				},
@@ -383,7 +380,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 
 	timeNow := time.Now()
 	taskId1 := uuid.New()
-	taskId2 := uuid.New()
 
 	next := []entity.Socket{
 		{
@@ -396,14 +392,9 @@ func TestGoFormBlock_Update(t *testing.T) {
 	ctx := context.Background()
 	databaseMock := dbMocks.NewMockedDatabase(t)
 
-	databaseMock.On("StopTaskBlocks", ctx, mock.Anything).Return(error(nil))
-
 	databaseMock.On("CheckUserCanEditForm", ctx, "", name, login).Return(true, error(nil))
 	databaseMock.On("CheckUserCanEditForm", ctx, "", name, login2).Return(false, error(nil))
 	databaseMock.On("CheckUserCanEditForm", ctx, "", name, login3).Return(false, errors.New("mock error"))
-
-	databaseMock.On("UpdateTaskStatus", ctx, taskId1, db.RunStatusFinished).Return(error(nil))
-	databaseMock.On("UpdateTaskStatus", ctx, taskId2, db.RunStatusFinished).Return(errors.New("mock error"))
 
 	type args struct {
 		Name       string
@@ -537,7 +528,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 					IsFilled:         false,
 					ActualExecutor:   nil,
 					ChangesLog:       []ChangesLogItem{},
-					IsRevoked:        false,
 				},
 				RunContext: &BlockRunContext{
 					UpdateData: &script.BlockUpdateData{
@@ -612,7 +602,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 						Executor:  login,
 					},
 				},
-				IsRevoked: false,
 			},
 		},
 		{
@@ -637,7 +626,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 					IsFilled:       true,
 					ActualExecutor: getStringAddress(login),
 					ChangesLog:     []ChangesLogItem{},
-					IsRevoked:      false,
 				},
 				RunContext: &BlockRunContext{
 					UpdateData: &script.BlockUpdateData{
@@ -711,7 +699,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 						Executor:  login,
 					},
 				},
-				IsRevoked: false,
 			},
 		},
 		{
@@ -820,7 +807,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 					IsFilled:         false,
 					ActualExecutor:   nil,
 					ChangesLog:       []ChangesLogItem{},
-					IsRevoked:        false,
 				},
 				RunContext: &BlockRunContext{
 					UpdateData: &script.BlockUpdateData{
@@ -840,50 +826,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				Executors:        map[string]struct{}{login: {}},
 				ApplicationBody:  map[string]interface{}{},
 				ChangesLog:       []ChangesLogItem{},
-				IsRevoked:        true,
-			},
-		},
-		{
-			name: "cancel pipeline, update task error case",
-			args: args{
-				Name:  name,
-				Title: title,
-				Input: map[string]string{},
-				Output: map[string]string{
-					keyOutputFormExecutor: global1,
-					keyOutputFormBody:     global2,
-				},
-				Sockets: entity.ConvertSocket(next),
-				State: &FormData{
-					FormExecutorType: script.FormExecutorTypeFromSchema,
-					SchemaId:         schemaId,
-					SchemaName:       schemaName,
-					Executors:        map[string]struct{}{login: {}},
-					ApplicationBody:  map[string]interface{}{},
-					IsFilled:         false,
-					ActualExecutor:   nil,
-					ChangesLog:       []ChangesLogItem{},
-					IsRevoked:        false,
-				},
-				RunContext: &BlockRunContext{
-					UpdateData: &script.BlockUpdateData{
-						Action:     string(entity.TaskUpdateActionCancelApp),
-						Parameters: json.RawMessage{},
-					},
-					VarStore: store.NewStore(),
-					TaskID:   taskId2,
-				},
-			},
-			want:    nil,
-			wantErr: assert.Error,
-			wantState: &FormData{
-				FormExecutorType: script.FormExecutorTypeFromSchema,
-				SchemaId:         schemaId,
-				SchemaName:       schemaName,
-				Executors:        map[string]struct{}{login: {}},
-				ApplicationBody:  map[string]interface{}{},
-				ChangesLog:       []ChangesLogItem{},
-				IsRevoked:        true,
 			},
 		},
 	}
