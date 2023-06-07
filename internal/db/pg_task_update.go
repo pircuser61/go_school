@@ -26,6 +26,19 @@ func (db *PGCon) deleteFinishedPipelineDeadlines(ctx context.Context, taskID uui
 	return err
 }
 
+func (db *PGCon) deleteFinishedPipelineMembers(ctx context.Context, taskID uuid.UUID) error {
+	ctx, span := trace.StartSpan(ctx, "delete_finished_pipeline_members")
+	defer span.End()
+
+	q := `
+		DELETE 
+		FROM members
+		WHERE block_id IN (SELECT id FROM variable_storage WHERE work_id = $1)
+	`
+	_, err := db.Connection.Exec(ctx, q, taskID)
+	return err
+}
+
 func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error {
 	ctx, span := trace.StartSpan(ctx, "pg_change_task_status")
 	defer span.End()
@@ -51,6 +64,9 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) e
 	switch status {
 	case RunStatusFinished, RunStatusStopped, RunStatusError:
 		if delErr := db.deleteFinishedPipelineDeadlines(ctx, taskID); delErr != nil {
+			return delErr
+		}
+		if delErr := db.deleteFinishedPipelineMembers(ctx, taskID); delErr != nil {
 			return delErr
 		}
 	}

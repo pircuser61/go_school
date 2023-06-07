@@ -594,11 +594,6 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 
-	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
-
 	case string(entity.TaskUpdateActionAddApprovers):
 		var updateParams addApproversParams
 		if err := json.Unmarshal(data.Parameters, &updateParams); err != nil {
@@ -627,25 +622,6 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	return nil, nil
-}
-
-// nolint:dupl // another action
-func (gb *GoApproverBlock) cancelPipeline(ctx c.Context) error {
-	var currentLogin = gb.RunContext.UpdateData.ByLogin
-	var initiator = gb.RunContext.Initiator
-
-	if currentLogin != initiator {
-		return NewUserIsNotPartOfProcessErr()
-	}
-
-	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
-		return stopErr
-	}
-	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
-		return stopErr
-	}
-	return nil
 }
 
 func (gb *GoApproverBlock) addApprovers(ctx c.Context, u addApproversParams) error {

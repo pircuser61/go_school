@@ -164,7 +164,6 @@ type ApproverData struct {
 
 	AddInfo []AdditionalInfo `json:"additional_info,omitempty"`
 
-	IsRevoked         bool   `json:"is_revoked"`
 	ApproveStatusName string `json:"approve_status_name"`
 
 	SLA                          int  `json:"sla"`

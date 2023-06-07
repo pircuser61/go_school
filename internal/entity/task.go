@@ -163,9 +163,9 @@ const (
 	TaskUpdateActionExecutorStartWork          TaskUpdateAction = "executor_start_work"
 	TaskUpdateActionApproverSendEditApp        TaskUpdateAction = "approver_send_edit_app"
 	TaskUpdateActionExecutorSendEditApp        TaskUpdateAction = "executor_send_edit_app"
-	TaskUpdateActionCancelApp                  TaskUpdateAction = "cancel_app"
 	TaskUpdateActionRequestApproveInfo         TaskUpdateAction = "request_add_info"
 	TaskUpdateActionRequestFillForm            TaskUpdateAction = "fill_form"
+	TaskUpdateActionCancelApp                  TaskUpdateAction = "cancel_app"
 	TaskUpdateActionAddApprovers               TaskUpdateAction = "add_approvers"
 	TaskUpdateActionDayBeforeSLARequestAddInfo TaskUpdateAction = "day_before_sla_request_add_info"
 	TaskUpdateActionSLABreachRequestAddInfo    TaskUpdateAction = "sla_breach_request_add_info"
@@ -182,11 +182,16 @@ var (
 		TaskUpdateActionExecutorStartWork:     {},
 		TaskUpdateActionApproverSendEditApp:   {},
 		TaskUpdateActionExecutorSendEditApp:   {},
-		TaskUpdateActionCancelApp:             {},
 		TaskUpdateActionRequestApproveInfo:    {},
 		TaskUpdateActionRequestFillForm:       {},
 		TaskUpdateActionAddApprovers:          {},
 		TaskUpdateActionFormExecutorStartWork: {},
+	}
+)
+
+var (
+	checkTaskUpdateAppMap = map[TaskUpdateAction]struct{}{
+		TaskUpdateActionCancelApp: {},
 	}
 )
 
@@ -201,6 +206,13 @@ func (t *TaskUpdate) Validate() error {
 	}
 
 	return nil
+}
+
+func (t *TaskUpdate) IsApplicationAction() bool {
+	if _, ok := checkTaskUpdateAppMap[t.Action]; ok {
+		return true
+	}
+	return false
 }
 
 type NeededNotif struct {

@@ -52,7 +52,7 @@ func (gb *GoApproverBlock) Members() []Member {
 }
 
 func (gb *GoApproverBlock) isApprovementBaseFinished(login string) bool {
-	if gb.State.Decision != nil || gb.State.IsRevoked {
+	if gb.State.Decision != nil {
 		return true
 	}
 	for i := 0; i < len(gb.State.ApproverLog); i++ {
@@ -65,7 +65,7 @@ func (gb *GoApproverBlock) isApprovementBaseFinished(login string) bool {
 }
 
 func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
-	if gb.State.Decision != nil || gb.State.IsRevoked || gb.State.EditingApp != nil {
+	if gb.State.Decision != nil || gb.State.EditingApp != nil {
 		return []MemberAction{}
 	}
 	for i := 0; i < len(gb.State.ApproverLog); i++ {
@@ -91,14 +91,14 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 }
 
 func (gb *GoApproverBlock) isApprovementAddFinished(a *AdditionalApprover) bool {
-	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != nil {
+	if gb.State.Decision != nil || a.Decision != nil {
 		return true
 	}
 	return false
 }
 
 func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []MemberAction {
-	if gb.State.Decision != nil || gb.State.IsRevoked || a.Decision != nil || gb.State.EditingApp != nil {
+	if gb.State.Decision != nil || a.Decision != nil || gb.State.EditingApp != nil {
 		return []MemberAction{}
 	}
 	return []MemberAction{{
@@ -121,10 +121,6 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 
 //nolint:dupl //Need here
 func (gb *GoApproverBlock) Deadlines() []Deadline {
-	if gb.State.IsRevoked {
-		return []Deadline{}
-	}
-
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.Decision != nil && len(gb.State.AddInfo) > 0 &&
@@ -193,9 +189,6 @@ func (gb *GoApproverBlock) UpdateManual() bool {
 }
 
 func (gb *GoApproverBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked {
-		return StatusCancel
-	}
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ApproverDecisionRejected {
 			return StatusNoSuccess
@@ -218,7 +211,7 @@ func (gb *GoApproverBlock) GetStatus() Status {
 }
 
 func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked {
+	if gb.State != nil {
 		return StatusRevoke
 	}
 	if gb.State != nil && gb.State.EditingApp != nil {

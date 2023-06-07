@@ -49,8 +49,6 @@ type FormData struct {
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
-	IsRevoked bool `json:"is_revoked"`
-
 	SLA            int  `json:"sla"`
 	CheckSLA       bool `json:"check_sla"`
 	SLAChecked     bool `json:"sla_checked"`
@@ -86,14 +84,11 @@ func (gb *GoFormBlock) Members() []Member {
 }
 
 func (gb *GoFormBlock) isFormFinished() bool {
-	if gb.State.IsFilled || gb.State.IsRevoked {
-		return true
-	}
-	return false
+	return gb.State.IsFilled
 }
 
 func (gb *GoFormBlock) formActions() []MemberAction {
-	if gb.State.IsFilled || gb.State.IsRevoked {
+	if gb.State.IsFilled {
 		return []MemberAction{}
 	}
 	action := MemberAction{
@@ -104,10 +99,6 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 }
 
 func (gb *GoFormBlock) Deadlines() []Deadline {
-	if gb.State.IsRevoked {
-		return []Deadline{}
-	}
-
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
@@ -136,9 +127,6 @@ func (gb *GoFormBlock) UpdateManual() bool {
 }
 
 func (gb *GoFormBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked {
-		return StatusCancel
-	}
 	if gb.State != nil && gb.State.IsFilled {
 		return StatusFinished
 	}
@@ -147,7 +135,7 @@ func (gb *GoFormBlock) GetStatus() Status {
 }
 
 func (gb *GoFormBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked {
+	if gb.State != nil {
 		return StatusRevoke
 	}
 	if gb.State != nil && gb.State.IsFilled {

@@ -698,7 +698,11 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 		return
 	}
 
-	err = ae.updateTaskInternal(ctx, workNumber, ui.Username, &updateData)
+	if updateData.IsApplicationAction() {
+		err = ae.updateApplicationInternal(ctx, workNumber, ui.Username, &updateData)
+	} else {
+		err = ae.updateTaskInternal(ctx, workNumber, ui.Username, &updateData)
+	}
 
 	if err != nil {
 		e := UpdateTaskParsingError
@@ -869,6 +873,35 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	}
 
 	return
+}
+
+func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+	ctxLocal, span := trace.StartSpan(ctx, "update_application_internal")
+	defer span.End()
+
+	blockTypes := getTaskStepNameByAction(in.Action)
+	if len(blockTypes) == 0 {
+		return errors.New("blockTypes is empty")
+	}
+
+	dbTask, err := ae.DB.GetTask(ctxLocal, []string{userLogin}, []string{userLogin}, userLogin, workNumber)
+
+	err = ae.DB.StopTaskBlocks(ctxLocal, dbTask.ID)
+	if err != nil {
+		return err
+	}
+
+	err = ae.DB.UpdateTaskStatus(ctxLocal, dbTask.ID, db.RunStatusFinished)
+	if err != nil {
+		return err
+	}
+
+	err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //nolint:gocyclo //its ok here
