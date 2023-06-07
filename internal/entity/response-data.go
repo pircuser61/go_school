@@ -134,10 +134,11 @@ func (bt *BlocksType) IsSdBlueprintFilled() bool {
 
 func (bt *BlocksType) addDefaultStartNode() {
 	(*bt)["start_0"] = EriusFunc{
-		X:      0,
-		Y:      0,
-		TypeID: BlockGoStartName,
-		Title:  "Начало",
+		X:         0,
+		Y:         0,
+		TypeID:    BlockGoStartName,
+		BlockType: script.TypeGo,
+		Title:     "Начало",
 		Output: []EriusFunctionValue{
 			{
 				Name:   "workNumber",
