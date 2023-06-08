@@ -78,10 +78,10 @@ func TestMapData(t *testing.T) {
 	assert.Nil(t, err)
 
 	type args struct {
-		mapping    JSONSchemaProperties
-		input      map[string]interface{}
-		required   []string
-		pathToRoot []string
+		mapping     JSONSchemaProperties
+		input       map[string]interface{}
+		required    []string
+		levelToRoot int
 	}
 	tests := []struct {
 		name    string
@@ -163,9 +163,9 @@ func TestMapData(t *testing.T) {
 						Default: "some string",
 					},
 				},
-				input:      input,
-				required:   []string{"param1"},
-				pathToRoot: []string{"start_0"},
+				input:       input,
+				required:    []string{"param1"},
+				levelToRoot: 1,
 			},
 			want:    output,
 			wantErr: assert.NoError,
@@ -178,9 +178,9 @@ func TestMapData(t *testing.T) {
 						Type: "string",
 					},
 				},
-				input:      nil,
-				required:   []string{"param1"},
-				pathToRoot: []string{"start_0"},
+				input:       nil,
+				required:    []string{"param1"},
+				levelToRoot: 1,
 			},
 			wantErr: assert.Error,
 		},
@@ -198,9 +198,9 @@ func TestMapData(t *testing.T) {
 						},
 					},
 				},
-				input:      input2,
-				required:   nil,
-				pathToRoot: []string{"start_0"},
+				input:       input2,
+				required:    nil,
+				levelToRoot: 1,
 			},
 			wantErr: assert.Error,
 		},
@@ -218,9 +218,9 @@ func TestMapData(t *testing.T) {
 						Value: "param1",
 					},
 				},
-				input:      input2,
-				required:   nil,
-				pathToRoot: []string{"start_0"},
+				input:       input2,
+				required:    nil,
+				levelToRoot: 1,
 			},
 			wantErr: assert.Error,
 		},
@@ -238,20 +238,20 @@ func TestMapData(t *testing.T) {
 						Value: "servicedesk_application_0.application_body.param1",
 					},
 				},
-				input:      input2,
-				required:   nil,
-				pathToRoot: []string{"servicedesk_application_0", "application_body"},
+				input:       input2,
+				required:    nil,
+				levelToRoot: 2,
 			},
 			wantErr: assert.Error,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := MapData(tt.args.mapping, tt.args.input, tt.args.required, tt.args.pathToRoot)
-			if !tt.wantErr(t, err, fmt.Sprintf("MapData(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.pathToRoot)) {
+			got, err := MapData(tt.args.mapping, tt.args.input, tt.args.required, tt.args.levelToRoot)
+			if !tt.wantErr(t, err, fmt.Sprintf("MapData(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.levelToRoot)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "MapData(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.pathToRoot)
+			assert.Equalf(t, tt.want, got, "MapData(%v, %v, %v, %v)", tt.args.mapping, tt.args.input, tt.args.required, tt.args.levelToRoot)
 		})
 	}
 }

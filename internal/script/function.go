@@ -107,12 +107,6 @@ func (p ParamMetadata) GetItems() []interface{} {
 	return items
 }
 
-type Options struct {
-	Type   string
-	Input  map[string]interface{}
-	Output map[string]ParamMetadata
-}
-
 func (a *ExecutableFunctionParams) Validate() error {
 	if a.Name == "" || a.Version == "" {
 		return errors.New("got no function name or version")
