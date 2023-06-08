@@ -62,6 +62,18 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	return &runCtxCopy
 }
 
+func (runCtx *BlockRunContext) GetTestName(ctx c.Context) (string, error) {
+	test, err := runCtx.Storage.CheckIsTest(ctx, runCtx.TaskID)
+	if err != nil {
+		return "", err
+	}
+	notifName := runCtx.WorkTitle
+	if test {
+		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
+	}
+	return notifName, nil
+}
+
 //nolint:gocyclo //todo: need to decompose
 func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext, manual bool) (err error) {
 	ctx, s := trace.StartSpan(ctx, "process_block")
@@ -437,9 +449,13 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 
 		emails = append(emails, email)
 	}
-
+	notifName, err := runCtx.GetTestName(ctx)
+	if err != nil {
+		return err
+	}
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		runCtx.WorkNumber,
+		notifName,
 		statusToTaskState[status],
 		description,
 		runCtx.Sender.SdAddress)

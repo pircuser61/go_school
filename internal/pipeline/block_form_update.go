@@ -147,14 +147,17 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-
-		err := gb.RunContext.Sender.SendNotification(
+		notifName, err := gb.RunContext.GetTestName(ctx)
+		if err != nil {
+			return err
+		}
+		err = gb.RunContext.Sender.SendNotification(
 			ctx,
 			emails,
 			nil,
 			mail.NewFormSLATpl(
 				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
+				notifName,
 				gb.RunContext.Sender.SdAddress,
 			))
 		if err != nil {
@@ -194,14 +197,17 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-
-		err := gb.RunContext.Sender.SendNotification(
+		notifName, err := gb.RunContext.GetTestName(ctx)
+		if err != nil {
+			return err
+		}
+		err = gb.RunContext.Sender.SendNotification(
 			ctx,
 			emails,
 			nil,
 			mail.NewFormDayHalfSLATpl(
 				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
+				notifName,
 				gb.RunContext.Sender.SdAddress,
 			))
 		if err != nil {
@@ -285,8 +291,12 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return convertErr
 	}
 
+	notifName, err := gb.RunContext.GetTestName(ctx)
+	if err != nil {
+		return err
+	}
 	tpl := mail.NewFormExecutionTakenInWorkTpl(gb.RunContext.WorkNumber,
-		gb.RunContext.WorkTitle,
+		notifName,
 		typedSSOPerson.FullName,
 		gb.RunContext.Sender.SdAddress,
 	)
@@ -301,7 +311,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	}
 
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
-		gb.RunContext.WorkTitle,
+		notifName,
 		gb.RunContext.Sender.SdAddress,
 		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA),
 	)

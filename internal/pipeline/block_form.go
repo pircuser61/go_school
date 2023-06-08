@@ -359,17 +359,20 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
-
+		notifName, err := gb.RunContext.GetTestName(ctx)
+		if err != nil {
+			return err
+		}
 		if isGroupExecutors {
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
+				notifName,
 				gb.RunContext.Sender.SdAddress,
 				ComputeDeadline(time.Now(), gb.State.SLA),
 			)
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
+				notifName,
 				gb.RunContext.Sender.SdAddress)
 		}
 	}

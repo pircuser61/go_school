@@ -1489,3 +1489,20 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 
 	return blockOutputs, nil
 }
+
+func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_is_test")
+	defer span.End()
+
+	q := `
+		SELECT run_context -> 'initial_application' -> 'is_test_application'
+		FROM works
+		WHERE id = $1`
+
+	var isTest bool
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&isTest); err != nil {
+		return false, err
+	}
+
+	return isTest, nil
+}
