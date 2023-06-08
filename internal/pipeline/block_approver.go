@@ -211,9 +211,6 @@ func (gb *GoApproverBlock) GetStatus() Status {
 }
 
 func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil {
-		return StatusRevoke
-	}
 	if gb.State != nil && gb.State.EditingApp != nil {
 		return StatusWait
 	}

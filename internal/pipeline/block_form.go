@@ -135,9 +135,6 @@ func (gb *GoFormBlock) GetStatus() Status {
 }
 
 func (gb *GoFormBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil {
-		return StatusRevoke
-	}
 	if gb.State != nil && gb.State.IsFilled {
 		return StatusDone
 	}
