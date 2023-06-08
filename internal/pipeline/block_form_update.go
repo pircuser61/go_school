@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
@@ -349,11 +350,17 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	}
 
 	var calendarDays *hrgate.CalendarDays
+	var startworkHour, endWorkHour int
+	if gb.State.WorkType != string(api.WorkTypeN247) {
+
+	} else {
+		startworkHour, endWorkHour = 0, 0 // looks funny
+	}
 	//todo
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle,
 		gb.RunContext.Sender.SdAddress,
-		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, calendarDays),
+		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, calendarDays, startworkHour, endWorkHour),
 	)
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {
