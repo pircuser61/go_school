@@ -46,9 +46,6 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 }
 
 func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil {
-		return StatusRevoke
-	}
 	return ""
 }
 
