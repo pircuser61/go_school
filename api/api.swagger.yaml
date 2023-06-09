@@ -3597,6 +3597,26 @@ components:
         - type
         - properties
 
+    FormReEnterSettings:
+      type: object
+      description: Настройки блока при повторном заходе в этот блок
+      properties:
+        form_executor_type:
+          $ref: '#/components/schemas/FormExecutorType'
+        executor:
+          type: string
+          description: Executor value
+        sla:
+          type: integer
+          description: form sla
+          minimum: 1
+        check_sla:
+          type: boolean
+          description: Is active SLA
+        form_group_id:
+          type: string
+          description: Form group id in SD
+
     JSONSchemaProperties:
       type: object
       description: Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта,
@@ -4388,12 +4408,18 @@ components:
         constants:
           type: object
           description: Constant values for function parameters (key of object is variable name)
+        repeat_prev_decision:
+          type: boolean
+          description: true - repeat prev decision when reenter in block
+        form_re_enter_settings:
+          $ref: '#/components/schemas/FormReEnterSettings'
       required:
         - sla
         - check_sla
         - blueprint_id
         - blueprint_name
         - hide_executor_from_initiator
+        - repeat_prev_decision
 
     FormExecutorType:
       type: string

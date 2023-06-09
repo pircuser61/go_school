@@ -2,10 +2,8 @@ package pipeline
 
 import (
 	c "context"
-	"encoding/json"
 	"time"
 
-	"github.com/pkg/errors"
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -57,6 +55,9 @@ type FormData struct {
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
 	Mapping script.JSONSchemaProperties `json:"mapping"`
+
+	RepeatPrevDecision bool                        `json:"repeat_prev_decision"`
+	ReEnterSettings    *script.FormReEnterSettings `json:"form_re_enter_settings"`
 }
 
 type GoFormBlock struct {
@@ -181,124 +182,6 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
 	}
-}
-
-// nolint:dupl // another block
-func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, error) {
-	b := &GoFormBlock{
-		Name:       name,
-		Title:      ef.Title,
-		Input:      map[string]string{},
-		Output:     map[string]string{},
-		Sockets:    entity.ConvertSocket(ef.Sockets),
-		RunContext: runCtx,
-	}
-
-	for _, v := range ef.Input {
-		b.Input[v.Name] = v.Global
-	}
-
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
-	}
-
-	rawState, ok := runCtx.VarStore.State[name]
-	if ok {
-		if err := b.loadState(rawState); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := b.createState(ctx, ef); err != nil {
-			return nil, err
-		}
-		b.RunContext.VarStore.AddStep(b.Name)
-	}
-
-	return b, nil
-}
-
-func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
-	return json.Unmarshal(raw, &gb.State)
-}
-
-//nolint:dupl //different logic
-func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
-	var params script.FormParams
-	err := json.Unmarshal(ef.Params, &params)
-	if err != nil {
-		return errors.Wrap(err, "can not get form parameters")
-	}
-
-	if err = params.Validate(); err != nil {
-		return errors.Wrap(err, "invalid form parameters")
-	}
-
-	gb.State = &FormData{
-		Executors: map[string]struct{}{
-			params.Executor: {},
-		},
-		SchemaId:                  params.SchemaId,
-		SLA:                       params.SLA,
-		CheckSLA:                  params.CheckSLA,
-		SchemaName:                params.SchemaName,
-		ChangesLog:                make([]ChangesLogItem, 0),
-		FormExecutorType:          params.FormExecutorType,
-		ApplicationBody:           map[string]interface{}{},
-		FormsAccessibility:        params.FormsAccessibility,
-		Mapping:                   params.Mapping,
-		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
-	}
-
-	switch gb.State.FormExecutorType {
-	case script.FormExecutorTypeUser:
-		gb.State.Executors = map[string]struct{}{
-			params.Executor: {},
-		}
-	case script.FormExecutorTypeInitiator:
-		gb.State.Executors = map[string]struct{}{
-			gb.RunContext.Initiator: {},
-		}
-	case script.FormExecutorTypeFromSchema:
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return err
-		}
-
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
-			variableStorage,
-			map[string]struct{}{
-				params.Executor: {},
-			},
-		)
-		if resolveErr != nil {
-			return err
-		}
-
-		gb.State.Executors = resolvedEntities
-	case script.FormExecutorTypeAutoFillUser:
-		if err = gb.handleAutoFillForm(); err != nil {
-			return err
-		}
-	case script.FormExecutorTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.FormGroupId)
-		if errGroup != nil {
-			return errors.Wrap(errGroup, "can`t get form group with id: "+params.FormGroupId)
-		}
-
-		if len(workGroup.People) == 0 {
-			//nolint:goimports // bugged golint
-			return errors.New("zero form executors in group: " + params.FormGroupId)
-		}
-
-		gb.State.Executors = make(map[string]struct{})
-		for i := range workGroup.People {
-			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
-		}
-		gb.State.FormGroupId = params.FormGroupId
-		gb.State.FormExecutorsGroupName = workGroup.GroupName
-	}
-
-	return gb.handleNotifications(ctx)
 }
 
 func (gb *GoFormBlock) handleAutoFillForm() error {

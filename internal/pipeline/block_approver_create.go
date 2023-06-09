@@ -42,17 +42,41 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		if err := b.loadState(rawState); err != nil {
 			return nil, err
 		}
+
+		// это для возврата на доработку в рамках одного процесса
+		if runCtx.UpdateData == nil || runCtx.UpdateData.Action != "" {
+			if err := b.reEntry(ctx); err != nil {
+				return nil, err
+			}
+		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
 			return nil, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
+
+		// TODO: выпилить когда сделаем циклы
+		// это для возврата на доработку при которой мы создаем новый процесс
+		// и пытаемся взять решение из прошлого процесса
+		if err := b.setPrevDecision(ctx); err != nil {
+			return nil, err
+		}
 	}
 
-	if err := b.setPrevDecision(ctx); err != nil {
-		return nil, err
-	}
 	return b, nil
+}
+
+func (gb *GoApproverBlock) reEntry(ctx c.Context) error {
+	if gb.State.GetRepeatPrevDecision() {
+		return nil
+	}
+
+	gb.State.Decision = nil
+	gb.State.Comment = nil
+	gb.State.DecisionAttachments = make([]string, 0)
+	gb.State.ActualApprover = nil
+
+	return gb.handleNotifications(ctx)
 }
 
 func (gb *GoApproverBlock) loadState(raw json.RawMessage) error {
@@ -114,27 +138,48 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		gb.State.ApprovementRule = script.AnyOfApprovementRequired
 	}
 
-	switch params.Type {
+	setErr := gb.setExecutorsByParams(ctx, &setApproversByParamsDTO{
+		Type:     params.Type,
+		GroupID:  params.ApproversGroupID,
+		Approver: params.Approver,
+	})
+	if setErr != nil {
+		return setErr
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	return gb.handleNotifications(ctx)
+}
+
+type setApproversByParamsDTO struct {
+	Type     script.ApproverType
+	GroupID  string
+	Approver string
+}
+
+func (gb *GoApproverBlock) setExecutorsByParams(ctx c.Context, dto *setApproversByParamsDTO) error {
+	switch dto.Type {
 	case script.ApproverTypeUser:
 		gb.State.Approvers = map[string]struct{}{
-			params.Approver: {},
+			dto.Approver: {},
 		}
 	case script.ApproverTypeHead:
 	case script.ApproverTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.ApproversGroupID)
+		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
 		if errGroup != nil {
-			return errors.Wrap(errGroup, "can`t get approvers group with id: "+params.ApproversGroupID)
+			return errors.Wrap(errGroup, "can`t get approvers group with id: "+dto.GroupID)
 		}
 
 		if len(workGroup.People) == 0 {
-			return errors.New("zero approvers in group: " + params.ApproversGroupID)
+			return errors.New("zero approvers in group: " + dto.GroupID)
 		}
 
 		gb.State.Approvers = make(map[string]struct{})
 		for i := range workGroup.People {
 			gb.State.Approvers[workGroup.People[i].Login] = struct{}{}
 		}
-		gb.State.ApproversGroupID = params.ApproversGroupID
+		gb.State.ApproversGroupID = dto.GroupID
 		gb.State.ApproversGroupName = workGroup.GroupName
 	case script.ApproverTypeFromSchema:
 
@@ -145,7 +190,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 		approversFromSchema := make(map[string]struct{})
 
-		approversVars := strings.Split(params.Approver, ";")
+		approversVars := strings.Split(dto.Approver, ";")
 		for i := range approversVars {
 			resolvedEntities, resolveErr := resolveValuesFromVariables(
 				variableStorage,
@@ -171,9 +216,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		gb.RunContext.Delegations = delegations.FilterByType("approvement")
 	}
 
-	gb.RunContext.VarStore.AddStep(gb.Name)
-
-	return gb.handleNotifications(ctx)
+	return nil
 }
 
 //nolint:dupl // maybe later

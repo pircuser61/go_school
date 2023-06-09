@@ -30,6 +30,8 @@ type FormParams struct {
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`
+	RepeatPrevDecision        bool                 `json:"repeat_prev_decision"`
+	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings"`
 }
 
 func (a *FormParams) Validate() error {
@@ -41,5 +43,22 @@ func (a *FormParams) Validate() error {
 		return fmt.Errorf("invalid SLA value %d", a.SLA)
 	}
 
+	if !a.RepeatPrevDecision && a.ReEnterSettings == nil {
+		return errors.New("reEnterSettings can`t be empty when RepeatPrevDecision = true")
+	}
+
+	if !a.RepeatPrevDecision && a.ReEnterSettings != nil {
+		if a.ReEnterSettings.SLA < 1 && a.ReEnterSettings.CheckSLA {
+			return fmt.Errorf("invalid reEnterSettings.SLA value %d", a.ReEnterSettings.SLA)
+		}
+	}
 	return nil
+}
+
+type FormReEnterSettings struct {
+	FormExecutorType FormExecutorType `json:"form_executor_type"`
+	FormGroupId      string           `json:"form_group_id"`
+	SLA              int              `json:"sla"`
+	CheckSLA         bool             `json:"check_sla"`
+	Executor         string           `json:"executor"`
 }

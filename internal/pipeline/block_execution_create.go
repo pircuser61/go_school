@@ -40,17 +40,41 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		if err := b.loadState(rawState); err != nil {
 			return nil, err
 		}
+
+		// это для возврата на доработку в рамках одного процесса
+		if runCtx.UpdateData == nil || runCtx.UpdateData.Action != "" {
+			if err := b.reEntry(ctx); err != nil {
+				return nil, err
+			}
+		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
 			return nil, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
+
+		// TODO: выпилить когда сделаем циклы
+		// это для возврата на доработку при которой мы создаем новый процесс
+		// и пытаемся взять решение из прошлого процесса
+		if err := b.setPrevDecision(ctx); err != nil {
+			return nil, err
+		}
 	}
 
-	if err := b.setPrevDecision(ctx); err != nil {
-		return nil, err
-	}
 	return b, nil
+}
+
+func (gb *GoExecutionBlock) reEntry(ctx c.Context) error {
+	if gb.State.GetRepeatPrevDecision() {
+		return nil
+	}
+
+	gb.State.Decision = nil
+	gb.State.DecisionComment = nil
+	gb.State.DecisionAttachments = make([]string, 0)
+	gb.State.ActualExecutor = nil
+
+	return gb.handleNotifications(ctx)
 }
 
 func (gb *GoExecutionBlock) loadState(raw json.RawMessage) error {

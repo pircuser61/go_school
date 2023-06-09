@@ -961,6 +961,9 @@ type FormParams struct {
 	// Form group id in SD
 	FormGroupId *string `json:"form_group_id,omitempty"`
 
+	// Настройки блока при повторном заходе в этот блок
+	FormReEnterSettings *FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
+
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
@@ -970,6 +973,9 @@ type FormParams struct {
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	Mapping *JSONSchemaProperties `json:"mapping,omitempty"`
 
+	// true - repeat prev decision when reenter in block
+	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+
 	// form template id
 	SchemaId *string `json:"schema_id,omitempty"`
 
@@ -978,6 +984,29 @@ type FormParams struct {
 
 	// form sla
 	Sla int `json:"sla"`
+}
+
+// Настройки блока при повторном заходе в этот блок
+type FormReEnterSettings struct {
+	// Is active SLA
+	CheckSla *bool `json:"check_sla,omitempty"`
+
+	// Executor value
+	Executor *string `json:"executor,omitempty"`
+
+	// Form executor type:
+	//   * User - Single user
+	//   * group - Form group ID
+	//   * Initiator - Process initiator
+	//   * From_schema - Selected by initiator
+	//   * Auto_Fill - Auto Fill form by system
+	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
+
+	// Form group id in SD
+	FormGroupId *string `json:"form_group_id,omitempty"`
+
+	// form sla
+	Sla *int `json:"sla,omitempty"`
 }
 
 // FormsAccessibility defines model for FormsAccessibility.
