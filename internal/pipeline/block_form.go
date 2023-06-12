@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"golang.org/x/net/context"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
@@ -105,20 +106,32 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	return []MemberAction{action}
 }
 
-func (gb *GoFormBlock) Deadlines() []Deadline {
+func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	if gb.State.IsRevoked {
-		return []Deadline{}
+		return []Deadline{}, nil
 	}
 
 	deadlines := make([]Deadline, 0, 2)
 
-	var calendarDays *hrgate.CalendarDays
-	//todo
-
 	if gb.State.CheckSLA {
+		calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+			[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		)
+		if getCalendarDaysErr != nil {
+			return nil, getCalendarDaysErr
+		}
+		workHourType := WorkHourType(gb.State.WorkType)
+		startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
+		if getWorkingHoursErr != nil {
+			return nil, getWorkingHoursErr
+		}
+		weekends, getWeekendsErr := workHourType.GetWeekends()
+		if getWeekendsErr != nil {
+			return nil, getWeekendsErr
+		}
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), calendarDays),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), calendarDays, &startWorkHour, &endWorkHour, weekends),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -126,14 +139,14 @@ func (gb *GoFormBlock) Deadlines() []Deadline {
 
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, calendarDays),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, calendarDays, &startWorkHour, &endWorkHour, weekends),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
 		}
 	}
 
-	return deadlines
+	return deadlines, nil
 }
 
 func (gb *GoFormBlock) UpdateManual() bool {

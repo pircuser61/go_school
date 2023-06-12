@@ -93,7 +93,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if check := CheckBreachSLA(tt.fields.Start, tt.fields.Current, tt.fields.SLA); check != tt.wantedCheck {
+			if check := CheckBreachSLA(tt.fields.Start, tt.fields.Current, tt.fields.SLA, nil, nil, nil); check != tt.wantedCheck {
 				t.Errorf("check SLA returned unexpected result")
 			}
 		})

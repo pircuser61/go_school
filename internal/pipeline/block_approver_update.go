@@ -476,6 +476,9 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt,
 			time.Now(),
 			nil,
+			nil,
+			nil,
+			nil,
 		)
 		gb.State.IncreaseSLA(workHours)
 

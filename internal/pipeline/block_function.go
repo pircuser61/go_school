@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/net/context"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -67,8 +68,8 @@ func (gb *ExecutableFunctionBlock) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *ExecutableFunctionBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {

@@ -513,6 +513,9 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
 				time.Now(),
 				nil,
+				nil,
+				nil,
+				nil,
 			)
 			gb.State.IncreaseSLA(workHours)
 		}

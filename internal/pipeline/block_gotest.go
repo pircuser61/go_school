@@ -24,8 +24,8 @@ func (gb *GoTestBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoTestBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *GoTestBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *GoTestBlock) UpdateManual() bool {

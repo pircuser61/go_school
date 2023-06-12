@@ -23,8 +23,8 @@ func (gb *GoStartBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoStartBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *GoStartBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *GoStartBlock) UpdateManual() bool {

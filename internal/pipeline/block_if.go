@@ -6,6 +6,7 @@ import (
 
 	//nolint:goimports //cant sort import to not trigger golint
 	"gitlab.services.mts.ru/jocasta/conditions-kit"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -29,8 +30,8 @@ func (gb *IF) Members() []Member {
 	return nil
 }
 
-func (gb *IF) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *IF) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 type ConditionsData struct {

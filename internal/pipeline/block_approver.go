@@ -1,8 +1,10 @@
 package pipeline
 
 import (
+	"context"
+	"time"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -121,36 +123,50 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 }
 
 //nolint:dupl //Need here
-func (gb *GoApproverBlock) Deadlines() []Deadline {
+func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	if gb.State.IsRevoked {
-		return []Deadline{}
+		return []Deadline{}, nil
 	}
 
 	deadlines := make([]Deadline, 0, 2)
-	var calendarDays *hrgate.CalendarDays
-	//todo
 
 	if gb.State.Decision != nil && len(gb.State.AddInfo) > 0 &&
 		gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, calendarDays),
+				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil, nil, nil, nil),
 				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, calendarDays),
+			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil, nil, nil, nil),
 			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 
-		return deadlines
+		return deadlines, nil
 	}
 
 	if gb.State.CheckSLA {
+		calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+			[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		)
+		if getCalendarDaysErr != nil {
+			return nil, getCalendarDaysErr
+		}
+		workHourType := WorkHourType(gb.State.WorkType)
+		startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
+		if getWorkingHoursErr != nil {
+			return nil, getWorkingHoursErr
+		}
+		weekends, getWeekendsErr := workHourType.GetWeekends()
+		if getWeekendsErr != nil {
+			return nil, getWeekendsErr
+		}
+
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), calendarDays),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), calendarDays, &startWorkHour, &endWorkHour, weekends),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -158,7 +174,7 @@ func (gb *GoApproverBlock) Deadlines() []Deadline {
 
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, calendarDays),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, calendarDays, &startWorkHour, &endWorkHour, weekends),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
@@ -167,7 +183,7 @@ func (gb *GoApproverBlock) Deadlines() []Deadline {
 
 	if gb.State.IsEditable && gb.State.CheckReworkSLA && gb.State.EditingApp != nil {
 		deadlines = append(deadlines,
-			Deadline{Deadline: ComputeMaxDate(gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), calendarDays),
+			Deadline{Deadline: ComputeMaxDate(gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil, nil, nil, nil),
 				Action: entity.TaskUpdateActionReworkSLABreach,
 			},
 		)
@@ -177,18 +193,18 @@ func (gb *GoApproverBlock) Deadlines() []Deadline {
 		gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, calendarDays),
+				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil, nil, nil, nil),
 				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, calendarDays),
+			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil, nil, nil, nil),
 			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}
 
-	return deadlines
+	return deadlines, nil
 }
 
 func (gb *GoApproverBlock) UpdateManual() bool {

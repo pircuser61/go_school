@@ -32,8 +32,8 @@ func (gb *GoWaitForAllInputsBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoWaitForAllInputsBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *GoWaitForAllInputsBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *GoWaitForAllInputsBlock) UpdateManual() bool {

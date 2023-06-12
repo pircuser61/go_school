@@ -12,7 +12,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -264,8 +263,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails := make(map[string]mail.Template, 0)
-	var calendarDays *hrgate.CalendarDays
-	//todo
+
 	for _, login := range loginsToNotify {
 		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
@@ -279,7 +277,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				Name:                      gb.RunContext.WorkTitle,
 				Status:                    gb.State.ApproveStatusName,
 				Action:                    statusToTaskAction[StatusApprovement],
-				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA, calendarDays),
+				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA, calendarDays, nil, nil),
 				SdUrl:                     gb.RunContext.Sender.SdAddress,
 				Mailto:                    gb.RunContext.Sender.FetchEmail,
 				Login:                     login,

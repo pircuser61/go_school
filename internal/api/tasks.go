@@ -822,6 +822,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 			HumanTasks:    ae.HumanTasks,
 			Integrations:  ae.Integrations,
 			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
 
 			UpdateData: &script.BlockUpdateData{
 				ByLogin:    userLogin,

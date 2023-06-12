@@ -1,8 +1,11 @@
 package pipeline
 
 import (
+	"fmt"
 	"math"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
@@ -16,7 +19,51 @@ const (
 	ddmmyyFormat = "02.01.2006"
 )
 
-func getWorkHoursBetweenDates(from, to time.Time, calendarDays *hrgate.CalendarDays, startWorkHour, endWorkHour int) (workHours int) {
+type WorkHourType string
+
+const (
+	WorkTypeN125 WorkHourType = "12/5"
+
+	WorkTypeN247 WorkHourType = "24/7"
+
+	WorkTypeN85 WorkHourType = "8/5"
+)
+
+func (t *WorkHourType) GetWorkingHours() (start, end int, err error) {
+	if t == nil {
+		return 0, 0, fmt.Errorf("work hour type is nil")
+	}
+
+	switch *t {
+	case WorkTypeN125:
+		return 6, 18, nil
+	case WorkTypeN247:
+		return 0, 0, nil
+	case WorkTypeN85:
+		return 6, 14, nil
+	default:
+		return 0, 0, fmt.Errorf("unknown work hour type: %s", string(*t))
+	}
+}
+
+func (t *WorkHourType) GetWeekends() ([]time.Weekday, error) {
+	if t == nil {
+		return nil, fmt.Errorf("work hour type is nil")
+	}
+
+	switch *t {
+	case WorkTypeN125:
+		return []time.Weekday{time.Saturday, time.Sunday}, nil
+	case WorkTypeN247:
+		return []time.Weekday{}, nil
+	case WorkTypeN85:
+		return []time.Weekday{time.Saturday, time.Sunday}, nil
+	default:
+		return nil, fmt.Errorf("unknown work hour type: %s", string(*t))
+	}
+}
+
+func getWorkHoursBetweenDates(from, to time.Time, calendarDays *hrgate.CalendarDays, startWorkHourPtr, endWorkHourPtr *int, weekends []time.Weekday) (workHours int) {
 	from = from.UTC()
 	to = to.UTC()
 
@@ -24,8 +71,26 @@ func getWorkHoursBetweenDates(from, to time.Time, calendarDays *hrgate.CalendarD
 		return 0
 	}
 
+	var startWorkHour, endWorkHour int
+
+	if startWorkHourPtr != nil {
+		startWorkHour = *startWorkHourPtr
+	} else {
+		startWorkHour = workingHoursStart
+	}
+
+	if endWorkHourPtr != nil {
+		endWorkHour = *endWorkHourPtr
+	} else {
+		endWorkHour = workingHoursEnd
+	}
+
+	if weekends == nil {
+		weekends = []time.Weekday{time.Saturday, time.Sunday}
+	}
+
 	for from.Before(to) {
-		if !notWorkingHours(from, calendarDays, startWorkHour, endWorkHour) {
+		if !notWorkingHours(from, calendarDays, startWorkHour, endWorkHour, weekends) {
 			workHours++
 		}
 
@@ -43,11 +108,12 @@ func afterWorkingHours(t time.Time, endHour int) bool {
 	return t.Hour() >= endHour
 }
 
-func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHour, endWorkHour int) bool {
-	if t.Weekday() == time.Saturday || t.Weekday() == time.Sunday {
+func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHour, endWorkHour int, weekends []time.Weekday) bool {
+	if slices.Contains(weekends, t.Weekday()) {
 		return true
 	}
 	workDayType := calendarDays.GetDayType(t)
+
 	if workDayType == hrgate.CalendarDayTypeHoliday {
 		return true
 	}
@@ -62,15 +128,33 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHo
 	return false
 }
 
-func ComputeMaxDate(start time.Time, sla float32, calendarDays *hrgate.CalendarDays, startWorkHour, endWorkHour int) time.Time {
+func ComputeMaxDate(start time.Time, sla float32, calendarDays *hrgate.CalendarDays, startWorkHourPtr, endWorkHourPtr *int, weekends []time.Weekday) time.Time {
 	// SLA in hours
 	// Convert to minutes
 	deadline := start.UTC()
 	slaInMinutes := sla * 60
 	slaDur := time.Minute * time.Duration(slaInMinutes)
 
+	var startWorkHour, endWorkHour int
+
+	if startWorkHourPtr != nil {
+		startWorkHour = *startWorkHourPtr
+	} else {
+		startWorkHour = workingHoursStart
+	}
+
+	if endWorkHourPtr != nil {
+		endWorkHour = *endWorkHourPtr
+	} else {
+		endWorkHour = workingHoursEnd
+	}
+
+	if weekends == nil {
+		weekends = []time.Weekday{time.Saturday, time.Sunday}
+	}
+
 	for slaDur > 0 {
-		if notWorkingHours(deadline, calendarDays, startWorkHour, endWorkHour) {
+		if notWorkingHours(deadline, calendarDays, startWorkHour, endWorkHour, weekends) {
 			datesDay := deadline.AddDate(0, 0, 1)                // default = next day
 			if beforeWorkingHours(deadline, workingHoursStart) { // but in case it's now early in the morning...
 				datesDay = deadline
@@ -93,13 +177,13 @@ func ComputeMaxDate(start time.Time, sla float32, calendarDays *hrgate.CalendarD
 	return deadline
 }
 
-func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval, calendarDays hrgate.CalendarDays, startWorkHour, endWorkHour int) (
+func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval, calendarDays hrgate.CalendarDays) (
 	result script.TaskSolveTime) {
 	var taskIntervalsCnt = len(taskIntervals)
 
 	var totalHours = 0
 	for _, interval := range taskIntervals {
-		totalHours += getWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt, &calendarDays, startWorkHour, endWorkHour)
+		totalHours += getWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt, &calendarDays, nil, nil, nil)
 	}
 
 	return script.TaskSolveTime{
@@ -107,12 +191,12 @@ func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval
 	}
 }
 
-func CheckBreachSLA(start, current time.Time, sla int, startWorkHour, endWorkHour int) bool {
-	deadline := ComputeMaxDate(start, float32(sla), nil, startWorkHour, endWorkHour)
+func CheckBreachSLA(start, current time.Time, sla int, startWorkHour, endWorkHour *int, weekends []time.Weekday) bool {
+	deadline := ComputeMaxDate(start, float32(sla), nil, startWorkHour, endWorkHour, weekends)
 
 	return current.UTC().After(deadline)
 }
 
-func ComputeDeadline(start time.Time, sla int, calendarDays *hrgate.CalendarDays, startWorkHour, endWorkHour int) string {
-	return ComputeMaxDate(start, float32(sla), calendarDays, startWorkHour, endWorkHour).Format(ddmmyyFormat)
+func ComputeDeadline(start time.Time, sla int, calendarDays *hrgate.CalendarDays, startWorkHour, endWorkHour *int, weekends []time.Weekday) string {
+	return ComputeMaxDate(start, float32(sla), calendarDays, startWorkHour, endWorkHour, weekends).Format(ddmmyyFormat)
 }
