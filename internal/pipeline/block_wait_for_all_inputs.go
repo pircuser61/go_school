@@ -146,3 +146,7 @@ func (gb *GoWaitForAllInputsBlock) createState(ctx context.Context) error {
 	gb.State = &SyncData{IncomingBlockIds: steps}
 	return nil
 }
+
+func (gb *GoWaitForAllInputsBlock) IsReEntered() bool {
+	return false
+}

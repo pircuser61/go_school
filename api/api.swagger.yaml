@@ -4408,9 +4408,9 @@ components:
         constants:
           type: object
           description: Constant values for function parameters (key of object is variable name)
-        repeat_prev_decision:
+        is_editable:
           type: boolean
-          description: true - repeat prev decision when reenter in block
+          description: true - need manual feel when reenter in block
         form_re_enter_settings:
           $ref: '#/components/schemas/FormReEnterSettings'
       required:
@@ -4419,7 +4419,6 @@ components:
         - blueprint_id
         - blueprint_name
         - hide_executor_from_initiator
-        - repeat_prev_decision
 
     FormExecutorType:
       type: string

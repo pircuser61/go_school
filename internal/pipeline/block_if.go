@@ -166,3 +166,7 @@ func getVariables(runCtx *store.VariableStore) (result map[string]interface{}, e
 	}
 	return variables, nil
 }
+
+func (gb *IF) IsReEntered() bool {
+	return false
+}

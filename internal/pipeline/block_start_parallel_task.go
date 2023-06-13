@@ -90,3 +90,7 @@ func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *Block
 	b.RunContext.VarStore.AddStep(b.Name)
 	return b
 }
+
+func (gb *GoBeginParallelTaskBlock) IsReEntered() bool {
+	return false
+}

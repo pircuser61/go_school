@@ -51,10 +51,12 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 }
 
 func (gb *GoFormBlock) reEntry(ctx c.Context) error {
-	if gb.State.RepeatPrevDecision {
+	if gb.State.IsEditable == nil || !*gb.State.IsEditable {
 		return nil
 	}
 
+	isReEntered := true
+	gb.State.IsReEntered = &isReEntered
 	gb.State.IsFilled = false
 	gb.State.IsTakenInWork = false
 	gb.State.ActualExecutor = nil
@@ -109,7 +111,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		FormsAccessibility:        params.FormsAccessibility,
 		Mapping:                   params.Mapping,
 		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
-		RepeatPrevDecision:        params.RepeatPrevDecision,
+		IsEditable:                params.IsEditable,
 		ReEnterSettings:           params.ReEnterSettings,
 	}
 

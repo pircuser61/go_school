@@ -69,6 +69,8 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context) error {
 		return nil
 	}
 
+	isReEntered := true
+	gb.State.IsReEntered = &isReEntered
 	gb.State.Decision = nil
 	gb.State.DecisionComment = nil
 	gb.State.DecisionAttachments = make([]string, 0)

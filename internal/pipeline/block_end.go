@@ -90,3 +90,7 @@ func createGoEndBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext
 	b.RunContext.VarStore.AddStep(b.Name)
 	return b
 }
+
+func (gb *GoEndBlock) IsReEntered() bool {
+	return false
+}

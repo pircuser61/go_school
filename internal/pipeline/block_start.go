@@ -121,3 +121,7 @@ func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunConte
 
 	return b
 }
+
+func (gb *GoStartBlock) IsReEntered() bool {
+	return false
+}

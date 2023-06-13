@@ -30,7 +30,7 @@ type FormParams struct {
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`
-	RepeatPrevDecision        bool                 `json:"repeat_prev_decision"`
+	IsEditable                *bool                `json:"is_editable"`
 	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings"`
 }
 
@@ -43,8 +43,8 @@ func (a *FormParams) Validate() error {
 		return fmt.Errorf("invalid SLA value %d", a.SLA)
 	}
 
-	if !a.RepeatPrevDecision && a.ReEnterSettings == nil {
-		return errors.New("reEnterSettings can`t be empty when RepeatPrevDecision = true")
+	if (a.IsEditable != nil && *a.IsEditable) && a.ReEnterSettings == nil {
+		return errors.New("reEnterSettings can`t be empty when IsEditable = true")
 	}
 
 	if a.ReEnterSettings != nil {

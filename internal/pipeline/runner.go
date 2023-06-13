@@ -50,4 +50,5 @@ type Runner interface {
 	UpdateManual() bool
 	Members() []Member
 	Deadlines() []Deadline
+	IsReEntered() bool
 }

@@ -406,3 +406,7 @@ func (gb *ExecutableFunctionBlock) deleteNodeNamesFromVariables(variablesWithFul
 
 	return variables
 }
+
+func (gb *ExecutableFunctionBlock) IsReEntered() bool {
+	return false
+}

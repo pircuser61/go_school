@@ -56,8 +56,9 @@ type FormData struct {
 
 	Mapping script.JSONSchemaProperties `json:"mapping"`
 
-	RepeatPrevDecision bool                        `json:"repeat_prev_decision"`
-	ReEnterSettings    *script.FormReEnterSettings `json:"form_re_enter_settings"`
+	IsReEntered     *bool                       `json:"is_re_entered"`
+	IsEditable      *bool                       `json:"is_editable"`
+	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings"`
 }
 
 type GoFormBlock struct {
@@ -133,6 +134,10 @@ func (gb *GoFormBlock) GetStatus() Status {
 	}
 
 	return StatusRunning
+}
+
+func (gb *GoFormBlock) IsReEntered() bool {
+	return gb.State.IsReEntered != nil && *gb.State.IsReEntered
 }
 
 func (gb *GoFormBlock) GetTaskHumanStatus() TaskHumanStatus {

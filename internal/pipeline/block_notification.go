@@ -235,3 +235,7 @@ func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []s
 
 	return requiredFiles, skippedFiles
 }
+
+func (gb *GoNotificationBlock) IsReEntered() bool {
+	return false
+}

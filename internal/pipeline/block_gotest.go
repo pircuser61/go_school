@@ -124,3 +124,7 @@ func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContex
 	}
 	return b
 }
+
+func (gb *GoTestBlock) IsReEntered() bool {
+	return false
+}

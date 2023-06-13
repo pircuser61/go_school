@@ -71,6 +71,8 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context) error {
 		return nil
 	}
 
+	isReEntered := true
+	gb.State.IsReEntered = &isReEntered
 	gb.State.Decision = nil
 	gb.State.Comment = nil
 	gb.State.DecisionAttachments = make([]string, 0)
@@ -421,4 +423,8 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 	}
 
 	return true
+}
+
+func (gb *GoApproverBlock) IsReEntered() bool {
+	return gb.State.IsReEntered != nil && *gb.State.IsReEntered
 }

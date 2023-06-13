@@ -192,3 +192,7 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *Block
 
 	return b, nil
 }
+
+func (gb *GoSdApplicationBlock) IsReEntered() bool {
+	return false
+}

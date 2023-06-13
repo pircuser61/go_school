@@ -114,3 +114,7 @@ func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRu
 
 	return b
 }
+
+func (gb *GoPlaceholderBlock) IsReEntered() bool {
+	return false
+}
