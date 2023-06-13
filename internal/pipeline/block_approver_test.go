@@ -493,6 +493,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 			got, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, &BlockRunContext{
 				skipNotifications: true,
 				VarStore:          store.NewStore(),
+				Storage:           makeStorage(),
 			})
 			if got != nil {
 				got.RunContext = nil
