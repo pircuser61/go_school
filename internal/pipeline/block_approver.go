@@ -122,9 +122,8 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 		}}
 }
 
-//nolint:dupl //Need here
+//nolint:dupl,gocyclo //Need here
 func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
-
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.Decision != nil && len(gb.State.AddInfo) > 0 &&
@@ -146,7 +145,8 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 	if gb.State.CheckSLA {
 		calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-			[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 		)
 		if getCalendarDaysErr != nil {
 			return nil, getCalendarDaysErr
@@ -163,7 +163,8 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), calendarDays, &startWorkHour, &endWorkHour, weekends),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), calendarDays,
+					&startWorkHour, &endWorkHour, weekends),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -171,7 +172,8 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, calendarDays, &startWorkHour, &endWorkHour, weekends),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, calendarDays,
+					&startWorkHour, &endWorkHour, weekends),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)

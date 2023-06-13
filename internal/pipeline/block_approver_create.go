@@ -264,7 +264,8 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 	emails := make(map[string]mail.Template, 0)
 	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 	)
 	if getCalendarDaysErr != nil {
 		return getCalendarDaysErr

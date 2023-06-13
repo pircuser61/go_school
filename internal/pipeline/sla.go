@@ -63,7 +63,8 @@ func (t *WorkHourType) GetWeekends() ([]time.Weekday, error) {
 	}
 }
 
-func getWorkHoursBetweenDates(from, to time.Time, calendarDays *hrgate.CalendarDays, startWorkHourPtr, endWorkHourPtr *int, weekends []time.Weekday) (workHours int) {
+func getWorkHoursBetweenDates(from, to time.Time, calendarDays *hrgate.CalendarDays,
+	startWorkHourPtr, endWorkHourPtr *int, weekends []time.Weekday) (workHours int) {
 	from = from.UTC()
 	to = to.UTC()
 
@@ -128,7 +129,8 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHo
 	return false
 }
 
-func ComputeMaxDate(start time.Time, sla float32, calendarDays *hrgate.CalendarDays, startWorkHourPtr, endWorkHourPtr *int, weekends []time.Weekday) time.Time {
+func ComputeMaxDate(start time.Time, sla float32, calendarDays *hrgate.CalendarDays,
+	startWorkHourPtr, endWorkHourPtr *int, weekends []time.Weekday) time.Time {
 	// SLA in hours
 	// Convert to minutes
 	deadline := start.UTC()
@@ -197,6 +199,7 @@ func CheckBreachSLA(start, current time.Time, sla int, startWorkHour, endWorkHou
 	return current.UTC().After(deadline)
 }
 
-func ComputeDeadline(start time.Time, sla int, calendarDays *hrgate.CalendarDays, startWorkHour, endWorkHour *int, weekends []time.Weekday) string {
+func ComputeDeadline(start time.Time, sla int, calendarDays *hrgate.CalendarDays,
+	startWorkHour, endWorkHour *int, weekends []time.Weekday) string {
 	return ComputeMaxDate(start, float32(sla), calendarDays, startWorkHour, endWorkHour, weekends).Format(ddmmyyFormat)
 }

@@ -3,10 +3,12 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"golang.org/x/net/context"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/pkg/errors"
+
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -110,7 +112,8 @@ func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 	if gb.State.CheckSLA {
 		calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-			[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 		)
 		if getCalendarDaysErr != nil {
 			return nil, getCalendarDaysErr
@@ -126,7 +129,8 @@ func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		}
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), calendarDays, &startWorkHour, &endWorkHour, weekends),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA),
+					calendarDays, &startWorkHour, &endWorkHour, weekends),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -134,7 +138,8 @@ func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, calendarDays, &startWorkHour, &endWorkHour, weekends),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
+					calendarDays, &startWorkHour, &endWorkHour, weekends),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
@@ -400,7 +405,8 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 
 		if isGroupExecutors {
 			calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-				[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+				[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+					FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 			)
 			if getCalendarDaysErr != nil {
 				return getCalendarDaysErr
