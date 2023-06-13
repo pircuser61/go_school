@@ -66,6 +66,11 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	p.ID = uuid.New()
 	p.VersionID = uuid.New()
 
+	if len(p.Pipeline.Blocks) == 0 {
+		p.Pipeline.FillEmptyPipeline()
+		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
+	}
+
 	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate() {
 		e := PipelineValidateError
 		log.Error(e.errorMessage(err))

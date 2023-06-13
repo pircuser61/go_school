@@ -22,6 +22,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
@@ -164,6 +165,12 @@ func main() {
 		return
 	}
 
+	fileRegistryService, err := file_registry.NewService(cfg.FileRegistry)
+	if err != nil {
+		log.WithError(err).Error("can't create file-registry service")
+		return
+	}
+
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
 	APIEnv := &api.APIEnv{
@@ -181,6 +188,7 @@ func main() {
 		HumanTasks:              humanTasksService,
 		MailFetcher:             mailFetcher,
 		Minio:                   fileService,
+		FileRegistry:            fileRegistryService,
 		Integrations:            integrationsService,
 		HrGate:                  hrgateService,
 		IncludePlaceholderBlock: includePlaceholderBlock,

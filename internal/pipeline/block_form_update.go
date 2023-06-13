@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -24,47 +23,6 @@ type updateFillFormParams struct {
 func (a *updateFillFormParams) Validate() error {
 	if a.BlockId == "" || a.Description == "" || len(a.ApplicationBody) == 0 {
 		return errors.New("empty form data")
-	}
-
-	return nil
-}
-
-// nolint:dupl // another action
-func (gb *GoFormBlock) cancelPipeline(ctx c.Context) error {
-	l := logger.GetLogger(ctx)
-
-	var currentLogin = gb.RunContext.UpdateData.ByLogin
-	var initiator = gb.RunContext.Initiator
-
-	if currentLogin != initiator {
-		return NewUserIsNotPartOfProcessErr()
-	}
-
-	gb.State.IsRevoked = true
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
-		return stopErr
-	}
-	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
-		return stopErr
-	}
-
-	stateBytes, err := json.Marshal(gb.State)
-	if err != nil {
-		return err
-	}
-
-	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
-
-	if gb.State.FormExecutorType == script.FormExecutorTypeGroup {
-		em := mail.NewRejectPipelineGroupTemplate(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
-		userEmail, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
-		if getEmailErr != nil {
-			l.WithField("login", gb.RunContext.Initiator).WithError(getEmailErr).Warning("couldn't get email")
-			return nil
-		}
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{userEmail}, nil, em); sendErr != nil {
-			return sendErr
-		}
 	}
 
 	return nil
@@ -86,11 +44,6 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.handleHalfSLABreached(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
-	case string(entity.TaskUpdateActionCancelApp):
-		if errUpdate := gb.cancelPipeline(ctx); errUpdate != nil {
-			return nil, errUpdate
-		}
-		return nil, nil
 	case string(entity.TaskUpdateActionRequestFillForm):
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill

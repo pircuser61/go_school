@@ -3,13 +3,12 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/pkg/errors"
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"golang.org/x/net/context"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -88,14 +87,11 @@ func (gb *GoFormBlock) Members() []Member {
 }
 
 func (gb *GoFormBlock) isFormFinished() bool {
-	if gb.State.IsFilled || gb.State.IsRevoked {
-		return true
-	}
-	return false
+	return gb.State.IsFilled
 }
 
 func (gb *GoFormBlock) formActions() []MemberAction {
-	if gb.State.IsFilled || gb.State.IsRevoked {
+	if gb.State.IsFilled {
 		return []MemberAction{}
 	}
 	action := MemberAction{
@@ -153,9 +149,6 @@ func (gb *GoFormBlock) UpdateManual() bool {
 }
 
 func (gb *GoFormBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked {
-		return StatusCancel
-	}
 	if gb.State != nil && gb.State.IsFilled {
 		return StatusFinished
 	}
@@ -164,9 +157,6 @@ func (gb *GoFormBlock) GetStatus() Status {
 }
 
 func (gb *GoFormBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked {
-		return StatusRevoke
-	}
 	if gb.State != nil && gb.State.IsFilled {
 		return StatusDone
 	}

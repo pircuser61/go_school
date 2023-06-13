@@ -114,3 +114,7 @@ minio:
   secret_access_env_key: "SECRET_ACCESS_KEY"
   use_ssl: False
   bucket_name: "jocasta-attachments"
+
+file_registry:
+  rest: 'file-registry:8000'
+  grpc: 'file-registry:90'

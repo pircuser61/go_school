@@ -19,6 +19,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -44,6 +45,7 @@ type BlockRunContext struct {
 	FunctionStore      *functions.Service
 	HumanTasks         *human_tasks.Service
 	Integrations       *integrations.Service
+	FileRegistry       *file_registry.Service
 	FaaS               string
 	VarStore           *store.VariableStore
 	UpdateData         *script.BlockUpdateData

@@ -77,6 +77,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
+		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
@@ -351,7 +352,7 @@ func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
 			externalSystem.InputMapping.Properties,
 			appBody,
 			externalSystem.InputMapping.Required,
-			nil,
+			0,
 		)
 		if err != nil {
 			return orderedmap.OrderedMap{}, err
@@ -596,6 +597,11 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		_ = e.sendError(w)
 
 		return
+	}
+
+	if len(p.Pipeline.Blocks) == 0 {
+		p.Pipeline.FillEmptyPipeline()
+		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 
 	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate() {
@@ -850,6 +856,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		FunctionStore: ep.FunctionStore,
 		HumanTasks:    ep.HumanTasks,
 		Integrations:  ep.Integrations,
+		FileRegistry:  ep.FileRegistry,
 		FaaS:          ep.FaaS,
 		HrGate:        ae.HrGate,
 

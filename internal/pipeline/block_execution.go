@@ -52,14 +52,11 @@ func (gb *GoExecutionBlock) Members() []Member {
 }
 
 func (gb *GoExecutionBlock) isExecutionFinished() bool {
-	if gb.State.Decision != nil || gb.State.IsRevoked {
-		return true
-	}
-	return false
+	return gb.State.Decision != nil
 }
 
 func (gb *GoExecutionBlock) executionActions() []MemberAction {
-	if gb.State.Decision != nil || gb.State.IsRevoked {
+	if gb.State.Decision != nil {
 		return nil
 	}
 
@@ -96,10 +93,6 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 
 //nolint:dupl //Need here
 func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
-	if gb.State.IsRevoked {
-		return []Deadline{}, nil
-	}
-
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.Decision != nil && len(gb.State.RequestExecutionInfoLogs) > 0 &&
@@ -184,10 +177,6 @@ func (gb *GoExecutionBlock) UpdateManual() bool {
 
 // nolint:dupl // another block
 func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State != nil && gb.State.IsRevoked {
-		return StatusRevoke
-	}
-
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusDone
@@ -209,10 +198,6 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 
 // nolint:dupl // another block
 func (gb *GoExecutionBlock) GetStatus() Status {
-	if gb.State != nil && gb.State.IsRevoked {
-		return StatusCancel
-	}
-
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusFinished
@@ -288,7 +273,6 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		Sockets: []script.Socket{
 			script.ExecutedSocket,
 			script.NotExecutedSocket,
-			script.ExecutorEditAppSocket,
 		},
 	}
 }
