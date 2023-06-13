@@ -540,6 +540,7 @@ github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475/go.mod h1:bCqn
 github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 h1:OdAsTTz6OkFY5QxjkYwrChwuRruF69c169dPK26NUlk=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
+github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
 github.com/rs/xid v1.4.0 h1:qd7wPTDkN6KQx2VmMBLrpHkiyQwgFXRnkOLacUiaSNY=
@@ -640,8 +641,12 @@ gitlab.services.mts.ru/jocasta/conditions-kit v1.0.1 h1:Qlm9UR7vM1++D7bobhE/4swZ
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.1/go.mod h1:6Q7Q5QkybhdvGpYBOojsDENuKigwRxZCCX+b/F9Y5w0=
 gitlab.services.mts.ru/jocasta/file-registry v1.1.1 h1:yieYrPIAgHzwrk9an4hW5sj0P4AEcpaTRnC7aq9z9xM=
 gitlab.services.mts.ru/jocasta/file-registry v1.1.1/go.mod h1:xN/W1j0dnKo6zSsXR/Hg5U4wfYtm1x8EAp3TnkAWU04=
+gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/lyqa+CrStWUJ4nAd5H5j4w=
+gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2/go.mod h1:ANtPfoYQBM4QcDLHXkOZL+NJwQ3mKm3MF3M3KnwFIPs=
 gitlab.services.mts.ru/jocasta/functions v1.6.0 h1:m+TKuwBqXhroTDDeQZQXUUT7ilH8/q//gO9+OqyOgH8=
 gitlab.services.mts.ru/jocasta/functions v1.6.0/go.mod h1:Ubz3OfokfsWP4+zO3fPXqtEbnuAz2bqFWlmh0hRQkoM=
+gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3 h1:5pW66koPEYP8/ZUilXUjJYRgJO4doHbs+ZVOEvKUgIE=
+gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3/go.mod h1:s5ymK5liDXfZRBcLNOFZr+YleyYBNCUCUhzr6ddtJuo=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.5 h1:2R/O353nyzJnW/AV/J+FK2s3ZKnovYEVRCCgyhgXz68=
 gitlab.services.mts.ru/jocasta/human-tasks v1.0.5/go.mod h1:0cRAzWs8DS7v7CJYYzTK+KT5jO0krE+lWxQ7yu9fPXU=
 gitlab.services.mts.ru/jocasta/integrations v1.6.0 h1:JjOF2a1+whFc+0NMsD0h1Ip0yq60YO8e8e1MPsOo41s=
