@@ -11,7 +11,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -218,6 +217,21 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		}
 	}
 
+	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+	)
+	if getCalendarDaysErr != nil {
+		return getCalendarDaysErr
+	}
+	workHourType := WorkHourType(gb.State.WorkType)
+	startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
+	if getWorkingHoursErr != nil {
+		return getWorkingHoursErr
+	}
+	weekends, getWeekendsErr := workHourType.GetWeekends()
+	if getWeekendsErr != nil {
+		return getWeekendsErr
+	}
 	for _, login := range loginsToNotify {
 		email, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
@@ -238,15 +252,13 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 				},
 			)
 		} else {
-			var calendarDays *hrgate.CalendarDays
-			//todo
 			emails[email] = mail.NewAppPersonStatusNotificationTpl(
 				&mail.NewAppPersonStatusTpl{
 					WorkNumber:  gb.RunContext.WorkNumber,
 					Name:        gb.RunContext.WorkTitle,
 					Status:      string(StatusExecution),
 					Action:      statusToTaskAction[StatusExecution],
-					DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, calendarDays),
+					DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, calendarDays, &startWorkHour, &endWorkHour, weekends),
 					Description: description,
 					SdUrl:       gb.RunContext.Sender.SdAddress,
 					Mailto:      gb.RunContext.Sender.FetchEmail,

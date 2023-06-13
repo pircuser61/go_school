@@ -11,7 +11,6 @@ import (
 	"golang.org/x/net/context"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -401,8 +400,6 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	var emailAttachment []e.Attachment
 
 	var emails = make(map[string]mail.Template, 0)
-	var calendarDays *hrgate.CalendarDays
-	//todo
 
 	for _, login := range executors {
 		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
@@ -412,10 +409,25 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		if isGroupExecutors {
+			calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+				[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			)
+			if getCalendarDaysErr != nil {
+				return getCalendarDaysErr
+			}
+			workHourType := WorkHourType(gb.State.WorkType)
+			startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
+			if getWorkingHoursErr != nil {
+				return getWorkingHoursErr
+			}
+			weekends, getWeekendsErr := workHourType.GetWeekends()
+			if getWeekendsErr != nil {
+				return getWeekendsErr
+			}
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
-				ComputeDeadline(time.Now(), gb.State.SLA, calendarDays),
+				ComputeDeadline(time.Now(), gb.State.SLA, calendarDays, &startWorkHour, &endWorkHour, weekends),
 			)
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(

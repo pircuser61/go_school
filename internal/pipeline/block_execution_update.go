@@ -15,7 +15,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 )
@@ -723,15 +722,28 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return emailErr
 	}
 
-	var calendarDays *hrgate.CalendarDays
-	//todo
+	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+	)
+	if getCalendarDaysErr != nil {
+		return getCalendarDaysErr
+	}
+	workHourType := WorkHourType(gb.State.WorkType)
+	startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
+	if getWorkingHoursErr != nil {
+		return getWorkingHoursErr
+	}
+	weekends, getWeekendsErr := workHourType.GetWeekends()
+	if getWeekendsErr != nil {
+		return getWeekendsErr
+	}
 	tpl = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
 			WorkNumber:  gb.RunContext.WorkNumber,
 			Name:        gb.RunContext.WorkTitle,
 			Status:      string(StatusExecution),
 			Action:      statusToTaskAction[StatusExecution],
-			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, calendarDays),
+			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, calendarDays, &startWorkHour, &endWorkHour, weekends),
 			Description: description,
 			SdUrl:       gb.RunContext.Sender.SdAddress,
 			Mailto:      gb.RunContext.Sender.FetchEmail,
