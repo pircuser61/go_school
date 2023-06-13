@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -71,8 +70,6 @@ func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolv
 		return entitiesToResolve, nil
 	}
 
-	fmt.Println(variableStorage)
-	fmt.Println(toResolve)
 	return nil, errors.New("Unexpected behavior")
 }
 

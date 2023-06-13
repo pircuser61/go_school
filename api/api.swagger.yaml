@@ -3603,19 +3603,9 @@ components:
       properties:
         form_executor_type:
           $ref: '#/components/schemas/FormExecutorType'
-        executor:
+        value:
           type: string
-          description: Executor value
-        sla:
-          type: integer
-          description: form sla
-          minimum: 1
-        check_sla:
-          type: boolean
-          description: Is active SLA
-        form_group_id:
-          type: string
-          description: Form group id in SD
+          description: Executor login, variable or group id
 
     JSONSchemaProperties:
       type: object

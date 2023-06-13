@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -44,7 +43,6 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 
 		// это для возврата в рамках одного процесса
 		if runCtx.UpdateData == nil || runCtx.UpdateData.Action == "" {
-			fmt.Println("EXECUTION IsReEntered")
 			if err := b.reEntry(ctx); err != nil {
 				return nil, err
 			}

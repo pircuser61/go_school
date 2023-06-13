@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -61,15 +62,9 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.ActualExecutor = nil
 
 	if gb.State.ReEnterSettings != nil {
-		gb.State.CheckSLA = gb.State.ReEnterSettings.CheckSLA
-		gb.State.SLA = gb.State.ReEnterSettings.SLA
-		gb.State.FormExecutorType = gb.State.ReEnterSettings.FormExecutorType
-		gb.State.FormGroupId = gb.State.ReEnterSettings.FormGroupId
-
 		setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
 			FormExecutorType: gb.State.ReEnterSettings.FormExecutorType,
-			FormGroupId:      gb.State.ReEnterSettings.FormGroupId,
-			Executor:         gb.State.ReEnterSettings.Executor,
+			Value:            gb.State.ReEnterSettings.Value,
 		})
 		if setErr != nil {
 			return setErr
@@ -114,10 +109,14 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		ReEnterSettings:           params.ReEnterSettings,
 	}
 
+	executorValue := params.Executor
+	if params.FormExecutorType == script.FormExecutorTypeGroup {
+		executorValue = params.FormGroupId
+	}
+
 	if setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
 		FormExecutorType: params.FormExecutorType,
-		FormGroupId:      params.FormGroupId,
-		Executor:         params.Executor,
+		Value:            executorValue,
 	}); setErr != nil {
 		return setErr
 	}
@@ -127,15 +126,14 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 
 type setFormExecutorsByParamsDTO struct {
 	FormExecutorType script.FormExecutorType
-	FormGroupId      string
-	Executor         string
+	Value            string
 }
 
 func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutorsByParamsDTO) error {
 	switch dto.FormExecutorType {
 	case script.FormExecutorTypeUser:
 		gb.State.Executors = map[string]struct{}{
-			dto.Executor: {},
+			dto.Value: {},
 		}
 	case script.FormExecutorTypeInitiator:
 		gb.State.Executors = map[string]struct{}{
@@ -150,7 +148,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		resolvedEntities, resolveErr := resolveValuesFromVariables(
 			variableStorage,
 			map[string]struct{}{
-				dto.Executor: {},
+				dto.Value: {},
 			},
 		)
 		if resolveErr != nil {
@@ -163,21 +161,22 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 			return err
 		}
 	case script.FormExecutorTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.FormGroupId)
+		gb.State.FormGroupId = dto.Value
+		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.Value)
 		if errGroup != nil {
-			return errors.Wrap(errGroup, "can`t get form group with id: "+dto.FormGroupId)
+			return errors.Wrap(errGroup, "can`t get form group with id: "+dto.Value)
 		}
 
 		if len(workGroup.People) == 0 {
 			//nolint:goimports // bugged golint
-			return errors.New("zero form executors in group: " + dto.FormGroupId)
+			return errors.New("zero form executors in group: " + dto.Value)
 		}
 
 		gb.State.Executors = make(map[string]struct{})
 		for i := range workGroup.People {
 			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
 		}
-		gb.State.FormGroupId = dto.FormGroupId
+		gb.State.FormGroupId = dto.Value
 		gb.State.FormExecutorsGroupName = workGroup.GroupName
 	}
 

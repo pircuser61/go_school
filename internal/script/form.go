@@ -48,8 +48,8 @@ func (a *FormParams) Validate() error {
 	}
 
 	if a.ReEnterSettings != nil {
-		if a.ReEnterSettings.SLA < 1 && a.ReEnterSettings.CheckSLA {
-			return fmt.Errorf("invalid reEnterSettings.SLA value %d", a.ReEnterSettings.SLA)
+		if a.ReEnterSettings.Value == "" {
+			return fmt.Errorf("invalid reEnterSettings.Value %s", a.ReEnterSettings.Value)
 		}
 	}
 	return nil
@@ -57,8 +57,5 @@ func (a *FormParams) Validate() error {
 
 type FormReEnterSettings struct {
 	FormExecutorType FormExecutorType `json:"form_executor_type"`
-	FormGroupId      string           `json:"form_group_id"`
-	SLA              int              `json:"sla"`
-	CheckSLA         bool             `json:"check_sla"`
-	Executor         string           `json:"executor"`
+	Value            string           `json:"value"`
 }

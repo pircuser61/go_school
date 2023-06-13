@@ -988,12 +988,6 @@ type FormParams struct {
 
 // Настройки блока при повторном заходе в этот блок
 type FormReEnterSettings struct {
-	// Is active SLA
-	CheckSla *bool `json:"check_sla,omitempty"`
-
-	// Executor value
-	Executor *string `json:"executor,omitempty"`
-
 	// Form executor type:
 	//   * User - Single user
 	//   * group - Form group ID
@@ -1002,11 +996,8 @@ type FormReEnterSettings struct {
 	//   * Auto_Fill - Auto Fill form by system
 	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
 
-	// Form group id in SD
-	FormGroupId *string `json:"form_group_id,omitempty"`
-
-	// form sla
-	Sla *int `json:"sla,omitempty"`
+	// Executor login, variable or group id
+	Value *string `json:"value,omitempty"`
 }
 
 // FormsAccessibility defines model for FormsAccessibility.
