@@ -1591,7 +1591,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		return NullUuid, time.Time{}, nil
 	}
 
-	if id != NullUuid {
+	if id != NullUuid && dto.IsReEntered {
 		return id, t, nil
 	}
 	id = uuid.New()

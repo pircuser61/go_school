@@ -178,7 +178,7 @@ func Test_createGoFormBlock(t *testing.T) {
 						r, _ := json.Marshal(&script.FormParams{
 							SchemaId:         schemaId,
 							SchemaName:       schemaName,
-							Executor:         executor,
+							Executor:         "form.executor",
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
 
@@ -188,7 +188,11 @@ func Test_createGoFormBlock(t *testing.T) {
 				},
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
-					VarStore:          store.NewStore(),
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("form.executor", executor)
+						return s
+					}(),
 				},
 			},
 			want: &GoFormBlock{

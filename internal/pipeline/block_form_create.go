@@ -3,7 +3,6 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -115,7 +114,11 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		ReEnterSettings:           params.ReEnterSettings,
 	}
 
-	if setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{}); setErr != nil {
+	if setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
+		FormExecutorType: params.FormExecutorType,
+		FormGroupId:      params.FormGroupId,
+		Executor:         params.Executor,
+	}); setErr != nil {
 		return setErr
 	}
 
