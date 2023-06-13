@@ -272,7 +272,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	runCtx.currBlockStartTime = time.Now() // will be used only for the block creation
 	deadlines := block.Deadlines()
 	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()),
-		block.Members(), deadlines)
+		block.Members(), deadlines, block.IsReEntered())
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -295,7 +295,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	pl []Member, deadlines []Deadline) (uuid.UUID, time.Time, error) {
+	pl []Member, deadlines []Deadline, isReEntered bool) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
@@ -333,6 +333,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 		Status:      status,
 		Members:     dbPeople,
 		Deadlines:   dbDeadlines,
+		IsReEntered: isReEntered,
 	})
 }
 

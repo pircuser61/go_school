@@ -4410,7 +4410,7 @@ components:
           description: Constant values for function parameters (key of object is variable name)
         is_editable:
           type: boolean
-          description: true - need manual feel when reenter in block
+          description: true - need manual fill when reenter in block
         form_re_enter_settings:
           $ref: '#/components/schemas/FormReEnterSettings'
       required:

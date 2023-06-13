@@ -373,3 +373,7 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 
 	return true
 }
+
+func (gb *GoExecutionBlock) IsReEntered() bool {
+	return gb.State.IsReEntered != nil && *gb.State.IsReEntered
+}

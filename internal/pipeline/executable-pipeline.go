@@ -179,3 +179,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 
 	return nil
 }
+
+func (gb *ExecutablePipeline) IsReEntered() bool {
+	return false
+}
