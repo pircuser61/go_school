@@ -234,7 +234,7 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 		{
 			name: "work days with preholidays and holidays days",
 			fields: fields{
-				from: time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC),
+				from: time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC),
 				to:   time.Date(2022, 07, 21, 15, 30, 0, 0, time.UTC),
 				calendarDays: &hrgate.CalendarDays{
 					CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
