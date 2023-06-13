@@ -170,9 +170,12 @@ func Test_ComputeDeadline(t *testing.T) {
 
 func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 	type fields struct {
-		from         time.Time
-		to           time.Time
-		calendarDays *hrgate.CalendarDays
+		from             time.Time
+		to               time.Time
+		calendarDays     *hrgate.CalendarDays
+		startWorkHourPtr *int
+		endWorkHourPtr   *int
+		weekends         []time.Weekday
 	}
 	tests := []struct {
 		name          string
@@ -242,7 +245,7 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotWorkHours := getWorkHoursBetweenDates(tt.fields.from, tt.fields.to, tt.fields.calendarDays, nil, nil, nil); gotWorkHours != tt.wantWorkHours {
+			if gotWorkHours := getWorkHoursBetweenDates(tt.fields.from, tt.fields.to, tt.fields.calendarDays, tt.fields.startWorkHourPtr, tt.fields.endWorkHourPtr, tt.fields.weekends); gotWorkHours != tt.wantWorkHours {
 				t.Errorf("getWorkHoursBetweenDates() = %v, want %v", gotWorkHours, tt.wantWorkHours)
 			}
 		})
