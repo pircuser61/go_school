@@ -47,7 +47,7 @@ func (a *FormParams) Validate() error {
 		return errors.New("reEnterSettings can`t be empty when RepeatPrevDecision = true")
 	}
 
-	if !a.RepeatPrevDecision && a.ReEnterSettings != nil {
+	if a.ReEnterSettings != nil {
 		if a.ReEnterSettings.SLA < 1 && a.ReEnterSettings.CheckSLA {
 			return fmt.Errorf("invalid reEnterSettings.SLA value %d", a.ReEnterSettings.SLA)
 		}

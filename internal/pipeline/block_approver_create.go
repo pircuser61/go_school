@@ -44,7 +44,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		}
 
 		// это для возврата на доработку в рамках одного процесса
-		if runCtx.UpdateData == nil || runCtx.UpdateData.Action != "" {
+		if runCtx.UpdateData == nil || runCtx.UpdateData.Action == "" {
 			if err := b.reEntry(ctx); err != nil {
 				return nil, err
 			}
