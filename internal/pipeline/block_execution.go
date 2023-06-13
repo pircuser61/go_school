@@ -255,7 +255,6 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		Sockets: []script.Socket{
 			script.ExecutedSocket,
 			script.NotExecutedSocket,
-			script.ExecutorEditAppSocket,
 		},
 	}
 }
