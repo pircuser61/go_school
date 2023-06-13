@@ -481,6 +481,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 							Title: script.RejectSocketTitle,
 						},
 					},
+					WorkType: string(WorkTypeN85),
 				},
 				Sockets: entity.ConvertSocket(next),
 			},

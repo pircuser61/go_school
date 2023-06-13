@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"io"
 	"net/http"
 	"testing"
@@ -259,6 +260,7 @@ func Test_createGoFormBlock(t *testing.T) {
 									Value: "sd.form_0.b",
 								},
 							},
+							WorkType: utils.GetAddressOfValue("8/5"),
 						})
 
 						return r
@@ -296,6 +298,7 @@ func Test_createGoFormBlock(t *testing.T) {
 						"a": 100,
 						"b": 200,
 					},
+					WorkType: "8/5",
 					IsFilled: true,
 					Mapping: script.JSONSchemaProperties{
 						"a": script.JSONSchemaPropertiesValue{
