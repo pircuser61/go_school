@@ -590,7 +590,24 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	}
 
 	gb.State.IsTakenInWork = true
-	workHours := getWorkHoursBetweenDates(gb.RunContext.currBlockStartTime, time.Now(), nil)
+
+	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+	)
+	if getCalendarDaysErr != nil {
+		return getCalendarDaysErr
+	}
+	workHourType := WorkHourType(gb.State.WorkType)
+	startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
+	if getWorkingHoursErr != nil {
+		return getWorkingHoursErr
+	}
+	weekends, getWeekendsErr := workHourType.GetWeekends()
+	if getWeekendsErr != nil {
+		return getWeekendsErr
+	}
+
+	workHours := getWorkHoursBetweenDates(gb.RunContext.currBlockStartTime, time.Now(), calendarDays, &startWorkHour, &endWorkHour, weekends)
 	gb.State.IncreaseSLA(workHours)
 
 	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {

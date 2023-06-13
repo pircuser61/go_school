@@ -11,7 +11,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -284,6 +283,7 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 	}
 
 	gb.State.IsTakenInWork = true
+
 	workHours := getWorkHoursBetweenDates(
 		gb.RunContext.currBlockStartTime,
 		time.Now(),
@@ -348,14 +348,26 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return emailErr
 	}
 
-	var calendarDays *hrgate.CalendarDays
-	var startworkHour, endWorkHour int
+	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime, FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+	)
+	if getCalendarDaysErr != nil {
+		return getCalendarDaysErr
+	}
+	workHourType := WorkHourType(gb.State.WorkType)
+	startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
+	if getWorkingHoursErr != nil {
+		return getWorkingHoursErr
+	}
+	weekends, getWeekendsErr := workHourType.GetWeekends()
+	if getWeekendsErr != nil {
+		return getWeekendsErr
+	}
 
-	//todo
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle,
 		gb.RunContext.Sender.SdAddress,
-		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, calendarDays, startworkHour, endWorkHour),
+		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, calendarDays, &startWorkHour, &endWorkHour, weekends),
 	)
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {
