@@ -125,8 +125,8 @@ func (bt *BlocksType) IsSdBlueprintFilled() bool {
 	if err != nil {
 		return false
 	}
-
-	return len(params.BlueprintID) > 0
+	_, err = uuid.Parse(params.BlueprintID)
+	return err == nil
 }
 
 func (bt *BlocksType) addDefaultStartNode() {
