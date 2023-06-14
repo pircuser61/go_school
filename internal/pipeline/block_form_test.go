@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"io"
 	"net/http"
 	"testing"
@@ -17,6 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	delegationht "gitlab.services.mts.ru/jocasta/human-tasks/pkg/proto/gen/proto/go/delegation"
+
 	dbMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -25,6 +25,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func Test_createGoFormBlock(t *testing.T) {
