@@ -340,7 +340,12 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle,
 		gb.RunContext.Sender.SdAddress,
-		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, calendarDays, &startWorkHour, &endWorkHour, weekends),
+		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, &SLAInfo{
+			CalendarDays:     calendarDays,
+			StartWorkHourPtr: &startWorkHour,
+			EndWorkHourPtr:   &endWorkHour,
+			Weekends:         weekends,
+		}),
 	)
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {

@@ -255,11 +255,16 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		} else {
 			emails[email] = mail.NewAppPersonStatusNotificationTpl(
 				&mail.NewAppPersonStatusTpl{
-					WorkNumber:  gb.RunContext.WorkNumber,
-					Name:        gb.RunContext.WorkTitle,
-					Status:      string(StatusExecution),
-					Action:      statusToTaskAction[StatusExecution],
-					DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, calendarDays, &startWorkHour, &endWorkHour, weekends),
+					WorkNumber: gb.RunContext.WorkNumber,
+					Name:       gb.RunContext.WorkTitle,
+					Status:     string(StatusExecution),
+					Action:     statusToTaskAction[StatusExecution],
+					DeadLine: ComputeDeadline(time.Now(), gb.State.SLA, &SLAInfo{
+						CalendarDays:     calendarDays,
+						StartWorkHourPtr: &startWorkHour,
+						EndWorkHourPtr:   &endWorkHour,
+						Weekends:         weekends,
+					}),
 					Description: description,
 					SdUrl:       gb.RunContext.Sender.SdAddress,
 					Mailto:      gb.RunContext.Sender.FetchEmail,

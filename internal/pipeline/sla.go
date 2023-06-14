@@ -21,6 +21,13 @@ const (
 
 type WorkHourType string
 
+type SLAInfo struct {
+	CalendarDays     *hrgate.CalendarDays `json:"calendar_days"`
+	StartWorkHourPtr *int                 `json:"start_work_hour"`
+	EndWorkHourPtr   *int                 `json:"end_work_hour"`
+	Weekends         []time.Weekday       `json:"weekends"`
+}
+
 const (
 	WorkTypeN125 WorkHourType = "12/5"
 
@@ -129,13 +136,24 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHo
 	return false
 }
 
-func ComputeMaxDate(start time.Time, sla float32, calendarDays *hrgate.CalendarDays,
-	startWorkHourPtr, endWorkHourPtr *int, weekends []time.Weekday) time.Time {
+func ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAInfo) time.Time {
 	// SLA in hours
 	// Convert to minutes
 	deadline := start.UTC()
 	slaInMinutes := sla * 60
 	slaDur := time.Minute * time.Duration(slaInMinutes)
+
+	var slaInfo SLAInfo
+	if slaInfoPtr == nil {
+		slaInfo = SLAInfo{}
+	} else {
+		slaInfo = *slaInfoPtr
+	}
+
+	calendarDays, startWorkHourPtr, endWorkHourPtr, weekends := slaInfo.CalendarDays,
+		slaInfo.StartWorkHourPtr,
+		slaInfo.EndWorkHourPtr,
+		slaInfo.Weekends
 
 	var startWorkHour, endWorkHour int
 
@@ -193,13 +211,12 @@ func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval
 	}
 }
 
-func CheckBreachSLA(start, current time.Time, sla int, startWorkHour, endWorkHour *int, weekends []time.Weekday) bool {
-	deadline := ComputeMaxDate(start, float32(sla), nil, startWorkHour, endWorkHour, weekends)
+func CheckBreachSLA(start, current time.Time, sla int, slaInfoPtr *SLAInfo) bool {
+	deadline := ComputeMaxDate(start, float32(sla), slaInfoPtr)
 
 	return current.UTC().After(deadline)
 }
 
-func ComputeDeadline(start time.Time, sla int, calendarDays *hrgate.CalendarDays,
-	startWorkHour, endWorkHour *int, weekends []time.Weekday) string {
-	return ComputeMaxDate(start, float32(sla), calendarDays, startWorkHour, endWorkHour, weekends).Format(ddmmyyFormat)
+func ComputeDeadline(start time.Time, sla int, slaInfoPtr *SLAInfo) string {
+	return ComputeMaxDate(start, float32(sla), slaInfoPtr).Format(ddmmyyFormat)
 }

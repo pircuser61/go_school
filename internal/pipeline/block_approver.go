@@ -130,13 +130,13 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil, nil, nil, nil),
+				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil),
 				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil, nil, nil, nil),
+			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil),
 			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 
@@ -163,8 +163,12 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), calendarDays,
-					&startWorkHour, &endWorkHour, weekends),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), &SLAInfo{
+					CalendarDays:     calendarDays,
+					StartWorkHourPtr: &startWorkHour,
+					EndWorkHourPtr:   &endWorkHour,
+					Weekends:         weekends,
+				}),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -172,8 +176,12 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, calendarDays,
-					&startWorkHour, &endWorkHour, weekends),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, &SLAInfo{
+					CalendarDays:     calendarDays,
+					StartWorkHourPtr: &startWorkHour,
+					EndWorkHourPtr:   &endWorkHour,
+					Weekends:         weekends,
+				}),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
@@ -182,7 +190,7 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 	if gb.State.IsEditable && gb.State.CheckReworkSLA && gb.State.EditingApp != nil {
 		deadlines = append(deadlines,
-			Deadline{Deadline: ComputeMaxDate(gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil, nil, nil, nil),
+			Deadline{Deadline: ComputeMaxDate(gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil),
 				Action: entity.TaskUpdateActionReworkSLABreach,
 			},
 		)
@@ -192,13 +200,13 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil, nil, nil, nil),
+				Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil),
 				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil, nil, nil, nil),
+			Deadline: ComputeMaxDate(gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil),
 			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}

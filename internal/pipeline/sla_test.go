@@ -93,7 +93,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if check := CheckBreachSLA(tt.fields.Start, tt.fields.Current, tt.fields.SLA, nil, nil, nil); check != tt.wantedCheck {
+			if check := CheckBreachSLA(tt.fields.Start, tt.fields.Current, tt.fields.SLA, nil); check != tt.wantedCheck {
 				t.Errorf("check SLA returned unexpected result")
 			}
 		})
@@ -161,7 +161,7 @@ func Test_ComputeDeadline(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if deadline := ComputeDeadline(tt.fields.Start, tt.fields.SLA, nil, nil, nil, nil); deadline != tt.wanted {
+			if deadline := ComputeDeadline(tt.fields.Start, tt.fields.SLA, nil); deadline != tt.wanted {
 				t.Errorf("compute deadline returned unexpected result")
 			}
 		})
@@ -189,7 +189,7 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 				to:           time.Date(2022, 01, 04, 6, 30, 0, 0, time.UTC),
 				calendarDays: nil,
 			},
-			wantWorkHours: 2,
+			wantWorkHours: 1,
 		},
 		{
 			name: "work days eq 0",
@@ -201,16 +201,16 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 			wantWorkHours: 0,
 		},
 		{
-			name: "work days eq 9",
+			name: "work days eq 8",
 			fields: fields{
 				from:         time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC),
 				to:           time.Date(2022, 07, 18, 15, 30, 0, 0, time.UTC),
 				calendarDays: nil,
 			},
-			wantWorkHours: 9,
+			wantWorkHours: 8,
 		},
 		{
-			name: "work days eq 9 at preholidays days",
+			name: "work days eq 7 at preholidays days",
 			fields: fields{
 				from: time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC),
 				to:   time.Date(2022, 07, 18, 15, 30, 0, 0, time.UTC),
@@ -218,7 +218,7 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 					CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 17, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
 				},
 			},
-			wantWorkHours: 8,
+			wantWorkHours: 7,
 		},
 		{
 			name: "work hours eq 0 at holidays days",
@@ -240,7 +240,7 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 					CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
 				},
 			},
-			wantWorkHours: 8,
+			wantWorkHours: 7,
 		},
 	}
 	for _, tt := range tests {

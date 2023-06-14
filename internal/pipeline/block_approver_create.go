@@ -288,11 +288,16 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 		emails[email] = mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
-				WorkNumber:                gb.RunContext.WorkNumber,
-				Name:                      gb.RunContext.WorkTitle,
-				Status:                    gb.State.ApproveStatusName,
-				Action:                    statusToTaskAction[StatusApprovement],
-				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA, calendarDays, &startWorkHour, &endWorkHour, weekends),
+				WorkNumber: gb.RunContext.WorkNumber,
+				Name:       gb.RunContext.WorkTitle,
+				Status:     gb.State.ApproveStatusName,
+				Action:     statusToTaskAction[StatusApprovement],
+				DeadLine: ComputeDeadline(time.Now(), gb.State.SLA, &SLAInfo{
+					CalendarDays:     calendarDays,
+					StartWorkHourPtr: &startWorkHour,
+					EndWorkHourPtr:   &endWorkHour,
+					Weekends:         weekends,
+				}),
 				SdUrl:                     gb.RunContext.Sender.SdAddress,
 				Mailto:                    gb.RunContext.Sender.FetchEmail,
 				Login:                     login,

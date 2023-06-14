@@ -11,6 +11,7 @@ import (
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -130,7 +131,12 @@ func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
 				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA),
-					calendarDays, &startWorkHour, &endWorkHour, weekends),
+					&SLAInfo{
+						CalendarDays:     calendarDays,
+						StartWorkHourPtr: &startWorkHour,
+						EndWorkHourPtr:   &endWorkHour,
+						Weekends:         weekends,
+					}),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -139,7 +145,12 @@ func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
 				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
-					calendarDays, &startWorkHour, &endWorkHour, weekends),
+					&SLAInfo{
+						CalendarDays:     calendarDays,
+						StartWorkHourPtr: &startWorkHour,
+						EndWorkHourPtr:   &endWorkHour,
+						Weekends:         weekends,
+					}),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
@@ -423,7 +434,12 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
-				ComputeDeadline(time.Now(), gb.State.SLA, calendarDays, &startWorkHour, &endWorkHour, weekends),
+				ComputeDeadline(time.Now(), gb.State.SLA, &SLAInfo{
+					CalendarDays:     calendarDays,
+					StartWorkHourPtr: &startWorkHour,
+					EndWorkHourPtr:   &endWorkHour,
+					Weekends:         weekends,
+				}),
 			)
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
