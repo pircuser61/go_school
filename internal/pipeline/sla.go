@@ -14,7 +14,7 @@ import (
 
 const (
 	workingHoursStart = 6
-	workingHoursEnd   = 15
+	workingHoursEnd   = 14
 
 	ddmmyyFormat = "02.01.2006"
 )
