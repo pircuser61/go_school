@@ -43,7 +43,7 @@ func upGo(tx *sql.Tx) error {
 			rows.Close()
 			return scanErr
 		}
-		halfSLADeadline = pipeline.ComputeMaxDate(resultRow.TimeStart, float32(resultRow.SLA)/2)
+		halfSLADeadline = pipeline.ComputeMaxDate(resultRow.TimeStart, float32(resultRow.SLA)/2, nil)
 		resultRows = append(resultRows, UpdateStruct{
 			Id:              resultRow.Id,
 			HalfSLADeadline: halfSLADeadline,

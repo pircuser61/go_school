@@ -22,8 +22,8 @@ func (gb *GoEndBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoEndBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *GoEndBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *GoEndBlock) GetStatus() Status {

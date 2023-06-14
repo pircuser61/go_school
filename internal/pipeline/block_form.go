@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/pkg/errors"
+
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
@@ -49,10 +52,13 @@ type FormData struct {
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
-	SLA            int  `json:"sla"`
-	CheckSLA       bool `json:"check_sla"`
-	SLAChecked     bool `json:"sla_checked"`
-	HalfSLAChecked bool `json:"half_sla_checked"`
+	IsRevoked bool `json:"is_revoked"`
+
+	SLA            int    `json:"sla"`
+	CheckSLA       bool   `json:"check_sla"`
+	SLAChecked     bool   `json:"sla_checked"`
+	HalfSLAChecked bool   `json:"half_sla_checked"`
+	WorkType       string `json:"work_type"`
 
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
@@ -98,13 +104,29 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	return []MemberAction{action}
 }
 
-func (gb *GoFormBlock) Deadlines() []Deadline {
+func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
+	if gb.State.IsRevoked {
+		return []Deadline{}, nil
+	}
+
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
+		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+			Service: gb.RunContext.HrGate,
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: WorkHourType(gb.State.WorkType),
+		})
+
+		if getSlaInfoErr != nil {
+			return nil, getSlaInfoErr
+		}
+
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA),
+					slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -112,14 +134,15 @@ func (gb *GoFormBlock) Deadlines() []Deadline {
 
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
+					slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
 		}
 	}
 
-	return deadlines
+	return deadlines, nil
 }
 
 func (gb *GoFormBlock) UpdateManual() bool {
@@ -298,6 +321,21 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		gb.State.FormExecutorsGroupName = workGroup.GroupName
 	}
 
+	if params.WorkType != nil {
+		gb.State.WorkType = *params.WorkType
+	} else {
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+		gb.State.WorkType = processSLASettings.WorkType
+	}
+
 	return gb.handleNotifications(ctx)
 }
 
@@ -353,6 +391,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	var emailAttachment []e.Attachment
 
 	var emails = make(map[string]mail.Template, 0)
+
 	for _, login := range executors {
 		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
@@ -361,6 +400,16 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		if isGroupExecutors {
+			slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+				Service: gb.RunContext.HrGate,
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+					FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+				WorkType: WorkHourType(gb.State.WorkType),
+			})
+
+			if getSlaInfoErr != nil {
+				return getSlaInfoErr
+			}
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(&mail.NewFormExecutionNeedTakeInWorkDto{
 				WorkNumber: gb.RunContext.WorkNumber,
 				WorkTitle:  gb.RunContext.WorkTitle,
@@ -368,7 +417,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				Mailto:     gb.RunContext.Sender.FetchEmail,
 				BlockName:  BlockGoFormID,
 				Login:      login,
-				Deadline:   ComputeDeadline(time.Now(), gb.State.SLA),
+				Deadline:   ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
 			})
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(

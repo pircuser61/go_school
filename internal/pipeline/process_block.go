@@ -21,6 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/integrations"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
@@ -52,6 +53,7 @@ type BlockRunContext struct {
 	skipProduce        bool // for tests too :)
 	currBlockStartTime time.Time
 	Delegations        human_tasks.Delegations
+	HrGate             *hrgate.Service
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
@@ -267,7 +269,10 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	}
 
 	runCtx.currBlockStartTime = time.Now() // will be used only for the block creation
-	deadlines := block.Deadlines()
+	deadlines, deadlinesErr := block.Deadlines(ctx)
+	if deadlinesErr != nil {
+		return nil, uuid.Nil, deadlinesErr
+	}
 	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()),
 		block.Members(), deadlines)
 	if err != nil {
@@ -282,7 +287,10 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 	if err != nil {
 		return err
 	}
-	deadlines := block.Deadlines()
+	deadlines, deadlinesErr := block.Deadlines(ctx)
+	if deadlinesErr != nil {
+		return deadlinesErr
+	}
 	err = runCtx.updateStepInDB(ctx, name, id, err != nil, block.GetStatus(), block.Members(), deadlines)
 	if err != nil {
 		return err

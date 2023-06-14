@@ -858,6 +858,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		Integrations:  ep.Integrations,
 		FileRegistry:  ep.FileRegistry,
 		FaaS:          ep.FaaS,
+		HrGate:        ae.HrGate,
 
 		UpdateData: nil,
 	}

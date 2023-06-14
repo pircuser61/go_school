@@ -49,5 +49,5 @@ type Runner interface {
 	GetStatus() Status
 	UpdateManual() bool
 	Members() []Member
-	Deadlines() []Deadline
+	Deadlines(ctx context.Context) ([]Deadline, error)
 }
