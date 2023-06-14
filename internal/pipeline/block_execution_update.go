@@ -508,9 +508,6 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
 				time.Now(),
 				nil,
-				nil,
-				nil,
-				nil,
 			)
 			gb.State.IncreaseSLA(workHours)
 		}
@@ -586,24 +583,17 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 
-	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-	)
-	if getCalendarDaysErr != nil {
-		return getCalendarDaysErr
-	}
-	workHourType := WorkHourType(gb.State.WorkType)
-	startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
-	if getWorkingHoursErr != nil {
-		return getWorkingHoursErr
-	}
-	weekends, getWeekendsErr := workHourType.GetWeekends()
-	if getWeekendsErr != nil {
-		return getWeekendsErr
-	}
+		WorkType: WorkHourType(gb.State.WorkType),
+	})
 
-	workHours := getWorkHoursBetweenDates(gb.RunContext.currBlockStartTime, time.Now(), calendarDays, &startWorkHour, &endWorkHour, weekends)
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
+	}
+	workHours := getWorkHoursBetweenDates(gb.RunContext.currBlockStartTime, time.Now(), slaInfoPtr)
 	gb.State.IncreaseSLA(workHours)
 
 	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
@@ -719,34 +709,23 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return emailErr
 	}
 
-	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-	)
-	if getCalendarDaysErr != nil {
-		return getCalendarDaysErr
-	}
-	workHourType := WorkHourType(gb.State.WorkType)
-	startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
-	if getWorkingHoursErr != nil {
-		return getWorkingHoursErr
-	}
-	weekends, getWeekendsErr := workHourType.GetWeekends()
-	if getWeekendsErr != nil {
-		return getWeekendsErr
+		WorkType: WorkHourType(gb.State.WorkType),
+	})
+
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
 	}
 	tpl = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
-			WorkNumber: gb.RunContext.WorkNumber,
-			Name:       gb.RunContext.WorkTitle,
-			Status:     string(StatusExecution),
-			Action:     statusToTaskAction[StatusExecution],
-			DeadLine: ComputeDeadline(time.Now(), gb.State.SLA, &SLAInfo{
-				CalendarDays:     calendarDays,
-				StartWorkHourPtr: &startWorkHour,
-				EndWorkHourPtr:   &endWorkHour,
-				Weekends:         weekends,
-			}),
+			WorkNumber:  gb.RunContext.WorkNumber,
+			Name:        gb.RunContext.WorkTitle,
+			Status:      string(StatusExecution),
+			Action:      statusToTaskAction[StatusExecution],
+			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
 			Description: description,
 			SdUrl:       gb.RunContext.Sender.SdAddress,
 			Mailto:      gb.RunContext.Sender.FetchEmail,

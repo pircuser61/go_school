@@ -237,29 +237,20 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 
-	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-	)
-	if getCalendarDaysErr != nil {
-		return getCalendarDaysErr
-	}
-	workHourType := WorkHourType(gb.State.WorkType)
-	startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
-	if getWorkingHoursErr != nil {
-		return getWorkingHoursErr
-	}
-	weekends, getWeekendsErr := workHourType.GetWeekends()
-	if getWeekendsErr != nil {
-		return getWeekendsErr
+		WorkType: WorkHourType(gb.State.WorkType),
+	})
+
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
 	}
 	workHours := getWorkHoursBetweenDates(
 		gb.RunContext.currBlockStartTime,
 		time.Now(),
-		calendarDays,
-		&startWorkHour,
-		&endWorkHour,
-		weekends,
+		slaInfoPtr,
 	)
 	gb.State.IncreaseSLA(workHours)
 
@@ -320,32 +311,20 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return emailErr
 	}
 
-	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-	)
-	if getCalendarDaysErr != nil {
-		return getCalendarDaysErr
-	}
-	workHourType := WorkHourType(gb.State.WorkType)
-	startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
-	if getWorkingHoursErr != nil {
-		return getWorkingHoursErr
-	}
-	weekends, getWeekendsErr := workHourType.GetWeekends()
-	if getWeekendsErr != nil {
-		return getWeekendsErr
-	}
+		WorkType: WorkHourType(gb.State.WorkType),
+	})
 
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
+	}
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.WorkTitle,
 		gb.RunContext.Sender.SdAddress,
-		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, &SLAInfo{
-			CalendarDays:     calendarDays,
-			StartWorkHourPtr: &startWorkHour,
-			EndWorkHourPtr:   &endWorkHour,
-			Weekends:         weekends,
-		}),
+		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, slaInfoPtr),
 	)
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {

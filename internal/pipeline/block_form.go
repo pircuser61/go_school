@@ -112,31 +112,22 @@ func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
-		calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-			[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+
+		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+			Service: gb.RunContext.HrGate,
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		)
-		if getCalendarDaysErr != nil {
-			return nil, getCalendarDaysErr
+			WorkType: WorkHourType(gb.State.WorkType),
+		})
+
+		if getSlaInfoErr != nil {
+			return nil, getSlaInfoErr
 		}
-		workHourType := WorkHourType(gb.State.WorkType)
-		startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
-		if getWorkingHoursErr != nil {
-			return nil, getWorkingHoursErr
-		}
-		weekends, getWeekendsErr := workHourType.GetWeekends()
-		if getWeekendsErr != nil {
-			return nil, getWeekendsErr
-		}
+
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
 				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA),
-					&SLAInfo{
-						CalendarDays:     calendarDays,
-						StartWorkHourPtr: &startWorkHour,
-						EndWorkHourPtr:   &endWorkHour,
-						Weekends:         weekends,
-					}),
+					slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -145,12 +136,7 @@ func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
 				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
-					&SLAInfo{
-						CalendarDays:     calendarDays,
-						StartWorkHourPtr: &startWorkHour,
-						EndWorkHourPtr:   &endWorkHour,
-						Weekends:         weekends,
-					}),
+					slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
@@ -415,31 +401,20 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		if isGroupExecutors {
-			calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-				[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+			slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+				Service: gb.RunContext.HrGate,
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 					FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-			)
-			if getCalendarDaysErr != nil {
-				return getCalendarDaysErr
-			}
-			workHourType := WorkHourType(gb.State.WorkType)
-			startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
-			if getWorkingHoursErr != nil {
-				return getWorkingHoursErr
-			}
-			weekends, getWeekendsErr := workHourType.GetWeekends()
-			if getWeekendsErr != nil {
-				return getWeekendsErr
+				WorkType: WorkHourType(gb.State.WorkType),
+			})
+
+			if getSlaInfoErr != nil {
+				return getSlaInfoErr
 			}
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
 				gb.RunContext.Sender.SdAddress,
-				ComputeDeadline(time.Now(), gb.State.SLA, &SLAInfo{
-					CalendarDays:     calendarDays,
-					StartWorkHourPtr: &startWorkHour,
-					EndWorkHourPtr:   &endWorkHour,
-					Weekends:         weekends,
-				}),
+				ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
 			)
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(

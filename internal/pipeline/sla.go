@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"time"
@@ -26,6 +27,12 @@ type SLAInfo struct {
 	StartWorkHourPtr *int                 `json:"start_work_hour"`
 	EndWorkHourPtr   *int                 `json:"end_work_hour"`
 	Weekends         []time.Weekday       `json:"weekends"`
+}
+
+type GetSLAInfoDTOStruct struct {
+	Service                 *hrgate.Service
+	TaskCompletionIntervals []entity.TaskCompletionInterval
+	WorkType                WorkHourType
 }
 
 const (
@@ -70,14 +77,49 @@ func (t *WorkHourType) GetWeekends() ([]time.Weekday, error) {
 	}
 }
 
-func getWorkHoursBetweenDates(from, to time.Time, calendarDays *hrgate.CalendarDays,
-	startWorkHourPtr, endWorkHourPtr *int, weekends []time.Weekday) (workHours int) {
+func GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTOStruct) (*SLAInfo, error) {
+	calendarDays, getCalendarDaysErr := GetSLAInfoDTO.Service.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+		GetSLAInfoDTO.TaskCompletionIntervals,
+	)
+	if getCalendarDaysErr != nil {
+		return nil, getCalendarDaysErr
+	}
+	startWorkHour, endWorkHour, getWorkingHoursErr := GetSLAInfoDTO.WorkType.GetWorkingHours()
+	if getWorkingHoursErr != nil {
+		return nil, getWorkingHoursErr
+	}
+	weekends, getWeekendsErr := GetSLAInfoDTO.WorkType.GetWeekends()
+	if getWeekendsErr != nil {
+		return nil, getWeekendsErr
+	}
+
+	return &SLAInfo{
+		CalendarDays:     calendarDays,
+		StartWorkHourPtr: &startWorkHour,
+		EndWorkHourPtr:   &endWorkHour,
+		Weekends:         weekends,
+	}, nil
+}
+
+func getWorkHoursBetweenDates(from, to time.Time, slaInfoPtr *SLAInfo) (workHours int) {
 	from = from.UTC()
 	to = to.UTC()
 
 	if from.After(to) || from.Equal(to) || to.Sub(from).Hours() < 1 {
 		return 0
 	}
+
+	var slaInfo SLAInfo
+	if slaInfoPtr == nil {
+		slaInfo = SLAInfo{}
+	} else {
+		slaInfo = *slaInfoPtr
+	}
+
+	calendarDays, startWorkHourPtr, endWorkHourPtr, weekends := slaInfo.CalendarDays,
+		slaInfo.StartWorkHourPtr,
+		slaInfo.EndWorkHourPtr,
+		slaInfo.Weekends
 
 	var startWorkHour, endWorkHour int
 
@@ -203,7 +245,9 @@ func ComputeMeanTaskCompletionTime(taskIntervals []entity.TaskCompletionInterval
 
 	var totalHours = 0
 	for _, interval := range taskIntervals {
-		totalHours += getWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt, &calendarDays, nil, nil, nil)
+		totalHours += getWorkHoursBetweenDates(interval.StartedAt, interval.FinishedAt, &SLAInfo{
+			CalendarDays: &calendarDays,
+		})
 	}
 
 	return script.TaskSolveTime{

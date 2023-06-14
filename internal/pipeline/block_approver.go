@@ -144,31 +144,19 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	}
 
 	if gb.State.CheckSLA {
-		calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-			[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+			Service: gb.RunContext.HrGate,
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		)
-		if getCalendarDaysErr != nil {
-			return nil, getCalendarDaysErr
-		}
-		workHourType := WorkHourType(gb.State.WorkType)
-		startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
-		if getWorkingHoursErr != nil {
-			return nil, getWorkingHoursErr
-		}
-		weekends, getWeekendsErr := workHourType.GetWeekends()
-		if getWeekendsErr != nil {
-			return nil, getWeekendsErr
-		}
+			WorkType: WorkHourType(gb.State.WorkType),
+		})
 
+		if getSlaInfoErr != nil {
+			return nil, getSlaInfoErr
+		}
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), &SLAInfo{
-					CalendarDays:     calendarDays,
-					StartWorkHourPtr: &startWorkHour,
-					EndWorkHourPtr:   &endWorkHour,
-					Weekends:         weekends,
-				}),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -176,12 +164,7 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, &SLAInfo{
-					CalendarDays:     calendarDays,
-					StartWorkHourPtr: &startWorkHour,
-					EndWorkHourPtr:   &endWorkHour,
-					Weekends:         weekends,
-				}),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)

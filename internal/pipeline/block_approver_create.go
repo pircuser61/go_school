@@ -263,21 +263,15 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails := make(map[string]mail.Template, 0)
-	calendarDays, getCalendarDaysErr := gb.RunContext.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-		[]entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-	)
-	if getCalendarDaysErr != nil {
-		return getCalendarDaysErr
-	}
-	workHourType := WorkHourType(gb.State.WorkType)
-	startWorkHour, endWorkHour, getWorkingHoursErr := workHourType.GetWorkingHours()
-	if getWorkingHoursErr != nil {
-		return getWorkingHoursErr
-	}
-	weekends, getWeekendsErr := workHourType.GetWeekends()
-	if getWeekendsErr != nil {
-		return getWeekendsErr
+		WorkType: WorkHourType(gb.State.WorkType),
+	})
+
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
 	}
 	for _, login := range loginsToNotify {
 		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
@@ -288,16 +282,11 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 
 		emails[email] = mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
-				WorkNumber: gb.RunContext.WorkNumber,
-				Name:       gb.RunContext.WorkTitle,
-				Status:     gb.State.ApproveStatusName,
-				Action:     statusToTaskAction[StatusApprovement],
-				DeadLine: ComputeDeadline(time.Now(), gb.State.SLA, &SLAInfo{
-					CalendarDays:     calendarDays,
-					StartWorkHourPtr: &startWorkHour,
-					EndWorkHourPtr:   &endWorkHour,
-					Weekends:         weekends,
-				}),
+				WorkNumber:                gb.RunContext.WorkNumber,
+				Name:                      gb.RunContext.WorkTitle,
+				Status:                    gb.State.ApproveStatusName,
+				Action:                    statusToTaskAction[StatusApprovement],
+				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
 				SdUrl:                     gb.RunContext.Sender.SdAddress,
 				Mailto:                    gb.RunContext.Sender.FetchEmail,
 				Login:                     login,
