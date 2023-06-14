@@ -361,11 +361,15 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		if isGroupExecutors {
-			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
-				gb.RunContext.Sender.SdAddress,
-				ComputeDeadline(time.Now(), gb.State.SLA),
-			)
+			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(&mail.NewFormExecutionNeedTakeInWorkDto{
+				WorkNumber: gb.RunContext.WorkNumber,
+				WorkTitle:  gb.RunContext.WorkTitle,
+				SdUrl:      gb.RunContext.Sender.SdAddress,
+				Mailto:     gb.RunContext.Sender.FetchEmail,
+				BlockName:  BlockGoFormID,
+				Login:      login,
+				Deadline:   ComputeDeadline(time.Now(), gb.State.SLA),
+			})
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
