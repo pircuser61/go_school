@@ -217,15 +217,15 @@ func ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAInfo) time.Time
 
 	for slaDur > 0 {
 		if notWorkingHours(deadline, calendarDays, startWorkHour, endWorkHour, weekends) {
-			datesDay := deadline.AddDate(0, 0, 1)                // default = next day
-			if beforeWorkingHours(deadline, workingHoursStart) { // but in case it's now early in the morning...
+			datesDay := deadline.AddDate(0, 0, 1)            // default = next day
+			if beforeWorkingHours(deadline, startWorkHour) { // but in case it's now early in the morning...
 				datesDay = deadline
 			}
-			deadline = time.Date(datesDay.Year(), datesDay.Month(), datesDay.Day(), 6, 0, 0, 0, time.UTC)
+			deadline = time.Date(datesDay.Year(), datesDay.Month(), datesDay.Day(), startWorkHour, 0, 0, 0, time.UTC)
 			continue
 		}
 
-		maxPossibleTime := time.Date(deadline.Year(), deadline.Month(), deadline.Day(), 15, 0, 0, 0, time.UTC)
+		maxPossibleTime := time.Date(deadline.Year(), deadline.Month(), deadline.Day(), endWorkHour, 0, 0, 0, time.UTC)
 		diff := maxPossibleTime.Sub(deadline)
 		if diff < slaDur {
 			deadline = deadline.Add(diff)
