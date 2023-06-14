@@ -193,19 +193,34 @@ func NewRequestExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
-func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
+type NewRequestFormExecutionInfoDto struct {
+	WorkNumber string
+	Name       string
+	SdUrl      string
+	Mailto     string
+	BlockName  string
+	Login      string
+}
+
+func NewRequestFormExecutionInfoTpl(dto *NewRequestFormExecutionInfoDto) Template {
+	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockName, "", dto.WorkNumber, formExecutorStartWorkAction, dto.Login)
+	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
+
 	return Template{
-		Subject: fmt.Sprintf("Заявка №%s - Необходимо предоставить информацию", id),
+		Subject: fmt.Sprintf("Заявка №%s - Необходимо предоставить информацию", dto.WorkNumber),
 		Text: `Уважаемый коллега, по заявке {{.Id}} необходимо предоставить информацию.<br>
-				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>`,
+				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>
+				<b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`,
 		Variables: struct {
-			Id   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Id        string
+			Name      string
+			Link      string
+			ActionBtn string
 		}{
-			Id:   id,
-			Name: name,
-			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Id:        dto.WorkNumber,
+			Name:      dto.Name,
+			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			ActionBtn: actionBtn,
 		},
 	}
 }
@@ -424,14 +439,12 @@ func NewAnswerSendToEditTpl(id, name, sdUrl string) Template {
 
 func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockID, "", dto.WorkNumber, executionStartWorkAction, dto.Login)
-	actionSubject = strings.ReplaceAll(actionSubject, " ", "")
 	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
 
 	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>
 {{end}}Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b><br>
  Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
- <b>Действия с заявкой</b><br>
- {{.ActionBtn}}<br>`
+ <b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`
 
 	if dto.Description != "" {
 		textPart += ` ------------ Описание ------------  </br>
@@ -643,10 +656,10 @@ func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, de
 					Для просмотра и заполнения полей заявки перейдите по <ссылке><br>
 					Срок предоставления информации заявки: {{.Deadline}}`,
 		Variables: struct {
-			Id       string `json:"id"`
-			Name     string `json:"name"`
-			Link     string `json:"link"`
-			Deadline string `json:"deadline"`
+			Id       string
+			Name     string
+			Link     string
+			Deadline string
 		}{
 			Id:       workNumber,
 			Name:     workTitle,
@@ -711,6 +724,7 @@ const (
 	taskUpdateActionExecution   = "execution"
 	taskUpdateActionApprovement = "approvement"
 	executionStartWorkAction    = "executor_start_work"
+	formExecutorStartWorkAction = "form_executor_start_work"
 )
 
 func getApproverButtons(workNumber, mailto, blockId, login string, actions []Action, isEditable bool) string {
