@@ -52,7 +52,7 @@ func (t *WorkHourType) GetWorkingHours() (start, end int, err error) {
 	case WorkTypeN125:
 		return 6, 18, nil
 	case WorkTypeN247:
-		return 0, 0, nil
+		return -1, 25, nil
 	case WorkTypeN85:
 		return 6, 14, nil
 	default:
