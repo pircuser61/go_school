@@ -193,54 +193,55 @@ func NewRequestExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
-type NewRequestFormExecutionInfoDto struct {
-	WorkNumber string
-	Name       string
-	SdUrl      string
-	Mailto     string
-	BlockName  string
-	Login      string
-}
-
-func NewRequestFormExecutionInfoTpl(dto *NewRequestFormExecutionInfoDto) Template {
-	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockName, "", dto.WorkNumber, formExecutorStartWorkAction, dto.Login)
-	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
-
+func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
-		Subject: fmt.Sprintf("Заявка №%s - Необходимо предоставить информацию", dto.WorkNumber),
+		Subject: fmt.Sprintf("Заявка №%s - Необходимо предоставить информацию", id),
 		Text: `Уважаемый коллега, по заявке {{.Id}} необходимо предоставить информацию.<br>
-				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>
-				<b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`,
+				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
-			Id        string
-			Name      string
-			Link      string
-			ActionBtn string
+			Id   string
+			Name string
+			Link string
 		}{
-			Id:        dto.WorkNumber,
-			Name:      dto.Name,
-			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
-			ActionBtn: actionBtn,
+			Id:   id,
+			Name: name,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
 		},
 	}
 }
 
-func NewFormExecutionNeedTakeInWorkTpl(workNumber, workTitle, sdUrl, deadline string) Template {
+type NewFormExecutionNeedTakeInWorkDto struct {
+	WorkNumber string
+	WorkTitle  string
+	SdUrl      string
+	Mailto     string
+	BlockName  string
+	Login      string
+	Deadline   string
+}
+
+func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto) Template {
+	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockName, "", dto.WorkNumber, formExecutorStartWorkAction, dto.Login)
+	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
+
 	return Template{
-		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", dto.WorkNumber, dto.WorkTitle),
 		Text: `Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо предоставить информацию.<br>
 					Для просмотра полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
-					Срок предоставления информации заявки: {{.Deadline}}`,
+					Срок предоставления информации заявки: {{.Deadline}}
+					</br><b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`,
 		Variables: struct {
-			Id       string `json:"id"`
-			Name     string `json:"name"`
-			Link     string `json:"link"`
-			Deadline string `json:"deadline"`
+			Id        string
+			Name      string
+			Link      string
+			Deadline  string
+			ActionBtn string
 		}{
-			Id:       workNumber,
-			Name:     workTitle,
-			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
-			Deadline: deadline,
+			Id:        dto.WorkNumber,
+			Name:      dto.WorkTitle,
+			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Deadline:  dto.Deadline,
+			ActionBtn: actionBtn,
 		},
 	}
 }
