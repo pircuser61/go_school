@@ -174,7 +174,9 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl // another block
-func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoNotificationBlock, error) {
+func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoNotificationBlock, bool, error) {
+	const reEntry = false
+
 	b := &GoNotificationBlock{
 		Name:    name,
 		Title:   ef.Title,
@@ -196,11 +198,11 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 	var params script.NotificationParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
-		return nil, errors.Wrap(err, "can not get notification parameters")
+		return nil, reEntry, errors.Wrap(err, "can not get notification parameters")
 	}
 
 	if err = params.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid notification parameters")
+		return nil, reEntry, errors.Wrap(err, "invalid notification parameters")
 	}
 
 	b.State = &NotificationData{
@@ -211,7 +213,7 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 	}
 	b.RunContext.VarStore.AddStep(b.Name)
 
-	return b, nil
+	return b, reEntry, nil
 }
 
 func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []string, skippedFiles []string) {
@@ -234,8 +236,4 @@ func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []s
 	}
 
 	return requiredFiles, skippedFiles
-}
-
-func (gb *GoNotificationBlock) IsReEntered() bool {
-	return false
 }

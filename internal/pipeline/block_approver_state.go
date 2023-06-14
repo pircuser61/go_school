@@ -179,7 +179,6 @@ type ApproverData struct {
 	ActionList []Action `json:"action_list"`
 
 	AdditionalApprovers []AdditionalApprover `json:"additional_approvers"`
-	IsReEntered         *bool                `json:"is_re_entered"`
 }
 
 type Action struct {

@@ -17,7 +17,7 @@ import (
 )
 
 // nolint:dupl // another block
-func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoApproverBlock, error) {
+func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoApproverBlock, bool, error) {
 	b := &GoApproverBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -37,21 +37,23 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		b.Output[v.Name] = v.Global
 	}
 
-	rawState, ok := runCtx.VarStore.State[name]
-	if ok {
+	rawState, blockExists := runCtx.VarStore.State[name]
+	reEntry := false
+	if blockExists {
 		if err := b.loadState(rawState); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
-		// это для возврата на доработку в рамках одного процесса
-		if runCtx.UpdateData == nil || runCtx.UpdateData.Action == "" {
+		reEntry = runCtx.UpdateData == nil && !b.State.GetRepeatPrevDecision()
+
+		if reEntry {
 			if err := b.reEntry(ctx); err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 
@@ -59,23 +61,17 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		// это для возврата на доработку при которой мы создаем новый процесс
 		// и пытаемся взять решение из прошлого процесса
 		if err := b.setPrevDecision(ctx); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	}
 
-	return b, nil
+	return b, reEntry, nil
 }
 
 func (gb *GoApproverBlock) reEntry(ctx c.Context) error {
-	if gb.State.GetRepeatPrevDecision() {
-		return nil
-	}
-
-	isReEntered := true
-	gb.State.IsReEntered = &isReEntered
 	gb.State.Decision = nil
 	gb.State.Comment = nil
-	gb.State.DecisionAttachments = make([]string, 0)
+	gb.State.DecisionAttachments = nil
 	gb.State.ActualApprover = nil
 
 	return gb.handleNotifications(ctx)
@@ -423,8 +419,4 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 	}
 
 	return true
-}
-
-func (gb *GoApproverBlock) IsReEntered() bool {
-	return gb.State.IsReEntered != nil && *gb.State.IsReEntered
 }

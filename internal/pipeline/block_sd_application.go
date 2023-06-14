@@ -153,9 +153,11 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 	}
 }
 
-func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSdApplicationBlock, error) {
+func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSdApplicationBlock, bool, error) {
 	log := logger.CreateLogger(nil)
 	log.WithField("params", string(ef.Params)).Info("sd_application parameters")
+
+	const reEntry = false
 
 	b := &GoSdApplicationBlock{
 		Name:       name,
@@ -177,11 +179,11 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *Block
 	var params script.SdApplicationParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
-		return nil, errors.Wrap(err, "can not get sd_application parameters")
+		return nil, reEntry, errors.Wrap(err, "can not get sd_application parameters")
 	}
 
 	if err = params.Validate(); err != nil {
-		return nil, errors.Wrap(err, "invalid sd_application parameters")
+		return nil, reEntry, errors.Wrap(err, "invalid sd_application parameters")
 	}
 
 	b.State = &ApplicationData{
@@ -190,9 +192,5 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *Block
 
 	b.RunContext.VarStore.AddStep(b.Name)
 
-	return b, nil
-}
-
-func (gb *GoSdApplicationBlock) IsReEntered() bool {
-	return false
+	return b, reEntry, nil
 }

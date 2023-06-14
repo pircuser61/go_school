@@ -247,7 +247,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := c.Background()
-			got, _ := createGoExecutionBlock(ctx, test.args.name, test.args.ef, test.args.runCtx)
+			got, _, _ := createGoExecutionBlock(ctx, test.args.name, test.args.ef, test.args.runCtx)
 			assert.Equal(t, test.want, got)
 		})
 	}

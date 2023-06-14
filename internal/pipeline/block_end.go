@@ -69,7 +69,9 @@ func (gb *GoEndBlock) Model() script.FunctionModel {
 }
 
 //nolint:dupl //its not duplicate
-func createGoEndBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoEndBlock {
+func createGoEndBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoEndBlock, bool, error) {
+	const reEntry = false
+
 	b := &GoEndBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -88,9 +90,5 @@ func createGoEndBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
-	return b
-}
-
-func (gb *GoEndBlock) IsReEntered() bool {
-	return false
+	return b, reEntry, nil
 }

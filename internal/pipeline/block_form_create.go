@@ -11,7 +11,7 @@ import (
 )
 
 // nolint:dupl // another block
-func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, error) {
+func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, bool, error) {
 	b := &GoFormBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -29,34 +29,31 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		b.Output[v.Name] = v.Global
 	}
 
-	rawState, ok := runCtx.VarStore.State[name]
-	if ok {
+	rawState, blockExists := runCtx.VarStore.State[name]
+	reEntry := false
+	if blockExists {
 		if err := b.loadState(rawState); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
-		if runCtx.UpdateData == nil || runCtx.UpdateData.Action == "" {
+		reEntry = runCtx.UpdateData == nil && (b.State.IsEditable != nil && *b.State.IsEditable)
+
+		if reEntry {
 			if err := b.reEntry(ctx); err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 	}
 
-	return b, nil
+	return b, reEntry, nil
 }
 
 func (gb *GoFormBlock) reEntry(ctx c.Context) error {
-	if gb.State.IsEditable == nil || !*gb.State.IsEditable {
-		return nil
-	}
-
-	isReEntered := true
-	gb.State.IsReEntered = &isReEntered
 	gb.State.IsFilled = false
 	gb.State.IsTakenInWork = false
 	gb.State.ActualExecutor = nil

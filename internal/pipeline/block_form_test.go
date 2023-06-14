@@ -346,7 +346,7 @@ func Test_createGoFormBlock(t *testing.T) {
 				Cli: &cli,
 			}
 
-			got, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
+			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
 			if got != nil {
 				got.RunContext = nil
 				if got.State != nil && len(got.State.ChangesLog) > 0 {

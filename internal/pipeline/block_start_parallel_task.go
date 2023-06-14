@@ -69,7 +69,9 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 }
 
 //nolint:dupl //its not duplicate
-func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoBeginParallelTaskBlock {
+func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoBeginParallelTaskBlock, bool, error) {
+	const reEntry = false
+
 	b := &GoBeginParallelTaskBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -88,9 +90,5 @@ func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *Block
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
-	return b
-}
-
-func (gb *GoBeginParallelTaskBlock) IsReEntered() bool {
-	return false
+	return b, reEntry, nil
 }

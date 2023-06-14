@@ -92,7 +92,9 @@ func (gb *GoPlaceholderBlock) Update(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoPlaceholderBlock {
+func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoPlaceholderBlock, bool, error) {
+	const reEntry = false
+
 	b := &GoPlaceholderBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -112,9 +114,5 @@ func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRu
 
 	b.RunContext.VarStore.AddStep(b.Name)
 
-	return b
-}
-
-func (gb *GoPlaceholderBlock) IsReEntered() bool {
-	return false
+	return b, reEntry, nil
 }

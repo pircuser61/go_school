@@ -269,7 +269,7 @@ func (gb *ExecutableFunctionBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*ExecutableFunctionBlock, error) {
+func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*ExecutableFunctionBlock, bool, error) {
 	b := &ExecutableFunctionBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -287,21 +287,22 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		b.Output[v.Name] = v.Global
 	}
 
-	rawState, ok := runCtx.VarStore.State[name]
-	if ok {
+	rawState, blockExists := runCtx.VarStore.State[name]
+	reEntry := blockExists && runCtx.UpdateData == nil // ADD CONDITION FOR FUNCTION BLOCK
+	if blockExists {
 		if err := b.loadState(rawState); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	} else {
 		if err := b.createState(ef); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
 
-	return b, nil
+	return b, reEntry, nil
 }
 
 func (gb *ExecutableFunctionBlock) loadState(raw json.RawMessage) error {
@@ -405,8 +406,4 @@ func (gb *ExecutableFunctionBlock) deleteNodeNamesFromVariables(variablesWithFul
 	}
 
 	return variables
-}
-
-func (gb *ExecutableFunctionBlock) IsReEntered() bool {
-	return false
 }
