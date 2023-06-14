@@ -862,7 +862,6 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 		UpdateData: nil,
 	}
-	//dto.runCtx.InitialApplication.
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
 	err = pipeline.ProcessBlockWithEndMapping(processCtx, ep.EntryPoint, &blockData, runCtx, false)
