@@ -7,12 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"golang.org/x/net/context"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
