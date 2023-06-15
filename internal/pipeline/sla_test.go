@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func Test_CheckBreachSLA(t *testing.T) {
@@ -93,7 +94,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if check := CheckBreachSLA(tt.fields.Start, tt.fields.Current, tt.fields.SLA); check != tt.wantedCheck {
+			if check := CheckBreachSLA(tt.fields.Start, tt.fields.Current, tt.fields.SLA, nil); check != tt.wantedCheck {
 				t.Errorf("check SLA returned unexpected result")
 			}
 		})
@@ -161,7 +162,7 @@ func Test_ComputeDeadline(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if deadline := ComputeDeadline(tt.fields.Start, tt.fields.SLA); deadline != tt.wanted {
+			if deadline := ComputeDeadline(tt.fields.Start, tt.fields.SLA, nil); deadline != tt.wanted {
 				t.Errorf("compute deadline returned unexpected result")
 			}
 		})
@@ -170,9 +171,9 @@ func Test_ComputeDeadline(t *testing.T) {
 
 func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 	type fields struct {
-		from         time.Time
-		to           time.Time
-		calendarDays *hrgate.CalendarDays
+		from       time.Time
+		to         time.Time
+		slaInfoPtr *SLAInfo
 	}
 	tests := []struct {
 		name          string
@@ -182,48 +183,49 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 		{
 			name: "work days eq 2",
 			fields: fields{
-				from:         time.Date(2022, 01, 03, 14, 0, 0, 0, time.UTC),
-				to:           time.Date(2022, 01, 04, 6, 30, 0, 0, time.UTC),
-				calendarDays: nil,
+				from: time.Date(2022, 01, 03, 14, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 01, 04, 6, 30, 0, 0, time.UTC),
 			},
-			wantWorkHours: 2,
+			wantWorkHours: 1,
 		},
 		{
 			name: "work days eq 0",
 			fields: fields{
-				from:         time.Date(2022, 07, 16, 14, 0, 0, 0, time.UTC),
-				to:           time.Date(2022, 07, 17, 6, 30, 0, 0, time.UTC),
-				calendarDays: nil,
+				from: time.Date(2022, 07, 16, 14, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 17, 6, 30, 0, 0, time.UTC),
 			},
 			wantWorkHours: 0,
 		},
 		{
-			name: "work days eq 9",
-			fields: fields{
-				from:         time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC),
-				to:           time.Date(2022, 07, 18, 15, 30, 0, 0, time.UTC),
-				calendarDays: nil,
-			},
-			wantWorkHours: 9,
-		},
-		{
-			name: "work days eq 9 at preholidays days",
+			name: "work days eq 8",
 			fields: fields{
 				from: time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC),
 				to:   time.Date(2022, 07, 18, 15, 30, 0, 0, time.UTC),
-				calendarDays: &hrgate.CalendarDays{
-					CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 17, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
-				},
 			},
 			wantWorkHours: 8,
+		},
+		{
+			name: "work days eq 7 at preholidays days",
+			fields: fields{
+				from: time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 18, 15, 30, 0, 0, time.UTC),
+				slaInfoPtr: &SLAInfo{
+					CalendarDays: &hrgate.CalendarDays{
+						CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 16, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 17, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
+					},
+				},
+			},
+			wantWorkHours: 7,
 		},
 		{
 			name: "work hours eq 0 at holidays days",
 			fields: fields{
 				from: time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC),
 				to:   time.Date(2022, 07, 21, 15, 30, 0, 0, time.UTC),
-				calendarDays: &hrgate.CalendarDays{
-					CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday},
+				slaInfoPtr: &SLAInfo{
+					CalendarDays: &hrgate.CalendarDays{
+						CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday},
+					},
 				},
 			},
 			wantWorkHours: 0,
@@ -231,18 +233,100 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 		{
 			name: "work days with preholidays and holidays days",
 			fields: fields{
-				from: time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC),
+				from: time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC),
 				to:   time.Date(2022, 07, 21, 15, 30, 0, 0, time.UTC),
-				calendarDays: &hrgate.CalendarDays{
-					CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
+				slaInfoPtr: &SLAInfo{
+					CalendarDays: &hrgate.CalendarDays{
+						CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 20, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 21, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 18, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 19, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday},
+					},
 				},
 			},
-			wantWorkHours: 8,
+			wantWorkHours: 7,
+		},
+		{
+			name: "work days with work type 24/7 without holidays",
+			fields: fields{
+				from: time.Date(2022, 07, 1, 0, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 15, 0, 0, 0, 0, time.UTC),
+				slaInfoPtr: &SLAInfo{
+					StartWorkHourPtr: utils.GetAddressOfValue(-1),
+					EndWorkHourPtr:   utils.GetAddressOfValue(25),
+					Weekends:         []time.Weekday{},
+				},
+			},
+			wantWorkHours: 336,
+		},
+		{
+			name: "work days with work type 5/2 without holidays",
+			fields: fields{
+				from: time.Date(2022, 07, 1, 0, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 15, 0, 0, 0, 0, time.UTC),
+				slaInfoPtr: &SLAInfo{
+					StartWorkHourPtr: utils.GetAddressOfValue(6),
+					EndWorkHourPtr:   utils.GetAddressOfValue(14),
+					Weekends:         []time.Weekday{time.Saturday, time.Sunday},
+				},
+			},
+			wantWorkHours: 80,
+		},
+		{
+			name: "work days with work type 24/7 without holidays",
+			fields: fields{
+				from: time.Date(2022, 07, 1, 0, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 15, 0, 0, 0, 0, time.UTC),
+				slaInfoPtr: &SLAInfo{
+					StartWorkHourPtr: utils.GetAddressOfValue(6),
+					EndWorkHourPtr:   utils.GetAddressOfValue(18),
+					Weekends:         []time.Weekday{},
+				},
+			},
+			wantWorkHours: 168,
+		},
+		{
+			name: "work days with work type 24/7 without holidays",
+			fields: fields{
+				from: time.Date(2022, 07, 1, 0, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 15, 0, 0, 0, 0, time.UTC),
+				slaInfoPtr: &SLAInfo{
+					StartWorkHourPtr: utils.GetAddressOfValue(6),
+					EndWorkHourPtr:   utils.GetAddressOfValue(14),
+					Weekends:         []time.Weekday{time.Wednesday, time.Sunday},
+				},
+			},
+			wantWorkHours: 80,
+		},
+		{
+			name: "work days with work type 24/7 without holidays",
+			fields: fields{
+				from: time.Date(2022, 07, 1, 0, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 15, 0, 0, 0, 0, time.UTC),
+				slaInfoPtr: &SLAInfo{
+					StartWorkHourPtr: utils.GetAddressOfValue(6),
+					EndWorkHourPtr:   utils.GetAddressOfValue(14),
+					Weekends:         []time.Weekday{time.Monday},
+					CalendarDays:     &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 13, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 12, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypePreHoliday}},
+				},
+			},
+			wantWorkHours: 87,
+		},
+		{
+			name: "work days with work type 24/7 without holidays",
+			fields: fields{
+				from: time.Date(2022, 07, 1, 0, 0, 0, 0, time.UTC),
+				to:   time.Date(2022, 07, 15, 0, 0, 0, 0, time.UTC),
+				slaInfoPtr: &SLAInfo{
+					StartWorkHourPtr: utils.GetAddressOfValue(6),
+					EndWorkHourPtr:   utils.GetAddressOfValue(14),
+					Weekends:         []time.Weekday{time.Tuesday},
+					CalendarDays:     &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{time.Date(2022, 07, 13, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday, time.Date(2022, 07, 14, 0, 0, 0, 0, time.UTC).Unix(): hrgate.CalendarDayTypeHoliday}},
+				},
+			},
+			wantWorkHours: 80,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotWorkHours := getWorkHoursBetweenDates(tt.fields.from, tt.fields.to, tt.fields.calendarDays); gotWorkHours != tt.wantWorkHours {
+			if gotWorkHours := getWorkHoursBetweenDates(tt.fields.from, tt.fields.to, tt.fields.slaInfoPtr); gotWorkHours != tt.wantWorkHours {
 				t.Errorf("getWorkHoursBetweenDates() = %v, want %v", gotWorkHours, tt.wantWorkHours)
 			}
 		})

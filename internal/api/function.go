@@ -80,6 +80,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		Integrations:  ae.Integrations,
 		FileRegistry:  ae.FileRegistry,
 		FaaS:          ae.FaaS,
+		HrGate:        ae.HrGate,
 
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,

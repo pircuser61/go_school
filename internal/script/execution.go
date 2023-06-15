@@ -32,8 +32,9 @@ type ExecutionParams struct {
 	ReworkSLA      int  `json:"rework_sla"`
 	CheckReworkSLA bool `json:"check_rework_sla"`
 
-	IsEditable         bool `json:"is_editable"`
-	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+	IsEditable         bool    `json:"is_editable"`
+	RepeatPrevDecision bool    `json:"repeat_prev_decision"`
+	WorkType           *string `json:"work_type"`
 }
 
 func (a *ExecutionParams) Validate() error {

@@ -173,6 +173,21 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 	gb.RunContext.VarStore.AddStep(gb.Name)
 
+	if params.WorkType != nil {
+		gb.State.WorkType = *params.WorkType
+	} else {
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+		gb.State.WorkType = processSLASettings.WorkType
+	}
+
 	return gb.handleNotifications(ctx)
 }
 
@@ -248,6 +263,16 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails := make(map[string]mail.Template, 0)
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		WorkType: WorkHourType(gb.State.WorkType),
+	})
+
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
+	}
 	for _, login := range loginsToNotify {
 		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
@@ -264,7 +289,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				Name:                      notifName,
 				Status:                    gb.State.ApproveStatusName,
 				Action:                    statusToTaskAction[StatusApprovement],
-				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA),
+				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
 				SdUrl:                     gb.RunContext.Sender.SdAddress,
 				Mailto:                    gb.RunContext.Sender.FetchEmail,
 				Login:                     login,

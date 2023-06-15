@@ -154,12 +154,6 @@ func main() {
 		return
 	}
 
-	err = hrgateService.FillDefaultUnitId(ctx)
-	if err != nil {
-		log.WithError(err).Error("cant fill default unit id")
-		return
-	}
-
 	fillErr := hrgateService.FillDefaultUnitId(ctx)
 	if fillErr != nil {
 		log.WithError(err).Error("can't fill default unit id")

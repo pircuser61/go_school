@@ -23,8 +23,8 @@ func (gb *GoBeginParallelTaskBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoBeginParallelTaskBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *GoBeginParallelTaskBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *GoBeginParallelTaskBlock) UpdateManual() bool {

@@ -30,6 +30,7 @@ type FormParams struct {
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`
+	WorkType                  *string              `json:"work_type"`
 }
 
 func (a *FormParams) Validate() error {

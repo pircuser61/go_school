@@ -71,7 +71,7 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 
-	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate() {
+	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
 		e := PipelineValidateError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)

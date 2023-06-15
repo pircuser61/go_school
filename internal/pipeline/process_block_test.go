@@ -76,6 +76,20 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(blockIds []string) bool { return true }),
 	).Return(store.NewStore(), nil)
 
+	res.On("GetVersionByWorkNumber",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workNumber string) bool { return true }),
+	).Return(&entity.EriusScenario{}, nil)
+
+	res.On("GetSlaVersionSettings",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(versionId string) bool { return true }),
+	).Return(entity.SlaVersionSettings{
+		Author:   "voronin",
+		WorkType: "8/5",
+		Sla:      8,
+	}, nil)
+
 	return res
 }
 

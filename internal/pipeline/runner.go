@@ -38,7 +38,6 @@ var (
 	StatusRunning   Status = "running"
 	StatusFinished  Status = "finished"
 	StatusNoSuccess Status = "no_success"
-	StatusCancel    Status = "cancel"
 )
 
 type Runner interface {
@@ -49,5 +48,5 @@ type Runner interface {
 	GetStatus() Status
 	UpdateManual() bool
 	Members() []Member
-	Deadlines() []Deadline
+	Deadlines(ctx context.Context) ([]Deadline, error)
 }

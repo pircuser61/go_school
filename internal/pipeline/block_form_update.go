@@ -242,10 +242,21 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 	}
 
 	gb.State.IsTakenInWork = true
+
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		WorkType: WorkHourType(gb.State.WorkType),
+	})
+
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
+	}
 	workHours := getWorkHoursBetweenDates(
 		gb.RunContext.currBlockStartTime,
 		time.Now(),
-		nil,
+		slaInfoPtr,
 	)
 	gb.State.IncreaseSLA(workHours)
 
@@ -310,10 +321,20 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return emailErr
 	}
 
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		WorkType: WorkHourType(gb.State.WorkType),
+	})
+
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
+	}
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
 		notifName,
 		gb.RunContext.Sender.SdAddress,
-		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA),
+		ComputeDeadline(gb.RunContext.currBlockStartTime, gb.State.SLA, slaInfoPtr),
 	)
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {

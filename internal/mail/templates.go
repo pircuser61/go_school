@@ -202,9 +202,9 @@ func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
 		Text: `Уважаемый коллега, по заявке {{.Id}} {{.Name}} необходимо предоставить информацию.<br>
 				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
-			Id   string `json:"id"`
-			Name string `json:"name"`
-			Link string `json:"link"`
+			Id   string
+			Name string
+			Link string
 		}{
 			Id:   id,
 			Name: name,
@@ -213,22 +213,38 @@ func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
 	}
 }
 
-func NewFormExecutionNeedTakeInWorkTpl(workNumber, workTitle, sdUrl, deadline string) Template {
+type NewFormExecutionNeedTakeInWorkDto struct {
+	WorkNumber string
+	WorkTitle  string
+	SdUrl      string
+	Mailto     string
+	BlockName  string
+	Login      string
+	Deadline   string
+}
+
+func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto) Template {
+	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockName, "", dto.WorkNumber, formExecutorStartWorkAction, dto.Login)
+	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
+
 	return Template{
-		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
+		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", dto.WorkNumber, dto.WorkTitle),
 		Text: `Уважаемый коллега, по заявке № {{.Id}} {{.Name}} необходимо предоставить информацию.<br>
 					Для просмотра полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
-					Срок предоставления информации заявки: {{.Deadline}}`,
+					Срок предоставления информации заявки: {{.Deadline}}
+					</br><b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`,
 		Variables: struct {
-			Id       string `json:"id"`
-			Name     string `json:"name"`
-			Link     string `json:"link"`
-			Deadline string `json:"deadline"`
+			Id        string
+			Name      string
+			Link      string
+			Deadline  string
+			ActionBtn string
 		}{
-			Id:       workNumber,
-			Name:     workTitle,
-			Link:     fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
-			Deadline: deadline,
+			Id:        dto.WorkNumber,
+			Name:      dto.WorkTitle,
+			Link:      fmt.Sprintf(TaskUrlTemplate, dto.SdUrl, dto.WorkNumber),
+			Deadline:  dto.Deadline,
+			ActionBtn: actionBtn,
 		},
 	}
 }
@@ -431,14 +447,12 @@ func NewAnswerSendToEditTpl(id, name, sdUrl string) Template {
 
 func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockID, "", dto.WorkNumber, executionStartWorkAction, dto.Login)
-	actionSubject = strings.ReplaceAll(actionSubject, " ", "")
 	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
 
 	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>
 {{end}}Уважаемый коллега, заявка {{.Id}} {{.Name}} <b>назначена на Группу исполнителей</b><br>
  Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
- <b>Действия с заявкой</b><br>
- {{.ActionBtn}}<br>`
+ <b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`
 
 	if dto.Description != "" {
 		textPart += ` ------------ Описание ------------  </br>
@@ -662,10 +676,10 @@ func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, de
 					Для просмотра и заполнения полей заявки перейдите по <ссылке><br>
 					Срок предоставления информации заявки: {{.Deadline}}`,
 		Variables: struct {
-			Id       string `json:"id"`
-			Name     string `json:"name"`
-			Link     string `json:"link"`
-			Deadline string `json:"deadline"`
+			Id       string
+			Name     string
+			Link     string
+			Deadline string
 		}{
 			Id:       workNumber,
 			Name:     workTitle,
@@ -730,6 +744,7 @@ const (
 	taskUpdateActionExecution   = "execution"
 	taskUpdateActionApprovement = "approvement"
 	executionStartWorkAction    = "executor_start_work"
+	formExecutorStartWorkAction = "form_executor_start_work"
 )
 
 func getApproverButtons(workNumber, mailto, blockId, login string, actions []Action, isEditable bool) string {
