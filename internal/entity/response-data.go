@@ -142,10 +142,7 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 		return false
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
-		return true
-	}
-	return false
+	return resp.StatusCode == http.StatusOK
 }
 
 func (bt *BlocksType) addDefaultStartNode() {
