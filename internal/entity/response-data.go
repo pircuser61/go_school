@@ -138,10 +138,10 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 		return false
 	}
 	resp, err := sd.Cli.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		return false
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
 		return true
 	}
