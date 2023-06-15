@@ -712,7 +712,8 @@ func (db *PGCon) GetTask(
 			COALESCE(descr.blueprint_id, ''),
 			w.rate,
 			w.rate_comment,
-         	ua.actions
+         	ua.actions,
+ 			run_context -> 'initial_application' -> 'is_test_application' as isTest
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -767,6 +768,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.Rate,
 		&et.RateComment,
 		pq.Array(&nullStringActions),
+		&et.IsTest,
 	)
 	if err != nil {
 		return nil, err

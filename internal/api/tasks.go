@@ -835,6 +835,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 				Parameters: in.Parameters,
 			},
 			Delegations: delegations,
+			IsTest:      dbTask.IsTest,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]

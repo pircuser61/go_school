@@ -69,6 +69,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			UpdateData: &script.BlockUpdateData{
 				Action: string(item.Action),
 			},
+			IsTest: item.IsTest,
 		}
 
 		blockErr := pipeline.ProcessBlockWithEndMapping(processCtx, item.StepName, item.BlockData, runCtx, true)

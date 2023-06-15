@@ -54,6 +54,7 @@ type BlockRunContext struct {
 	currBlockStartTime time.Time
 	Delegations        human_tasks.Delegations
 	HrGate             *hrgate.Service
+	IsTest             bool
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
@@ -64,13 +65,9 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	return &runCtxCopy
 }
 
-func (runCtx *BlockRunContext) GetTestName(ctx c.Context) (string, error) {
-	test, err := runCtx.Storage.CheckIsTest(ctx, runCtx.TaskID)
-	if err != nil {
-		return "", err
-	}
+func (runCtx *BlockRunContext) GetTestName() (string, error) {
 	notifName := runCtx.WorkTitle
-	if test {
+	if runCtx.IsTest {
 		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
 	}
 	return notifName, nil
@@ -457,7 +454,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 
 		emails = append(emails, email)
 	}
-	notifName, err := runCtx.GetTestName(ctx)
+	notifName, err := runCtx.GetTestName()
 	if err != nil {
 		return err
 	}

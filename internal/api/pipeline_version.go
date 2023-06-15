@@ -861,6 +861,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		HrGate:        ae.HrGate,
 
 		UpdateData: nil,
+		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 

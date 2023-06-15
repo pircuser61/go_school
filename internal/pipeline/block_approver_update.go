@@ -126,7 +126,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		notifName, err := gb.RunContext.GetTestName(ctx)
+		notifName, err := gb.RunContext.GetTestName()
 		if err != nil {
 			return err
 		}
@@ -243,7 +243,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 				return getWorksErr
 			}
 		}
-		notifName, err := gb.RunContext.GetTestName(ctx)
+		notifName, err := gb.RunContext.GetTestName()
 		if err != nil {
 			return err
 		}
@@ -308,7 +308,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Contex
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -402,7 +402,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -756,7 +756,7 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 			return getWorksErr
 		}
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -810,7 +810,7 @@ func (gb *GoApproverBlock) notificateDecisionMadeByAdditionalApprover(ctx c.Cont
 	}
 
 	latestDecisonLog := gb.State.ApproverLog[len(gb.State.ApproverLog)-1]
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -861,7 +861,7 @@ func (gb *GoApproverBlock) notificateNeedRework(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -901,7 +901,7 @@ func (gb *GoApproverBlock) notificateNewInfoRecieved(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -934,7 +934,7 @@ func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}

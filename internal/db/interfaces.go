@@ -134,6 +134,7 @@ type StepBreachedSLA struct {
 	BlockData  *e.EriusFunc
 	StepName   string
 	Action     e.TaskUpdateAction
+	IsTest     bool
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase

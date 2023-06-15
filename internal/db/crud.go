@@ -2122,7 +2122,8 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		vs.has_error,
 		vs.status,
 		w.author,
-		vs.updated_at
+		vs.updated_at,
+		w.run_context -> 'initial_application' -> 'is_test_application' as isTest
 	FROM variable_storage vs 
 	JOIN works w
 	ON vs.work_id = w.id
@@ -2144,6 +2145,7 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		&s.Status,
 		&s.Initiator,
 		&s.UpdatedAt,
+		&s.IsTest,
 	)
 	if err != nil {
 		return nil, err
@@ -2605,7 +2607,8 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		       vs.content,
 		       v.content->'pipeline'->'blocks'->vs.step_name,
 		       vs.step_name,
-		       d.action
+		       d.action,
+			   w.run_context -> 'initial_application' -> 'is_test_application' as isTest
 		FROM variable_storage vs 
 		    JOIN works w on vs.work_id = w.id 
 		    JOIN versions v on w.version_id = v.id
@@ -2636,6 +2639,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			&item.BlockData,
 			&item.StepName,
 			&item.Action,
+			&item.IsTest,
 		); scanErr != nil {
 			return nil, scanErr
 		}

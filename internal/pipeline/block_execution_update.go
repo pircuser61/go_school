@@ -179,7 +179,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		notifName, err := gb.RunContext.GetTestName(ctx)
+		notifName, err := gb.RunContext.GetTestName()
 		if err != nil {
 			return err
 		}
@@ -275,7 +275,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 				return getWorksErr
 			}
 		}
-		notifName, err := gb.RunContext.GetTestName(ctx)
+		notifName, err := gb.RunContext.GetTestName()
 		if err != nil {
 			return err
 		}
@@ -340,7 +340,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -374,7 +374,7 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 
 		emails = append(emails, email)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -434,7 +434,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -705,7 +705,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			return getWorksErr
 		}
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -793,7 +793,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 
 		emails = append(emails, email)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -819,7 +819,7 @@ func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx c.Context) error {
 
 		emails = append(emails, email)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}
@@ -852,7 +852,7 @@ func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx c.Context) error {
 
 		emails = append(emails, email)
 	}
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}

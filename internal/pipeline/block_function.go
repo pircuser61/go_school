@@ -170,7 +170,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 				}
 
 				emails := []string{em}
-				notifName, err := gb.RunContext.GetTestName(ctx)
+				notifName, err := gb.RunContext.GetTestName()
 				if err != nil {
 					return nil, err
 				}

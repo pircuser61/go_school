@@ -85,6 +85,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
 		},
+		IsTest: step.IsTest,
 	}
 
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)

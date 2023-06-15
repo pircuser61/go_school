@@ -147,7 +147,7 @@ func (gb *GoFormBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		notifName, err := gb.RunContext.GetTestName(ctx)
+		notifName, err := gb.RunContext.GetTestName()
 		if err != nil {
 			return err
 		}
@@ -197,7 +197,7 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		notifName, err := gb.RunContext.GetTestName(ctx)
+		notifName, err := gb.RunContext.GetTestName()
 		if err != nil {
 			return err
 		}
@@ -302,7 +302,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return convertErr
 	}
 
-	notifName, err := gb.RunContext.GetTestName(ctx)
+	notifName, err := gb.RunContext.GetTestName()
 	if err != nil {
 		return err
 	}

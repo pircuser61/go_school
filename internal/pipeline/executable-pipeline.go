@@ -150,7 +150,10 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 
 	ctx, s := trace.StartSpan(ctx, "create_blocks")
 	defer s.End()
-
+	isTest, err := gb.Storage.CheckIsTest(ctx, gb.TaskID)
+	if err != nil {
+		return err
+	}
 	for k := range source {
 		bl := source[k]
 
@@ -172,6 +175,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			FaaS:          gb.FaaS,
 			HrGate:        gb.RunContext.HrGate,
 			UpdateData:    nil,
+			IsTest:        isTest,
 		})
 		if err != nil {
 			return err

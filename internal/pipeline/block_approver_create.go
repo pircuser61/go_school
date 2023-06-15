@@ -279,7 +279,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
 			continue
 		}
-		notifName, err := gb.RunContext.GetTestName(ctx)
+		notifName, err := gb.RunContext.GetTestName()
 		if err != nil {
 			return err
 		}
