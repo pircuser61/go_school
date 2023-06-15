@@ -55,6 +55,7 @@ type BlockRunContext struct {
 	Delegations        human_tasks.Delegations
 	HrGate             *hrgate.Service
 	IsTest             bool
+	NotifName          string
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
@@ -63,14 +64,6 @@ func (runCtx *BlockRunContext) Copy() *BlockRunContext {
 	runCtxCopy.VarStore = runCtx.VarStore.Copy()
 	runCtxCopy.UpdateData = nil
 	return &runCtxCopy
-}
-
-func (runCtx *BlockRunContext) GetTestName() (string, error) {
-	notifName := runCtx.WorkTitle
-	if runCtx.IsTest {
-		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
-	}
-	return notifName, nil
 }
 
 //nolint:gocyclo //todo: need to decompose
@@ -454,13 +447,9 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 
 		emails = append(emails, email)
 	}
-	notifName, err := runCtx.GetTestName()
-	if err != nil {
-		return err
-	}
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		runCtx.WorkNumber,
-		notifName,
+		runCtx.NotifName,
 		statusToTaskState[status],
 		description,
 		runCtx.Sender.SdAddress)

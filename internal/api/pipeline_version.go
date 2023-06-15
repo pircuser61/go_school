@@ -840,7 +840,10 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
-
+	var notifName string
+	if dto.runCtx.InitialApplication.IsTestApplication {
+		notifName = ep.Name + " (ТЕСТОВАЯ ЗАЯВКА)"
+	}
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     ep.TaskID,
 		WorkNumber: ep.WorkNumber,
@@ -862,6 +865,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 		UpdateData: nil,
 		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
+		NotifName:  notifName,
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 

@@ -170,12 +170,8 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 				}
 
 				emails := []string{em}
-				notifName, err := gb.RunContext.GetTestName()
-				if err != nil {
-					return nil, err
-				}
 
-				tpl := mail.NewInvalidFunctionResp(gb.RunContext.WorkNumber, notifName, gb.RunContext.Sender.SdAddress)
+				tpl := mail.NewInvalidFunctionResp(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 				errSend := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 				if errSend != nil {
 					log.WithField("emails", emails).Error(errSend)

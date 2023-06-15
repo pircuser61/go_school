@@ -154,6 +154,10 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 	if err != nil {
 		return err
 	}
+	var notifName string
+	if isTest {
+		notifName = gb.Name + " (ТЕСТОВАЯ ЗАЯВКА)"
+	}
 	for k := range source {
 		bl := source[k]
 
@@ -176,6 +180,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			HrGate:        gb.RunContext.HrGate,
 			UpdateData:    nil,
 			IsTest:        isTest,
+			NotifName:     notifName,
 		})
 		if err != nil {
 			return err

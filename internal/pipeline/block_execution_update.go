@@ -179,17 +179,13 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		notifName, err := gb.RunContext.GetTestName()
-		if err != nil {
-			return err
-		}
 		err = gb.RunContext.Sender.SendNotification(
 			ctx,
 			emails,
 			nil,
 			mail.NewExecutionSLATpl(
 				gb.RunContext.WorkNumber,
-				notifName,
+				gb.RunContext.NotifName,
 				gb.RunContext.Sender.SdAddress,
 			))
 		if err != nil {
@@ -275,17 +271,13 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 				return getWorksErr
 			}
 		}
-		notifName, err := gb.RunContext.GetTestName()
-		if err != nil {
-			return err
-		}
 		err = gb.RunContext.Sender.SendNotification(
 			ctx,
 			emails,
 			nil,
 			mail.NewExecutiontHalfSLATpl(
 				gb.RunContext.WorkNumber,
-				notifName,
+				gb.RunContext.NotifName,
 				gb.RunContext.Sender.SdAddress,
 				lastWorksForUser,
 			))
@@ -340,11 +332,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName()
-	if err != nil {
-		return err
-	}
-	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, notifName, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
+	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -374,12 +362,8 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 
 		emails = append(emails, email)
 	}
-	notifName, err := gb.RunContext.GetTestName()
-	if err != nil {
-		return err
-	}
-	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, notifName, gb.RunContext.Sender.SdAddress)
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
+	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -434,11 +418,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context)
 
 		emails = append(emails, em)
 	}
-	notifName, err := gb.RunContext.GetTestName()
-	if err != nil {
-		return err
-	}
-	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, notifName, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -705,13 +685,10 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			return getWorksErr
 		}
 	}
-	notifName, err := gb.RunContext.GetTestName()
-	if err != nil {
-		return err
-	}
+
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		WorkNumber:   gb.RunContext.WorkNumber,
-		Name:         notifName,
+		Name:         gb.RunContext.NotifName,
 		SdUrl:        gb.RunContext.Sender.SdAddress,
 		Description:  description,
 		ExecutorName: typedAuthor.GetFullName(),
@@ -742,7 +719,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	tpl = mail.NewAppPersonStatusNotificationTpl(
 		&mail.NewAppPersonStatusTpl{
 			WorkNumber:  gb.RunContext.WorkNumber,
-			Name:        notifName,
+			Name:        gb.RunContext.NotifName,
 			Status:      string(StatusExecution),
 			Action:      statusToTaskAction[StatusExecution],
 			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
@@ -793,12 +770,8 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 
 		emails = append(emails, email)
 	}
-	notifName, err := gb.RunContext.GetTestName()
-	if err != nil {
-		return err
-	}
 	tpl := mail.NewAnswerSendToEditTpl(gb.RunContext.WorkNumber,
-		notifName, gb.RunContext.Sender.SdAddress)
+		gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -819,14 +792,10 @@ func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx c.Context) error {
 
 		emails = append(emails, email)
 	}
-	notifName, err := gb.RunContext.GetTestName()
-	if err != nil {
-		return err
-	}
 	tpl := mail.NewRequestExecutionInfoTpl(gb.RunContext.WorkNumber,
-		notifName, gb.RunContext.Sender.SdAddress)
+		gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -852,12 +821,8 @@ func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx c.Context) error {
 
 		emails = append(emails, email)
 	}
-	notifName, err := gb.RunContext.GetTestName()
-	if err != nil {
-		return err
-	}
 	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
-		notifName, gb.RunContext.Sender.SdAddress)
+		gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err

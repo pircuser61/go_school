@@ -279,14 +279,11 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
 			continue
 		}
-		notifName, err := gb.RunContext.GetTestName()
-		if err != nil {
-			return err
-		}
+
 		emails[email] = mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber:                gb.RunContext.WorkNumber,
-				Name:                      notifName,
+				Name:                      gb.RunContext.NotifName,
 				Status:                    gb.State.ApproveStatusName,
 				Action:                    statusToTaskAction[StatusApprovement],
 				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
