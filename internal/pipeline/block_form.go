@@ -398,7 +398,6 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
-
 		if isGroupExecutors {
 			slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
 				Service: gb.RunContext.HrGate,
@@ -412,7 +411,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			}
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(&mail.NewFormExecutionNeedTakeInWorkDto{
 				WorkNumber: gb.RunContext.WorkNumber,
-				WorkTitle:  gb.RunContext.WorkTitle,
+				WorkTitle:  gb.RunContext.NotifName,
 				SdUrl:      gb.RunContext.Sender.SdAddress,
 				Mailto:     gb.RunContext.Sender.FetchEmail,
 				BlockName:  BlockGoFormID,
@@ -422,7 +421,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
+				gb.RunContext.NotifName,
 				gb.RunContext.Sender.SdAddress)
 		}
 	}

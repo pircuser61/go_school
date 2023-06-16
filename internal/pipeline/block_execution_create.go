@@ -233,11 +233,11 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
-
 		if isGroupExecutors {
 			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
 				&mail.ExecutorNotifTemplate{
 					WorkNumber:  gb.RunContext.WorkNumber,
+					Name:        gb.RunContext.NotifName,
 					SdUrl:       gb.RunContext.Sender.SdAddress,
 					BlockID:     BlockGoExecutionID,
 					Description: description,
@@ -250,7 +250,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			emails[email] = mail.NewAppPersonStatusNotificationTpl(
 				&mail.NewAppPersonStatusTpl{
 					WorkNumber:  gb.RunContext.WorkNumber,
-					Name:        gb.RunContext.WorkTitle,
+					Name:        gb.RunContext.NotifName,
 					Status:      string(StatusExecution),
 					Action:      statusToTaskAction[StatusExecution],
 					DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),

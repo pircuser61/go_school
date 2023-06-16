@@ -1362,3 +1362,7 @@ func (m *MockDB) SaveSlaVersionSettings(ctx context.Context, versionID string, s
 func (m *MockDB) GetSlaVersionSettings(ctx context.Context, versionID string) (s entity.SlaVersionSettings, err error) {
 	return entity.SlaVersionSettings{}, errNotImplemented
 }
+
+func (m *MockDB) CheckIsTest(ctx context.Context, taskID uuid.UUID) (bool, error) {
+	return false, nil
+}

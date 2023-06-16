@@ -54,6 +54,8 @@ type BlockRunContext struct {
 	currBlockStartTime time.Time
 	Delegations        human_tasks.Delegations
 	HrGate             *hrgate.Service
+	IsTest             bool
+	NotifName          string
 }
 
 func (runCtx *BlockRunContext) Copy() *BlockRunContext {
@@ -445,9 +447,9 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 
 		emails = append(emails, email)
 	}
-
 	tmpl := mail.NewAppInitiatorStatusNotificationTpl(
 		runCtx.WorkNumber,
+		runCtx.NotifName,
 		statusToTaskState[status],
 		description,
 		runCtx.Sender.SdAddress)
