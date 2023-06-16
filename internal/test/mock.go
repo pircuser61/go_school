@@ -902,6 +902,14 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetTaskMembersLogins(ctx context.Context, workNumber string) ([]string, error) {
+	return nil, nil
+}
+
+func (_m *MockDB) GetTaskMembers(ctx context.Context, workNumber string) ([]db.DbMember, error) {
+	return nil, nil
+}
+
 func (_m *MockDB) RemoveObsoleteMapping(ctx context.Context, versionID string) error {
 	return nil
 }

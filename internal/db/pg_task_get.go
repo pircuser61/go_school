@@ -1492,6 +1492,39 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	return blockOutputs, nil
 }
 
+func (db *PGCon) GetTaskMembersLogins(ctx c.Context, workNumber string) ([]string, error) {
+	q := `SELECT DISTINCT m.login FROM works
+    		JOIN variable_storage vs ON works.id = vs.work_id
+    		JOIN members m ON vs.id = m.block_id
+		 WHERE work_number = $1 AND vs.status IN ('running', 'idle');`
+
+	members := make([]string, 0)
+
+	rows, err := db.Connection.Query(ctx, q, workNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var login string
+
+		if scanErr := rows.Scan(
+			&login,
+		); scanErr != nil {
+			return nil, scanErr
+		}
+
+		members = append(members, login)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return members, nil
+}
+
 func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "check_is_test")
 	defer span.End()
