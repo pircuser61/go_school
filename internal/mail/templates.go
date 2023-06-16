@@ -673,7 +673,7 @@ func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, de
 		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
 		Text: `Уважаемый коллега, по заявке № {{.Id}} {{.Name}} 
 					вам необходимо предоставить информацию.<br>
-					Для просмотра и заполнения полей заявки перейдите по <ссылке><br>
+					Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
 					Срок предоставления информации заявки: {{.Deadline}}`,
 		Variables: struct {
 			Id       string
