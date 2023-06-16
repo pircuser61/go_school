@@ -692,7 +692,7 @@ func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, de
 func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка № %s %s - Необходимо предоставить информацию", workNumber, workTitle),
-		Text:    "Уважаемый коллега, заявка №{{.Id}} {{.Name}} отозвана<br>Для просмотра перейдите по {{.Link}}",
+		Text:    "Уважаемый коллега, заявка №{{.Id}} {{.Name}} отозвана<br>Для просмотра перейдите по <a href={{.Link}}>ссылке</a>",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
