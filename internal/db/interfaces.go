@@ -60,7 +60,7 @@ type TaskStorager interface {
 	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
 	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
-	GetExecutorFromPrevBlock(ctx c.Context, taskID uuid.UUID, name string) (exec string, err error)
+	GetExecutorFromPrevBlockStart(ctx c.Context, taskID uuid.UUID, name string) (exec string, err error)
 
 	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
 }

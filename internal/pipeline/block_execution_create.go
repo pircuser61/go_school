@@ -81,18 +81,24 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		RepeatPrevDecision: params.RepeatPrevDecision,
 		UseActualExecutor:  params.UseActualExecutor,
 	}
-	executorChoosedFlag := false
+	executorChosenFlag := false
 	if gb.State.UseActualExecutor {
-		executor, prevExecErr := gb.RunContext.Storage.GetExecutorFromPrevBlock(ctx, gb.RunContext.TaskID, gb.Name)
-		if prevExecErr != nil && prevExecErr != sql.ErrNoRows {
+		executor, prevExecErr := gb.RunContext.Storage.GetExecutorFromPrevBlockStart(ctx, gb.RunContext.TaskID, gb.Name)
+		switch prevExecErr {
+		case nil:
+			{
+				gb.State.Executors = map[string]struct{}{
+					executor: {},
+				}
+				executorChosenFlag = true
+			}
+		case sql.ErrNoRows:
+			break
+		default:
 			return prevExecErr
 		}
-		gb.State.Executors = map[string]struct{}{
-			executor: {},
-		}
-		executorChoosedFlag = true
 	}
-	if !executorChoosedFlag {
+	if !executorChosenFlag {
 		switch params.Type {
 		case script.ExecutionTypeUser:
 			gb.State.Executors = map[string]struct{}{

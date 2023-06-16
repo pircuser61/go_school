@@ -1375,6 +1375,6 @@ func (m *MockDB) CheckIsTest(ctx context.Context, taskID uuid.UUID) (bool, error
 	return false, nil
 }
 
-func (m *MockDB) GetExecutorFromPrevBlock(ctx context.Context, taskID uuid.UUID, name string) (exec string, err error) {
+func (m *MockDB) GetExecutorFromPrevBlockStart(ctx context.Context, taskID uuid.UUID, name string) (exec string, err error) {
 	return "", nil
 }

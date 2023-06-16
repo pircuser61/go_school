@@ -649,8 +649,8 @@ func (_m *MockedDatabase) GetExecutableScenarios(ctx context.Context) ([]entity.
 	return r0, r1
 }
 
-// GetExecutorFromPrevBlock provides a mock function with given fields: ctx, taskID, name
-func (_m *MockedDatabase) GetExecutorFromPrevBlock(ctx context.Context, taskID uuid.UUID, name string) (string, error) {
+// GetExecutorFromPrevBlockStart provides a mock function with given fields: ctx, taskID, name
+func (_m *MockedDatabase) GetExecutorFromPrevBlockStart(ctx context.Context, taskID uuid.UUID, name string) (string, error) {
 	ret := _m.Called(ctx, taskID, name)
 
 	var r0 string

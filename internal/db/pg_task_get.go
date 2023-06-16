@@ -1541,7 +1541,7 @@ func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
 
 	return isTest, nil
 }
-func (db *PGCon) GetExecutorFromPrevBlock(ctx c.Context, taskID uuid.UUID, name string) (exec string, err error) {
+func (db *PGCon) GetExecutorFromPrevBlockStart(ctx c.Context, taskID uuid.UUID, name string) (exec string, err error) {
 	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
 	defer span.End()
 
