@@ -154,9 +154,9 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 	if err != nil {
 		return err
 	}
-	var notifName string
+	notifName := gb.Name
 	if isTest {
-		notifName = gb.Name + " (ТЕСТОВАЯ ЗАЯВКА)"
+		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
 	}
 	for k := range source {
 		bl := source[k]

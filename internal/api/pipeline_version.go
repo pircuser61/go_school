@@ -840,9 +840,9 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
-	var notifName string
+	notifName := ep.Name
 	if dto.runCtx.InitialApplication.IsTestApplication {
-		notifName = ep.Name + " (ТЕСТОВАЯ ЗАЯВКА)"
+		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
 	}
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     ep.TaskID,

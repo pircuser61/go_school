@@ -46,7 +46,7 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			log.WithError(transactionErr).Error("couldn't set SLA breach")
 			continue
 		}
-		var notifName string
+		notifName := item.WorkTitle
 		if item.IsTest {
 			notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
 		}
