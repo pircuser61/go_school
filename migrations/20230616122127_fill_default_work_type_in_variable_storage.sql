@@ -1,4 +1,4 @@
- -- +goose Up
+-- +goose Up
 -- +goose StatementBegin
  update variable_storage
  set content = jsonb_set(content, array ['State', step_name, 'work_type']::varchar[],
