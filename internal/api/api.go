@@ -853,6 +853,9 @@ type ExecutionParams struct {
 	//  * from_schema - Selected by initiator
 	Type ExecutionParamsType `json:"type"`
 
+	// flag to use actual executor
+	UseActualExecutor *bool `json:"use_actual_executor,omitempty"`
+
 	// Рабочий режим
 	WorkType *WorkType `json:"work_type,omitempty"`
 }

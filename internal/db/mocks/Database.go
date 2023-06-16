@@ -649,6 +649,27 @@ func (_m *MockedDatabase) GetExecutableScenarios(ctx context.Context) ([]entity.
 	return r0, r1
 }
 
+// GetExecutorFromPrevBlock provides a mock function with given fields: ctx, taskID, name
+func (_m *MockedDatabase) GetExecutorFromPrevBlock(ctx context.Context, taskID uuid.UUID, name string) (string, error) {
+	ret := _m.Called(ctx, taskID, name)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) string); ok {
+		r0 = rf(ctx, taskID, name)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = rf(ctx, taskID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetExternalSystemSettings provides a mock function with given fields: ctx, versionID, systemID
 func (_m *MockedDatabase) GetExternalSystemSettings(ctx context.Context, versionID string, systemID string) (entity.ExternalSystem, error) {
 	ret := _m.Called(ctx, versionID, systemID)

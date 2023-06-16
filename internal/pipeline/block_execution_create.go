@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	c "context"
+	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -78,57 +79,69 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		FormsAccessibility: params.FormsAccessibility,
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,
+		UseActualExecutor:  params.UseActualExecutor,
 	}
-
-	switch params.Type {
-	case script.ExecutionTypeUser:
+	executorChoosedFlag := false
+	if gb.State.UseActualExecutor {
+		executor, prevExecErr := gb.RunContext.Storage.GetExecutorFromPrevBlock(ctx, gb.RunContext.TaskID, gb.Name)
+		if prevExecErr != nil && prevExecErr != sql.ErrNoRows {
+			return prevExecErr
+		}
 		gb.State.Executors = map[string]struct{}{
-			params.Executors: {},
+			executor: {},
 		}
-	case script.ExecutionTypeFromSchema:
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
-		}
-
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
-			variableStorage,
-			map[string]struct{}{
-				params.Executors: {},
-			},
-		)
-		if resolveErr != nil {
-			return resolveErr
-		}
-
-		gb.State.Executors = resolvedEntities
-
-		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
-		if htErr != nil {
-			return htErr
-		}
-		delegations = delegations.FilterByType("execution")
-
-		gb.RunContext.Delegations = delegations
-	case script.ExecutionTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.ExecutorsGroupID)
-		if errGroup != nil {
-			return errors.Wrap(errGroup, "can`t get executors group with id: "+params.ExecutorsGroupID)
-		}
-
-		if len(workGroup.People) == 0 {
-			//nolint:goimports // bugged golint
-			return errors.New("zero executors in group: " + params.ExecutorsGroupID)
-		}
-
-		gb.State.Executors = make(map[string]struct{})
-		for i := range workGroup.People {
-			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
-		}
-		gb.State.ExecutorsGroupID = params.ExecutorsGroupID
-		gb.State.ExecutorsGroupName = workGroup.GroupName
+		executorChoosedFlag = true
 	}
+	if !executorChoosedFlag {
+		switch params.Type {
+		case script.ExecutionTypeUser:
+			gb.State.Executors = map[string]struct{}{
+				params.Executors: {},
+			}
+		case script.ExecutionTypeFromSchema:
+			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+			if grabStorageErr != nil {
+				return grabStorageErr
+			}
 
+			resolvedEntities, resolveErr := resolveValuesFromVariables(
+				variableStorage,
+				map[string]struct{}{
+					params.Executors: {},
+				},
+			)
+			if resolveErr != nil {
+				return resolveErr
+			}
+
+			gb.State.Executors = resolvedEntities
+
+			delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+			if htErr != nil {
+				return htErr
+			}
+			delegations = delegations.FilterByType("execution")
+
+			gb.RunContext.Delegations = delegations
+		case script.ExecutionTypeGroup:
+			workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.ExecutorsGroupID)
+			if errGroup != nil {
+				return errors.Wrap(errGroup, "can`t get executors group with id: "+params.ExecutorsGroupID)
+			}
+
+			if len(workGroup.People) == 0 {
+				//nolint:goimports // bugged golint
+				return errors.New("zero executors in group: " + params.ExecutorsGroupID)
+			}
+
+			gb.State.Executors = make(map[string]struct{})
+			for i := range workGroup.People {
+				gb.State.Executors[workGroup.People[i].Login] = struct{}{}
+			}
+			gb.State.ExecutorsGroupID = params.ExecutorsGroupID
+			gb.State.ExecutorsGroupName = workGroup.GroupName
+		}
+	}
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {

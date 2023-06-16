@@ -4319,6 +4319,9 @@ components:
         is_editable:
           type: boolean
           description: Show action edit application in SD
+        use_actual_executor:
+          type: boolean
+          description: flag to use actual executor
         work_type:
           $ref: "#/components/schemas/WorkType"
       required:

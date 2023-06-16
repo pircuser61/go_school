@@ -35,6 +35,7 @@ type ExecutionParams struct {
 	IsEditable         bool    `json:"is_editable"`
 	RepeatPrevDecision bool    `json:"repeat_prev_decision"`
 	WorkType           *string `json:"work_type"`
+	UseActualExecutor  bool    `json:"use_actual_executor"`
 }
 
 func (a *ExecutionParams) Validate() error {

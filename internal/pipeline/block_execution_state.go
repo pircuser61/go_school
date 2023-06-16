@@ -64,6 +64,7 @@ type ExecutionData struct {
 
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+	UseActualExecutor  bool `json:"use_actual_executor"`
 
 	SLA                          int    `json:"sla"`
 	CheckSLA                     bool   `json:"check_sla"`

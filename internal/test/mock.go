@@ -1374,3 +1374,7 @@ func (m *MockDB) GetSlaVersionSettings(ctx context.Context, versionID string) (s
 func (m *MockDB) CheckIsTest(ctx context.Context, taskID uuid.UUID) (bool, error) {
 	return false, nil
 }
+
+func (m *MockDB) GetExecutorFromPrevBlock(ctx context.Context, taskID uuid.UUID, name string) (exec string, err error) {
+	return "", nil
+}

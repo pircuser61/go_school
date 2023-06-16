@@ -1541,3 +1541,19 @@ func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
 
 	return isTest, nil
 }
+func (db *PGCon) GetExecutorFromPrevBlock(ctx c.Context, taskID uuid.UUID, name string) (exec string, err error) {
+	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
+	defer span.End()
+
+	q := `
+		SELECT  content-> 'State' -> $1 -> 'actual_executor'
+		FROM variable_storage
+		WHERE work_id = $2 and step_name = $3 order by time desc limit 1 offset 1`
+
+	var executor string
+	if err = db.Connection.QueryRow(ctx, q, name, taskID, name).Scan(&executor); err != nil {
+		return "", err
+	}
+
+	return executor, nil
+}
