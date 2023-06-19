@@ -712,7 +712,8 @@ func (db *PGCon) GetTask(
 			COALESCE(descr.blueprint_id, ''),
 			w.rate,
 			w.rate_comment,
-         	ua.actions
+         	ua.actions,
+ 			run_context -> 'initial_application' -> 'is_test_application' as isTest
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -767,6 +768,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.Rate,
 		&et.RateComment,
 		pq.Array(&nullStringActions),
+		&et.IsTest,
 	)
 	if err != nil {
 		return nil, err
@@ -1488,4 +1490,54 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	}
 
 	return blockOutputs, nil
+}
+
+func (db *PGCon) GetTaskMembersLogins(ctx c.Context, workNumber string) ([]string, error) {
+	q := `SELECT DISTINCT m.login FROM works
+    		JOIN variable_storage vs ON works.id = vs.work_id
+    		JOIN members m ON vs.id = m.block_id
+		 WHERE work_number = $1 AND vs.status IN ('running', 'idle');`
+
+	members := make([]string, 0)
+
+	rows, err := db.Connection.Query(ctx, q, workNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var login string
+
+		if scanErr := rows.Scan(
+			&login,
+		); scanErr != nil {
+			return nil, scanErr
+		}
+
+		members = append(members, login)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return members, nil
+}
+
+func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "check_is_test")
+	defer span.End()
+
+	q := `
+		SELECT run_context -> 'initial_application' -> 'is_test_application'
+		FROM works
+		WHERE id = $1`
+
+	var isTest bool
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&isTest); err != nil {
+		return false, err
+	}
+
+	return isTest, nil
 }

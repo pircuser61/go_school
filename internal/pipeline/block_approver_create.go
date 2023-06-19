@@ -140,6 +140,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		Type:     params.Type,
 		GroupID:  params.ApproversGroupID,
 		Approver: params.Approver,
+		WorkType: params.WorkType,
 	})
 	if setErr != nil {
 		return setErr
@@ -154,6 +155,7 @@ type setApproversByParamsDTO struct {
 	Type     script.ApproverType
 	GroupID  string
 	Approver string
+	WorkType *string
 }
 
 func (gb *GoApproverBlock) setExecutorsByParams(ctx c.Context, dto *setApproversByParamsDTO) error {
@@ -212,6 +214,23 @@ func (gb *GoApproverBlock) setExecutorsByParams(ctx c.Context, dto *setApprovers
 			return htErr
 		}
 		gb.RunContext.Delegations = delegations.FilterByType("approvement")
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	if dto.WorkType != nil {
+		gb.State.WorkType = *dto.WorkType
+	} else {
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+		gb.State.WorkType = processSLASettings.WorkType
 	}
 
 	return nil
@@ -289,6 +308,16 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails := make(map[string]mail.Template, 0)
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		WorkType: WorkHourType(gb.State.WorkType),
+	})
+
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
+	}
 	for _, login := range loginsToNotify {
 		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
@@ -299,10 +328,10 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 		emails[email] = mail.NewAppPersonStatusNotificationTpl(
 			&mail.NewAppPersonStatusTpl{
 				WorkNumber:                gb.RunContext.WorkNumber,
-				Name:                      gb.RunContext.WorkTitle,
+				Name:                      gb.RunContext.NotifName,
 				Status:                    gb.State.ApproveStatusName,
 				Action:                    statusToTaskAction[StatusApprovement],
-				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA),
+				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
 				SdUrl:                     gb.RunContext.Sender.SdAddress,
 				Mailto:                    gb.RunContext.Sender.FetchEmail,
 				Login:                     login,

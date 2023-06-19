@@ -4,8 +4,11 @@ import (
 	c "context"
 	"net/http"
 
-	"github.com/google/uuid"
 	"go.opencensus.io/trace"
+
+	"golang.org/x/net/context"
+
+	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -61,8 +64,8 @@ func (gb *ExecutablePipeline) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutablePipeline) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *ExecutablePipeline) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *ExecutablePipeline) GetStatus() Status {
@@ -147,7 +150,14 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 
 	ctx, s := trace.StartSpan(ctx, "create_blocks")
 	defer s.End()
-
+	isTest, err := gb.Storage.CheckIsTest(ctx, gb.TaskID)
+	if err != nil {
+		return err
+	}
+	notifName := gb.Name
+	if isTest {
+		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
+	}
 	for k := range source {
 		bl := source[k]
 
@@ -167,8 +177,10 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			HumanTasks:    gb.HumanTasks,
 			Integrations:  gb.Integrations,
 			FaaS:          gb.FaaS,
-
-			UpdateData: nil,
+			HrGate:        gb.RunContext.HrGate,
+			UpdateData:    nil,
+			IsTest:        isTest,
+			NotifName:     notifName,
 		})
 		if err != nil {
 			return err

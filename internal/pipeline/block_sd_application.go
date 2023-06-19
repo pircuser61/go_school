@@ -46,8 +46,8 @@ func (gb *GoSdApplicationBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoSdApplicationBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *GoSdApplicationBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *GoSdApplicationBlock) UpdateManual() bool {

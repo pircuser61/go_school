@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/google/uuid"
+
+	"github.com/pkg/errors"
 
 	"golang.org/x/exp/slices"
 
@@ -22,6 +22,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
@@ -827,6 +828,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 			Integrations:  ae.Integrations,
 			FileRegistry:  ae.FileRegistry,
 			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
 
 			UpdateData: &script.BlockUpdateData{
 				ByLogin:    userLogin,
@@ -834,6 +836,8 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 				Parameters: in.Parameters,
 			},
 			Delegations: delegations,
+			IsTest:      dbTask.IsTest,
+			NotifName:   dbTask.Name,
 		}
 
 		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
@@ -885,6 +889,39 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 	}
 
 	dbTask, err := ae.DB.GetTask(ctxLocal, []string{userLogin}, []string{userLogin}, userLogin, workNumber)
+
+	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
+	if getDelegationsErr != nil {
+		return getDelegationsErr
+	}
+
+	delegationsByApprovement := delegations.FilterByType("approvement")
+	delegationsByExecution := delegations.FilterByType("execution")
+
+	taskMembersLogins, err := ae.DB.GetTaskMembersLogins(ctx, workNumber)
+	if err != nil {
+		return err
+	}
+
+	loginsToNotify := make([]string, 0)
+	loginsToNotify = append(loginsToNotify, delegationsByApprovement.GetUserInArrayWithDelegators([]string{})...)
+	loginsToNotify = append(loginsToNotify, delegationsByExecution.GetUserInArrayWithDelegators([]string{})...)
+	loginsToNotify = append(loginsToNotify, taskMembersLogins...)
+
+	emails := make([]string, 0, len(loginsToNotify))
+	for _, login := range loginsToNotify {
+		email, getUserEmailErr := ae.People.GetUserEmail(ctx, login)
+		if getUserEmailErr != nil {
+			continue
+		}
+		emails = append(emails, email)
+	}
+
+	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
+	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
+	if err != nil {
+		return err
+	}
 
 	err = ae.DB.StopTaskBlocks(ctxLocal, dbTask.ID)
 	if err != nil {

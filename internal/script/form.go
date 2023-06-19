@@ -30,6 +30,7 @@ type FormParams struct {
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`
+	WorkType                  *string              `json:"work_type"`
 	IsEditable                *bool                `json:"is_editable"`
 	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings"`
 }

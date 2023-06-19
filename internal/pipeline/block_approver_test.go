@@ -481,6 +481,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 							Title: script.RejectSocketTitle,
 						},
 					},
+					WorkType: string(WorkTypeN85),
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -493,6 +494,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 			got, _, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, &BlockRunContext{
 				skipNotifications: true,
 				VarStore:          store.NewStore(),
+				Storage:           makeStorage(),
 			})
 			if got != nil {
 				got.RunContext = nil

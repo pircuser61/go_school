@@ -604,7 +604,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 
-	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate() {
+	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
 		e := PipelineValidateError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -840,7 +840,10 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
-
+	notifName := ep.Name
+	if dto.runCtx.InitialApplication.IsTestApplication {
+		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
+	}
 	runCtx := &pipeline.BlockRunContext{
 		TaskID:     ep.TaskID,
 		WorkNumber: ep.WorkNumber,
@@ -858,10 +861,12 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		Integrations:  ep.Integrations,
 		FileRegistry:  ep.FileRegistry,
 		FaaS:          ep.FaaS,
+		HrGate:        ae.HrGate,
 
 		UpdateData: nil,
+		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
+		NotifName:  notifName,
 	}
-
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
 	err = pipeline.ProcessBlockWithEndMapping(processCtx, ep.EntryPoint, &blockData, runCtx, false)

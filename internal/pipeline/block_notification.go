@@ -40,8 +40,8 @@ func (gb *GoNotificationBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoNotificationBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *GoNotificationBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *GoNotificationBlock) UpdateManual() bool {

@@ -166,13 +166,14 @@ type ApproverData struct {
 
 	ApproveStatusName string `json:"approve_status_name"`
 
-	SLA                          int  `json:"sla"`
-	CheckSLA                     bool `json:"check_sla"`
-	SLAChecked                   bool `json:"sla_checked"`
-	HalfSLAChecked               bool `json:"half_sla_checked"`
-	ReworkSLA                    int  `json:"rework_sla"`
-	CheckReworkSLA               bool `json:"check_rework_sla"`
-	CheckDayBeforeSLARequestInfo bool `json:"check_day_before_sla_request_info"`
+	SLA                          int    `json:"sla"`
+	CheckSLA                     bool   `json:"check_sla"`
+	SLAChecked                   bool   `json:"sla_checked"`
+	HalfSLAChecked               bool   `json:"half_sla_checked"`
+	ReworkSLA                    int    `json:"rework_sla"`
+	CheckReworkSLA               bool   `json:"check_rework_sla"`
+	CheckDayBeforeSLARequestInfo bool   `json:"check_day_before_sla_request_info"`
+	WorkType                     string `json:"work_type"`
 
 	AutoAction *ApproverAction `json:"auto_action,omitempty"`
 

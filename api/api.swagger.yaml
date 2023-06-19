@@ -2943,12 +2943,7 @@ components:
           description: SLA в рабочих часах
           minimum: 1
         work_type:
-          type: string
-          description: Рабочий режим
-          enum:
-            - 24/7
-            - 8/5
-            - 12/5
+          $ref: "#/components/schemas/WorkType"
       required:
         - version_id
         - name
@@ -4334,6 +4329,8 @@ components:
         is_editable:
           type: boolean
           description: Show action edit application in SD
+        work_type:
+          $ref: "#/components/schemas/WorkType"
       required:
         - type
         - executors
@@ -4398,6 +4395,8 @@ components:
         constants:
           type: object
           description: Constant values for function parameters (key of object is variable name)
+        work_type:
+          $ref: "#/components/schemas/WorkType"
         is_editable:
           type: boolean
           description: true - need manual fill when reenter in block
@@ -4488,6 +4487,8 @@ components:
         approve_status_name:
           type: string
           description: Approvement status
+        work_type:
+          $ref: "#/components/schemas/WorkType"
       required:
         - type
         - approver
@@ -4794,3 +4795,10 @@ components:
           description: Существует ли имя
       required:
         - exists
+    WorkType:
+      type: string
+      description: Рабочий режим
+      enum:
+        - 24/7
+        - 8/5
+        - 12/5

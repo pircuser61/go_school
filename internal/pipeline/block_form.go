@@ -47,10 +47,13 @@ type FormData struct {
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
-	SLA            int  `json:"sla"`
-	CheckSLA       bool `json:"check_sla"`
-	SLAChecked     bool `json:"sla_checked"`
-	HalfSLAChecked bool `json:"half_sla_checked"`
+	IsRevoked bool `json:"is_revoked"`
+
+	SLA            int    `json:"sla"`
+	CheckSLA       bool   `json:"check_sla"`
+	SLAChecked     bool   `json:"sla_checked"`
+	HalfSLAChecked bool   `json:"half_sla_checked"`
+	WorkType       string `json:"work_type"`
 
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
@@ -99,13 +102,29 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	return []MemberAction{action}
 }
 
-func (gb *GoFormBlock) Deadlines() []Deadline {
+func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
+	if gb.State.IsRevoked {
+		return []Deadline{}, nil
+	}
+
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
+		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+			Service: gb.RunContext.HrGate,
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: WorkHourType(gb.State.WorkType),
+		})
+
+		if getSlaInfoErr != nil {
+			return nil, getSlaInfoErr
+		}
+
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA),
+					slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -113,14 +132,15 @@ func (gb *GoFormBlock) Deadlines() []Deadline {
 
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2),
+				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
+					slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
 		}
 	}
 
-	return deadlines
+	return deadlines, nil
 }
 
 func (gb *GoFormBlock) UpdateManual() bool {
@@ -244,15 +264,29 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		if isGroupExecutors {
-			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
-				gb.RunContext.Sender.SdAddress,
-				ComputeDeadline(time.Now(), gb.State.SLA),
-			)
+			slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+				Service: gb.RunContext.HrGate,
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+					FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+				WorkType: WorkHourType(gb.State.WorkType),
+			})
+
+			if getSlaInfoErr != nil {
+				return getSlaInfoErr
+			}
+			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(&mail.NewFormExecutionNeedTakeInWorkDto{
+				WorkNumber: gb.RunContext.WorkNumber,
+				WorkTitle:  gb.RunContext.NotifName,
+				SdUrl:      gb.RunContext.Sender.SdAddress,
+				Mailto:     gb.RunContext.Sender.FetchEmail,
+				BlockName:  BlockGoFormID,
+				Login:      login,
+				Deadline:   ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
+			})
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
+				gb.RunContext.NotifName,
 				gb.RunContext.Sender.SdAddress)
 		}
 	}

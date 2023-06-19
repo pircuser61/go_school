@@ -902,6 +902,14 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetTaskMembersLogins(ctx context.Context, workNumber string) ([]string, error) {
+	return nil, nil
+}
+
+func (_m *MockDB) GetTaskMembers(ctx context.Context, workNumber string) ([]db.DbMember, error) {
+	return nil, nil
+}
+
 func (_m *MockDB) RemoveObsoleteMapping(ctx context.Context, versionID string) error {
 	return nil
 }
@@ -1361,4 +1369,8 @@ func (m *MockDB) SaveSlaVersionSettings(ctx context.Context, versionID string, s
 
 func (m *MockDB) GetSlaVersionSettings(ctx context.Context, versionID string) (s entity.SlaVersionSettings, err error) {
 	return entity.SlaVersionSettings{}, errNotImplemented
+}
+
+func (m *MockDB) CheckIsTest(ctx context.Context, taskID uuid.UUID) (bool, error) {
+	return false, nil
 }

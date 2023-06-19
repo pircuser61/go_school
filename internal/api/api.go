@@ -177,15 +177,6 @@ const (
 	NumberOperandOperandTypeVariableOperand NumberOperandOperandType = "variableOperand"
 )
 
-// Defines values for ProcessSettingsWorkType.
-const (
-	ProcessSettingsWorkTypeN125 ProcessSettingsWorkType = "12/5"
-
-	ProcessSettingsWorkTypeN247 ProcessSettingsWorkType = "24/7"
-
-	ProcessSettingsWorkTypeN85 ProcessSettingsWorkType = "8/5"
-)
-
 // Defines values for RequestExecutionInfoType.
 const (
 	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
@@ -260,6 +251,15 @@ const (
 	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
 
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
+)
+
+// Defines values for WorkType.
+const (
+	WorkTypeN125 WorkType = "12/5"
+
+	WorkTypeN247 WorkType = "24/7"
+
+	WorkTypeN85 WorkType = "8/5"
 )
 
 // Defines values for AdditionalApproverDecision.
@@ -499,6 +499,9 @@ type ApproverParams struct {
 	//   * head - Receiver's head
 	//   * FromSchema - Selected by initiator
 	Type ApproverType `json:"type"`
+
+	// Рабочий режим
+	WorkType *WorkType `json:"work_type,omitempty"`
 }
 
 // Approver type:
@@ -849,6 +852,9 @@ type ExecutionParams struct {
 	//  * group - Execution group ID
 	//  * from_schema - Selected by initiator
 	Type ExecutionParamsType `json:"type"`
+
+	// Рабочий режим
+	WorkType *WorkType `json:"work_type,omitempty"`
 }
 
 // Execution type:
@@ -984,6 +990,9 @@ type FormParams struct {
 
 	// form sla
 	Sla int `json:"sla"`
+
+	// Рабочий режим
+	WorkType *WorkType `json:"work_type,omitempty"`
 }
 
 // Настройки блока при повторном заходе в этот блок
@@ -1295,11 +1304,8 @@ type ProcessSettings struct {
 	VersionId string `json:"version_id"`
 
 	// Рабочий режим
-	WorkType ProcessSettingsWorkType `json:"work_type"`
+	WorkType WorkType `json:"work_type"`
 }
-
-// Рабочий режим
-type ProcessSettingsWorkType string
 
 // Настройки старта версии пайплайна(процесса)
 type ProcessSettingsWithExternalSystems struct {
@@ -1489,6 +1495,9 @@ type UsedBy struct {
 	// Имя сценария
 	Name string `json:"name"`
 }
+
+// Рабочий режим
+type WorkType string
 
 // Action defines model for action.
 type Action struct {

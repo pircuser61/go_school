@@ -58,6 +58,7 @@ type TaskStorager interface {
 	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
 	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
 	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
+	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
 
 	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
@@ -134,6 +135,7 @@ type StepBreachedSLA struct {
 	BlockData  *e.EriusFunc
 	StepName   string
 	Action     e.TaskUpdateAction
+	IsTest     bool
 }
 
 //go:generate mockery --name=Database --structname=MockedDatabase
@@ -210,4 +212,5 @@ type Database interface {
 	UpdateEndingSystemSettings(ctx c.Context, versionID, systemID string, settings e.EndSystemSettings) (err error)
 	SaveSlaVersionSettings(ctx c.Context, versionID string, s e.SlaVersionSettings) (err error)
 	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
+	GetTaskMembersLogins(ctx c.Context, workNumber string) ([]string, error)
 }

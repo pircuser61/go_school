@@ -13,6 +13,7 @@ import (
 
 const dotSeparator = "."
 
+//nolint:gocyclo // ok here
 func MapData(mapping JSONSchemaProperties, input map[string]interface{},
 	required []string, levelFromRoot int) (map[string]interface{}, error) {
 	mappedData := make(map[string]interface{}, len(input))

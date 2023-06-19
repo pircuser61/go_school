@@ -27,6 +27,7 @@ type Step struct {
 	Status      string                     `json:"status"`
 	Initiator   string                     `json:"initiator"`
 	UpdatedAt   *time.Time                 `json:"updated_at"`
+	IsTest      bool                       `json:"-"`
 }
 
 type TaskSteps []*Step
@@ -96,6 +97,7 @@ type EriusTask struct {
 	PrevUpdateStatusBlocks map[string]string   `json:"prev_update_status_blocks"`
 	Total                  int                 `json:"-"`
 	AttachmentsCount       *int                `json:"attachments_count"`
+	IsTest                 bool                `json:"-"`
 }
 
 func (et *EriusTask) IsRun() bool {

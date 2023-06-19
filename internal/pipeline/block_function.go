@@ -7,13 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
+	"golang.org/x/net/context"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -66,8 +67,8 @@ func (gb *ExecutableFunctionBlock) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *ExecutableFunctionBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
@@ -83,7 +84,15 @@ func (gb *ExecutableFunctionBlock) GetStatus() Status {
 }
 
 func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+	if gb.State.Async && gb.State.HasAck && !gb.State.HasResponse {
+		return StatusWait
+	}
+
+	if gb.State.HasResponse {
+		return StatusDone
+	}
+
+	return StatusExecution
 }
 
 func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -142,6 +151,9 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			}
 		}
 	} else {
+		if gb.State.HasResponse {
+			return nil, nil
+		}
 		taskStep, errTask := gb.RunContext.Storage.GetTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 		if errTask != nil {
 			return nil, errTask
@@ -162,13 +174,11 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 				emails := []string{em}
 
-				tpl := mail.NewInvalidFunctionResp(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+				tpl := mail.NewInvalidFunctionResp(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 				errSend := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 				if errSend != nil {
 					log.WithField("emails", emails).Error(errSend)
 				}
-
-				return nil, gb.cancelPipeline(ctx)
 			}
 		}
 
@@ -288,7 +298,7 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 	}
 
 	rawState, blockExists := runCtx.VarStore.State[name]
-	reEntry := blockExists && runCtx.UpdateData == nil // ADD CONDITION FOR FUNCTION BLOCK
+	reEntry := blockExists && runCtx.UpdateData == nil
 	if blockExists {
 		if err := b.loadState(rawState); err != nil {
 			return nil, false, err
@@ -353,18 +363,6 @@ func (gb *ExecutableFunctionBlock) changeCurrentState() {
 		return
 	}
 	gb.State.HasResponse = true
-}
-
-// nolint:dupl // another action
-func (gb *ExecutableFunctionBlock) cancelPipeline(ctx c.Context) error {
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
-		return stopErr
-	}
-	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
-		return stopErr
-	}
-
-	return nil
 }
 
 func isTimeToRetry(createdAt time.Time, waitInDays int) bool {

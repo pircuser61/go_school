@@ -46,6 +46,10 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			log.WithError(transactionErr).Error("couldn't set SLA breach")
 			continue
 		}
+		notifName := item.WorkTitle
+		if item.IsTest {
+			notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
+		}
 		// goroutines?
 		runCtx := &pipeline.BlockRunContext{
 			TaskID:     item.TaskID,
@@ -64,10 +68,13 @@ func (ae *APIEnv) CheckBreachSLA(w http.ResponseWriter, r *http.Request) {
 			Integrations:  ae.Integrations,
 			FileRegistry:  ae.FileRegistry,
 			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
 
 			UpdateData: &script.BlockUpdateData{
 				Action: string(item.Action),
 			},
+			IsTest:    item.IsTest,
+			NotifName: notifName,
 		}
 
 		blockErr := pipeline.ProcessBlockWithEndMapping(processCtx, item.StepName, item.BlockData, runCtx, true)

@@ -40,8 +40,8 @@ func (gb *GoPlaceholderBlock) Members() []Member {
 	return nil
 }
 
-func (gb *GoPlaceholderBlock) Deadlines() []Deadline {
-	return []Deadline{}
+func (gb *GoPlaceholderBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+	return []Deadline{}, nil
 }
 
 func (gb *GoPlaceholderBlock) UpdateManual() bool {
