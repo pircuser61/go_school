@@ -1589,7 +1589,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 
 		if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).
 			Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
-			return NullUuid, time.Time{}, nil
+			return NullUuid, time.Time{}, scanErr
 		}
 
 		if id != NullUuid {
@@ -2101,7 +2101,7 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, 
 
 	var c int
 	if scanErr := db.Connection.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
-		return false, nil
+		return false, scanErr
 	}
 	return c == len(blocks), nil
 }
