@@ -103,7 +103,6 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 //nolint:unparam // its ok
 func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.EriusFunc,
 	runCtx *BlockRunContext) (*GoWaitForAllInputsBlock, bool, error) {
-
 	const reEntry = false
 
 	b := &GoWaitForAllInputsBlock{
