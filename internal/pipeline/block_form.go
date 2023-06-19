@@ -269,7 +269,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		ApplicationBody:           map[string]interface{}{},
 		FormsAccessibility:        params.FormsAccessibility,
 		Mapping:                   params.Mapping,
-		HideExecutorFromInitiator: false, //params.HideExecutorFromInitiator
+		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
 	}
 
 	switch gb.State.FormExecutorType {
