@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
 	"go.opencensus.io/trace"
@@ -226,7 +227,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 
 	if dbTask.Author == ui.Username { // If initiator equals to user who made request
-		hideErr := ae.hideExecutorsFromInitiator(dbTask.Steps)
+		hideErr := ae.hideExecutorsFromInitiator(dbTask.Steps, ui.Username)
 		if hideErr != nil {
 			e := UnknownError
 			log.Error(e.errorMessage(hideErr))
@@ -1088,7 +1089,7 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *APIEnv) hideExecutorsFromInitiator(steps entity.TaskSteps) error {
+func (ae *APIEnv) hideExecutorsFromInitiator(steps entity.TaskSteps, requesterLogin string) error {
 	for stepIndex := range steps {
 		currentStep := steps[stepIndex]
 		if currentStep.State == nil {
@@ -1102,7 +1103,7 @@ func (ae *APIEnv) hideExecutorsFromInitiator(steps entity.TaskSteps) error {
 				return unmarshalErr
 			}
 
-			if !formBlock.HideExecutorFromInitiator {
+			if !formBlock.HideExecutorFromInitiator || slices.Contains(maps.Keys(formBlock.Executors), requesterLogin) {
 				continue
 			}
 			formBlock.Executors = map[string]struct{}{
