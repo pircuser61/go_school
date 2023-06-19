@@ -122,6 +122,6 @@ func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContex
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
 	}
-	//nolint:unparam its ok
+	//nolint:unparam // its ok
 	return b, reEntry, nil
 }

@@ -113,6 +113,6 @@ func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRu
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
-	//nolint:unparam its ok
+	//nolint:unparam // its ok
 	return b, reEntry, nil
 }

@@ -212,7 +212,7 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 		Subject: params.Subject,
 	}
 	b.RunContext.VarStore.AddStep(b.Name)
-	//nolint:unparam its ok
+	//nolint:unparam // its ok
 	return b, reEntry, nil
 }
 
