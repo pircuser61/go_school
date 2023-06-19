@@ -105,6 +105,7 @@ func (gb *GoTestBlock) Update(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
+//nolint:unparam // its ok
 func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (b *GoTestBlock, reEntry bool, err error) {
 	b = &GoTestBlock{
 		Name:       name,
@@ -122,6 +123,5 @@ func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContex
 	for _, v := range ef.Output {
 		b.Output[v.Name] = v.Global
 	}
-	//nolint:unparam // its ok
 	return b, reEntry, nil
 }

@@ -100,6 +100,7 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 	}
 }
 
+//nolint:unparam // its ok
 func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.EriusFunc,
 	runCtx *BlockRunContext) (*GoWaitForAllInputsBlock, bool, error) {
 
@@ -133,7 +134,7 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 	}
-	//nolint:unparam // its ok
+
 	return b, reEntry, nil
 }
 

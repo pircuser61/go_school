@@ -173,7 +173,7 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 	}
 }
 
-// nolint:dupl // another block
+// nolint:dupl,unparam // another block
 func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoNotificationBlock, bool, error) {
 	const reEntry = false
 
@@ -212,7 +212,7 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 		Subject: params.Subject,
 	}
 	b.RunContext.VarStore.AddStep(b.Name)
-	//nolint:unparam // its ok
+
 	return b, reEntry, nil
 }
 

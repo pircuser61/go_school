@@ -119,6 +119,7 @@ func (gb *IF) Model() script.FunctionModel {
 	}
 }
 
+//nolint:unparam // its ok
 func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (block *IF, reEntry bool, err error) {
 	b := &IF{
 		Name:       name,
@@ -157,7 +158,6 @@ func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext)
 	}
 	b.RunContext.VarStore.AddStep(b.Name)
 
-	//nolint:unparam // its ok
 	return b, reEntry, nil
 }
 

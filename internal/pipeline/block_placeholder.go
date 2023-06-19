@@ -92,6 +92,7 @@ func (gb *GoPlaceholderBlock) Update(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
+//nolint:unparam // its ok
 func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoPlaceholderBlock, bool, error) {
 	const reEntry = false
 
@@ -113,6 +114,6 @@ func createGoPlaceholderBlock(name string, ef *entity.EriusFunc, runCtx *BlockRu
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
-	//nolint:unparam // its ok
+
 	return b, reEntry, nil
 }
