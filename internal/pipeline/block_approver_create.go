@@ -182,8 +182,6 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		gb.State.WorkType = processSLASettings.WorkType
 	}
 
-	gb.RunContext.VarStore.AddStep(gb.Name)
-
 	return gb.handleNotifications(ctx)
 }
 

@@ -153,8 +153,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		return notifErr
 	}
 
-	gb.RunContext.VarStore.AddStep(gb.Name)
-
 	return gb.handleNotifications(ctx)
 }
 

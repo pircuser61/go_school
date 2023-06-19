@@ -310,8 +310,6 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 		b.RunContext.VarStore.AddStep(b.Name)
 	}
 
-	b.RunContext.VarStore.AddStep(b.Name)
-
 	return b, reEntry, nil
 }
 
