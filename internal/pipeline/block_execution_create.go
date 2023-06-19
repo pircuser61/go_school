@@ -123,22 +123,15 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		RepeatPrevDecision: params.RepeatPrevDecision,
 	}
 
-	executor := ""
-	if len(gb.State.Executors) == 1 {
-		executor = getSliceFromMapOfStrings(gb.State.Executors)[0]
-	}
-
 	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-		Type:     gb.State.ExecutionType,
-		GroupID:  gb.State.ExecutorsGroupID,
-		Executor: executor,
-		WorkType: &gb.State.WorkType,
+		Type:     params.Type,
+		GroupID:  params.ExecutorsGroupID,
+		Executor: params.Executors,
+		WorkType: params.WorkType,
 	})
 	if err != nil {
 		return err
 	}
-
-	gb.RunContext.VarStore.AddStep(gb.Name)
 
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
@@ -159,6 +152,9 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifErr != nil {
 		return notifErr
 	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
 	return gb.handleNotifications(ctx)
 }
 

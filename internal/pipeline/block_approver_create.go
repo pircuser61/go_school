@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -166,8 +167,6 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		return setErr
 	}
 
-	gb.RunContext.VarStore.AddStep(gb.Name)
-
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
@@ -196,6 +195,7 @@ type setApproversByParamsDTO struct {
 }
 
 func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApproversByParamsDTO) error {
+	fmt.Printf("%+v\n", dto)
 	switch dto.Type {
 	case script.ApproverTypeUser:
 		gb.State.Approvers = map[string]struct{}{
@@ -219,7 +219,6 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 		gb.State.ApproversGroupID = dto.GroupID
 		gb.State.ApproversGroupName = workGroup.GroupName
 	case script.ApproverTypeFromSchema:
-
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return grabStorageErr
