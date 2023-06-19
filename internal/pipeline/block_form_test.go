@@ -35,8 +35,11 @@ func Test_createGoFormBlock(t *testing.T) {
 		global1    = "form_0.executor"
 		global2    = "form_0.application_body"
 		schemaId   = "c77be97a-f978-46d3-aa03-ab72663f2b74"
+		versionId  = "d77be97a-f978-46d3-aa03-ab72663f2b74"
 		schemaName = "название формы"
 		executor   = "executor"
+		workNumber = "J0000001"
+		workType   = "test"
 	)
 
 	timeNow := time.Now()
@@ -48,6 +51,14 @@ func Test_createGoFormBlock(t *testing.T) {
 			NextBlockIds: []string{"next"},
 		},
 	}
+
+	ctx := context.Background()
+	databaseMock := dbMocks.NewMockedDatabase(t)
+	vid, _ := uuid.Parse(versionId)
+	databaseMock.On("GetVersionByWorkNumber", ctx, workNumber).
+		Return(&entity.EriusScenario{VersionID: vid}, error(nil))
+	databaseMock.On("GetSlaVersionSettings", ctx, vid.String()).
+		Return(entity.SlaVersionSettings{WorkType: workType}, error(nil))
 
 	type args struct {
 		name   string
@@ -189,6 +200,8 @@ func Test_createGoFormBlock(t *testing.T) {
 					Sockets: next,
 				},
 				runCtx: &BlockRunContext{
+					WorkNumber:        workNumber,
+					Storage:           databaseMock,
 					skipNotifications: true,
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
@@ -218,6 +231,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					ChangesLog:         []ChangesLogItem{},
 					Description:        "",
 					FormsAccessibility: nil,
+					WorkType:           workType,
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
