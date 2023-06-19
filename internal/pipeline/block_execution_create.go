@@ -77,6 +77,21 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context) error {
 	gb.State.DecisionAttachments = nil
 	gb.State.ActualExecutor = nil
 
+	executor := ""
+	if len(gb.State.Executors) == 1 {
+		executor = getSliceFromMapOfStrings(gb.State.Executors)[0]
+	}
+
+	err := gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+		Type:     gb.State.ExecutionType,
+		GroupID:  gb.State.ExecutorsGroupID,
+		Executor: executor,
+		WorkType: &gb.State.WorkType,
+	})
+	if err != nil {
+		return err
+	}
+
 	return gb.handleNotifications(ctx)
 }
 
@@ -107,54 +122,22 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		RepeatPrevDecision: params.RepeatPrevDecision,
 	}
 
-	switch params.Type {
-	case script.ExecutionTypeUser:
-		gb.State.Executors = map[string]struct{}{
-			params.Executors: {},
-		}
-	case script.ExecutionTypeFromSchema:
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
-		}
-
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
-			variableStorage,
-			map[string]struct{}{
-				params.Executors: {},
-			},
-		)
-		if resolveErr != nil {
-			return resolveErr
-		}
-
-		gb.State.Executors = resolvedEntities
-
-		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
-		if htErr != nil {
-			return htErr
-		}
-		delegations = delegations.FilterByType("execution")
-
-		gb.RunContext.Delegations = delegations
-	case script.ExecutionTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.ExecutorsGroupID)
-		if errGroup != nil {
-			return errors.Wrap(errGroup, "can`t get executors group with id: "+params.ExecutorsGroupID)
-		}
-
-		if len(workGroup.People) == 0 {
-			//nolint:goimports // bugged golint
-			return errors.New("zero executors in group: " + params.ExecutorsGroupID)
-		}
-
-		gb.State.Executors = make(map[string]struct{})
-		for i := range workGroup.People {
-			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
-		}
-		gb.State.ExecutorsGroupID = params.ExecutorsGroupID
-		gb.State.ExecutorsGroupName = workGroup.GroupName
+	executor := ""
+	if len(gb.State.Executors) == 1 {
+		executor = getSliceFromMapOfStrings(gb.State.Executors)[0]
 	}
+
+	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+		Type:     gb.State.ExecutionType,
+		GroupID:  gb.State.ExecutorsGroupID,
+		Executor: executor,
+		WorkType: &gb.State.WorkType,
+	})
+	if err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
 
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
@@ -299,6 +282,66 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
 			return sendErr
 		}
+	}
+
+	return nil
+}
+
+type setExecutorsByParamsDTO struct {
+	Type     script.ExecutionType
+	GroupID  string
+	Executor string
+	WorkType *string
+}
+
+func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutorsByParamsDTO) error {
+	switch dto.Type {
+	case script.ExecutionTypeUser:
+		gb.State.Executors = map[string]struct{}{
+			dto.Executor: {},
+		}
+	case script.ExecutionTypeFromSchema:
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		resolvedEntities, resolveErr := resolveValuesFromVariables(
+			variableStorage,
+			map[string]struct{}{
+				dto.Executor: {},
+			},
+		)
+		if resolveErr != nil {
+			return resolveErr
+		}
+
+		gb.State.Executors = resolvedEntities
+
+		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+		if htErr != nil {
+			return htErr
+		}
+		delegations = delegations.FilterByType("execution")
+
+		gb.RunContext.Delegations = delegations
+	case script.ExecutionTypeGroup:
+		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
+		if errGroup != nil {
+			return errors.Wrap(errGroup, "can`t get executors group with id: "+dto.GroupID)
+		}
+
+		if len(workGroup.People) == 0 {
+			//nolint:goimports // bugged golint
+			return errors.New("zero executors in group: " + dto.GroupID)
+		}
+
+		gb.State.Executors = make(map[string]struct{})
+		for i := range workGroup.People {
+			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
+		}
+		gb.State.ExecutorsGroupID = dto.GroupID
+		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
 
 	return nil

@@ -78,6 +78,21 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context) error {
 	gb.State.DecisionAttachments = nil
 	gb.State.ActualApprover = nil
 
+	approver := ""
+	if len(gb.State.Approvers) == 1 {
+		approver = getSliceFromMapOfStrings(gb.State.Approvers)[0]
+	}
+
+	err := gb.setApproversByParams(ctx, &setApproversByParamsDTO{
+		Type:     gb.State.Type,
+		GroupID:  gb.State.ApproversGroupID,
+		Approver: approver,
+		WorkType: &gb.State.WorkType,
+	})
+	if err != nil {
+		return err
+	}
+
 	return gb.handleNotifications(ctx)
 }
 
@@ -140,7 +155,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		gb.State.ApprovementRule = script.AnyOfApprovementRequired
 	}
 
-	setErr := gb.setExecutorsByParams(ctx, &setApproversByParamsDTO{
+	setErr := gb.setApproversByParams(ctx, &setApproversByParamsDTO{
 		Type:     params.Type,
 		GroupID:  params.ApproversGroupID,
 		Approver: params.Approver,
@@ -148,6 +163,23 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 	})
 	if setErr != nil {
 		return setErr
+	}
+
+	gb.RunContext.VarStore.AddStep(gb.Name)
+
+	if params.WorkType != nil {
+		gb.State.WorkType = *params.WorkType
+	} else {
+		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+
+		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
+		if getVersionErr != nil {
+			return getVersionErr
+		}
+		gb.State.WorkType = processSLASettings.WorkType
 	}
 
 	gb.RunContext.VarStore.AddStep(gb.Name)
@@ -162,7 +194,7 @@ type setApproversByParamsDTO struct {
 	WorkType *string
 }
 
-func (gb *GoApproverBlock) setExecutorsByParams(ctx c.Context, dto *setApproversByParamsDTO) error {
+func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApproversByParamsDTO) error {
 	switch dto.Type {
 	case script.ApproverTypeUser:
 		gb.State.Approvers = map[string]struct{}{
@@ -218,23 +250,6 @@ func (gb *GoApproverBlock) setExecutorsByParams(ctx c.Context, dto *setApprovers
 			return htErr
 		}
 		gb.RunContext.Delegations = delegations.FilterByType("approvement")
-	}
-
-	gb.RunContext.VarStore.AddStep(gb.Name)
-
-	if dto.WorkType != nil {
-		gb.State.WorkType = *dto.WorkType
-	} else {
-		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-		if getVersionErr != nil {
-			return getVersionErr
-		}
-
-		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
-		if getVersionErr != nil {
-			return getVersionErr
-		}
-		gb.State.WorkType = processSLASettings.WorkType
 	}
 
 	return nil
