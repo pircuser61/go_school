@@ -42,7 +42,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil && !b.State.GetRepeatPrevDecision()
+		reEntry = runCtx.UpdateData == nil
 
 		// это для возврата в рамках одного процесса
 		if reEntry {
@@ -68,6 +68,10 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 }
 
 func (gb *GoExecutionBlock) reEntry(ctx c.Context) error {
+	if gb.State.GetRepeatPrevDecision() {
+		return nil
+	}
+
 	gb.State.Decision = nil
 	gb.State.DecisionComment = nil
 	gb.State.DecisionAttachments = nil

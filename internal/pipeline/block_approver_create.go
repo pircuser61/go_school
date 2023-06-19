@@ -44,7 +44,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil && !b.State.GetRepeatPrevDecision()
+		reEntry = runCtx.UpdateData == nil
 
 		if reEntry {
 			if err := b.reEntry(ctx); err != nil {
@@ -69,6 +69,10 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 }
 
 func (gb *GoApproverBlock) reEntry(ctx c.Context) error {
+	if gb.State.GetRepeatPrevDecision() {
+		return nil
+	}
+
 	gb.State.Decision = nil
 	gb.State.Comment = nil
 	gb.State.DecisionAttachments = nil

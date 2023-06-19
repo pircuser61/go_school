@@ -36,7 +36,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil && (b.State.IsEditable != nil && *b.State.IsEditable)
+		reEntry = runCtx.UpdateData == nil
 
 		if reEntry {
 			if err := b.reEntry(ctx); err != nil {
@@ -54,6 +54,10 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 }
 
 func (gb *GoFormBlock) reEntry(ctx c.Context) error {
+	if gb.State.IsEditable == nil || !*gb.State.IsEditable {
+		return nil
+	}
+
 	gb.State.IsFilled = false
 	gb.State.IsTakenInWork = false
 	gb.State.ActualExecutor = nil
