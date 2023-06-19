@@ -46,7 +46,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 
 		// это для возврата в рамках одного процесса
 		if reEntry {
-			if err := b.reEntry(ctx); err != nil {
+			if err := b.reEntry(ctx, ef); err != nil {
 				return nil, false, err
 			}
 		}
@@ -67,7 +67,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 	return b, reEntry, nil
 }
 
-func (gb *GoExecutionBlock) reEntry(ctx c.Context) error {
+func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if gb.State.GetRepeatPrevDecision() {
 		return nil
 	}
@@ -77,15 +77,8 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context) error {
 	gb.State.DecisionAttachments = nil
 	gb.State.ActualExecutor = nil
 
-	version, err := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-	if err != nil {
-		return err
-	}
-
-	bl := version.Pipeline.Blocks[gb.Name]
-
 	var params script.ExecutionParams
-	err = json.Unmarshal(bl.Params, &params)
+	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
 	}

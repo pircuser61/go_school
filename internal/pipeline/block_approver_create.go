@@ -47,7 +47,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		reEntry = runCtx.UpdateData == nil
 
 		if reEntry {
-			if err := b.reEntry(ctx); err != nil {
+			if err := b.reEntry(ctx, ef); err != nil {
 				return nil, false, err
 			}
 		}
@@ -68,7 +68,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 	return b, reEntry, nil
 }
 
-func (gb *GoApproverBlock) reEntry(ctx c.Context) error {
+func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if gb.State.GetRepeatPrevDecision() {
 		return nil
 	}
@@ -78,15 +78,8 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context) error {
 	gb.State.DecisionAttachments = nil
 	gb.State.ActualApprover = nil
 
-	version, err := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-	if err != nil {
-		return err
-	}
-
-	bl := version.Pipeline.Blocks[gb.Name]
-
 	var params script.ApproverParams
-	err = json.Unmarshal(bl.Params, &params)
+	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get approver parameters for block: "+gb.Name)
 	}
