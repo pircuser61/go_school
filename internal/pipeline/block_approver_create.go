@@ -78,16 +78,24 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context) error {
 	gb.State.DecisionAttachments = nil
 	gb.State.ActualApprover = nil
 
-	approver := ""
-	if len(gb.State.Approvers) == 1 {
-		approver = getSliceFromMapOfStrings(gb.State.Approvers)[0]
+	version, err := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if err != nil {
+		return err
 	}
 
-	err := gb.setApproversByParams(ctx, &setApproversByParamsDTO{
-		Type:     gb.State.Type,
-		GroupID:  gb.State.ApproversGroupID,
-		Approver: approver,
-		WorkType: &gb.State.WorkType,
+	bl := version.Pipeline.Blocks[gb.Name]
+
+	var params script.ApproverParams
+	err = json.Unmarshal(bl.Params, &params)
+	if err != nil {
+		return errors.Wrap(err, "can not get approver parameters for block: "+gb.Name)
+	}
+
+	err = gb.setApproversByParams(ctx, &setApproversByParamsDTO{
+		Type:     params.Type,
+		GroupID:  params.ApproversGroupID,
+		Approver: params.Approver,
+		WorkType: params.WorkType,
 	})
 	if err != nil {
 		return err

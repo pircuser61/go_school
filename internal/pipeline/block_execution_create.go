@@ -77,16 +77,24 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context) error {
 	gb.State.DecisionAttachments = nil
 	gb.State.ActualExecutor = nil
 
-	executor := ""
-	if len(gb.State.Executors) == 1 {
-		executor = getSliceFromMapOfStrings(gb.State.Executors)[0]
+	version, err := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	if err != nil {
+		return err
 	}
 
-	err := gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-		Type:     gb.State.ExecutionType,
-		GroupID:  gb.State.ExecutorsGroupID,
-		Executor: executor,
-		WorkType: &gb.State.WorkType,
+	bl := version.Pipeline.Blocks[gb.Name]
+
+	var params script.ExecutionParams
+	err = json.Unmarshal(bl.Params, &params)
+	if err != nil {
+		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
+	}
+
+	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+		Type:     params.Type,
+		GroupID:  params.ExecutorsGroupID,
+		Executor: params.Executors,
+		WorkType: params.WorkType,
 	})
 	if err != nil {
 		return err
