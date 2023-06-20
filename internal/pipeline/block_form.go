@@ -17,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (
@@ -261,7 +262,6 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			params.Executor: {},
 		},
 		SchemaId:                  params.SchemaId,
-		SLA:                       params.SLA,
 		CheckSLA:                  params.CheckSLA,
 		SchemaName:                params.SchemaName,
 		ChangesLog:                make([]ChangesLogItem, 0),
@@ -335,6 +335,12 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 		gb.State.WorkType = processSLASettings.WorkType
 	}
+	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(gb.State.SLA)
+
+	if getSLAErr != nil {
+		return getSLAErr
+	}
+	gb.State.SLA = sla
 
 	return gb.handleNotifications(ctx)
 }

@@ -77,13 +77,67 @@ func (t *WorkHourType) GetWeekends() ([]time.Weekday, error) {
 	}
 }
 
-func GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTOStruct) (*SLAInfo, error) {
-	calendarDays, getCalendarDaysErr := GetSLAInfoDTO.Service.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-		GetSLAInfoDTO.TaskCompletionIntervals,
-	)
-	if getCalendarDaysErr != nil {
-		return nil, getCalendarDaysErr
+func (t *WorkHourType) GetNotUseCalendarDays() (bool, error) {
+	if t == nil {
+		return false, fmt.Errorf("work hour type is nil")
 	}
+
+	switch *t {
+	case WorkTypeN125:
+		return false, nil
+	case WorkTypeN247:
+		return true, nil
+	case WorkTypeN85:
+		return false, nil
+	default:
+		return false, fmt.Errorf("unknown work hour type: %s", string(*t))
+	}
+}
+
+func (t *WorkHourType) GetTotalWorkHourPerDay() (int, error) {
+	if t == nil {
+		return 0, fmt.Errorf("work hour type is nil")
+	}
+
+	switch *t {
+	case WorkTypeN125:
+		return 12, nil
+	case WorkTypeN247:
+		return 24, nil
+	case WorkTypeN85:
+		return 8, nil
+	default:
+		return 0, fmt.Errorf("unknown work hour type: %s", string(*t))
+	}
+}
+
+func (t *WorkHourType) GetTotalSLAInHours(slaInDays int) (int, error) {
+	totalWorkHour, getTotalWorkHourErr := t.GetTotalWorkHourPerDay()
+
+	if getTotalWorkHourErr != nil {
+		return 0, getTotalWorkHourErr
+	}
+
+	return totalWorkHour * slaInDays, nil
+}
+
+func GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTOStruct) (*SLAInfo, error) {
+	notUseCalendarDays, getNotUseErr := GetSLAInfoDTO.WorkType.GetNotUseCalendarDays()
+	if getNotUseErr != nil {
+		return nil, getNotUseErr
+	}
+
+	var calendarDays *hrgate.CalendarDays
+	var getCalendarDaysErr error
+	if !notUseCalendarDays {
+		calendarDays, getCalendarDaysErr = GetSLAInfoDTO.Service.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+			GetSLAInfoDTO.TaskCompletionIntervals,
+		)
+		if getCalendarDaysErr != nil {
+			return nil, getCalendarDaysErr
+		}
+	}
+
 	startWorkHour, endWorkHour, getWorkingHoursErr := GetSLAInfoDTO.WorkType.GetWorkingHours()
 	if getWorkingHoursErr != nil {
 		return nil, getWorkingHoursErr
@@ -91,6 +145,11 @@ func GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTOStruct) (*SLA
 	weekends, getWeekendsErr := GetSLAInfoDTO.WorkType.GetWeekends()
 	if getWeekendsErr != nil {
 		return nil, getWeekendsErr
+	}
+
+	notUseCalendarDays, getUseErr := GetSLAInfoDTO.WorkType.GetNotUseCalendarDays()
+	if getUseErr != nil {
+		return nil, getUseErr
 	}
 
 	return &SLAInfo{

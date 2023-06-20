@@ -332,3 +332,57 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 		})
 	}
 }
+
+func Test_ComputeMaxDate(t *testing.T) {
+	type fields struct {
+		from         time.Time
+		sla          float32
+		workHourType *WorkHourType
+	}
+	tests := []struct {
+		name          string
+		fields        fields
+		wantTimestamp int64
+	}{
+		{
+			name: "default test 8/5",
+			fields: fields{
+				from:         time.Date(2023, 6, 14, 6, 0, 0, 0, time.UTC),
+				sla:          16,
+				workHourType: utils.GetAddressOfValue(WorkTypeN85),
+			},
+			wantTimestamp: time.Date(2023, 6, 15, 14, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			name: "default test 12/5",
+			fields: fields{
+				from:         time.Date(2023, 6, 14, 6, 0, 0, 0, time.UTC),
+				sla:          16,
+				workHourType: utils.GetAddressOfValue(WorkTypeN125),
+			},
+			wantTimestamp: 0,
+		},
+		{
+			name: "default test 24/7",
+			fields: fields{
+				from:         time.Date(2023, 6, 14, 6, 0, 0, 0, time.UTC),
+				sla:          16,
+				workHourType: utils.GetAddressOfValue(WorkTypeN247),
+			},
+			wantTimestamp: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			startHour, endHour, _ := tt.fields.workHourType.GetWorkingHours()
+			weekends, _ := tt.fields.workHourType.GetWeekends()
+			if gotDate := ComputeMaxDate(tt.fields.from, tt.fields.sla, &SLAInfo{
+				StartWorkHourPtr: &startHour,
+				EndWorkHourPtr:   &endHour,
+				Weekends:         weekends,
+			}); gotDate.Unix() != tt.wantTimestamp {
+				t.Errorf("ComputeMaxDate() = %v, want %v", gotDate.Format(time.RFC3339), time.Unix(tt.wantTimestamp, 0).Format(time.RFC3339))
+			}
+		})
+	}
+}
