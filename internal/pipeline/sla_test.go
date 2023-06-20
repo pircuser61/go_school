@@ -356,20 +356,20 @@ func Test_ComputeMaxDate(t *testing.T) {
 		{
 			name: "default test 12/5",
 			fields: fields{
-				from:         time.Date(2023, 6, 14, 6, 0, 0, 0, time.UTC),
+				from:         time.Date(2023, 6, 5, 6, 0, 0, 0, time.UTC),
 				workHourType: utils.GetAddressOfValue(WorkTypeN125),
 				days:         2,
 			},
-			wantTimestamp: 0,
+			wantTimestamp: time.Date(2023, 6, 6, 18, 0, 0, 0, time.UTC).Unix(),
 		},
 		{
 			name: "default test 24/7",
 			fields: fields{
-				from:         time.Date(2023, 6, 14, 6, 0, 0, 0, time.UTC),
+				from:         time.Date(2023, 5, 5, 6, 0, 0, 0, time.UTC),
 				workHourType: utils.GetAddressOfValue(WorkTypeN247),
 				days:         2,
 			},
-			wantTimestamp: 0,
+			wantTimestamp: time.Date(2023, 5, 7, 6, 0, 0, 0, time.UTC).Unix(),
 		},
 	}
 	for _, tt := range tests {
