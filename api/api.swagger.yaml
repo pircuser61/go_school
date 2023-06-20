@@ -3592,6 +3592,16 @@ components:
         - type
         - properties
 
+    FormReEnterSettings:
+      type: object
+      description: Настройки блока при повторном заходе в этот блок
+      properties:
+        form_executor_type:
+          $ref: '#/components/schemas/FormExecutorType'
+        value:
+          type: string
+          description: Executor login, variable or group id
+
     JSONSchemaProperties:
       type: object
       description: Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта,
@@ -4390,6 +4400,11 @@ components:
           description: Constant values for function parameters (key of object is variable name)
         work_type:
           $ref: "#/components/schemas/WorkType"
+        is_editable:
+          type: boolean
+          description: true - need manual fill when reenter in block
+        form_re_enter_settings:
+          $ref: '#/components/schemas/FormReEnterSettings'
       required:
         - sla
         - check_sla

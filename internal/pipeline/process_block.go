@@ -157,7 +157,7 @@ func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 	return nil
 }
 
-func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, error) {
+func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, bool, error) {
 	ctx, s := trace.StartSpan(ctx, "create_block")
 	defer s.End()
 
@@ -169,7 +169,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 	case script.TypeScenario:
 		p, err := runCtx.Storage.GetExecutableByName(ctx, bl.Title)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		epi := ExecutablePipeline{}
@@ -192,7 +192,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 
 		parameters, err := json.Marshal(parametersMap)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		err = epi.CreateTask(ctx, &CreateTaskDTO{
@@ -201,12 +201,12 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 			Params:  parameters,
 		})
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		err = epi.CreateBlocks(ctx, p.Pipeline.Blocks)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		for _, v := range bl.Input {
@@ -217,18 +217,18 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 			epi.Output[v.Name] = v.Global
 		}
 
-		return &epi, nil
+		return &epi, false, nil
 	}
 
-	return nil, errors.Errorf("can't create block with type: %s", bl.BlockType)
+	return nil, false, errors.Errorf("can't create block with type: %s", bl.BlockType)
 }
 
-func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *BlockRunContext) (Runner, error) {
+func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *BlockRunContext) (r Runner, reEntry bool, err error) {
 	switch ef.TypeID {
 	case BlockGoIfID:
 		return createGoIfBlock(name, ef, runCtx)
 	case BlockGoTestID:
-		return createGoTestBlock(name, ef, runCtx), nil
+		return createGoTestBlock(name, ef, runCtx)
 	case BlockGoApproverID:
 		return createGoApproverBlock(ctx, name, ef, runCtx)
 	case BlockGoSdApplicationID:
@@ -236,13 +236,13 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	case BlockGoExecutionID:
 		return createGoExecutionBlock(ctx, name, ef, runCtx)
 	case BlockGoStartId:
-		return createGoStartBlock(name, ef, runCtx), nil
+		return createGoStartBlock(name, ef, runCtx)
 	case BlockGoEndId:
-		return createGoEndBlock(name, ef, runCtx), nil
+		return createGoEndBlock(name, ef, runCtx)
 	case BlockWaitForAllInputsId:
 		return createGoWaitForAllInputsBlock(ctx, name, ef, runCtx)
 	case BlockGoBeginParallelTaskId:
-		return createGoStartParallelBlock(name, ef, runCtx), nil
+		return createGoStartParallelBlock(name, ef, runCtx)
 	case BlockGoNotificationID:
 		return createGoNotificationBlock(name, ef, runCtx)
 	case BlockExecutableFunctionID:
@@ -250,19 +250,22 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 	case BlockGoFormID:
 		return createGoFormBlock(ctx, name, ef, runCtx)
 	case BlockPlaceholderID:
-		return createGoPlaceholderBlock(name, ef, runCtx), nil
+		return createGoPlaceholderBlock(name, ef, runCtx)
 	}
 
-	return nil, errors.New("unknown go-block type: " + ef.TypeID)
+	return nil, false, errors.New("unknown go-block type: " + ef.TypeID)
 }
 
 func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRunContext) (Runner, uuid.UUID, error) {
-	block, err := CreateBlock(ctx, name, bl, runCtx)
+	block, isReEntry, err := CreateBlock(ctx, name, bl, runCtx)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
 
-	if _, ok := runCtx.VarStore.State[name]; !ok {
+	_, blockExists := runCtx.VarStore.State[name]
+
+	// либо блока нет либо блок уже есть и мы зашли в него повторно
+	if !blockExists || isReEntry {
 		state, stateErr := json.Marshal(block.GetState())
 		if stateErr != nil {
 			return nil, uuid.Nil, stateErr
@@ -276,7 +279,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		return nil, uuid.Nil, deadlinesErr
 	}
 	id, startTime, err := runCtx.saveStepInDB(ctx, name, bl.TypeID, string(block.GetStatus()),
-		block.Members(), deadlines)
+		block.Members(), deadlines, isReEntry)
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
@@ -302,7 +305,7 @@ func updateBlock(ctx c.Context, block Runner, name string, id uuid.UUID, runCtx 
 }
 
 func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, status string,
-	pl []Member, deadlines []Deadline) (uuid.UUID, time.Time, error) {
+	pl []Member, deadlines []Deadline, isReEntered bool) (uuid.UUID, time.Time, error) {
 	storageData, errSerialize := json.Marshal(runCtx.VarStore)
 	if errSerialize != nil {
 		return db.NullUuid, time.Time{}, errSerialize
@@ -340,6 +343,7 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 		Status:      status,
 		Members:     dbPeople,
 		Deadlines:   dbDeadlines,
+		IsReEntry:   isReEntered,
 	})
 }
 

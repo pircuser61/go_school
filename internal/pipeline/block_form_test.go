@@ -35,8 +35,11 @@ func Test_createGoFormBlock(t *testing.T) {
 		global1    = "form_0.executor"
 		global2    = "form_0.application_body"
 		schemaId   = "c77be97a-f978-46d3-aa03-ab72663f2b74"
+		versionId  = "d77be97a-f978-46d3-aa03-ab72663f2b74"
 		schemaName = "название формы"
 		executor   = "executor"
+		workNumber = "J0000001"
+		workType   = "test"
 	)
 
 	timeNow := time.Now()
@@ -48,6 +51,14 @@ func Test_createGoFormBlock(t *testing.T) {
 			NextBlockIds: []string{"next"},
 		},
 	}
+
+	ctx := context.Background()
+	databaseMock := dbMocks.NewMockedDatabase(t)
+	vid, _ := uuid.Parse(versionId)
+	databaseMock.On("GetVersionByWorkNumber", ctx, workNumber).
+		Return(&entity.EriusScenario{VersionID: vid}, error(nil))
+	databaseMock.On("GetSlaVersionSettings", ctx, vid.String()).
+		Return(entity.SlaVersionSettings{WorkType: workType}, error(nil))
 
 	type args struct {
 		name   string
@@ -180,7 +191,7 @@ func Test_createGoFormBlock(t *testing.T) {
 						r, _ := json.Marshal(&script.FormParams{
 							SchemaId:         schemaId,
 							SchemaName:       schemaName,
-							Executor:         executor,
+							Executor:         "form.executor",
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
 
@@ -189,8 +200,14 @@ func Test_createGoFormBlock(t *testing.T) {
 					Sockets: next,
 				},
 				runCtx: &BlockRunContext{
+					WorkNumber:        workNumber,
+					Storage:           databaseMock,
 					skipNotifications: true,
-					VarStore:          store.NewStore(),
+					VarStore: func() *store.VariableStore {
+						s := store.NewStore()
+						s.SetValue("form.executor", executor)
+						return s
+					}(),
 				},
 			},
 			want: &GoFormBlock{
@@ -214,6 +231,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					ChangesLog:         []ChangesLogItem{},
 					Description:        "",
 					FormsAccessibility: nil,
+					WorkType:           workType,
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -346,7 +364,7 @@ func Test_createGoFormBlock(t *testing.T) {
 				Cli: &cli,
 			}
 
-			got, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
+			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
 			if got != nil {
 				got.RunContext = nil
 				if got.State != nil && len(got.State.ChangesLog) > 0 {

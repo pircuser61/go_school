@@ -98,6 +98,7 @@ type SaveStepRequest struct {
 	Status      string
 	Members     []DbMember
 	Deadlines   []DbDeadline
+	IsReEntry   bool
 }
 
 type UpdateStepRequest struct {
