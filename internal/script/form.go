@@ -31,6 +31,8 @@ type FormParams struct {
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`
 	WorkType                  *string              `json:"work_type"`
+	IsEditable                *bool                `json:"is_editable"`
+	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings"`
 }
 
 func (a *FormParams) Validate() error {
@@ -42,5 +44,19 @@ func (a *FormParams) Validate() error {
 		return fmt.Errorf("invalid SLA value %d", a.SLA)
 	}
 
+	if (a.IsEditable != nil && *a.IsEditable) && a.ReEnterSettings == nil {
+		return errors.New("reEnterSettings can`t be empty when IsEditable = true")
+	}
+
+	if a.ReEnterSettings != nil {
+		if a.ReEnterSettings.Value == "" {
+			return fmt.Errorf("invalid reEnterSettings.Value %s", a.ReEnterSettings.Value)
+		}
+	}
 	return nil
+}
+
+type FormReEnterSettings struct {
+	FormExecutorType FormExecutorType `json:"form_executor_type"`
+	Value            string           `json:"value"`
 }

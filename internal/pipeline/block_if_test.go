@@ -2106,7 +2106,7 @@ func TestIF_DebugRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			goBlock, err := createGoIfBlock(tt.args.name, tt.args.ef, &BlockRunContext{VarStore: tt.args.runCtx})
+			goBlock, _, err := createGoIfBlock(tt.args.name, tt.args.ef, &BlockRunContext{VarStore: tt.args.runCtx})
 
 			if goBlock != nil {
 				if _, err = goBlock.Update(tt.args.ctx); (err != nil) != tt.wantErr {

@@ -100,8 +100,11 @@ func (gb *GoWaitForAllInputsBlock) Model() script.FunctionModel {
 	}
 }
 
+//nolint:unparam // its ok
 func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.EriusFunc,
-	runCtx *BlockRunContext) (*GoWaitForAllInputsBlock, error) {
+	runCtx *BlockRunContext) (*GoWaitForAllInputsBlock, bool, error) {
+	const reEntry = false
+
 	b := &GoWaitForAllInputsBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -122,16 +125,16 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 	rawState, ok := runCtx.VarStore.State[name]
 	if ok {
 		if err := b.loadState(rawState); err != nil {
-			return nil, err
+			return nil, reEntry, err
 		}
 	} else {
 		if err := b.createState(ctx); err != nil {
-			return nil, err
+			return nil, reEntry, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 	}
 
-	return b, nil
+	return b, reEntry, nil
 }
 
 func (gb *GoWaitForAllInputsBlock) loadState(raw json.RawMessage) error {

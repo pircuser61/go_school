@@ -119,7 +119,8 @@ func (gb *IF) Model() script.FunctionModel {
 	}
 }
 
-func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (block *IF, err error) {
+//nolint:unparam // its ok
+func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (block *IF, reEntry bool, err error) {
 	b := &IF{
 		Name:       name,
 		Title:      ef.Title,
@@ -145,11 +146,11 @@ func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext)
 		var params conditions_kit.ConditionParams
 		err = json.Unmarshal(ef.Params, &params)
 		if err != nil {
-			return nil, err
+			return nil, reEntry, err
 		}
 
-		if err := params.Validate(); err != nil {
-			return nil, err
+		if err = params.Validate(); err != nil {
+			return nil, reEntry, err
 		}
 
 		b.State.Type = params.Type
@@ -157,7 +158,7 @@ func createGoIfBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext)
 	}
 	b.RunContext.VarStore.AddStep(b.Name)
 
-	return b, nil
+	return b, reEntry, nil
 }
 
 func getVariables(runCtx *store.VariableStore) (result map[string]interface{}, err error) {
