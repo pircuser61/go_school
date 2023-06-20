@@ -43,6 +43,18 @@ const (
 	WorkTypeN85 WorkHourType = "8/5"
 )
 
+func (slaInfo *SLAInfo) GetCalendarDays() *hrgate.CalendarDays {
+	if slaInfo == nil {
+		return &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{}}
+	}
+
+	if slaInfo.CalendarDays == nil {
+		return &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{}}
+	}
+
+	return slaInfo.CalendarDays
+}
+
 func (t *WorkHourType) GetWorkingHours() (start, end int, err error) {
 	if t == nil {
 		return 0, 0, fmt.Errorf("work hour type is nil")
