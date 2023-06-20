@@ -269,7 +269,7 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 		gb.State.WorkType = processSLASettings.WorkType
 	}
 
-	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(gb.State.SLA)
+	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(para)
 
 	if getSLAErr != nil {
 		return getSLAErr

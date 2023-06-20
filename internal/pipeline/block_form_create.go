@@ -138,7 +138,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		gb.State.WorkType = processSLASettings.WorkType
 	}
 
-	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(gb.State.SLA)
+	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(params.SLA)
 
 	if getSLAErr != nil {
 		return getSLAErr
