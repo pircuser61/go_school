@@ -12,7 +12,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 const (

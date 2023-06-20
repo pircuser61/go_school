@@ -6,6 +6,8 @@ import (
 	"math"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -51,6 +53,42 @@ func (slaInfo *SLAInfo) GetCalendarDays() *hrgate.CalendarDays {
 	}
 
 	return slaInfo.CalendarDays
+}
+
+func (slaInfo *SLAInfo) GetStartWorkHour() int {
+	if slaInfo == nil {
+		return workingHoursStart
+	}
+
+	if slaInfo.StartWorkHourPtr == nil {
+		return workingHoursStart
+	}
+
+	return *slaInfo.StartWorkHourPtr
+}
+
+func (slaInfo *SLAInfo) GetEndWorkHour() int {
+	if slaInfo == nil {
+		return workingHoursEnd
+	}
+
+	if slaInfo.StartWorkHourPtr == nil {
+		return workingHoursEnd
+	}
+
+	return *slaInfo.EndWorkHourPtr
+}
+
+func (slaInfo *SLAInfo) GetWeekends() []time.Weekday {
+	if slaInfo == nil {
+		return []time.Weekday{time.Saturday, time.Sunday}
+	}
+
+	if slaInfo.Weekends == nil {
+		return []time.Weekday{time.Saturday, time.Sunday}
+	}
+
+	return slaInfo.Weekends
 }
 
 func (t *WorkHourType) GetWorkingHours() (start, end int, err error) {
@@ -173,35 +211,10 @@ func getWorkHoursBetweenDates(from, to time.Time, slaInfoPtr *SLAInfo) (workHour
 		return 0
 	}
 
-	var slaInfo SLAInfo
-	if slaInfoPtr == nil {
-		slaInfo = SLAInfo{}
-	} else {
-		slaInfo = *slaInfoPtr
-	}
-
-	calendarDays, startWorkHourPtr, endWorkHourPtr, weekends := slaInfo.CalendarDays,
-		slaInfo.StartWorkHourPtr,
-		slaInfo.EndWorkHourPtr,
-		slaInfo.Weekends
-
-	var startWorkHour, endWorkHour int
-
-	if startWorkHourPtr != nil {
-		startWorkHour = *startWorkHourPtr
-	} else {
-		startWorkHour = workingHoursStart
-	}
-
-	if endWorkHourPtr != nil {
-		endWorkHour = *endWorkHourPtr
-	} else {
-		endWorkHour = workingHoursEnd
-	}
-
-	if weekends == nil {
-		weekends = []time.Weekday{time.Saturday, time.Sunday}
-	}
+	calendarDays, startWorkHour, endWorkHour, weekends := slaInfoPtr.GetCalendarDays(),
+		slaInfoPtr.GetStartWorkHour(),
+		slaInfoPtr.GetEndWorkHour(),
+		slaInfoPtr.GetWeekends()
 
 	for from.Before(to) {
 		if !notWorkingHours(from, calendarDays, startWorkHour, endWorkHour, weekends) {
@@ -249,35 +262,10 @@ func ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAInfo) time.Time
 	slaInMinutes := sla * 60
 	slaDur := time.Minute * time.Duration(slaInMinutes)
 
-	var slaInfo SLAInfo
-	if slaInfoPtr == nil {
-		slaInfo = SLAInfo{}
-	} else {
-		slaInfo = *slaInfoPtr
-	}
-
-	calendarDays, startWorkHourPtr, endWorkHourPtr, weekends := slaInfo.CalendarDays,
-		slaInfo.StartWorkHourPtr,
-		slaInfo.EndWorkHourPtr,
-		slaInfo.Weekends
-
-	var startWorkHour, endWorkHour int
-
-	if startWorkHourPtr != nil {
-		startWorkHour = *startWorkHourPtr
-	} else {
-		startWorkHour = workingHoursStart
-	}
-
-	if endWorkHourPtr != nil {
-		endWorkHour = *endWorkHourPtr
-	} else {
-		endWorkHour = workingHoursEnd
-	}
-
-	if weekends == nil {
-		weekends = []time.Weekday{time.Saturday, time.Sunday}
-	}
+	calendarDays, startWorkHour, endWorkHour, weekends := slaInfoPtr.GetCalendarDays(),
+		slaInfoPtr.GetStartWorkHour(),
+		slaInfoPtr.GetEndWorkHour(),
+		slaInfoPtr.GetWeekends()
 
 	for slaDur > 0 {
 		if notWorkingHours(deadline, calendarDays, startWorkHour, endWorkHour, weekends) {
