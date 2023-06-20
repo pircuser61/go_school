@@ -229,6 +229,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 						s.State = map[string]json.RawMessage{
 							example: r,
 						}
+						s.Steps = []string{example}
 						return s
 					}(),
 				},
