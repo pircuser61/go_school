@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	c "context"
-	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -61,6 +60,15 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		// TODO: выпилить когда сделаем циклы
 		// это для возврата на доработку при которой мы создаем новый процесс
 		// и пытаемся взять решение из прошлого процесса
+		if b.State.UseActualExecutor {
+			execs, execErr := b.RunContext.Storage.GetExecutorFromPrevBlockRunOld(ctx, b.RunContext.WorkNumber, b.Name)
+			if execErr != nil {
+				return nil, false, execErr
+			}
+			if len(execs) == 1 {
+				b.State.Executors = execs
+			}
+		}
 		if err := b.setPrevDecision(ctx); err != nil {
 			return nil, false, err
 		}
@@ -84,17 +92,28 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if err != nil {
 		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
 	}
-
-	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-		Type:     params.Type,
-		GroupID:  params.ExecutorsGroupID,
-		Executor: params.Executors,
-		WorkType: params.WorkType,
-	})
-	if err != nil {
-		return err
+	executorChosenFlag := false
+	if gb.State.UseActualExecutor {
+		execs, prevErr := gb.RunContext.Storage.GetExecutorFromPrevBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
+		if prevErr != nil {
+			return prevErr
+		}
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+			executorChosenFlag = true
+		}
 	}
-
+	if !executorChosenFlag {
+		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+			Type:     params.Type,
+			GroupID:  params.ExecutorsGroupID,
+			Executor: params.Executors,
+			WorkType: params.WorkType,
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return gb.handleNotifications(ctx)
 }
 

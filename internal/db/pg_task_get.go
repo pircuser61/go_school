@@ -1541,19 +1541,36 @@ func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
 
 	return isTest, nil
 }
-func (db *PGCon) GetExecutorFromPrevBlockStart(ctx c.Context, taskID uuid.UUID, name string) (exec string, err error) {
+func (db *PGCon) GetExecutorFromPrevBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error) {
 	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
 	defer span.End()
 
 	q := `
-		SELECT  content-> 'State' -> $1 -> 'actual_executor'
+		SELECT  content-> 'State' -> $1 -> 'executors'
 		FROM variable_storage
 		WHERE work_id = $2 and step_name = $3 order by time desc limit 1 offset 1`
 
-	var executor string
-	if err = db.Connection.QueryRow(ctx, q, name, taskID, name).Scan(&executor); err != nil {
-		return "", err
+	var executors map[string]struct{}
+	if err = db.Connection.QueryRow(ctx, q, name, taskID, name).Scan(&executors); err != nil {
+		return map[string]struct{}{}, err
 	}
 
-	return executor, nil
+	return executors, nil
+}
+
+func (db *PGCon) GetExecutorFromPrevBlockRunOld(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error) {
+	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
+	defer span.End()
+
+	q := `
+		SELECT  content-> 'State' -> $1 -> 'executors'
+		FROM variable_storage
+		WHERE work_id = (select id from works where work_number = $2) and step_name = $3 order by time desc limit 1 offset 1`
+
+	var executors map[string]struct{}
+	if err = db.Connection.QueryRow(ctx, q, name, workNumber, name).Scan(&executors); err != nil {
+		return map[string]struct{}{}, err
+	}
+
+	return executors, nil
 }

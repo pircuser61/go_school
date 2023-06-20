@@ -649,20 +649,45 @@ func (_m *MockedDatabase) GetExecutableScenarios(ctx context.Context) ([]entity.
 	return r0, r1
 }
 
-// GetExecutorFromPrevBlockStart provides a mock function with given fields: ctx, taskID, name
-func (_m *MockedDatabase) GetExecutorFromPrevBlockStart(ctx context.Context, taskID uuid.UUID, name string) (string, error) {
+// GetExecutorFromPrevBlockRun provides a mock function with given fields: ctx, taskID, name
+func (_m *MockedDatabase) GetExecutorFromPrevBlockRun(ctx context.Context, taskID uuid.UUID, name string) (map[string]struct{}, error) {
 	ret := _m.Called(ctx, taskID, name)
 
-	var r0 string
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) string); ok {
+	var r0 map[string]struct{}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) map[string]struct{}); ok {
 		r0 = rf(ctx, taskID, name)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]struct{})
+		}
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
 		r1 = rf(ctx, taskID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetExecutorFromPrevBlockRunOld provides a mock function with given fields: ctx, workNumber, name
+func (_m *MockedDatabase) GetExecutorFromPrevBlockRunOld(ctx context.Context, workNumber string, name string) (map[string]struct{}, error) {
+	ret := _m.Called(ctx, workNumber, name)
+
+	var r0 map[string]struct{}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) map[string]struct{}); ok {
+		r0 = rf(ctx, workNumber, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]struct{})
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, workNumber, name)
 	} else {
 		r1 = ret.Error(1)
 	}
