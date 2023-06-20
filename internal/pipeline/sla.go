@@ -147,11 +147,6 @@ func GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTOStruct) (*SLA
 		return nil, getWeekendsErr
 	}
 
-	notUseCalendarDays, getUseErr := GetSLAInfoDTO.WorkType.GetNotUseCalendarDays()
-	if getUseErr != nil {
-		return nil, getUseErr
-	}
-
 	return &SLAInfo{
 		CalendarDays:     calendarDays,
 		StartWorkHourPtr: &startWorkHour,
