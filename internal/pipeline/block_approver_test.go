@@ -440,7 +440,6 @@ func Test_createGoApproverBlock(t *testing.T) {
 						r, _ := json.Marshal(&script.ApproverParams{
 							Type:               script.ApproverTypeUser,
 							Approver:           login,
-							SLA:                1,
 							FormsAccessibility: make([]script.FormAccessibility, 0),
 						})
 
@@ -469,7 +468,6 @@ func Test_createGoApproverBlock(t *testing.T) {
 					AutoAction:         nil,
 					ApprovementRule:    script.AnyOfApprovementRequired,
 					ApproverLog:        make([]ApproverLogEntry, 0),
-					SLA:                1,
 					FormsAccessibility: make([]script.FormAccessibility, 0),
 					ActionList: []Action{
 						{

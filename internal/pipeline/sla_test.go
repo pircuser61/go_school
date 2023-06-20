@@ -336,8 +336,8 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 func Test_ComputeMaxDate(t *testing.T) {
 	type fields struct {
 		from         time.Time
-		sla          float32
 		workHourType *WorkHourType
+		days         int
 	}
 	tests := []struct {
 		name          string
@@ -348,8 +348,8 @@ func Test_ComputeMaxDate(t *testing.T) {
 			name: "default test 8/5",
 			fields: fields{
 				from:         time.Date(2023, 6, 14, 6, 0, 0, 0, time.UTC),
-				sla:          16,
 				workHourType: utils.GetAddressOfValue(WorkTypeN85),
+				days:         2,
 			},
 			wantTimestamp: time.Date(2023, 6, 15, 14, 0, 0, 0, time.UTC).Unix(),
 		},
@@ -357,8 +357,8 @@ func Test_ComputeMaxDate(t *testing.T) {
 			name: "default test 12/5",
 			fields: fields{
 				from:         time.Date(2023, 6, 14, 6, 0, 0, 0, time.UTC),
-				sla:          16,
 				workHourType: utils.GetAddressOfValue(WorkTypeN125),
+				days:         2,
 			},
 			wantTimestamp: 0,
 		},
@@ -366,8 +366,8 @@ func Test_ComputeMaxDate(t *testing.T) {
 			name: "default test 24/7",
 			fields: fields{
 				from:         time.Date(2023, 6, 14, 6, 0, 0, 0, time.UTC),
-				sla:          16,
 				workHourType: utils.GetAddressOfValue(WorkTypeN247),
+				days:         2,
 			},
 			wantTimestamp: 0,
 		},
@@ -376,7 +376,8 @@ func Test_ComputeMaxDate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			startHour, endHour, _ := tt.fields.workHourType.GetWorkingHours()
 			weekends, _ := tt.fields.workHourType.GetWeekends()
-			if gotDate := ComputeMaxDate(tt.fields.from, tt.fields.sla, &SLAInfo{
+			totalSLA, _ := tt.fields.workHourType.GetTotalSLAInHours(tt.fields.days)
+			if gotDate := ComputeMaxDate(tt.fields.from, float32(totalSLA), &SLAInfo{
 				StartWorkHourPtr: &startHour,
 				EndWorkHourPtr:   &endHour,
 				Weekends:         weekends,
