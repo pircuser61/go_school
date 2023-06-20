@@ -42,6 +42,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 			if err := b.reEntry(ctx); err != nil {
 				return nil, false, err
 			}
+			b.RunContext.VarStore.AddStep(b.Name)
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {

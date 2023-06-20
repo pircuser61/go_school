@@ -404,8 +404,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approv
 		return errSet
 	}
 
-	err := gb.notificateNeedRework(ctx)
-	if err != nil {
+	if err := gb.notificateNeedRework(ctx); err != nil {
 		return err
 	}
 

@@ -51,6 +51,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 			if err := b.reEntry(ctx, ef); err != nil {
 				return nil, false, err
 			}
+			b.RunContext.VarStore.AddStep(b.Name)
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
