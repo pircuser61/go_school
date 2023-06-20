@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	c "context"
+	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -86,12 +87,18 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	executorChosenFlag := false
 	if gb.State.UseActualExecutor {
 		execs, prevErr := gb.RunContext.Storage.GetExecutorsFromPrevExecutionRun(ctx, gb.RunContext.TaskID, gb.Name)
-		if prevErr != nil {
+		switch prevErr {
+		case nil:
+			{
+				if len(execs) == 1 {
+					gb.State.Executors = execs
+					executorChosenFlag = true
+				}
+			}
+		case sql.ErrNoRows:
+			break
+		default:
 			return prevErr
-		}
-		if len(execs) == 1 {
-			gb.State.Executors = execs
-			executorChosenFlag = true
 		}
 	}
 	if !executorChosenFlag {
@@ -138,12 +145,18 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	executorChosenFlag := false
 	if gb.State.UseActualExecutor {
 		execs, execErr := gb.RunContext.Storage.GetExecutorsFromPrevExecutionRunOld(ctx, gb.RunContext.WorkNumber, gb.Name)
-		if execErr != nil {
+		switch execErr {
+		case nil:
+			{
+				if len(execs) == 1 {
+					gb.State.Executors = execs
+					executorChosenFlag = true
+				}
+			}
+		case sql.ErrNoRows:
+			break
+		default:
 			return execErr
-		}
-		if len(execs) == 1 {
-			gb.State.Executors = execs
-			executorChosenFlag = true
 		}
 	}
 	if !executorChosenFlag {
