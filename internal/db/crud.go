@@ -1575,9 +1575,10 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()
 
-	var id uuid.UUID
-	var t time.Time
-	const q = `
+	if !dto.IsReEntry {
+		var id uuid.UUID
+		var t time.Time
+		const q = `
 		SELECT id, time
 			FROM variable_storage
 			WHERE work_id = $1 AND
@@ -1586,15 +1587,17 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
                 (step_type = 'form' AND status IN ('idle', 'ready', 'running', 'finished')))
 	`
 
-	if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).
-		Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
-		return NullUuid, time.Time{}, nil
+		if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).
+			Scan(&id, &t); scanErr != nil && !errors.Is(scanErr, pgx.ErrNoRows) {
+			return NullUuid, time.Time{}, scanErr
+		}
+
+		if id != NullUuid {
+			return id, t, nil
+		}
 	}
 
-	if id != NullUuid {
-		return id, t, nil
-	}
-	id = uuid.New()
+	id := uuid.New()
 	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -2098,7 +2101,7 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, 
 
 	var c int
 	if scanErr := db.Connection.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
-		return false, nil
+		return false, scanErr
 	}
 	return c == len(blocks), nil
 }
@@ -2122,11 +2125,11 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		vs.has_error,
 		vs.status,
 		w.author,
-		vs.updated_at
+		vs.updated_at,
+		w.run_context -> 'initial_application' -> 'is_test_application' as isTest
 	FROM variable_storage vs 
-	JOIN works w
-	ON vs.work_id = w.id
-	WHERE vs.id = $1
+	JOIN works w ON vs.work_id = w.id
+		WHERE vs.id = $1
 	LIMIT 1`
 
 	var s entity.Step
@@ -2144,6 +2147,7 @@ func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Ste
 		&s.Status,
 		&s.Initiator,
 		&s.UpdatedAt,
+		&s.IsTest,
 	)
 	if err != nil {
 		return nil, err
@@ -2185,6 +2189,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 		FROM variable_storage vs 
 			LEFT JOIN works w ON w.child_id = $1 
 		WHERE vs.work_id = w.id AND vs.step_name = $2
+		ORDER BY vs.time DESC
 		LIMIT 1
 `
 
@@ -2237,6 +2242,7 @@ func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepNa
 			vs.status
 		FROM variable_storage vs  
 			WHERE vs.work_id = $1 AND vs.step_name = $2
+			ORDER BY vs.time DESC
 		LIMIT 1
 `
 
@@ -2605,7 +2611,8 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 		       vs.content,
 		       v.content->'pipeline'->'blocks'->vs.step_name,
 		       vs.step_name,
-		       d.action
+		       d.action,
+			   w.run_context -> 'initial_application' -> 'is_test_application' as isTest
 		FROM variable_storage vs 
 		    JOIN works w on vs.work_id = w.id 
 		    JOIN versions v on w.version_id = v.id
@@ -2636,6 +2643,7 @@ func (db *PGCon) GetBlocksBreachedSLA(ctx context.Context) ([]StepBreachedSLA, e
 			&item.BlockData,
 			&item.StepName,
 			&item.Action,
+			&item.IsTest,
 		); scanErr != nil {
 			return nil, scanErr
 		}

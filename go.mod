@@ -13,6 +13,7 @@ require (
 	github.com/go-chi/render v1.0.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.3.0
+	github.com/hrishin/httpmock v0.0.2
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/jackc/pgconn v1.14.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
@@ -29,14 +30,14 @@ require (
 	gitlab.services.mts.ru/abp/mail/pkg v1.19.0
 	gitlab.services.mts.ru/abp/myosotis v1.4.4
 	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.1
-	gitlab.services.mts.ru/jocasta/file-registry v1.1.1-alpha.1
+	gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1
 	gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
-	gitlab.services.mts.ru/jocasta/integrations v1.5.0
+	gitlab.services.mts.ru/jocasta/integrations v1.6.0
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
-	gitlab.services.mts.ru/prodboard/infra v0.0.12
+	gitlab.services.mts.ru/prodboard/infra v0.3.0
 	go.opencensus.io v0.24.0
-	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
+	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
 	golang.org/x/net v0.9.0
 	google.golang.org/grpc v1.55.0
 	gopkg.in/square/go-jose.v2 v2.6.0
@@ -95,7 +96,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/onrik/logrus v0.9.0 // indirect
-	github.com/onsi/gomega v1.20.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
@@ -113,14 +113,14 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	gitlab.services.mts.ru/libs/logger v1.1.1 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.17.0 // indirect
+	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/api v0.103.0 // indirect
+	google.golang.org/api v0.114.0 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

@@ -1,7 +1,9 @@
 package entity
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 )
 
 type EriusScenarioInfo struct {
@@ -54,7 +57,11 @@ const (
 	BlockSDName      = "servicedesk_application"
 )
 
-func (bt *BlocksType) Validate() bool {
+const (
+	checkSdBlueprint = "/api/herald/v1/schema/blueprint/"
+)
+
+func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) bool {
 	if !bt.EndExists() {
 		return false
 	}
@@ -67,7 +74,7 @@ func (bt *BlocksType) Validate() bool {
 		return false
 	}
 
-	if !bt.IsSdBlueprintFilled() {
+	if !bt.IsSdBlueprintFilled(ctx, sd) {
 		return false
 	}
 
@@ -114,7 +121,7 @@ func (bt *BlocksType) IsSocketsFilled() bool {
 	return true
 }
 
-func (bt *BlocksType) IsSdBlueprintFilled() bool {
+func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.Service) bool {
 	sdNode := bt.getNodeByType(BlockSDName)
 	if sdNode == nil {
 		return true
@@ -125,8 +132,17 @@ func (bt *BlocksType) IsSdBlueprintFilled() bool {
 	if err != nil {
 		return false
 	}
-	_, err = uuid.Parse(params.BlueprintID)
-	return err == nil
+	checkUrl := sd.SdURL + checkSdBlueprint + params.BlueprintID
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, checkUrl, http.NoBody)
+	if err != nil {
+		return false
+	}
+	resp, err := sd.Cli.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode == http.StatusOK
 }
 
 func (bt *BlocksType) addDefaultStartNode() {

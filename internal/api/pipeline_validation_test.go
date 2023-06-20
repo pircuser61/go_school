@@ -1,11 +1,15 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
+	"github.com/hrishin/httpmock"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 )
 
 func TestValidation_EndExists(t *testing.T) {
@@ -454,6 +458,11 @@ func TestValidation_SocketFilled(t *testing.T) {
 }
 
 func TestValidation_SdBlueprintFilled(t *testing.T) {
+	mockResponse := httpmock.Response{
+		URI:        "/api/herald/v1/schema/blueprint/59d1a7e6-011d-11ed-b7f9-baa4bc97ef20",
+		StatusCode: 200,
+		Body:       "bar response",
+	}
 	tests := []struct {
 		Name      string
 		Ef        entity.EriusScenario
@@ -498,10 +507,13 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 			WantValid: false,
 		},
 	}
-
+	sdApi := &servicedesc.Service{
+		Cli:   httpmock.Client(&mockResponse),
+		SdURL: "https://dev.servicedesk.mts.ru",
+	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled() {
+			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled(context.Background(), sdApi) {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})

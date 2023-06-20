@@ -6,7 +6,7 @@ serve_addr: ':8000'
 probes:
   liveness: "/alive"
   readiness: "/ready"
-timeout: '30s'
+timeout: '600s'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
@@ -93,7 +93,7 @@ function_store:
   url: 'functions:90'
 
 human_tasks:
-  url: 'human-tasks:90'
+  url: 'localhost:8001'
 
 imap:
   imap_connection: "mail.inside.mts.ru:993"

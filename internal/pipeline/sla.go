@@ -6,8 +6,6 @@ import (
 	"math"
 	"time"
 
-	"golang.org/x/exp/slices"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"

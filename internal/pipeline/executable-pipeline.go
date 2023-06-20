@@ -150,11 +150,18 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 
 	ctx, s := trace.StartSpan(ctx, "create_blocks")
 	defer s.End()
-
+	isTest, err := gb.Storage.CheckIsTest(ctx, gb.TaskID)
+	if err != nil {
+		return err
+	}
+	notifName := gb.Name
+	if isTest {
+		notifName = notifName + " (ТЕСТОВАЯ ЗАЯВКА)"
+	}
 	for k := range source {
 		bl := source[k]
 
-		block, err := CreateBlock(ctx, k, &bl, &BlockRunContext{
+		block, _, err := CreateBlock(ctx, k, &bl, &BlockRunContext{
 			TaskID:     gb.TaskID,
 			WorkNumber: gb.WorkNumber,
 			WorkTitle:  gb.Name,
@@ -172,6 +179,8 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			FaaS:          gb.FaaS,
 			HrGate:        gb.RunContext.HrGate,
 			UpdateData:    nil,
+			IsTest:        isTest,
+			NotifName:     notifName,
 		})
 		if err != nil {
 			return err

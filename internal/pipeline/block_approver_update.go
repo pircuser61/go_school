@@ -126,11 +126,10 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-
 		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementSLATpl(
 				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
+				gb.RunContext.NotifName,
 				gb.RunContext.Sender.SdAddress,
 				gb.State.ApproveStatusName,
 			),
@@ -240,11 +239,10 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 				return getWorksErr
 			}
 		}
-
 		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementHalfSLATpl(
 				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
+				gb.RunContext.NotifName,
 				gb.RunContext.Sender.SdAddress,
 				gb.State.ApproveStatusName,
 				lastWorksForUser,
@@ -303,7 +301,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
+	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -334,7 +332,7 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Contex
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -390,8 +388,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 
 		emails = append(emails, em)
 	}
-
-	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -407,8 +404,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approv
 		return errSet
 	}
 
-	err := gb.notificateNeedRework(ctx)
-	if err != nil {
+	if err := gb.notificateNeedRework(ctx); err != nil {
 		return err
 	}
 
@@ -745,7 +741,7 @@ func (gb *GoApproverBlock) notificateAdditionalApprovers(ctx c.Context, logins, 
 	for i := range emails {
 		tpl := mail.NewAddApproversTpl(
 			gb.RunContext.WorkNumber,
-			gb.RunContext.WorkTitle,
+			gb.RunContext.NotifName,
 			gb.RunContext.Sender.SdAddress,
 			gb.State.ApproveStatusName,
 			lastWorksForUser,
@@ -795,6 +791,7 @@ func (gb *GoApproverBlock) notificateDecisionMadeByAdditionalApprover(ctx c.Cont
 
 	tpl := mail.NewDecisionMadeByAdditionalApprover(
 		gb.RunContext.WorkNumber,
+		gb.RunContext.NotifName,
 		userInfo.FullName,
 		latestDecisonLog.Decision.ToRuString(),
 		latestDecisonLog.Comment,
@@ -839,8 +836,7 @@ func (gb *GoApproverBlock) notificateNeedRework(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-
-	tpl := mail.NewAnswerSendToEditTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewAnswerSendToEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -877,7 +873,7 @@ func (gb *GoApproverBlock) notificateNewInfoRecieved(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewAnswerApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewAnswerApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
@@ -906,8 +902,7 @@ func (gb *GoApproverBlock) notificateNeedMoreInfo(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-
-	tpl := mail.NewRequestApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.WorkTitle, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewRequestApproverInfoTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 
 	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
