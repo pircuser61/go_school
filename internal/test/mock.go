@@ -1375,7 +1375,7 @@ func (m *MockDB) CheckIsTest(ctx context.Context, taskID uuid.UUID) (bool, error
 	return false, nil
 }
 
-func (m *MockDB) GetExecutorsFromPrevExecutionRun(ctx context.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error) {
+func (m *MockDB) GetExecutorsFromPrevExecutionRun(ctx context.Context, taskID uuid.UUID, n string) (exec map[string]struct{}, err error) {
 	return map[string]struct{}{}, nil
 }
 
