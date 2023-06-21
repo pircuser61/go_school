@@ -84,17 +84,28 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if err != nil {
 		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
 	}
-
-	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-		Type:     params.Type,
-		GroupID:  params.ExecutorsGroupID,
-		Executor: params.Executors,
-		WorkType: params.WorkType,
-	})
-	if err != nil {
-		return err
+	executorChosenFlag := false
+	if gb.State.UseActualExecutor {
+		execs, prevErr := gb.RunContext.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
+		if prevErr != nil {
+			return prevErr
+		}
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+			executorChosenFlag = true
+		}
 	}
-
+	if !executorChosenFlag {
+		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+			Type:     params.Type,
+			GroupID:  params.ExecutorsGroupID,
+			Executor: params.Executors,
+			WorkType: params.WorkType,
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return gb.handleNotifications(ctx)
 }
 
@@ -122,18 +133,30 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		FormsAccessibility: params.FormsAccessibility,
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,
+		UseActualExecutor:  params.UseActualExecutor,
 	}
-
-	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-		Type:     params.Type,
-		GroupID:  params.ExecutorsGroupID,
-		Executor: params.Executors,
-		WorkType: params.WorkType,
-	})
-	if err != nil {
-		return err
+	executorChosenFlag := false
+	if gb.State.UseActualExecutor {
+		execs, execErr := gb.RunContext.Storage.GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx, gb.RunContext.WorkNumber, gb.Name)
+		if execErr != nil {
+			return execErr
+		}
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+			executorChosenFlag = true
+		}
 	}
-
+	if !executorChosenFlag {
+		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+			Type:     params.Type,
+			GroupID:  params.ExecutorsGroupID,
+			Executor: params.Executors,
+			WorkType: params.WorkType,
+		})
+		if err != nil {
+			return err
+		}
+	}
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
