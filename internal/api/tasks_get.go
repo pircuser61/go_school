@@ -636,6 +636,14 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 		_ = e.sendError(w)
 		return
 	}
+	if len(taskTimeIntervals) == 0 {
+		if err := sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: 0}); err != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+		}
+		return
+	}
 
 	calendarDays, err := ae.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx, taskTimeIntervals)
 	if err != nil {

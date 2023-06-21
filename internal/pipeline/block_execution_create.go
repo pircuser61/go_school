@@ -13,6 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -115,7 +116,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 
 	gb.State = &ExecutionData{
 		ExecutionType:      params.Type,
-		SLA:                params.SLA,
 		CheckSLA:           params.CheckSLA,
 		ReworkSLA:          params.ReworkSLA,
 		CheckReworkSLA:     params.CheckReworkSLA,
@@ -148,6 +148,12 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 		gb.State.WorkType = processSLASettings.WorkType
 	}
+	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(params.SLA)
+
+	if getSLAErr != nil {
+		return getSLAErr
+	}
+	gb.State.SLA = sla
 
 	// maybe we should notify the executor
 	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifErr != nil {

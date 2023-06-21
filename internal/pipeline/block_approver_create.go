@@ -15,6 +15,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -127,7 +128,6 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 	gb.State = &ApproverData{
 		Type:               params.Type,
-		SLA:                params.SLA,
 		CheckSLA:           params.CheckSLA,
 		ReworkSLA:          params.ReworkSLA,
 		CheckReworkSLA:     params.CheckReworkSLA,
@@ -182,6 +182,13 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		}
 		gb.State.WorkType = processSLASettings.WorkType
 	}
+
+	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(params.SLA)
+
+	if getSLAErr != nil {
+		return getSLAErr
+	}
+	gb.State.SLA = sla
 
 	return gb.handleNotifications(ctx)
 }

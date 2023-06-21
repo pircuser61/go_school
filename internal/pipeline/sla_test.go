@@ -332,3 +332,94 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 		})
 	}
 }
+
+func Test_ComputeMaxDate(t *testing.T) {
+	type fields struct {
+		from         time.Time
+		workHourType *WorkHourType
+		days         int
+	}
+	tests := []struct {
+		name          string
+		fields        fields
+		wantTimestamp int64
+	}{
+		{
+			name: "default test 8/5",
+			fields: fields{
+				from:         time.Date(2023, 6, 14, 6, 0, 0, 0, time.UTC),
+				workHourType: utils.GetAddressOfValue(WorkTypeN85),
+				days:         2,
+			},
+			wantTimestamp: time.Date(2023, 6, 15, 14, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			name: "default test 12/5",
+			fields: fields{
+				from:         time.Date(2023, 6, 5, 6, 0, 0, 0, time.UTC),
+				workHourType: utils.GetAddressOfValue(WorkTypeN125),
+				days:         2,
+			},
+			wantTimestamp: time.Date(2023, 6, 6, 18, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			name: "default test 24/7",
+			fields: fields{
+				from:         time.Date(2023, 5, 5, 6, 0, 0, 0, time.UTC),
+				workHourType: utils.GetAddressOfValue(WorkTypeN247),
+				days:         2,
+			},
+			wantTimestamp: time.Date(2023, 5, 7, 6, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			name: "test with start before work hours 8/5",
+			fields: fields{
+				from:         time.Date(2023, 6, 14, 5, 59, 0, 0, time.UTC),
+				workHourType: utils.GetAddressOfValue(WorkTypeN85),
+				days:         6,
+			},
+			wantTimestamp: time.Date(2023, 6, 21, 14, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			name: "test with start after work hours 8/5",
+			fields: fields{
+				from:         time.Date(2023, 6, 5, 21, 0, 0, 0, time.UTC),
+				workHourType: utils.GetAddressOfValue(WorkTypeN85),
+				days:         3,
+			},
+			wantTimestamp: time.Date(2023, 6, 8, 14, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			name: "test with start before work hours 12/5",
+			fields: fields{
+				from:         time.Date(2023, 6, 5, 21, 0, 0, 0, time.UTC),
+				workHourType: utils.GetAddressOfValue(WorkTypeN85),
+				days:         3,
+			},
+			wantTimestamp: time.Date(2023, 6, 8, 14, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			name: "test with start after work hours 12/5",
+			fields: fields{
+				from:         time.Date(2023, 6, 5, 21, 0, 0, 0, time.UTC),
+				workHourType: utils.GetAddressOfValue(WorkTypeN85),
+				days:         3,
+			},
+			wantTimestamp: time.Date(2023, 6, 8, 14, 0, 0, 0, time.UTC).Unix(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			startHour, endHour, _ := tt.fields.workHourType.GetWorkingHours()
+			weekends, _ := tt.fields.workHourType.GetWeekends()
+			totalSLA, _ := tt.fields.workHourType.GetTotalSLAInHours(tt.fields.days)
+			if gotDate := ComputeMaxDate(tt.fields.from, float32(totalSLA), &SLAInfo{
+				StartWorkHourPtr: &startHour,
+				EndWorkHourPtr:   &endHour,
+				Weekends:         weekends,
+			}); gotDate.Unix() != tt.wantTimestamp {
+				t.Errorf("ComputeMaxDate() = %v, want %v", gotDate.Format(time.RFC3339), time.Unix(tt.wantTimestamp, 0).Format(time.RFC3339))
+			}
+		})
+	}
+}
