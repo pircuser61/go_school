@@ -776,8 +776,6 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		if err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
 			return err
 		}
-	} else {
-
 	}
 
 	return nil

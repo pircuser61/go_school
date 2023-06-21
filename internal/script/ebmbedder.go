@@ -86,9 +86,6 @@ const (
 	notExecutedSocketID    = "not_executed"
 	notExecutedSocketTitle = "Не исполнено"
 
-	notSendEditSocketID    = "send_edit"
-	notSendEditSocketTitle = "На доработку"
-
 	DefaultSocketID    = "default"
 	DefaultSocketTitle = "Выход по умолчанию"
 )
