@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -331,17 +332,23 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 			return grabStorageErr
 		}
 
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
-			variableStorage,
-			map[string]struct{}{
-				dto.Executor: {},
-			},
-		)
-		if resolveErr != nil {
-			return resolveErr
+		executorsFromSchema := make(map[string]struct{})
+		executorVars := strings.Split(dto.Executor, ";")
+		for i := range executorVars {
+			resolvedEntities, resolveErr := resolveValuesFromVariables(
+				variableStorage,
+				map[string]struct{}{
+					executorVars[i]: {},
+				},
+			)
+			if resolveErr != nil {
+				return resolveErr
+			}
+			for executorLogin := range resolvedEntities {
+				executorsFromSchema[executorLogin] = struct{}{}
+			}
 		}
-
-		gb.State.Executors = resolvedEntities
+		gb.State.Executors = executorsFromSchema
 
 		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
 		if htErr != nil {

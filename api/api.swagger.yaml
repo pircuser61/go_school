@@ -4378,6 +4378,7 @@ components:
         executors:
           type: string
           description: Executor value (depends on type)
+          example: a.var1;b.var2;c.var3 (format for many approvers from schema)
         sla:
           type: integer
           description: Execution SLA (in working hours)
