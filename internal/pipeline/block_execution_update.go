@@ -758,26 +758,33 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		return editErr
 	}
 
-	loginsToNotify := []string{gb.RunContext.Initiator}
+	if gb.isNextBlockServiceDesk() {
+		loginsToNotify := []string{gb.RunContext.Initiator}
 
-	var email string
-	emails := make([]string, 0, len(loginsToNotify))
-	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
-		if err != nil {
+		var email string
+		emails := make([]string, 0, len(loginsToNotify))
+		for _, login := range loginsToNotify {
+			email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+			if err != nil {
+				return err
+			}
+
+			emails = append(emails, email)
+		}
+		tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
+		if err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
 			return err
 		}
+	} else {
 
-		emails = append(emails, email)
-	}
-	tpl := mail.NewAnswerSendToEditTpl(gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
-	if err != nil {
-		return err
 	}
 
 	return nil
+}
+
+func (gb *GoExecutionBlock) isNextBlockServiceDesk() bool {
+	return true
 }
 
 func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx c.Context) error {

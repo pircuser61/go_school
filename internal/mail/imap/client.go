@@ -10,7 +10,7 @@ import (
 
 	"go.opencensus.io/trace"
 
-	ilogger "gitlab.services.mts.ru/prodboard/infra/logger"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/prodboard/infra/tracer"
 
 	"github.com/emersion/go-imap"
@@ -67,7 +67,7 @@ func (s *Client) connect() error {
 }
 
 func (s *Client) Close(ctx context.Context) {
-	log := ilogger.FromContext(ctx)
+	log := logger.GetLogger(ctx)
 
 	errLogOut := s.imapClient.Logout()
 	if errLogOut != nil {
@@ -152,7 +152,7 @@ func (s *Client) SelectUnread(ctx context.Context) (messages chan *imap.Message,
 		tracer.End(span, err)
 	}()
 
-	log := ilogger.FromContext(ctx)
+	log := logger.GetLogger(ctx)
 	log.Info("start SelectUnread")
 
 	s.once.Do(func() {
