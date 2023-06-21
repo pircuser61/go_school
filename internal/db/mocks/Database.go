@@ -649,8 +649,8 @@ func (_m *MockedDatabase) GetExecutableScenarios(ctx context.Context) ([]entity.
 	return r0, r1
 }
 
-// GetExecutorsFromPrevExecutionRun provides a mock function with given fields: ctx, taskID, name
-func (_m *MockedDatabase) GetExecutorsFromPrevExecutionRun(ctx context.Context, taskID uuid.UUID, name string) (map[string]struct{}, error) {
+// GetExecutorsFromPrevExecutionBlockRun provides a mock function with given fields: ctx, taskID, name
+func (_m *MockedDatabase) GetExecutorsFromPrevExecutionBlockRun(ctx context.Context, taskID uuid.UUID, name string) (map[string]struct{}, error) {
 	ret := _m.Called(ctx, taskID, name)
 
 	var r0 map[string]struct{}
@@ -672,8 +672,8 @@ func (_m *MockedDatabase) GetExecutorsFromPrevExecutionRun(ctx context.Context, 
 	return r0, r1
 }
 
-// GetExecutorsFromPrevExecutionRunOld provides a mock function with given fields: ctx, workNumber, name
-func (_m *MockedDatabase) GetExecutorsFromPrevExecutionRunOld(ctx context.Context, workNumber string, name string) (map[string]struct{}, error) {
+// GetExecutorsFromPrevWorkVersionExecutionBlockRun provides a mock function with given fields: ctx, workNumber, name
+func (_m *MockedDatabase) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx context.Context, workNumber string, name string) (map[string]struct{}, error) {
 	ret := _m.Called(ctx, workNumber, name)
 
 	var r0 map[string]struct{}
