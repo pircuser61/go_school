@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	c "context"
 	"encoding/json"
 	"io"
@@ -43,6 +42,8 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	token := req.Header.Get(AuthorizationHeader)
+
 	for i := range emails {
 		usr, errGetUser := ae.People.GetUser(ctx, emails[i].Action.Login)
 		if errGetUser != nil {
@@ -65,10 +66,8 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		for fileName := range emails[i].Action.Attachments {
-			r := bytes.NewReader(emails[i].Action.Attachments[fileName].Raw)
-			ext := emails[i].Action.Attachments[fileName].Ext
-			id, errSave := ae.Minio.SaveFile(ctx, ext, fileName, r, r.Size())
+		for fileName, fileData := range emails[i].Action.Attachments {
+			id, errSave := ae.FileRegistry.SaveFile(ctx, token, fileName, fileData.Raw)
 			if errSave != nil {
 				log.WithField("workNumber", emails[i].Action.WorkNumber).
 					WithField("fileName", fileName).
