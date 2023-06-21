@@ -1541,7 +1541,8 @@ func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
 
 	return isTest, nil
 }
-func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error) {
+func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (
+	exec map[string]struct{}, err error) {
 	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
 	defer span.End()
 
@@ -1561,7 +1562,8 @@ func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uui
 	return executors, nil
 }
 
-func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error) {
+func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (
+	exec map[string]struct{}, err error) {
 	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
 	defer span.End()
 
