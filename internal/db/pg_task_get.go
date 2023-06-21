@@ -1553,7 +1553,7 @@ func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uui
 
 	var executors map[string]struct{}
 	if err = db.Connection.QueryRow(ctx, q, name, taskID, name).Scan(&executors); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return map[string]struct{}{}, nil
 		}
 		return map[string]struct{}{}, err
@@ -1575,7 +1575,7 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 
 	var executors map[string]struct{}
 	if err = db.Connection.QueryRow(ctx, q, name, workNumber, name).Scan(&executors); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return map[string]struct{}{}, nil
 		}
 		return map[string]struct{}{}, err
