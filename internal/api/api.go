@@ -853,6 +853,9 @@ type ExecutionParams struct {
 	//  * from_schema - Selected by initiator
 	Type ExecutionParamsType `json:"type"`
 
+	// flag to use actual executor
+	UseActualExecutor bool `json:"use_actual_executor"`
+
 	// Рабочий режим
 	WorkType *WorkType `json:"work_type,omitempty"`
 }
@@ -967,11 +970,17 @@ type FormParams struct {
 	// Form group id in SD
 	FormGroupId *string `json:"form_group_id,omitempty"`
 
+	// Настройки блока при повторном заходе в этот блок
+	FormReEnterSettings *FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
+
 	// List of accessibility properties for forms
 	FormsAccessibility *[]FormsAccessibility `json:"forms_accessibility,omitempty"`
 
 	// Hide executor from initiator
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
+
+	// true - need manual fill when reenter in block
+	IsEditable *bool `json:"is_editable,omitempty"`
 
 	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
 	Mapping *JSONSchemaProperties `json:"mapping,omitempty"`
@@ -987,6 +996,20 @@ type FormParams struct {
 
 	// Рабочий режим
 	WorkType *WorkType `json:"work_type,omitempty"`
+}
+
+// Настройки блока при повторном заходе в этот блок
+type FormReEnterSettings struct {
+	// Form executor type:
+	//   * User - Single user
+	//   * group - Form group ID
+	//   * Initiator - Process initiator
+	//   * From_schema - Selected by initiator
+	//   * Auto_Fill - Auto Fill form by system
+	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
+
+	// Executor login, variable or group id
+	Value *string `json:"value,omitempty"`
 }
 
 // FormsAccessibility defines model for FormsAccessibility.
@@ -1459,6 +1482,25 @@ type TaskUpdate struct {
 // TaskUpdateAction defines model for TaskUpdate.Action.
 type TaskUpdateAction string
 
+// TasksStop defines model for TasksStop.
+type TasksStop struct {
+	// Array of work numbers
+	Tasks []string `json:"tasks"`
+}
+
+// TasksStopped defines model for TasksStopped.
+type TasksStopped struct {
+	Tasks []struct {
+		FinishedAt string `json:"finished_at"`
+
+		// Task status
+		Status string `json:"status"`
+
+		// Task work number
+		WorkNumber string `json:"work_number"`
+	} `json:"tasks"`
+}
+
 // UsageResponse defines model for UsageResponse.
 type UsageResponse struct {
 	// Имя блока
@@ -1862,6 +1904,9 @@ type GetTasksParams struct {
 // GetTasksParamsExecutorTypeAssigned defines parameters for GetTasks.
 type GetTasksParamsExecutorTypeAssigned string
 
+// StopTasksJSONBody defines parameters for StopTasks.
+type StopTasksJSONBody TasksStop
+
 // UpdateTaskJSONBody defines parameters for UpdateTask.
 type UpdateTaskJSONBody TaskUpdate
 
@@ -1915,6 +1960,9 @@ type CreateTagJSONRequestBody CreateTagJSONBody
 
 // EditTagJSONRequestBody defines body for EditTag for application/json ContentType.
 type EditTagJSONRequestBody EditTagJSONBody
+
+// StopTasksJSONRequestBody defines body for StopTasks for application/json ContentType.
+type StopTasksJSONRequestBody StopTasksJSONBody
 
 // UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
 type UpdateTaskJSONRequestBody UpdateTaskJSONBody
@@ -2689,6 +2737,9 @@ type ServerInterface interface {
 	// Get Pipeline Tasks
 	// (GET /tasks/pipeline/{pipelineID})
 	GetPipelineTasks(w http.ResponseWriter, r *http.Request, pipelineID string)
+	// Stop tasks by work number
+	// (POST /tasks/stop)
+	StopTasks(w http.ResponseWriter, r *http.Request)
 	// Get Version Tasks
 	// (GET /tasks/version/{versionID})
 	GetVersionTasks(w http.ResponseWriter, r *http.Request, versionID string)
@@ -4365,6 +4416,21 @@ func (siw *ServerInterfaceWrapper) GetPipelineTasks(w http.ResponseWriter, r *ht
 	handler(w, r.WithContext(ctx))
 }
 
+// StopTasks operation middleware
+func (siw *ServerInterfaceWrapper) StopTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StopTasks(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // GetVersionTasks operation middleware
 func (siw *ServerInterfaceWrapper) GetVersionTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -4746,6 +4812,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/pipeline/{pipelineID}", wrapper.GetPipelineTasks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/tasks/stop", wrapper.StopTasks)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/tasks/version/{versionID}", wrapper.GetVersionTasks)

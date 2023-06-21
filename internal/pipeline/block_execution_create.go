@@ -13,10 +13,11 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
-func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, error) {
+func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, bool, error) {
 	b := &GoExecutionBlock{
 		Name:    name,
 		Title:   ef.Title,
@@ -35,22 +36,77 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		b.Output[v.Name] = v.Global
 	}
 
-	rawState, ok := runCtx.VarStore.State[name]
-	if ok {
+	rawState, blockExists := runCtx.VarStore.State[name]
+	reEntry := false
+	if blockExists {
 		if err := b.loadState(rawState); err != nil {
-			return nil, err
+			return nil, false, err
+		}
+
+		reEntry = runCtx.UpdateData == nil
+
+		// это для возврата в рамках одного процесса
+		if reEntry {
+			if err := b.reEntry(ctx, ef); err != nil {
+				return nil, false, err
+			}
+			b.RunContext.VarStore.AddStep(b.Name)
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
+
+		// TODO: выпилить когда сделаем циклы
+		// это для возврата на доработку при которой мы создаем новый процесс
+		// и пытаемся взять решение из прошлого процесса
+		if err := b.setPrevDecision(ctx); err != nil {
+			return nil, false, err
+		}
 	}
 
-	if err := b.setPrevDecision(ctx); err != nil {
-		return nil, err
+	return b, reEntry, nil
+}
+
+func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
+	if gb.State.GetRepeatPrevDecision() {
+		return nil
 	}
-	return b, nil
+
+	gb.State.Decision = nil
+	gb.State.DecisionComment = nil
+	gb.State.DecisionAttachments = nil
+	gb.State.ActualExecutor = nil
+
+	var params script.ExecutionParams
+	err := json.Unmarshal(ef.Params, &params)
+	if err != nil {
+		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
+	}
+	executorChosenFlag := false
+	if gb.State.UseActualExecutor {
+		execs, prevErr := gb.RunContext.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
+		if prevErr != nil {
+			return prevErr
+		}
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+			executorChosenFlag = true
+		}
+	}
+	if !executorChosenFlag {
+		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+			Type:     params.Type,
+			GroupID:  params.ExecutorsGroupID,
+			Executor: params.Executors,
+			WorkType: params.WorkType,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return gb.handleNotifications(ctx)
 }
 
 func (gb *GoExecutionBlock) loadState(raw json.RawMessage) error {
@@ -71,64 +127,36 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 
 	gb.State = &ExecutionData{
 		ExecutionType:      params.Type,
-		SLA:                params.SLA,
 		CheckSLA:           params.CheckSLA,
 		ReworkSLA:          params.ReworkSLA,
 		CheckReworkSLA:     params.CheckReworkSLA,
 		FormsAccessibility: params.FormsAccessibility,
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,
+		UseActualExecutor:  params.UseActualExecutor,
 	}
-
-	switch params.Type {
-	case script.ExecutionTypeUser:
-		gb.State.Executors = map[string]struct{}{
-			params.Executors: {},
+	executorChosenFlag := false
+	if gb.State.UseActualExecutor {
+		execs, execErr := gb.RunContext.Storage.GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx, gb.RunContext.WorkNumber, gb.Name)
+		if execErr != nil {
+			return execErr
 		}
-	case script.ExecutionTypeFromSchema:
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+			executorChosenFlag = true
 		}
-
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
-			variableStorage,
-			map[string]struct{}{
-				params.Executors: {},
-			},
-		)
-		if resolveErr != nil {
-			return resolveErr
-		}
-
-		gb.State.Executors = resolvedEntities
-
-		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
-		if htErr != nil {
-			return htErr
-		}
-		delegations = delegations.FilterByType("execution")
-
-		gb.RunContext.Delegations = delegations
-	case script.ExecutionTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.ExecutorsGroupID)
-		if errGroup != nil {
-			return errors.Wrap(errGroup, "can`t get executors group with id: "+params.ExecutorsGroupID)
-		}
-
-		if len(workGroup.People) == 0 {
-			//nolint:goimports // bugged golint
-			return errors.New("zero executors in group: " + params.ExecutorsGroupID)
-		}
-
-		gb.State.Executors = make(map[string]struct{})
-		for i := range workGroup.People {
-			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
-		}
-		gb.State.ExecutorsGroupID = params.ExecutorsGroupID
-		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
-
+	if !executorChosenFlag {
+		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+			Type:     params.Type,
+			GroupID:  params.ExecutorsGroupID,
+			Executor: params.Executors,
+			WorkType: params.WorkType,
+		})
+		if err != nil {
+			return err
+		}
+	}
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
@@ -143,11 +171,18 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 		gb.State.WorkType = processSLASettings.WorkType
 	}
+	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(params.SLA)
+
+	if getSLAErr != nil {
+		return getSLAErr
+	}
+	gb.State.SLA = sla
 
 	// maybe we should notify the executor
 	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifErr != nil {
 		return notifErr
 	}
+
 	return gb.handleNotifications(ctx)
 }
 
@@ -272,6 +307,66 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
 			return sendErr
 		}
+	}
+
+	return nil
+}
+
+type setExecutorsByParamsDTO struct {
+	Type     script.ExecutionType
+	GroupID  string
+	Executor string
+	WorkType *string
+}
+
+func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutorsByParamsDTO) error {
+	switch dto.Type {
+	case script.ExecutionTypeUser:
+		gb.State.Executors = map[string]struct{}{
+			dto.Executor: {},
+		}
+	case script.ExecutionTypeFromSchema:
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		resolvedEntities, resolveErr := resolveValuesFromVariables(
+			variableStorage,
+			map[string]struct{}{
+				dto.Executor: {},
+			},
+		)
+		if resolveErr != nil {
+			return resolveErr
+		}
+
+		gb.State.Executors = resolvedEntities
+
+		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+		if htErr != nil {
+			return htErr
+		}
+		delegations = delegations.FilterByType("execution")
+
+		gb.RunContext.Delegations = delegations
+	case script.ExecutionTypeGroup:
+		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
+		if errGroup != nil {
+			return errors.Wrap(errGroup, "can`t get executors group with id: "+dto.GroupID)
+		}
+
+		if len(workGroup.People) == 0 {
+			//nolint:goimports // bugged golint
+			return errors.New("zero executors in group: " + dto.GroupID)
+		}
+
+		gb.State.Executors = make(map[string]struct{})
+		for i := range workGroup.People {
+			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
+		}
+		gb.State.ExecutorsGroupID = dto.GroupID
+		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
 
 	return nil

@@ -98,8 +98,8 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 	}
 }
 
-//nolint:dupl //its not duplicate
-func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) *GoStartBlock {
+//nolint:dupl,unparam //its not duplicate
+func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoStartBlock, bool, error) {
 	b := &GoStartBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -119,5 +119,5 @@ func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunConte
 
 	b.RunContext.VarStore.AddStep(b.Name)
 
-	return b
+	return b, false, nil
 }

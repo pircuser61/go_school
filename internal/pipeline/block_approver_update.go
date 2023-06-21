@@ -404,8 +404,7 @@ func (gb *GoApproverBlock) setEditApplication(ctx c.Context, updateParams approv
 		return errSet
 	}
 
-	err := gb.notificateNeedRework(ctx)
-	if err != nil {
+	if err := gb.notificateNeedRework(ctx); err != nil {
 		return err
 	}
 
@@ -837,7 +836,7 @@ func (gb *GoApproverBlock) notificateNeedRework(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-	tpl := mail.NewAnswerSendToEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
 	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
