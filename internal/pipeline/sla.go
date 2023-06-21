@@ -44,11 +44,7 @@ const (
 )
 
 func (slaInfo *SLAInfo) GetCalendarDays() *hrgate.CalendarDays {
-	if slaInfo == nil {
-		return &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{}}
-	}
-
-	if slaInfo.CalendarDays == nil {
+	if slaInfo == nil || slaInfo.CalendarDays == nil {
 		return &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{}}
 	}
 
@@ -56,35 +52,32 @@ func (slaInfo *SLAInfo) GetCalendarDays() *hrgate.CalendarDays {
 }
 
 func (slaInfo *SLAInfo) GetStartWorkHour() int {
-	if slaInfo == nil {
-		return workingHoursStart
-	}
-
-	if slaInfo.StartWorkHourPtr == nil {
+	if slaInfo == nil || slaInfo.StartWorkHourPtr == nil {
 		return workingHoursStart
 	}
 
 	return *slaInfo.StartWorkHourPtr
 }
 
-func (slaInfo *SLAInfo) GetEndWorkHour() int {
-	if slaInfo == nil {
+func (slaInfo *SLAInfo) GetEndWorkHour(t time.Time) int {
+	workDayType := slaInfo.GetCalendarDays().GetDayType(t)
+
+	if slaInfo == nil || slaInfo.EndWorkHourPtr == nil {
+		if workDayType == hrgate.CalendarDayTypePreHoliday {
+			return workingHoursEnd - 1
+		}
 		return workingHoursEnd
 	}
 
-	if slaInfo.StartWorkHourPtr == nil {
-		return workingHoursEnd
+	if workDayType == hrgate.CalendarDayTypePreHoliday {
+		return *slaInfo.EndWorkHourPtr - 1
 	}
 
 	return *slaInfo.EndWorkHourPtr
 }
 
 func (slaInfo *SLAInfo) GetWeekends() []time.Weekday {
-	if slaInfo == nil {
-		return []time.Weekday{time.Saturday, time.Sunday}
-	}
-
-	if slaInfo.Weekends == nil {
+	if slaInfo == nil || slaInfo.Weekends == nil {
 		return []time.Weekday{time.Saturday, time.Sunday}
 	}
 
@@ -211,12 +204,11 @@ func getWorkHoursBetweenDates(from, to time.Time, slaInfoPtr *SLAInfo) (workHour
 		return 0
 	}
 
-	calendarDays, startWorkHour, endWorkHour, weekends := slaInfoPtr.GetCalendarDays(),
-		slaInfoPtr.GetStartWorkHour(),
-		slaInfoPtr.GetEndWorkHour(),
-		slaInfoPtr.GetWeekends()
-
 	for from.Before(to) {
+		calendarDays, startWorkHour, endWorkHour, weekends := slaInfoPtr.GetCalendarDays(),
+			slaInfoPtr.GetStartWorkHour(),
+			slaInfoPtr.GetEndWorkHour(from),
+			slaInfoPtr.GetWeekends()
 		if !notWorkingHours(from, calendarDays, startWorkHour, endWorkHour, weekends) {
 			workHours++
 		}
@@ -245,10 +237,6 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHo
 		return true
 	}
 
-	if workDayType == hrgate.CalendarDayTypePreHoliday {
-		endWorkHour = endWorkHour - 1
-	}
-
 	if beforeWorkingHours(t, startWorkHour) || afterWorkingHours(t, endWorkHour) {
 		return true
 	}
@@ -262,12 +250,11 @@ func ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAInfo) time.Time
 	slaInMinutes := sla * 60
 	slaDur := time.Minute * time.Duration(slaInMinutes)
 
-	calendarDays, startWorkHour, endWorkHour, weekends := slaInfoPtr.GetCalendarDays(),
-		slaInfoPtr.GetStartWorkHour(),
-		slaInfoPtr.GetEndWorkHour(),
-		slaInfoPtr.GetWeekends()
-
 	for slaDur > 0 {
+		calendarDays, startWorkHour, endWorkHour, weekends := slaInfoPtr.GetCalendarDays(),
+			slaInfoPtr.GetStartWorkHour(),
+			slaInfoPtr.GetEndWorkHour(deadline),
+			slaInfoPtr.GetWeekends()
 		if notWorkingHours(deadline, calendarDays, startWorkHour, endWorkHour, weekends) {
 			datesDay := deadline.AddDate(0, 0, 1)            // default = next day
 			if beforeWorkingHours(deadline, startWorkHour) { // but in case it's now early in the morning...

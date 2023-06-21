@@ -15,7 +15,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -251,35 +250,7 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 		gb.RunContext.Delegations = delegations.FilterByType("approvement")
 	}
 
-<<<<<<< HEAD
-	gb.RunContext.VarStore.AddStep(gb.Name)
-
-	if params.WorkType != nil {
-		gb.State.WorkType = *params.WorkType
-	} else {
-		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-		if getVersionErr != nil {
-			return getVersionErr
-		}
-
-		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
-		if getVersionErr != nil {
-			return getVersionErr
-		}
-		gb.State.WorkType = processSLASettings.WorkType
-	}
-
-	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(para)
-
-	if getSLAErr != nil {
-		return getSLAErr
-	}
-	gb.State.SLA = sla
-
-	return gb.handleNotifications(ctx)
-=======
 	return nil
->>>>>>> develop
 }
 
 //nolint:dupl // maybe later
