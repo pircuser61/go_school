@@ -250,12 +250,6 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 		}
 
 		gb.State.Approvers = approversFromSchema
-
-		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Approvers))
-		if htErr != nil {
-			return htErr
-		}
-		gb.RunContext.Delegations = delegations.FilterByType("approvement")
 	}
 
 	return nil

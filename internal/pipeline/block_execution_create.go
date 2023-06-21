@@ -350,13 +350,6 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		}
 		gb.State.Executors = executorsFromSchema
 
-		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
-		if htErr != nil {
-			return htErr
-		}
-		delegations = delegations.FilterByType("execution")
-
-		gb.RunContext.Delegations = delegations
 	case script.ExecutionTypeGroup:
 		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
 		if errGroup != nil {
