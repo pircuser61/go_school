@@ -854,7 +854,7 @@ type ExecutionParams struct {
 	Type ExecutionParamsType `json:"type"`
 
 	// flag to use actual executor
-	UseActualExecutor *bool `json:"use_actual_executor,omitempty"`
+	UseActualExecutor bool `json:"use_actual_executor"`
 
 	// Рабочий режим
 	WorkType *WorkType `json:"work_type,omitempty"`

@@ -4345,6 +4345,7 @@ components:
         - executors_group_name
         - repeat_prev_decision
         - is_editable
+        - use_actual_executor
 
     PlaceholderParams:
       type: object
