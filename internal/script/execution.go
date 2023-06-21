@@ -55,7 +55,7 @@ func (a *ExecutionParams) Validate() error {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
 	}
 
-	if typeExecution == ExecutionTypeFromSchema && len(strings.Split(a.Executors, ";")) > 1 {
+	if typeExecution == ExecutionTypeFromSchema && len(strings.Split(a.Executors, ";")) < 1 {
 		return errors.New("execution from schema is empty")
 	}
 
