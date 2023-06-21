@@ -190,11 +190,6 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 	}
 	gb.State.SLA = sla
 
-	// maybe we should notify the executor
-	if notifErr := gb.RunContext.handleInitiatorNotification(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifErr != nil {
-		return notifErr
-	}
-
 	return gb.handleNotifications(ctx)
 }
 
