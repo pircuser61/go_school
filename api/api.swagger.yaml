@@ -2292,6 +2292,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /tasks/stop:
+    post:
+      tags:
+        - tasks
+      summary: Stop tasks by work number
+      description: Остановка переданных заявок
+      operationId: stop-tasks
+      requestBody:
+        description: Task stop data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TasksStop'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TasksStopped'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /forms/changelog:
     get:
       tags:
@@ -3377,6 +3422,41 @@ components:
           type: number
       required:
         - meanWorkHours
+
+    TasksStop:
+      type: object
+      properties:
+        tasks:
+          type: array
+          description: Array of work numbers
+          items:
+            type: string
+      required:
+        - tasks
+
+    TasksStopped:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+                description: Task status
+              work_number:
+                type: string
+                description: Task work number
+              finished_at:
+                type: string
+                example: 2020-07-16T17:10:25.112704+03:00
+            required:
+              - status
+              - work_number
+              - finished_at
+      required:
+        - tasks
 
     FillFormUpdateParams:
       type: object

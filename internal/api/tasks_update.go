@@ -450,3 +450,6 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 		return
 	}
 }
+
+func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
+}
