@@ -456,8 +456,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return NewUserIsNotPartOfProcessErr()
 		}
 
-		err := gb.notifyNeedMoreInfo(ctx)
-		if err != nil {
+		if err = gb.notifyNeedMoreInfo(ctx); err != nil {
 			return err
 		}
 
