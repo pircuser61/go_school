@@ -207,6 +207,10 @@ func (gb *GoApproverBlock) GetStatus() Status {
 			return StatusNoSuccess
 		}
 
+		if *gb.State.Decision == ApproverDecisionSentToEdit {
+			return StatusNoSuccess
+		}
+
 		return StatusFinished
 	}
 
@@ -230,6 +234,10 @@ func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
 
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ApproverDecisionRejected {
+			return StatusApprovementRejected
+		}
+
+		if *gb.State.Decision == ApproverDecisionSentToEdit {
 			return StatusApprovementRejected
 		}
 

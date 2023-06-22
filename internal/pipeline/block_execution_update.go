@@ -801,7 +801,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 
 func (gb *GoExecutionBlock) isNextBlockServiceDesk() bool {
 	for i := range gb.Sockets {
-		if utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
+		if gb.Sockets[i].Id == "edit_app" && utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
 			return true
 		}
 	}

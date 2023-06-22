@@ -14,12 +14,13 @@ import (
 type ApproverAction string
 
 const (
-	ApproverActionApprove  = "approve"
-	ApproverActionReject   = "reject"
-	ApproverActionViewed   = "viewed"
-	ApproverActionInformed = "informed"
-	ApproverActionSign     = "sign"
-	ApproverActionConfirm  = "confirm"
+	ApproverActionApprove    = "approve"
+	ApproverActionReject     = "reject"
+	ApproverActionViewed     = "viewed"
+	ApproverActionInformed   = "informed"
+	ApproverActionSign       = "sign"
+	ApproverActionConfirm    = "confirm"
+	ApproverActionSendToEdit = "edit_app"
 
 	ApproverDecisionApprovedRU = "согласен"
 	ApproverDecisionRejectedRU = "не согласен"
@@ -72,6 +73,8 @@ func (a ApproverDecision) ToAction() ApproverAction {
 		return ApproverActionSign
 	case ApproverDecisionConfirmed:
 		return ApproverActionConfirm
+	case ApproverDecisionSentToEdit:
+		return ApproverActionSendToEdit
 	default:
 		return ""
 	}
@@ -89,12 +92,13 @@ func (a ApproverDecision) ToRuString() string {
 }
 
 const (
-	ApproverDecisionApproved  ApproverDecision = "approved"
-	ApproverDecisionRejected  ApproverDecision = "rejected"
-	ApproverDecisionViewed    ApproverDecision = "viewed"
-	ApproverDecisionInformed  ApproverDecision = "informed"
-	ApproverDecisionSigned    ApproverDecision = "signed"
-	ApproverDecisionConfirmed ApproverDecision = "confirmed"
+	ApproverDecisionApproved   ApproverDecision = "approved"
+	ApproverDecisionRejected   ApproverDecision = "rejected"
+	ApproverDecisionViewed     ApproverDecision = "viewed"
+	ApproverDecisionInformed   ApproverDecision = "informed"
+	ApproverDecisionSigned     ApproverDecision = "signed"
+	ApproverDecisionConfirmed  ApproverDecision = "confirmed"
+	ApproverDecisionSentToEdit ApproverDecision = "sent_to_edit"
 )
 
 type ApproverEditingApp struct {
@@ -444,16 +448,12 @@ func (a *ApproverData) getAdditionalApproversSlice() []string {
 }
 
 //nolint:dupl //its not duplicate
-func (a *ApproverData) setEditApp(login string, params approverUpdateEditingParams, delegations human_tasks.Delegations) error {
+func (a *ApproverData) setEditAppToInitiator(login string, params approverUpdateEditingParams, delegations human_tasks.Delegations) error {
 	_, approverFound := a.Approvers[login]
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Approvers))
 
 	if !(approverFound || isDelegate) && login != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
-	}
-
-	if a.Decision != nil {
-		return errors.New("decision already set")
 	}
 
 	editing := &ApproverEditingApp{
@@ -466,6 +466,16 @@ func (a *ApproverData) setEditApp(login string, params approverUpdateEditingPara
 
 	a.EditingAppLog = append(a.EditingAppLog, *editing)
 	a.EditingApp = editing
+
+	return nil
+}
+
+//nolint:dupl //its not duplicate
+func (a *ApproverData) setEditToNextBlock(params approverUpdateEditingParams) error {
+	sentToEdit := ApproverDecisionSentToEdit
+	a.Decision = &sentToEdit
+	a.Comment = &params.Comment
+	a.DecisionAttachments = params.Attachments
 
 	return nil
 }
