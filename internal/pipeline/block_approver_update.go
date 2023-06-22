@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,6 +15,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type approverUpdateEditingParams struct {
@@ -423,7 +423,7 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 
 func (gb *GoApproverBlock) isNextBlockServiceDesk() bool {
 	for i := range gb.Sockets {
-		if gb.Sockets[i].Id == "edit_app" && utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
+		if gb.Sockets[i].Id == approverEditAppSocketID && utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
 			return true
 		}
 	}

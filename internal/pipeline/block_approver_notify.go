@@ -2,11 +2,12 @@ package pipeline
 
 import (
 	c "context"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins, attachsId []string) error {
