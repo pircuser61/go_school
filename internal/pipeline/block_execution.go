@@ -200,7 +200,6 @@ func (gb *GoExecutionBlock) GetStatus() Status {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusFinished
 		}
-
 		return StatusNoSuccess
 	}
 
