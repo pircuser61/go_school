@@ -1,10 +1,8 @@
 package pipeline
 
 import (
-	"errors"
 	"time"
 
-	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -88,18 +86,7 @@ func (a *ExecutionData) GetRepeatPrevDecision() bool {
 }
 
 //nolint:dupl //its not duplicate
-func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams, delegations human_tasks.Delegations) error {
-	_, executorFound := a.Executors[login]
-
-	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
-	if !(executorFound || isDelegate) && login != AutoApprover {
-		return NewUserIsNotPartOfProcessErr()
-	}
-
-	if a.Decision != nil {
-		return errors.New("decision already set")
-	}
-
+func (a *ExecutionData) setEditAppToInitiator(login, delegateFor string, params executorUpdateEditParams) error {
 	editing := &ExecutorEditApp{
 		Executor:    login,
 		Comment:     params.Comment,
@@ -110,6 +97,16 @@ func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams
 
 	a.EditingAppLog = append(a.EditingAppLog, *editing)
 	a.EditingApp = editing
+
+	return nil
+}
+
+//nolint:dupl //its not duplicate
+func (a *ExecutionData) setEditToNextBlock(params executorUpdateEditParams) error {
+	rejected := ExecutionDecisionRejected
+	a.Decision = &rejected
+	a.DecisionComment = &params.Comment
+	a.DecisionAttachments = params.Attachments
 
 	return nil
 }

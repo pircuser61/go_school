@@ -4,6 +4,7 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"time"
 
 	"golang.org/x/net/context"
@@ -749,16 +750,29 @@ type executorUpdateEditParams struct {
 
 //nolint:gocyclo //its ok here
 func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
+	if gb.State.Decision != nil {
+		return errors.New("decision already set")
+	}
+
 	var updateParams executorUpdateEditParams
 	if err = json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams); err != nil {
 		return errors.New("can't assert provided update data")
 	}
 
-	if editErr := gb.State.setEditApp(gb.RunContext.UpdateData.ByLogin, updateParams, gb.RunContext.Delegations); editErr != nil {
-		return editErr
+	byLogin := gb.RunContext.UpdateData.ByLogin
+	_, executorFound := gb.State.Executors[byLogin]
+
+	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(byLogin, getSliceFromMapOfStrings(gb.State.Executors))
+	if !(executorFound || isDelegate) && byLogin != AutoApprover {
+		return NewUserIsNotPartOfProcessErr()
 	}
 
+	// возврат на доработку всей заявки инициатору
 	if gb.isNextBlockServiceDesk() {
+		if editErr := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams); editErr != nil {
+			return editErr
+		}
+
 		loginsToNotify := []string{gb.RunContext.Initiator}
 
 		var email string
@@ -776,13 +790,23 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		if err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
 			return err
 		}
+	} else {
+		if editErr := gb.State.setEditToNextBlock(updateParams); editErr != nil {
+			return editErr
+		}
 	}
 
 	return nil
 }
 
 func (gb *GoExecutionBlock) isNextBlockServiceDesk() bool {
-	return true
+	for i := range gb.Sockets {
+		if utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx c.Context) error {
