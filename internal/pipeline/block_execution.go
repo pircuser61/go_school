@@ -16,6 +16,7 @@ const (
 
 	ExecutionDecisionExecuted ExecutionDecision = "executed"
 	ExecutionDecisionRejected ExecutionDecision = "rejected"
+	ExecutionDecisionSentEdit ExecutionDecision = "sent_edit"
 
 	RequestInfoQuestion RequestInfoType = "question"
 	RequestInfoAnswer   RequestInfoType = "answer"
@@ -221,8 +222,13 @@ func (gb *GoExecutionBlock) Next(_ *store.VariableStore) ([]string, bool) {
 		key = executedSocketID
 	}
 
-	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {
+	if gb.State != nil && gb.State.Decision != nil && *gb.State.Decision == ExecutionDecisionSentEdit {
 		key = executionEditAppSocketID
+	}
+
+	// возврат заявки инициатору. эта заявка дальше не пойдет по процессу
+	if gb.State != nil && gb.State.Decision == nil && gb.State.EditingApp != nil {
+		return nil, false
 	}
 
 	nexts, ok := script.GetNexts(gb.Sockets, key)
