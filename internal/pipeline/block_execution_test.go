@@ -61,7 +61,11 @@ func TestExecution_Next(t *testing.T) {
 			fields: fields{
 				Nexts: []script.Socket{script.NewSocket("executor_send_edit_app", []string{"test-next"})},
 				State: &ExecutionData{
-					EditingApp: &ExecutorEditApp{},
+					Decision: func() *ExecutionDecision {
+						res := ExecutionDecisionSentEdit
+						return &res
+					}(),
+					EditingApp: nil,
 				},
 			},
 			args: args{
