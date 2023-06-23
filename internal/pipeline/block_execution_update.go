@@ -755,7 +755,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 		}
 
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], *gb.State.ActualExecutor)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ExecutionDecisionRejected)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ExecutionDecisionSentEdit)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
 	}
 
