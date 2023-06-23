@@ -1,9 +1,12 @@
 package file_registry
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"regexp"
 
@@ -19,8 +22,10 @@ import (
 )
 
 const (
-	getFileById       = "/api/fileregistry/v1/file/"
-	dispositionHeader = "Content-Disposition"
+	getFileById         = "/api/fileregistry/v1/file/"
+	saveFile            = "/api/fileregistry/v1/file/upload"
+	dispositionHeader   = "Content-Disposition"
+	authorizationHeader = "Authorization"
 )
 
 type Service struct {
@@ -142,4 +147,52 @@ func (s *Service) GetAttachments(ctx context.Context, attachments []string) ([]e
 		res = append(res, file)
 	}
 	return res, nil
+}
+
+func (s *Service) SaveFile(ctx context.Context, token string, name string, file []byte) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "save_file")
+	defer span.End()
+
+	buf := new(bytes.Buffer)
+	writer := multipart.NewWriter(buf)
+	filePart, err := writer.CreateFormFile("file", name)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = filePart.Write(file)
+	if err != nil {
+		return "", err
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return "", err
+	}
+
+	reqURL := s.restURL + saveFile
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, buf)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set(authorizationHeader, token)
+	resp, err := s.restCli.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("got bad status: %s", resp.Status)
+	}
+
+	id := fileID{}
+	err = json.NewDecoder(resp.Body).Decode(&id)
+	if err != nil {
+		return "", err
+	}
+
+	return id.Data, nil
 }

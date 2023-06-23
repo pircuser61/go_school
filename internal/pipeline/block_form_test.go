@@ -39,7 +39,7 @@ func Test_createGoFormBlock(t *testing.T) {
 		schemaName = "название формы"
 		executor   = "executor"
 		workNumber = "J0000001"
-		workType   = "test"
+		workType   = "8/5"
 	)
 
 	timeNow := time.Now()

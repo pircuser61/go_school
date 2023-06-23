@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -10,6 +11,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -80,15 +82,27 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if err != nil {
 		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
 	}
-
-	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-		Type:     params.Type,
-		GroupID:  params.ExecutorsGroupID,
-		Executor: params.Executors,
-		WorkType: params.WorkType,
-	})
-	if err != nil {
-		return err
+	executorChosenFlag := false
+	if gb.State.UseActualExecutor {
+		execs, prevErr := gb.RunContext.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
+		if prevErr != nil {
+			return prevErr
+		}
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+			executorChosenFlag = true
+		}
+	}
+	if !executorChosenFlag {
+		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+			Type:     params.Type,
+			GroupID:  params.ExecutorsGroupID,
+			Executor: params.Executors,
+			WorkType: params.WorkType,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	if notifyErr := gb.RunContext.handleInitiatorNotify(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifyErr != nil {
@@ -116,25 +130,36 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 
 	gb.State = &ExecutionData{
 		ExecutionType:      params.Type,
-		SLA:                params.SLA,
 		CheckSLA:           params.CheckSLA,
 		ReworkSLA:          params.ReworkSLA,
 		CheckReworkSLA:     params.CheckReworkSLA,
 		FormsAccessibility: params.FormsAccessibility,
 		IsEditable:         params.IsEditable,
 		RepeatPrevDecision: params.RepeatPrevDecision,
+		UseActualExecutor:  params.UseActualExecutor,
 	}
-
-	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-		Type:     params.Type,
-		GroupID:  params.ExecutorsGroupID,
-		Executor: params.Executors,
-		WorkType: params.WorkType,
-	})
-	if err != nil {
-		return err
+	executorChosenFlag := false
+	if gb.State.UseActualExecutor {
+		execs, execErr := gb.RunContext.Storage.GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx, gb.RunContext.WorkNumber, gb.Name)
+		if execErr != nil {
+			return execErr
+		}
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+			executorChosenFlag = true
+		}
 	}
-
+	if !executorChosenFlag {
+		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+			Type:     params.Type,
+			GroupID:  params.ExecutorsGroupID,
+			Executor: params.Executors,
+			WorkType: params.WorkType,
+		})
+		if err != nil {
+			return err
+		}
+	}
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
@@ -149,9 +174,15 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 		gb.State.WorkType = processSLASettings.WorkType
 	}
+	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(params.SLA)
 
-	if notifErr := gb.RunContext.handleInitiatorNotify(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifErr != nil {
-		return notifErr
+	if getSLAErr != nil {
+		return getSLAErr
+	}
+	gb.State.SLA = sla
+
+	if notifуErr := gb.RunContext.handleInitiatorNotify(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifуErr != nil {
+		return notifуErr
 	}
 
 	return gb.handleNotifications(ctx)
@@ -176,25 +207,24 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 			return grabStorageErr
 		}
 
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
-			variableStorage,
-			map[string]struct{}{
-				dto.Executor: {},
-			},
-		)
-		if resolveErr != nil {
-			return resolveErr
+		executorsFromSchema := make(map[string]struct{})
+		executorVars := strings.Split(dto.Executor, ";")
+		for i := range executorVars {
+			resolvedEntities, resolveErr := resolveValuesFromVariables(
+				variableStorage,
+				map[string]struct{}{
+					executorVars[i]: {},
+				},
+			)
+			if resolveErr != nil {
+				return resolveErr
+			}
+			for executorLogin := range resolvedEntities {
+				executorsFromSchema[executorLogin] = struct{}{}
+			}
 		}
+		gb.State.Executors = executorsFromSchema
 
-		gb.State.Executors = resolvedEntities
-
-		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
-		if htErr != nil {
-			return htErr
-		}
-		delegations = delegations.FilterByType("execution")
-
-		gb.RunContext.Delegations = delegations
 	case script.ExecutionTypeGroup:
 		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
 		if errGroup != nil {
