@@ -96,6 +96,10 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		return err
 	}
 
+	if notifyErr := gb.RunContext.handleInitiatorNotify(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifyErr != nil {
+		return notifyErr
+	}
+
 	return gb.handleNotifications(ctx)
 }
 

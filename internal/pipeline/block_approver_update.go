@@ -423,7 +423,8 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 
 func (gb *GoApproverBlock) isNextBlockServiceDesk() bool {
 	for i := range gb.Sockets {
-		if gb.Sockets[i].Id == approverEditAppSocketID && utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
+		if gb.Sockets[i].Id == approverEditAppSocketID &&
+			utils.IsContainsInSlice("servicedesk_application_0", gb.Sockets[i].NextBlockIds) {
 			return true
 		}
 	}
