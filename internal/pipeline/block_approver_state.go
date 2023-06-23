@@ -448,14 +448,7 @@ func (a *ApproverData) getAdditionalApproversSlice() []string {
 }
 
 //nolint:dupl //its not duplicate
-func (a *ApproverData) setEditAppToInitiator(login string, params approverUpdateEditingParams, delegations human_tasks.Delegations) error {
-	_, approverFound := a.Approvers[login]
-	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Approvers))
-
-	if !(approverFound || isDelegate) && login != AutoApprover {
-		return NewUserIsNotPartOfProcessErr()
-	}
-
+func (a *ApproverData) setEditAppToInitiator(login, delegateFor string, params approverUpdateEditingParams) error {
 	editing := &ApproverEditingApp{
 		Approver:    login,
 		Comment:     params.Comment,
@@ -471,11 +464,24 @@ func (a *ApproverData) setEditAppToInitiator(login string, params approverUpdate
 }
 
 //nolint:dupl //its not duplicate
-func (a *ApproverData) setEditToNextBlock(params approverUpdateEditingParams) error {
+func (a *ApproverData) setEditToNextBlock(approver *string, delegateFor string, params approverUpdateEditingParams) error {
 	sentToEdit := ApproverDecisionSentToEdit
+	a.ActualApprover = approver
 	a.Decision = &sentToEdit
 	a.Comment = &params.Comment
 	a.DecisionAttachments = params.Attachments
+
+	var logEntry = ApproverLogEntry{
+		Login:       *approver,
+		Decision:    sentToEdit,
+		Comment:     params.Comment,
+		Attachments: params.Attachments,
+		CreatedAt:   time.Now(),
+		LogType:     ApproverLogDecision,
+		DelegateFor: delegateFor,
+	}
+
+	a.ApproverLog = append(a.ApproverLog, logEntry)
 
 	return nil
 }

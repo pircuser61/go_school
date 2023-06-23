@@ -403,8 +403,15 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 		return errors.New("decision already set")
 	}
 
+	_, approverFound := gb.State.Approvers[gb.RunContext.UpdateData.ByLogin]
+	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Approvers))
+
+	if !(approverFound || isDelegate) && gb.RunContext.UpdateData.ByLogin != AutoApprover {
+		return NewUserIsNotPartOfProcessErr()
+	}
+
 	if gb.isNextBlockServiceDesk() {
-		errSet := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, updateParams, gb.RunContext.Delegations)
+		errSet := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams)
 		if errSet != nil {
 			return errSet
 		}
@@ -413,9 +420,13 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 			return err
 		}
 	} else {
-		if editErr := gb.State.setEditToNextBlock(updateParams); editErr != nil {
+		if editErr := gb.State.setEditToNextBlock(gb.State.ActualApprover, delegateFor, updateParams); editErr != nil {
 			return editErr
 		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], *gb.State.ActualApprover)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ApproverDecisionSentToEdit)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
 	}
 
 	return nil

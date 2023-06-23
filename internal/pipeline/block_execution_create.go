@@ -3,15 +3,12 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"time"
 
 	"github.com/pkg/errors"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -158,132 +155,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	}
 
 	return gb.handleNotifications(ctx)
-}
-
-//nolint:dupl,gocyclo // maybe later
-func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
-	if gb.RunContext.skipNotifications {
-		return nil
-	}
-
-	l := logger.GetLogger(ctx)
-
-	executors := getSliceFromMapOfStrings(gb.State.Executors)
-	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
-	if getDelegationsErr != nil {
-		return getDelegationsErr
-	}
-	delegates = delegates.FilterByType("execution")
-
-	loginsToNotify := delegates.GetUserInArrayWithDelegations(executors)
-
-	var emailAttachment []e.Attachment
-
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
-	if err != nil {
-		return err
-	}
-
-	emails := make(map[string]mail.Template, 0)
-	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution)
-
-	task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-	if getVersionErr != nil {
-		return getVersionErr
-	}
-
-	processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
-	if getVersionErr != nil {
-		return getVersionErr
-	}
-
-	taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-	if getDataErr != nil {
-		return getDataErr
-	}
-
-	login := task.Author
-
-	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
-
-	if recipient != "" {
-		login = recipient
-	}
-
-	lastWorksForUser := make([]*entity.EriusTask, 0)
-
-	if processSettings.ResubmissionPeriod > 0 {
-		var getWorksErr error
-		lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
-			ctx,
-			processSettings.ResubmissionPeriod,
-			login,
-			task.VersionID.String(),
-			gb.RunContext.WorkNumber,
-		)
-		if getWorksErr != nil {
-			return getWorksErr
-		}
-	}
-
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(gb.State.WorkType),
-	})
-
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
-	}
-	for _, login := range loginsToNotify {
-		email, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
-		if getUserEmailErr != nil {
-			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
-			continue
-		}
-		if isGroupExecutors {
-			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
-				&mail.ExecutorNotifTemplate{
-					WorkNumber:  gb.RunContext.WorkNumber,
-					Name:        gb.RunContext.NotifName,
-					SdUrl:       gb.RunContext.Sender.SdAddress,
-					BlockID:     BlockGoExecutionID,
-					Description: description,
-					Mailto:      gb.RunContext.Sender.FetchEmail,
-					Login:       login,
-					LastWorks:   lastWorksForUser,
-				},
-			)
-		} else {
-			emails[email] = mail.NewAppPersonStatusNotificationTpl(
-				&mail.NewAppPersonStatusTpl{
-					WorkNumber:  gb.RunContext.WorkNumber,
-					Name:        gb.RunContext.NotifName,
-					Status:      string(StatusExecution),
-					Action:      statusToTaskAction[StatusExecution],
-					DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
-					Description: description,
-					SdUrl:       gb.RunContext.Sender.SdAddress,
-					Mailto:      gb.RunContext.Sender.FetchEmail,
-					Login:       login,
-					IsEditable:  gb.State.GetIsEditable(),
-
-					BlockID:                   BlockGoExecutionID,
-					ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
-					ExecutionDecisionRejected: string(ExecutionDecisionRejected),
-					LastWorks:                 lastWorksForUser,
-				})
-		}
-	}
-
-	for i := range emails {
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
-			return sendErr
-		}
-	}
-
-	return nil
 }
 
 type setExecutorsByParamsDTO struct {

@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/pkg/errors"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
@@ -342,7 +340,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context.Context) error {
+func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Context) error {
 	const fn = "pipeline.execution.handleBreachedDayBeforeSLARequestAddInfo"
 
 	if !gb.State.CheckDayBeforeSLARequestInfo {
@@ -375,7 +373,7 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx context
 }
 
 //nolint:dupl // dont duplicate
-func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx context.Context) error {
+func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error {
 	const fn = "pipeline.execution.HandleBreachedSLARequestAddInfo"
 	var comment = "заявка автоматически перенесена в архив по истечении 3 дней"
 
@@ -449,31 +447,6 @@ func (gb *GoExecutionBlock) updateDecision() error {
 	return nil
 }
 
-func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, delegations human_tasks.Delegations) error {
-	_, executorFound := a.Executors[login]
-
-	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
-	if !(executorFound || isDelegate) && login != AutoApprover {
-		return NewUserIsNotPartOfProcessErr()
-	}
-
-	if a.Decision != nil {
-		return errors.New("decision already set")
-	}
-
-	if in.Decision != ExecutionDecisionExecuted && in.Decision != ExecutionDecisionRejected {
-		return fmt.Errorf("unknown decision %s", in.Decision)
-	}
-
-	a.Decision = &in.Decision
-	a.DecisionComment = &in.Comment
-	a.DecisionAttachments = in.Attachments
-	a.ActualExecutor = &login
-	a.DelegateFor = delegateFor
-
-	return nil
-}
-
 type RequestInfoUpdateParams struct {
 	Comment       string          `json:"comment"`
 	ReqType       RequestInfoType `json:"req_type"`
@@ -511,7 +484,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	}
 
 	if updateParams.ReqType == RequestInfoQuestion {
-		err = gb.notificateNeedMoreInfo(ctx)
+		err = gb.notifyNeedMoreInfo(ctx)
 		if err != nil {
 			return err
 		}
@@ -520,7 +493,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	}
 
 	if updateParams.ReqType == RequestInfoAnswer {
-		err = gb.notificateNewInfoRecieved(ctx)
+		err = gb.notifyNewInfoReceived(ctx)
 		if err != nil {
 			return err
 		}
@@ -773,27 +746,17 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 			return editErr
 		}
 
-		loginsToNotify := []string{gb.RunContext.Initiator}
-
-		var email string
-		emails := make([]string, 0, len(loginsToNotify))
-		for _, login := range loginsToNotify {
-			email, err = gb.RunContext.People.GetUserEmail(ctx, login)
-			if err != nil {
-				return err
-			}
-
-			emails = append(emails, email)
-		}
-		tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber,
-			gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
-		if err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+		if err = gb.notifyNeedRework(ctx); err != nil {
 			return err
 		}
 	} else {
-		if editErr := gb.State.setEditToNextBlock(updateParams); editErr != nil {
+		if editErr := gb.State.setEditToNextBlock(gb.State.ActualExecutor, delegateFor, updateParams); editErr != nil {
 			return editErr
 		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], *gb.State.ActualExecutor)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ExecutionDecisionRejected)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
 	}
 
 	return nil
@@ -808,55 +771,4 @@ func (gb *GoExecutionBlock) isNextBlockServiceDesk() bool {
 	}
 
 	return false
-}
-
-func (gb *GoExecutionBlock) notificateNeedMoreInfo(ctx c.Context) error {
-	loginsToNotify := []string{gb.RunContext.Initiator}
-
-	emails := make([]string, 0, len(loginsToNotify))
-	for _, login := range loginsToNotify {
-		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
-		if err != nil {
-			return err
-		}
-
-		emails = append(emails, email)
-	}
-	tpl := mail.NewRequestExecutionInfoTpl(gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
-
-	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (gb *GoExecutionBlock) notificateNewInfoRecieved(ctx c.Context) error {
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
-	if err != nil {
-		return err
-	}
-
-	loginsToNotify := delegates.GetUserInArrayWithDelegations(getSliceFromMapOfStrings(gb.State.Executors))
-
-	var email string
-	emails := make([]string, 0, len(loginsToNotify))
-	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
-		if err != nil {
-			continue
-		}
-
-		emails = append(emails, email)
-	}
-	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

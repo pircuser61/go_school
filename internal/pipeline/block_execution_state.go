@@ -1,8 +1,12 @@
 package pipeline
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
+
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -101,12 +105,39 @@ func (a *ExecutionData) setEditAppToInitiator(login, delegateFor string, params 
 	return nil
 }
 
+func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, delegations human_tasks.Delegations) error {
+	_, executorFound := a.Executors[login]
+
+	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
+	if !(executorFound || isDelegate) && login != AutoApprover {
+		return NewUserIsNotPartOfProcessErr()
+	}
+
+	if a.Decision != nil {
+		return errors.New("decision already set")
+	}
+
+	if in.Decision != ExecutionDecisionExecuted && in.Decision != ExecutionDecisionRejected {
+		return fmt.Errorf("unknown decision %s", in.Decision)
+	}
+
+	a.Decision = &in.Decision
+	a.DecisionComment = &in.Comment
+	a.DecisionAttachments = in.Attachments
+	a.ActualExecutor = &login
+	a.DelegateFor = delegateFor
+
+	return nil
+}
+
 //nolint:dupl //its not duplicate
-func (a *ExecutionData) setEditToNextBlock(params executorUpdateEditParams) error {
+func (a *ExecutionData) setEditToNextBlock(executor *string, delegateFor string, params executorUpdateEditParams) error {
 	rejected := ExecutionDecisionRejected
+	a.ActualExecutor = executor
 	a.Decision = &rejected
 	a.DecisionComment = &params.Comment
 	a.DecisionAttachments = params.Attachments
+	a.DelegateFor = delegateFor
 
 	return nil
 }
