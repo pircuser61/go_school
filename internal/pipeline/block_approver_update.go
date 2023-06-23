@@ -404,7 +404,8 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 	}
 
 	_, approverFound := gb.State.Approvers[gb.RunContext.UpdateData.ByLogin]
-	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Approvers))
+	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(
+		gb.RunContext.UpdateData.ByLogin, getSliceFromMapOfStrings(gb.State.Approvers))
 
 	if !(approverFound || isDelegate) && gb.RunContext.UpdateData.ByLogin != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
