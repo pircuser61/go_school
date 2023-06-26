@@ -238,3 +238,7 @@ type TaskRunContext struct {
 	ClientID           string             `json:"client_id"`
 	InitialApplication InitialApplication `json:"initial_application"`
 }
+
+type Attachment struct {
+	Id string `json:"id"`
+}

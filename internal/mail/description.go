@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 type userFromSD struct {
@@ -19,8 +21,8 @@ func (u userFromSD) String() string {
 	return fmt.Sprintf("%s (%s)", u.Fullname, u.Username)
 }
 
-func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[string][]string {
-	aa := make(map[string][]string)
+func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[string][]entity.Attachment {
+	aa := make(map[string][]entity.Attachment)
 
 	ff := make(map[string]struct{})
 	for _, f := range fields {
@@ -34,13 +36,30 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 			}
 			v, _ := body.Get(k)
 			switch val := v.(type) {
-			case string:
-				aa[k] = []string{val}
+			case orderedmap.OrderedMap:
+				attachmentId, ok := val.Get("id")
+				if !ok {
+					continue
+				}
+				attachmentIdString, ok := attachmentId.(string)
+				if !ok {
+					continue
+				}
+				aa[k] = []entity.Attachment{{Id: attachmentIdString}}
 			case []interface{}:
-				a := make([]string, 0)
+				a := make([]entity.Attachment, 0)
 				for _, item := range val {
-					if _, ok := item.(string); ok {
-						a = append(a, item.(string))
+					if _, ok := item.(orderedmap.OrderedMap); ok {
+						orderedMapVal := item.(orderedmap.OrderedMap)
+						attachmentId, ok := orderedMapVal.Get("id")
+						if !ok {
+							continue
+						}
+						attachmentIdString, ok := attachmentId.(string)
+						if !ok {
+							continue
+						}
+						a = append(a, entity.Attachment{Id: attachmentIdString})
 					}
 				}
 				aa[k] = a
