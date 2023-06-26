@@ -135,8 +135,8 @@ func TestGetAttachmentsFromBody(t *testing.T) {
 			data: `{"recipient": {"email": "snkosya1@mts.ru", "phone": "15857", "mobile": "+79111157031", 
 "tabnum": "415336", "fullname": "Косяк Сергей Николаевич", "position": "ведущий разработчик", 
 "username": "snkosya1"}, "chislo_moe": 12, "stroka_moya": "строка", 
-"vlozhenie_odno": "34bc6b5b-2391-11ed-b54b-04505600ad66", 
-"vlozhenie_mnogo": ["34b9dd4a-2391-11ed-b54b-04505600ad66", "366bc146-2391-11ed-b54b-04505600ad66"]}`,
+"vlozhenie_odno": "attachment:34bc6b5b-2391-11ed-b54b-04505600ad66", 
+"vlozhenie_mnogo": ["attachment:34b9dd4a-2391-11ed-b54b-04505600ad66", "attachment:366bc146-2391-11ed-b54b-04505600ad66"]}`,
 			fields: []string{".vlozhenie_odno", ".vlozhenie_mnogo"},
 			want: map[string][]string{
 				"vlozhenie_odno":  []string{"34bc6b5b-2391-11ed-b54b-04505600ad66"},

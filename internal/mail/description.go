@@ -35,12 +35,12 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 			v, _ := body.Get(k)
 			switch val := v.(type) {
 			case string:
-				aa[k] = []string{val}
+				aa[k] = []string{strings.Replace(val, "attachment:", "", -1)}
 			case []interface{}:
 				a := make([]string, 0)
 				for _, item := range val {
 					if _, ok := item.(string); ok {
-						a = append(a, item.(string))
+						a = append(a, strings.Replace(item.(string), "attachment:", "", -1))
 					}
 				}
 				aa[k] = a
