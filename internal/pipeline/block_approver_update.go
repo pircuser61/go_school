@@ -421,13 +421,11 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 			return err
 		}
 	} else {
-		if editErr := gb.State.setEditToNextBlock(gb.State.ActualApprover, delegateFor, updateParams); editErr != nil {
+		if editErr := gb.State.setEditToNextBlock(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams); editErr != nil {
 			return editErr
 		}
 
-		if gb.State.ActualApprover != nil {
-			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], *gb.State.ActualApprover)
-		}
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], gb.RunContext.UpdateData.ByLogin)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ApproverDecisionSentToEdit)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
 	}
