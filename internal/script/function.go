@@ -162,10 +162,10 @@ func (properties JSONSchemaProperties) Validate() error {
 			}
 		}
 
-		for _, name := range property.Required {
-			_, ok := property.Properties[name]
+		for _, requiredName := range property.Required {
+			_, ok := property.Properties[requiredName]
 			if !ok {
-				return fmt.Errorf("%s is required", name)
+				return fmt.Errorf("%s is required", requiredName)
 			}
 		}
 

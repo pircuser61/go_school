@@ -6,7 +6,6 @@ import (
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
@@ -18,11 +17,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-)
-
-const (
-	StrategyHTTP  = "http"
-	StrategyKafka = "kafka"
 )
 
 type Probes struct {
@@ -59,7 +53,6 @@ type Pipeliner struct {
 	MailFetcher             mail_fetcher.Config  `yaml:"imap"`
 	Integrations            integrations.Config  `yaml:"integrations"`
 	HrGate                  hrgate.Config        `yaml:"hrgate"`
-	Minio                   file.Config          `yaml:"minio"`
 	FileRegistry            file_registry.Config `yaml:"file_registry"`
 	IncludePlaceholderBlock bool                 `yaml:"include_placeholder_block"`
 }
