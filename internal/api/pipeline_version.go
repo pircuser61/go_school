@@ -785,6 +785,18 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		return nil, e, transactionErr
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "execVersionInternal").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
 	ep := pipeline.ExecutablePipeline{}
 	ep.PipelineID = dto.p.ID
 	ep.VersionID = dto.p.VersionID
