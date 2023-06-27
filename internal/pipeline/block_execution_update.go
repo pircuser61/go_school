@@ -750,7 +750,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 			return err
 		}
 	} else {
-		if editErr := gb.State.setEditToNextBlock(gb.State.ActualExecutor, delegateFor, updateParams); editErr != nil {
+		if editErr := gb.State.setEditToNextBlock(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams); editErr != nil {
 			return editErr
 		}
 
