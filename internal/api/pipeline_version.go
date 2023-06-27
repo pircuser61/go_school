@@ -79,7 +79,6 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
-		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 	if p.Pipeline.Entrypoint == "" {
 		p.Pipeline.Entrypoint = startEntrypoint
@@ -346,10 +345,18 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
-		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 	if p.Pipeline.Entrypoint == "" {
 		p.Pipeline.Entrypoint = startEntrypoint
+	}
+
+	updated, err := json.Marshal(p)
+	if err != nil {
+		e := PipelineParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
 
 	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
@@ -390,7 +397,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.UpdateDraft(ctx, &p, b)
+	err = ae.DB.UpdateDraft(ctx, &p, updated)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
