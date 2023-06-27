@@ -12,7 +12,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/observability"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/file"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
@@ -41,7 +40,6 @@ type APIEnv struct {
 	FunctionStore           *functions.Service
 	HumanTasks              *human_tasks.Service
 	MailFetcher             mail_fetcher.Service
-	Minio                   *file.Service
 	FileRegistry            *file_registry.Service
 	Integrations            *integrations.Service
 	HrGate                  *hrgate.Service

@@ -176,6 +176,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			FunctionStore: gb.FunctionStore,
 			HumanTasks:    gb.HumanTasks,
 			Integrations:  gb.Integrations,
+			FileRegistry:  gb.FileRegistry,
 			FaaS:          gb.FaaS,
 			HrGate:        gb.RunContext.HrGate,
 			UpdateData:    nil,

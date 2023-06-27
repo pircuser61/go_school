@@ -805,6 +805,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.FunctionStore = ae.FunctionStore
 	ep.HumanTasks = ae.HumanTasks
 	ep.Integrations = ae.Integrations
+	ep.FileRegistry = ae.FileRegistry
 
 	if dto.makeNewWork {
 		ep.WorkNumber = dto.workNumber

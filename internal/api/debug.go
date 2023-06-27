@@ -132,6 +132,7 @@ func (ae *APIEnv) executablePipeline(
 		Sender:        ae.Mail,
 		People:        ae.People,
 		ServiceDesc:   ae.ServiceDesc,
+		FileRegistry:  ae.FileRegistry,
 	}
 
 	err := ep.CreateBlocks(ctx, version.Pipeline.Blocks)
