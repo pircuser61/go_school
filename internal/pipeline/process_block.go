@@ -403,7 +403,10 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (str
 
 func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 	step, stepType string, status TaskHumanStatus) error {
-	const FormStepType = "form"
+	const (
+		FormStepType     = "form"
+		FunctionStepType = "executable_function"
+	)
 
 	if runCtx.skipNotifications {
 		return nil
@@ -424,7 +427,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 		return nil
 	}
 
-	if status == StatusDone && stepType == FormStepType {
+	if status == StatusDone && (stepType == FormStepType || stepType == FunctionStepType) {
 		return nil
 	}
 
