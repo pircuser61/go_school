@@ -10,7 +10,7 @@ variables:
   WRK_MEMORY_LIMIT_KUSTOMIZE: 521Mi
   WRK_CPU_LIMIT_KUSTOMIZE: 1
   ENABLED_DEPLOY: "true"
-  # ENABLED_LINT: 'allow-failure-true'
+  ENABLED_LINT: 'allow-failure-true'
   ENABLED_REVIEW: 'allow-failure-true'
   ENABLED_DEP_CHECK: 'allow-failure-true'
   # ENABLED_TEST: 'allow-failure-true'
