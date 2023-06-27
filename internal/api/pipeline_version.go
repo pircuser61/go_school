@@ -604,12 +604,13 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 
-	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
-		e := PipelineValidateError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
+	// nolint
+	//if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
+	//	e := PipelineValidateError
+	//	log.Error(e.errorMessage(err))
+	//	_ = e.sendError(w)
+	//	return
+	//}
 
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
 	if err != nil {
