@@ -20,7 +20,7 @@ const (
 	ApproverActionInformed   = "informed"
 	ApproverActionSign       = "sign"
 	ApproverActionConfirm    = "confirm"
-	ApproverActionSendToEdit = "edit_app"
+	ApproverActionSendToEdit = "approver_send_edit_app"
 
 	ApproverDecisionApprovedRU = "согласен"
 	ApproverDecisionRejectedRU = "не согласен"
