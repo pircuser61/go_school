@@ -132,9 +132,9 @@ func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, del
 }
 
 //nolint:dupl //its not duplicate
-func (a *ExecutionData) setEditToNextBlock(executor *string, delegateFor string, params executorUpdateEditParams) error {
+func (a *ExecutionData) setEditToNextBlock(executor string, delegateFor string, params executorUpdateEditParams) error {
 	rejected := ExecutionDecisionSentEdit
-	a.ActualExecutor = executor
+	a.ActualExecutor = &executor
 	a.Decision = &rejected
 	a.DecisionComment = &params.Comment
 	a.DecisionAttachments = params.Attachments

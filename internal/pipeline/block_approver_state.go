@@ -464,15 +464,15 @@ func (a *ApproverData) setEditAppToInitiator(login, delegateFor string, params a
 }
 
 //nolint:dupl //its not duplicate
-func (a *ApproverData) setEditToNextBlock(approver *string, delegateFor string, params approverUpdateEditingParams) error {
+func (a *ApproverData) setEditToNextBlock(approver string, delegateFor string, params approverUpdateEditingParams) error {
 	sentToEdit := ApproverDecisionSentToEdit
-	a.ActualApprover = approver
+	a.ActualApprover = &approver
 	a.Decision = &sentToEdit
 	a.Comment = &params.Comment
 	a.DecisionAttachments = params.Attachments
 
 	var logEntry = ApproverLogEntry{
-		Login:       *approver,
+		Login:       approver,
 		Decision:    sentToEdit,
 		Comment:     params.Comment,
 		Attachments: params.Attachments,
