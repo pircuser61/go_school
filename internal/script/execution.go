@@ -35,6 +35,7 @@ type ExecutionParams struct {
 	IsEditable         bool    `json:"is_editable"`
 	RepeatPrevDecision bool    `json:"repeat_prev_decision"`
 	WorkType           *string `json:"work_type"`
+	UseActualExecutor  bool    `json:"use_actual_executor"`
 }
 
 func (a *ExecutionParams) Validate() error {
@@ -52,6 +53,10 @@ func (a *ExecutionParams) Validate() error {
 		typeExecution != ExecutionTypeGroup &&
 		typeExecution != ExecutionTypeFromSchema {
 		return fmt.Errorf("unknown executor type: %s", a.Type)
+	}
+
+	if typeExecution == ExecutionTypeFromSchema && len(strings.Split(a.Executors, ";")) < 1 {
+		return errors.New("execution from schema is empty")
 	}
 
 	if a.IsEditable && a.CheckReworkSLA && a.ReworkSLA < 16 {

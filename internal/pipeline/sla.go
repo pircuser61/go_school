@@ -43,6 +43,47 @@ const (
 	WorkTypeN85 WorkHourType = "8/5"
 )
 
+func (slaInfo *SLAInfo) GetCalendarDays() *hrgate.CalendarDays {
+	if slaInfo == nil || slaInfo.CalendarDays == nil {
+		return &hrgate.CalendarDays{CalendarMap: map[int64]hrgate.CalendarDayType{}}
+	}
+
+	return slaInfo.CalendarDays
+}
+
+func (slaInfo *SLAInfo) GetStartWorkHour() int {
+	if slaInfo == nil || slaInfo.StartWorkHourPtr == nil {
+		return workingHoursStart
+	}
+
+	return *slaInfo.StartWorkHourPtr
+}
+
+func (slaInfo *SLAInfo) GetEndWorkHour(t time.Time) int {
+	workDayType := slaInfo.GetCalendarDays().GetDayType(t)
+
+	if slaInfo == nil || slaInfo.EndWorkHourPtr == nil {
+		if workDayType == hrgate.CalendarDayTypePreHoliday {
+			return workingHoursEnd - 1
+		}
+		return workingHoursEnd
+	}
+
+	if workDayType == hrgate.CalendarDayTypePreHoliday {
+		return *slaInfo.EndWorkHourPtr - 1
+	}
+
+	return *slaInfo.EndWorkHourPtr
+}
+
+func (slaInfo *SLAInfo) GetWeekends() []time.Weekday {
+	if slaInfo == nil || slaInfo.Weekends == nil {
+		return []time.Weekday{time.Saturday, time.Sunday}
+	}
+
+	return slaInfo.Weekends
+}
+
 func (t *WorkHourType) GetWorkingHours() (start, end int, err error) {
 	if t == nil {
 		return 0, 0, fmt.Errorf("work hour type is nil")
@@ -77,13 +118,67 @@ func (t *WorkHourType) GetWeekends() ([]time.Weekday, error) {
 	}
 }
 
-func GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTOStruct) (*SLAInfo, error) {
-	calendarDays, getCalendarDaysErr := GetSLAInfoDTO.Service.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-		GetSLAInfoDTO.TaskCompletionIntervals,
-	)
-	if getCalendarDaysErr != nil {
-		return nil, getCalendarDaysErr
+func (t *WorkHourType) GetNotUseCalendarDays() (bool, error) {
+	if t == nil {
+		return false, fmt.Errorf("work hour type is nil")
 	}
+
+	switch *t {
+	case WorkTypeN125:
+		return false, nil
+	case WorkTypeN247:
+		return true, nil
+	case WorkTypeN85:
+		return false, nil
+	default:
+		return false, fmt.Errorf("unknown work hour type: %s", string(*t))
+	}
+}
+
+func (t *WorkHourType) GetTotalWorkHourPerDay() (int, error) {
+	if t == nil {
+		return 0, fmt.Errorf("work hour type is nil")
+	}
+
+	switch *t {
+	case WorkTypeN125:
+		return 12, nil
+	case WorkTypeN247:
+		return 24, nil
+	case WorkTypeN85:
+		return 8, nil
+	default:
+		return 0, fmt.Errorf("unknown work hour type: %s", string(*t))
+	}
+}
+
+func (t *WorkHourType) GetTotalSLAInHours(slaInDays int) (int, error) {
+	totalWorkHour, getTotalWorkHourErr := t.GetTotalWorkHourPerDay()
+
+	if getTotalWorkHourErr != nil {
+		return 0, getTotalWorkHourErr
+	}
+
+	return totalWorkHour * slaInDays, nil
+}
+
+func GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTOStruct) (*SLAInfo, error) {
+	notUseCalendarDays, getNotUseErr := GetSLAInfoDTO.WorkType.GetNotUseCalendarDays()
+	if getNotUseErr != nil {
+		return nil, getNotUseErr
+	}
+
+	var calendarDays *hrgate.CalendarDays
+	var getCalendarDaysErr error
+	if !notUseCalendarDays {
+		calendarDays, getCalendarDaysErr = GetSLAInfoDTO.Service.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
+			GetSLAInfoDTO.TaskCompletionIntervals,
+		)
+		if getCalendarDaysErr != nil {
+			return nil, getCalendarDaysErr
+		}
+	}
+
 	startWorkHour, endWorkHour, getWorkingHoursErr := GetSLAInfoDTO.WorkType.GetWorkingHours()
 	if getWorkingHoursErr != nil {
 		return nil, getWorkingHoursErr
@@ -109,37 +204,11 @@ func getWorkHoursBetweenDates(from, to time.Time, slaInfoPtr *SLAInfo) (workHour
 		return 0
 	}
 
-	var slaInfo SLAInfo
-	if slaInfoPtr == nil {
-		slaInfo = SLAInfo{}
-	} else {
-		slaInfo = *slaInfoPtr
-	}
-
-	calendarDays, startWorkHourPtr, endWorkHourPtr, weekends := slaInfo.CalendarDays,
-		slaInfo.StartWorkHourPtr,
-		slaInfo.EndWorkHourPtr,
-		slaInfo.Weekends
-
-	var startWorkHour, endWorkHour int
-
-	if startWorkHourPtr != nil {
-		startWorkHour = *startWorkHourPtr
-	} else {
-		startWorkHour = workingHoursStart
-	}
-
-	if endWorkHourPtr != nil {
-		endWorkHour = *endWorkHourPtr
-	} else {
-		endWorkHour = workingHoursEnd
-	}
-
-	if weekends == nil {
-		weekends = []time.Weekday{time.Saturday, time.Sunday}
-	}
-
 	for from.Before(to) {
+		calendarDays, startWorkHour, endWorkHour, weekends := slaInfoPtr.GetCalendarDays(),
+			slaInfoPtr.GetStartWorkHour(),
+			slaInfoPtr.GetEndWorkHour(from),
+			slaInfoPtr.GetWeekends()
 		if !notWorkingHours(from, calendarDays, startWorkHour, endWorkHour, weekends) {
 			workHours++
 		}
@@ -168,10 +237,6 @@ func notWorkingHours(t time.Time, calendarDays *hrgate.CalendarDays, startWorkHo
 		return true
 	}
 
-	if workDayType == hrgate.CalendarDayTypePreHoliday {
-		endWorkHour = endWorkHour - 1
-	}
-
 	if beforeWorkingHours(t, startWorkHour) || afterWorkingHours(t, endWorkHour) {
 		return true
 	}
@@ -185,37 +250,11 @@ func ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAInfo) time.Time
 	slaInMinutes := sla * 60
 	slaDur := time.Minute * time.Duration(slaInMinutes)
 
-	var slaInfo SLAInfo
-	if slaInfoPtr == nil {
-		slaInfo = SLAInfo{}
-	} else {
-		slaInfo = *slaInfoPtr
-	}
-
-	calendarDays, startWorkHourPtr, endWorkHourPtr, weekends := slaInfo.CalendarDays,
-		slaInfo.StartWorkHourPtr,
-		slaInfo.EndWorkHourPtr,
-		slaInfo.Weekends
-
-	var startWorkHour, endWorkHour int
-
-	if startWorkHourPtr != nil {
-		startWorkHour = *startWorkHourPtr
-	} else {
-		startWorkHour = workingHoursStart
-	}
-
-	if endWorkHourPtr != nil {
-		endWorkHour = *endWorkHourPtr
-	} else {
-		endWorkHour = workingHoursEnd
-	}
-
-	if weekends == nil {
-		weekends = []time.Weekday{time.Saturday, time.Sunday}
-	}
-
 	for slaDur > 0 {
+		calendarDays, startWorkHour, endWorkHour, weekends := slaInfoPtr.GetCalendarDays(),
+			slaInfoPtr.GetStartWorkHour(),
+			slaInfoPtr.GetEndWorkHour(deadline),
+			slaInfoPtr.GetWeekends()
 		if notWorkingHours(deadline, calendarDays, startWorkHour, endWorkHour, weekends) {
 			datesDay := deadline.AddDate(0, 0, 1)            // default = next day
 			if beforeWorkingHours(deadline, startWorkHour) { // but in case it's now early in the morning...

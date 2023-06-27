@@ -1,8 +1,10 @@
 package pipeline
 
 import (
-	"errors"
+	"fmt"
 	"time"
+
+	"github.com/pkg/errors"
 
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -64,6 +66,7 @@ type ExecutionData struct {
 
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
+	UseActualExecutor  bool `json:"use_actual_executor"`
 
 	SLA                          int    `json:"sla"`
 	CheckSLA                     bool   `json:"check_sla"`
@@ -88,7 +91,22 @@ func (a *ExecutionData) GetRepeatPrevDecision() bool {
 }
 
 //nolint:dupl //its not duplicate
-func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams, delegations human_tasks.Delegations) error {
+func (a *ExecutionData) setEditAppToInitiator(login, delegateFor string, params executorUpdateEditParams) error {
+	editing := &ExecutorEditApp{
+		Executor:    login,
+		Comment:     params.Comment,
+		Attachments: params.Attachments,
+		CreatedAt:   time.Now(),
+		DelegateFor: delegateFor,
+	}
+
+	a.EditingAppLog = append(a.EditingAppLog, *editing)
+	a.EditingApp = editing
+
+	return nil
+}
+
+func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, delegations human_tasks.Delegations) error {
 	_, executorFound := a.Executors[login]
 
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
@@ -100,16 +118,27 @@ func (a *ExecutionData) setEditApp(login string, params executorUpdateEditParams
 		return errors.New("decision already set")
 	}
 
-	editing := &ExecutorEditApp{
-		Executor:    login,
-		Comment:     params.Comment,
-		Attachments: params.Attachments,
-		CreatedAt:   time.Now(),
-		DelegateFor: delegateFor,
+	if in.Decision != ExecutionDecisionExecuted && in.Decision != ExecutionDecisionRejected {
+		return fmt.Errorf("unknown decision %s", in.Decision)
 	}
 
-	a.EditingAppLog = append(a.EditingAppLog, *editing)
-	a.EditingApp = editing
+	a.Decision = &in.Decision
+	a.DecisionComment = &in.Comment
+	a.DecisionAttachments = in.Attachments
+	a.ActualExecutor = &login
+	a.DelegateFor = delegateFor
+
+	return nil
+}
+
+//nolint:dupl //its not duplicate
+func (a *ExecutionData) setEditToNextBlock(executor *string, delegateFor string, params executorUpdateEditParams) error {
+	rejected := ExecutionDecisionSentEdit
+	a.ActualExecutor = executor
+	a.Decision = &rejected
+	a.DecisionComment = &params.Comment
+	a.DecisionAttachments = params.Attachments
+	a.DelegateFor = delegateFor
 
 	return nil
 }

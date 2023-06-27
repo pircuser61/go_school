@@ -440,7 +440,6 @@ func Test_createGoApproverBlock(t *testing.T) {
 						r, _ := json.Marshal(&script.ApproverParams{
 							Type:               script.ApproverTypeUser,
 							Approver:           login,
-							SLA:                1,
 							FormsAccessibility: make([]script.FormAccessibility, 0),
 						})
 
@@ -469,7 +468,6 @@ func Test_createGoApproverBlock(t *testing.T) {
 					AutoAction:         nil,
 					ApprovementRule:    script.AnyOfApprovementRequired,
 					ApproverLog:        make([]ApproverLogEntry, 0),
-					SLA:                1,
 					FormsAccessibility: make([]script.FormAccessibility, 0),
 					ActionList: []Action{
 						{
@@ -491,7 +489,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			got, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, &BlockRunContext{
+			got, _, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, &BlockRunContext{
 				skipNotifications: true,
 				VarStore:          store.NewStore(),
 				Storage:           makeStorage(),

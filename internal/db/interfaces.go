@@ -60,6 +60,8 @@ type TaskStorager interface {
 	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
 	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
+	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
+	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
 
 	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
 }
@@ -97,6 +99,7 @@ type SaveStepRequest struct {
 	Status      string
 	Members     []DbMember
 	Deadlines   []DbDeadline
+	IsReEntry   bool
 }
 
 type UpdateStepRequest struct {
