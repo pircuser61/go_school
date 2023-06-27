@@ -346,6 +346,18 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "SaveVersionMainSettings").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := transaction.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
 	defer func(transaction db.Database, ctx context.Context) {
 		_ = transaction.RollbackTransaction(ctx)
 	}(transaction, ctx)
