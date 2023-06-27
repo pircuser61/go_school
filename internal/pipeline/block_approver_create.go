@@ -74,8 +74,9 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 
 	gb.State.Decision = nil
 	gb.State.Comment = nil
-	gb.State.DecisionAttachments = nil
+	gb.State.DecisionAttachments = make([]string, 0)
 	gb.State.ActualApprover = nil
+	gb.State.ApproverLog = make([]ApproverLogEntry, 0)
 
 	var params script.ApproverParams
 	err := json.Unmarshal(ef.Params, &params)
