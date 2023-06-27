@@ -425,7 +425,9 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 			return editErr
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], *gb.State.ActualApprover)
+		if gb.State.ActualApprover != nil {
+			gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], *gb.State.ActualApprover)
+		}
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ApproverDecisionSentToEdit)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
 	}
