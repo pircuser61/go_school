@@ -76,6 +76,7 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	gb.State.DecisionComment = nil
 	gb.State.DecisionAttachments = make([]string, 0)
 	gb.State.ActualExecutor = nil
+	gb.State.IsTakenInWork = false
 
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
