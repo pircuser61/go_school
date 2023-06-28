@@ -23,6 +23,18 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		return transactionErr
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "FunctionReturnHandler").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
 	if message.Err != "" {
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "message has err").

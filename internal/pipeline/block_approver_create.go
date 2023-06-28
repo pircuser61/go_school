@@ -3,17 +3,13 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -78,8 +74,9 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 
 	gb.State.Decision = nil
 	gb.State.Comment = nil
-	gb.State.DecisionAttachments = nil
+	gb.State.DecisionAttachments = make([]string, 0)
 	gb.State.ActualApprover = nil
+	gb.State.ApproverLog = make([]ApproverLogEntry, 0)
 
 	var params script.ApproverParams
 	err := json.Unmarshal(ef.Params, &params)
@@ -201,7 +198,6 @@ type setApproversByParamsDTO struct {
 }
 
 func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApproversByParamsDTO) error {
-	fmt.Printf("%+v\n", dto)
 	switch dto.Type {
 	case script.ApproverTypeUser:
 		gb.State.Approvers = map[string]struct{}{
@@ -250,130 +246,6 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 		}
 
 		gb.State.Approvers = approversFromSchema
-
-		delegations, htErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Approvers))
-		if htErr != nil {
-			return htErr
-		}
-		gb.RunContext.Delegations = delegations.FilterByType("approvement")
-	}
-
-	return nil
-}
-
-//nolint:dupl // maybe later
-func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
-	if gb.RunContext.skipNotifications {
-		return nil
-	}
-
-	l := logger.GetLogger(ctx)
-
-	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Approvers))
-	if getDelegationsErr != nil {
-		return getDelegationsErr
-	}
-	delegates = delegates.FilterByType("approvement")
-
-	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
-	loginsToNotify := delegates.GetUserInArrayWithDelegations(approvers)
-
-	var emailAttachment []e.Attachment
-
-	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
-	if err != nil {
-		return err
-	}
-
-	actionsList := make([]mail.Action, 0, len(gb.State.ActionList))
-	for i := range gb.State.ActionList {
-		actionsList = append(actionsList, mail.Action{
-			InternalActionName: gb.State.ActionList[i].Id,
-			Title:              gb.State.ActionList[i].Title,
-		})
-	}
-
-	task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-	if getVersionErr != nil {
-		return getVersionErr
-	}
-
-	processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
-	if getVersionErr != nil {
-		return getVersionErr
-	}
-
-	taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
-	if getDataErr != nil {
-		return getDataErr
-	}
-
-	login := task.Author
-
-	recipient := getRecipientFromState(&taskRunContext.InitialApplication.ApplicationBody)
-
-	if recipient != "" {
-		login = recipient
-	}
-
-	lastWorksForUser := make([]*entity.EriusTask, 0)
-
-	if processSettings.ResubmissionPeriod > 0 {
-		var getWorksErr error
-		lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
-			ctx,
-			processSettings.ResubmissionPeriod,
-			login,
-			task.VersionID.String(),
-			gb.RunContext.WorkNumber,
-		)
-		if getWorksErr != nil {
-			return getWorksErr
-		}
-	}
-
-	emails := make(map[string]mail.Template, 0)
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(gb.State.WorkType),
-	})
-
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
-	}
-	for _, login := range loginsToNotify {
-		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
-		if getEmailErr != nil {
-			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
-			continue
-		}
-
-		emails[email] = mail.NewAppPersonStatusNotificationTpl(
-			&mail.NewAppPersonStatusTpl{
-				WorkNumber:                gb.RunContext.WorkNumber,
-				Name:                      gb.RunContext.NotifName,
-				Status:                    gb.State.ApproveStatusName,
-				Action:                    statusToTaskAction[StatusApprovement],
-				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
-				SdUrl:                     gb.RunContext.Sender.SdAddress,
-				Mailto:                    gb.RunContext.Sender.FetchEmail,
-				Login:                     login,
-				IsEditable:                gb.State.GetIsEditable(),
-				ApproverActions:           actionsList,
-				Description:               description,
-				BlockID:                   BlockGoApproverID,
-				ExecutionDecisionExecuted: string(ExecutionDecisionExecuted),
-				ExecutionDecisionRejected: string(ExecutionDecisionRejected),
-				LastWorks:                 lastWorksForUser,
-			})
-	}
-
-	for i := range emails {
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
-			return sendErr
-		}
 	}
 
 	return nil

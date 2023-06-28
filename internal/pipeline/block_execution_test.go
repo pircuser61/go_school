@@ -61,7 +61,11 @@ func TestExecution_Next(t *testing.T) {
 			fields: fields{
 				Nexts: []script.Socket{script.NewSocket("executor_send_edit_app", []string{"test-next"})},
 				State: &ExecutionData{
-					EditingApp: &ExecutorEditApp{},
+					Decision: func() *ExecutionDecision {
+						res := ExecutionDecisionSentEdit
+						return &res
+					}(),
+					EditingApp: nil,
 				},
 			},
 			args: args{
@@ -87,9 +91,23 @@ func TestExecution_Next(t *testing.T) {
 
 func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 	const (
-		example = "example"
-		title   = "title"
+		example             = "example"
+		title               = "title"
+		executorsFromSchema = "form_0.user.username;form_1.user.username"
+		executorFromSchema  = "form_0.user.username"
 	)
+	myStorage := makeStorage()
+
+	varStore := store.NewStore()
+
+	varStore.SetValue("form_0.user", map[string]interface{}{
+		"username": "test",
+		"fullname": "test test test",
+	})
+	varStore.SetValue("form_1.user", map[string]interface{}{
+		"username": "test2",
+		"fullname": "test2 test test",
+	})
 
 	next := []entity.Socket{
 		{
@@ -154,7 +172,135 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "good execution",
+			name: "executors from schema",
+			args: args{
+				name: example,
+				runCtx: &BlockRunContext{
+					WorkNumber:        "J001",
+					skipNotifications: true,
+					VarStore:          varStore,
+					Storage:           myStorage,
+				},
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoExecutionID,
+					Title:     title,
+					Sockets:   next,
+					Input: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Output: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ExecutionParams{
+							Type:               script.ExecutionTypeFromSchema,
+							Executors:          executorsFromSchema,
+							SLA:                1,
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						return r
+					}(),
+				},
+			},
+			want: &GoExecutionBlock{
+				Name:  example,
+				Title: title,
+				Input: map[string]string{
+					"foo": "bar",
+				},
+				Output: map[string]string{
+					"foo": "bar",
+				},
+				Sockets: entity.ConvertSocket(next),
+				RunContext: &BlockRunContext{
+					Storage:           myStorage,
+					WorkNumber:        "J001",
+					skipNotifications: true,
+					VarStore:          varStore,
+				},
+				State: &ExecutionData{
+					WorkType:           "8/5",
+					ExecutionType:      script.ExecutionTypeFromSchema,
+					Executors:          map[string]struct{}{"test": {}, "test2": {}},
+					SLA:                8,
+					FormsAccessibility: make([]script.FormAccessibility, 1),
+				},
+			},
+		},
+		{
+			name: "executor from schema",
+			args: args{
+				name: example,
+				runCtx: &BlockRunContext{
+					WorkNumber:        "J001",
+					skipNotifications: true,
+					VarStore:          varStore,
+					Storage:           myStorage,
+				},
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoExecutionID,
+					Title:     title,
+					Sockets:   next,
+					Input: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Output: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ExecutionParams{
+							Type:               script.ExecutionTypeFromSchema,
+							Executors:          executorFromSchema,
+							SLA:                1,
+							FormsAccessibility: make([]script.FormAccessibility, 1),
+						})
+						return r
+					}(),
+				},
+			},
+			want: &GoExecutionBlock{
+				Name:  example,
+				Title: title,
+				Input: map[string]string{
+					"foo": "bar",
+				},
+				Output: map[string]string{
+					"foo": "bar",
+				},
+				Sockets: entity.ConvertSocket(next),
+				RunContext: &BlockRunContext{
+					Storage:           myStorage,
+					WorkNumber:        "J001",
+					skipNotifications: true,
+					VarStore:          varStore,
+				},
+				State: &ExecutionData{
+					WorkType:           "8/5",
+					ExecutionType:      script.ExecutionTypeFromSchema,
+					Executors:          map[string]struct{}{"test": {}},
+					SLA:                8,
+					FormsAccessibility: make([]script.FormAccessibility, 1),
+				},
+			},
+		},
+		{
+			name: "load execution state",
 			args: args{
 				name: example,
 				runCtx: &BlockRunContext{
@@ -238,8 +384,9 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Executors: map[string]struct{}{
 						"tester": {},
 					},
-					SLA:                1,
-					FormsAccessibility: make([]script.FormAccessibility, 1),
+					SLA:                 1,
+					FormsAccessibility:  make([]script.FormAccessibility, 1),
+					DecisionAttachments: make([]string, 0),
 				},
 			},
 		},

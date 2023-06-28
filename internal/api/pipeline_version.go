@@ -34,6 +34,8 @@ import (
 const (
 	defaultPage    = 1
 	defaultPerPage = 10
+
+	startEntrypoint = "start_0"
 )
 
 func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, pipelineID string) {
@@ -77,7 +79,9 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
-		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
+	}
+	if p.Pipeline.Entrypoint == "" {
+		p.Pipeline.Entrypoint = startEntrypoint
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
@@ -341,7 +345,18 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
-		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
+	}
+	if p.Pipeline.Entrypoint == "" {
+		p.Pipeline.Entrypoint = startEntrypoint
+	}
+
+	updated, err := json.Marshal(p)
+	if err != nil {
+		e := PipelineParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
 
 	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
@@ -382,7 +397,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.UpdateDraft(ctx, &p, b)
+	err = ae.DB.UpdateDraft(ctx, &p, updated)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
@@ -525,6 +540,18 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		return nil, e, transactionErr
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "execVersionInternal").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
 	ep := pipeline.ExecutablePipeline{}
 	ep.PipelineID = dto.p.ID
 	ep.VersionID = dto.p.VersionID
@@ -545,6 +572,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.FunctionStore = ae.FunctionStore
 	ep.HumanTasks = ae.HumanTasks
 	ep.Integrations = ae.Integrations
+	ep.FileRegistry = ae.FileRegistry
 
 	if dto.makeNewWork {
 		ep.WorkNumber = dto.workNumber
@@ -641,7 +669,7 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 		return
 	}
 
-	items, err := ae.DB.GetPipelinesByNameOrId(ctx, toDbSearchPipelinesParams(&params))
+	items, err := ae.DB.GetPipelinesByNameOrId(ctx, toDBSearchPipelinesParams(&params))
 	if err != nil {
 		e := GetPipelinesSearchError
 		log.Error(e.errorMessage(err))
@@ -673,7 +701,7 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 	}
 }
 
-func toDbSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelineRequest) {
+func toDBSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelineRequest) {
 	var (
 		page    = defaultPage
 		perPage = defaultPerPage

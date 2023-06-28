@@ -127,7 +127,7 @@ func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		return nil
 	}
 
-	err = runCtx.handleInitiatorNotification(ctx, name, bl.TypeID, taskHumanStatus)
+	err = runCtx.handleInitiatorNotify(ctx, name, bl.TypeID, taskHumanStatus)
 	if err != nil {
 		return err
 	}
@@ -405,9 +405,12 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (str
 	return descr, nil
 }
 
-func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
+func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context,
 	step, stepType string, status TaskHumanStatus) error {
-	const FormStepType = "form"
+	const (
+		FormStepType     = "form"
+		FunctionStepType = "executable_function"
+	)
 
 	if runCtx.skipNotifications {
 		return nil
@@ -428,7 +431,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotification(ctx c.Context,
 		return nil
 	}
 
-	if status == StatusDone && stepType == FormStepType {
+	if status == StatusDone && (stepType == FormStepType || stepType == FunctionStepType) {
 		return nil
 	}
 

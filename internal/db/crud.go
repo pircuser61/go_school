@@ -2577,13 +2577,14 @@ func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
 }
 
 func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
-	ctx, span := trace.StartSpan(ctx, "stop_task_blocks")
+	ctx, span := trace.StartSpan(ctx, "get_variable_storage_for_step")
 	defer span.End()
 
-	q := `
+	const q = `
 		SELECT content
 		FROM variable_storage
-		WHERE work_id = $1 AND step_name = $2`
+		WHERE work_id = $1 AND step_name = $2 
+		ORDER BY time DESC LIMIT 1`
 
 	var content []byte
 	if err := db.Connection.QueryRow(ctx, q, taskID, stepType).Scan(&content); err != nil {

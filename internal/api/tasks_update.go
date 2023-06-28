@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	c "context"
 	"encoding/json"
 	"io"
@@ -16,6 +15,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -43,6 +43,8 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	token := req.Header.Get(AuthorizationHeader)
+
 	for i := range emails {
 		usr, errGetUser := ae.People.GetUser(ctx, emails[i].Action.Login)
 		if errGetUser != nil {
@@ -65,10 +67,8 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		for fileName := range emails[i].Action.Attachments {
-			r := bytes.NewReader(emails[i].Action.Attachments[fileName].Raw)
-			ext := emails[i].Action.Attachments[fileName].Ext
-			id, errSave := ae.Minio.SaveFile(ctx, ext, fileName, r, r.Size())
+		for fileName, fileData := range emails[i].Action.Attachments {
+			id, errSave := ae.FileRegistry.SaveFile(ctx, token, fileName, fileData.Raw)
 			if errSave != nil {
 				log.WithField("workNumber", emails[i].Action.WorkNumber).
 					WithField("fileName", fileName).
@@ -174,6 +174,106 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 }
 
+type updateStepData struct {
+	scenario    *entity.EriusScenario
+	task        *entity.EriusTask
+	step        *entity.Step
+	updData     *entity.TaskUpdate
+	delegations ht.Delegations
+	workNumber  string
+	login       string
+}
+
+func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
+	log := logger.GetLogger(ctx)
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't set update step")
+		return false
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "updateStepInternal").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
+	storage, getErr := txStorage.GetVariableStorageForStep(ctx, data.task.ID, data.step.Name)
+	if getErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "GetVariableStorageForStep").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+		log.WithError(getErr).Error("couldn't get block to update")
+		return false
+	}
+	runCtx := &pipeline.BlockRunContext{
+		TaskID:     data.task.ID,
+		WorkNumber: data.workNumber,
+		WorkTitle:  data.task.Name,
+		Initiator:  data.task.Author,
+		Storage:    txStorage,
+		VarStore:   storage,
+
+		Sender:        ae.Mail,
+		Kafka:         ae.Kafka,
+		People:        ae.People,
+		ServiceDesc:   ae.ServiceDesc,
+		FunctionStore: ae.FunctionStore,
+		HumanTasks:    ae.HumanTasks,
+		Integrations:  ae.Integrations,
+		FileRegistry:  ae.FileRegistry,
+		FaaS:          ae.FaaS,
+		HrGate:        ae.HrGate,
+
+		UpdateData: &script.BlockUpdateData{
+			ByLogin:    data.login,
+			Action:     string(data.updData.Action),
+			Parameters: data.updData.Parameters,
+		},
+		Delegations: data.delegations,
+		IsTest:      data.task.IsTest,
+		NotifName:   data.task.Name,
+	}
+
+	blockFunc, ok := data.scenario.Pipeline.Blocks[data.step.Name]
+	if !ok {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "get block by name").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+		log.WithError(errors.New("couldn't get block from pipeline")).
+			Error("couldn't get block to update")
+		return false
+	}
+
+	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, &blockFunc, runCtx, true)
+	if blockErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "ProcessBlockWithEndMapping").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+		log.WithError(blockErr).Error("couldn't update block")
+		return false
+	}
+
+	if err := txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't update block")
+		return false
+	}
+	return true
+}
+
 //nolint:gocyclo // ok here
 func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
@@ -248,79 +348,18 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_task_step_update", spCtx)
 		fakeSpan.End()
 
-		txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
-		if transactionErr != nil {
-			continue
+		success := ae.updateStepInternal(processCtx, updateStepData{
+			scenario:    scenario,
+			task:        dbTask,
+			step:        item,
+			updData:     in,
+			delegations: delegations,
+			workNumber:  workNumber,
+			login:       userLogin,
+		})
+		if success {
+			couldUpdateOne = true
 		}
-
-		storage, getErr := txStorage.GetVariableStorageForStep(processCtx, dbTask.ID, item.Name)
-		if getErr != nil {
-			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-				log.WithField("funcName", "GetVariableStorageForStep").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-			log.WithError(getErr).Error("couldn't get block to update")
-			continue
-		}
-		runCtx := &pipeline.BlockRunContext{
-			TaskID:     dbTask.ID,
-			WorkNumber: workNumber,
-			WorkTitle:  dbTask.Name,
-			Initiator:  dbTask.Author,
-			Storage:    txStorage,
-			VarStore:   storage,
-
-			Sender:        ae.Mail,
-			Kafka:         ae.Kafka,
-			People:        ae.People,
-			ServiceDesc:   ae.ServiceDesc,
-			FunctionStore: ae.FunctionStore,
-			HumanTasks:    ae.HumanTasks,
-			Integrations:  ae.Integrations,
-			FileRegistry:  ae.FileRegistry,
-			FaaS:          ae.FaaS,
-			HrGate:        ae.HrGate,
-
-			UpdateData: &script.BlockUpdateData{
-				ByLogin:    userLogin,
-				Action:     string(in.Action),
-				Parameters: in.Parameters,
-			},
-			Delegations: delegations,
-			IsTest:      dbTask.IsTest,
-			NotifName:   dbTask.Name,
-		}
-
-		blockFunc, ok := scenario.Pipeline.Blocks[item.Name]
-		if !ok {
-			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-				log.WithField("funcName", "get block by name").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-			log.WithError(errors.New("couldn't get block from pipeline")).
-				Error("couldn't get block to update")
-			continue
-		}
-
-		blockErr := pipeline.ProcessBlockWithEndMapping(processCtx, item.Name, &blockFunc, runCtx, true)
-		if blockErr != nil {
-			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
-				log.WithField("funcName", "ProcessBlock").
-					WithError(errors.New("couldn't rollback tx")).
-					Error(txErr)
-			}
-			log.WithError(blockErr).Error("couldn't update block")
-			continue
-		}
-
-		if err = txStorage.CommitTransaction(processCtx); err != nil {
-			log.WithError(err).Error("couldn't update block")
-			continue
-		}
-
-		couldUpdateOne = true
 	}
 
 	if !couldUpdateOne {
