@@ -462,20 +462,21 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 
 	for propertyName, property := range es.Settings.StartSchema.Properties {
 		name := strings.ToLower(propertyName)
+		format := strings.ToLower(property.Format)
 
 		fieldType := property.Type
 
-		if property.Format == "ssoperson" || name == "recipient" {
+		if format == "ssoperson" || name == "recipient" {
 			fieldType = "SsoPerson"
 		}
 
-		if property.Format == "file" {
+		if format == "file" {
 			fieldType = "File"
 		}
 
 		entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
 			Global: es.Pipeline.Entrypoint + "." + name,
-			Name:   name,
+			Name:   propertyName,
 			Type:   fieldType,
 		})
 	}
