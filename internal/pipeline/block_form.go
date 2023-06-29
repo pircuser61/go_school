@@ -19,7 +19,10 @@ const (
 	keyOutputFormBody     = "application_body"
 )
 
-const formFillFormAction = "fill_form"
+const (
+	formFillFormAction  = "fill_form"
+	formStartWorkAction = "form_executor_start_work"
+)
 
 const AutoFillUser = "auto_fill"
 
@@ -95,6 +98,15 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	if gb.State.IsFilled {
 		return []MemberAction{}
 	}
+
+	if !gb.State.IsTakenInWork {
+		action := MemberAction{
+			Id:   formStartWorkAction,
+			Type: ActionTypePrimary,
+		}
+		return []MemberAction{action}
+	}
+
 	action := MemberAction{
 		Id:   formFillFormAction,
 		Type: ActionTypeCustom,
