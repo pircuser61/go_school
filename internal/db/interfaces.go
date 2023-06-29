@@ -2,6 +2,7 @@ package db
 
 import (
 	c "context"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
@@ -82,6 +83,7 @@ type DbMember struct {
 	Login    string
 	Finished bool
 	Actions  []DbMemberAction
+	Type     string
 }
 
 type DbDeadline struct {
@@ -214,5 +216,5 @@ type Database interface {
 	UpdateEndingSystemSettings(ctx c.Context, versionID, systemID string, settings e.EndSystemSettings) (err error)
 	SaveSlaVersionSettings(ctx c.Context, versionID string, s e.SlaVersionSettings) (err error)
 	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
-	GetTaskMembersLogins(ctx c.Context, workNumber string) ([]string, error)
+	GetTaskMembers(ctx context.Context, workNumber string) ([]DbMember, error)
 }

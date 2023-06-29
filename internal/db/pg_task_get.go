@@ -1492,7 +1492,7 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetTaskMembersLogins(ctx c.Context, workNumber string) ([]string, error) {
+func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, error) {
 	q := `SELECT DISTINCT m.login FROM works
     		JOIN variable_storage vs ON works.id = vs.work_id
     		JOIN members m ON vs.id = m.block_id
