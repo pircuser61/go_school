@@ -425,6 +425,8 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 	ctxLocal, span := trace.StartSpan(ctx, "update_application_internal")
 	defer span.End()
 
+	log := ae.Log.WithField("mainFuncName", "updateApplicationInternal")
+
 	dbTask, err := ae.DB.GetTask(ctxLocal, []string{userLogin}, []string{userLogin}, userLogin, workNumber)
 	if err != nil {
 		return err
@@ -452,23 +454,58 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		emails = append(emails, email)
 	}
 
-	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
-	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
-	if err != nil {
-		return err
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		return transactionErr
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "updateApplicationInternal").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
 
 	err = ae.DB.StopTaskBlocks(ctxLocal, dbTask.ID)
 	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
+			log.WithField("funcName", "StopTaskBlocks").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		return err
 	}
 
 	err = ae.DB.UpdateTaskStatus(ctxLocal, dbTask.ID, db.RunStatusFinished)
 	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
+			log.WithField("funcName", "UpdateTaskStatus").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		return err
 	}
 
 	err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke))
+	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
+			log.WithField("funcName", "UpdateTaskHumanStatus").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+		return err
+	}
+	if commitErr := txStorage.CommitTransaction(ctxLocal); commitErr != nil {
+		log.WithError(commitErr).Error("couldn't commit transaction")
+		return commitErr
+	}
+
+	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
+	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
 	if err != nil {
 		return err
 	}
