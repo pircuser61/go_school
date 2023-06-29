@@ -377,12 +377,15 @@ func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLog
 	}
 	executors := make([]string, 0, len(taskMembers))
 	approvers := make([]string, 0, len(taskMembers))
+	formexec := make([]string, 0, len(taskMembers))
 	for _, m := range taskMembers {
 		switch m.Type {
 		case "execution":
 			executors = append(executors, m.Login)
 		case "approver":
 			approvers = append(approvers, m.Login)
+		case "form":
+			formexec = append(formexec, m.Login)
 		}
 	}
 
@@ -402,7 +405,7 @@ func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLog
 
 	uniquePeople := make(map[string]struct{})
 	peopleGroups := [][]string{
-		executors, approvers, executorDelegates, approverDelegates,
+		executors, approvers, executorDelegates, approverDelegates, formexec,
 	}
 	uniquePeople[userLogin] = struct{}{}
 	for _, g := range peopleGroups {
@@ -425,6 +428,10 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 	dbTask, err := ae.DB.GetTask(ctxLocal, []string{userLogin}, []string{userLogin}, userLogin, workNumber)
 	if err != nil {
 		return err
+	}
+
+	if dbTask.FinishedAt != nil {
+		return errors.New("task is already finished")
 	}
 
 	if dbTask.Author != userLogin {
