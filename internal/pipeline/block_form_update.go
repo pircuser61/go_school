@@ -266,10 +266,6 @@ func (a *FormData) IncreaseSLA(addSla int) {
 	a.SLA += addSla
 }
 
-func (a *FormData) GetIsEditable() bool {
-	return !a.IsTakenInWork
-}
-
 func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {
 	executors := getSliceFromMapOfStrings(logins)
 

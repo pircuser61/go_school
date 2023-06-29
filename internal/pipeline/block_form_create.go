@@ -95,9 +95,6 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	gb.State = &FormData{
-		Executors: map[string]struct{}{
-			params.Executor: {},
-		},
 		SchemaId:                  params.SchemaId,
 		CheckSLA:                  params.CheckSLA,
 		SchemaName:                params.SchemaName,
@@ -155,11 +152,6 @@ type setFormExecutorsByParamsDTO struct {
 
 func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutorsByParamsDTO) error {
 	switch dto.FormExecutorType {
-	case script.FormExecutorTypeUser:
-		gb.State.Executors = map[string]struct{}{
-			dto.Value: {},
-		}
-		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeInitiator:
 		gb.State.Executors = map[string]struct{}{
 			gb.RunContext.Initiator: {},
@@ -182,6 +174,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 
 		gb.State.Executors = resolvedEntities
+		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeAutoFillUser:
 		if err := gb.handleAutoFillForm(); err != nil {
 			return err
@@ -205,6 +198,11 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 		gb.State.FormGroupId = dto.Value
 		gb.State.FormExecutorsGroupName = workGroup.GroupName
+	default:
+		gb.State.Executors = map[string]struct{}{
+			dto.Value: {},
+		}
+		gb.State.IsTakenInWork = true
 	}
 
 	return nil
