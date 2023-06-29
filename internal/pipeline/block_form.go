@@ -238,6 +238,9 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		Username: AutoFillUser,
 	}
 
+	gb.State.Executors = map[string]struct{}{
+		AutoFillUser: {},
+	}
 	gb.State.ChangesLog = append([]ChangesLogItem{
 		{
 			ApplicationBody: formMapping,

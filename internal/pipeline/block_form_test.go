@@ -232,6 +232,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					Description:        "",
 					FormsAccessibility: nil,
 					WorkType:           workType,
+					IsTakenInWork:      true,
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -312,7 +313,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					FormExecutorType: script.FormExecutorTypeAutoFillUser,
 					SchemaId:         schemaId,
 					SchemaName:       schemaName,
-					Executors:        map[string]struct{}{executor: {}},
+					Executors:        map[string]struct{}{"auto_fill": {}},
 					ApplicationBody: map[string]interface{}{
 						"a": 100,
 						"b": 200,
