@@ -122,7 +122,6 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		return nil
 	}
 
-	log.Info("trying to commit transaction")
 	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
 		log.WithError(commitErr).Error("couldn't commit transaction")
 		return commitErr
