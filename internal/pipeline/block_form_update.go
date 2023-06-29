@@ -45,10 +45,16 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionRequestFillForm):
+		if !gb.State.IsTakenInWork {
+			return nil, errors.New("is not taken in work")
+		}
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill
 		}
 	case string(entity.TaskUpdateActionFormExecutorStartWork):
+		if gb.State.IsTakenInWork {
+			return nil, errors.New("is already taken in work")
+		}
 		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -213,9 +219,6 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 }
 
 func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
-	if gb.State.IsTakenInWork {
-		return nil
-	}
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 

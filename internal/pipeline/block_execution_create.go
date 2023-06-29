@@ -202,6 +202,7 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		gb.State.Executors = map[string]struct{}{
 			dto.Executor: {},
 		}
+		gb.State.IsTakenInWork = true
 	case script.ExecutionTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
@@ -225,6 +226,9 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 			}
 		}
 		gb.State.Executors = executorsFromSchema
+		if len(gb.State.Executors) == 1 {
+			gb.State.IsTakenInWork = true
+		}
 
 	case script.ExecutionTypeGroup:
 		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
@@ -244,7 +248,6 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		gb.State.ExecutorsGroupID = dto.GroupID
 		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
-
 	return nil
 }
 

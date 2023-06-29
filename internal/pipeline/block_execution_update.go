@@ -35,22 +35,37 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecution):
+		if !gb.State.IsTakenInWork {
+			return nil, errors.New("is not taken in work")
+		}
 		if errUpdate := gb.updateDecision(); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionChangeExecutor):
+		if !gb.State.IsTakenInWork {
+			return nil, errors.New("is not taken in work")
+		}
 		if errUpdate := gb.changeExecutor(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionRequestExecutionInfo):
+		if !gb.State.IsTakenInWork {
+			return nil, errors.New("is not taken in work")
+		}
 		if errUpdate := gb.updateRequestInfo(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecutorStartWork):
+		if gb.State.IsTakenInWork {
+			return nil, errors.New("is already taken in work")
+		}
 		if errUpdate := gb.executorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionExecutorSendEditApp):
+		if !gb.State.IsTakenInWork {
+			return nil, errors.New("is not taken in work")
+		}
 		if errUpdate := gb.toEditApplication(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -530,10 +545,6 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations human_
 
 func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	log := logger.GetLogger(ctx)
-
-	if gb.State.IsTakenInWork {
-		return nil
-	}
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 

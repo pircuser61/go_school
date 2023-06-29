@@ -159,10 +159,12 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		gb.State.Executors = map[string]struct{}{
 			dto.Value: {},
 		}
+		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeInitiator:
 		gb.State.Executors = map[string]struct{}{
 			gb.RunContext.Initiator: {},
 		}
+		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
@@ -184,6 +186,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		if err := gb.handleAutoFillForm(); err != nil {
 			return err
 		}
+		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeGroup:
 		gb.State.FormGroupId = dto.Value
 		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.Value)

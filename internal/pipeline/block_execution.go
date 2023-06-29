@@ -61,7 +61,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		return nil
 	}
 
-	if gb.State.ExecutionType == script.ExecutionTypeGroup && !gb.State.IsTakenInWork {
+	if !gb.State.IsTakenInWork {
 		action := MemberAction{
 			Id:   executionStartWorkAction,
 			Type: ActionTypePrimary,
