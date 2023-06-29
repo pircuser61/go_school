@@ -1506,7 +1506,7 @@ func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, e
 	}
 	defer rows.Close()
 
-	met := make(map[string]string)
+	met := make(map[string]struct{})
 
 	for rows.Next() {
 		m := DbMember{}
@@ -1517,11 +1517,11 @@ func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, e
 			return nil, scanErr
 		}
 
-		t, ok := met[m.Login]
-		if ok && t == m.Type {
+		key := fmt.Sprintf("%s:%s", m.Login, m.Type)
+		if _, ok := met[key]; ok {
 			continue
 		}
-		met[m.Login] = m.Type
+		met[key] = struct{}{}
 
 		members = append(members, m)
 	}
