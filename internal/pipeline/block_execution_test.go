@@ -203,7 +203,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 						r, _ := json.Marshal(&script.ExecutionParams{
 							Type:               script.ExecutionTypeFromSchema,
 							Executors:          executorsFromSchema,
-							SLA:                1,
+							SLA:                8,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
 						return r
@@ -267,7 +267,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 						r, _ := json.Marshal(&script.ExecutionParams{
 							Type:               script.ExecutionTypeFromSchema,
 							Executors:          executorFromSchema,
-							SLA:                1,
+							SLA:                8,
 							FormsAccessibility: make([]script.FormAccessibility, 1),
 						})
 						return r
@@ -384,8 +384,8 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Executors: map[string]struct{}{
 						"tester": {},
 					},
-					SLA:                1,
-					FormsAccessibility: make([]script.FormAccessibility, 1),
+					SLA:                 1,
+					FormsAccessibility:  make([]script.FormAccessibility, 1),
 					DecisionAttachments: make([]string, 0),
 				},
 			},
