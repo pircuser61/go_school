@@ -71,13 +71,12 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
 
-	// nolint
-	//if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
-	//	e := PipelineValidateError
-	//	log.Error(e.errorMessage(err))
-	//	_ = e.sendError(w)
-	//	return
-	//}
+	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
+		e := PipelineValidateError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
 
 	err = ae.DB.CreatePipeline(ctx, &p, userFromContext.Username, b)
 	if err != nil {
