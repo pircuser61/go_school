@@ -370,38 +370,82 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	return
 }
 
+func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLogin string) ([]string, error) {
+	taskMembers, err := ae.DB.GetTaskMembers(ctx, workNumber)
+	if err != nil {
+		return nil, err
+	}
+	executors := make([]string, 0, len(taskMembers))
+	approvers := make([]string, 0, len(taskMembers))
+	formexec := make([]string, 0, len(taskMembers))
+	for _, m := range taskMembers {
+		switch m.Type {
+		case "execution":
+			executors = append(executors, m.Login)
+		case "approver":
+			approvers = append(approvers, m.Login)
+		case "form":
+			formexec = append(formexec, m.Login)
+		}
+	}
+
+	execDelegates, getDelegatesErr := ae.HumanTasks.GetDelegationsByLogins(ctx, executors)
+	if getDelegatesErr != nil {
+		return nil, getDelegatesErr
+	}
+	execDelegates = execDelegates.FilterByType("execution")
+	executorDelegates := (&execDelegates).GetUniqueLogins()
+
+	apprDelegates, getDelegatesErr := ae.HumanTasks.GetDelegationsByLogins(ctx, approvers)
+	if getDelegatesErr != nil {
+		return nil, getDelegatesErr
+	}
+	apprDelegates = apprDelegates.FilterByType("approvement")
+	approverDelegates := (&execDelegates).GetUniqueLogins()
+
+	uniquePeople := make(map[string]struct{})
+	peopleGroups := [][]string{
+		executors, approvers, executorDelegates, approverDelegates, formexec,
+	}
+	uniquePeople[userLogin] = struct{}{}
+	for _, g := range peopleGroups {
+		for _, p := range g {
+			uniquePeople[p] = struct{}{}
+		}
+	}
+
+	res := make([]string, 0, len(uniquePeople))
+	for k := range uniquePeople {
+		res = append(res, k)
+	}
+	return res, nil
+}
+
 func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_application_internal")
 	defer span.End()
 
-	blockTypes := getTaskStepNameByAction(in.Action)
-	if len(blockTypes) == 0 {
-		return errors.New("blockTypes is empty")
-	}
-
 	dbTask, err := ae.DB.GetTask(ctxLocal, []string{userLogin}, []string{userLogin}, userLogin, workNumber)
-
-	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
-	if getDelegationsErr != nil {
-		return getDelegationsErr
-	}
-
-	delegationsByApprovement := delegations.FilterByType("approvement")
-	delegationsByExecution := delegations.FilterByType("execution")
-
-	taskMembersLogins, err := ae.DB.GetTaskMembersLogins(ctx, workNumber)
 	if err != nil {
 		return err
 	}
 
-	loginsToNotify := make([]string, 0)
-	loginsToNotify = append(loginsToNotify, delegationsByApprovement.GetUserInArrayWithDelegators([]string{})...)
-	loginsToNotify = append(loginsToNotify, delegationsByExecution.GetUserInArrayWithDelegators([]string{})...)
-	loginsToNotify = append(loginsToNotify, taskMembersLogins...)
+	if dbTask.FinishedAt != nil {
+		return errors.New("task is already finished")
+	}
 
-	emails := make([]string, 0, len(loginsToNotify))
-	for _, login := range loginsToNotify {
-		email, getUserEmailErr := ae.People.GetUserEmail(ctx, login)
+	if dbTask.Author != userLogin {
+		return errors.New("you have no access for this action")
+	}
+
+	logins, err := ae.getAuthorAndMembersToNotify(ctxLocal, workNumber, userLogin)
+	if err != nil {
+		return err
+	}
+
+	emails := make([]string, 0, len(logins))
+	for _, login := range logins {
+		email, getUserEmailErr := ae.People.GetUserEmail(ctxLocal, login)
 		if getUserEmailErr != nil {
 			continue
 		}

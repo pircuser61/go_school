@@ -18,6 +18,20 @@ type Delegation struct {
 
 type DelegationLogins map[string]Delegation
 
+func (delegations *Delegations) GetUniqueLogins() []string {
+	var uniqueLogins = make(map[string]struct{}, 0)
+
+	for _, d := range *delegations {
+		uniqueLogins[d.FromLogin] = struct{}{}
+	}
+
+	logins := make([]string, 0, len(uniqueLogins))
+	for k := range uniqueLogins {
+		logins = append(logins, k)
+	}
+	return logins
+}
+
 func (delegations *Delegations) FilterByType(delegationType string) Delegations {
 	filteredDelegations := make([]Delegation, 0)
 	for _, delegation := range *delegations {

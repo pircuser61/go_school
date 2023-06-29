@@ -1492,13 +1492,13 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetTaskMembersLogins(ctx c.Context, workNumber string) ([]string, error) {
-	q := `SELECT DISTINCT m.login FROM works
+func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, error) {
+	q := `SELECT m.login, vs.step_type FROM works
     		JOIN variable_storage vs ON works.id = vs.work_id
     		JOIN members m ON vs.id = m.block_id
 		 WHERE work_number = $1 AND vs.status IN ('running', 'idle');`
 
-	members := make([]string, 0)
+	members := make([]DbMember, 0)
 
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {
@@ -1506,16 +1506,24 @@ func (db *PGCon) GetTaskMembersLogins(ctx c.Context, workNumber string) ([]strin
 	}
 	defer rows.Close()
 
+	met := make(map[string]string)
+
 	for rows.Next() {
-		var login string
+		m := DbMember{}
 
 		if scanErr := rows.Scan(
-			&login,
+			&m.Login, &m.Type,
 		); scanErr != nil {
 			return nil, scanErr
 		}
 
-		members = append(members, login)
+		t, ok := met[m.Login]
+		if ok && t == m.Type {
+			continue
+		}
+		met[m.Login] = m.Type
+
+		members = append(members, m)
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
