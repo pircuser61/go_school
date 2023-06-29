@@ -199,6 +199,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		gb.State.FormGroupId = dto.Value
 		gb.State.FormExecutorsGroupName = workGroup.GroupName
 	default:
+		gb.State.FormExecutorType = script.FormExecutorTypeUser
 		gb.State.Executors = map[string]struct{}{
 			dto.Value: {},
 		}
