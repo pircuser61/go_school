@@ -49,8 +49,8 @@ func (a *FormParams) Validate() error {
 	}
 
 	if a.ReEnterSettings != nil {
-		if a.ReEnterSettings.Value == "" {
-			return fmt.Errorf("invalid reEnterSettings.Value %s", a.ReEnterSettings.Value)
+		if a.ReEnterSettings.FormExecutorType == "" {
+			return fmt.Errorf("invalid reEnterSettings.FormExecutorType")
 		}
 	}
 	return nil
