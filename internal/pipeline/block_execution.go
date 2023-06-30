@@ -198,10 +198,15 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 // nolint:dupl // another block
 func (gb *GoExecutionBlock) GetStatus() Status {
 	if gb.State != nil && gb.State.Decision != nil {
-		if *gb.State.Decision == ExecutionDecisionExecuted {
+		if *gb.State.Decision == ExecutionDecisionRejected {
 			return StatusFinished
 		}
-		return StatusNoSuccess
+
+		if *gb.State.Decision == ExecutionDecisionSentEdit {
+			return StatusNoSuccess
+		}
+
+		return StatusFinished
 	}
 
 	if gb.State.EditingApp != nil {
