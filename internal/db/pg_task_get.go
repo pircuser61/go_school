@@ -1044,7 +1044,12 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			vs.status,
 			vs.updated_at
 		FROM variable_storage vs 
-			WHERE work_id = $1 AND vs.status != 'skipped'
+			WHERE work_id = $1 AND vs.status != 'skipped' AND 
+			(SELECT max(time)
+				 FROM variable_storage vrbs
+				 WHERE vrbs.step_name = vs.step_name AND
+					   vrbs.work_id = $1
+				) = vs.time
 		ORDER BY vs.time DESC`
 
 	rows, err := db.Connection.Query(ctx, query, id)
