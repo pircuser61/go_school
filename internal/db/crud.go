@@ -839,10 +839,20 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersion
 	}
 
 	qCopyExternalSystems := `
-	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema) 
-		SELECT uuid_generate_v4(), $1, system_id, input_schema, output_schema 
-		FROM external_systems 
-		WHERE version_id = $2;
+	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema, input_mapping, output_mapping,
+                              microservice_id, ending_url, sending_method)
+SELECT uuid_generate_v4(),
+       $1,
+       system_id,
+       input_schema,
+       output_schema,
+       input_mapping,
+       output_mapping,
+       microservice_id,
+       ending_url,
+       sending_method
+FROM external_systems
+WHERE version_id = $2;
 	`
 
 	_, err = db.Connection.Exec(c, qCopyExternalSystems, newVersionID, oldVersionID)
