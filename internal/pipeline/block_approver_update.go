@@ -19,34 +19,34 @@ import (
 )
 
 type approverUpdateEditingParams struct {
-	Comment     string   `json:"comment"`
-	Attachments []string `json:"attachments"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
 }
 
 type approverUpdateParams struct {
-	Decision         ApproverAction `json:"decision"`
-	Comment          string         `json:"comment"`
-	Attachments      []string       `json:"attachments"`
+	Decision         ApproverAction      `json:"decision"`
+	Comment          string              `json:"comment"`
+	Attachments      []entity.Attachment `json:"attachments"`
 	internalDecision ApproverDecision
 }
 
 type additionalApproverUpdateParams struct {
-	Decision    ApproverDecision `json:"decision"`
-	Comment     string           `json:"comment"`
-	Attachments []string         `json:"attachments"`
+	Decision    ApproverDecision    `json:"decision"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
 }
 
 type requestInfoParams struct {
-	Type        AdditionalInfoType `json:"type"`
-	Comment     string             `json:"comment"`
-	Attachments []string           `json:"attachments"`
-	LinkId      *string            `json:"link_id,omitempty"`
+	Type        AdditionalInfoType  `json:"type"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
+	LinkId      *string             `json:"link_id,omitempty"`
 }
 
 type addApproversParams struct {
-	AdditionalApproversLogins []string `json:"additionalApprovers"`
-	Question                  string   `json:"question"`
-	Attachments               []string `json:"attachments"`
+	AdditionalApproversLogins []string            `json:"additionalApprovers"`
+	Question                  string              `json:"question"`
+	Attachments               []entity.Attachment `json:"attachments"`
 }
 
 func (a *additionalApproverUpdateParams) Validate() error {
