@@ -137,9 +137,9 @@ func (a *ExecutionData) SetChangeExecutor(oldLogin string, in *ExecutorChangePar
 }
 
 type ExecutionUpdateParams struct {
-	Decision    ExecutionDecision   `json:"decision"`
-	Comment     string              `json:"comment"`
-	Attachments []entity.Attachment `json:"attachments"`
+	Decision    ExecutionDecision `json:"decision"`
+	Comment     string            `json:"comment"`
+	Attachments []string          `json:"attachments"`
 }
 
 //nolint:dupl //its not duplicate
@@ -717,8 +717,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 }
 
 type executorUpdateEditParams struct {
-	Comment     string              `json:"comment"`
-	Attachments []entity.Attachment `json:"attachments"`
+	Comment     string   `json:"comment"`
+	Attachments []string `json:"attachments"`
 }
 
 //nolint:gocyclo //its ok here

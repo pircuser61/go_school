@@ -19,8 +19,6 @@ import (
 	"gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	fileregistry "gitlab.services.mts.ru/jocasta/file-registry/pkg/proto/gen/file-registry/v1"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 const (
@@ -78,7 +76,7 @@ func (s *Service) getAttachmentInfo(ctx context.Context, fileId string) (FileInf
 	}, nil
 }
 
-func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string][]entity.Attachment) (map[string][]FileInfo, error) {
+func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string][]string) (map[string][]FileInfo, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachments_info")
 	defer span.End()
 
@@ -88,7 +86,7 @@ func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string
 		aa := attachments[k]
 		filesInfo := make([]FileInfo, 0, len(aa))
 		for _, a := range aa {
-			fileInfo, err := s.getAttachmentInfo(ctxLocal, a.Id)
+			fileInfo, err := s.getAttachmentInfo(ctxLocal, a)
 			if err != nil {
 				return nil, err
 			}
@@ -134,7 +132,7 @@ func (s *Service) getAttachment(ctx context.Context, fileId string) (email.Attac
 	}, nil
 }
 
-func (s *Service) GetAttachments(ctx context.Context, attachments []entity.Attachment) ([]email.Attachment, error) {
+func (s *Service) GetAttachments(ctx context.Context, attachments []string) ([]email.Attachment, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachments")
 	defer span.End()
 
@@ -142,7 +140,7 @@ func (s *Service) GetAttachments(ctx context.Context, attachments []entity.Attac
 
 	for i := range attachments {
 		a := attachments[i]
-		file, err := s.getAttachment(ctxLocal, a.Id)
+		file, err := s.getAttachment(ctxLocal, a)
 		if err != nil {
 			return nil, err
 		}
