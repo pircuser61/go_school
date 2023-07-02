@@ -7,6 +7,8 @@ import (
 	"github.com/iancoleman/orderedmap"
 
 	"github.com/stretchr/testify/assert"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 func TestToUser(t *testing.T) {
@@ -128,19 +130,19 @@ func TestGetAttachmentsFromBody(t *testing.T) {
 		name   string
 		data   string
 		fields []string
-		want   map[string][]string
+		want   map[string][]entity.Attachment
 	}{
 		{
 			name: "all types",
 			data: `{"recipient": {"email": "snkosya1@mts.ru", "phone": "15857", "mobile": "+79111157031", 
 "tabnum": "415336", "fullname": "Косяк Сергей Николаевич", "position": "ведущий разработчик", 
 "username": "snkosya1"}, "chislo_moe": 12, "stroka_moya": "строка", 
-"vlozhenie_odno": "attachment:34bc6b5b-2391-11ed-b54b-04505600ad66", 
-"vlozhenie_mnogo": ["attachment:34b9dd4a-2391-11ed-b54b-04505600ad66", "attachment:366bc146-2391-11ed-b54b-04505600ad66"]}`,
+"vlozhenie_odno": {"id": "34bc6b5b-2391-11ed-b54b-04505600ad66"}, 
+"vlozhenie_mnogo": [{"id": "34b9dd4a-2391-11ed-b54b-04505600ad66"}, {"id": "366bc146-2391-11ed-b54b-04505600ad66"}]}`,
 			fields: []string{".vlozhenie_odno", ".vlozhenie_mnogo"},
-			want: map[string][]string{
-				"vlozhenie_odno":  []string{"34bc6b5b-2391-11ed-b54b-04505600ad66"},
-				"vlozhenie_mnogo": []string{"34b9dd4a-2391-11ed-b54b-04505600ad66", "366bc146-2391-11ed-b54b-04505600ad66"},
+			want: map[string][]entity.Attachment{
+				"vlozhenie_odno":  {entity.Attachment{Id: "34bc6b5b-2391-11ed-b54b-04505600ad66"}},
+				"vlozhenie_mnogo": {entity.Attachment{Id: "34b9dd4a-2391-11ed-b54b-04505600ad66"}, entity.Attachment{Id: "366bc146-2391-11ed-b54b-04505600ad66"}},
 			},
 		},
 	}
