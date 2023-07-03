@@ -15,7 +15,6 @@ import (
 
 // nolint:dupl // another block
 func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, bool, error) {
-	log := logger.GetLogger(ctx)
 	b := &GoExecutionBlock{
 		Name:    name,
 		Title:   ef.Title,
