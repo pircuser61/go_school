@@ -40,7 +40,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil || runCtx.UpdateData.ByLogin == ""
+		reEntry = runCtx.UpdateData == nil || runCtx.UpdateData.Action == ""
 
 		// это для возврата в рамках одного процесса
 		if reEntry {

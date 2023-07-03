@@ -41,7 +41,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil || runCtx.UpdateData.ByLogin == ""
+		reEntry = runCtx.UpdateData == nil || runCtx.UpdateData.Action == ""
 
 		if reEntry {
 			if err := b.reEntry(ctx, ef); err != nil {
