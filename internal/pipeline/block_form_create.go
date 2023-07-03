@@ -36,7 +36,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil
+		reEntry = runCtx.UpdateData == nil || runCtx.UpdateData.ByLogin == ""
 
 		if reEntry {
 			if err := b.reEntry(ctx); err != nil {

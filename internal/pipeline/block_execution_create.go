@@ -15,6 +15,7 @@ import (
 
 // nolint:dupl // another block
 func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, bool, error) {
+	log := logger.GetLogger(ctx)
 	b := &GoExecutionBlock{
 		Name:    name,
 		Title:   ef.Title,
@@ -40,7 +41,7 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 			return nil, false, err
 		}
 
-		reEntry = runCtx.UpdateData == nil
+		reEntry = runCtx.UpdateData == nil || runCtx.UpdateData.ByLogin == ""
 
 		// это для возврата в рамках одного процесса
 		if reEntry {
