@@ -199,7 +199,7 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 func (gb *GoExecutionBlock) GetStatus() Status {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionRejected {
-			return StatusFinished
+			return StatusNoSuccess
 		}
 
 		if *gb.State.Decision == ExecutionDecisionSentEdit {

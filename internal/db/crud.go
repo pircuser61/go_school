@@ -2013,8 +2013,9 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	FROM variable_storage vs 
 	WHERE 
 	    work_id = $1 AND 
-	    step_type = $2
-	    AND NOT status = ANY($3)
+	    step_type = $2 AND 
+	    NOT status = ANY($3) AND 
+	    vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $1 AND step_name = vs.step_name)
 	    ORDER BY vs.time ASC`
 
 	rows, err := db.Connection.Query(ctx, q, id, stepType, notInStatuses)
