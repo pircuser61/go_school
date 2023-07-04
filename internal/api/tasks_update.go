@@ -279,8 +279,6 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).WithField("mainFuncName", "updateTaskInternal")
-
 	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
@@ -340,15 +338,8 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	}
 
 	couldUpdateOne := false
-	spCtx := span.SpanContext()
 	for _, item := range steps {
-		// nolint:staticcheck // fix later
-		routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-		routineCtx = logger.WithLogger(routineCtx, log)
-		processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_task_step_update", spCtx)
-		fakeSpan.End()
-
-		success := ae.updateStepInternal(processCtx, updateStepData{
+		success := ae.updateStepInternal(ctxLocal, updateStepData{
 			scenario:    scenario,
 			task:        dbTask,
 			step:        item,
