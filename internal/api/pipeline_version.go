@@ -552,19 +552,12 @@ type execVersionInternalDTO struct {
 }
 
 func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
-	_, span := trace.StartSpan(ctx, "exec_version_internal")
+	ctx, span := trace.StartSpan(ctx, "exec_version_internal")
 	defer span.End()
 
 	log := logger.GetLogger(ctx).WithField("mainFuncName", "execVersionInternal")
 
-	spCtx := span.SpanContext()
-	// nolint:staticcheck //its ok here
-	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-	routineCtx = logger.WithLogger(routineCtx, log)
-	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_processing", spCtx)
-	fakeSpan.End()
-
-	txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		e := PipelineRunError
 		return nil, e, transactionErr
@@ -575,7 +568,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 			log = log.WithField("funcName", "execVersionInternal").
 				WithField("panic handle", true)
 			log.Error(r)
-			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
 			}
@@ -613,7 +606,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	parameters, err := json.Marshal(pipelineVars)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "marshal vars").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
@@ -630,7 +623,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		WorkNumber: dto.workNumber,
 		RunCtx:     dto.runCtx,
 	}); err != nil {
-		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "CreateTask").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
@@ -667,9 +660,9 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
-	err = pipeline.ProcessBlockWithEndMapping(processCtx, ep.EntryPoint, &blockData, runCtx, false)
+	err = pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "RollbackTransaction").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
@@ -678,7 +671,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
-	if err = txStorage.CommitTransaction(processCtx); err != nil {
+	if err = txStorage.CommitTransaction(ctx); err != nil {
 		e := PipelineRunError
 		return nil, e, err
 	}
