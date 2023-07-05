@@ -1354,7 +1354,9 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMo
 func getWorksStatusQuery(statusFilter []string) *string {
 	statusQuery := `(CASE 
 						WHEN w.status IN (1, 3, 5) THEN 'В работе' 
-						WHEN w.status = 2 THEN 'Завершен' WHEN w.status = 4 THEN 'Остановлен' 
+						WHEN w.status = 2 THEN 'Завершен' 
+						WHEN w.status = 4 THEN 'Остановлен' 
+						WHEN w.status = 6 THEN 'Отменен'
 						WHEN w.status IS NULL THEN 'Неизвестный статус' END) 
 						IN %s`
 
@@ -1376,6 +1378,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *stri
 					WHEN w.status IN (1, 3, 5) THEN 'В работе'
         			WHEN w.status = 2 THEN 'Завершен'
 				    WHEN w.status = 4 THEN 'Остановлен'
+			    	WHEN w.status = 6 THEN 'Отменен'
         			WHEN w.status IS NULL THEN 'Неизвестный статус'
     			END AS status,
 				p.name AS process_name,
