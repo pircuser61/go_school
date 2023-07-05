@@ -720,7 +720,9 @@ func (db *PGCon) GetTask(
 			w.rate,
 			w.rate_comment,
          	ua.actions,
- 			run_context -> 'initial_application' -> 'is_test_application' as isTest
+ 			run_context -> 'initial_application' -> 'is_test_application' as isTest,
+ 			w.status_comment,
+			w.status_author
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -776,6 +778,8 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.RateComment,
 		pq.Array(&nullStringActions),
 		&et.IsTest,
+		&et.StatusComment,
+		&et.StatusAuthor,
 	)
 	if err != nil {
 		return nil, err

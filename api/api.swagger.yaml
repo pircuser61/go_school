@@ -3110,8 +3110,22 @@ components:
       enum:
         - new
         - approvement
+        - approve-view
+        - approve-inform
+        - approve-sign
+        - approve-confirm
+        - processing
+        - executor-reject
         - approved
+        - approve-viewed
+        - approve-informed
+        - approve-signed
+        - approve-confirmed
+        - approvement-reject
         - done
+        - wait
+        - revoke
+        - cancel
 
     EriusTask:
       type: object
@@ -3411,6 +3425,7 @@ components:
             - $ref: '#/components/schemas/ExecutableFunctionParams'
             - $ref: '#/components/schemas/FillFormUpdateParams'
             - $ref: '#/components/schemas/AddApproversParams'
+            - $ref: '#/components/schemas/CancelAppParams'
       required:
         - action
         - parameters
@@ -3440,23 +3455,27 @@ components:
         tasks:
           type: array
           items:
-            type: object
-            properties:
-              status:
-                type: string
-                description: Task status
-              work_number:
-                type: string
-                description: Task work number
-              finished_at:
-                type: string
-                example: 2020-07-16T17:10:25.112704+03:00
-            required:
-              - status
-              - work_number
-              - finished_at
+            $ref: '#/components/schemas/TaskStatus'
       required:
         - tasks
+
+    TaskStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Task status
+        work_number:
+          type: string
+          description: Task work number
+        finished_at:
+          type: string
+          format: 'date-time'
+          example: 2020-07-16T17:10:25.112704+03:00
+      required:
+        - status
+        - work_number
+        - finished_at
 
     FillFormUpdateParams:
       type: object
@@ -3550,6 +3569,14 @@ components:
         - additionalApprovers
         - question
         - attachments
+
+    CancelAppParams:
+      type: object
+      properties:
+        comment:
+          type: string
+      required:
+        - comment
 
     approverDecision:
       type: string
@@ -3965,6 +3992,9 @@ components:
           description: Доступные действия
           items:
             $ref: '#/components/schemas/action'
+        status_comment:
+          type: string
+          description: Комментарий статуса
       required:
         - id
         - version_id
@@ -3982,6 +4012,7 @@ components:
         - blueprint_id
         - rate
         - rate_comment
+        - status_comment
 
     httpError:
       type: object

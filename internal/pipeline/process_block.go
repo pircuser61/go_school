@@ -76,7 +76,7 @@ func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 	defer func() {
 		if err != nil && !errors.Is(err, UserIsNotPartOfProcessErr{}) {
 			log.WithError(err).Error("couldn't process block")
-			if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusError); changeErr != nil {
+			if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusError, "", db.SystemLogin); changeErr != nil {
 				log.WithError(changeErr).Error("couldn't change task status")
 			}
 		}
@@ -90,11 +90,13 @@ func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 
 	switch status {
 	case db.RunStatusCreated:
-		if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusRunning); changeErr != nil {
+		if changeErr := runCtx.updateTaskStatus(ctx, db.RunStatusRunning, "", db.SystemLogin); changeErr != nil {
 			err = changeErr
 			return
 		}
 	case db.RunStatusRunning:
+	case db.RunStatusCanceled:
+		return errors.New("couldn't process canceled block")
 	default:
 		return nil
 	}

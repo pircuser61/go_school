@@ -115,6 +115,7 @@ const (
 	ValidationSlaProcessSettingsError
 	GetProcessSlaSettingsError
 	PipelineValidateError
+	StopTaskParsingError
 )
 
 //nolint:dupl //its not duplicate
@@ -212,6 +213,7 @@ var errorText = map[Err]string{
 	ValidationSlaProcessSettingsError:   "wrong data for version SLA settings",
 	GetProcessSlaSettingsError:          "can't get sla settings for process",
 	PipelineValidateError:               "invalid pipeline schema",
+	StopTaskParsingError:                "can't parse stop task request",
 }
 
 // JOKE.
@@ -311,6 +313,7 @@ var errorDescription = map[Err]string{
 	ValidationSlaProcessSettingsError:   "Ошибка при валидации параметров SLA процесса",
 	GetProcessSlaSettingsError:          "Ошибка при получении параметров SLA процесса",
 	PipelineValidateError:               "Невалидная схема пайплайна",
+	StopTaskParsingError:                "Не удалось распарсить запрос",
 }
 
 var errorStatus = map[Err]int{
@@ -327,6 +330,7 @@ var errorStatus = map[Err]int{
 	BodyParseError:            http.StatusBadRequest,
 	ValidationError:           http.StatusBadRequest,
 	PipelineValidateError:     http.StatusBadRequest,
+	StopTaskParsingError:      http.StatusBadRequest,
 }
 
 type httpError struct {

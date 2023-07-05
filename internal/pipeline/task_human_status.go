@@ -20,6 +20,7 @@ const (
 	StatusDone                TaskHumanStatus = "done"
 	StatusWait                TaskHumanStatus = "wait"
 	StatusRevoke              TaskHumanStatus = "revoke"
+	StatusCancel              TaskHumanStatus = "cancel"
 )
 
 var statusToTaskState = map[TaskHumanStatus]string{
@@ -34,6 +35,7 @@ var statusToTaskState = map[TaskHumanStatus]string{
 	StatusExecutionRejected:   "отклонена исполнителем",
 	StatusDone:                "выполнена исполнителем",
 	StatusRevoke:              "отозвана инициатором",
+	StatusCancel:              "отозвана администратором",
 }
 
 var statusToTaskAction = map[TaskHumanStatus]string{

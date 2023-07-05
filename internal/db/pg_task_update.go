@@ -6,11 +6,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/pkg/errors"
-
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
+
+	"github.com/pkg/errors"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 func (db *PGCon) deleteFinishedPipelineDeadlines(ctx context.Context, taskID uuid.UUID) error {
@@ -39,26 +41,30 @@ func (db *PGCon) deleteFinishedPipelineMembers(ctx context.Context, taskID uuid.
 	return err
 }
 
-func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error {
+func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_change_task_status")
 	defer span.End()
 
 	var q string
 	// nolint:gocritic
 	// language=PostgreSQL
-	if status == RunStatusFinished {
+	switch status {
+	case RunStatusCanceled:
 		q = `UPDATE works 
-		SET status = $1, finished_at = now()
+		SET status = $1, finished_at = now(), status_comment = $3, status_author = $4
 		WHERE id = $2`
-	} else {
+		_, err := db.Connection.Exec(ctx, q, status, taskID, comment, author)
+		if err != nil {
+			return err
+		}
+	default:
 		q = `UPDATE works 
 		SET status = $1
 		WHERE id = $2`
-	}
-
-	_, err := db.Connection.Exec(ctx, q, status, taskID)
-	if err != nil {
-		return err
+		_, err := db.Connection.Exec(ctx, q, status, taskID)
+		if err != nil {
+			return err
+		}
 	}
 
 	switch status {
@@ -73,7 +79,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) e
 	return nil
 }
 
-func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error {
+func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "update_task_human_status")
 	defer span.End()
 
@@ -81,10 +87,19 @@ func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status s
 	// language=PostgreSQL
 	q := `UPDATE works
 		SET human_status = $1
-		WHERE id = $2`
+		WHERE id = $2 RETURNING human_status, finished_at, work_number`
 
-	_, err := db.Connection.Exec(ctx, q, status, taskID)
-	return err
+	row := db.Connection.QueryRow(ctx, q, status, taskID)
+
+	et := entity.EriusTask{}
+
+	err := row.Scan(
+		&et.HumanStatus,
+		&et.FinishedAt,
+		&et.WorkNumber,
+	)
+
+	return &et, err
 }
 
 func (db *PGCon) setTaskChild(ctx c.Context, workNumber string, newTaskID uuid.UUID) error {

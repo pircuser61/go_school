@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/go-chi/chi/v5"
@@ -562,6 +563,11 @@ type BooleanOperandDataType string
 
 // BooleanOperandOperandType defines model for BooleanOperand.OperandType.
 type BooleanOperandOperandType string
+
+// CancelAppParams defines model for CancelAppParams.
+type CancelAppParams struct {
+	Comment string `json:"comment"`
+}
 
 // Compare operands using operator
 type Condition struct {
@@ -1471,6 +1477,17 @@ type TaskMeanSolveTime struct {
 	MeanWorkHours float32 `json:"meanWorkHours"`
 }
 
+// TaskStatus defines model for TaskStatus.
+type TaskStatus struct {
+	FinishedAt time.Time `json:"finished_at"`
+
+	// Task status
+	Status string `json:"status"`
+
+	// Task work number
+	WorkNumber string `json:"work_number"`
+}
+
 // TaskUpdate defines model for TaskUpdate.
 type TaskUpdate struct {
 	Action TaskUpdateAction `json:"action"`
@@ -1490,15 +1507,7 @@ type TasksStop struct {
 
 // TasksStopped defines model for TasksStopped.
 type TasksStopped struct {
-	Tasks []struct {
-		FinishedAt string `json:"finished_at"`
-
-		// Task status
-		Status string `json:"status"`
-
-		// Task work number
-		WorkNumber string `json:"work_number"`
-	} `json:"tasks"`
+	Tasks []TaskStatus `json:"tasks"`
 }
 
 // UsageResponse defines model for UsageResponse.
