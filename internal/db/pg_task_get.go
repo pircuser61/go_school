@@ -459,19 +459,26 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 				AND value(blocks) ->> 'executors' SIMILAR TO '{"(%s)": {}}'
 			)
 	), data AS (SELECT work_id,
-					   jsonb_each(blocks -> 'application_body')                           AS form_and_sd_application_body,
+					   value(jsonb_each(blocks -> 'application_body'))					  AS form_and_sd_application_body,
 					   jsonb_array_elements(blocks -> 'additional_info') -> 'attachments' AS additional_info_attachments,
 					   jsonb_array_elements(blocks -> 'approver_log') -> 'attachments'    AS approver_log_attachments,
 					   jsonb_array_elements(blocks -> 'editing_app_log') -> 'attachments' AS editing_app_log_attachments
 				FROM blocks_with_filtered_forms),
 		 counts AS (SELECT
 						work_id,
-						COUNT(form_and_sd_application_body) AS form_and_sd_count,
+						SUM(CASE
+                        		WHEN jsonb_typeof(form_and_sd_application_body) = 'string' 
+									THEN 1
+                        		WHEN jsonb_typeof(form_and_sd_application_body) = 'array'  
+									THEN jsonb_array_length(form_and_sd_application_body)
+                        		ELSE 0
+                        	END) AS form_and_sd_count,
 						SUM(coalesce(jsonb_array_length(NULLIF(additional_info_attachments, 'null')), 0)) AS additional_attachment_count,
 						SUM(coalesce(jsonb_array_length(NULLIF(approver_log_attachments, 'null')), 0)) AS additional_approvers_count,
 						SUM(coalesce(jsonb_array_length(NULLIF(editing_app_log_attachments, 'null')), 0)) AS rework_count
 					FROM data
-					WHERE value(form_and_sd_application_body)::text LIKE '"attachment:%%'
+					WHERE form_and_sd_application_body::text LIKE '"attachment:%%'
+					   OR form_and_sd_application_body::text LIKE '["attachment:%%'
 					   OR additional_info_attachments IS NOT NULL
 					   OR approver_log_attachments IS NOT NULL
 					   OR editing_app_log_attachments IS NOT NULL
