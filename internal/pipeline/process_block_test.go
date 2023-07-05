@@ -42,13 +42,15 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		uuid.UUID{},
 		mock.MatchedBy(func(taskStatus int) bool { return true }),
+		mock.MatchedBy(func(comment string) bool { return true }),
+		mock.MatchedBy(func(author string) bool { return true }),
 	).Return(nil)
 
 	res.On("UpdateTaskHumanStatus",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		uuid.UUID{},
 		mock.MatchedBy(func(status string) bool { return true }),
-	).Return(nil)
+	).Return(nil, nil)
 
 	res.On("SaveStepContext",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),

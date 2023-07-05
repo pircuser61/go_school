@@ -278,7 +278,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 		return stopErr
 	}
 
-	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished, "", db.SystemLogin); stopErr != nil {
 		return stopErr
 	}
 
@@ -358,7 +358,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 		return stopErr
 	}
 
-	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished, "", db.SystemLogin); stopErr != nil {
 		return stopErr
 	}
 

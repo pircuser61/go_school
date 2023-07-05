@@ -324,7 +324,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 		return stopErr
 	}
 
-	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished, "", db.SystemLogin); stopErr != nil {
 		return stopErr
 	}
 
@@ -402,7 +402,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 		return stopErr
 	}
 
-	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); stopErr != nil {
+	if stopErr := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished, "", db.SystemLogin); stopErr != nil {
 		return stopErr
 	}
 

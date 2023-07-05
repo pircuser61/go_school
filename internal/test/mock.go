@@ -975,7 +975,7 @@ func (_m *MockDB) CheckIsArchived(ctx context.Context, taskID uuid.UUID) (bool, 
 	return false, nil
 }
 
-func (_m *MockDB) UpdateTaskStatus(_ context.Context, _ uuid.UUID, _ int) error {
+func (_m *MockDB) UpdateTaskStatus(_ context.Context, _ uuid.UUID, _ int, _, _ string) error {
 	return nil
 }
 
@@ -1023,8 +1023,8 @@ func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ uuid.UUID, _ string) error {
-	return nil
+func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ uuid.UUID, _ string) (*entity.EriusTask, error) {
+	return &entity.EriusTask{}, nil
 }
 
 func (m *MockDB) GetApplicationData(workNumber string) (string, error) {

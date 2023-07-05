@@ -51,7 +51,7 @@ func (gb *GoEndBlock) Update(ctx context.Context) (interface{}, error) {
 	if err := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); err != nil {
 		return nil, err
 	}
-	if err := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished); err != nil {
+	if err := gb.RunContext.updateTaskStatus(ctx, db.RunStatusFinished, "", db.SystemLogin); err != nil {
 		return nil, err
 	}
 	return nil, nil

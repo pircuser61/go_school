@@ -48,6 +48,8 @@ type eriusTaskResponse struct {
 	Rate             *int                   `json:"rate"`
 	RateComment      *string                `json:"rate_comment"`
 	AvailableActions taskActions            `json:"available_actions"`
+	StatusComment    string                 `json:"status_comment"`
+	StatusAuthor     string                 `json:"status_author"`
 }
 
 type step struct {
@@ -128,6 +130,8 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask,
 		Rate:             in.Rate,
 		RateComment:      in.RateComment,
 		AvailableActions: actions,
+		StatusComment:    in.StatusComment,
+		StatusAuthor:     in.StatusAuthor,
 	}
 
 	return out
@@ -594,10 +598,6 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 
 	if action == entity.TaskUpdateActionRequestExecutionInfo {
 		return []string{pipeline.BlockGoExecutionID}
-	}
-
-	if action == entity.TaskUpdateActionCancelApp {
-		return []string{pipeline.BlockGoApproverID, pipeline.BlockGoExecutionID, pipeline.BlockGoFormID, pipeline.BlockGoWaitForAllInputsTitle}
 	}
 
 	if action == entity.TaskUpdateActionExecutorStartWork {

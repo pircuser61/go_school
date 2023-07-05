@@ -115,6 +115,11 @@ const (
 	RunStatusError    int = 3
 	RunStatusStopped  int = 4
 	RunStatusCreated  int = 5
+	RunStatusCanceled int = 6
+
+	CommentCanceled = "Заявка отозвана администратором платформы автоматизации"
+
+	SystemLogin = "jocasta"
 
 	// language=PostgreSQL
 	qCheckTagIsAttached string = `

@@ -44,11 +44,11 @@ type TaskStorager interface {
 	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
-	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int) error
+	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
 	GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error)
 	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
-	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) error
+	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) (*e.EriusTask, error)
 	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)
 	GetTaskStepsToWait(ctx c.Context, workNumber, blockName string) ([]string, error)
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
