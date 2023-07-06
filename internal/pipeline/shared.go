@@ -23,7 +23,14 @@ func getVariable(variables map[string]interface{}, key string) interface{} {
 		return variables[key]
 	}
 
-	variable, ok := variables[strings.Join(variableMemberNames[:2], dotSeparator)]
+	variable, ok := variables[strings.Join(variableMemberNames, dotSeparator)]
+	if ok {
+		if _, ok = variable.([]interface{}); ok {
+			return variable
+		}
+	}
+
+	variable, ok = variables[strings.Join(variableMemberNames[:2], dotSeparator)]
 	if !ok {
 		return nil
 	}
@@ -59,7 +66,7 @@ func getUsersFromVars(varStore map[string]interface{}, toResolve map[string]stru
 		varValue := getVariable(varStore, varName)
 
 		if varValue == nil {
-			return nil, errors.New("unable to find entity by varName: " + varName)
+			return nil, errors.New("unable to find value by varName: " + varName)
 		}
 
 		if login, castOK := varValue.(string); castOK {

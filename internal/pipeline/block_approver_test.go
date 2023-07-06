@@ -303,12 +303,30 @@ func TestApproverData_SetDecisionByAdditionalApprover(t *testing.T) {
 
 func Test_createGoApproverBlock(t *testing.T) {
 	const (
-		example             = "example"
-		title               = "title"
-		login               = "login1"
-		approversFromSchema = "a.var1;b.var2;var3"
-		approverGroupId     = "uuid13456"
+		example                  = "example"
+		title                    = "title"
+		login                    = "login1"
+		approversFromSchema      = "a.var1;b.var2;var3"
+		approversFromSchemaSlice = "sd_app_0.application_body.users"
+		approverGroupId          = "uuid13456"
+		loginFromSlice0          = "pilzner1"
+		loginFromSlice1          = "pupok_na_jope"
 	)
+
+	myStorage := makeStorage()
+	varStore := store.NewStore()
+
+	varStore.SetValue("sd_app_0.application_body.users", []interface{}{
+		map[string]interface{}{
+			"username": loginFromSlice0,
+		},
+		map[string]interface{}{
+			"username": loginFromSlice1,
+		},
+		map[string]interface{}{
+			"userName": "noname",
+		},
+	})
 
 	next := []entity.Socket{
 		{
@@ -324,8 +342,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 	}
 
 	type args struct {
-		name string
-		ef   *entity.EriusFunc
+		name   string
+		ef     *entity.EriusFunc
+		runCtx *BlockRunContext
 	}
 	tests := []struct {
 		name    string
@@ -337,6 +356,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 			name: "can not get approver parameters",
 			args: args{
 				name: example,
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Storage:           myStorage,
+				},
 				ef: &entity.EriusFunc{
 					BlockType: BlockGoApproverID,
 					Title:     title,
@@ -353,6 +377,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 			name: "invalid approver parameters",
 			args: args{
 				name: example,
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Storage:           myStorage,
+				},
 				ef: &entity.EriusFunc{
 					BlockType: BlockGoApproverID,
 					Title:     title,
@@ -369,6 +398,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 			name: "invalid approvement rule for many approvers from schema",
 			args: args{
 				name: example,
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Storage:           myStorage,
+				},
 				ef: &entity.EriusFunc{
 					BlockType: BlockGoApproverID,
 					Title:     title,
@@ -394,6 +428,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 			name: "invalid approvement rule for group",
 			args: args{
 				name: example,
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Storage:           myStorage,
+				},
 				ef: &entity.EriusFunc{
 					BlockType: BlockGoApproverID,
 					Title:     title,
@@ -416,9 +455,90 @@ func Test_createGoApproverBlock(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "get logins from slice of SsoPerson",
+			args: args{
+				name: example,
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          varStore,
+					Storage:           myStorage,
+				},
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoApproverID,
+					Title:     title,
+					Input: []entity.EriusFunctionValue{
+						{
+							Name:   "foo",
+							Type:   "string",
+							Global: "bar",
+						},
+					},
+					Output: []entity.EriusFunctionValue{
+						{
+							Name:   keyOutputApprover,
+							Type:   "string",
+							Global: example,
+						},
+					},
+					Params: func() []byte {
+						r, _ := json.Marshal(&script.ApproverParams{
+							Type:               script.ApproverTypeFromSchema,
+							Approver:           approversFromSchemaSlice,
+							FormsAccessibility: make([]script.FormAccessibility, 0),
+						})
+
+						return r
+					}(),
+					Sockets: next,
+				},
+			},
+			want: &GoApproverBlock{
+				Name:  example,
+				Title: title,
+				Input: map[string]string{
+					"foo": "bar",
+				},
+				Output: map[string]string{
+					keyOutputApprover: example,
+				},
+				State: &ApproverData{
+					Type: script.ApproverTypeFromSchema,
+					Approvers: map[string]struct{}{
+						loginFromSlice0: {},
+						loginFromSlice1: {},
+					},
+					Decision:           nil,
+					Comment:            nil,
+					ActualApprover:     nil,
+					AutoAction:         nil,
+					ApprovementRule:    script.AnyOfApprovementRequired,
+					ApproverLog:        make([]ApproverLogEntry, 0),
+					FormsAccessibility: make([]script.FormAccessibility, 0),
+					ActionList: []Action{
+						{
+							Id:    DefaultSocketID,
+							Title: script.DefaultSocketTitle,
+						},
+						{
+							Id:    rejectedSocketID,
+							Title: script.RejectSocketTitle,
+						},
+					},
+					WorkType: string(WorkTypeN85),
+				},
+				Sockets: entity.ConvertSocket(next),
+			},
+			wantErr: false,
+		},
+		{
 			name: "acceptance test",
 			args: args{
 				name: example,
+				runCtx: &BlockRunContext{
+					skipNotifications: true,
+					VarStore:          store.NewStore(),
+					Storage:           myStorage,
+				},
 				ef: &entity.EriusFunc{
 					BlockType: BlockGoApproverID,
 					Title:     title,
@@ -489,14 +609,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			got, _, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, &BlockRunContext{
-				skipNotifications: true,
-				VarStore:          store.NewStore(),
-				Storage:           makeStorage(),
-			})
+			got, _, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
 			if got != nil {
 				got.RunContext = nil
 			}
+
 			assert.Equalf(t, tt.wantErr, err != nil, "createGoApproverBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 			assert.Equalf(t, tt.want, got, "createGoApproverBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 		})
