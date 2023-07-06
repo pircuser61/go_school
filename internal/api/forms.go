@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"go.opencensus.io/trace"
 
 	"github.com/pkg/errors"
@@ -22,14 +24,6 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 
 	log := logger.GetLogger(ctx)
 
-	ui, err := user.GetUserInfoFromCtx(ctx)
-	if err != nil {
-		e := NoUserInContextError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
-
 	currentUi, err := user.GetEffectiveUserInfoFromCtx(ctx)
 	if err != nil {
 		e := NoUserInContextError
@@ -38,7 +32,7 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
-	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, ui.Username)
+	delegations, err := ae.HumanTasks.GetDelegationsToLogin(ctx, currentUi.Username)
 	if err != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(err))
@@ -50,8 +44,8 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 	delegationsByExecution := delegations.FilterByType("execution")
 
 	dbTask, err := ae.DB.GetTask(ctx,
-		delegationsByApprovement.GetUserInArrayWithDelegators([]string{ui.Username}),
-		delegationsByExecution.GetUserInArrayWithDelegators([]string{ui.Username}),
+		delegationsByApprovement.GetUserInArrayWithDelegators([]string{currentUi.Username}),
+		delegationsByExecution.GetUserInArrayWithDelegators([]string{currentUi.Username}),
 		currentUi.Username,
 		params.WorkNumber)
 	if err != nil {
@@ -108,7 +102,8 @@ func (ae *APIEnv) GetFormsChangelog(w http.ResponseWriter, r *http.Request, para
 			Executor:        &changelog.Executor,
 		}
 
-		if ui.Username == dbTask.Author && formData.HideExecutorFromInitiator {
+		if !slices.Contains([]string{changelog.Executor}, currentUi.Username) &&
+			currentUi.Username == dbTask.Author && formData.HideExecutorFromInitiator {
 			result[i].Executor = utils.GetAddressOfValue(hiddenUserLogin)
 		}
 	}
