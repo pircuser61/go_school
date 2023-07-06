@@ -20,7 +20,6 @@ require (
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/labstack/gommon v0.4.0
 	github.com/lib/pq v1.10.9
-	github.com/minio/minio-go/v7 v7.0.52
 	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose/v3 v3.7.0
 	github.com/prometheus/client_golang v1.14.0
@@ -29,7 +28,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0
 	gitlab.services.mts.ru/abp/mail/pkg v1.19.0
 	gitlab.services.mts.ru/abp/myosotis v1.4.4
-	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.1
+	gitlab.services.mts.ru/jocasta/conditions-kit v1.0.2
 	gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1
 	gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3

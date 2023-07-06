@@ -1599,7 +1599,12 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			WHERE work_id = $1 AND
                 step_name = $2 AND
                 (status IN ('idle', 'ready', 'running') OR
-                (step_type = 'form' AND status IN ('idle', 'ready', 'running', 'finished')))
+					(
+						step_type = 'form' AND
+						status IN ('idle', 'ready', 'running', 'finished') AND
+			    		time = (SELECT max(time) FROM variable_storage vs WHERE vs.work_id = $1 AND step_name = $2)
+					)
+			    )
 	`
 
 		if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).

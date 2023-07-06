@@ -640,6 +640,8 @@ gitlab.services.mts.ru/abp/myosotis v1.4.4 h1:De8ST0tK1aZKnVFvOd1a3FReloOh3hl6G3
 gitlab.services.mts.ru/abp/myosotis v1.4.4/go.mod h1:x1TTaEJ+kgNbCkQViA5eWgnNLAprspL6qJWJWkhVZFE=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.1 h1:Qlm9UR7vM1++D7bobhE/4swZ5piqwZSvkKxwdldcVi0=
 gitlab.services.mts.ru/jocasta/conditions-kit v1.0.1/go.mod h1:6Q7Q5QkybhdvGpYBOojsDENuKigwRxZCCX+b/F9Y5w0=
+gitlab.services.mts.ru/jocasta/conditions-kit v1.0.2 h1:vD7NG8h7GVI20NkIE/aDyPMtjwdq0eX6+SMo9nq3xRw=
+gitlab.services.mts.ru/jocasta/conditions-kit v1.0.2/go.mod h1:6Q7Q5QkybhdvGpYBOojsDENuKigwRxZCCX+b/F9Y5w0=
 gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1 h1:KDG7ZfhKbqwB5we4i7mjfEp7P1LLOm3iU+zu4PYD0y0=
 gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1/go.mod h1:/otsOvcT23tOs3a7Mtay4MB+58VKIDkwlnS4gzOS5Kc=
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/lyqa+CrStWUJ4nAd5H5j4w=
