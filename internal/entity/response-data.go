@@ -285,6 +285,7 @@ type EriusFunctionValue struct {
 	Name   string `json:"name" example:"some_data"`
 	Type   string `json:"type" example:"string"`
 	Global string `json:"global,omitempty" example:"block.some_data"`
+	Format string `json:"format" example:"string"`
 }
 
 type ProcessSettingsWithExternalSystems struct {
@@ -457,7 +458,8 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 		}, EriusFunctionValue{
 			Global: es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
 			Name:   KeyOutputApplicationInitiator,
-			Type:   "SsoPerson",
+			Type:   "Object",
+			Format: "SsoPerson",
 		})
 
 	for propertyName, property := range es.Settings.StartSchema.Properties {
@@ -466,18 +468,24 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 
 		fieldType := property.Type
 
-		if format == "ssoperson" || name == "recipient" {
-			fieldType = "SsoPerson"
+		if name == "recipient" {
+			fieldType = "Object"
+			format = "SsoPerson"
 		}
 
 		if format == "file" {
 			fieldType = "File"
 		}
 
+		if fieldType == "array" && property.Items != nil {
+			format = property.Items.Format
+		}
+
 		entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
 			Global: es.Pipeline.Entrypoint + "." + name,
 			Name:   propertyName,
 			Type:   fieldType,
+			Format: format,
 		})
 	}
 

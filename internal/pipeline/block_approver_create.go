@@ -223,7 +223,7 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 
 		approversVars := strings.Split(dto.Approver, ";")
 		for i := range approversVars {
-			resolvedEntities, resolveErr := resolveValuesFromVariables(
+			resolvedEntities, resolveErr := getUsersFromVars(
 				variableStorage,
 				map[string]struct{}{
 					approversVars[i]: {},

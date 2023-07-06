@@ -2852,10 +2852,14 @@ components:
         type:
           type: string
           example: string
+        format:
+          type: string
+          example: string
       required:
         - name
         - type
         - global
+        - format
 
     pipeline:
       type: object

@@ -40,6 +40,7 @@ type ArrayItems struct {
 	Items      *ArrayItems          `json:"items,omitempty"`
 	Properties JSONSchemaProperties `json:"properties,omitempty"`
 	Type       string               `json:"type,omitempty"`
+	Format     string               `json:"format,omitempty"`
 }
 
 func (jspv *JSONSchemaPropertiesValue) GetType() string {

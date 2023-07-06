@@ -392,13 +392,41 @@ const (
 
 // Defines values for TaskHumanStatus.
 const (
+	TaskHumanStatusApproveConfirm TaskHumanStatus = "approve-confirm"
+
+	TaskHumanStatusApproveConfirmed TaskHumanStatus = "approve-confirmed"
+
+	TaskHumanStatusApproveInform TaskHumanStatus = "approve-inform"
+
+	TaskHumanStatusApproveInformed TaskHumanStatus = "approve-informed"
+
+	TaskHumanStatusApproveSign TaskHumanStatus = "approve-sign"
+
+	TaskHumanStatusApproveSigned TaskHumanStatus = "approve-signed"
+
+	TaskHumanStatusApproveView TaskHumanStatus = "approve-view"
+
+	TaskHumanStatusApproveViewed TaskHumanStatus = "approve-viewed"
+
 	TaskHumanStatusApproved TaskHumanStatus = "approved"
 
 	TaskHumanStatusApprovement TaskHumanStatus = "approvement"
 
+	TaskHumanStatusApprovementReject TaskHumanStatus = "approvement-reject"
+
+	TaskHumanStatusCancel TaskHumanStatus = "cancel"
+
 	TaskHumanStatusDone TaskHumanStatus = "done"
 
+	TaskHumanStatusExecutorReject TaskHumanStatus = "executor-reject"
+
 	TaskHumanStatusNew TaskHumanStatus = "new"
+
+	TaskHumanStatusProcessing TaskHumanStatus = "processing"
+
+	TaskHumanStatusRevoke TaskHumanStatus = "revoke"
+
+	TaskHumanStatusWait TaskHumanStatus = "wait"
 )
 
 // Add Approver params
@@ -682,6 +710,7 @@ type EriusFunctionList struct {
 
 // EriusFunctionValue defines model for EriusFunctionValue.
 type EriusFunctionValue struct {
+	Format string `json:"format"`
 	Global string `json:"global"`
 	Name   string `json:"name"`
 	Type   string `json:"type"`
@@ -1626,7 +1655,10 @@ type EriusTaskResponse struct {
 
 	// Технический статус заявки
 	Status EriusTaskResponseStatus `json:"status"`
-	Steps  []TaskResponseStep      `json:"steps"`
+
+	// Комментарий статуса
+	StatusComment string             `json:"status_comment"`
+	Steps         []TaskResponseStep `json:"steps"`
 
 	// Версия процесса заявки
 	VersionId string `json:"version_id"`
