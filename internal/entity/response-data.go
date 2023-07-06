@@ -458,7 +458,7 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 		}, EriusFunctionValue{
 			Global: es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
 			Name:   KeyOutputApplicationInitiator,
-			Type:   "Object",
+			Type:   "object",
 			Format: "SsoPerson",
 		})
 
@@ -469,12 +469,8 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 		fieldType := property.Type
 
 		if name == "recipient" {
-			fieldType = "Object"
+			fieldType = "object"
 			format = "SsoPerson"
-		}
-
-		if format == "file" {
-			fieldType = "File"
 		}
 
 		if fieldType == "array" && property.Items != nil {
