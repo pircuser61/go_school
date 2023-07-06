@@ -279,6 +279,8 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
 
+	log := logger.GetLogger(ctx)
+
 	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
@@ -327,6 +329,8 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		}
 		steps = append(steps, stepsByBlock...)
 	}
+
+	log.Info("update_task_internal steps: ", steps)
 
 	if len(steps) == 0 {
 		e := GetTaskError
