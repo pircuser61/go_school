@@ -157,7 +157,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 			return grabStorageErr
 		}
 
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
+		resolvedEntities, resolveErr := getUsersFromVars(
 			variableStorage,
 			map[string]struct{}{
 				dto.Value: {},

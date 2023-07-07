@@ -58,6 +58,7 @@ type FunctionValueModel struct {
 	Name    string `json:"name"`
 	Type    string `json:"type"`
 	Comment string `json:"comment"`
+	Format  string `json:"format"`
 }
 
 type Socket struct {

@@ -139,8 +139,9 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 			},
 			{
 				Name:    keyOutputSdApplicationExecutor,
-				Type:    "SsoPerson",
+				Type:    "object",
 				Comment: "person object from sso",
+				Format:  "SsoPerson",
 			},
 		},
 		Params: &script.FunctionParams{

@@ -195,6 +195,8 @@ type setExecutorsByParamsDTO struct {
 }
 
 func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutorsByParamsDTO) error {
+	const variablesSep = ";"
+
 	switch dto.Type {
 	case script.ExecutionTypeUser:
 		gb.State.Executors = map[string]struct{}{
@@ -208,9 +210,9 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		}
 
 		executorsFromSchema := make(map[string]struct{})
-		executorVars := strings.Split(dto.Executor, ";")
+		executorVars := strings.Split(dto.Executor, variablesSep)
 		for i := range executorVars {
-			resolvedEntities, resolveErr := resolveValuesFromVariables(
+			resolvedEntities, resolveErr := getUsersFromVars(
 				variableStorage,
 				map[string]struct{}{
 					executorVars[i]: {},
