@@ -5,11 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/araddon/dateparse"
 )
 
 const (
 	timeLayout  = `"2006-01-02 15:04:05.000000 -0700 MST"`
 	timeLayout2 = `"2006-01-02 15:04:05.000 -0700 MST"`
+	timeLayout3 = `"2006-01-02 15:04:05.00000 -0700 MST"`
+	timeLayout4 = `"2006-01-02 15:04:05.0000 -0700 MST"`
 	emptyString = `""`
 	object      = "object"
 )
@@ -231,7 +235,14 @@ func (ft *functionTime) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	parsedTime, err := time.Parse(timeLayout, string(b))
+	parsedTime, err := dateparse.ParseLocal(string(b))
+	if err == nil {
+		*ft = functionTime(parsedTime)
+
+		return nil
+	}
+
+	parsedTime, err = time.Parse(timeLayout, string(b))
 	if err == nil {
 		*ft = functionTime(parsedTime)
 		return nil
@@ -243,8 +254,19 @@ func (ft *functionTime) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	err = json.Unmarshal(b, &parsedTime)
-	if err != nil {
+	parsedTime, err = time.Parse(timeLayout3, string(b))
+	if err == nil {
+		*ft = functionTime(parsedTime)
+		return nil
+	}
+
+	parsedTime, err = time.Parse(timeLayout4, string(b))
+	if err == nil {
+		*ft = functionTime(parsedTime)
+		return nil
+	}
+
+	if err = json.Unmarshal(b, &parsedTime); err != nil {
 		return err
 	}
 
