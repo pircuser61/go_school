@@ -27,6 +27,7 @@ type FormParams struct {
 	Executor                  string               `json:"executor"`
 	FormExecutorType          FormExecutorType     `json:"form_executor_type"`
 	FormGroupId               string               `json:"form_group_id"`
+	FormGroupIDPath           *string              `json:"form_group_id_path,omitempty"`
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`

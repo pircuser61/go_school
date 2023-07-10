@@ -86,6 +86,22 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if err != nil {
 		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
 	}
+
+	if params.ExecutorsGroupIDPath != nil {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupId := getVariable(
+			variableStorage,
+			*params.ExecutorsGroupIDPath,
+		)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.ExecutorsGroupID = groupId.(string)
+	}
 	executorChosenFlag := false
 	if gb.State.UseActualExecutor {
 		execs, prevErr := gb.RunContext.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
@@ -144,6 +160,21 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		UseActualExecutor:  params.UseActualExecutor,
 	}
 	executorChosenFlag := false
+	if params.ExecutorsGroupIDPath != nil {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupId := getVariable(
+			variableStorage,
+			*params.ExecutorsGroupIDPath,
+		)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.ExecutorsGroupID = groupId.(string)
+	}
 	if gb.State.UseActualExecutor {
 		execs, execErr := gb.RunContext.Storage.GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx, gb.RunContext.WorkNumber, gb.Name)
 		if execErr != nil {

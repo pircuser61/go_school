@@ -108,7 +108,21 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		IsEditable:                params.IsEditable,
 		ReEnterSettings:           params.ReEnterSettings,
 	}
+	if params.FormGroupIDPath != nil {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
 
+		groupId := getVariable(
+			variableStorage,
+			*params.FormGroupIDPath,
+		)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.FormGroupId = groupId.(string)
+	}
 	executorValue := params.Executor
 	if params.FormExecutorType == script.FormExecutorTypeGroup {
 		executorValue = params.FormGroupId

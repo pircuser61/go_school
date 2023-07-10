@@ -22,8 +22,9 @@ type ExecutionParams struct {
 	Type      ExecutionType `json:"type"`
 	Executors string        `json:"executors"`
 
-	ExecutorsGroupID   string `json:"executors_group_id"`
-	ExecutorsGroupName string `json:"executors_group_name"`
+	ExecutorsGroupID     string  `json:"executors_group_id"`
+	ExecutorsGroupName   string  `json:"executors_group_name"`
+	ExecutorsGroupIDPath *string `json:"executors_group_id_path"`
 
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 

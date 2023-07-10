@@ -468,6 +468,9 @@ type ApproverParams struct {
 	// Approvers group id in SD
 	ApproversGroupId string `json:"approvers_group_id"`
 
+	// Path to approvers group id
+	ApproversGroupIdPath *string `json:"approvers_group_id_path,omitempty"`
+
 	// Approvers group name in SD
 	ApproversGroupName string `json:"approvers_group_name"`
 
@@ -829,6 +832,9 @@ type ExecutionParams struct {
 	// Executors group id in SD
 	ExecutorsGroupId string `json:"executors_group_id"`
 
+	// Path to executors group id
+	ExecutorsGroupIdPath *string `json:"executors_group_id_path,omitempty"`
+
 	// Executors group name in SD
 	ExecutorsGroupName string `json:"executors_group_name"`
 
@@ -969,6 +975,9 @@ type FormParams struct {
 
 	// Form group id in SD
 	FormGroupId *string `json:"form_group_id,omitempty"`
+
+	// Path to form group id
+	FormGroupIdPath *string `json:"form_group_id_path,omitempty"`
 
 	// Настройки блока при повторном заходе в этот блок
 	FormReEnterSettings *FormReEnterSettings `json:"form_re_enter_settings,omitempty"`

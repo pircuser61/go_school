@@ -166,6 +166,8 @@ type ApproverData struct {
 	ApproversGroupID   string `json:"approvers_group_id"`
 	ApproversGroupName string `json:"approvers_group_name"`
 
+	ApproversGroupIdPath *string `json:"approvers_group_id_path,omitempty"`
+
 	AddInfo []AdditionalInfo `json:"additional_info,omitempty"`
 
 	ApproveStatusName string `json:"approve_status_name"`
