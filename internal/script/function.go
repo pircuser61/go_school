@@ -245,24 +245,25 @@ func (ft *functionTime) UnmarshalJSON(b []byte) error {
 	parsedTime, err = time.Parse(timeLayout, string(b))
 	if err == nil {
 		*ft = functionTime(parsedTime)
+
 		return nil
 	}
 
-	parsedTime, err = time.Parse(timeLayout2, string(b))
-	if err == nil {
+	if parsedTime, err = time.Parse(timeLayout2, string(b)); err == nil {
 		*ft = functionTime(parsedTime)
+
 		return nil
 	}
 
-	parsedTime, err = time.Parse(timeLayout3, string(b))
-	if err == nil {
+	if parsedTime, err = time.Parse(timeLayout3, string(b)); err == nil {
 		*ft = functionTime(parsedTime)
+
 		return nil
 	}
 
-	parsedTime, err = time.Parse(timeLayout4, string(b))
-	if err == nil {
+	if parsedTime, err = time.Parse(timeLayout4, string(b)); err == nil {
 		*ft = functionTime(parsedTime)
+
 		return nil
 	}
 
