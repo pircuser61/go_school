@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"golang.org/x/net/context"
+
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -60,6 +62,8 @@ type TaskStorager interface {
 	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
 	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
+	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
+	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
 
 	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
 }
@@ -80,6 +84,7 @@ type DbMember struct {
 	Login    string
 	Finished bool
 	Actions  []DbMemberAction
+	Type     string
 }
 
 type DbDeadline struct {
@@ -97,6 +102,7 @@ type SaveStepRequest struct {
 	Status      string
 	Members     []DbMember
 	Deadlines   []DbDeadline
+	IsReEntry   bool
 }
 
 type UpdateStepRequest struct {
@@ -211,5 +217,5 @@ type Database interface {
 	UpdateEndingSystemSettings(ctx c.Context, versionID, systemID string, settings e.EndSystemSettings) (err error)
 	SaveSlaVersionSettings(ctx c.Context, versionID string, s e.SlaVersionSettings) (err error)
 	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
-	GetTaskMembersLogins(ctx c.Context, workNumber string) ([]string, error)
+	GetTaskMembers(ctx context.Context, workNumber string) ([]DbMember, error)
 }

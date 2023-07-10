@@ -428,7 +428,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 	}
 }
 
-func NewAnswerSendToEditTpl(id, name, sdUrl string) Template {
+func NewSendToInitiatorEditTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s требует доработки", id),
 		Text: `Уважаемый коллега, заявка {{.Id}} <b>требует доработки.</b><br>

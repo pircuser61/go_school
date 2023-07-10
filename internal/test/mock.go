@@ -902,10 +902,6 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
-func (_m *MockDB) GetTaskMembersLogins(ctx context.Context, workNumber string) ([]string, error) {
-	return nil, nil
-}
-
 func (_m *MockDB) GetTaskMembers(ctx context.Context, workNumber string) ([]db.DbMember, error) {
 	return nil, nil
 }
@@ -1373,4 +1369,14 @@ func (m *MockDB) GetSlaVersionSettings(ctx context.Context, versionID string) (s
 
 func (m *MockDB) CheckIsTest(ctx context.Context, taskID uuid.UUID) (bool, error) {
 	return false, nil
+}
+
+func (m *MockDB) GetExecutorsFromPrevExecutionBlockRun(ctx context.Context, taskID uuid.UUID, n string) (
+	exec map[string]struct{}, err error) {
+	return map[string]struct{}{}, nil
+}
+
+func (m *MockDB) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx context.Context, workNumber, name string) (
+	exec map[string]struct{}, err error) {
+	return map[string]struct{}{}, nil
 }

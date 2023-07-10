@@ -1044,7 +1044,12 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			vs.status,
 			vs.updated_at
 		FROM variable_storage vs 
-			WHERE work_id = $1 AND vs.status != 'skipped'
+			WHERE work_id = $1 AND vs.status != 'skipped' AND 
+			(SELECT max(time)
+				 FROM variable_storage vrbs
+				 WHERE vrbs.step_name = vs.step_name AND
+					   vrbs.work_id = $1
+				) = vs.time
 		ORDER BY vs.time DESC`
 
 	rows, err := db.Connection.Query(ctx, query, id)
@@ -1492,13 +1497,13 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetTaskMembersLogins(ctx c.Context, workNumber string) ([]string, error) {
-	q := `SELECT DISTINCT m.login FROM works
+func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, error) {
+	q := `SELECT m.login, vs.step_type FROM works
     		JOIN variable_storage vs ON works.id = vs.work_id
     		JOIN members m ON vs.id = m.block_id
 		 WHERE work_number = $1 AND vs.status IN ('running', 'idle');`
 
-	members := make([]string, 0)
+	members := make([]DbMember, 0)
 
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {
@@ -1506,16 +1511,24 @@ func (db *PGCon) GetTaskMembersLogins(ctx c.Context, workNumber string) ([]strin
 	}
 	defer rows.Close()
 
+	met := make(map[string]struct{})
+
 	for rows.Next() {
-		var login string
+		m := DbMember{}
 
 		if scanErr := rows.Scan(
-			&login,
+			&m.Login, &m.Type,
 		); scanErr != nil {
 			return nil, scanErr
 		}
 
-		members = append(members, login)
+		key := fmt.Sprintf("%s:%s", m.Login, m.Type)
+		if _, ok := met[key]; ok {
+			continue
+		}
+		met[key] = struct{}{}
+
+		members = append(members, m)
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
@@ -1540,4 +1553,46 @@ func (db *PGCon) CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error) {
 	}
 
 	return isTest, nil
+}
+func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (
+	exec map[string]struct{}, err error) {
+	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
+	defer span.End()
+
+	q := `
+		SELECT  content-> 'State' -> $1 -> 'executors'
+		FROM variable_storage
+		WHERE work_id = $2 and step_name = $3 order by time desc limit 1 offset 1`
+
+	var executors map[string]struct{}
+	if err = db.Connection.QueryRow(ctx, q, name, taskID, name).Scan(&executors); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return map[string]struct{}{}, nil
+		}
+		return map[string]struct{}{}, err
+	}
+
+	return executors, nil
+}
+
+func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (
+	exec map[string]struct{}, err error) {
+	ctx, span := trace.StartSpan(ctx, "get_executor_from_prev_block")
+	defer span.End()
+
+	q := `
+		SELECT  content-> 'State' -> $1 -> 'executors'
+		FROM variable_storage
+		WHERE work_id = (select id from works where work_number = $2 order by started_at desc limit 1 offset 1) 
+		  and step_name = $3 order by time desc limit 1 offset 1`
+
+	var executors map[string]struct{}
+	if err = db.Connection.QueryRow(ctx, q, name, workNumber, name).Scan(&executors); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return map[string]struct{}{}, nil
+		}
+		return map[string]struct{}{}, err
+	}
+
+	return executors, nil
 }

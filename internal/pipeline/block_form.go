@@ -2,12 +2,7 @@ package pipeline
 
 import (
 	c "context"
-	"encoding/json"
 	"time"
-
-	"golang.org/x/net/context"
-
-	"github.com/pkg/errors"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -24,7 +19,10 @@ const (
 	keyOutputFormBody     = "application_body"
 )
 
-const formFillFormAction = "fill_form"
+const (
+	formFillFormAction  = "fill_form"
+	formStartWorkAction = "form_executor_start_work"
+)
 
 const AutoFillUser = "auto_fill"
 
@@ -63,6 +61,9 @@ type FormData struct {
 	HideExecutorFromInitiator bool `json:"hide_executor_from_initiator"`
 
 	Mapping script.JSONSchemaProperties `json:"mapping"`
+
+	IsEditable      *bool                       `json:"is_editable"`
+	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings"`
 }
 
 type GoFormBlock struct {
@@ -97,6 +98,15 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	if gb.State.IsFilled {
 		return []MemberAction{}
 	}
+
+	if !gb.State.IsTakenInWork {
+		action := MemberAction{
+			Id:   formStartWorkAction,
+			Type: ActionTypePrimary,
+		}
+		return []MemberAction{action}
+	}
+
 	action := MemberAction{
 		Id:   formFillFormAction,
 		Type: ActionTypeCustom,
@@ -104,7 +114,7 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	return []MemberAction{action}
 }
 
-func (gb *GoFormBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
+func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	if gb.State.IsRevoked {
 		return []Deadline{}, nil
 	}
@@ -206,139 +216,6 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 	}
 }
 
-// nolint:dupl // another block
-func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, error) {
-	b := &GoFormBlock{
-		Name:       name,
-		Title:      ef.Title,
-		Input:      map[string]string{},
-		Output:     map[string]string{},
-		Sockets:    entity.ConvertSocket(ef.Sockets),
-		RunContext: runCtx,
-	}
-
-	for _, v := range ef.Input {
-		b.Input[v.Name] = v.Global
-	}
-
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
-	}
-
-	rawState, ok := runCtx.VarStore.State[name]
-	if ok {
-		if err := b.loadState(rawState); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := b.createState(ctx, ef); err != nil {
-			return nil, err
-		}
-		b.RunContext.VarStore.AddStep(b.Name)
-	}
-
-	return b, nil
-}
-
-func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
-	return json.Unmarshal(raw, &gb.State)
-}
-
-//nolint:dupl //different logic
-func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
-	var params script.FormParams
-	err := json.Unmarshal(ef.Params, &params)
-	if err != nil {
-		return errors.Wrap(err, "can not get form parameters")
-	}
-
-	if err = params.Validate(); err != nil {
-		return errors.Wrap(err, "invalid form parameters")
-	}
-
-	gb.State = &FormData{
-		Executors: map[string]struct{}{
-			params.Executor: {},
-		},
-		SchemaId:                  params.SchemaId,
-		SLA:                       params.SLA,
-		CheckSLA:                  params.CheckSLA,
-		SchemaName:                params.SchemaName,
-		ChangesLog:                make([]ChangesLogItem, 0),
-		FormExecutorType:          params.FormExecutorType,
-		ApplicationBody:           map[string]interface{}{},
-		FormsAccessibility:        params.FormsAccessibility,
-		Mapping:                   params.Mapping,
-		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
-	}
-
-	switch gb.State.FormExecutorType {
-	case script.FormExecutorTypeUser:
-		gb.State.Executors = map[string]struct{}{
-			params.Executor: {},
-		}
-	case script.FormExecutorTypeInitiator:
-		gb.State.Executors = map[string]struct{}{
-			gb.RunContext.Initiator: {},
-		}
-	case script.FormExecutorTypeFromSchema:
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return err
-		}
-
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
-			variableStorage,
-			map[string]struct{}{
-				params.Executor: {},
-			},
-		)
-		if resolveErr != nil {
-			return err
-		}
-
-		gb.State.Executors = resolvedEntities
-	case script.FormExecutorTypeAutoFillUser:
-		if err = gb.handleAutoFillForm(); err != nil {
-			return err
-		}
-	case script.FormExecutorTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, params.FormGroupId)
-		if errGroup != nil {
-			return errors.Wrap(errGroup, "can`t get form group with id: "+params.FormGroupId)
-		}
-
-		if len(workGroup.People) == 0 {
-			//nolint:goimports // bugged golint
-			return errors.New("zero form executors in group: " + params.FormGroupId)
-		}
-
-		gb.State.Executors = make(map[string]struct{})
-		for i := range workGroup.People {
-			gb.State.Executors[workGroup.People[i].Login] = struct{}{}
-		}
-		gb.State.FormGroupId = params.FormGroupId
-		gb.State.FormExecutorsGroupName = workGroup.GroupName
-	}
-
-	if params.WorkType != nil {
-		gb.State.WorkType = *params.WorkType
-	} else {
-		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
-		if getVersionErr != nil {
-			return getVersionErr
-		}
-
-		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
-		if getVersionErr != nil {
-			return getVersionErr
-		}
-		gb.State.WorkType = processSLASettings.WorkType
-	}
-
-	return gb.handleNotifications(ctx)
-}
-
 func (gb *GoFormBlock) handleAutoFillForm() error {
 	variables, err := getVariables(gb.RunContext.VarStore)
 	if err != nil {
@@ -361,6 +238,9 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		Username: AutoFillUser,
 	}
 
+	gb.State.Executors = map[string]struct{}{
+		AutoFillUser: {},
+	}
 	gb.State.ChangesLog = append([]ChangesLogItem{
 		{
 			ApplicationBody: formMapping,
@@ -391,13 +271,13 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	var emailAttachment []e.Attachment
 
 	var emails = make(map[string]mail.Template, 0)
-
 	for _, login := range executors {
 		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
+
 		if isGroupExecutors {
 			slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
 				Service: gb.RunContext.HrGate,

@@ -2292,6 +2292,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /tasks/stop:
+    post:
+      tags:
+        - tasks
+      summary: Stop tasks by work number
+      description: Остановка переданных заявок
+      operationId: stop-tasks
+      requestBody:
+        description: Task stop data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TasksStop'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TasksStopped'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /forms/changelog:
     get:
       tags:
@@ -3378,6 +3423,41 @@ components:
       required:
         - meanWorkHours
 
+    TasksStop:
+      type: object
+      properties:
+        tasks:
+          type: array
+          description: Array of work numbers
+          items:
+            type: string
+      required:
+        - tasks
+
+    TasksStopped:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+                description: Task status
+              work_number:
+                type: string
+                description: Task work number
+              finished_at:
+                type: string
+                example: 2020-07-16T17:10:25.112704+03:00
+            required:
+              - status
+              - work_number
+              - finished_at
+      required:
+        - tasks
+
     FillFormUpdateParams:
       type: object
       description: Fill form
@@ -3591,6 +3671,16 @@ components:
       required:
         - type
         - properties
+
+    FormReEnterSettings:
+      type: object
+      description: Настройки блока при повторном заходе в этот блок
+      properties:
+        form_executor_type:
+          $ref: '#/components/schemas/FormExecutorType'
+        value:
+          type: string
+          description: Executor login, variable or group id
 
     JSONSchemaProperties:
       type: object
@@ -4288,6 +4378,7 @@ components:
         executors:
           type: string
           description: Executor value (depends on type)
+          example: form_0.user.username;form_1.user.username (format for many executors from schema)
         sla:
           type: integer
           description: Execution SLA (in working hours)
@@ -4319,6 +4410,9 @@ components:
         is_editable:
           type: boolean
           description: Show action edit application in SD
+        use_actual_executor:
+          type: boolean
+          description: flag to use actual executor
         work_type:
           $ref: "#/components/schemas/WorkType"
       required:
@@ -4332,6 +4426,7 @@ components:
         - executors_group_name
         - repeat_prev_decision
         - is_editable
+        - use_actual_executor
 
     PlaceholderParams:
       type: object
@@ -4387,6 +4482,11 @@ components:
           description: Constant values for function parameters (key of object is variable name)
         work_type:
           $ref: "#/components/schemas/WorkType"
+        is_editable:
+          type: boolean
+          description: true - need manual fill when reenter in block
+        form_re_enter_settings:
+          $ref: '#/components/schemas/FormReEnterSettings'
       required:
         - sla
         - check_sla
@@ -4433,7 +4533,7 @@ components:
         approver:
           type: string
           description: Approver value (depends on type)
-          example: a.var1;b.var2;c.var3 (format for many approvers from schema)
+          example: form_0.user.username;form_1.user.username (format for many approvers from schema)
         approvementRule:
           $ref: '#/components/schemas/ApprovementRule'
         forms_accessibility:

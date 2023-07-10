@@ -34,10 +34,12 @@ import (
 const (
 	defaultPage    = 1
 	defaultPerPage = 10
+
+	startEntrypoint = "start_0"
 )
 
 func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request, pipelineID string) {
-	ctx, s := trace.StartSpan(req.Context(), "create_draft")
+	ctx, s := trace.StartSpan(req.Context(), "create_pipeline_version")
 	defer s.End()
 
 	log := logger.GetLogger(ctx)
@@ -77,7 +79,9 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
-		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
+	}
+	if p.Pipeline.Entrypoint == "" {
+		p.Pipeline.Entrypoint = startEntrypoint
 	}
 
 	ui, err := user.GetUserInfoFromCtx(ctx)
@@ -94,13 +98,43 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't create pipeline version")
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "CreatePipelineVersion").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
 	err = ae.DB.CreateVersion(ctx, &p, ui.Username, updated, oldVersionID)
 	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "CreateVersion").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
+	}
+
+	if commitErr := txStorage.CommitTransaction(ctx); commitErr != nil {
+		log.WithError(commitErr).Error("couldn't create pipeline version")
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.Error(txErr)
+		}
 	}
 
 	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
@@ -112,175 +146,7 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, created)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-}
-
-func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID string) {
-	ctx, s := trace.StartSpan(req.Context(), "run_pipeline")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	id, err := uuid.Parse(versionID)
-	if err != nil {
-		e := UUIDParsingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	p, err := ae.DB.GetPipelineVersion(ctx, id, true)
-	if err != nil {
-		e := GetPipelineError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	runResponse, err := ae.execVersion(ctx, &execVersionDTO{
-		version:  p,
-		withStop: false,
-		w:        w,
-		req:      req,
-	})
-	if err != nil {
-		e := PipelineExecutionError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	_ = sendResponse(w, http.StatusOK, entity.RunResponse{
-		PipelineID: runResponse.PipelineID,
-		WorkNumber: runResponse.WorkNumber,
-		Status:     statusRunned,
-	})
-}
-
-type runVersionByPipelineIDRequest struct {
-	ApplicationBody   orderedmap.OrderedMap `json:"application_body"`
-	Description       string                `json:"description"`
-	PipelineId        string                `json:"pipeline_id"`
-	AttachmentFields  []string              `json:"attachment_fields"`
-	Keys              map[string]string     `json:"keys"`
-	IsTestApplication bool                  `json:"is_test_application"`
-}
-
-//nolint:gocyclo //its ok here
-func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request) {
-	ctx, s := trace.StartSpan(r.Context(), "run_version_by_pipeline_id")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-
-	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	req := &runVersionByPipelineIDRequest{}
-
-	if err = json.Unmarshal(body, req); err != nil {
-		e := BodyParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if req.PipelineId == "" {
-		e := ValidationError
-		log.Error(e.errorMessage(errors.New("pipelineID is empty")))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	version, err := ae.DB.GetVersionByPipelineID(ctx, req.PipelineId)
-	if err != nil {
-		e := GetVersionsByBlueprintIdError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	var clientID string
-	clientID, err = ae.getClietIDFromToken(r.Header.Get(AuthorizationHeader))
-	if err != nil {
-		e := GetClientIDError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	var mappedApplicationBody orderedmap.OrderedMap
-	mappedApplicationBody, err = ae.processMappings(ctx, clientID, *version, req.ApplicationBody)
-	if err != nil {
-		e := MappingError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if err = version.FillEntryPointOutput(); err != nil {
-		e := GetEntryPointOutputError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	v, execErr := ae.execVersion(ctx, &execVersionDTO{
-		version:  version,
-		withStop: false,
-		w:        w,
-		req:      r,
-		runCtx: entity.TaskRunContext{
-			ClientID: clientID,
-			InitialApplication: entity.InitialApplication{
-				Description:               req.Description,
-				ApplicationBody:           mappedApplicationBody,
-				Keys:                      req.Keys,
-				AttachmentFields:          req.AttachmentFields,
-				IsTestApplication:         req.IsTestApplication,
-				ApplicationBodyFromSystem: req.ApplicationBody,
-			},
-		},
-	})
-	if execErr != nil {
-		e := PipelineExecutionError
-		log.Error(e.errorMessage(execErr))
-		_ = e.sendError(w)
-		return
-	}
-
-	if v == nil {
-		e := PipelineExecutionError
-		log.Error(e.errorMessage(errors.New("run_version_by_pipeline_id execution error")))
-		_ = e.sendError(w)
-		return
-	}
-
-	if err = sendResponse(w, http.StatusOK, []*entity.RunResponse{v}); err != nil {
+	if err = sendResponse(w, http.StatusOK, created); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -370,98 +236,6 @@ func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
 	}
 
 	return mappedApplicationBody, nil
-}
-
-type runNewVersionsByPrevVersionRequest struct {
-	ApplicationBody  orderedmap.OrderedMap `json:"application_body"`
-	Description      string                `json:"description"`
-	WorkNumber       string                `json:"work_number"`
-	AttachmentFields []string              `json:"attachment_fields"`
-	Keys             map[string]string     `json:"keys"`
-}
-
-func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Request) {
-	ctx, s := trace.StartSpan(r.Context(), "run_new_version_by_prev_version")
-	defer s.End()
-
-	log := logger.GetLogger(ctx)
-
-	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-
-	if err != nil {
-		e := RequestReadError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	req := &runNewVersionsByPrevVersionRequest{}
-
-	err = json.Unmarshal(body, req)
-	if err != nil {
-		e := BodyParseError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	if req.WorkNumber == "" {
-		e := ValidationError
-		log.Error(e.errorMessage(errors.New("workNumber is empty")))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	version, err := ae.DB.GetVersionByWorkNumber(ctx, req.WorkNumber)
-	if err != nil {
-		e := GetVersionsByWorkNumberError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
-	started, execErr := ae.execVersion(ctx, &execVersionDTO{
-		version:     version,
-		withStop:    false,
-		w:           w,
-		req:         r,
-		makeNewWork: true,
-		workNumber:  req.WorkNumber,
-		runCtx: entity.TaskRunContext{
-			InitialApplication: entity.InitialApplication{
-				Description:      req.Description,
-				ApplicationBody:  req.ApplicationBody,
-				AttachmentFields: req.AttachmentFields,
-				Keys:             req.Keys,
-			},
-		},
-	})
-	if execErr != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(execErr))
-		_ = e.sendError(w)
-		return
-	}
-
-	if started == nil {
-		e := UnknownError
-		log.Error(e.errorMessage(errors.New("no one version was started")))
-		_ = e.sendError(w)
-		return
-	}
-
-	err = sendResponse(w, http.StatusOK, started)
-	if err != nil {
-		e := UnknownError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-		return
-	}
 }
 
 func (ae *APIEnv) DeleteVersion(w http.ResponseWriter, req *http.Request, versionID string) {
@@ -601,7 +375,18 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 	if len(p.Pipeline.Blocks) == 0 {
 		p.Pipeline.FillEmptyPipeline()
-		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
+	}
+	if p.Pipeline.Entrypoint == "" {
+		p.Pipeline.Entrypoint = startEntrypoint
+	}
+
+	updated, err := json.Marshal(p)
+	if err != nil {
+		e := PipelineParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
 
 	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
@@ -642,7 +427,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.UpdateDraft(ctx, &p, b)
+	err = ae.DB.UpdateDraft(ctx, &p, updated)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))
@@ -767,19 +552,12 @@ type execVersionInternalDTO struct {
 }
 
 func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
-	_, span := trace.StartSpan(ctx, "exec_version_internal")
+	ctx, span := trace.StartSpan(ctx, "exec_version_internal")
 	defer span.End()
 
 	log := logger.GetLogger(ctx).WithField("mainFuncName", "execVersionInternal")
 
-	spCtx := span.SpanContext()
-	// nolint:staticcheck //its ok here
-	routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-	routineCtx = logger.WithLogger(routineCtx, log)
-	processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_processing", spCtx)
-	fakeSpan.End()
-
-	txStorage, transactionErr := ae.DB.StartTransaction(processCtx)
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
 		e := PipelineRunError
 		return nil, e, transactionErr
@@ -790,7 +568,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 			log = log.WithField("funcName", "execVersionInternal").
 				WithField("panic handle", true)
 			log.Error(r)
-			if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithError(errors.New("couldn't rollback tx")).
 					Error(txErr)
 			}
@@ -828,7 +606,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	parameters, err := json.Marshal(pipelineVars)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "marshal vars").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
@@ -845,7 +623,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		WorkNumber: dto.workNumber,
 		RunCtx:     dto.runCtx,
 	}); err != nil {
-		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "CreateTask").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
@@ -882,9 +660,9 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
-	err = pipeline.ProcessBlockWithEndMapping(processCtx, ep.EntryPoint, &blockData, runCtx, false)
+	err = pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(processCtx); txErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.WithField("funcName", "RollbackTransaction").
 				WithError(errors.New("couldn't rollback tx")).
 				Error(txErr)
@@ -893,7 +671,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
-	if err = txStorage.CommitTransaction(processCtx); err != nil {
+	if err = txStorage.CommitTransaction(ctx); err != nil {
 		e := PipelineRunError
 		return nil, e, err
 	}
@@ -914,7 +692,7 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 		return
 	}
 
-	items, err := ae.DB.GetPipelinesByNameOrId(ctx, toDbSearchPipelinesParams(&params))
+	items, err := ae.DB.GetPipelinesByNameOrId(ctx, toDBSearchPipelinesParams(&params))
 	if err != nil {
 		e := GetPipelinesSearchError
 		log.Error(e.errorMessage(err))
@@ -946,7 +724,7 @@ func (ae *APIEnv) SearchPipelines(w http.ResponseWriter, req *http.Request, para
 	}
 }
 
-func toDbSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelineRequest) {
+func toDBSearchPipelinesParams(in *SearchPipelinesParams) (out *db.SearchPipelineRequest) {
 	var (
 		page    = defaultPage
 		perPage = defaultPerPage
