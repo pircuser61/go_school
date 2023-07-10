@@ -324,3 +324,59 @@ func TestJSONSchemaProperties_Validate1(t *testing.T) {
 		})
 	}
 }
+
+func Test_functionTime_UnmarshalJSON(t *testing.T) {
+	const (
+		date1 = "2023-06-21 06:26:10.447720 +0000 UTC"
+		date2 = "2023-06-21 06:26:10.44772 +0000 UTC"
+		date3 = "2009-08-12T22:15:09.988"
+	)
+
+	type args struct {
+		b []byte
+	}
+	tests := []struct {
+		name    string
+		ft      functionTime
+		args    args
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "success: " + date1,
+			ft:   functionTime{},
+			args: args{
+				b: []byte(date1),
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "success: " + date2,
+			ft:   functionTime{},
+			args: args{
+				b: []byte(date2),
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "success: " + date3,
+			ft:   functionTime{},
+			args: args{
+				b: []byte(date3),
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "fail parse date",
+			ft:   functionTime{},
+			args: args{
+				b: []byte("GGG"),
+			},
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.wantErr(t, tt.ft.UnmarshalJSON(tt.args.b), fmt.Sprintf("UnmarshalJSON(%v)", tt.args.b))
+		})
+	}
+}
