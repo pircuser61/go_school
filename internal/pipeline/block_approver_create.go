@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -82,6 +83,7 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	if err != nil {
 		return errors.Wrap(err, "can not get approver parameters for block: "+gb.Name)
 	}
+
 	if params.ApproversGroupIDPath != nil {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
@@ -95,8 +97,9 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.ApproversGroupID = groupId.(string)
+		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
 	}
+
 	err = gb.setApproversByParams(ctx, &setApproversByParamsDTO{
 		Type:     params.Type,
 		GroupID:  params.ApproversGroupID,
@@ -182,7 +185,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.ApproversGroupID = groupId.(string)
+		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
 	}
 
 	setErr := gb.setApproversByParams(ctx, &setApproversByParamsDTO{

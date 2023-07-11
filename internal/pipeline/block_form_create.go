@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -121,7 +122,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.FormGroupId = groupId.(string)
+		params.FormGroupId = fmt.Sprintf("%v", groupId)
 	}
 	executorValue := params.Executor
 	if params.FormExecutorType == script.FormExecutorTypeGroup {
