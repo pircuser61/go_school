@@ -1017,6 +1017,9 @@ type FormReEnterSettings struct {
 	//   * Auto_Fill - Auto Fill form by system
 	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
 
+	// path to group id
+	GroupPath *string `json:"group_path,omitempty"`
+
 	// Executor login, variable or group id
 	Value *string `json:"value,omitempty"`
 }

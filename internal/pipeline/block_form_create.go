@@ -65,6 +65,22 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.ActualExecutor = nil
 
 	if gb.State.ReEnterSettings != nil {
+		if gb.State.ReEnterSettings.GroupPath != nil {
+			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+			if grabStorageErr != nil {
+				return grabStorageErr
+			}
+
+			groupId := getVariable(
+				variableStorage,
+				*gb.State.ReEnterSettings.GroupPath,
+			)
+			if groupId == nil {
+				return errors.New("can't find group id in variables")
+			}
+			gb.State.ReEnterSettings.Value = fmt.Sprintf("%v", groupId)
+		}
+
 		setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
 			FormExecutorType: gb.State.ReEnterSettings.FormExecutorType,
 			Value:            gb.State.ReEnterSettings.Value,
