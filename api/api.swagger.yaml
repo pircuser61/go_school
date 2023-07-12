@@ -4439,6 +4439,9 @@ components:
         executors_group_name:
           type: string
           description: Executors group name in SD
+        executors_group_id_path:
+          type: string
+          description: Path to executors group id
         repeat_prev_decision:
           type: boolean
           description: auto apply prev decision
@@ -4512,6 +4515,9 @@ components:
         form_group_id:
           type: string
           description: Form group id in SD
+        form_group_id_path:
+          type: string
+          description: Path to form group id
         constants:
           type: object
           description: Constant values for function parameters (key of object is variable name)
@@ -4604,6 +4610,9 @@ components:
         approvers_group_name:
           type: string
           description: Approvers group name in SD
+        approvers_group_id_path:
+          type: string
+          description: Path to approvers group id
         approve_status_name:
           type: string
           description: Approvement status

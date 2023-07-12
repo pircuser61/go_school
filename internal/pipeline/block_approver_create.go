@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -83,6 +84,22 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "can not get approver parameters for block: "+gb.Name)
 	}
 
+	if params.ApproversGroupIDPath != nil {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupId := getVariable(
+			variableStorage,
+			*params.ApproversGroupIDPath,
+		)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
+	}
+
 	err = gb.setApproversByParams(ctx, &setApproversByParamsDTO{
 		Type:     params.Type,
 		GroupID:  params.ApproversGroupID,
@@ -153,6 +170,22 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 
 	if gb.State.ApprovementRule == "" {
 		gb.State.ApprovementRule = script.AnyOfApprovementRequired
+	}
+
+	if params.ApproversGroupIDPath != nil {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupId := getVariable(
+			variableStorage,
+			*params.ApproversGroupIDPath,
+		)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
 	}
 
 	setErr := gb.setApproversByParams(ctx, &setApproversByParamsDTO{

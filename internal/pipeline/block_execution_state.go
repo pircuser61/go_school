@@ -61,6 +61,8 @@ type ExecutionData struct {
 	ExecutorsGroupID   string `json:"executors_group_id"`
 	ExecutorsGroupName string `json:"executors_group_name"`
 
+	ExecutorsGroupIdPath *string `json:"executors_group_id_path,omitempty"`
+
 	IsTakenInWork               bool `json:"is_taken_in_work"`
 	IsExecutorVariablesResolved bool `json:"is_executor_variables_resolved"`
 

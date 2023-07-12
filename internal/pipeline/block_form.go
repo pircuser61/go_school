@@ -38,6 +38,7 @@ type FormData struct {
 	FormExecutorType       script.FormExecutorType `json:"form_executor_type"`
 	FormGroupId            string                  `json:"form_group_id"`
 	FormExecutorsGroupName string                  `json:"form_executors_group_name"`
+	FormGroupIdPath        *string                 `json:"form_group_id_path,omitempty"`
 	SchemaId               string                  `json:"schema_id"`
 	SchemaName             string                  `json:"schema_name"`
 	Executors              map[string]struct{}     `json:"executors"`
