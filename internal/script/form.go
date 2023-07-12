@@ -60,4 +60,5 @@ func (a *FormParams) Validate() error {
 type FormReEnterSettings struct {
 	FormExecutorType FormExecutorType `json:"form_executor_type"`
 	Value            string           `json:"value"`
+	GroupPath        *string          `json:"group_path,omitempty"`
 }

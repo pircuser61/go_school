@@ -3712,6 +3712,9 @@ components:
         value:
           type: string
           description: Executor login, variable or group id
+        group_path:
+          type: string
+          description: path to group id
 
     JSONSchemaProperties:
       type: object
