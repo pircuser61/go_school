@@ -120,7 +120,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Error("can't create kafka service")
 
-		return
+		//return
 	}
 
 	functionsService, err := functions.NewService(cfg.FunctionStore)

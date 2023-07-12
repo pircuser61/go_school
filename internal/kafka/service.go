@@ -2,6 +2,7 @@ package kafka
 
 import (
 	c "context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -52,18 +53,34 @@ func NewService(log logger.Logger, cfg Config) (*Service, error) {
 }
 
 func (s *Service) Produce(ctx c.Context, message RunnerOutMessage) error {
+	if s == nil {
+		return errors.New("kafka service unavailable")
+	}
+
 	return s.producer.Produce(ctx, message)
 }
 
 func (s *Service) CloseProducer() error {
-	return s.producer.Close()
+	if s != nil {
+		return s.producer.Close()
+	}
+
+	return nil
 }
 
 func (s *Service) InitMessageHandler(handler func(c.Context, RunnerInMessage) error) {
+	if s == nil {
+		return
+	}
+
 	s.MessageHandler = msgkit.NewMessageHandler[RunnerInMessage](s.log, handler, "function_return")
 }
 
 func (s *Service) StartConsumer(ctx c.Context) {
+	if s == nil {
+		return
+	}
+
 	go func() {
 		err := s.consumer.Serve(ctx, s.MessageHandler)
 		if err != nil {
