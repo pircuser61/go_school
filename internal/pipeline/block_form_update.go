@@ -91,6 +91,10 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx c.Context, data *script.BlockUp
 		if !isAllowed {
 			return NewUserIsNotPartOfProcessErr()
 		}
+
+		if gb.State.ActualExecutor != nil && *gb.State.ActualExecutor == AutoFillUser {
+			gb.State.ActualExecutor = &data.ByLogin
+		}
 	} else {
 		_, executorFound := gb.State.Executors[data.ByLogin]
 
