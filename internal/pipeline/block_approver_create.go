@@ -90,10 +90,7 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 			return grabStorageErr
 		}
 
-		groupId := getVariable(
-			variableStorage,
-			*params.ApproversGroupIDPath,
-		)
+		groupId := getVariable(variableStorage, *params.ApproversGroupIDPath)
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
@@ -178,10 +175,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 			return grabStorageErr
 		}
 
-		groupId := getVariable(
-			variableStorage,
-			*params.ApproversGroupIDPath,
-		)
+		groupId := getVariable(variableStorage, *params.ApproversGroupIDPath)
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}

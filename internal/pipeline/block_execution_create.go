@@ -94,10 +94,7 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 			return grabStorageErr
 		}
 
-		groupId := getVariable(
-			variableStorage,
-			*params.ExecutorsGroupIDPath,
-		)
+		groupId := getVariable(variableStorage, *params.ExecutorsGroupIDPath)
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
@@ -168,10 +165,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 			return grabStorageErr
 		}
 
-		groupId := getVariable(
-			variableStorage,
-			*params.ExecutorsGroupIDPath,
-		)
+		groupId := getVariable(variableStorage, *params.ExecutorsGroupIDPath)
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}

@@ -71,10 +71,7 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 				return grabStorageErr
 			}
 
-			groupId := getVariable(
-				variableStorage,
-				*gb.State.ReEnterSettings.GroupPath,
-			)
+			groupId := getVariable(variableStorage, *gb.State.ReEnterSettings.GroupPath)
 			if groupId == nil {
 				return errors.New("can't find group id in variables")
 			}
@@ -131,10 +128,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 			return grabStorageErr
 		}
 
-		groupId := getVariable(
-			variableStorage,
-			*params.FormGroupIDPath,
-		)
+		groupId := getVariable(variableStorage, *params.FormGroupIDPath)
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
