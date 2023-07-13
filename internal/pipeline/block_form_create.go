@@ -123,16 +123,18 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		ReEnterSettings:           params.ReEnterSettings,
 	}
 	if params.FormGroupIDPath != nil {
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
-		}
+		if *params.FormGroupIDPath != "" {
+			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+			if grabStorageErr != nil {
+				return grabStorageErr
+			}
 
-		groupId := getVariable(variableStorage, *params.FormGroupIDPath)
-		if groupId == nil {
-			return errors.New("can't find group id in variables")
+			groupId := getVariable(variableStorage, *params.FormGroupIDPath)
+			if groupId == nil {
+				return errors.New("can't find group id in variables")
+			}
+			params.FormGroupId = fmt.Sprintf("%v", groupId)
 		}
-		params.FormGroupId = fmt.Sprintf("%v", groupId)
 	}
 	executorValue := params.Executor
 	if params.FormExecutorType == script.FormExecutorTypeGroup {

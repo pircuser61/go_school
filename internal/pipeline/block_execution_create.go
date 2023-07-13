@@ -160,16 +160,18 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	executorChosenFlag := false
 
 	if params.ExecutorsGroupIDPath != nil {
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
-		}
+		if *params.ExecutorsGroupIDPath != "" {
+			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+			if grabStorageErr != nil {
+				return grabStorageErr
+			}
 
-		groupId := getVariable(variableStorage, *params.ExecutorsGroupIDPath)
-		if groupId == nil {
-			return errors.New("can't find group id in variables")
+			groupId := getVariable(variableStorage, *params.ExecutorsGroupIDPath)
+			if groupId == nil {
+				return errors.New("can't find group id in variables")
+			}
+			params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
 		}
-		params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
 	}
 
 	if gb.State.UseActualExecutor {

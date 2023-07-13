@@ -170,16 +170,18 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 	}
 
 	if params.ApproversGroupIDPath != nil {
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
-		}
+		if *params.ApproversGroupIDPath != "" {
+			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+			if grabStorageErr != nil {
+				return grabStorageErr
+			}
 
-		groupId := getVariable(variableStorage, *params.ApproversGroupIDPath)
-		if groupId == nil {
-			return errors.New("can't find group id in variables")
+			groupId := getVariable(variableStorage, *params.ApproversGroupIDPath)
+			if groupId == nil {
+				return errors.New("can't find group id in variables")
+			}
+			params.ApproversGroupID = fmt.Sprintf("%v", groupId)
 		}
-		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
 	}
 
 	setErr := gb.setApproversByParams(ctx, &setApproversByParamsDTO{
