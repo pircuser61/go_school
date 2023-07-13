@@ -40,7 +40,7 @@ type ExecutionParams struct {
 }
 
 func (a *ExecutionParams) Validate() error {
-	if a.ExecutorsGroupID == "" && a.Type == ExecutionTypeGroup {
+	if a.ExecutorsGroupID == "" && a.ExecutorsGroupIDPath == nil && a.Type == ExecutionTypeGroup {
 		return errors.New("executors group id is empty")
 	}
 

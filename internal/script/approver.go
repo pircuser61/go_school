@@ -53,7 +53,7 @@ type ApproverParams struct {
 
 	ApproversGroupID     string  `json:"approvers_group_id"`
 	ApproversGroupName   string  `json:"approvers_group_name"`
-	ApproversGroupIDPath *string `json:"form_group_id_path,omitempty"`
+	ApproversGroupIDPath *string `json:"approvers_group_id_path,omitempty"`
 	ApproveStatusName    string  `json:"approve_status_name"`
 	WorkType             *string `json:"work_type"`
 }
@@ -64,8 +64,8 @@ func (a *ApproverParams) Validate() error {
 		return errors.New("approver is empty")
 	}
 
-	if a.ApproversGroupID == "" && a.Type == ApproverTypeGroup {
-		return errors.New("approvers group id is empty")
+	if (a.ApproversGroupID == "" && a.ApproversGroupIDPath == nil) && a.Type == ApproverTypeGroup {
+		return errors.New("approvers group is empty")
 	}
 
 	typeApprove := ApproverType(a.Type.String())
@@ -81,10 +81,6 @@ func (a *ApproverParams) Validate() error {
 		len(strings.Split(a.Approver, ";")) > 1 &&
 		a.ApprovementRule == "" {
 		return errors.New("approvement rule is empty")
-	}
-
-	if a.Type == ApproverTypeGroup && a.ApproversGroupID == "" {
-		return errors.New("approvers group id is empty")
 	}
 
 	if a.Type == ApproverTypeGroup && a.ApprovementRule == "" {
