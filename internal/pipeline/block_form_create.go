@@ -122,7 +122,8 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		IsEditable:                params.IsEditable,
 		ReEnterSettings:           params.ReEnterSettings,
 	}
-	if params.FormGroupIDPath != nil {
+
+	if params.FormGroupIDPath != nil && *params.FormGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return grabStorageErr
@@ -134,6 +135,7 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 		params.FormGroupId = fmt.Sprintf("%v", groupId)
 	}
+
 	executorValue := params.Executor
 	if params.FormExecutorType == script.FormExecutorTypeGroup {
 		executorValue = params.FormGroupId

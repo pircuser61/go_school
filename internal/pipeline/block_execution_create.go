@@ -159,7 +159,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	}
 	executorChosenFlag := false
 
-	if params.ExecutorsGroupIDPath != nil {
+	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return grabStorageErr
