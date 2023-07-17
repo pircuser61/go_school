@@ -282,6 +282,8 @@ const (
 
 	ApproverDecisionSign ApproverDecision = "sign"
 
+	ApproverDecisionSignUkep ApproverDecision = "sign_ukep"
+
 	ApproverDecisionViewed ApproverDecision = "viewed"
 )
 
@@ -401,6 +403,8 @@ const (
 	TaskHumanStatusApproveInformed TaskHumanStatus = "approve-informed"
 
 	TaskHumanStatusApproveSign TaskHumanStatus = "approve-sign"
+
+	TaskHumanStatusApproveSignUkep TaskHumanStatus = "approve-sign_ukep"
 
 	TaskHumanStatusApproveSigned TaskHumanStatus = "approve-signed"
 
@@ -557,6 +561,7 @@ type ApproverUpdateParams struct {
 	//  * informed - Проинформирован
 	//  * sign - Подписать
 	//  * confirm - Утвердить
+	//  * sign_ukep - Подписать УКЭП
 	Decision ApproverDecision `json:"decision"`
 }
 
@@ -1601,6 +1606,7 @@ type AdditionalApproverDecision string
 //   - informed - Проинформирован
 //   - sign - Подписать
 //   - confirm - Утвердить
+//   - sign_ukep - Подписать УКЭП
 type ApproverDecision string
 
 // Block type (language)

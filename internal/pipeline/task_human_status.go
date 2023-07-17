@@ -8,6 +8,7 @@ const (
 	StatusApproveView         TaskHumanStatus = "approve-view"
 	StatusApproveInform       TaskHumanStatus = "approve-inform"
 	StatusApproveSign         TaskHumanStatus = "approve-sign"
+	StatusApproveSignUkep     TaskHumanStatus = "approve-sign-ukep"
 	StatusApproveConfirm      TaskHumanStatus = "approve-confirm"
 	StatusExecution           TaskHumanStatus = "processing"
 	StatusExecutionRejected   TaskHumanStatus = "executor-reject"
