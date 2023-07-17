@@ -3117,6 +3117,7 @@ components:
         - approve-view
         - approve-inform
         - approve-sign
+        - approve-sign_ukep
         - approve-confirm
         - processing
         - executor-reject

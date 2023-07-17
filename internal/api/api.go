@@ -404,6 +404,8 @@ const (
 
 	TaskHumanStatusApproveSign TaskHumanStatus = "approve-sign"
 
+	TaskHumanStatusApproveSignUkep TaskHumanStatus = "approve-sign_ukep"
+
 	TaskHumanStatusApproveSigned TaskHumanStatus = "approve-signed"
 
 	TaskHumanStatusApproveView TaskHumanStatus = "approve-view"

@@ -357,7 +357,7 @@ func getPositiveFinishStatus(decision ApproverDecision) (status TaskHumanStatus)
 		return StatusApproveViewed
 	case ApproverDecisionInformed:
 		return StatusApproveInformed
-	case ApproverDecisionSigned:
+	case ApproverDecisionSigned, ApproverDecisionSignedUkep:
 		return StatusApproveSigned
 	case ApproverDecisionConfirmed:
 		return StatusApproveConfirmed

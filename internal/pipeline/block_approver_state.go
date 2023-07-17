@@ -19,6 +19,7 @@ const (
 	ApproverActionViewed     = "viewed"
 	ApproverActionInformed   = "informed"
 	ApproverActionSign       = "sign"
+	ApproverActionSignUkep   = "sign_ukep"
 	ApproverActionConfirm    = "confirm"
 	ApproverActionSendToEdit = "approver_send_edit_app"
 
@@ -46,6 +47,8 @@ func (a ApproverAction) ToDecision() ApproverDecision {
 		return ApproverDecisionInformed
 	case ApproverActionSign:
 		return ApproverDecisionSigned
+	case ApproverActionSignUkep:
+		return ApproverDecisionSignedUkep
 	case ApproverActionConfirm:
 		return ApproverDecisionConfirmed
 	default:
@@ -71,6 +74,8 @@ func (a ApproverDecision) ToAction() ApproverAction {
 		return ApproverActionInformed
 	case ApproverDecisionSigned:
 		return ApproverActionSign
+	case ApproverDecisionSignedUkep:
+		return ApproverActionSignUkep
 	case ApproverDecisionConfirmed:
 		return ApproverActionConfirm
 	case ApproverDecisionSentToEdit:
@@ -97,6 +102,7 @@ const (
 	ApproverDecisionViewed     ApproverDecision = "viewed"
 	ApproverDecisionInformed   ApproverDecision = "informed"
 	ApproverDecisionSigned     ApproverDecision = "signed"
+	ApproverDecisionSignedUkep ApproverDecision = "signed_ukep"
 	ApproverDecisionConfirmed  ApproverDecision = "confirmed"
 	ApproverDecisionSentToEdit ApproverDecision = "sent_to_edit"
 )
