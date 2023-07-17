@@ -3591,6 +3591,7 @@ components:
         - informed
         - sign
         - confirm
+        - sign_ukep
       description: >
         Approver decision:
          * approve - Согласовать
@@ -3599,6 +3600,7 @@ components:
          * informed - Проинформирован
          * sign - Подписать
          * confirm - Утвердить
+         * sign_ukep - Подписать УКЭП
 
     additionalApproverDecision:
       type: string

@@ -386,7 +386,8 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 		in.Status == script.SettingStatusApproveConfirm ||
 		in.Status == script.SettingStatusApproveView ||
 		in.Status == script.SettingStatusApproveInform ||
-		in.Status == script.SettingStatusApproveSign {
+		in.Status == script.SettingStatusApproveSign ||
+		in.Status == script.SettingStatusApproveSignUkep {
 		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
 	}
 
@@ -715,6 +716,8 @@ func getApprovementActionNameByStatus(status, defaultActionName string) (res str
 		return "подтверждения об информировании"
 	case script.SettingStatusApproveSign:
 		return "подписания"
+	case script.SettingStatusApproveSignUkep:
+		return "подписания УКЭП"
 	default:
 		return defaultActionName
 	}

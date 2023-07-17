@@ -341,6 +341,8 @@ func getPositiveProcessingStatus(decision string) (status TaskHumanStatus) {
 		return StatusApproveInform
 	case script.SettingStatusApproveSign:
 		return StatusApproveSign
+	case script.SettingStatusApproveSignUkep:
+		return StatusApproveSignUkep
 	default:
 		return StatusApprovement
 	}

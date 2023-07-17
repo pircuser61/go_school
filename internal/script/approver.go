@@ -21,11 +21,12 @@ func (a ApprovementRule) String() string {
 type AutoAction string
 
 const (
-	SettingStatusApprovement    = "На согласовании"
-	SettingStatusApproveConfirm = "На утверждении"
-	SettingStatusApproveView    = "На ознакомлении"
-	SettingStatusApproveInform  = "На информировании"
-	SettingStatusApproveSign    = "На подписании"
+	SettingStatusApprovement     = "На согласовании"
+	SettingStatusApproveConfirm  = "На утверждении"
+	SettingStatusApproveView     = "На ознакомлении"
+	SettingStatusApproveInform   = "На информировании"
+	SettingStatusApproveSign     = "На подписании"
+	SettingStatusApproveSignUkep = "На подписании УКЭП"
 
 	ApproverTypeUser       ApproverType = "user"
 	ApproverTypeGroup      ApproverType = "group"
