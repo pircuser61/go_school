@@ -70,7 +70,7 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	}
 
 	if gb.State.ReEnterSettings != nil {
-		if gb.State.ReEnterSettings.GroupPath != nil {
+		if gb.State.ReEnterSettings.GroupPath != nil && *gb.State.ReEnterSettings.GroupPath != "" {
 			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 			if grabStorageErr != nil {
 				return grabStorageErr

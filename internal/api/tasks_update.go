@@ -159,7 +159,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 
 	if err != nil {
-		e := UpdateTaskParsingError
+		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 

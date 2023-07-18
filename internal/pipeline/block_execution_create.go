@@ -88,7 +88,7 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
 	}
 
-	if params.ExecutorsGroupIDPath != nil {
+	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return grabStorageErr
