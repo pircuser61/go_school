@@ -84,7 +84,7 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "can not get approver parameters for block: "+gb.Name)
 	}
 
-	if params.ApproversGroupIDPath != nil {
+	if params.ApproversGroupIDPath != nil && *params.ApproversGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return grabStorageErr
