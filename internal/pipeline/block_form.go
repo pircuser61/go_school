@@ -64,7 +64,7 @@ type FormData struct {
 	Mapping script.JSONSchemaProperties `json:"mapping"`
 
 	IsEditable      *bool                       `json:"is_editable"`
-	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings"`
+	ReEnterSettings *script.FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 }
 
 type GoFormBlock struct {

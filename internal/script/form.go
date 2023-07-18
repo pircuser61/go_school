@@ -33,7 +33,7 @@ type FormParams struct {
 	Mapping                   JSONSchemaProperties `json:"mapping"`
 	WorkType                  *string              `json:"work_type"`
 	IsEditable                *bool                `json:"is_editable"`
-	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings"`
+	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 }
 
 func (a *FormParams) Validate() error {
