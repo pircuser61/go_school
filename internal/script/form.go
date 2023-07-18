@@ -49,6 +49,11 @@ func (a *FormParams) Validate() error {
 		return errors.New("reEnterSettings can`t be empty when IsEditable = true")
 	}
 
+	/* if a.ReEnterSettings != nil {
+		if a.ReEnterSettings.FormExecutorType == "" {
+			return fmt.Errorf("invalid reEnterSettings.FormExecutorType")
+		}
+	} */
 	return nil
 }
 
