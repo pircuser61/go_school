@@ -56,7 +56,7 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 }
 
 func (gb *GoFormBlock) reEntry(ctx c.Context) error {
-	isAutofill := gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser
+	isAutofill := gb.State.FormExecutorType == script.FormExecutorTypeAutoFillUser
 	if (gb.State.IsEditable == nil || !*gb.State.IsEditable) && isAutofill {
 		return nil
 	}
