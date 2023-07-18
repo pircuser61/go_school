@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -137,7 +138,7 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	var updateData entity.TaskUpdate
 	if err = json.Unmarshal(b, &updateData); err != nil {
 		e := UpdateTaskParsingError
-		log.Error(e.errorMessage(err))
+		log.WithField("updateData", string(b)).Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
 		return
@@ -268,7 +269,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 	}
 
 	if err := txStorage.CommitTransaction(ctx); err != nil {
-		log.WithError(err).Error("couldn't update block")
+		log.WithError(err).Error("couldn't update block, CommitTransaction")
 		return false
 	}
 	return true
@@ -330,7 +331,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		steps = append(steps, stepsByBlock...)
 	}
 
-	log.Info("update_task_internal steps: ", steps)
+	log.Info(fmt.Printf("update_task_internal steps: %+v", steps))
 
 	if len(steps) == 0 {
 		e := GetTaskError
