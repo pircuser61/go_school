@@ -33,7 +33,7 @@ type FormParams struct {
 	Mapping                   JSONSchemaProperties `json:"mapping"`
 	WorkType                  *string              `json:"work_type"`
 	IsEditable                *bool                `json:"is_editable"`
-	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings"`
+	ReEnterSettings           *FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 }
 
 func (a *FormParams) Validate() error {
@@ -49,11 +49,11 @@ func (a *FormParams) Validate() error {
 		return errors.New("reEnterSettings can`t be empty when IsEditable = true")
 	}
 
-	/* if a.ReEnterSettings != nil {
+	if a.ReEnterSettings != nil {
 		if a.ReEnterSettings.FormExecutorType == "" {
 			return fmt.Errorf("invalid reEnterSettings.FormExecutorType")
 		}
-	} */
+	}
 	return nil
 }
 
