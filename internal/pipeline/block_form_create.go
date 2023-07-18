@@ -65,6 +65,10 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.IsTakenInWork = false
 	gb.State.ActualExecutor = nil
 
+	if !isAutofill && gb.State.ReEnterSettings == nil {
+		gb.State.IsTakenInWork = true
+	}
+
 	if gb.State.ReEnterSettings != nil {
 		if gb.State.ReEnterSettings.GroupPath != nil {
 			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
