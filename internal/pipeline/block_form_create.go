@@ -56,7 +56,8 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 }
 
 func (gb *GoFormBlock) reEntry(ctx c.Context) error {
-	if gb.State.IsEditable == nil || !*gb.State.IsEditable {
+	isAutofill := gb.State.FormExecutorType != script.FormExecutorTypeAutoFillUser
+	if (gb.State.IsEditable == nil || !*gb.State.IsEditable) && isAutofill {
 		return nil
 	}
 
@@ -87,9 +88,8 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 		}
 		gb.State.FormExecutorType = gb.State.ReEnterSettings.FormExecutorType
 
-		return gb.handleNotifications(ctx)
 	}
-	return nil
+	return gb.handleNotifications(ctx)
 }
 
 func (gb *GoFormBlock) loadState(raw json.RawMessage) error {
