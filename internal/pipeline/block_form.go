@@ -19,7 +19,10 @@ const (
 	keyOutputFormBody     = "application_body"
 )
 
-const formFillFormAction = "fill_form"
+const (
+	formFillFormAction  = "fill_form"
+	formStartWorkAction = "form_executor_start_work"
+)
 
 const AutoFillUser = "auto_fill"
 
@@ -35,6 +38,7 @@ type FormData struct {
 	FormExecutorType       script.FormExecutorType `json:"form_executor_type"`
 	FormGroupId            string                  `json:"form_group_id"`
 	FormExecutorsGroupName string                  `json:"form_executors_group_name"`
+	FormGroupIdPath        *string                 `json:"form_group_id_path,omitempty"`
 	SchemaId               string                  `json:"schema_id"`
 	SchemaName             string                  `json:"schema_name"`
 	Executors              map[string]struct{}     `json:"executors"`
@@ -95,6 +99,15 @@ func (gb *GoFormBlock) formActions() []MemberAction {
 	if gb.State.IsFilled {
 		return []MemberAction{}
 	}
+
+	if !gb.State.IsTakenInWork {
+		action := MemberAction{
+			Id:   formStartWorkAction,
+			Type: ActionTypePrimary,
+		}
+		return []MemberAction{action}
+	}
+
 	action := MemberAction{
 		Id:   formFillFormAction,
 		Type: ActionTypeCustom,
@@ -184,8 +197,9 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 		Outputs: []script.FunctionValueModel{
 			{
 				Name:    keyOutputFormExecutor,
-				Type:    "SsoPerson",
-				Comment: "form executor login",
+				Type:    "object",
+				Comment: "person object from sso",
+				Format:  "SsoPerson",
 			},
 			{
 				Name:    keyOutputFormBody,
@@ -226,6 +240,9 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		Username: AutoFillUser,
 	}
 
+	gb.State.Executors = map[string]struct{}{
+		AutoFillUser: {},
+	}
 	gb.State.ChangesLog = append([]ChangesLogItem{
 		{
 			ApplicationBody: formMapping,

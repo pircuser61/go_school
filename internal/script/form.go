@@ -27,6 +27,7 @@ type FormParams struct {
 	Executor                  string               `json:"executor"`
 	FormExecutorType          FormExecutorType     `json:"form_executor_type"`
 	FormGroupId               string               `json:"form_group_id"`
+	FormGroupIDPath           *string              `json:"form_group_id_path,omitempty"`
 	FormsAccessibility        []FormAccessibility  `json:"forms_accessibility"`
 	HideExecutorFromInitiator bool                 `json:"hide_executor_from_initiator"`
 	Mapping                   JSONSchemaProperties `json:"mapping"`
@@ -49,8 +50,8 @@ func (a *FormParams) Validate() error {
 	}
 
 	if a.ReEnterSettings != nil {
-		if a.ReEnterSettings.Value == "" {
-			return fmt.Errorf("invalid reEnterSettings.Value %s", a.ReEnterSettings.Value)
+		if a.ReEnterSettings.FormExecutorType == "" {
+			return fmt.Errorf("invalid reEnterSettings.FormExecutorType")
 		}
 	}
 	return nil
@@ -59,4 +60,5 @@ func (a *FormParams) Validate() error {
 type FormReEnterSettings struct {
 	FormExecutorType FormExecutorType `json:"form_executor_type"`
 	Value            string           `json:"value"`
+	GroupPath        *string          `json:"group_path,omitempty"`
 }

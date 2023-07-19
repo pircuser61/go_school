@@ -908,6 +908,53 @@ func TestIF_DebugRun(t *testing.T) {
 			},
 		},
 		{
+			name:          "compare with empty string and number (number-nil string pair)",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []conditions_kit.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []conditions_kit.Condition{
+										{
+											LeftOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
+													DataType: "number",
+												},
+												Value: nil,
+											},
+											RightOperand: &conditions_kit.ValueOperand{
+												OperandBase: conditions_kit.OperandBase{
+													DataType: "number",
+												},
+												Value: "0",
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
 			name:          "compare with string and number (string-number pair)",
 			wantErr:       false,
 			wantedGroupID: "test-group-1",

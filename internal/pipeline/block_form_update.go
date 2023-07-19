@@ -45,10 +45,16 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionRequestFillForm):
+		if !gb.State.IsTakenInWork {
+			return nil, errors.New("is not taken in work")
+		}
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill
 		}
 	case string(entity.TaskUpdateActionFormExecutorStartWork):
+		if gb.State.IsTakenInWork {
+			return nil, errors.New("is already taken in work")
+		}
 		if errUpdate := gb.formExecutorStartWork(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
@@ -84,6 +90,10 @@ func (gb *GoFormBlock) handleRequestFillForm(ctx c.Context, data *script.BlockUp
 		}
 		if !isAllowed {
 			return NewUserIsNotPartOfProcessErr()
+		}
+
+		if gb.State.ActualExecutor != nil && *gb.State.ActualExecutor == AutoFillUser {
+			gb.State.ActualExecutor = &data.ByLogin
 		}
 	} else {
 		_, executorFound := gb.State.Executors[data.ByLogin]
@@ -213,9 +223,6 @@ func (gb *GoFormBlock) handleHalfSLABreached(ctx c.Context) error {
 }
 
 func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
-	if gb.State.IsTakenInWork {
-		return nil
-	}
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
@@ -261,10 +268,6 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 
 func (a *FormData) IncreaseSLA(addSla int) {
 	a.SLA += addSla
-}
-
-func (a *FormData) GetIsEditable() bool {
-	return !a.IsTakenInWork
 }
 
 func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork string, logins map[string]struct{}) (err error) {

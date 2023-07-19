@@ -23,7 +23,14 @@ func getVariable(variables map[string]interface{}, key string) interface{} {
 		return variables[key]
 	}
 
-	variable, ok := variables[strings.Join(variableMemberNames[:2], dotSeparator)]
+	variable, ok := variables[strings.Join(variableMemberNames, dotSeparator)]
+	if ok {
+		if _, ok = variable.([]interface{}); ok {
+			return variable
+		}
+	}
+
+	variable, ok = variables[strings.Join(variableMemberNames[:2], dotSeparator)]
 	if !ok {
 		return nil
 	}
@@ -50,27 +57,38 @@ func getVariable(variables map[string]interface{}, key string) interface{} {
 	return newVariables[currK]
 }
 
-func resolveValuesFromVariables(variableStorage map[string]interface{}, toResolve map[string]struct{}) (
-	map[string]struct{}, error) {
-	entitiesToResolve := make(map[string]struct{})
-	for entityVariableRef := range toResolve {
-		if len(strings.Split(entityVariableRef, dotSeparator)) == 1 {
+func getUsersFromVars(varStore map[string]interface{}, toResolve map[string]struct{}) (map[string]struct{}, error) {
+	res := make(map[string]struct{})
+	for varName := range toResolve {
+		if len(strings.Split(varName, dotSeparator)) == 1 {
 			continue
 		}
-		entityVar := getVariable(variableStorage, entityVariableRef)
+		varValue := getVariable(varStore, varName)
 
-		if entityVar == nil {
-			return nil, errors.New("Unable to find entity by variable reference")
+		if varValue == nil {
+			return nil, errors.New("unable to find value by varName: " + varName)
 		}
 
-		if actualFormExecutorUsername, castOK := entityVar.(string); castOK {
-			entitiesToResolve[actualFormExecutorUsername] = toResolve[entityVariableRef]
+		if login, castOK := varValue.(string); castOK {
+			res[login] = toResolve[varName]
 		}
 
-		return entitiesToResolve, nil
+		if people, castOk := varValue.([]interface{}); castOk {
+			for _, castedPerson := range people {
+				if person, ok := castedPerson.(map[string]interface{}); ok {
+					if login, exists := person["username"]; exists {
+						if loginString, castOK := login.(string); castOK {
+							res[loginString] = toResolve[varName]
+						}
+					}
+				}
+			}
+		}
+
+		return res, nil
 	}
 
-	return nil, errors.New("Unexpected behavior")
+	return nil, errors.New("unexpected behavior")
 }
 
 func getSliceFromMapOfStrings(source map[string]struct{}) []string {

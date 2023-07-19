@@ -115,6 +115,11 @@ const (
 	RunStatusError    int = 3
 	RunStatusStopped  int = 4
 	RunStatusCreated  int = 5
+	RunStatusCanceled int = 6
+
+	CommentCanceled = "Заявка отозвана администратором платформы автоматизации"
+
+	SystemLogin = "jocasta"
 
 	// language=PostgreSQL
 	qCheckTagIsAttached string = `
@@ -839,10 +844,20 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersion
 	}
 
 	qCopyExternalSystems := `
-	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema) 
-		SELECT uuid_generate_v4(), $1, system_id, input_schema, output_schema 
-		FROM external_systems 
-		WHERE version_id = $2;
+	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema, input_mapping, output_mapping,
+                              microservice_id, ending_url, sending_method)
+SELECT uuid_generate_v4(),
+       $1,
+       system_id,
+       input_schema,
+       output_schema,
+       input_mapping,
+       output_mapping,
+       microservice_id,
+       ending_url,
+       sending_method
+FROM external_systems
+WHERE version_id = $2;
 	`
 
 	_, err = db.Connection.Exec(c, qCopyExternalSystems, newVersionID, oldVersionID)
@@ -1584,7 +1599,12 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			WHERE work_id = $1 AND
                 step_name = $2 AND
                 (status IN ('idle', 'ready', 'running') OR
-                (step_type = 'form' AND status IN ('idle', 'ready', 'running', 'finished')))
+					(
+						step_type = 'form' AND
+						status IN ('idle', 'ready', 'running', 'finished') AND
+			    		time = (SELECT max(time) FROM variable_storage vs WHERE vs.work_id = $1 AND step_name = $2)
+					)
+			    )
 	`
 
 		if scanErr := db.Connection.QueryRow(ctx, q, dto.WorkID, dto.StepName).
@@ -2003,8 +2023,9 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	FROM variable_storage vs 
 	WHERE 
 	    work_id = $1 AND 
-	    step_type = $2
-	    AND NOT status = ANY($3)
+	    step_type = $2 AND 
+	    NOT status = ANY($3) AND 
+	    vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $1 AND step_name = vs.step_name)
 	    ORDER BY vs.time ASC`
 
 	rows, err := db.Connection.Query(ctx, q, id, stepType, notInStatuses)
@@ -2569,7 +2590,7 @@ func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
 
 	q := `
 		UPDATE variable_storage
-		SET status = 'cancel'
+		SET status = 'cancel', updated_at = now()
 		WHERE work_id = $1 AND status IN ('ready', 'idle', 'running')`
 
 	_, err := db.Connection.Exec(ctx, q, taskID)

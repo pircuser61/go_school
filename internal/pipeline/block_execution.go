@@ -61,7 +61,7 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		return nil
 	}
 
-	if gb.State.ExecutionType == script.ExecutionTypeGroup && !gb.State.IsTakenInWork {
+	if !gb.State.IsTakenInWork {
 		action := MemberAction{
 			Id:   executionStartWorkAction,
 			Type: ActionTypePrimary,
@@ -198,10 +198,15 @@ func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
 // nolint:dupl // another block
 func (gb *GoExecutionBlock) GetStatus() Status {
 	if gb.State != nil && gb.State.Decision != nil {
-		if *gb.State.Decision == ExecutionDecisionExecuted {
-			return StatusFinished
+		if *gb.State.Decision == ExecutionDecisionRejected {
+			return StatusNoSuccess
 		}
-		return StatusNoSuccess
+
+		if *gb.State.Decision == ExecutionDecisionSentEdit {
+			return StatusNoSuccess
+		}
+
+		return StatusFinished
 	}
 
 	if gb.State.EditingApp != nil {

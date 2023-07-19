@@ -3,12 +3,12 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -65,6 +65,19 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 	gb.State.ActualExecutor = nil
 
 	if gb.State.ReEnterSettings != nil {
+		if gb.State.ReEnterSettings.GroupPath != nil {
+			variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+			if grabStorageErr != nil {
+				return grabStorageErr
+			}
+
+			groupId := getVariable(variableStorage, *gb.State.ReEnterSettings.GroupPath)
+			if groupId == nil {
+				return errors.New("can't find group id in variables")
+			}
+			gb.State.ReEnterSettings.Value = fmt.Sprintf("%v", groupId)
+		}
+
 		setErr := gb.setExecutorsByParams(ctx, &setFormExecutorsByParamsDTO{
 			FormExecutorType: gb.State.ReEnterSettings.FormExecutorType,
 			Value:            gb.State.ReEnterSettings.Value,
@@ -72,6 +85,7 @@ func (gb *GoFormBlock) reEntry(ctx c.Context) error {
 		if setErr != nil {
 			return setErr
 		}
+		gb.State.FormExecutorType = gb.State.ReEnterSettings.FormExecutorType
 
 		return gb.handleNotifications(ctx)
 	}
@@ -95,11 +109,9 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	gb.State = &FormData{
-		Executors: map[string]struct{}{
-			params.Executor: {},
-		},
 		SchemaId:                  params.SchemaId,
 		CheckSLA:                  params.CheckSLA,
+		SLA:                       params.SLA,
 		SchemaName:                params.SchemaName,
 		ChangesLog:                make([]ChangesLogItem, 0),
 		FormExecutorType:          params.FormExecutorType,
@@ -109,6 +121,19 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		HideExecutorFromInitiator: params.HideExecutorFromInitiator,
 		IsEditable:                params.IsEditable,
 		ReEnterSettings:           params.ReEnterSettings,
+	}
+
+	if params.FormGroupIDPath != nil && *params.FormGroupIDPath != "" {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupId := getVariable(variableStorage, *params.FormGroupIDPath)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.FormGroupId = fmt.Sprintf("%v", groupId)
 	}
 
 	executorValue := params.Executor
@@ -138,13 +163,6 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		gb.State.WorkType = processSLASettings.WorkType
 	}
 
-	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(params.SLA)
-
-	if getSLAErr != nil {
-		return getSLAErr
-	}
-	gb.State.SLA = sla
-
 	return gb.handleNotifications(ctx)
 }
 
@@ -155,21 +173,18 @@ type setFormExecutorsByParamsDTO struct {
 
 func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutorsByParamsDTO) error {
 	switch dto.FormExecutorType {
-	case script.FormExecutorTypeUser:
-		gb.State.Executors = map[string]struct{}{
-			dto.Value: {},
-		}
 	case script.FormExecutorTypeInitiator:
 		gb.State.Executors = map[string]struct{}{
 			gb.RunContext.Initiator: {},
 		}
+		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
 			return grabStorageErr
 		}
 
-		resolvedEntities, resolveErr := resolveValuesFromVariables(
+		resolvedEntities, resolveErr := getUsersFromVars(
 			variableStorage,
 			map[string]struct{}{
 				dto.Value: {},
@@ -180,10 +195,12 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 
 		gb.State.Executors = resolvedEntities
+		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeAutoFillUser:
 		if err := gb.handleAutoFillForm(); err != nil {
 			return err
 		}
+		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeGroup:
 		gb.State.FormGroupId = dto.Value
 		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.Value)
@@ -202,6 +219,12 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 		gb.State.FormGroupId = dto.Value
 		gb.State.FormExecutorsGroupName = workGroup.GroupName
+	default:
+		gb.State.FormExecutorType = script.FormExecutorTypeUser
+		gb.State.Executors = map[string]struct{}{
+			dto.Value: {},
+		}
+		gb.State.IsTakenInWork = true
 	}
 
 	return nil

@@ -36,7 +36,7 @@ func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
 }
 
 func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+	return StatusExecution
 }
 
 func (gb *GoBeginParallelTaskBlock) Next(_ *store.VariableStore) ([]string, bool) {

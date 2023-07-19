@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -11,11 +12,12 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
 func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, bool, error) {
+	log := logger.GetLogger(ctx)
+
 	b := &GoExecutionBlock{
 		Name:    name,
 		Title:   ef.Title,
@@ -42,6 +44,8 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		}
 
 		reEntry = runCtx.UpdateData == nil
+		log.WithField("createGoExecutionBlock", runCtx.UpdateData).
+			Info("create new execution block: "+b.Name, reEntry)
 
 		// это для возврата в рамках одного процесса
 		if reEntry {
@@ -76,11 +80,25 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	gb.State.DecisionComment = nil
 	gb.State.DecisionAttachments = make([]string, 0)
 	gb.State.ActualExecutor = nil
+	gb.State.IsTakenInWork = false
 
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
 		return errors.Wrap(err, "can not get execution parameters for block: "+gb.Name)
+	}
+
+	if params.ExecutorsGroupIDPath != nil {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupId := getVariable(variableStorage, *params.ExecutorsGroupIDPath)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
 	}
 	executorChosenFlag := false
 	if gb.State.UseActualExecutor {
@@ -131,6 +149,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 	gb.State = &ExecutionData{
 		ExecutionType:      params.Type,
 		CheckSLA:           params.CheckSLA,
+		SLA:                params.SLA,
 		ReworkSLA:          params.ReworkSLA,
 		CheckReworkSLA:     params.CheckReworkSLA,
 		FormsAccessibility: params.FormsAccessibility,
@@ -139,6 +158,20 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		UseActualExecutor:  params.UseActualExecutor,
 	}
 	executorChosenFlag := false
+
+	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupId := getVariable(variableStorage, *params.ExecutorsGroupIDPath)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
+	}
+
 	if gb.State.UseActualExecutor {
 		execs, execErr := gb.RunContext.Storage.GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx, gb.RunContext.WorkNumber, gb.Name)
 		if execErr != nil {
@@ -174,12 +207,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 		gb.State.WorkType = processSLASettings.WorkType
 	}
-	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(params.SLA)
-
-	if getSLAErr != nil {
-		return getSLAErr
-	}
-	gb.State.SLA = sla
 
 	if notifуErr := gb.RunContext.handleInitiatorNotify(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifуErr != nil {
 		return notifуErr
@@ -196,11 +223,14 @@ type setExecutorsByParamsDTO struct {
 }
 
 func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutorsByParamsDTO) error {
+	const variablesSep = ";"
+
 	switch dto.Type {
 	case script.ExecutionTypeUser:
 		gb.State.Executors = map[string]struct{}{
 			dto.Executor: {},
 		}
+		gb.State.IsTakenInWork = true
 	case script.ExecutionTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
@@ -208,9 +238,9 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		}
 
 		executorsFromSchema := make(map[string]struct{})
-		executorVars := strings.Split(dto.Executor, ";")
+		executorVars := strings.Split(dto.Executor, variablesSep)
 		for i := range executorVars {
-			resolvedEntities, resolveErr := resolveValuesFromVariables(
+			resolvedEntities, resolveErr := getUsersFromVars(
 				variableStorage,
 				map[string]struct{}{
 					executorVars[i]: {},
@@ -224,6 +254,9 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 			}
 		}
 		gb.State.Executors = executorsFromSchema
+		if len(gb.State.Executors) == 1 {
+			gb.State.IsTakenInWork = true
+		}
 
 	case script.ExecutionTypeGroup:
 		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
@@ -243,7 +276,6 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		gb.State.ExecutorsGroupID = dto.GroupID
 		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
-
 	return nil
 }
 

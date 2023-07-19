@@ -9,9 +9,9 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-
 	"github.com/pkg/errors"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -279,7 +279,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
 
-	log := logger.GetLogger(ctx).WithField("mainFuncName", "updateTaskInternal")
+	log := logger.GetLogger(ctx)
 
 	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
@@ -330,25 +330,16 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		steps = append(steps, stepsByBlock...)
 	}
 
+	log.Info("update_task_internal steps: ", steps)
+
 	if len(steps) == 0 {
 		e := GetTaskError
 		return errors.New(e.errorMessage(nil))
 	}
 
-	if in.Action == entity.TaskUpdateActionCancelApp {
-		steps = steps[:1]
-	}
-
 	couldUpdateOne := false
-	spCtx := span.SpanContext()
 	for _, item := range steps {
-		// nolint:staticcheck // fix later
-		routineCtx := c.WithValue(c.Background(), XRequestIDHeader, ctx.Value(XRequestIDHeader))
-		routineCtx = logger.WithLogger(routineCtx, log)
-		processCtx, fakeSpan := trace.StartSpanWithRemoteParent(routineCtx, "start_task_step_update", spCtx)
-		fakeSpan.End()
-
-		success := ae.updateStepInternal(processCtx, updateStepData{
+		success := ae.updateStepInternal(ctxLocal, updateStepData{
 			scenario:    scenario,
 			task:        dbTask,
 			step:        item,
@@ -370,61 +361,147 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	return
 }
 
+func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLogin string) ([]string, error) {
+	taskMembers, err := ae.DB.GetTaskMembers(ctx, workNumber)
+	if err != nil {
+		return nil, err
+	}
+	executors := make([]string, 0, len(taskMembers))
+	approvers := make([]string, 0, len(taskMembers))
+	formexec := make([]string, 0, len(taskMembers))
+	for _, m := range taskMembers {
+		switch m.Type {
+		case "execution":
+			executors = append(executors, m.Login)
+		case "approver":
+			approvers = append(approvers, m.Login)
+		case "form":
+			formexec = append(formexec, m.Login)
+		}
+	}
+
+	execDelegates, getDelegatesErr := ae.HumanTasks.GetDelegationsByLogins(ctx, executors)
+	if getDelegatesErr != nil {
+		return nil, getDelegatesErr
+	}
+	execDelegates = execDelegates.FilterByType("execution")
+	executorDelegates := (&execDelegates).GetUniqueLogins()
+
+	apprDelegates, getDelegatesErr := ae.HumanTasks.GetDelegationsByLogins(ctx, approvers)
+	if getDelegatesErr != nil {
+		return nil, getDelegatesErr
+	}
+	apprDelegates = apprDelegates.FilterByType("approvement")
+	approverDelegates := (&execDelegates).GetUniqueLogins()
+
+	uniquePeople := make(map[string]struct{})
+	peopleGroups := [][]string{
+		executors, approvers, executorDelegates, approverDelegates, formexec,
+	}
+	uniquePeople[userLogin] = struct{}{}
+	for _, g := range peopleGroups {
+		for _, p := range g {
+			uniquePeople[p] = struct{}{}
+		}
+	}
+
+	res := make([]string, 0, len(uniquePeople))
+	for k := range uniquePeople {
+		res = append(res, k)
+	}
+	return res, nil
+}
+
 func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_application_internal")
 	defer span.End()
 
-	blockTypes := getTaskStepNameByAction(in.Action)
-	if len(blockTypes) == 0 {
-		return errors.New("blockTypes is empty")
-	}
+	log := ae.Log.WithField("mainFuncName", "updateApplicationInternal")
 
 	dbTask, err := ae.DB.GetTask(ctxLocal, []string{userLogin}, []string{userLogin}, userLogin, workNumber)
-
-	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
-	if getDelegationsErr != nil {
-		return getDelegationsErr
-	}
-
-	delegationsByApprovement := delegations.FilterByType("approvement")
-	delegationsByExecution := delegations.FilterByType("execution")
-
-	taskMembersLogins, err := ae.DB.GetTaskMembersLogins(ctx, workNumber)
 	if err != nil {
 		return err
 	}
 
-	loginsToNotify := make([]string, 0)
-	loginsToNotify = append(loginsToNotify, delegationsByApprovement.GetUserInArrayWithDelegators([]string{})...)
-	loginsToNotify = append(loginsToNotify, delegationsByExecution.GetUserInArrayWithDelegators([]string{})...)
-	loginsToNotify = append(loginsToNotify, taskMembersLogins...)
+	if dbTask.FinishedAt != nil {
+		return errors.New("task is already finished")
+	}
 
-	emails := make([]string, 0, len(loginsToNotify))
-	for _, login := range loginsToNotify {
-		email, getUserEmailErr := ae.People.GetUserEmail(ctx, login)
+	if dbTask.Author != userLogin {
+		return errors.New("you have no access for this action")
+	}
+
+	logins, err := ae.getAuthorAndMembersToNotify(ctxLocal, workNumber, userLogin)
+	if err != nil {
+		return err
+	}
+
+	emails := make([]string, 0, len(logins))
+	for _, login := range logins {
+		email, getUserEmailErr := ae.People.GetUserEmail(ctxLocal, login)
 		if getUserEmailErr != nil {
 			continue
 		}
 		emails = append(emails, email)
 	}
 
-	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
-	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
-	if err != nil {
-		return err
+	cancelAppParams := entity.CancelAppParams{}
+	if err = json.Unmarshal(in.Parameters, &cancelAppParams); err != nil {
+		return errors.New("can't assert provided data")
 	}
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		return transactionErr
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "updateApplicationInternal").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
 
 	err = ae.DB.StopTaskBlocks(ctxLocal, dbTask.ID)
 	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
+			log.WithField("funcName", "StopTaskBlocks").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		return err
 	}
 
-	err = ae.DB.UpdateTaskStatus(ctxLocal, dbTask.ID, db.RunStatusFinished)
+	err = ae.DB.UpdateTaskStatus(ctxLocal, dbTask.ID, db.RunStatusFinished, cancelAppParams.Comment, userLogin)
 	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
+			log.WithField("funcName", "UpdateTaskStatus").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
 		return err
 	}
 
-	err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke))
+	_, err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke))
+	if err != nil {
+		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
+			log.WithField("funcName", "UpdateTaskHumanStatus").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+		return err
+	}
+	if commitErr := txStorage.CommitTransaction(ctxLocal); commitErr != nil {
+		log.WithError(commitErr).Error("couldn't commit transaction")
+		return commitErr
+	}
+
+	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
+	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
 	if err != nil {
 		return err
 	}
@@ -491,4 +568,153 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 }
 
 func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer r.Body.Close()
+
+	req := &TasksStop{}
+	if err = json.Unmarshal(b, req); err != nil {
+		e := StopTaskParsingError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	ui, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		e := NoUserInContextError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
+	resp := TasksStopped{
+		Tasks: make([]TaskStatus, 0, len(req.Tasks)),
+	}
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(err).Error("couldn't start transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "StopTasks").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
+	for _, workNumber := range req.Tasks {
+		dbTask, getTaskErr := txStorage.GetTask(ctx, []string{ui.Username}, []string{ui.Username}, ui.Username, workNumber)
+		if getTaskErr != nil {
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "GetTask").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+			log.WithError(getTaskErr).Error("couldn't get task")
+			continue
+		}
+
+		if dbTask.FinishedAt != nil {
+			resp.Tasks = append(resp.Tasks, TaskStatus{
+				FinishedAt: *dbTask.FinishedAt,
+				Status:     dbTask.HumanStatus,
+				WorkNumber: dbTask.WorkNumber,
+			})
+			continue
+		}
+
+		err = txStorage.StopTaskBlocks(ctx, dbTask.ID)
+		if err != nil {
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "StopTasksBlocks").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+			log.WithError(err).Error("couldn't stop task blocks")
+			continue
+		}
+
+		err = txStorage.UpdateTaskStatus(ctx, dbTask.ID, db.RunStatusCanceled, db.CommentCanceled, ui.Username)
+		if err != nil {
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "UpdateTaskStatus").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+			log.WithError(err).Error("couldn't update task status")
+			continue
+		}
+
+		updatedTask, updateTaskErr := txStorage.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusCancel))
+		if updateTaskErr != nil {
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithField("funcName", "UpdateTaskHumanStatus").
+					WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+			log.WithError(updateTaskErr).Error("couldn't update human status")
+			continue
+		}
+
+		logins, loginsErr := ae.getAuthorAndMembersToNotify(ctx, workNumber, ui.Username)
+		if loginsErr != nil {
+			log.WithError(loginsErr).Error("couldn't get logins")
+		}
+
+		emails := make([]string, 0, len(logins))
+		for _, login := range logins {
+			email, getUserEmailErr := ae.People.GetUserEmail(ctx, login)
+			if getUserEmailErr != nil {
+				continue
+			}
+			emails = append(emails, email)
+		}
+
+		em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
+		sendNotifErr := ae.Mail.SendNotification(ctx, emails, nil, em)
+		if sendNotifErr != nil {
+			log.WithError(sendNotifErr).Error("couldn't send notification")
+		}
+
+		resp.Tasks = append(resp.Tasks, TaskStatus{
+			FinishedAt: *updatedTask.FinishedAt,
+			Status:     updatedTask.HumanStatus,
+			WorkNumber: updatedTask.WorkNumber,
+		})
+	}
+
+	if err = txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't commit transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+
+	if err = sendResponse(w, http.StatusOK, resp); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }

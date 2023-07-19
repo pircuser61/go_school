@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -11,7 +12,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 // nolint:dupl // another block
@@ -84,6 +84,19 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "can not get approver parameters for block: "+gb.Name)
 	}
 
+	if params.ApproversGroupIDPath != nil {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupId := getVariable(variableStorage, *params.ApproversGroupIDPath)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
+	}
+
 	err = gb.setApproversByParams(ctx, &setApproversByParamsDTO{
 		Type:     params.Type,
 		GroupID:  params.ApproversGroupID,
@@ -126,6 +139,7 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 	gb.State = &ApproverData{
 		Type:               params.Type,
 		CheckSLA:           params.CheckSLA,
+		SLA:                params.SLA,
 		ReworkSLA:          params.ReworkSLA,
 		CheckReworkSLA:     params.CheckReworkSLA,
 		AutoAction:         ApproverActionFromString(params.AutoAction),
@@ -155,6 +169,19 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		gb.State.ApprovementRule = script.AnyOfApprovementRequired
 	}
 
+	if params.ApproversGroupIDPath != nil && *params.ApproversGroupIDPath != "" {
+		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
+		if grabStorageErr != nil {
+			return grabStorageErr
+		}
+
+		groupId := getVariable(variableStorage, *params.ApproversGroupIDPath)
+		if groupId == nil {
+			return errors.New("can't find group id in variables")
+		}
+		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
+	}
+
 	setErr := gb.setApproversByParams(ctx, &setApproversByParamsDTO{
 		Type:     params.Type,
 		GroupID:  params.ApproversGroupID,
@@ -179,13 +206,6 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 		}
 		gb.State.WorkType = processSLASettings.WorkType
 	}
-
-	sla, getSLAErr := utils.GetAddressOfValue(WorkHourType(gb.State.WorkType)).GetTotalSLAInHours(params.SLA)
-
-	if getSLAErr != nil {
-		return getSLAErr
-	}
-	gb.State.SLA = sla
 
 	return gb.handleNotifications(ctx)
 }
@@ -230,7 +250,7 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 
 		approversVars := strings.Split(dto.Approver, ";")
 		for i := range approversVars {
-			resolvedEntities, resolveErr := resolveValuesFromVariables(
+			resolvedEntities, resolveErr := getUsersFromVars(
 				variableStorage,
 				map[string]struct{}{
 					approversVars[i]: {},

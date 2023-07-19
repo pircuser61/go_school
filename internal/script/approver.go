@@ -21,11 +21,12 @@ func (a ApprovementRule) String() string {
 type AutoAction string
 
 const (
-	SettingStatusApprovement    = "На согласовании"
-	SettingStatusApproveConfirm = "На утверждении"
-	SettingStatusApproveView    = "На ознакомлении"
-	SettingStatusApproveInform  = "На информировании"
-	SettingStatusApproveSign    = "На подписании"
+	SettingStatusApprovement     = "На согласовании"
+	SettingStatusApproveConfirm  = "На утверждении"
+	SettingStatusApproveView     = "На ознакомлении"
+	SettingStatusApproveInform   = "На информировании"
+	SettingStatusApproveSign     = "На подписании"
+	SettingStatusApproveSignUkep = "На подписании УКЭП"
 
 	ApproverTypeUser       ApproverType = "user"
 	ApproverTypeGroup      ApproverType = "group"
@@ -51,10 +52,11 @@ type ApproverParams struct {
 	IsEditable         bool `json:"is_editable"`
 	RepeatPrevDecision bool `json:"repeat_prev_decision"`
 
-	ApproversGroupID   string  `json:"approvers_group_id"`
-	ApproversGroupName string  `json:"approvers_group_name"`
-	ApproveStatusName  string  `json:"approve_status_name"`
-	WorkType           *string `json:"work_type"`
+	ApproversGroupID     string  `json:"approvers_group_id"`
+	ApproversGroupName   string  `json:"approvers_group_name"`
+	ApproversGroupIDPath *string `json:"approvers_group_id_path,omitempty"`
+	ApproveStatusName    string  `json:"approve_status_name"`
+	WorkType             *string `json:"work_type"`
 }
 
 // nolint:gocyclo // its ok here
@@ -63,8 +65,8 @@ func (a *ApproverParams) Validate() error {
 		return errors.New("approver is empty")
 	}
 
-	if a.ApproversGroupID == "" && a.Type == ApproverTypeGroup {
-		return errors.New("approvers group id is empty")
+	if (a.ApproversGroupID == "" && a.ApproversGroupIDPath == nil) && a.Type == ApproverTypeGroup {
+		return errors.New("approvers group is empty")
 	}
 
 	typeApprove := ApproverType(a.Type.String())
@@ -80,10 +82,6 @@ func (a *ApproverParams) Validate() error {
 		len(strings.Split(a.Approver, ";")) > 1 &&
 		a.ApprovementRule == "" {
 		return errors.New("approvement rule is empty")
-	}
-
-	if a.Type == ApproverTypeGroup && a.ApproversGroupID == "" {
-		return errors.New("approvers group id is empty")
 	}
 
 	if a.Type == ApproverTypeGroup && a.ApprovementRule == "" {

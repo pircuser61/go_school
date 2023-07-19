@@ -90,8 +90,9 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 			},
 			{
 				Name:    entity.KeyOutputApplicationInitiator,
-				Type:    "SsoPerson",
-				Comment: "task initiator",
+				Type:    "object",
+				Comment: "person object from sso",
+				Format:  "SsoPerson",
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},

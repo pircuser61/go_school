@@ -459,19 +459,26 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 				AND value(blocks) ->> 'executors' SIMILAR TO '{"(%s)": {}}'
 			)
 	), data AS (SELECT work_id,
-					   jsonb_each(blocks -> 'application_body')                           AS form_and_sd_application_body,
+					   value(jsonb_each(blocks -> 'application_body'))					  AS form_and_sd_application_body,
 					   jsonb_array_elements(blocks -> 'additional_info') -> 'attachments' AS additional_info_attachments,
 					   jsonb_array_elements(blocks -> 'approver_log') -> 'attachments'    AS approver_log_attachments,
 					   jsonb_array_elements(blocks -> 'editing_app_log') -> 'attachments' AS editing_app_log_attachments
 				FROM blocks_with_filtered_forms),
 		 counts AS (SELECT
 						work_id,
-						COUNT(form_and_sd_application_body) AS form_and_sd_count,
+						SUM(CASE
+                        		WHEN jsonb_typeof(form_and_sd_application_body) = 'string' 
+									THEN 1
+                        		WHEN jsonb_typeof(form_and_sd_application_body) = 'array'  
+									THEN jsonb_array_length(form_and_sd_application_body)
+                        		ELSE 0
+                        	END) AS form_and_sd_count,
 						SUM(coalesce(jsonb_array_length(NULLIF(additional_info_attachments, 'null')), 0)) AS additional_attachment_count,
 						SUM(coalesce(jsonb_array_length(NULLIF(approver_log_attachments, 'null')), 0)) AS additional_approvers_count,
 						SUM(coalesce(jsonb_array_length(NULLIF(editing_app_log_attachments, 'null')), 0)) AS rework_count
 					FROM data
-					WHERE form_and_sd_application_body - 'id' - 'external-link'
+					WHERE form_and_sd_application_body::text LIKE '"attachment:%%'
+					   OR form_and_sd_application_body::text LIKE '["attachment:%%'
 					   OR additional_info_attachments IS NOT NULL
 					   OR approver_log_attachments IS NOT NULL
 					   OR editing_app_log_attachments IS NOT NULL
@@ -713,7 +720,9 @@ func (db *PGCon) GetTask(
 			w.rate,
 			w.rate_comment,
          	ua.actions,
- 			run_context -> 'initial_application' -> 'is_test_application' as isTest
+ 			run_context -> 'initial_application' -> 'is_test_application' as isTest,
+ 			w.status_comment,
+			w.status_author
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -769,6 +778,8 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.RateComment,
 		pq.Array(&nullStringActions),
 		&et.IsTest,
+		&et.StatusComment,
+		&et.StatusAuthor,
 	)
 	if err != nil {
 		return nil, err
@@ -1044,7 +1055,12 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 			vs.status,
 			vs.updated_at
 		FROM variable_storage vs 
-			WHERE work_id = $1 AND vs.status != 'skipped'
+			WHERE work_id = $1 AND vs.status != 'skipped' AND 
+			(SELECT max(time)
+				 FROM variable_storage vrbs
+				 WHERE vrbs.step_name = vs.step_name AND
+					   vrbs.work_id = $1
+				) = vs.time
 		ORDER BY vs.time DESC`
 
 	rows, err := db.Connection.Query(ctx, query, id)
@@ -1338,7 +1354,9 @@ func (db *PGCon) GetTasksForMonitoring(ctx c.Context, filters *entity.TasksForMo
 func getWorksStatusQuery(statusFilter []string) *string {
 	statusQuery := `(CASE 
 						WHEN w.status IN (1, 3, 5) THEN 'В работе' 
-						WHEN w.status = 2 THEN 'Завершен' WHEN w.status = 4 THEN 'Остановлен' 
+						WHEN w.status = 2 THEN 'Завершен' 
+						WHEN w.status = 4 THEN 'Остановлен' 
+						WHEN w.status = 6 THEN 'Отменен'
 						WHEN w.status IS NULL THEN 'Неизвестный статус' END) 
 						IN %s`
 
@@ -1360,6 +1378,7 @@ func getTasksForMonitoringQuery(filters *entity.TasksForMonitoringFilters) *stri
 					WHEN w.status IN (1, 3, 5) THEN 'В работе'
         			WHEN w.status = 2 THEN 'Завершен'
 				    WHEN w.status = 4 THEN 'Остановлен'
+			    	WHEN w.status = 6 THEN 'Отменен'
         			WHEN w.status IS NULL THEN 'Неизвестный статус'
     			END AS status,
 				p.name AS process_name,
@@ -1492,13 +1511,13 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	return blockOutputs, nil
 }
 
-func (db *PGCon) GetTaskMembersLogins(ctx c.Context, workNumber string) ([]string, error) {
-	q := `SELECT DISTINCT m.login FROM works
+func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, error) {
+	q := `SELECT m.login, vs.step_type FROM works
     		JOIN variable_storage vs ON works.id = vs.work_id
     		JOIN members m ON vs.id = m.block_id
 		 WHERE work_number = $1 AND vs.status IN ('running', 'idle');`
 
-	members := make([]string, 0)
+	members := make([]DbMember, 0)
 
 	rows, err := db.Connection.Query(ctx, q, workNumber)
 	if err != nil {
@@ -1506,16 +1525,24 @@ func (db *PGCon) GetTaskMembersLogins(ctx c.Context, workNumber string) ([]strin
 	}
 	defer rows.Close()
 
+	met := make(map[string]struct{})
+
 	for rows.Next() {
-		var login string
+		m := DbMember{}
 
 		if scanErr := rows.Scan(
-			&login,
+			&m.Login, &m.Type,
 		); scanErr != nil {
 			return nil, scanErr
 		}
 
-		members = append(members, login)
+		key := fmt.Sprintf("%s:%s", m.Login, m.Type)
+		if _, ok := met[key]; ok {
+			continue
+		}
+		met[key] = struct{}{}
+
+		members = append(members, m)
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {

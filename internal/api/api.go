@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/go-chi/chi/v5"
@@ -281,6 +282,8 @@ const (
 
 	ApproverDecisionSign ApproverDecision = "sign"
 
+	ApproverDecisionSignUkep ApproverDecision = "sign_ukep"
+
 	ApproverDecisionViewed ApproverDecision = "viewed"
 )
 
@@ -391,13 +394,43 @@ const (
 
 // Defines values for TaskHumanStatus.
 const (
+	TaskHumanStatusApproveConfirm TaskHumanStatus = "approve-confirm"
+
+	TaskHumanStatusApproveConfirmed TaskHumanStatus = "approve-confirmed"
+
+	TaskHumanStatusApproveInform TaskHumanStatus = "approve-inform"
+
+	TaskHumanStatusApproveInformed TaskHumanStatus = "approve-informed"
+
+	TaskHumanStatusApproveSign TaskHumanStatus = "approve-sign"
+
+	TaskHumanStatusApproveSignUkep TaskHumanStatus = "approve-sign_ukep"
+
+	TaskHumanStatusApproveSigned TaskHumanStatus = "approve-signed"
+
+	TaskHumanStatusApproveView TaskHumanStatus = "approve-view"
+
+	TaskHumanStatusApproveViewed TaskHumanStatus = "approve-viewed"
+
 	TaskHumanStatusApproved TaskHumanStatus = "approved"
 
 	TaskHumanStatusApprovement TaskHumanStatus = "approvement"
 
+	TaskHumanStatusApprovementReject TaskHumanStatus = "approvement-reject"
+
+	TaskHumanStatusCancel TaskHumanStatus = "cancel"
+
 	TaskHumanStatusDone TaskHumanStatus = "done"
 
+	TaskHumanStatusExecutorReject TaskHumanStatus = "executor-reject"
+
 	TaskHumanStatusNew TaskHumanStatus = "new"
+
+	TaskHumanStatusProcessing TaskHumanStatus = "processing"
+
+	TaskHumanStatusRevoke TaskHumanStatus = "revoke"
+
+	TaskHumanStatusWait TaskHumanStatus = "wait"
 )
 
 // Add Approver params
@@ -468,6 +501,9 @@ type ApproverParams struct {
 	// Approvers group id in SD
 	ApproversGroupId string `json:"approvers_group_id"`
 
+	// Path to approvers group id
+	ApproversGroupIdPath *string `json:"approvers_group_id_path,omitempty"`
+
 	// Approvers group name in SD
 	ApproversGroupName string `json:"approvers_group_name"`
 
@@ -525,6 +561,7 @@ type ApproverUpdateParams struct {
 	//  * informed - Проинформирован
 	//  * sign - Подписать
 	//  * confirm - Утвердить
+	//  * sign_ukep - Подписать УКЭП
 	Decision ApproverDecision `json:"decision"`
 }
 
@@ -562,6 +599,11 @@ type BooleanOperandDataType string
 
 // BooleanOperandOperandType defines model for BooleanOperand.OperandType.
 type BooleanOperandOperandType string
+
+// CancelAppParams defines model for CancelAppParams.
+type CancelAppParams struct {
+	Comment string `json:"comment"`
+}
 
 // Compare operands using operator
 type Condition struct {
@@ -676,6 +718,7 @@ type EriusFunctionList struct {
 
 // EriusFunctionValue defines model for EriusFunctionValue.
 type EriusFunctionValue struct {
+	Format string `json:"format"`
 	Global string `json:"global"`
 	Name   string `json:"name"`
 	Type   string `json:"type"`
@@ -829,6 +872,9 @@ type ExecutionParams struct {
 	// Executors group id in SD
 	ExecutorsGroupId string `json:"executors_group_id"`
 
+	// Path to executors group id
+	ExecutorsGroupIdPath *string `json:"executors_group_id_path,omitempty"`
+
 	// Executors group name in SD
 	ExecutorsGroupName string `json:"executors_group_name"`
 
@@ -970,6 +1016,9 @@ type FormParams struct {
 	// Form group id in SD
 	FormGroupId *string `json:"form_group_id,omitempty"`
 
+	// Path to form group id
+	FormGroupIdPath *string `json:"form_group_id_path,omitempty"`
+
 	// Настройки блока при повторном заходе в этот блок
 	FormReEnterSettings *FormReEnterSettings `json:"form_re_enter_settings,omitempty"`
 
@@ -1007,6 +1056,9 @@ type FormReEnterSettings struct {
 	//   * From_schema - Selected by initiator
 	//   * Auto_Fill - Auto Fill form by system
 	FormExecutorType *FormExecutorType `json:"form_executor_type,omitempty"`
+
+	// path to group id
+	GroupPath *string `json:"group_path,omitempty"`
 
 	// Executor login, variable or group id
 	Value *string `json:"value,omitempty"`
@@ -1471,6 +1523,17 @@ type TaskMeanSolveTime struct {
 	MeanWorkHours float32 `json:"meanWorkHours"`
 }
 
+// TaskStatus defines model for TaskStatus.
+type TaskStatus struct {
+	FinishedAt time.Time `json:"finished_at"`
+
+	// Task status
+	Status string `json:"status"`
+
+	// Task work number
+	WorkNumber string `json:"work_number"`
+}
+
 // TaskUpdate defines model for TaskUpdate.
 type TaskUpdate struct {
 	Action TaskUpdateAction `json:"action"`
@@ -1490,15 +1553,7 @@ type TasksStop struct {
 
 // TasksStopped defines model for TasksStopped.
 type TasksStopped struct {
-	Tasks []struct {
-		FinishedAt string `json:"finished_at"`
-
-		// Task status
-		Status string `json:"status"`
-
-		// Task work number
-		WorkNumber string `json:"work_number"`
-	} `json:"tasks"`
+	Tasks []TaskStatus `json:"tasks"`
 }
 
 // UsageResponse defines model for UsageResponse.
@@ -1551,6 +1606,7 @@ type AdditionalApproverDecision string
 //   - informed - Проинформирован
 //   - sign - Подписать
 //   - confirm - Утвердить
+//   - sign_ukep - Подписать УКЭП
 type ApproverDecision string
 
 // Block type (language)
@@ -1617,7 +1673,10 @@ type EriusTaskResponse struct {
 
 	// Технический статус заявки
 	Status EriusTaskResponseStatus `json:"status"`
-	Steps  []TaskResponseStep      `json:"steps"`
+
+	// Комментарий статуса
+	StatusComment string             `json:"status_comment"`
+	Steps         []TaskResponseStep `json:"steps"`
 
 	// Версия процесса заявки
 	VersionId string `json:"version_id"`

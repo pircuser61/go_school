@@ -8,6 +8,7 @@ const (
 	StatusApproveView         TaskHumanStatus = "approve-view"
 	StatusApproveInform       TaskHumanStatus = "approve-inform"
 	StatusApproveSign         TaskHumanStatus = "approve-sign"
+	StatusApproveSignUkep     TaskHumanStatus = "approve-sign-ukep"
 	StatusApproveConfirm      TaskHumanStatus = "approve-confirm"
 	StatusExecution           TaskHumanStatus = "processing"
 	StatusExecutionRejected   TaskHumanStatus = "executor-reject"
@@ -20,6 +21,7 @@ const (
 	StatusDone                TaskHumanStatus = "done"
 	StatusWait                TaskHumanStatus = "wait"
 	StatusRevoke              TaskHumanStatus = "revoke"
+	StatusCancel              TaskHumanStatus = "cancel"
 )
 
 var statusToTaskState = map[TaskHumanStatus]string{
@@ -34,6 +36,7 @@ var statusToTaskState = map[TaskHumanStatus]string{
 	StatusExecutionRejected:   "отклонена исполнителем",
 	StatusDone:                "выполнена исполнителем",
 	StatusRevoke:              "отозвана инициатором",
+	StatusCancel:              "отозвана администратором",
 }
 
 var statusToTaskAction = map[TaskHumanStatus]string{

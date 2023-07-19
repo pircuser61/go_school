@@ -22,8 +22,9 @@ type ExecutionParams struct {
 	Type      ExecutionType `json:"type"`
 	Executors string        `json:"executors"`
 
-	ExecutorsGroupID   string `json:"executors_group_id"`
-	ExecutorsGroupName string `json:"executors_group_name"`
+	ExecutorsGroupID     string  `json:"executors_group_id"`
+	ExecutorsGroupName   string  `json:"executors_group_name"`
+	ExecutorsGroupIDPath *string `json:"executors_group_id_path"`
 
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 
@@ -39,7 +40,7 @@ type ExecutionParams struct {
 }
 
 func (a *ExecutionParams) Validate() error {
-	if a.ExecutorsGroupID == "" && a.Type == ExecutionTypeGroup {
+	if a.ExecutorsGroupID == "" && a.ExecutorsGroupIDPath == nil && a.Type == ExecutionTypeGroup {
 		return errors.New("executors group id is empty")
 	}
 

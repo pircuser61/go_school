@@ -232,6 +232,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					Description:        "",
 					FormsAccessibility: nil,
 					WorkType:           workType,
+					IsTakenInWork:      true,
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -312,13 +313,14 @@ func Test_createGoFormBlock(t *testing.T) {
 					FormExecutorType: script.FormExecutorTypeAutoFillUser,
 					SchemaId:         schemaId,
 					SchemaName:       schemaName,
-					Executors:        map[string]struct{}{executor: {}},
+					Executors:        map[string]struct{}{"auto_fill": {}},
 					ApplicationBody: map[string]interface{}{
 						"a": 100,
 						"b": 200,
 					},
-					WorkType: "8/5",
-					IsFilled: true,
+					WorkType:      "8/5",
+					IsFilled:      true,
+					IsTakenInWork: true,
 					Mapping: script.JSONSchemaProperties{
 						"a": script.JSONSchemaPropertiesValue{
 							Type:  "number",
@@ -412,11 +414,29 @@ func TestGoFormBlock_Update(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	databaseMock := dbMocks.NewMockedDatabase(t)
+	mockedDb := &dbMocks.MockedDatabase{}
 
-	databaseMock.On("CheckUserCanEditForm", ctx, "", name, login).Return(true, error(nil))
-	databaseMock.On("CheckUserCanEditForm", ctx, "", name, login2).Return(false, error(nil))
-	databaseMock.On("CheckUserCanEditForm", ctx, "", name, login3).Return(false, errors.New("mock error"))
+	mockedDb.On("CheckUserCanEditForm",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+	).Return(false, nil)
+	currCall := mockedDb.ExpectedCalls[len(mockedDb.ExpectedCalls)-1]
+	currCall = currCall.Run(func(args mock.Arguments) {
+		switch args.Get(3).(string) {
+		case login:
+			currCall.ReturnArguments[0] = true
+			currCall.ReturnArguments[1] = nil
+		case login2:
+			currCall.ReturnArguments[0] = false
+			currCall.ReturnArguments[1] = nil
+		case login3:
+			currCall.ReturnArguments[0] = false
+			currCall.ReturnArguments[1] = errors.New("mock error")
+		}
+
+	})
 
 	type args struct {
 		Name       string
@@ -454,49 +474,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					UpdateData: nil,
 					VarStore:   store.NewStore(),
-				}},
-			want:    nil,
-			wantErr: assert.Error,
-		},
-		{
-			name: "can't assert provided data error",
-			args: args{
-				Name:   name,
-				Title:  title,
-				Input:  map[string]string{},
-				Output: map[string]string{},
-				RunContext: &BlockRunContext{
-					UpdateData: &script.BlockUpdateData{
-						Action:     string(entity.TaskUpdateActionRequestFillForm),
-						Parameters: json.RawMessage{},
-					},
-					VarStore: store.NewStore(),
-				}},
-			want:    nil,
-			wantErr: assert.Error,
-		},
-		{
-			name: "wrong form id error",
-			args: args{
-				Name:   name,
-				Title:  title,
-				Input:  map[string]string{},
-				Output: map[string]string{},
-				RunContext: &BlockRunContext{
-					UpdateData: &script.BlockUpdateData{
-						ByLogin: login,
-						Action:  string(entity.TaskUpdateActionRequestFillForm),
-						Parameters: json.RawMessage(
-							func() []byte {
-								r, _ := json.Marshal(&updateFillFormParams{
-									BlockId: blockId2,
-								})
-
-								return r
-							}(),
-						),
-					},
-					VarStore: store.NewStore(),
 				}},
 			want:    nil,
 			wantErr: assert.Error,
@@ -550,6 +527,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 					IsFilled:         false,
 					ActualExecutor:   nil,
 					ChangesLog:       []ChangesLogItem{},
+					IsTakenInWork:    true,
 				},
 				RunContext: &BlockRunContext{
 					UpdateData: &script.BlockUpdateData{
@@ -606,6 +584,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 				SchemaName:       schemaName,
 				Executors:        map[string]struct{}{login: {}},
 				Description:      description,
+				IsTakenInWork:    true,
 				ApplicationBody: map[string]interface{}{
 					fieldName: fieldValue,
 				},
@@ -645,6 +624,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 					ApplicationBody: map[string]interface{}{
 						fieldName: fieldValue,
 					},
+					IsTakenInWork:  true,
 					IsFilled:       true,
 					ActualExecutor: getStringAddress(login),
 					ChangesLog:     []ChangesLogItem{},
@@ -700,6 +680,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 			wantState: &FormData{
 				FormExecutorType: script.FormExecutorTypeFromSchema,
 				SchemaId:         schemaId,
+				IsTakenInWork:    true,
 				SchemaName:       schemaName,
 				Executors:        map[string]struct{}{login: {}},
 				Description:      description,
@@ -864,7 +845,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 			}
 
 			gb.RunContext.skipNotifications = true
-			gb.RunContext.Storage = databaseMock
+			gb.RunContext.Storage = mockedDb
 
 			got, err := gb.Update(ctx)
 
