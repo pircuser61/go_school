@@ -18,6 +18,12 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	ServiceAccoutDev   = "service-account-jocasta-dev"
+	ServiceAccoutStage = "service-account-jocasta-stage"
+	ServiceAccout      = "service-account-jocasta"
+)
+
 type approverUpdateEditingParams struct {
 	Comment     string   `json:"comment"`
 	Attachments []string `json:"attachments"`
@@ -27,6 +33,7 @@ type approverUpdateParams struct {
 	Decision         ApproverAction `json:"decision"`
 	Comment          string         `json:"comment"`
 	Attachments      []string       `json:"attachments"`
+	Username         string         `json:"username"`
 	internalDecision ApproverDecision
 }
 
@@ -574,6 +581,11 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 
 		if !gb.actionAcceptable(updateParams.Decision) {
 			return nil, errors.New("unacceptable action")
+		}
+
+		login := gb.RunContext.UpdateData.ByLogin
+		if login == ServiceAccout || login == ServiceAccoutStage || login == ServiceAccoutDev {
+			gb.RunContext.UpdateData.ByLogin = updateParams.Username
 		}
 
 		updateParams.internalDecision = updateParams.Decision.ToDecision()
