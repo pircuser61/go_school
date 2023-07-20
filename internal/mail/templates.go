@@ -145,7 +145,7 @@ func NewExecutiontHalfSLATpl(id, name, sdUrl string, lastWorks []*entity.EriusTa
 func NewFormDayHalfSLATpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s истекает время предоставления информации", id),
-		Text: "Уважаемый коллега, время предоставления информации по заявке № {{.Id}} истекает <br>" +
+		Text: "Уважаемый коллега, время предоставления информации по заявке № {{.ID}} истекает <br>" +
 			"Для просмотра перейдите по <a href={{.Link}}>заявке</a>",
 		Variables: struct {
 			Name string `json:"name"`
@@ -162,7 +162,7 @@ func NewFormDayHalfSLATpl(id, name, sdUrl string) Template {
 func NewReworkSLATpl(id, name, sdUrl string, reworkSla int) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s автоматически перенесена в архив", id),
-		Text: `Уважаемый коллега, истек срок ожидания доработок по заявке {{.Id}}.</br>
+		Text: `Уважаемый коллега, истек срок ожидания доработок по заявке {{.ID}}.</br>
 Заявка автоматически перенесена в архив по истечении {{.Duration}} дней.</br>
 Для просмотра заявки перейдите по <a href={{.Link}}>ссылке</a><br>`,
 		Variables: struct {
@@ -182,7 +182,7 @@ func NewReworkSLATpl(id, name, sdUrl string, reworkSla int) Template {
 func NewRequestExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),
-		Text: `Уважаемый коллега, по заявке {{.Id}} требуется дополнительная информация<br>
+		Text: `Уважаемый коллега, по заявке {{.ID}} требуется дополнительная информация<br>
 				Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>`,
 		Variables: struct {
 			Id   string `json:"id"`
@@ -199,7 +199,7 @@ func NewRequestExecutionInfoTpl(id, name, sdUrl string) Template {
 func NewRequestFormExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s - Необходимо предоставить информацию", id),
-		Text: `Уважаемый коллега, по заявке {{.Id}} необходимо предоставить информацию.<br>
+		Text: `Уважаемый коллега, по заявке {{.ID}} необходимо предоставить информацию.<br>
 				Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
 			Id   string
@@ -229,7 +229,7 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto) T
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка № %s - Необходимо предоставить информацию", dto.WorkNumber),
-		Text: `Уважаемый коллега, по заявке № {{.Id}} необходимо предоставить информацию.<br>
+		Text: `Уважаемый коллега, по заявке № {{.ID}} необходимо предоставить информацию.<br>
 					Для просмотра полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
 					Срок предоставления информации заявки: {{.Deadline}}
 					</br><b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`,
@@ -252,7 +252,7 @@ func NewFormExecutionNeedTakeInWorkTpl(dto *NewFormExecutionNeedTakeInWorkDto) T
 func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),
-		Text: `Уважаемый коллега, по заявке № {{.Id}} требуется дополнительная информация<br>
+		Text: `Уважаемый коллега, по заявке № {{.ID}} требуется дополнительная информация<br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
 			Id   string `json:"id"`
@@ -269,7 +269,7 @@ func NewRequestApproverInfoTpl(id, name, sdUrl string) Template {
 func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s запрос дополнительной информации", id),
-		Text: `Уважаемый коллега, по заявке № {{.Id}} была получена дополнительная информация<br>
+		Text: `Уважаемый коллега, по заявке № {{.ID}} была получена дополнительная информация<br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
 			Id   string `json:"id"`
@@ -286,7 +286,7 @@ func NewAnswerApproverInfoTpl(id, name, sdUrl string) Template {
 func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s  получена дополнительная информация", id),
-		Text: `Уважаемый коллега, по заявке {{.Id}} была получена дополнительная информация<br>
+		Text: `Уважаемый коллега, по заявке {{.ID}} была получена дополнительная информация<br>
 				Для ознакомления Вы можете перейти в <a href={{.Link}}>заявку</a>`,
 		Variables: struct {
 			Id   string `json:"id"`
@@ -302,16 +302,16 @@ func NewAnswerExecutionInfoTpl(id, name, sdUrl string) Template {
 
 func NewAppInitiatorStatusNotificationTpl(id, name, action, description, sdUrl string) Template {
 	subject := fmt.Sprintf("Заявка %s %s", id, action)
-	textPart := `Уважаемый коллега, заявка {{.Id}} <b>{{.Action}}</b><br>`
+	textPart := `Уважаемый коллега, заявка {{.ID}} <b>{{.Action}}</b><br>`
 
 	if action == "ознакомлено" {
 		subject = fmt.Sprintf("Ознакомление по заявке %s", id)
-		textPart = `Уважаемый коллега, заявка {{.Id}} получена виза <b>Ознакомлен</b><br>`
+		textPart = `Уважаемый коллега, заявка {{.ID}} получена виза <b>Ознакомлен</b><br>`
 	}
 
 	if action == "проинформировано" {
 		subject = fmt.Sprintf("Информирование по заявке %s", id)
-		textPart = `Уважаемый коллега, заявка {{.Id}} получена виза <b>Проинформирован</b><br>`
+		textPart = `Уважаемый коллега, заявка {{.ID}} получена виза <b>Проинформирован</b><br>`
 	}
 
 	textPart += `Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>`
@@ -393,7 +393,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 
 	lastWorksTemplate := getLastWorksForTemplate(in.LastWorks, in.SdUrl)
 
-	textPart := `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.Action}}</b><br/>
+	textPart := `Уважаемый коллега, заявка {{.ID}} <b>ожидает {{.Action}}</b><br/>
 				{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br/>
 				Срок {{.Action}} до {{.Deadline}}<br/>
@@ -432,7 +432,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 func NewSendToInitiatorEditTpl(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s требует доработки", id),
-		Text: `Уважаемый коллега, заявка {{.Id}} <b>требует доработки.</b><br>
+		Text: `Уважаемый коллега, заявка {{.ID}} <b>требует доработки.</b><br>
 				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
 			Id   string `json:"id"`
@@ -451,7 +451,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
 
 	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>
-{{end}}Уважаемый коллега, заявка {{.Id}} <b>назначена на Группу исполнителей</b><br>
+{{end}}Уважаемый коллега, заявка {{.ID}} <b>назначена на Группу исполнителей</b><br>
  Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
  <b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`
 
@@ -491,7 +491,7 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 
 func NewExecutionTakenInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>
-{{end}}Уважаемый коллега, заявка {{.Id}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
+{{end}}Уважаемый коллега, заявка {{.ID}} <b>взята в работу</b> пользователем <b>{{.Executor}}</b><br>
  <b>Инициатор: </b>{{.Initiator}}</br>
  <b>Ссылка на заявку: </b><a href={{.Link}}>{{.Link}}</a></br>`
 
@@ -538,7 +538,7 @@ func NewAddApproversTpl(id, name, sdUrl, status string, lastWorks []*entity.Eriu
 
 	return Template{
 		Subject: fmt.Sprintf("Заявка %s ожидает %s", id, actionName),
-		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает {{.ActionName}}.</b><br>
+		Text: `Уважаемый коллега, заявка {{.ID}} <b>ожидает {{.ActionName}}.</b><br>
 				{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>{{end}}
 				Для просмотра перейти по <a href={{.Link}}>ссылке</a>`,
 		Variables: struct {
@@ -563,7 +563,7 @@ func NewDecisionMadeByAdditionalApprover(id, name, fullname, decision, comment, 
 	}
 	return Template{
 		Subject: fmt.Sprintf("Получена рецензия по Заявке №%s", id),
-		Text: `Уважаемый коллега, получена рецензия по заявке №{{.Id}}<br>
+		Text: `Уважаемый коллега, получена рецензия по заявке №{{.ID}}<br>
 				{{.Fullname}} {{.Decision}}{{.Comment}}<br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
 				
@@ -595,7 +595,7 @@ func NewDecisionMadeByAdditionalApprover(id, name, fullname, decision, comment, 
 func NewDayBeforeRequestAddInfoSLABreached(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s требуется дополнительная информация", id),
-		Text: `Уважаемый коллега, по вашей заявке №{{.Id}} 
+		Text: `Уважаемый коллега, по вашей заявке №{{.ID}} 
 				необходимо предоставить дополнительную информацию в течение 
 				одного рабочего дня с момента данного уведомления, 
 				иначе заявка будет автоматически <b>перенесена в архив</b>.</br> 
@@ -613,7 +613,7 @@ func NewDayBeforeRequestAddInfoSLABreached(id, name, sdUrl string) Template {
 func NewRequestAddInfoSLABreached(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s автоматически перенесена в архив", id),
-		Text: `Уважаемый коллега, заявка №{{.Id}} 
+		Text: `Уважаемый коллега, заявка №{{.ID}} 
 				автоматически перенесена в архив из-за отсутствия ответа 
 				на запрос дополнительной информации в течение 3 дней <br>
 				Заявка доступна по <a href={{.Link}}>ссылке</a></br>`,
@@ -632,7 +632,7 @@ func NewRequestAddInfoSLABreached(id, name, sdUrl string) Template {
 func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("По заявке №%s не удалось получить обратную связь от внешней системы", id),
-		Text: `Уважаемый коллега, по заявке №{{.Id}} 
+		Text: `Уважаемый коллега, по заявке №{{.ID}} 
 				не удалось получить обратную связь от внешней системы. 
 				Попробуйте создать заявку повторно. 
 				Если ошибка возникает снова, необходимо обратиться в техническую поддержку <br>
@@ -652,7 +652,7 @@ func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 func NewFormExecutionTakenInWorkTpl(workNumber, workTitle, namePerson, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка № %s - Необходимо предоставить информацию", workNumber),
-		Text:    "Уважаемый коллега, заявка № {{.Id}} взята в работу {{.NamePerson}}<br>Для просмотра перейдите по {{.Link}}",
+		Text:    "Уважаемый коллега, заявка № {{.ID}} взята в работу {{.NamePerson}}<br>Для просмотра перейдите по {{.Link}}",
 		Variables: struct {
 			Id         string `json:"id"`
 			Name       string `json:"name"`
@@ -670,7 +670,7 @@ func NewFormExecutionTakenInWorkTpl(workNumber, workTitle, namePerson, sdUrl str
 func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, deadline string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка № %s - Необходимо предоставить информацию", workNumber),
-		Text: `Уважаемый коллега, по заявке № {{.Id}} 
+		Text: `Уважаемый коллега, по заявке № {{.ID}} 
 					вам необходимо предоставить информацию.<br>
 					Для просмотра и заполнения полей заявки перейдите по <a href={{.Link}}>ссылке</a><br>
 					Срок предоставления информации заявки: {{.Deadline}}`,
@@ -691,7 +691,7 @@ func NewFormPersonExecutionNotificationTemplate(workNumber, workTitle, sdUrl, de
 func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdUrl string) Template {
 	return Template{
 		Subject: fmt.Sprintf("Заявка № %s - отозвана", workNumber),
-		Text:    "Уважаемый коллега, заявка №{{.Id}} отозвана<br>Для просмотра перейдите по <a href={{.Link}}>ссылке</a>",
+		Text:    "Уважаемый коллега, заявка №{{.ID}} отозвана<br>Для просмотра перейдите по <a href={{.Link}}>ссылке</a>",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`

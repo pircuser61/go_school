@@ -45,7 +45,7 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 				if !ok {
 					continue
 				}
-				aa[k] = []entity.Attachment{{Id: attachmentIDString}}
+				aa[k] = []entity.Attachment{{ID: attachmentIDString}}
 			case []interface{}:
 				a := make([]entity.Attachment, 0)
 				for _, item := range val {
@@ -61,7 +61,7 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 					if !ok {
 						continue
 					}
-					a = append(a, entity.Attachment{Id: attachmentIDString})
+					a = append(a, entity.Attachment{ID: attachmentIDString})
 				}
 				aa[k] = a
 			}

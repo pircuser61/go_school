@@ -947,11 +947,11 @@ type ExternalSystem struct {
 	OutputSchema   *JSONSchema        `json:"output_schema,omitempty"`
 	OutputSettings *EndSystemSettings `json:"output_settings,omitempty"`
 
-	// Id внешней системы
+	// ID внешней системы
 	SystemId string `json:"system_id"`
 }
 
-// Id внешней системы
+// ID внешней системы
 type ExternalSystemId string
 
 // Fill form
@@ -1355,7 +1355,7 @@ type ProcessSettings struct {
 	Sla         int         `json:"sla"`
 	StartSchema *JSONSchema `json:"start_schema,omitempty"`
 
-	// Id версии процесса
+	// ID версии процесса
 	VersionId string `json:"version_id"`
 
 	// Рабочий режим
@@ -1781,7 +1781,7 @@ type GetFormsChangelogParams struct {
 	// Work number
 	WorkNumber string `json:"work_number"`
 
-	// Id of form block (name)
+	// ID of form block (name)
 	BlockId string `json:"block_id"`
 }
 

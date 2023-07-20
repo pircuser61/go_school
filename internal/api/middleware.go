@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	XRequestIDHeader    = "X-Request-Id"
+	XRequestIDHeader    = "X-Request-ID"
 	AuthorizationHeader = "Authorization"
 	AsOtherHeader       = "X-As-Other"
 )

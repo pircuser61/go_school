@@ -141,8 +141,8 @@ func TestGetAttachmentsFromBody(t *testing.T) {
 "vlozhenie_mnogo": [{"id": "34b9dd4a-2391-11ed-b54b-04505600ad66"}, {"id": "366bc146-2391-11ed-b54b-04505600ad66"}]}`,
 			fields: []string{".vlozhenie_odno", ".vlozhenie_mnogo"},
 			want: map[string][]entity.Attachment{
-				"vlozhenie_odno":  {entity.Attachment{Id: "34bc6b5b-2391-11ed-b54b-04505600ad66"}},
-				"vlozhenie_mnogo": {entity.Attachment{Id: "34b9dd4a-2391-11ed-b54b-04505600ad66"}, entity.Attachment{Id: "366bc146-2391-11ed-b54b-04505600ad66"}},
+				"vlozhenie_odno":  {entity.Attachment{ID: "34bc6b5b-2391-11ed-b54b-04505600ad66"}},
+				"vlozhenie_mnogo": {entity.Attachment{ID: "34b9dd4a-2391-11ed-b54b-04505600ad66"}, entity.Attachment{ID: "366bc146-2391-11ed-b54b-04505600ad66"}},
 			},
 		},
 	}
