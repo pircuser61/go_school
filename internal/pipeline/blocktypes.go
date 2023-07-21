@@ -48,6 +48,9 @@ const (
 	BlockExecutableFunctionID    = "executable_function"
 	BlockExecutableFunctionTitle = "executable_function"
 
+	BlockTimerID    = "timer"
+	BlockTimerTitle = "timer"
+
 	BlockPlaceholderID    = "placeholder"
 	BlockPlaceholderTitle = "placeholder"
 )

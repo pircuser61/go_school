@@ -45,8 +45,6 @@ type ExecutableFunction struct {
 	Constants      map[string]interface{}      `json:"constants"`
 }
 
-type FunctionStatus string
-
 type FunctionUpdateParams struct {
 	Mapping map[string]interface{} `json:"mapping"`
 }
