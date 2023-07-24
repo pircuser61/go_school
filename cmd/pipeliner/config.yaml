@@ -6,7 +6,7 @@ serve_addr: ':8000'
 probes:
   liveness: "/alive"
   readiness: "/ready"
-timeout: '8000s'
+timeout: '30s'
 faas: 'https://openfaas.dev.autobp.mts.ru/'
 scheduler: "http://scheduler"
 network_monitor: "http://network-monitor/api/netmon/v1/"
@@ -102,7 +102,7 @@ imap:
   imap_mail_box: "Inbox"
 
 integrations:
-  url: 'localhost:9090'
+  url: 'integrations:90'
 
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
