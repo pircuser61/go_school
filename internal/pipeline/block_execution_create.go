@@ -123,10 +123,6 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 	}
 
-	if notifyErr := gb.RunContext.handleInitiatorNotify(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifyErr != nil {
-		return notifyErr
-	}
-
 	return gb.handleNotifications(ctx)
 }
 
@@ -206,10 +202,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 			return getVersionErr
 		}
 		gb.State.WorkType = processSLASettings.WorkType
-	}
-
-	if notifуErr := gb.RunContext.handleInitiatorNotify(ctx, gb.Name, ef.TypeID, gb.GetTaskHumanStatus()); notifуErr != nil {
-		return notifуErr
 	}
 
 	return gb.handleNotifications(ctx)
