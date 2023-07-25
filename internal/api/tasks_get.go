@@ -225,7 +225,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	shortNameMap := map[string]string{}
 	for key, val := range parsedContent.Pipeline.Blocks.AdditionalProperties {
-		if val.ShortTitle != nil && *val.ShortTitle != "" {
+		if val.ShortTitle != nil {
 			shortNameMap[key] = *val.ShortTitle
 		} else {
 			shortNameMap[key] = ""
@@ -255,7 +255,8 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 
 	resp := &eriusTaskResponse{}
-	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask, currentUserDelegateSteps, shortNameMap)); err != nil {
+	if err = sendResponse(w, http.StatusOK,
+		resp.toResponse(dbTask, currentUserDelegateSteps, shortNameMap)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
