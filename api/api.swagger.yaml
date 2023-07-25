@@ -4051,6 +4051,9 @@ components:
         name:
           type: string
           description: Наименование шага
+        short_title:
+          type: string
+          description: Короткое название ноды
         state:
           type: object
           description: Объект состояния

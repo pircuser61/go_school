@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"net/http"
 	"strings"
 	"time"
@@ -14,8 +15,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"go.opencensus.io/trace"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -63,6 +62,7 @@ type step struct {
 	Steps                     []string                   `json:"steps"`
 	HasError                  bool                       `json:"has_error"`
 	Status                    pipeline.Status            `json:"status"`
+	ShortTitle                string                     `json:"short_title"`
 }
 
 type action struct {
@@ -77,7 +77,7 @@ type taskActions []action
 type taskSteps []step
 
 func (eriusTaskResponse) toResponse(in *entity.EriusTask,
-	currentUserDelegateSteps map[string]bool) *eriusTaskResponse {
+	currentUserDelegateSteps map[string]bool, shortNames map[string]string) *eriusTaskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
 	for i := range in.Steps {
@@ -98,6 +98,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask,
 			HasError:                  in.Steps[i].HasError,
 			Status:                    pipeline.Status(in.Steps[i].Status),
 			IsDelegateOfAnyStepMember: currentUserDelegateSteps[in.Steps[i].Name],
+			ShortTitle:                shortNames[in.Steps[i].Name],
 		})
 	}
 
@@ -204,6 +205,15 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
+	var parsedContent EriusScenario
+	err = json.Unmarshal([]byte(dbTask.VersionContent), &parsedContent)
+	if err != nil {
+		e := PipelineParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+
 	steps, err := ae.DB.GetTaskSteps(ctx, dbTask.ID)
 	if err != nil {
 		e := GetTaskError
@@ -213,6 +223,14 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
+	shortNameMap := map[string]string{}
+	for key, val := range parsedContent.Pipeline.Blocks.AdditionalProperties {
+		if val.ShortTitle != nil {
+			shortNameMap[key] = *val.ShortTitle
+		} else {
+			shortNameMap[key] = ""
+		}
+	}
 	dbTask.Steps = steps
 
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
@@ -237,7 +255,8 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	}
 
 	resp := &eriusTaskResponse{}
-	if err = sendResponse(w, http.StatusOK, resp.toResponse(dbTask, currentUserDelegateSteps)); err != nil {
+	if err = sendResponse(w, http.StatusOK,
+		resp.toResponse(dbTask, currentUserDelegateSteps, shortNameMap)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)

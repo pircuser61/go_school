@@ -1745,6 +1745,9 @@ type TaskResponseStep struct {
 	// Наименование шага
 	Name *string `json:"name,omitempty"`
 
+	// Короткое название ноды
+	ShortTitle *string `json:"short_title,omitempty"`
+
 	// Объект состояния
 	State *map[string]interface{} `json:"state,omitempty"`
 
