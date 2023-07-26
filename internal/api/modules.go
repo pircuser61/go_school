@@ -37,6 +37,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		(&pipeline.GoBeginParallelTaskBlock{}).Model(),
 		(&pipeline.GoWaitForAllInputsBlock{}).Model(),
 		(&pipeline.ExecutableFunctionBlock{}).Model(),
+		(&pipeline.TimerBlock{}).Model(),
 		(&pipeline.GoNotificationBlock{}).Model(),
 		(&pipeline.GoPlaceholderBlock{}).Model(),
 		(&pipeline.GoStartBlock{}).Model(),

@@ -4171,6 +4171,7 @@ components:
         - $ref: '#/components/schemas/NotificationParams'
         - $ref: "#/components/schemas/ConditionParams"
         - $ref: "#/components/schemas/FormParams"
+        - $ref: "#/components/schemas/TimerParams"
         - $ref: "#/components/schemas/PlaceholderParams"
 
     ConditionGroup:
@@ -4574,6 +4575,16 @@ components:
           * head - Receiver's head
           * FromSchema - Selected by initiator
 
+    TimerParams:
+      type: object
+      description: Timer params
+      properties:
+        duration:
+          type: string
+          description: duration for timer
+      required:
+        - duration
+
     ApproverParams:
       type: object
       description: Approver params
@@ -4727,6 +4738,7 @@ components:
             - form
             - if
             - placeholder
+            - timer
         params:
           $ref: '#/components/schemas/Params'
       required:
