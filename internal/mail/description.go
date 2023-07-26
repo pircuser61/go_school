@@ -15,7 +15,10 @@ type userFromSD struct {
 	Username string `json:"username"`
 }
 
-const propsDelimiter = ", "
+const (
+	propsDelimiter   = ", "
+	attachmentPrefix = "attachment:"
+)
 
 func (u userFromSD) String() string {
 	return fmt.Sprintf("%s (%s)", u.Fullname, u.Username)
@@ -46,6 +49,8 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 					continue
 				}
 				aa[k] = []entity.Attachment{{ID: attachmentIDString}}
+			case string:
+				aa[k] = []entity.Attachment{{ID: strings.TrimPrefix(val, attachmentPrefix)}}
 			case []interface{}:
 				a := make([]entity.Attachment, 0)
 				for _, item := range val {

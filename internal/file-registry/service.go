@@ -78,7 +78,7 @@ func (s *Service) getAttachmentInfo(ctx context.Context, fileId string) (FileInf
 	}, nil
 }
 
-func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string][]any) (map[string][]FileInfo, error) {
+func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string][]entity.Attachment) (map[string][]FileInfo, error) {
 	ctxLocal, span := trace.StartSpan(ctx, "get_attachments_info")
 	defer span.End()
 
@@ -88,16 +88,7 @@ func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string
 		aa := attachments[k]
 		filesInfo := make([]FileInfo, 0, len(aa))
 		for _, a := range aa {
-			var attachmentId string
-			switch attachmentInstance := a.(type) {
-			case string:
-				attachmentId = attachmentInstance
-			case entity.Attachment:
-				attachmentId = attachmentInstance.ID
-			default:
-				return nil, fmt.Errorf("unknown type: %T", attachmentInstance)
-			}
-			fileInfo, err := s.getAttachmentInfo(ctxLocal, attachmentId)
+			fileInfo, err := s.getAttachmentInfo(ctxLocal, a.ID)
 			if err != nil {
 				return nil, err
 			}
