@@ -121,6 +121,8 @@ const (
 	FunctionParamsTypePlaceholder FunctionParamsType = "placeholder"
 
 	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
+
+	FunctionParamsTypeTimer FunctionParamsType = "timer"
 )
 
 // Defines values for IntegerOperandDataType.
@@ -1554,6 +1556,12 @@ type TasksStop struct {
 // TasksStopped defines model for TasksStopped.
 type TasksStopped struct {
 	Tasks []TaskStatus `json:"tasks"`
+}
+
+// Timer params
+type TimerParams struct {
+	// duration for timer
+	Duration string `json:"duration"`
 }
 
 // UsageResponse defines model for UsageResponse.

@@ -3,12 +3,11 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -75,8 +74,6 @@ func (gb *TimerBlock) GetState() interface{} {
 
 //nolint:gocyclo //its ok here
 func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
-	log := logger.GetLogger(ctx)
-
 	if gb.State.Expired {
 		return nil, errors.New("timer has already expired")
 	}
@@ -84,7 +81,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.Started {
 		gb.State.Expired = true
 	} else {
-		go gb.startTimer(log)
+		go gb.startTimer(ctx)
 		gb.State.Started = true
 	}
 
@@ -99,7 +96,8 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *TimerBlock) startTimer(log logger.Logger) {
+func (gb *TimerBlock) startTimer(ctx c.Context) {
+	log := logger.GetLogger(ctx)
 	log.Info("timer started")
 	time.Sleep(gb.State.Duration)
 	log.Info("timer is up")
@@ -179,7 +177,7 @@ func (gb *TimerBlock) createState(ef *entity.EriusFunc) error {
 		return errors.Wrap(err, "can not parse timer duration")
 	}
 
-	if duration == 0 {
+	if duration <= 0 {
 		return errors.New("delay time is not set for the timer")
 	}
 
