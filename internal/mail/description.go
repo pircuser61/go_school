@@ -66,7 +66,11 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 				}
 				aa[k] = a
 			case []string:
-
+				a := make([]entity.Attachment, 0)
+				for _, item := range val {
+					a = append(a, entity.Attachment{ID: strings.TrimPrefix(item, attachmentPrefix)})
+				}
+				aa[k] = a
 			}
 		}
 	}
