@@ -435,8 +435,14 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	taskIDs := make([]string, 0, len(tasks.Tasks))
-	for _, task := range tasks.Tasks {
+	for i, task := range tasks.Tasks {
 		taskIDs = append(taskIDs, task.ID.String())
+
+		steps, getTaskErr := db.GetTaskSteps(ctx, tasks.Tasks[i].ID)
+		if getTaskErr != nil {
+			return nil, getTaskErr
+		}
+		tasks.Tasks[i].Steps = steps
 	}
 
 	q = `
@@ -479,8 +485,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 						SUM(coalesce(jsonb_array_length(NULLIF(approver_log_attachments, 'null')), 0)) AS additional_approvers_count,
 						SUM(coalesce(jsonb_array_length(NULLIF(editing_app_log_attachments, 'null')), 0)) AS rework_count
 					FROM data
-					WHERE form_and_sd_application_body::text LIKE '{"id":%'
-					   OR form_and_sd_application_body::text LIKE '[{"id":%'
+					WHERE form_and_sd_application_body::text LIKE '{"id":%%'
+					   OR form_and_sd_application_body::text LIKE '[{"id":%%'
 					   OR form_and_sd_application_body::text LIKE '"attachment:%%'
 					   OR form_and_sd_application_body::text LIKE '["attachment:%%'
 					   OR additional_info_attachments IS NOT NULL
