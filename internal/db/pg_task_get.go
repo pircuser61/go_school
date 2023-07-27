@@ -467,7 +467,9 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 		 counts AS (SELECT
 						work_id,
 						SUM(CASE
-                        		WHEN jsonb_typeof(form_and_sd_application_body) = 'string' 
+                        		WHEN jsonb_typeof(form_and_sd_application_body) = 'object' 
+									THEN 1
+								WHEN jsonb_typeof(form_and_sd_application_body) = 'string'
 									THEN 1
                         		WHEN jsonb_typeof(form_and_sd_application_body) = 'array'  
 									THEN jsonb_array_length(form_and_sd_application_body)
@@ -477,7 +479,9 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 						SUM(coalesce(jsonb_array_length(NULLIF(approver_log_attachments, 'null')), 0)) AS additional_approvers_count,
 						SUM(coalesce(jsonb_array_length(NULLIF(editing_app_log_attachments, 'null')), 0)) AS rework_count
 					FROM data
-					WHERE form_and_sd_application_body::text LIKE '"attachment:%%'
+					WHERE form_and_sd_application_body::text LIKE '{"id":%'
+					   OR form_and_sd_application_body::text LIKE '[{"id":%'
+					   OR form_and_sd_application_body::text LIKE '"attachment:%%'
 					   OR form_and_sd_application_body::text LIKE '["attachment:%%'
 					   OR additional_info_attachments IS NOT NULL
 					   OR approver_log_attachments IS NOT NULL

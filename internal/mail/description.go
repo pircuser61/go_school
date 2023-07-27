@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/iancoleman/orderedmap"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 type userFromSD struct {
@@ -22,8 +24,8 @@ func (u userFromSD) String() string {
 	return fmt.Sprintf("%s (%s)", u.Fullname, u.Username)
 }
 
-func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[string][]string {
-	aa := make(map[string][]string)
+func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[string][]entity.Attachment {
+	aa := make(map[string][]entity.Attachment)
 
 	ff := make(map[string]struct{})
 	for _, f := range fields {
@@ -37,14 +39,38 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 			}
 			v, _ := body.Get(k)
 			switch val := v.(type) {
+			case orderedmap.OrderedMap:
+				attachmentID, ok := val.Get("id")
+				if !ok {
+					continue
+				}
+				attachmentIDString, ok := attachmentID.(string)
+				if !ok {
+					continue
+				}
+				aa[k] = []entity.Attachment{{ID: attachmentIDString}}
 			case string:
-				aa[k] = []string{strings.TrimPrefix(val, attachmentPrefix)}
+				aa[k] = []entity.Attachment{{ID: strings.TrimPrefix(val, attachmentPrefix)}}
 			case []interface{}:
-				a := make([]string, 0)
+				a := make([]entity.Attachment, 0)
 				for _, item := range val {
-					if attachment, ok := item.(string); ok {
-						a = append(a, strings.TrimPrefix(attachment, attachmentPrefix))
+					var attachmentID string
+					switch itemTyped := item.(type) {
+					case string:
+						attachmentID = itemTyped
+					case orderedmap.OrderedMap:
+						value, ok := itemTyped.Get("id")
+						if !ok {
+							continue
+						}
+						attachmentID, ok = value.(string)
+						if !ok {
+							continue
+						}
+					default:
+						continue
 					}
+					a = append(a, entity.Attachment{ID: attachmentID})
 				}
 				aa[k] = a
 			}
