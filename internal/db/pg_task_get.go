@@ -435,8 +435,14 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 	}
 
 	taskIDs := make([]string, 0, len(tasks.Tasks))
-	for _, task := range tasks.Tasks {
+	for i, task := range tasks.Tasks {
 		taskIDs = append(taskIDs, task.ID.String())
+
+		steps, getTaskErr := db.GetTaskSteps(ctx, tasks.Tasks[i].ID)
+		if getTaskErr != nil {
+			return nil, getTaskErr
+		}
+		tasks.Tasks[i].Steps = steps
 	}
 
 	q = `
