@@ -402,10 +402,10 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 	}
 
 	for i := range resp.Tasks {
-		steps, err := ae.DB.GetTaskSteps(ctx, resp.Tasks[i].ID)
+		steps, getTaskErr := ae.DB.GetTaskSteps(ctx, resp.Tasks[i].ID)
 		if err != nil {
 			e := GetTaskError
-			log.Error(e.errorMessage(err))
+			log.Error(e.errorMessage(getTaskErr))
 			_ = e.sendError(w)
 
 			return
