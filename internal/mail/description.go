@@ -57,7 +57,7 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 					var attachmentID string
 					switch itemTyped := item.(type) {
 					case string:
-						attachmentID = itemTyped
+						attachmentID = strings.TrimPrefix(itemTyped, attachmentPrefix)
 					case orderedmap.OrderedMap:
 						value, ok := itemTyped.Get("id")
 						if !ok {
