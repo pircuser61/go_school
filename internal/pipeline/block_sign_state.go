@@ -43,8 +43,12 @@ func (s *SignData) SetDecision(login string, params *SignSignatureParams) error 
 		return NewUserIsNotPartOfProcessErr()
 	}
 
-	if params.Decision == "" {
+	switch params.Decision {
+	case "":
 		return errors.New("missing decision")
+	case SignDecisionSigned, SignDecisionRejected, SignDecisionError:
+	default:
+		return errors.New("unknown decision")
 	}
 
 	if s.Decision != nil {
