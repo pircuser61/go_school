@@ -29,7 +29,7 @@ import (
 func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {
-		statuses = "('finished', 'no_success')"
+		statuses = "('finished', 'no_success', 'error')"
 	}
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                      AS work_id

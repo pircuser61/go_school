@@ -3418,6 +3418,7 @@ components:
             - executor_send_edit_app
             - add_approvers
             - form_executor_start_work
+            - sign
         parameters:
           type: object
           description: Task update params
@@ -3431,6 +3432,7 @@ components:
             - $ref: '#/components/schemas/FillFormUpdateParams'
             - $ref: '#/components/schemas/AddApproversParams'
             - $ref: '#/components/schemas/CancelAppParams'
+            - $ref: '#/components/schemas/SignUpdateParams'
       required:
         - action
         - parameters
@@ -3518,6 +3520,19 @@ components:
         - comment
         - attachments
 
+    SignUpdateParams:
+      type: object
+      description: Sign update params
+      properties:
+        decision:
+          $ref: '#/components/schemas/signDecision'
+        comment:
+          type: string
+          description: Comment from signer
+      required:
+        - decision
+        - comment
+
     AdditionalApproverUpdateParams:
       type: object
       description: Approver update params
@@ -3582,6 +3597,18 @@ components:
           type: string
       required:
         - comment
+
+    signDecision:
+      type: string
+      enum:
+        - signed
+        - rejected
+        - error
+      description: >
+        Approver decision:
+         * signed - Согласовано
+         * rejected - Отклонено
+         * error - Произошла ошибка
 
     approverDecision:
       type: string
@@ -4173,6 +4200,7 @@ components:
         - $ref: "#/components/schemas/FormParams"
         - $ref: "#/components/schemas/TimerParams"
         - $ref: "#/components/schemas/PlaceholderParams"
+        - $ref: "#/components/schemas/SignatureParams"
 
     ConditionGroup:
       type: object
@@ -4575,6 +4603,31 @@ components:
           * head - Receiver's head
           * FromSchema - Selected by initiator
 
+    SignerType:
+      type: string
+      enum:
+        - user
+        - group
+        - fromSchema
+      description: >
+        Signer type:
+          * user - Single user
+          * group - Group ID
+          * FromSchema - Selected by initiator
+
+    SignatureType:
+      type: string
+      enum:
+        - pep
+        - unep
+        - ukep
+
+    SignatureCarrier:
+      type: string
+      enum:
+        - cloud
+        - token
+
     TimerParams:
       type: object
       description: Timer params
@@ -4584,6 +4637,42 @@ components:
           description: duration for timer
       required:
         - duration
+
+    SignParams:
+      type: object
+      description: Singature params
+      properties:
+        type:
+          $ref: '#/components/schemas/SignerType'
+        signer:
+          type: string
+          description: Signer value (depends on type)
+          example: form_0.user.username;form_1.user.username (format for many signers from schema)
+        signer_group_id:
+          type: string
+          description: Singer group id in SD
+        signer_group_name:
+          type: string
+          description: Signer group name in SD
+        signer_group_id_path:
+          type: string
+          description: Path to singer group id
+        signingRule:
+          $ref: '#/components/schemas/SigningRule'
+        signatureType:
+          $ref: '#/components/schemas/SignatureType'
+        signatureCarrier:
+          $ref: '#/components/schemas/SignatureCarrier'
+        forms_accessibility:
+          type: array
+          description: List of accessibility properties for forms
+          items:
+            $ref: '#/components/schemas/FormsAccessibility'
+      required:
+        - type
+        - signingRule
+        - signatureType
+        - forms_accessibility
 
     ApproverParams:
       type: object
@@ -4717,6 +4806,13 @@ components:
         - AllOf
       description: Count of approvers which will participate in approvement will depends of approvement type. 'Any of' will check only first approvement action, when 'all of' will be waiting for all approvers or auto actions.
 
+    SigningRule:
+      type: string
+      enum:
+        - AnyOf
+        - AllOf
+      description: Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
+
     ApprovementRuleTranslated:
       type: string
       enum: [ "Один из согласующих", "Все согласующие" ]
@@ -4739,6 +4835,7 @@ components:
             - if
             - placeholder
             - timer
+            - sign
         params:
           $ref: '#/components/schemas/Params'
       required:

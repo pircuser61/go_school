@@ -33,6 +33,7 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		(&pipeline.GoFormBlock{}).Model(),
 		(&pipeline.GoApproverBlock{}).Model(),
 		(&pipeline.GoExecutionBlock{}).Model(),
+		(&pipeline.GoSignBlock{}).Model(),
 		(&pipeline.IF{}).Model(),
 		(&pipeline.GoBeginParallelTaskBlock{}).Model(),
 		(&pipeline.GoWaitForAllInputsBlock{}).Model(),

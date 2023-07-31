@@ -639,6 +639,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 		return []string{pipeline.BlockGoFormID}
 	}
 
+	if action == entity.TaskUpdateActionSign {
+		return []string{pipeline.BlockGoSignID}
+	}
+
 	return []string{}
 }
 

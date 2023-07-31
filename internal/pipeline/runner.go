@@ -38,6 +38,7 @@ var (
 	StatusRunning   Status = "running"
 	StatusFinished  Status = "finished"
 	StatusNoSuccess Status = "no_success"
+	StatusError     Status = "error"
 )
 
 type Runner interface {

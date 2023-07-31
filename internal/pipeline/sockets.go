@@ -10,4 +10,5 @@ const (
 	executedSocketID         = "executed"
 	notExecutedSocketID      = "not_executed"
 	requestAddInfoSocketID   = "req_add_info"
+	errorSocketID            = "error"
 )

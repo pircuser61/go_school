@@ -233,6 +233,8 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 		return createGoTestBlock(name, ef, runCtx)
 	case BlockGoApproverID:
 		return createGoApproverBlock(ctx, name, ef, runCtx)
+	case BlockGoSignID:
+		return createGoSignBlock(ctx, name, ef, runCtx)
 	case BlockGoSdApplicationID:
 		return createGoSdApplicationBlock(name, ef, runCtx)
 	case BlockGoExecutionID:
@@ -430,6 +432,9 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context,
 		StatusApprovementRejected,
 		StatusExecution,
 		StatusExecutionRejected,
+		StatusSignSigned,
+		StatusSignRejected,
+		StatusProcessingError,
 		StatusDone:
 	default:
 		return nil
