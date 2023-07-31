@@ -154,13 +154,15 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 	return resp.StatusCode == http.StatusOK
 }
 
+// nolint:gocognit //its ok here
 func (bt *BlocksType) IsParallelNodesCorrect() bool {
 	parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
 	if len(parallelStartNodes) == 0 {
 		return true
 	}
 
-	for _, parallelNode := range parallelStartNodes {
+	for idx := range parallelStartNodes {
+		parallelNode := parallelStartNodes[idx]
 		var foundedNode *string
 
 		nodes := make(map[string]*EriusFunc, 0)
@@ -244,7 +246,8 @@ func (bt *BlocksType) blockTypeExists(blockType string) bool {
 
 func (bt *BlocksType) getNodesByType(blockType string) map[string]EriusFunc {
 	blocks := make(map[string]EriusFunc, 0)
-	for id, b := range *bt {
+	for id := range *bt {
+		b := (*bt)[id]
 		if b.TypeID == blockType {
 			blocks[id] = b
 		}
@@ -252,10 +255,11 @@ func (bt *BlocksType) getNodesByType(blockType string) map[string]EriusFunc {
 	return blocks
 }
 
-func (bt *BlocksType) getNodeById(blockId string) *EriusFunc {
+func (bt *BlocksType) getNodeByID(blockId string) *EriusFunc {
 	for blockKey, _ := range *bt {
 		if blockKey == blockId {
 			block := (*bt)[blockKey]
+
 			return &block
 		}
 	}
