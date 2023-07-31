@@ -519,3 +519,19 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 		})
 	}
 }
+
+func TestValidation_ParallelNodes(t *testing.T) {
+	var tests []struct {
+		Name      string
+		Ef        entity.EriusScenario
+		WantValid bool
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsParallelNodesCorrect() {
+				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
+			}
+		})
+	}
+}
