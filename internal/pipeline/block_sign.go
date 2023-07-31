@@ -278,7 +278,6 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockGoSignID,
 			Params: &script.SignParams{
-				Signer:             "",
 				Type:               "",
 				SignatureType:      "",
 				FormsAccessibility: []script.FormAccessibility{},

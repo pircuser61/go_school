@@ -3,6 +3,7 @@ package script
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type SigningRule string
@@ -43,10 +44,11 @@ const (
 
 	SignatureCarrierCloud = "cloud"
 	SignatureCarrierToken = "token"
+	SignatureCarrierAll   = "all"
 )
 
 type SignParams struct {
-	Type             SignerType `json:"type"`
+	Type             SignerType `json:"signerType"`
 	SigningRule      `json:"approvementRule"`
 	Signer           string           `json:"approver,omitempty"`
 	SignatureType    SignatureType    `json:"signature_type"`
@@ -59,64 +61,74 @@ type SignParams struct {
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 }
 
-func (a *SignParams) Validate() error {
-	switch a.SignatureType {
+func (s *SignParams) Validate() error {
+	switch s.SignatureType {
 	case SignatureTypePEP:
-		if a.Type != SignerTypeUser {
-			return fmt.Errorf("bad signer type: %s", a.Type)
+		if s.Type != SignerTypeUser {
+			return fmt.Errorf("bad signer type: %s", s.Type)
 		}
-		if a.Signer == "" {
+		if s.Signer == "" {
 			return errors.New("signer is empty")
 		}
 	case SignatureTypeUNEP:
-		switch a.Type {
+		switch s.Type {
 		case SignerTypeUser:
-			if a.Signer == "" {
+			if s.Signer == "" {
 				return errors.New("signer is empty")
 			}
 		case SignerTypeGroup:
-			if a.SignerGroupID == "" && a.SignerGroupIDPath == "" {
+			if s.SignerGroupID == "" && s.SignerGroupIDPath == "" {
 				return errors.New("signer group id is empty")
 			}
-			if a.SigningRule != "" && a.SigningRule != AllOfSigningRequired && a.SigningRule != AnyOfSigningRequired {
-				return fmt.Errorf("unknown signing rule: %s", a.SigningRule)
+			if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
+				return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
 			}
 		case SignerTypeFromSchema:
-			if a.Signer == "" {
+			if s.Signer == "" {
 				return errors.New("signer is empty")
 			}
+			if len(strings.Split(s.Signer, ";")) > 1 {
+				if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
+					return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
+				}
+			}
 		default:
-			return fmt.Errorf("unknown signer type: %s", a.Type)
+			return fmt.Errorf("unknown signer type: %s", s.Type)
 		}
 	case SignatureTypeUKEP:
-		switch a.Type {
+		switch s.Type {
 		case SignerTypeUser:
-			if a.Signer == "" {
+			if s.Signer == "" {
 				return errors.New("signer is empty")
 			}
 		case SignerTypeGroup:
-			if a.SignerGroupID == "" && a.SignerGroupIDPath == "" {
+			if s.SignerGroupID == "" && s.SignerGroupIDPath == "" {
 				return errors.New("signer group id is empty")
 			}
-			if a.SigningRule != "" && a.SigningRule != AllOfSigningRequired && a.SigningRule != AnyOfSigningRequired {
-				return fmt.Errorf("unknown signing rule: %s", a.SigningRule)
+			if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
+				return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
 			}
 		case SignerTypeFromSchema:
-			if a.Signer == "" {
+			if s.Signer == "" {
 				return errors.New("signer is empty")
 			}
+			if len(strings.Split(s.Signer, ";")) > 1 {
+				if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
+					return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
+				}
+			}
 		default:
-			return fmt.Errorf("unknown signer type: %s", a.Type)
+			return fmt.Errorf("unknown signer type: %s", s.Type)
 		}
-		if a.SignatureCarrier == "" {
+		if s.SignatureCarrier == "" {
 			return errors.New("no signature carrier provided")
 		}
-		carrier := a.SignatureCarrier
-		if carrier != SignatureCarrierCloud && carrier != SignatureCarrierToken {
-			return fmt.Errorf("unknown signature carrier: %s", a.SignatureCarrier)
+		carrier := s.SignatureCarrier
+		if carrier != SignatureCarrierCloud && carrier != SignatureCarrierToken && carrier != SignatureCarrierAll {
+			return fmt.Errorf("unknown signature carrier: %s", s.SignatureCarrier)
 		}
 	default:
-		return fmt.Errorf("unknown signature type: %s", a.SignatureType)
+		return fmt.Errorf("unknown signature type: %s", s.SignatureType)
 	}
 
 	return nil
