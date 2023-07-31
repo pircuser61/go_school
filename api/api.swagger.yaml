@@ -4200,7 +4200,7 @@ components:
         - $ref: "#/components/schemas/FormParams"
         - $ref: "#/components/schemas/TimerParams"
         - $ref: "#/components/schemas/PlaceholderParams"
-        - $ref: "#/components/schemas/SignatureParams"
+        - $ref: "#/components/schemas/SignParams"
 
     ConditionGroup:
       type: object
@@ -4627,6 +4627,7 @@ components:
       enum:
         - cloud
         - token
+        - all
 
     TimerParams:
       type: object
@@ -4642,7 +4643,7 @@ components:
       type: object
       description: Singature params
       properties:
-        type:
+        signerType:
           $ref: '#/components/schemas/SignerType'
         signer:
           type: string
@@ -4669,8 +4670,7 @@ components:
           items:
             $ref: '#/components/schemas/FormsAccessibility'
       required:
-        - type
-        - signingRule
+        - signerType
         - signatureType
         - forms_accessibility
 
