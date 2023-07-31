@@ -386,8 +386,7 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 		in.Status == script.SettingStatusApproveConfirm ||
 		in.Status == script.SettingStatusApproveView ||
 		in.Status == script.SettingStatusApproveInform ||
-		in.Status == script.SettingStatusApproveSign ||
-		in.Status == script.SettingStatusApproveSignUkep {
+		in.Status == script.SettingStatusApproveSign {
 		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
 	}
 
