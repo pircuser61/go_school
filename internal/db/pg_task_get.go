@@ -1619,6 +1619,5 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 		}
 		return map[string]struct{}{}, err
 	}
-
 	return executors, nil
 }
