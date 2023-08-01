@@ -370,7 +370,9 @@ const (
 func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 	actionName := getApprovementActionNameByStatus(in.Status, in.Action)
 	buttons := ""
-	if in.Status == statusExecution {
+
+	switch in.Status {
+	case statusExecution:
 		buttons = getExecutionButtons(
 			in.WorkNumber,
 			in.Mailto,
@@ -380,13 +382,8 @@ func NewAppPersonStatusNotificationTpl(in *NewAppPersonStatusTpl) Template {
 			in.Login,
 			in.IsEditable,
 		)
-	}
-
-	if in.Status == script.SettingStatusApprovement ||
-		in.Status == script.SettingStatusApproveConfirm ||
-		in.Status == script.SettingStatusApproveView ||
-		in.Status == script.SettingStatusApproveInform ||
-		in.Status == script.SettingStatusApproveSign {
+	case script.SettingStatusApprovement, script.SettingStatusApproveConfirm, script.SettingStatusApproveView,
+		script.SettingStatusApproveInform, script.SettingStatusApproveSign, script.SettingStatusApproveSignUkep:
 		buttons = getApproverButtons(in.WorkNumber, in.Mailto, in.BlockID, in.Login, in.ApproverActions, in.IsEditable)
 	}
 
@@ -745,11 +742,15 @@ const (
 	taskUpdateActionApprovement = "approvement"
 	executionStartWorkAction    = "executor_start_work"
 	formExecutorStartWorkAction = "form_executor_start_work"
+	actionApproverSignUkep      = "sign_ukep"
 )
 
 func getApproverButtons(workNumber, mailto, blockId, login string, actions []Action, isEditable bool) string {
 	buttons := make([]string, 0, len(actions))
 	for i := range actions {
+		if actions[i].InternalActionName == actionApproverSignUkep {
+			return ""
+		}
 		if actions[i].InternalActionName == actionApproverSendEditApp {
 			continue
 		}
