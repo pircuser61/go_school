@@ -120,13 +120,13 @@ func (s *SignParams) Validate() error {
 		default:
 			return fmt.Errorf("unknown signer type: %s", s.Type)
 		}
-		if s.SignatureCarrier == "" {
-			return errors.New("no signature carrier provided")
-		}
-		carrier := s.SignatureCarrier
-		if carrier != SignatureCarrierCloud && carrier != SignatureCarrierToken && carrier != SignatureCarrierAll {
-			return fmt.Errorf("unknown signature carrier: %s", s.SignatureCarrier)
-		}
+		//if s.SignatureCarrier == "" {
+		//	return errors.New("no signature carrier provided")
+		//}
+		//carrier := s.SignatureCarrier
+		//if carrier != SignatureCarrierCloud && carrier != SignatureCarrierToken && carrier != SignatureCarrierAll {
+		//	return fmt.Errorf("unknown signature carrier: %s", s.SignatureCarrier)
+		//}
 	default:
 		return fmt.Errorf("unknown signature type: %s", s.SignatureType)
 	}

@@ -57,6 +57,10 @@ func (s *SignData) SetDecision(login string, params *SignSignatureParams) error 
 
 	var signingRule = s.SigningRule
 
+	if params.Decision == SignDecisionSigned {
+		params.Comment = ""
+	}
+
 	if signingRule == script.AnyOfSigningRequired {
 		s.Decision = &params.Decision
 		s.Comment = &params.Comment

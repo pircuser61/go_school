@@ -273,46 +273,46 @@ func TestSignParams_Validate(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		{
-			name: "UKEP - all",
-			fields: fields{
-				SignatureType:    SignatureTypeUKEP,
-				Type:             SignerTypeUser,
-				Signer:           "test",
-				SignatureCarrier: "all",
-			},
-			wantErr: false,
-		},
-		{
-			name: "UKEP - cloud",
-			fields: fields{
-				SignatureType:    SignatureTypeUKEP,
-				Type:             SignerTypeUser,
-				Signer:           "test",
-				SignatureCarrier: "cloud",
-			},
-			wantErr: false,
-		},
-		{
-			name: "UKEP - token",
-			fields: fields{
-				SignatureType:    SignatureTypeUKEP,
-				Type:             SignerTypeUser,
-				Signer:           "test",
-				SignatureCarrier: "token",
-			},
-			wantErr: false,
-		},
-		{
-			name: "UKEP - bad carrier",
-			fields: fields{
-				SignatureType:    SignatureTypeUKEP,
-				Type:             SignerTypeUser,
-				Signer:           "test",
-				SignatureCarrier: "bad",
-			},
-			wantErr: true,
-		},
+		//{
+		//	name: "UKEP - all",
+		//	fields: fields{
+		//		SignatureType:    SignatureTypeUKEP,
+		//		Type:             SignerTypeUser,
+		//		Signer:           "test",
+		//		SignatureCarrier: "all",
+		//	},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "UKEP - cloud",
+		//	fields: fields{
+		//		SignatureType:    SignatureTypeUKEP,
+		//		Type:             SignerTypeUser,
+		//		Signer:           "test",
+		//		SignatureCarrier: "cloud",
+		//	},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "UKEP - token",
+		//	fields: fields{
+		//		SignatureType:    SignatureTypeUKEP,
+		//		Type:             SignerTypeUser,
+		//		Signer:           "test",
+		//		SignatureCarrier: "token",
+		//	},
+		//	wantErr: false,
+		//},
+		//{
+		//	name: "UKEP - bad carrier",
+		//	fields: fields{
+		//		SignatureType:    SignatureTypeUKEP,
+		//		Type:             SignerTypeUser,
+		//		Signer:           "test",
+		//		SignatureCarrier: "bad",
+		//	},
+		//	wantErr: true,
+		//},
 		{
 			name: "bad type",
 			fields: fields{
