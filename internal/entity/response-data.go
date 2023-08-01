@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/exp/maps"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
@@ -52,9 +53,11 @@ type EriusTagInfo struct {
 type BlocksType map[string]EriusFunc
 
 const (
-	BlockGoStartName = "start"
-	BlockGoEndName   = "end"
-	BlockSDName      = "servicedesk_application"
+	BlockGoStartName       = "start"
+	BlockGoEndName         = "end"
+	BlockSDName            = "servicedesk_application"
+	BlockParallelStartName = "begin_parallel_task"
+	BlockParallelEndName   = "wait_for_all_inputs"
 )
 
 const (
@@ -78,6 +81,10 @@ func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) boo
 		return false
 	}
 
+	if !bt.IsParallelNodesCorrect() {
+		return false
+	}
+
 	return true
 }
 
@@ -86,14 +93,15 @@ func (bt *BlocksType) EndExists() bool {
 }
 
 func (bt *BlocksType) IsPipelineComplete() bool {
-	startNode := bt.getNodeByType(BlockGoStartName)
+	startNodes := bt.getNodesByType(BlockGoStartName)
 
-	if startNode == nil {
+	if len(startNodes) == 0 {
 		return false
 	}
+	startNode := startNodes[maps.Keys(startNodes)[0]]
 
 	nodesIds := bt.getNodesIds()
-	relatedNodesNum := bt.countRelatedNodesIds(startNode)
+	relatedNodesNum := bt.countRelatedNodesIds(&startNode)
 
 	return len(nodesIds) == relatedNodesNum
 }
@@ -122,10 +130,11 @@ func (bt *BlocksType) IsSocketsFilled() bool {
 }
 
 func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.Service) bool {
-	sdNode := bt.getNodeByType(BlockSDName)
-	if sdNode == nil {
+	sdNodes := bt.getNodesByType(BlockSDName)
+	if len(sdNodes) == 0 {
 		return true
 	}
+	sdNode := sdNodes[maps.Keys(sdNodes)[0]]
 
 	var params script.SdApplicationParams
 	err := json.Unmarshal(sdNode.Params, &params)
@@ -143,6 +152,63 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode == http.StatusOK
+}
+
+// nolint:gocognit //its ok here
+func (bt *BlocksType) IsParallelNodesCorrect() bool {
+	parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
+	if len(parallelStartNodes) == 0 {
+		return true
+	}
+
+	for idx := range parallelStartNodes {
+		parallelNode := parallelStartNodes[idx]
+		var foundedNode *string
+
+		nodes := make(map[string]*EriusFunc, 0)
+		visitedNodes := make(map[string]struct{}, 0)
+
+		for socketOut := range parallelNode.Next {
+			for _, socketOutNode := range parallelNode.Next[socketOut] {
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				nodes[socketOutNode] = &socketNode
+			}
+		}
+
+		for {
+			nodeKeys := maps.Keys(nodes)
+			if len(nodeKeys) == 0 {
+				break
+			}
+			nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
+			delete(nodes, nodeKey)
+			if _, ok := visitedNodes[nodeKey]; ok {
+				continue
+			}
+			if node.TypeID == BlockParallelEndName {
+				if foundedNode != nil && nodeKey != *foundedNode {
+					return false
+				}
+				foundedNode = &nodeKey
+			} else if node.TypeID == BlockParallelStartName {
+				continue
+			} else {
+				for socketOut := range node.Next {
+					for _, socketOutNode := range node.Next[socketOut] {
+						socketNode, ok := (*bt)[socketOutNode]
+						if !ok {
+							continue
+						}
+						nodes[socketOutNode] = &socketNode
+					}
+				}
+			}
+		}
+	}
+	return true
 }
 
 func (bt *BlocksType) addDefaultStartNode() {
@@ -175,13 +241,26 @@ func (bt *BlocksType) addDefaultStartNode() {
 }
 
 func (bt *BlocksType) blockTypeExists(blockType string) bool {
-	return bt.getNodeByType(blockType) != nil
+	return len(bt.getNodesByType(blockType)) != 0
 }
 
-func (bt *BlocksType) getNodeByType(blockType string) *EriusFunc {
-	for _, b := range *bt {
+func (bt *BlocksType) getNodesByType(blockType string) map[string]EriusFunc {
+	blocks := make(map[string]EriusFunc, 0)
+	for id := range *bt {
+		b := (*bt)[id]
 		if b.TypeID == blockType {
-			return &b
+			blocks[id] = b
+		}
+	}
+	return blocks
+}
+
+func (bt *BlocksType) getNodeByID(blockId string) *EriusFunc {
+	for blockKey, _ := range *bt {
+		if blockKey == blockId {
+			block := (*bt)[blockKey]
+
+			return &block
 		}
 	}
 	return nil
