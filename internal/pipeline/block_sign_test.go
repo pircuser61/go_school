@@ -1,9 +1,10 @@
 package pipeline
 
 import (
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"testing"
 	"time"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 func TestSignData_SetDecision(t *testing.T) {
