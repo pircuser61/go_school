@@ -1588,7 +1588,7 @@ func (db *PGCon) GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uui
 	q := `
 		SELECT  content-> 'State' -> step_name -> 'executors'
 		FROM variable_storage
-		WHERE work_id = $1 and step_name = $2 order by time desc limit 1 offset 1`
+		WHERE work_id = $1 and step_name = $2 order by time desc limit 1`
 
 	var executors map[string]struct{}
 	if err = db.Connection.QueryRow(ctx, q, taskID, name).Scan(&executors); err != nil {
