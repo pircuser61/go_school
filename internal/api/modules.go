@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	WaitForAllImputsBase = "wait_for_all_inputs"
+	WaitForAllInputsBase = "wait_for_all_inputs"
 	IfBase               = "if"
 	ConnectorBase        = "connector"
 	ForBase              = "for"
@@ -62,6 +62,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 		//nolint:goconst //ok
 		case "approver":
 			eriusFunctions[i].Title = "Согласование"
+		case "sign":
+			eriusFunctions[i].Title = "Подписание"
 		case "servicedesk_application":
 			eriusFunctions[i].Title = "Заявка Servicedesk"
 		case "execution":
@@ -72,8 +74,8 @@ func (ae *APIEnv) GetModules(w http.ResponseWriter, req *http.Request) {
 			eriusFunctions[i].Title = "Начало"
 		case "end":
 			eriusFunctions[i].Title = "Конец"
-		case WaitForAllImputsBase:
-			eriusFunctions[i].Title = WaitForAllImputsBase
+		case WaitForAllInputsBase:
+			eriusFunctions[i].Title = WaitForAllInputsBase
 		case BeginParallelTask:
 			eriusFunctions[i].Title = BeginParallelTask
 		case pipeline.BlockPlaceholderID:
