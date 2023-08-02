@@ -4649,13 +4649,13 @@ components:
           type: string
           description: Signer value (depends on type)
           example: form_0.user.username;form_1.user.username (format for many signers from schema)
-        signer_group_id:
+        signerGroupId:
           type: string
           description: Singer group id in SD
-        signer_group_name:
+        signerGroupName:
           type: string
           description: Signer group name in SD
-        signer_group_id_path:
+        signerGroupIdPath:
           type: string
           description: Path to singer group id
         signingRule:
@@ -4664,7 +4664,7 @@ components:
           $ref: '#/components/schemas/SignatureType'
         signatureCarrier:
           $ref: '#/components/schemas/SignatureCarrier'
-        forms_accessibility:
+        formsAccessibility:
           type: array
           description: List of accessibility properties for forms
           items:
@@ -4672,7 +4672,7 @@ components:
       required:
         - signerType
         - signatureType
-        - forms_accessibility
+        - formsAccessibility
 
     ApproverParams:
       type: object

@@ -1522,27 +1522,27 @@ type ShapeEntity struct {
 // Singature params
 type SignParams struct {
 	// List of accessibility properties for forms
-	FormsAccessibility []FormsAccessibility `json:"forms_accessibility"`
+	FormsAccessibility []FormsAccessibility `json:"formsAccessibility"`
 	SignatureCarrier   *SignatureCarrier    `json:"signatureCarrier,omitempty"`
 	SignatureType      SignatureType        `json:"signatureType"`
 
 	// Signer value (depends on type)
 	Signer *string `json:"signer,omitempty"`
 
+	// Singer group id in SD
+	SignerGroupId *string `json:"signerGroupId,omitempty"`
+
+	// Path to singer group id
+	SignerGroupIdPath *string `json:"signerGroupIdPath,omitempty"`
+
+	// Signer group name in SD
+	SignerGroupName *string `json:"signerGroupName,omitempty"`
+
 	// Signer type:
 	//   * user - Single user
 	//   * group - Group ID
 	//   * FromSchema - Selected by initiator
 	SignerType SignerType `json:"signerType"`
-
-	// Singer group id in SD
-	SignerGroupId *string `json:"signer_group_id,omitempty"`
-
-	// Path to singer group id
-	SignerGroupIdPath *string `json:"signer_group_id_path,omitempty"`
-
-	// Signer group name in SD
-	SignerGroupName *string `json:"signer_group_name,omitempty"`
 
 	// Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
 	SigningRule *SigningRule `json:"signingRule,omitempty"`

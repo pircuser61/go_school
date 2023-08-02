@@ -48,17 +48,17 @@ const (
 )
 
 type SignParams struct {
-	Type             SignerType `json:"signerType"`
-	SigningRule      `json:"approvementRule"`
-	Signer           string           `json:"approver,omitempty"`
-	SignatureType    SignatureType    `json:"signature_type"`
-	SignatureCarrier SignatureCarrier `json:"signature_carrier,omitempty"`
+	Type             SignerType       `json:"signerType"`
+	SigningRule      SigningRule      `json:"signingRule"`
+	Signer           string           `json:"signer,omitempty"`
+	SignatureType    SignatureType    `json:"signatureType"`
+	SignatureCarrier SignatureCarrier `json:"signatureCarrier,omitempty"`
 
-	SignerGroupID     string `json:"signer_group_id,omitempty"`
-	SignerGroupName   string `json:"signer_group_name,omitempty"`
-	SignerGroupIDPath string `json:"signer_group_id_path,omitempty"`
+	SignerGroupID     string `json:"signerGroupId,omitempty"`
+	SignerGroupName   string `json:"signerGroupName,omitempty"`
+	SignerGroupIDPath string `json:"signerGroupIdPath,omitempty"`
 
-	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
+	FormsAccessibility []FormAccessibility `json:"formsAccessibility"`
 }
 
 //nolint:gocyclo //it's ok

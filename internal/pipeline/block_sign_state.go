@@ -27,7 +27,7 @@ type SignData struct {
 	Decision         *SignDecision           `json:"decision,omitempty"`
 	Comment          *string                 `json:"comment,omitempty"`
 	ActualSigner     *string                 `json:"actual_signer,omitempty"`
-	SigningRule      script.SigningRule      `json:"signingRule,omitempty"`
+	SigningRule      script.SigningRule      `json:"signing_rule,omitempty"`
 	SignatureCarrier script.SignatureCarrier `json:"signature_carrier,omitempty"`
 	SignLog          []SignLogEntry          `json:"sign_log,omitempty"`
 
