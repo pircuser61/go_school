@@ -73,6 +73,14 @@ func getUsersFromVars(varStore map[string]interface{}, toResolve map[string]stru
 			res[login] = toResolve[varName]
 		}
 
+		if person, castOk := varValue.(map[string]interface{}); castOk {
+			if login, exists := person["username"]; exists {
+				if loginString, castOK := login.(string); castOK {
+					res[loginString] = toResolve[varName]
+				}
+			}
+		}
+
 		if people, castOk := varValue.([]interface{}); castOk {
 			for _, castedPerson := range people {
 				if person, ok := castedPerson.(map[string]interface{}); ok {
