@@ -4813,6 +4813,12 @@ components:
         - AllOf
       description: Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
 
+    SigningRuleTranslated:
+      type: string
+      enum: [ "Один из подписантов", "Все подписанты" ]
+      x-enum-varnames: [ 'AnyOf', 'AllOf' ]
+      description: Count of signers which will participate in signing will depends of signing type. 'Any of' will check only first signing action, when 'all of' will be waiting for all signers.
+
     ApprovementRuleTranslated:
       type: string
       enum: [ "Один из согласующих", "Все согласующие" ]
