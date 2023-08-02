@@ -61,65 +61,73 @@ type SignParams struct {
 	FormsAccessibility []FormAccessibility `json:"formsAccessibility"`
 }
 
-//nolint:gocyclo //it's ok
+func (s *SignParams) checkSignerTypeUserValid() error {
+	if s.Signer == "" {
+		return errors.New("signer is empty")
+	}
+	return nil
+}
+
+func (s *SignParams) checkSignerTypeGroupValid() error {
+	if s.SignerGroupID == "" && s.SignerGroupIDPath == "" {
+		return errors.New("signer group id is empty")
+	}
+	if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
+		return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
+	}
+	return nil
+}
+
+func (s *SignParams) checkSignerTypeFromSchemaValid() error {
+	if s.Signer == "" {
+		return errors.New("signer is empty")
+	}
+	if len(strings.Split(s.Signer, ";")) > 1 {
+		if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
+			return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
+		}
+	}
+	return nil
+}
+
+func (s *SignParams) checkSignerTypeValid() error {
+	switch s.Type {
+	case SignerTypeUser:
+		if err := s.checkSignerTypeUserValid(); err != nil {
+			return err
+		}
+		return nil
+	case SignerTypeGroup:
+		if err := s.checkSignerTypeGroupValid(); err != nil {
+			return err
+		}
+		return nil
+	case SignerTypeFromSchema:
+		if err := s.checkSignerTypeFromSchemaValid(); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return fmt.Errorf("unknown signer type: %s", s.Type)
+	}
+}
+
 func (s *SignParams) Validate() error {
 	switch s.SignatureType {
 	case SignatureTypePEP:
 		if s.Type != SignerTypeUser {
 			return fmt.Errorf("bad signer type: %s", s.Type)
 		}
-		if s.Signer == "" {
-			return errors.New("signer is empty")
+		if err := s.checkSignerTypeUserValid(); err != nil {
+			return err
 		}
 	case SignatureTypeUNEP:
-		switch s.Type {
-		case SignerTypeUser:
-			if s.Signer == "" {
-				return errors.New("signer is empty")
-			}
-		case SignerTypeGroup:
-			if s.SignerGroupID == "" && s.SignerGroupIDPath == "" {
-				return errors.New("signer group id is empty")
-			}
-			if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
-				return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
-			}
-		case SignerTypeFromSchema:
-			if s.Signer == "" {
-				return errors.New("signer is empty")
-			}
-			if len(strings.Split(s.Signer, ";")) > 1 {
-				if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
-					return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
-				}
-			}
-		default:
-			return fmt.Errorf("unknown signer type: %s", s.Type)
+		if err := s.checkSignerTypeValid(); err != nil {
+			return err
 		}
 	case SignatureTypeUKEP:
-		switch s.Type {
-		case SignerTypeUser:
-			if s.Signer == "" {
-				return errors.New("signer is empty")
-			}
-		case SignerTypeGroup:
-			if s.SignerGroupID == "" && s.SignerGroupIDPath == "" {
-				return errors.New("signer group id is empty")
-			}
-			if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
-				return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
-			}
-		case SignerTypeFromSchema:
-			if s.Signer == "" {
-				return errors.New("signer is empty")
-			}
-			if len(strings.Split(s.Signer, ";")) > 1 {
-				if s.SigningRule != "" && s.SigningRule != AllOfSigningRequired && s.SigningRule != AnyOfSigningRequired {
-					return fmt.Errorf("unknown signing rule: %s", s.SigningRule)
-				}
-			}
-		default:
-			return fmt.Errorf("unknown signer type: %s", s.Type)
+		if err := s.checkSignerTypeValid(); err != nil {
+			return err
 		}
 		//if s.SignatureCarrier == "" {
 		//	return errors.New("no signature carrier provided")
