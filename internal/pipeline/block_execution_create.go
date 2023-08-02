@@ -109,6 +109,7 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		if len(execs) == 1 {
 			gb.State.Executors = execs
 			executorChosenFlag = true
+			gb.State.IsTakenInWork = true
 		}
 	}
 	if !executorChosenFlag {
@@ -176,6 +177,7 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		if len(execs) == 1 {
 			gb.State.Executors = execs
 			executorChosenFlag = true
+			gb.State.IsTakenInWork = true
 		}
 	}
 	if !executorChosenFlag {
