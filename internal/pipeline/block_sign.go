@@ -22,9 +22,8 @@ const (
 	SignDecisionRejected SignDecision = "rejected"
 	SignDecisionError    SignDecision = "error"
 
-	signActionSign   = "sign"
-	signActionReject = "reject"
-	signActionError  = "error"
+	signActionSign   = "sign_sign"
+	signActionReject = "sign_reject"
 )
 
 type GoSignBlock struct {
