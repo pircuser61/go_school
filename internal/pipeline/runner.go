@@ -33,6 +33,7 @@ type Deadline struct {
 }
 
 var (
+	//nolint:gochecknoglobals //block statuses
 	StatusIdle      Status = "idle"
 	StatusReady     Status = "ready"
 	StatusRunning   Status = "running"

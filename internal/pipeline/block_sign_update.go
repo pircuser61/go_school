@@ -40,6 +40,7 @@ func (gb *GoSignBlock) Update(_ c.Context) (interface{}, error) {
 		return nil, errors.New("empty data")
 	}
 
+	//nolint:gocritic //for future actions
 	switch data.Action {
 	case string(entity.TaskUpdateActionSign):
 		if errUpdate := gb.handleSignature(); errUpdate != nil {

@@ -100,18 +100,25 @@ func (gb *GoSignBlock) isSignerFinished(login string) bool {
 	if gb.State.Decision != nil {
 		return true
 	}
-	for i := 0; i < len(gb.State.SignLog); i++ {
-		log := gb.State.SignLog[i]
-		if log.Login == login {
+
+	for _, s := range gb.State.SignLog {
+		if s.Login == login {
 			return true
 		}
 	}
+
 	return false
 }
 
-func (gb *GoSignBlock) signActions() []MemberAction {
+func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	if gb.State.Decision != nil {
-		return nil
+		return []MemberAction{}
+	}
+
+	for _, s := range gb.State.SignLog {
+		if s.Login == login {
+			return []MemberAction{}
+		}
 	}
 
 	return []MemberAction{
@@ -122,10 +129,6 @@ func (gb *GoSignBlock) signActions() []MemberAction {
 		{
 			Id:   signActionReject,
 			Type: ActionTypeSecondary,
-		},
-		{
-			Id:   signActionError,
-			Type: ActionTypeOther,
 		}}
 }
 
@@ -135,7 +138,7 @@ func (gb *GoSignBlock) Members() []Member {
 		members = append(members, Member{
 			Login:      login,
 			IsFinished: gb.isSignerFinished(login),
-			Actions:    gb.signActions(),
+			Actions:    gb.signActions(login),
 		})
 	}
 	return members
@@ -291,7 +294,7 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 	}
 }
 
-// nolint:dupl // another block
+// nolint:dupl,unparam // another block
 func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSignBlock, bool, error) {
 	b := &GoSignBlock{
 		Name:       name,

@@ -61,6 +61,7 @@ type SignParams struct {
 	FormsAccessibility []FormAccessibility `json:"forms_accessibility"`
 }
 
+//nolint:gocyclo //it's ok
 func (s *SignParams) Validate() error {
 	switch s.SignatureType {
 	case SignatureTypePEP:

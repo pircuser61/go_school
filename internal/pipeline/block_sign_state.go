@@ -94,6 +94,7 @@ func (s *SignData) SetDecision(login string, params *SignSignatureParams) error 
 		s.SignLog = append(s.SignLog, signingLogEntry)
 
 		var overallDecision SignDecision
+
 		switch params.Decision {
 		case SignDecisionRejected:
 			overallDecision = SignDecisionRejected
