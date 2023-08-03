@@ -4622,13 +4622,6 @@ components:
         - unep
         - ukep
 
-    SignatureCarrier:
-      type: string
-      enum:
-        - cloud
-        - token
-        - all
-
     TimerParams:
       type: object
       description: Timer params
@@ -4662,8 +4655,6 @@ components:
           $ref: '#/components/schemas/SigningRule'
         signatureType:
           $ref: '#/components/schemas/SignatureType'
-        signatureCarrier:
-          $ref: '#/components/schemas/SignatureCarrier'
         formsAccessibility:
           type: array
           description: List of accessibility properties for forms
