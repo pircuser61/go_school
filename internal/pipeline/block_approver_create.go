@@ -16,6 +16,10 @@ import (
 
 // nolint:dupl // another block
 func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoApproverBlock, bool, error) {
+	if ef.ShortTitle == "" {
+		return nil, false, errors.New(ef.Title + " block short title is empty")
+	}
+
 	b := &GoApproverBlock{
 		Name:       name,
 		Title:      ef.Title,
