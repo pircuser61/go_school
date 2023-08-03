@@ -125,7 +125,8 @@ func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		return err
 	}
 
-	if isArchived || (block.GetStatus() != StatusFinished && block.GetStatus() != StatusNoSuccess) {
+	if isArchived || (block.GetStatus() != StatusFinished && block.GetStatus() != StatusNoSuccess &&
+		block.GetStatus() != StatusError) {
 		return nil
 	}
 
