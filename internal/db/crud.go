@@ -2117,7 +2117,7 @@ func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, 
 	FROM variable_storage vs 
 	WHERE vs.work_id = (
 	    SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL
-	) AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success') `
+	) AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success', 'error') `
 	// TODO: rewrite to handle edits ?
 
 	var c int

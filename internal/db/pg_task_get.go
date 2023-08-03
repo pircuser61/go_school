@@ -29,7 +29,7 @@ import (
 func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {
-		statuses = "('finished', 'no_success')"
+		statuses = "('finished', 'no_success', 'error')"
 	}
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                      AS work_id
@@ -61,6 +61,7 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
     WHERE (m.login = '%s' AND vs.step_type = 'form')
+       OR (m.login = '%s' AND vs.step_type = 'sign')
        OR (m.login IN %s AND vs.step_type = 'approver')
        OR (m.login IN %s AND vs.step_type = 'execution')
       AND w.work_number = '%s'
@@ -72,7 +73,7 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
          FROM actions
                   LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
          GROUP BY actions.work_id
-     )`, currentUser, approverLoginsIn, executionLoginsIn, workNumber)
+     )`, currentUser, currentUser, approverLoginsIn, executionLoginsIn, workNumber)
 }
 
 func buildInExpression(items []string) string {

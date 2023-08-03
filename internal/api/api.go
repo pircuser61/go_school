@@ -122,6 +122,8 @@ const (
 
 	FunctionParamsTypeServicedeskApplication FunctionParamsType = "servicedesk_application"
 
+	FunctionParamsTypeSign FunctionParamsType = "sign"
+
 	FunctionParamsTypeTimer FunctionParamsType = "timer"
 )
 
@@ -185,6 +187,40 @@ const (
 	RequestExecutionInfoTypeAnswer RequestExecutionInfoType = "answer"
 
 	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
+)
+
+// Defines values for SignatureCarrier.
+const (
+	SignatureCarrierAll SignatureCarrier = "all"
+
+	SignatureCarrierCloud SignatureCarrier = "cloud"
+
+	SignatureCarrierToken SignatureCarrier = "token"
+)
+
+// Defines values for SignatureType.
+const (
+	SignatureTypePep SignatureType = "pep"
+
+	SignatureTypeUkep SignatureType = "ukep"
+
+	SignatureTypeUnep SignatureType = "unep"
+)
+
+// Defines values for SignerType.
+const (
+	SignerTypeFromSchema SignerType = "fromSchema"
+
+	SignerTypeGroup SignerType = "group"
+
+	SignerTypeUser SignerType = "user"
+)
+
+// Defines values for SigningRule.
+const (
+	SigningRuleAllOf SigningRule = "AllOf"
+
+	SigningRuleAnyOf SigningRule = "AnyOf"
 )
 
 // Defines values for SocketActionType.
@@ -254,6 +290,8 @@ const (
 	TaskUpdateActionRequestAddInfo TaskUpdateAction = "request_add_info"
 
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
+
+	TaskUpdateActionSign TaskUpdateAction = "sign"
 )
 
 // Defines values for WorkType.
@@ -392,6 +430,15 @@ const (
 	ScenarioStatusN4 ScenarioStatus = 4
 
 	ScenarioStatusN5 ScenarioStatus = 5
+)
+
+// Defines values for SignDecision.
+const (
+	SignDecisionError SignDecision = "error"
+
+	SignDecisionRejected SignDecision = "rejected"
+
+	SignDecisionSigned SignDecision = "signed"
 )
 
 // Defines values for TaskHumanStatus.
@@ -543,10 +590,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   - user - Single user
-//   - group - Approver group ID
-//   - head - Receiver's head
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -909,9 +956,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//   - user - Single user
-//   - group - Execution group ID
-//   - from_schema - Selected by initiator
+//  * user - Single user
+//  * group - Execution group ID
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -949,11 +996,11 @@ type ExternalSystem struct {
 	OutputSchema   *JSONSchema        `json:"output_schema,omitempty"`
 	OutputSettings *EndSystemSettings `json:"output_settings,omitempty"`
 
-	// ID внешней системы
+	// Id внешней системы
 	SystemId string `json:"system_id"`
 }
 
-// ID внешней системы
+// Id внешней системы
 type ExternalSystemId string
 
 // Fill form
@@ -989,11 +1036,11 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   - User - Single user
-//   - group - Form group ID
-//   - Initiator - Process initiator
-//   - From_schema - Selected by initiator
-//   - Auto_Fill - Auto Fill form by system
+//   * User - Single user
+//   * group - Form group ID
+//   * Initiator - Process initiator
+//   * From_schema - Selected by initiator
+//   * Auto_Fill - Auto Fill form by system
 type FormExecutorType string
 
 // Form params
@@ -1357,7 +1404,7 @@ type ProcessSettings struct {
 	Sla         int         `json:"sla"`
 	StartSchema *JSONSchema `json:"start_schema,omitempty"`
 
-	// ID версии процесса
+	// Id версии процесса
 	VersionId string `json:"version_id"`
 
 	// Рабочий режим
@@ -1471,6 +1518,62 @@ type ShapeEntity struct {
 	Id    int    `json:"id"`
 	Title string `json:"title"`
 }
+
+// Singature params
+type SignParams struct {
+	// List of accessibility properties for forms
+	FormsAccessibility []FormsAccessibility `json:"formsAccessibility"`
+	SignatureCarrier   *SignatureCarrier    `json:"signatureCarrier,omitempty"`
+	SignatureType      SignatureType        `json:"signatureType"`
+
+	// Signer value (depends on type)
+	Signer *string `json:"signer,omitempty"`
+
+	// Singer group id in SD
+	SignerGroupId *string `json:"signerGroupId,omitempty"`
+
+	// Path to singer group id
+	SignerGroupIdPath *string `json:"signerGroupIdPath,omitempty"`
+
+	// Signer group name in SD
+	SignerGroupName *string `json:"signerGroupName,omitempty"`
+
+	// Signer type:
+	//   * user - Single user
+	//   * group - Group ID
+	//   * FromSchema - Selected by initiator
+	SignerType SignerType `json:"signerType"`
+
+	// Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
+	SigningRule *SigningRule `json:"signingRule,omitempty"`
+}
+
+// Sign update params
+type SignUpdateParams struct {
+	// Comment from signer
+	Comment string `json:"comment"`
+
+	// Approver decision:
+	//  * signed - Согласовано
+	//  * rejected - Отклонено
+	//  * error - Произошла ошибка
+	Decision SignDecision `json:"decision"`
+}
+
+// SignatureCarrier defines model for SignatureCarrier.
+type SignatureCarrier string
+
+// SignatureType defines model for SignatureType.
+type SignatureType string
+
+// Signer type:
+//   * user - Single user
+//   * group - Group ID
+//   * FromSchema - Selected by initiator
+type SignerType string
+
+// Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
+type SigningRule string
 
 // Socket object
 type Socket struct {
@@ -1603,18 +1706,18 @@ type Action struct {
 }
 
 // Approver decision:
-//   - approved - Согласовать
-//   - rejected - Отклонить
+//  * approved - Согласовать
+//  * rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//   - approve - Согласовать
-//   - reject - Отклонить
-//   - viewed - Ознакомлен
-//   - informed - Проинформирован
-//   - sign - Подписать
-//   - confirm - Утвердить
-//   - sign_ukep - Подписать УКЭП
+//  * approve - Согласовать
+//  * reject - Отклонить
+//  * viewed - Ознакомлен
+//  * informed - Проинформирован
+//  * sign - Подписать
+//  * confirm - Утвердить
+//  * sign_ukep - Подписать УКЭП
 type ApproverDecision string
 
 // Block type (language)
@@ -1697,8 +1800,8 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
-//   - executed - executor executed block
-//   - rejected - executor rejected block
+//  * executed - executor executed block
+//  * rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1729,12 +1832,18 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
-//   - 1 - Draft
-//   - 2 - Approved
-//   - 3 - Deleted
-//   - 4 - Rejected
-//   - 5 - On approve
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
 type ScenarioStatus int
+
+// Approver decision:
+//  * signed - Согласовано
+//  * rejected - Отклонено
+//  * error - Произошла ошибка
+type SignDecision string
 
 // Task human readable status
 type TaskHumanStatus string
@@ -1792,7 +1901,7 @@ type GetFormsChangelogParams struct {
 	// Work number
 	WorkNumber string `json:"work_number"`
 
-	// ID of form block (name)
+	// Id of form block (name)
 	BlockId string `json:"block_id"`
 }
 
