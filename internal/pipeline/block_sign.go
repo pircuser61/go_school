@@ -46,7 +46,7 @@ func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	if gb.State != nil && gb.State.Decision != nil {
 		switch *gb.State.Decision {
 		case SignDecisionSigned:
-			key = executedSocketID
+			key = signedSocketID
 		case SignDecisionRejected:
 			key = rejectedSocketID
 		case SignDecisionError:
@@ -293,8 +293,13 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 	}
 }
 
+func (gb *GoSignBlock) loadState(raw json.RawMessage) error {
+	return json.Unmarshal(raw, &gb.State)
+}
+
 // nolint:dupl,unparam // another block
 func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSignBlock, bool, error) {
+	const reEntry = false
 	b := &GoSignBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -312,10 +317,17 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		b.Output[v.Name] = v.Global
 	}
 
-	if err := b.createState(ctx, ef); err != nil {
-		return nil, false, err
+	rawState, ok := runCtx.VarStore.State[name]
+	if ok {
+		if err := b.loadState(rawState); err != nil {
+			return nil, reEntry, err
+		}
+	} else {
+		if err := b.createState(ctx, ef); err != nil {
+			return nil, reEntry, err
+		}
+		b.RunContext.VarStore.AddStep(b.Name)
 	}
-	b.RunContext.VarStore.AddStep(b.Name)
 
-	return b, false, nil
+	return b, reEntry, nil
 }
