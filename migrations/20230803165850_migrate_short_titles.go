@@ -13,6 +13,19 @@ func init() {
 	goose.AddMigration(upMigrateShortTitles, downMigrateShortTitles)
 }
 
+const (
+	approverType  = "approver"
+	executionType = "execution"
+	formType      = "form"
+
+	approverName  = "Нода согласование"
+	executionName = "Нода исполнение"
+	formName      = "Нода Форма"
+
+	insertQ = `Update versions set content = jsonb_set(content,'{pipeline}', $1, false) where id = $2`
+)
+
+// nolint
 func upMigrateShortTitles(tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	type FormParams struct {
@@ -38,28 +51,30 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 		}
 
 		for _, val := range resultRow.Pipeline.Blocks {
-			if val.TypeID == "approver" && val.ShortTitle == "" {
-				val.ShortTitle = "Нода согласование"
-			}
-			if val.TypeID == "execution" && val.ShortTitle == "" {
-				val.ShortTitle = "Нода исполнение"
-			}
-			if val.TypeID == "form" {
-				var params FormParams
-				err := json.Unmarshal(val.Params, &params)
-				if err != nil {
-					return err
+			switch val.TypeID {
+			case approverType:
+				if val.ShortTitle == "" {
+					val.ShortTitle = approverName
 				}
-				if params.SchemaName != "" {
-					val.ShortTitle = params.SchemaName
-				} else {
-					if val.ShortTitle == "" {
-						val.ShortTitle = "Нода Форма"
+			case executionType:
+				if val.ShortTitle == "" {
+					val.ShortTitle = executionName
+				}
+			case formType:
+				{
+					var params FormParams
+					err := json.Unmarshal(val.Params, &params)
+					if err != nil {
+						return err
+					}
+					if params.SchemaName != "" {
+						val.ShortTitle = params.SchemaName
+					} else if val.ShortTitle == "" {
+						val.ShortTitle = formName
 					}
 				}
 			}
 		}
-		insertQ := `Update versions set content = jsonb_set(content,'{pipeline}', $1, false) where id = $2`
 		_, execErr := tx.Exec(insertQ, resultRow.Pipeline, resultRow.ID)
 		if execErr != nil {
 			return execErr
@@ -74,6 +89,7 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 	return nil
 }
 
+// nolint
 func downMigrateShortTitles(tx *sql.Tx) error {
 	type FormParams struct {
 		SchemaName string `json:"schema_name"`
@@ -102,25 +118,31 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 		}
 
 		for _, val := range resultRow.Pipeline.Blocks {
-			if val.TypeID == "approver" && val.ShortTitle == "Нода согласование" {
-				val.ShortTitle = ""
-			}
-			if val.TypeID == "execution" && val.ShortTitle == "Нода исполнение" {
-				val.ShortTitle = ""
-			}
-			if val.TypeID == "form" {
-				var params FormParams
-				err := json.Unmarshal(val.Params, &params)
-				if err != nil {
-					return err
-				}
-				if val.ShortTitle == "Нода Форма" {
+			switch val.TypeID {
+			case approverType:
+				if val.ShortTitle == approverName {
 					val.ShortTitle = ""
 				}
+			case executionType:
+				if val.ShortTitle == executionName {
+					val.ShortTitle = ""
+				}
+			case formType:
+				{
+					var params FormParams
+					err := json.Unmarshal(val.Params, &params)
+					if err != nil {
+						return err
+					}
+					if val.ShortTitle == formName {
+						val.ShortTitle = ""
+					}
+				}
+			default:
+				continue
 			}
 		}
 
-		insertQ := `Update versions set content = jsonb_set(content,'{pipeline}', $1, false) where id = $2`
 		_, execErr := tx.Exec(insertQ, &resultRow.Pipeline, resultRow.ID)
 		if execErr != nil {
 			return execErr
