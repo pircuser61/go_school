@@ -15,6 +15,13 @@ type UpdateData struct {
 	Data interface{}
 }
 
+type castUser struct {
+	varValue  interface{}
+	result    map[string]struct{}
+	toResolve map[string]struct{}
+	varName   string
+}
+
 const dotSeparator = "."
 
 func getVariable(variables map[string]interface{}, key string) interface{} {
@@ -73,15 +80,21 @@ func getUsersFromVars(varStore map[string]interface{}, toResolve map[string]stru
 			res[login] = toResolve[varName]
 		}
 
+		CastUserForLogin(castUser{
+			varValue:  varValue,
+			result:    res,
+			toResolve: toResolve,
+			varName:   varName,
+		})
+
 		if people, castOk := varValue.([]interface{}); castOk {
 			for _, castedPerson := range people {
-				if person, ok := castedPerson.(map[string]interface{}); ok {
-					if login, exists := person["username"]; exists {
-						if loginString, castOK := login.(string); castOK {
-							res[loginString] = toResolve[varName]
-						}
-					}
-				}
+				CastUserForLogin(castUser{
+					varValue:  castedPerson,
+					result:    res,
+					toResolve: toResolve,
+					varName:   varName,
+				})
 			}
 		}
 
@@ -89,6 +102,17 @@ func getUsersFromVars(varStore map[string]interface{}, toResolve map[string]stru
 	}
 
 	return nil, errors.New("unexpected behavior")
+}
+
+func CastUserForLogin(castData castUser) {
+	if person, castOk := castData.varValue.(map[string]interface{}); castOk {
+		if login, exists := person["username"]; exists {
+			if loginString, castOK := login.(string); castOK {
+				castData.result[loginString] = castData.toResolve[castData.varName]
+			}
+		}
+	}
+	return
 }
 
 func getSliceFromMapOfStrings(source map[string]struct{}) []string {
