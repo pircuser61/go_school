@@ -44,7 +44,7 @@ var statusToTaskState = map[TaskHumanStatus]string{
 	StatusSigning:             "на подписании",
 	StatusSignSigned:          "подписана",
 	StatusSignRejected:        "отклонена",
-	StatusProcessingError:     "остановлена из-за ошибки",
+	StatusProcessingError:     "обработана с ошибкой",
 }
 
 var statusToTaskAction = map[TaskHumanStatus]string{
