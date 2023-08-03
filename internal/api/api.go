@@ -189,15 +189,6 @@ const (
 	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
 )
 
-// Defines values for SignatureCarrier.
-const (
-	SignatureCarrierAll SignatureCarrier = "all"
-
-	SignatureCarrierCloud SignatureCarrier = "cloud"
-
-	SignatureCarrierToken SignatureCarrier = "token"
-)
-
 // Defines values for SignatureType.
 const (
 	SignatureTypePep SignatureType = "pep"
@@ -1523,7 +1514,6 @@ type ShapeEntity struct {
 type SignParams struct {
 	// List of accessibility properties for forms
 	FormsAccessibility []FormsAccessibility `json:"formsAccessibility"`
-	SignatureCarrier   *SignatureCarrier    `json:"signatureCarrier,omitempty"`
 	SignatureType      SignatureType        `json:"signatureType"`
 
 	// Signer value (depends on type)
@@ -1559,9 +1549,6 @@ type SignUpdateParams struct {
 	//  * error - Произошла ошибка
 	Decision SignDecision `json:"decision"`
 }
-
-// SignatureCarrier defines model for SignatureCarrier.
-type SignatureCarrier string
 
 // SignatureType defines model for SignatureType.
 type SignatureType string

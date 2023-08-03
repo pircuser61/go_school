@@ -24,12 +24,6 @@ func (s SignatureType) String() string {
 	return string(s)
 }
 
-type SignatureCarrier string
-
-func (s SignatureCarrier) String() string {
-	return string(s)
-}
-
 const (
 	SignerTypeUser       SignerType = "user"
 	SignerTypeGroup      SignerType = "group"
@@ -41,18 +35,13 @@ const (
 	SignatureTypePEP  = "pep"
 	SignatureTypeUNEP = "unep"
 	SignatureTypeUKEP = "ukep"
-
-	SignatureCarrierCloud = "cloud"
-	SignatureCarrierToken = "token"
-	SignatureCarrierAll   = "all"
 )
 
 type SignParams struct {
-	Type             SignerType       `json:"signerType"`
-	SigningRule      SigningRule      `json:"signingRule"`
-	Signer           string           `json:"signer,omitempty"`
-	SignatureType    SignatureType    `json:"signatureType"`
-	SignatureCarrier SignatureCarrier `json:"signatureCarrier,omitempty"`
+	Type          SignerType    `json:"signerType"`
+	SigningRule   SigningRule   `json:"signingRule"`
+	Signer        string        `json:"signer,omitempty"`
+	SignatureType SignatureType `json:"signatureType"`
 
 	SignerGroupID     string `json:"signerGroupId,omitempty"`
 	SignerGroupName   string `json:"signerGroupName,omitempty"`
@@ -121,21 +110,10 @@ func (s *SignParams) Validate() error {
 		if err := s.checkSignerTypeUserValid(); err != nil {
 			return err
 		}
-	case SignatureTypeUNEP:
+	case SignatureTypeUNEP, SignatureTypeUKEP:
 		if err := s.checkSignerTypeValid(); err != nil {
 			return err
 		}
-	case SignatureTypeUKEP:
-		if err := s.checkSignerTypeValid(); err != nil {
-			return err
-		}
-		//if s.SignatureCarrier == "" {
-		//	return errors.New("no signature carrier provided")
-		//}
-		//carrier := s.SignatureCarrier
-		//if carrier != SignatureCarrierCloud && carrier != SignatureCarrierToken && carrier != SignatureCarrierAll {
-		//	return fmt.Errorf("unknown signature carrier: %s", s.SignatureCarrier)
-		//}
 	default:
 		return fmt.Errorf("unknown signature type: %s", s.SignatureType)
 	}

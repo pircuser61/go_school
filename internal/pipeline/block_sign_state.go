@@ -28,7 +28,6 @@ type SignData struct {
 	Comment          *string                 `json:"comment,omitempty"`
 	ActualSigner     *string                 `json:"actual_signer,omitempty"`
 	SigningRule      script.SigningRule      `json:"signing_rule,omitempty"`
-	SignatureCarrier script.SignatureCarrier `json:"signature_carrier,omitempty"`
 	SignLog          []SignLogEntry          `json:"sign_log,omitempty"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
