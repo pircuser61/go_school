@@ -173,7 +173,7 @@ func TestBlockFunction_Update(t *testing.T) {
 				State: &ExecutableFunction{
 					HasResponse: true,
 					Function: script.FunctionParam{
-						Output: `{"mktu": {"type": "array", "items": [{"type": "number"}]}, "name": {"type": "string"}, "obj": {"type": "object", "properties": {"k1": {"type": "string"}}}}`,
+						Output: `{"mktu": {"type": "array", "items": {"type": "number"}}, "name": {"type": "string"}, "obj": {"type": "object", "properties": {"k1": {"type": "string"}}}}`,
 					},
 				},
 			},
