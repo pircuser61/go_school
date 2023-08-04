@@ -38,7 +38,7 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 	if queryErr != nil {
 		return queryErr
 	}
-
+	defer rows.Close()
 	for rows.Next() {
 		var resultRow entity.EriusScenario
 		scanErr := rows.Scan(
@@ -46,11 +46,11 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 			&resultRow.Pipeline,
 		)
 		if scanErr != nil {
-			rows.Close()
 			return scanErr
 		}
 
-		for _, val := range resultRow.Pipeline.Blocks {
+		for i := range resultRow.Pipeline.Blocks {
+			val := resultRow.Pipeline.Blocks[i]
 			switch val.TypeID {
 			case approverType:
 				if val.ShortTitle == "" {
@@ -82,10 +82,8 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
-		rows.Close()
 		return rowsErr
 	}
-	rows.Close()
 	return nil
 }
 
@@ -101,6 +99,7 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 	if queryErr != nil {
 		return queryErr
 	}
+	defer rows.Close()
 	var content string
 	for rows.Next() {
 		var resultRow entity.EriusScenario
@@ -109,7 +108,6 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 			&content,
 		)
 		if scanErr != nil {
-			rows.Close()
 			return scanErr
 		}
 		err := json.Unmarshal([]byte(content), &resultRow.Pipeline)
@@ -150,9 +148,7 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
-		rows.Close()
 		return rowsErr
 	}
-	rows.Close()
 	return nil
 }
