@@ -60,7 +60,6 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 
-		// TODO: выпилить когда сделаем циклы
 		// это для возврата на доработку при которой мы создаем новый процесс
 		// и пытаемся взять решение из прошлого процесса
 		if err := b.setPrevDecision(ctx); err != nil {
