@@ -36,7 +36,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails := make(map[string]mail.Template, 0)
-	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution)
+	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution) || len(gb.State.Executors) > 1
 
 	task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 	if getVersionErr != nil {
