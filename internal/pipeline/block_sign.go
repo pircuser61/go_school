@@ -300,6 +300,10 @@ func (gb *GoSignBlock) loadState(raw json.RawMessage) error {
 // nolint:dupl,unparam // another block
 func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSignBlock, bool, error) {
 	const reEntry = false
+	if ef.ShortTitle == "" {
+		return nil, false, errors.New(ef.Title + " block short title is empty")
+	}
+
 	b := &GoSignBlock{
 		Name:       name,
 		Title:      ef.Title,
