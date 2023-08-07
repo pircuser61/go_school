@@ -77,7 +77,6 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	}
 	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
 	if p.Status == db.StatusApproved && !ok {
-
 		var e Err
 
 		switch valErr {
