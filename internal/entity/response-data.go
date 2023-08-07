@@ -79,8 +79,9 @@ func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (bo
 		return false, PipelineValidateError
 	}
 
-	if !bt.IsSocketsFilled() {
-		return false, PipelineValidateError
+	ok, filledErr := bt.IsSocketsFilled()
+	if !ok {
+		return false, filledErr
 	}
 
 	if !bt.IsSdBlueprintFilled(ctx, sd) {
@@ -112,10 +113,10 @@ func (bt *BlocksType) IsPipelineComplete() bool {
 	return len(nodesIds) == relatedNodesNum
 }
 
-func (bt *BlocksType) IsSocketsFilled() bool {
+func (bt *BlocksType) IsSocketsFilled() (valid bool, textErr string) {
 	for _, b := range *bt {
 		if len(b.Next) != len(b.Sockets) {
-			return false
+			return false, ParallelNodeExitsNotConnected
 		}
 
 		nextNames := make(map[string]bool)
@@ -128,11 +129,11 @@ func (bt *BlocksType) IsSocketsFilled() bool {
 
 		for _, s := range b.Sockets {
 			if !nextNames[s.Id] {
-				return false
+				return false, ""
 			}
 		}
 	}
-	return true
+	return true, ""
 }
 
 func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.Service) bool {
@@ -163,7 +164,6 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 // nolint:gocognit //its ok here
 func (bt *BlocksType) IsParallelNodesCorrect() (bool, string) {
 	parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
-	// startNode := bt.getNodesByType(BlockGoStartName)
 	if len(parallelStartNodes) == 0 {
 		return true, ""
 	}
@@ -174,7 +174,6 @@ func (bt *BlocksType) IsParallelNodesCorrect() (bool, string) {
 
 		nodes := make(map[string]*EriusFunc, 0)
 		visitedParallelNodes := make(map[string]EriusFunc, 0)
-		// visitedStartNodes := make(map[string]EriusFunc, 0)
 		visitedParallelNodes[idx] = parallelNode
 		for socketOut := range parallelNode.Next {
 			for _, socketOutNode := range parallelNode.Next[socketOut] {
@@ -205,9 +204,6 @@ func (bt *BlocksType) IsParallelNodesCorrect() (bool, string) {
 			} else if node.TypeID == BlockParallelStartName {
 				continue
 			} else {
-				// if len(node.Next) == 0 {
-				// 	return false, ParallelNodeExitsNotConnected
-				// }
 				for socketOut := range node.Next {
 					for _, socketOutNode := range node.Next[socketOut] {
 						socketNode, ok := (*bt)[socketOutNode]

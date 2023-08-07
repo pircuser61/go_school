@@ -450,7 +450,8 @@ func TestValidation_SocketFilled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsSocketsFilled() {
+			ok, _ := tt.Ef.Pipeline.Blocks.IsSocketsFilled()
+			if tt.WantValid && !ok {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
