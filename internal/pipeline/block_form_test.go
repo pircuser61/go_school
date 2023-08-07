@@ -32,11 +32,11 @@ func Test_createGoFormBlock(t *testing.T) {
 	const (
 		name       = "form_0"
 		title      = "Форма"
+		shortTitle = "Нода Форма"
 		global1    = "form_0.executor"
 		global2    = "form_0.application_body"
 		schemaId   = "c77be97a-f978-46d3-aa03-ab72663f2b74"
 		versionId  = "d77be97a-f978-46d3-aa03-ab72663f2b74"
-		schemaName = "название формы"
 		executor   = "executor"
 		workNumber = "J0000001"
 		workType   = "8/5"
@@ -76,12 +76,13 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
-					Input:     nil,
-					Output:    nil,
-					Params:    nil,
-					Sockets:   next,
+					BlockType:  BlockGoFormID,
+					ShortTitle: shortTitle,
+					Title:      title,
+					Input:      nil,
+					Output:     nil,
+					Params:     nil,
+					Sockets:    next,
 				},
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
@@ -96,12 +97,13 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
-					Input:     nil,
-					Output:    nil,
-					Params:    []byte("{}"),
-					Sockets:   next,
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
+					Params:     []byte("{}"),
+					Sockets:    next,
 				},
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
@@ -116,8 +118,9 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -140,7 +143,6 @@ func Test_createGoFormBlock(t *testing.T) {
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
 							SchemaId:         schemaId,
-							SchemaName:       schemaName,
 							Executor:         executor,
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
@@ -166,8 +168,9 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -190,7 +193,6 @@ func Test_createGoFormBlock(t *testing.T) {
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
 							SchemaId:         schemaId,
-							SchemaName:       schemaName,
 							Executor:         "form.executor",
 							FormExecutorType: script.FormExecutorTypeFromSchema,
 						})
@@ -223,7 +225,6 @@ func Test_createGoFormBlock(t *testing.T) {
 				State: &FormData{
 					FormExecutorType:   script.FormExecutorTypeFromSchema,
 					SchemaId:           schemaId,
-					SchemaName:         schemaName,
 					Executors:          map[string]struct{}{executor: {}},
 					ApplicationBody:    map[string]interface{}{},
 					IsFilled:           false,
@@ -243,8 +244,9 @@ func Test_createGoFormBlock(t *testing.T) {
 			args: args{
 				name: name,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoFormID,
-					Title:     title,
+					BlockType:  BlockGoFormID,
+					Title:      title,
+					ShortTitle: shortTitle,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -267,7 +269,6 @@ func Test_createGoFormBlock(t *testing.T) {
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.FormParams{
 							SchemaId:         schemaId,
-							SchemaName:       schemaName,
 							Executor:         executor,
 							FormExecutorType: script.FormExecutorTypeAutoFillUser,
 							Mapping: script.JSONSchemaProperties{
@@ -312,7 +313,6 @@ func Test_createGoFormBlock(t *testing.T) {
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeAutoFillUser,
 					SchemaId:         schemaId,
-					SchemaName:       schemaName,
 					Executors:        map[string]struct{}{"auto_fill": {}},
 					ApplicationBody: map[string]interface{}{
 						"a": 100,
@@ -390,7 +390,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 		global1     = "form_0.executor"
 		global2     = "form_0.application_body"
 		schemaId    = "c77be97a-f978-46d3-aa03-ab72663f2b74"
-		schemaName  = "название формы"
 		login       = "login"
 		login2      = "login2"
 		login3      = "login3"
@@ -521,7 +520,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeFromSchema,
 					SchemaId:         schemaId,
-					SchemaName:       schemaName,
 					Executors:        map[string]struct{}{login: {}},
 					ApplicationBody:  map[string]interface{}{},
 					IsFilled:         false,
@@ -581,7 +579,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 			wantState: &FormData{
 				FormExecutorType: script.FormExecutorTypeFromSchema,
 				SchemaId:         schemaId,
-				SchemaName:       schemaName,
 				Executors:        map[string]struct{}{login: {}},
 				Description:      description,
 				IsTakenInWork:    true,
@@ -619,7 +616,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeFromSchema,
 					SchemaId:         schemaId,
-					SchemaName:       schemaName,
 					Executors:        map[string]struct{}{login: {}},
 					ApplicationBody: map[string]interface{}{
 						fieldName: fieldValue,
@@ -681,7 +677,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				FormExecutorType: script.FormExecutorTypeFromSchema,
 				SchemaId:         schemaId,
 				IsTakenInWork:    true,
-				SchemaName:       schemaName,
 				Executors:        map[string]struct{}{login: {}},
 				Description:      description,
 				ApplicationBody: map[string]interface{}{
@@ -804,7 +799,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeFromSchema,
 					SchemaId:         schemaId,
-					SchemaName:       schemaName,
 					Executors:        map[string]struct{}{login: {}},
 					ApplicationBody:  map[string]interface{}{},
 					IsFilled:         false,
@@ -825,7 +819,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 			wantState: &FormData{
 				FormExecutorType: script.FormExecutorTypeFromSchema,
 				SchemaId:         schemaId,
-				SchemaName:       schemaName,
 				Executors:        map[string]struct{}{login: {}},
 				ApplicationBody:  map[string]interface{}{},
 				ChangesLog:       []ChangesLogItem{},

@@ -24,11 +24,10 @@ import (
 
 func TestApproverData_SetDecision(t *testing.T) {
 	const (
-		login                   = "example"
-		decision ApproverAction = ApproverActionReject
-		comment                 = "blah blah blah"
-
-		invalidLogin = "foobar"
+		login                       = "example"
+		decision     ApproverAction = ApproverActionReject
+		comment                     = "blah blah blah"
+		invalidLogin                = "foobar"
 	)
 
 	type fields struct {
@@ -306,6 +305,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 		example                  = "example"
 		title                    = "title"
 		login                    = "login1"
+		shortTitle               = "Нода Согласование"
 		approversFromSchema      = "a.var1;b.var2;var3"
 		approversFromSchemaSlice = "sd_app_0.application_body.users"
 		approverGroupId          = "uuid13456"
@@ -362,12 +362,13 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Storage:           myStorage,
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoApproverID,
-					Title:     title,
-					Input:     nil,
-					Output:    nil,
-					Params:    nil,
-					Sockets:   next,
+					BlockType:  BlockGoApproverID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
+					Params:     nil,
+					Sockets:    next,
 				},
 			},
 			want:    nil,
@@ -383,12 +384,13 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Storage:           myStorage,
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoApproverID,
-					Title:     title,
-					Input:     nil,
-					Output:    nil,
-					Params:    []byte("{}"),
-					Sockets:   next,
+					BlockType:  BlockGoApproverID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
+					Params:     []byte("{}"),
+					Sockets:    next,
 				},
 			},
 			want:    nil,
@@ -404,10 +406,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Storage:           myStorage,
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoApproverID,
-					Title:     title,
-					Input:     nil,
-					Output:    nil,
+					BlockType:  BlockGoApproverID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.ApproverParams{
 							Type:            script.ApproverTypeFromSchema,
@@ -434,10 +437,11 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Storage:           myStorage,
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoApproverID,
-					Title:     title,
-					Input:     nil,
-					Output:    nil,
+					BlockType:  BlockGoApproverID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Input:      nil,
+					Output:     nil,
 					Params: func() []byte {
 						r, _ := json.Marshal(&script.ApproverParams{
 							Type:             script.ApproverTypeGroup,
@@ -464,8 +468,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Storage:           myStorage,
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoApproverID,
-					Title:     title,
+					BlockType:  BlockGoApproverID,
+					Title:      title,
+					ShortTitle: shortTitle,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -540,8 +545,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 					Storage:           myStorage,
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoApproverID,
-					Title:     title,
+					BlockType:  BlockGoApproverID,
+					Title:      title,
+					ShortTitle: shortTitle,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",

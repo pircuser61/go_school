@@ -4537,9 +4537,6 @@ components:
         check_sla:
           type: boolean
           description: Is active SLA
-        schema_name:
-          type: string
-          description: form template id name
         forms_accessibility:
           type: array
           description: List of accessibility properties for forms

@@ -23,7 +23,6 @@ type FormParams struct {
 	SchemaId                  string               `json:"schema_id"`
 	SLA                       int                  `json:"sla"`
 	CheckSLA                  bool                 `json:"check_sla"`
-	SchemaName                string               `json:"schema_name"`
 	Executor                  string               `json:"executor"`
 	FormExecutorType          FormExecutorType     `json:"form_executor_type"`
 	FormGroupId               string               `json:"form_group_id"`

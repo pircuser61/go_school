@@ -13,6 +13,10 @@ import (
 
 // nolint:dupl // another block
 func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, bool, error) {
+	if ef.ShortTitle == "" {
+		return nil, false, errors.New(ef.Title + " block short title is empty")
+	}
+
 	b := &GoFormBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -115,7 +119,6 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		SchemaId:                  params.SchemaId,
 		CheckSLA:                  params.CheckSLA,
 		SLA:                       params.SLA,
-		SchemaName:                params.SchemaName,
 		ChangesLog:                make([]ChangesLogItem, 0),
 		FormExecutorType:          params.FormExecutorType,
 		ApplicationBody:           map[string]interface{}{},
