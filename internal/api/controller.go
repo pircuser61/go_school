@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"net/http"
 	"time"
 
@@ -22,6 +21,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"

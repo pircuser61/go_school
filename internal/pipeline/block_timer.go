@@ -3,13 +3,13 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )

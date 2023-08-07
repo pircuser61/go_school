@@ -2,7 +2,6 @@ package configs
 
 import (
 	"fmt"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"os"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -16,6 +15,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
