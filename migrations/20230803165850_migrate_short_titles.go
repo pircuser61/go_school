@@ -32,7 +32,7 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 		SchemaName string `json:"schema_name"`
 	}
 	var scenarios []entity.EriusScenario
-	q := `Select id, content->>'pipeline' from versions`
+	q := `Select id, content->>'pipeline' from versions where content->>'pipeline' is not NULL`
 
 	rows, queryErr := tx.Query(q)
 	if queryErr != nil {
@@ -102,7 +102,7 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 		SchemaName string `json:"schema_name"`
 	}
 	var scenarios []entity.EriusScenario
-	q := `Select id, content->>'pipeline' from versions`
+	q := `Select id, content->>'pipeline' from versions where content->>'pipeline' is not NULL`
 
 	rows, queryErr := tx.Query(q)
 	if queryErr != nil {
