@@ -529,7 +529,8 @@ func TestValidation_ParallelNodes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsParallelNodesCorrect() {
+			ok, _ := tt.Ef.Pipeline.Blocks.IsParallelNodesCorrect()
+			if tt.WantValid && !ok {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})

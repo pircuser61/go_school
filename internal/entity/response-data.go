@@ -64,28 +64,34 @@ const (
 	checkSdBlueprint = "/api/herald/v1/schema/blueprint/"
 )
 
-func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) bool {
+const (
+	PipelineValidateError         = "PipelineValidateError"
+	ParallelNodeReturnCycle       = "ParallelNodeReturnCycle"
+	ParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
+)
+
+func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (bool, string) {
 	if !bt.EndExists() {
-		return false
+		return false, PipelineValidateError
 	}
 
 	if !bt.IsPipelineComplete() {
-		return false
+		return false, PipelineValidateError
 	}
 
 	if !bt.IsSocketsFilled() {
-		return false
+		return false, PipelineValidateError
 	}
 
 	if !bt.IsSdBlueprintFilled(ctx, sd) {
-		return false
+		return false, PipelineValidateError
+	}
+	ok, parallErr := bt.IsParallelNodesCorrect()
+	if !ok {
+		return false, parallErr
 	}
 
-	if !bt.IsParallelNodesCorrect() {
-		return false
-	}
-
-	return true
+	return true, ""
 }
 
 func (bt *BlocksType) EndExists() bool {
@@ -155,10 +161,11 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 }
 
 // nolint:gocognit //its ok here
-func (bt *BlocksType) IsParallelNodesCorrect() bool {
+func (bt *BlocksType) IsParallelNodesCorrect() (bool, string) {
 	parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
+	// startNode := bt.getNodesByType(BlockGoStartName)
 	if len(parallelStartNodes) == 0 {
-		return true
+		return true, ""
 	}
 
 	for idx := range parallelStartNodes {
@@ -166,8 +173,9 @@ func (bt *BlocksType) IsParallelNodesCorrect() bool {
 		var foundedNode *string
 
 		nodes := make(map[string]*EriusFunc, 0)
-		visitedNodes := make(map[string]struct{}, 0)
-
+		visitedParallelNodes := make(map[string]EriusFunc, 0)
+		// visitedStartNodes := make(map[string]EriusFunc, 0)
+		visitedParallelNodes[idx] = parallelNode
 		for socketOut := range parallelNode.Next {
 			for _, socketOutNode := range parallelNode.Next[socketOut] {
 				socketNode, ok := (*bt)[socketOutNode]
@@ -185,30 +193,39 @@ func (bt *BlocksType) IsParallelNodesCorrect() bool {
 			}
 			nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
 			delete(nodes, nodeKey)
-			if _, ok := visitedNodes[nodeKey]; ok {
+			if _, ok := visitedParallelNodes[nodeKey]; ok {
 				continue
 			}
+			visitedParallelNodes[nodeKey] = *node
 			if node.TypeID == BlockParallelEndName {
 				if foundedNode != nil && nodeKey != *foundedNode {
-					return false
+					return false, PipelineValidateError
 				}
 				foundedNode = &nodeKey
 			} else if node.TypeID == BlockParallelStartName {
 				continue
 			} else {
+				// if len(node.Next) == 0 {
+				// 	return false, ParallelNodeExitsNotConnected
+				// }
 				for socketOut := range node.Next {
 					for _, socketOutNode := range node.Next[socketOut] {
 						socketNode, ok := (*bt)[socketOutNode]
 						if !ok {
 							continue
 						}
+						_, visited := visitedParallelNodes[socketOutNode]
+						if socketNode.TypeID == BlockParallelStartName && visited {
+							return false, ParallelNodeReturnCycle
+						}
 						nodes[socketOutNode] = &socketNode
 					}
 				}
 			}
 		}
+
 	}
-	return true
+	return true, ""
 }
 
 func (bt *BlocksType) addDefaultStartNode() {

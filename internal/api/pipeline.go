@@ -70,9 +70,17 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		p.Pipeline.FillEmptyPipeline()
 		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
-
-	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
-		e := PipelineValidateError
+	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
+	if p.Status == db.StatusApproved && !ok {
+		var e Err
+		switch valErr {
+		case "ParallelNodeReturnCycle":
+			e = ParallelNodeReturnCycle
+		case "ParallelNodeExitsNotConnected":
+			e = ParallelNodeExitsNotConnected
+		default:
+			e = PipelineValidateError
+		}
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
