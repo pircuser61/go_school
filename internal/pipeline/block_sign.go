@@ -238,8 +238,8 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		emails[em] = mail.NewSignerNotificationTpl(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
-			gb.RunContext.Sender.SdAddress,
-			description)
+			description,
+			gb.RunContext.Sender.SdAddress)
 	}
 
 	if len(emails) == 0 {
