@@ -271,6 +271,7 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		SigningRule:        params.SigningRule,
 		SignLog:            make([]SignLogEntry, 0),
 		FormsAccessibility: params.FormsAccessibility,
+		SignatureType:      params.SignatureType,
 	}
 
 	if gb.State.SigningRule == "" {

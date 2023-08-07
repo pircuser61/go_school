@@ -41,6 +41,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
       AND vs.step_type = '%s'
       AND vs.status IN %s
       AND w.child_id IS NULL
+      --filter--
 ),
      unique_actions AS (
          SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
@@ -117,6 +118,14 @@ func getUniqueActions(as string, logins []string) string {
 		return uniqueActionsByRole(loginsIn, "form", false)
 	case "finished_form_executor":
 		return uniqueActionsByRole(loginsIn, "form", true)
+	case "signer_phys":
+		q := uniqueActionsByRole(loginsIn, "sign", false)
+		q = strings.Replace(q, "--filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --filter--", 1)
+		return q
+	case "signer_jur":
+		q := uniqueActionsByRole(loginsIn, "sign", false)
+		q = strings.Replace(q, "--filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --filter--", 1)
+		return q
 	case "initiators":
 		return fmt.Sprintf(`WITH unique_actions AS (
 			SELECT id AS work_id, '{}' AS actions
@@ -587,6 +596,13 @@ func (db *PGCon) GetTasksCount(
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
 				m.login = $1 AND vs.step_type = 'form'
+		),
+		(SELECT count(*)
+			FROM members m
+				JOIN variable_storage vs on vs.id = m.block_id
+				JOIN ids on vs.work_id = ids.id
+			WHERE vs.status IN ('running', 'idle', 'ready') AND
+				m.login = $1 AND vs.step_type = 'sign'
 		)`
 
 	counter, err := db.getTasksCount(
@@ -603,6 +619,7 @@ func (db *PGCon) GetTasksCount(
 		TotalExecutor:     counter.totalExecutor,
 		TotalApprover:     counter.totalApprover,
 		TotalFormExecutor: counter.totalFormExecutor,
+		TotalSign:         counter.totalSign,
 	}, nil
 }
 
@@ -958,6 +975,7 @@ type tasksCounter struct {
 	totalExecutor     int
 	totalApprover     int
 	totalFormExecutor int
+	totalSign         int
 }
 
 func (db *PGCon) getTasksCount(
@@ -975,6 +993,7 @@ func (db *PGCon) getTasksCount(
 			&counter.totalApprover,
 			&counter.totalExecutor,
 			&counter.totalFormExecutor,
+			&counter.totalSign,
 		); scanErr != nil {
 		return counter, scanErr
 	}
