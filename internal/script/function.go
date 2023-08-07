@@ -88,7 +88,7 @@ type functionTime time.Time
 type ParamMetadata struct {
 	Type        string
 	Description string
-	Items       []ParamMetadata
+	Items       *ParamMetadata
 	Properties  map[string]ParamMetadata
 }
 
@@ -102,14 +102,6 @@ func (p ParamMetadata) GetProperties() map[string]interface{} {
 		properties[k] = v
 	}
 	return properties
-}
-
-func (p ParamMetadata) GetItems() []interface{} {
-	items := make([]interface{}, 0)
-	for _, v := range p.Items {
-		items = append(items, v)
-	}
-	return items
 }
 
 func (a *ExecutableFunctionParams) Validate() error {
