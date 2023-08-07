@@ -363,6 +363,28 @@ type NewAppPersonStatusTpl struct {
 	LastWorks []*entity.EriusTask
 }
 
+func NewSignerNotificationTpl(id, name, description, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("Заявка №%s ожидает подписания", id),
+		Text: `Уважаемый коллега, заявка {{.Id}} <b>ожидает подписания</b>.<br>
+				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
+				Текст заявки:<br>
+<pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
+
+		Variables: struct {
+			Id          string
+			Name        string
+			Link        string
+			Description string
+		}{
+			Id:          id,
+			Name:        name,
+			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Description: description,
+		},
+	}
+}
+
 const (
 	statusExecution = "processing"
 )

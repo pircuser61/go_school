@@ -433,8 +433,8 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context,
 		StatusApprovementRejected,
 		StatusExecution,
 		StatusExecutionRejected,
-		StatusSignSigned,
-		StatusSignRejected,
+		StatusSigned,
+		StatusRejected,
 		StatusProcessingError,
 		StatusDone:
 	default:

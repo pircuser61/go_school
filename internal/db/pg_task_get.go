@@ -358,6 +358,12 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
 		FROM versions
 			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
+
+		UNION
+
+		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'formsAccessibility') as rules
+		FROM versions
+			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	)
     SELECT content -> 'State' -> step_name ->> 'description'
 	FROM variable_storage
