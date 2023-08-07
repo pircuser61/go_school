@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"flag"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"os"
 	"os/signal"
 	"syscall"
@@ -123,6 +124,12 @@ func main() {
 		//return
 	}
 
+	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks)
+	if err != nil {
+		log.WithError(err).Error("can't create scheduler service")
+		// for test return
+	}
+
 	functionsService, err := functions.NewService(cfg.FunctionStore)
 	if err != nil {
 		log.WithError(err).Error("can't create functions service")
@@ -183,6 +190,7 @@ func main() {
 		FileRegistry:            fileRegistryService,
 		Integrations:            integrationsService,
 		HrGate:                  hrgateService,
+		Scheduler:               schedulerService,
 		IncludePlaceholderBlock: includePlaceholderBlock,
 	}
 

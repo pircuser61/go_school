@@ -3,12 +3,11 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
@@ -82,7 +81,9 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.Started {
 		gb.State.Expired = true
 	} else {
-		go gb.startTimer(ctx)
+		if err := gb.startTimer(ctx); err != nil {
+			return nil, err
+		}
 		gb.State.Started = true
 	}
 
@@ -97,11 +98,15 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *TimerBlock) startTimer(ctx c.Context) {
-	log := logger.GetLogger(ctx)
-	log.Info("timer started")
-	time.Sleep(gb.State.Duration)
-	log.Info("timer is up")
+func (gb *TimerBlock) startTimer(ctx c.Context) error {
+	_, err := gb.RunContext.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+		WorkNumber:  gb.RunContext.WorkNumber,
+		WorkId:      gb.RunContext.TaskID.String(),
+		ActionName:  string(entity.TaskUpdateActionFinishTimer),
+		WaitSeconds: int(gb.State.Duration.Seconds()),
+	})
+
+	return err
 }
 
 func (gb *TimerBlock) Model() script.FunctionModel {

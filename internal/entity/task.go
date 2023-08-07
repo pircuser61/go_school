@@ -177,6 +177,7 @@ const (
 	TaskUpdateActionSLABreachRequestAddInfo    TaskUpdateAction = "sla_breach_request_add_info"
 	TaskUpdateActionFormExecutorStartWork      TaskUpdateAction = "form_executor_start_work"
 	TaskUpdateActionSign                       TaskUpdateAction = "sign"
+	TaskUpdateActionFinishTimer                TaskUpdateAction = "finish_timer"
 )
 
 var (
@@ -194,6 +195,7 @@ var (
 		TaskUpdateActionAddApprovers:          {},
 		TaskUpdateActionFormExecutorStartWork: {},
 		TaskUpdateActionSign:                  {},
+		TaskUpdateActionFinishTimer:           {},
 	}
 )
 

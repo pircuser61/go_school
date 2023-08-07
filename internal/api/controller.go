@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"net/http"
 	"time"
 
@@ -43,6 +44,7 @@ type APIEnv struct {
 	FileRegistry            *file_registry.Service
 	Integrations            *integrations.Service
 	HrGate                  *hrgate.Service
+	Scheduler               *scheduler.Service
 	IncludePlaceholderBlock bool
 }
 

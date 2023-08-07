@@ -27,6 +27,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -54,6 +55,7 @@ type BlockRunContext struct {
 	currBlockStartTime time.Time
 	Delegations        human_tasks.Delegations
 	HrGate             *hrgate.Service
+	Scheduler          *scheduler.Service
 	IsTest             bool
 	NotifName          string
 }

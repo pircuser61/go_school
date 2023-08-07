@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -234,6 +233,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		FileRegistry:  ae.FileRegistry,
 		FaaS:          ae.FaaS,
 		HrGate:        ae.HrGate,
+		Scheduler:     ae.Scheduler,
 
 		UpdateData: &script.BlockUpdateData{
 			ByLogin:    data.login,
@@ -279,8 +279,6 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
-
-	log := logger.GetLogger(ctx)
 
 	delegations, getDelegationsErr := ae.HumanTasks.GetDelegationsToLogin(ctxLocal, userLogin)
 	if getDelegationsErr != nil {
@@ -330,8 +328,6 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 		}
 		steps = append(steps, stepsByBlock...)
 	}
-
-	log.Info(fmt.Printf("update_task_internal steps: %+v", steps))
 
 	if len(steps) == 0 {
 		e := GetTaskError

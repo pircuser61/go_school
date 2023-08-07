@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"os"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -55,6 +56,7 @@ type Pipeliner struct {
 	HrGate                  hrgate.Config        `yaml:"hrgate"`
 	FileRegistry            file_registry.Config `yaml:"file_registry"`
 	IncludePlaceholderBlock bool                 `yaml:"include_placeholder_block"`
+	SchedulerTasks          scheduler.Config     `yaml:"scheduler_tasks"`
 }
 
 type RunEnv struct {
