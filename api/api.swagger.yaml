@@ -2783,7 +2783,7 @@ components:
       type: object
       properties:
         block_type:
-          $ref: '#/components/schemas/'
+          $ref: '#/components/schemas/blockType'
         input:
           type: array
           items:
@@ -4127,7 +4127,7 @@ components:
         - comment_enabled
         - attachments_enabled
 
-    blockType:blockType
+    blockType:
       type: string
       description: Block type (language)
       enum:
