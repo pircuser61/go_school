@@ -31,8 +31,8 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 	type FormParams struct {
 		SchemaName string `json:"schema_name"`
 	}
-
-	q := `Select id, content from versions`
+	var scenarios []entity.EriusScenario
+	q := `Select id, content->>'pipeline' from versions`
 
 	rows, queryErr := tx.Query(q)
 	if queryErr != nil {
@@ -41,14 +41,18 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 	defer rows.Close()
 	for rows.Next() {
 		var resultRow entity.EriusScenario
+		var pipeline string
 		scanErr := rows.Scan(
 			&resultRow.ID,
-			&resultRow.Pipeline,
+			&pipeline,
 		)
 		if scanErr != nil {
 			return scanErr
 		}
-
+		err := json.Unmarshal([]byte(pipeline), &resultRow.Pipeline)
+		if err != nil {
+			return err
+		}
 		for i := range resultRow.Pipeline.Blocks {
 			val := resultRow.Pipeline.Blocks[i]
 			switch val.TypeID {
@@ -74,8 +78,13 @@ func upMigrateShortTitles(tx *sql.Tx) error {
 					}
 				}
 			}
+			resultRow.Pipeline.Blocks[i] = val
 		}
-		_, execErr := tx.Exec(insertQ, resultRow.Pipeline, resultRow.ID)
+		scenarios = append(scenarios, resultRow)
+	}
+
+	for i := range scenarios {
+		_, execErr := tx.Exec(insertQ, scenarios[i].Pipeline, scenarios[i].ID)
 		if execErr != nil {
 			return execErr
 		}
@@ -92,7 +101,7 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 	type FormParams struct {
 		SchemaName string `json:"schema_name"`
 	}
-
+	var scenarios []entity.EriusScenario
 	q := `Select id, content->>'pipeline' from versions`
 
 	rows, queryErr := tx.Query(q)
@@ -100,22 +109,23 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 		return queryErr
 	}
 	defer rows.Close()
-	var content string
 	for rows.Next() {
 		var resultRow entity.EriusScenario
+		var pipeline string
 		scanErr := rows.Scan(
 			&resultRow.ID,
-			&content,
+			&pipeline,
 		)
 		if scanErr != nil {
 			return scanErr
 		}
-		err := json.Unmarshal([]byte(content), &resultRow.Pipeline)
+		err := json.Unmarshal([]byte(pipeline), &resultRow.Pipeline)
 		if err != nil {
 			return err
 		}
 
-		for _, val := range resultRow.Pipeline.Blocks {
+		for i := range resultRow.Pipeline.Blocks {
+			val := resultRow.Pipeline.Blocks[i]
 			switch val.TypeID {
 			case approverType:
 				if val.ShortTitle == approverName {
@@ -139,14 +149,17 @@ func downMigrateShortTitles(tx *sql.Tx) error {
 			default:
 				continue
 			}
+			resultRow.Pipeline.Blocks[i] = val
 		}
+		scenarios = append(scenarios, resultRow)
+	}
 
-		_, execErr := tx.Exec(insertQ, &resultRow.Pipeline, resultRow.ID)
+	for i := range scenarios {
+		_, execErr := tx.Exec(insertQ, scenarios[i].Pipeline, scenarios[i].ID)
 		if execErr != nil {
 			return execErr
 		}
 	}
-
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return rowsErr
 	}
