@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +14,8 @@ import (
 	"golang.org/x/exp/slices"
 
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
