@@ -392,9 +392,9 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 	if p.Status == db.StatusApproved && !ok {
 		var e Err
 		switch valErr {
-		case "ParallelNodeReturnCycle":
+		case ValidateParallelNodeReturnCycle:
 			e = ParallelNodeReturnCycle
-		case "ParallelNodeExitsNotConnected":
+		case ValidateParallelNodeExitsNotConnected:
 			e = ParallelNodeExitsNotConnected
 		default:
 			e = PipelineValidateError

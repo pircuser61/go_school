@@ -70,7 +70,7 @@ const (
 	ParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
 )
 
-func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (bool, string) {
+func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (valid bool, textErr string) {
 	if !bt.EndExists() {
 		return false, PipelineValidateError
 	}
@@ -162,7 +162,7 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 }
 
 // nolint:gocognit //its ok here
-func (bt *BlocksType) IsParallelNodesCorrect() (bool, string) {
+func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 	parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
 	if len(parallelStartNodes) == 0 {
 		return true, ""
@@ -219,7 +219,6 @@ func (bt *BlocksType) IsParallelNodesCorrect() (bool, string) {
 				}
 			}
 		}
-
 	}
 	return true, ""
 }
