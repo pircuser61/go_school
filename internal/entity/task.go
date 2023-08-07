@@ -51,6 +51,7 @@ type CountTasks struct {
 	TotalApprover     int `json:"approve"`
 	TotalExecutor     int `json:"execute"`
 	TotalFormExecutor int `json:"form_execute"`
+	TotalSign         int `json:"sign"`
 }
 
 type TaskAction struct {

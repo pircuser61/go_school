@@ -397,7 +397,7 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		ss := strings.Split(*filters.Status, ",")
 		uniqueS := make(map[pipeline.TaskHumanStatus]struct{})
 		for _, status := range ss {
-			uniqueS[pipeline.TaskHumanStatus(status)] = struct{}{}
+			uniqueS[pipeline.TaskHumanStatus(strings.Trim(status, "'"))] = struct{}{}
 		}
 		for status := range uniqueS {
 			switch status {
@@ -413,11 +413,13 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 				uniqueS[pipeline.StatusSigning] = struct{}{}
 			case pipeline.StatusApprovementRejected:
 				uniqueS[pipeline.StatusRejected] = struct{}{}
+			default:
+				continue
 			}
 		}
 		newSS := make([]string, 0, len(uniqueS))
 		for status := range uniqueS {
-			newSS = append(newSS, string(status))
+			newSS = append(newSS, "'"+string(status)+"'")
 		}
 		newStatuses := strings.Join(newSS, ",")
 		filters.Status = &newStatuses

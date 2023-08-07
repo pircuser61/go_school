@@ -2749,11 +2749,14 @@ components:
           type: integer
         form_execute:
           type: integer
+        sign:
+          type: integer
       required:
         - active
         - approve
         - execute
         - form_execute
+        - sign
 
     DebugResult:
       type: object
@@ -2780,7 +2783,7 @@ components:
       type: object
       properties:
         block_type:
-          $ref: '#/components/schemas/blockType'
+          $ref: '#/components/schemas/'
         input:
           type: array
           items:
@@ -4124,7 +4127,7 @@ components:
         - comment_enabled
         - attachments_enabled
 
-    blockType:
+    blockType:blockType
       type: string
       description: Block type (language)
       enum:

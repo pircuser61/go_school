@@ -596,6 +596,13 @@ func (db *PGCon) GetTasksCount(
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
 				m.login = $1 AND vs.step_type = 'form'
+		),
+		(SELECT count(*)
+			FROM members m
+				JOIN variable_storage vs on vs.id = m.block_id
+				JOIN ids on vs.work_id = ids.id
+			WHERE vs.status IN ('running', 'idle', 'ready') AND
+				m.login = $1 AND vs.step_type = 'sign'
 		)`
 
 	counter, err := db.getTasksCount(
@@ -612,6 +619,7 @@ func (db *PGCon) GetTasksCount(
 		TotalExecutor:     counter.totalExecutor,
 		TotalApprover:     counter.totalApprover,
 		TotalFormExecutor: counter.totalFormExecutor,
+		TotalSign:         counter.totalSign,
 	}, nil
 }
 
@@ -967,6 +975,7 @@ type tasksCounter struct {
 	totalExecutor     int
 	totalApprover     int
 	totalFormExecutor int
+	totalSign         int
 }
 
 func (db *PGCon) getTasksCount(
@@ -984,6 +993,7 @@ func (db *PGCon) getTasksCount(
 			&counter.totalApprover,
 			&counter.totalExecutor,
 			&counter.totalFormExecutor,
+			&counter.totalSign,
 		); scanErr != nil {
 		return counter, scanErr
 	}
