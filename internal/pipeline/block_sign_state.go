@@ -22,13 +22,14 @@ type SignLogEntry struct {
 }
 
 type SignData struct {
-	Type         script.SignerType   `json:"type"`
-	Signers      map[string]struct{} `json:"signers"`
-	Decision     *SignDecision       `json:"decision,omitempty"`
-	Comment      *string             `json:"comment,omitempty"`
-	ActualSigner *string             `json:"actual_signer,omitempty"`
-	SigningRule  script.SigningRule  `json:"signing_rule,omitempty"`
-	SignLog      []SignLogEntry      `json:"sign_log,omitempty"`
+	Type          script.SignerType    `json:"type"`
+	Signers       map[string]struct{}  `json:"signers"`
+	SignatureType script.SignatureType `json:"signature_type"`
+	Decision      *SignDecision        `json:"decision,omitempty"`
+	Comment       *string              `json:"comment,omitempty"`
+	ActualSigner  *string              `json:"actual_signer,omitempty"`
+	SigningRule   script.SigningRule   `json:"signing_rule,omitempty"`
+	SignLog       []SignLogEntry       `json:"sign_log,omitempty"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 

@@ -392,6 +392,36 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		users = delegations.GetUserInArrayWithDelegators(*filters.ProcessingLogins)
 	}
 
+	if filters.Status != nil {
+		ss := strings.Split(*filters.Status, ",")
+		uniqueS := make(map[pipeline.TaskHumanStatus]struct{})
+		for _, status := range ss {
+			uniqueS[pipeline.TaskHumanStatus(status)] = struct{}{}
+		}
+		for status := range uniqueS {
+			switch status {
+			case pipeline.StatusSigned:
+				uniqueS[pipeline.StatusApproveSigned] = struct{}{}
+			case pipeline.StatusSigning:
+				uniqueS[pipeline.StatusApproveSign] = struct{}{}
+			case pipeline.StatusRejected:
+				uniqueS[pipeline.StatusApprovementRejected] = struct{}{}
+			case pipeline.StatusApproveSigned:
+				uniqueS[pipeline.StatusSigned] = struct{}{}
+			case pipeline.StatusApproveSign:
+				uniqueS[pipeline.StatusSigning] = struct{}{}
+			case pipeline.StatusApprovementRejected:
+				uniqueS[pipeline.StatusRejected] = struct{}{}
+			}
+		}
+		newSS := make([]string, 0, len(uniqueS))
+		for status := range uniqueS {
+			newSS = append(newSS, string(status))
+		}
+		newStatuses := strings.Join(newSS, ",")
+		filters.Status = &newStatuses
+	}
+
 	resp, err := ae.DB.GetTasks(ctx, filters, users)
 	if err != nil {
 		e := GetTasksError
