@@ -240,7 +240,6 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			gb.RunContext.NotifName,
 			gb.RunContext.Sender.SdAddress,
 			description)
-
 	}
 
 	if len(emails) == 0 {
