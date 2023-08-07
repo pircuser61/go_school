@@ -4,8 +4,9 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
