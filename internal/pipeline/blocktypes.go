@@ -42,6 +42,9 @@ const (
 	// BlockGoExecutionID represents id/type of execution block (using in script.FunctionModel)
 	BlockGoExecutionID = "execution"
 
+	// BlockGoSignID represents id/type of sign block (using in script.FunctionModel)
+	BlockGoSignID = "sign"
+
 	BlockGoNotificationID    = "notification"
 	BlockGoNotificationTitle = "notification"
 

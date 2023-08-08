@@ -215,7 +215,7 @@ func (ae *APIEnv) GetMonitoringTask(w http.ResponseWriter, req *http.Request, wo
 
 func getMonitoringStatus(status string) MonitoringHistoryStatus {
 	switch status {
-	case "cancel", "finished", "no_success", "revoke":
+	case "cancel", "finished", "no_success", "revoke", "error":
 		return MonitoringHistoryStatusFinished
 	default:
 		return MonitoringHistoryStatusRunning

@@ -87,6 +87,15 @@ const (
 	notExecutedSocketID    = "not_executed"
 	notExecutedSocketTitle = "Не исполнено"
 
+	signSocketID    = "signed"
+	signSocketTitle = "Подписано"
+
+	rejectedSocketID    = "rejected"
+	rejectedSocketTitle = "Отклонено"
+
+	errorSocketID    = "error"
+	errorSocketTitle = "Ошибка"
+
 	DefaultSocketID    = "default"
 	DefaultSocketTitle = "Выход по умолчанию"
 )
@@ -110,6 +119,13 @@ var (
 
 	NotExecutedSocket = Socket{Id: notExecutedSocketID, Title: notExecutedSocketTitle}
 	ExecutedSocket    = Socket{Id: executedSocketID, Title: executedSocketTitle}
+
+	//nolint:gochecknoglobals //sign node sockets
+	SignedSocket   = Socket{Id: signSocketID, Title: signSocketTitle}
+	RejectedSocket = Socket{Id: rejectedSocketID, Title: rejectedSocketTitle}
+
+	//nolint:gochecknoglobals //new common socket
+	ErrorSocket = Socket{Id: errorSocketID, Title: errorSocketTitle}
 
 	DelegationsCollection = "delegations_collection"
 )

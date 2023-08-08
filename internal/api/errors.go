@@ -116,6 +116,8 @@ const (
 	GetProcessSlaSettingsError
 	PipelineValidateError
 	StopTaskParsingError
+	ParallelNodeReturnCycle
+	ParallelNodeExitsNotConnected
 )
 
 //nolint:dupl //its not duplicate
@@ -214,6 +216,8 @@ var errorText = map[Err]string{
 	GetProcessSlaSettingsError:          "can't get sla settings for process",
 	PipelineValidateError:               "invalid pipeline schema",
 	StopTaskParsingError:                "can't parse stop task request",
+	ParallelNodeReturnCycle:             "invalid pipeline schema: returning back from parallel",
+	ParallelNodeExitsNotConnected:       "invalid pipeline schema: node exits are not connected",
 }
 
 // JOKE.
@@ -314,23 +318,27 @@ var errorDescription = map[Err]string{
 	GetProcessSlaSettingsError:          "Ошибка при получении параметров SLA процесса",
 	PipelineValidateError:               "Невалидная схема пайплайна",
 	StopTaskParsingError:                "Не удалось распарсить запрос",
+	ParallelNodeReturnCycle:             "Нельзя выводить стрелки из параллельности. Используйте ноду условий после конца шлюза",
+	ParallelNodeExitsNotConnected:       "Процесс не опубликован. Соедините все ноды в процессе",
 }
 
 var errorStatus = map[Err]int{
-	Teapot:                    http.StatusTeapot,
-	UnauthError:               http.StatusUnauthorized,
-	UUIDParsingError:          http.StatusBadRequest,
-	BadFiltersError:           http.StatusBadRequest,
-	GetUserinfoErr:            http.StatusUnauthorized,
-	WorkNumberParsingError:    http.StatusBadRequest,
-	UpdateTaskParsingError:    http.StatusBadRequest,
-	UpdateTaskValidationError: http.StatusBadRequest,
-	UpdateNotRunningTaskError: http.StatusBadRequest,
-	BlockNotFoundError:        http.StatusBadRequest,
-	BodyParseError:            http.StatusBadRequest,
-	ValidationError:           http.StatusBadRequest,
-	PipelineValidateError:     http.StatusBadRequest,
-	StopTaskParsingError:      http.StatusBadRequest,
+	Teapot:                        http.StatusTeapot,
+	UnauthError:                   http.StatusUnauthorized,
+	UUIDParsingError:              http.StatusBadRequest,
+	BadFiltersError:               http.StatusBadRequest,
+	GetUserinfoErr:                http.StatusUnauthorized,
+	WorkNumberParsingError:        http.StatusBadRequest,
+	UpdateTaskParsingError:        http.StatusBadRequest,
+	UpdateTaskValidationError:     http.StatusBadRequest,
+	UpdateNotRunningTaskError:     http.StatusBadRequest,
+	BlockNotFoundError:            http.StatusBadRequest,
+	BodyParseError:                http.StatusBadRequest,
+	ValidationError:               http.StatusBadRequest,
+	PipelineValidateError:         http.StatusBadRequest,
+	StopTaskParsingError:          http.StatusBadRequest,
+	ParallelNodeReturnCycle:       http.StatusBadRequest,
+	ParallelNodeExitsNotConnected: http.StatusBadRequest,
 }
 
 type httpError struct {

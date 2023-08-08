@@ -33,11 +33,13 @@ type Deadline struct {
 }
 
 var (
+	//nolint:gochecknoglobals //block statuses
 	StatusIdle      Status = "idle"
 	StatusReady     Status = "ready"
 	StatusRunning   Status = "running"
 	StatusFinished  Status = "finished"
 	StatusNoSuccess Status = "no_success"
+	StatusError     Status = "error"
 )
 
 type Runner interface {

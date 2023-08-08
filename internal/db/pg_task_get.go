@@ -29,7 +29,7 @@ import (
 func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {
-		statuses = "('finished', 'no_success')"
+		statuses = "('finished', 'no_success', 'error')"
 	}
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                      AS work_id
@@ -41,6 +41,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
       AND vs.step_type = '%s'
       AND vs.status IN %s
       AND w.child_id IS NULL
+      --filter--
 ),
      unique_actions AS (
          SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
@@ -61,6 +62,7 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
     WHERE (m.login = '%s' AND vs.step_type = 'form')
+       OR (m.login = '%s' AND vs.step_type = 'sign')
        OR (m.login IN %s AND vs.step_type = 'approver')
        OR (m.login IN %s AND vs.step_type = 'execution')
       AND w.work_number = '%s'
@@ -72,7 +74,7 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
          FROM actions
                   LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
          GROUP BY actions.work_id
-     )`, currentUser, approverLoginsIn, executionLoginsIn, workNumber)
+     )`, currentUser, currentUser, approverLoginsIn, executionLoginsIn, workNumber)
 }
 
 func buildInExpression(items []string) string {
@@ -116,6 +118,14 @@ func getUniqueActions(as string, logins []string) string {
 		return uniqueActionsByRole(loginsIn, "form", false)
 	case "finished_form_executor":
 		return uniqueActionsByRole(loginsIn, "form", true)
+	case "signer_phys":
+		q := uniqueActionsByRole(loginsIn, "sign", false)
+		q = strings.Replace(q, "--filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --filter--", 1)
+		return q
+	case "signer_jur":
+		q := uniqueActionsByRole(loginsIn, "sign", false)
+		q = strings.Replace(q, "--filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --filter--", 1)
+		return q
 	case "initiators":
 		return fmt.Sprintf(`WITH unique_actions AS (
 			SELECT id AS work_id, '{}' AS actions
@@ -357,6 +367,12 @@ func (db *PGCon) GetAdditionalForms(workNumber, nodeName string) ([]string, erro
 		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'forms_accessibility') as rules
 		FROM versions
 			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
+
+		UNION
+
+		SELECT jsonb_array_elements(content -> 'pipeline' -> 'blocks' -> $2 -> 'params' -> 'formsAccessibility') as rules
+		FROM versions
+			WHERE id = (SELECT version_id FROM works WHERE work_number = $1 AND child_id IS NULL)
 	)
     SELECT content -> 'State' -> step_name ->> 'description'
 	FROM variable_storage
@@ -580,6 +596,13 @@ func (db *PGCon) GetTasksCount(
 				JOIN ids on vs.work_id = ids.id
 			WHERE vs.status IN ('running', 'idle', 'ready') AND
 				m.login = $1 AND vs.step_type = 'form'
+		),
+		(SELECT count(*)
+			FROM members m
+				JOIN variable_storage vs on vs.id = m.block_id
+				JOIN ids on vs.work_id = ids.id
+			WHERE vs.status IN ('running', 'idle', 'ready') AND
+				m.login = $1 AND vs.step_type = 'sign'
 		)`
 
 	counter, err := db.getTasksCount(
@@ -596,6 +619,7 @@ func (db *PGCon) GetTasksCount(
 		TotalExecutor:     counter.totalExecutor,
 		TotalApprover:     counter.totalApprover,
 		TotalFormExecutor: counter.totalFormExecutor,
+		TotalSign:         counter.totalSign,
 	}, nil
 }
 
@@ -951,6 +975,7 @@ type tasksCounter struct {
 	totalExecutor     int
 	totalApprover     int
 	totalFormExecutor int
+	totalSign         int
 }
 
 func (db *PGCon) getTasksCount(
@@ -968,6 +993,7 @@ func (db *PGCon) getTasksCount(
 			&counter.totalApprover,
 			&counter.totalExecutor,
 			&counter.totalFormExecutor,
+			&counter.totalSign,
 		); scanErr != nil {
 		return counter, scanErr
 	}

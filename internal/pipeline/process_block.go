@@ -125,7 +125,8 @@ func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		return err
 	}
 
-	if isArchived || (block.GetStatus() != StatusFinished && block.GetStatus() != StatusNoSuccess) {
+	if isArchived || (block.GetStatus() != StatusFinished && block.GetStatus() != StatusNoSuccess &&
+		block.GetStatus() != StatusError) {
 		return nil
 	}
 
@@ -233,6 +234,8 @@ func createGoBlock(ctx c.Context, ef *entity.EriusFunc, name string, runCtx *Blo
 		return createGoTestBlock(name, ef, runCtx)
 	case BlockGoApproverID:
 		return createGoApproverBlock(ctx, name, ef, runCtx)
+	case BlockGoSignID:
+		return createGoSignBlock(ctx, name, ef, runCtx)
 	case BlockGoSdApplicationID:
 		return createGoSdApplicationBlock(name, ef, runCtx)
 	case BlockGoExecutionID:
@@ -430,6 +433,9 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context,
 		StatusApprovementRejected,
 		StatusExecution,
 		StatusExecutionRejected,
+		StatusSigned,
+		StatusRejected,
+		StatusProcessingError,
 		StatusDone:
 	default:
 		return nil

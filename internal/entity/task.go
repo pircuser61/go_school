@@ -51,6 +51,7 @@ type CountTasks struct {
 	TotalApprover     int `json:"approve"`
 	TotalExecutor     int `json:"execute"`
 	TotalFormExecutor int `json:"form_execute"`
+	TotalSign         int `json:"sign"`
 }
 
 type TaskAction struct {
@@ -176,6 +177,7 @@ const (
 	TaskUpdateActionDayBeforeSLARequestAddInfo TaskUpdateAction = "day_before_sla_request_add_info"
 	TaskUpdateActionSLABreachRequestAddInfo    TaskUpdateAction = "sla_breach_request_add_info"
 	TaskUpdateActionFormExecutorStartWork      TaskUpdateAction = "form_executor_start_work"
+	TaskUpdateActionSign                       TaskUpdateAction = "sign"
 )
 
 var (
@@ -192,6 +194,7 @@ var (
 		TaskUpdateActionRequestFillForm:       {},
 		TaskUpdateActionAddApprovers:          {},
 		TaskUpdateActionFormExecutorStartWork: {},
+		TaskUpdateActionSign:                  {},
 	}
 )
 
