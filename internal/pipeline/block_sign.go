@@ -348,7 +348,6 @@ func (gb *GoSignBlock) loadState(raw json.RawMessage) error {
 
 // nolint:dupl,unparam // another block
 func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSignBlock, bool, error) {
-	const reEntry = false
 	if ef.ShortTitle == "" {
 		return nil, false, errors.New(ef.Title + " block short title is empty")
 	}
@@ -370,14 +369,15 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		b.Output[v.Name] = v.Global
 	}
 
+	reEntry := runCtx.UpdateData == nil
 	rawState, ok := runCtx.VarStore.State[name]
-	if ok {
+	if ok && !reEntry {
 		if err := b.loadState(rawState); err != nil {
-			return nil, reEntry, err
+			return nil, false, err
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
-			return nil, reEntry, err
+			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 	}
