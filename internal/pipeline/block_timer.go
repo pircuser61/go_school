@@ -4,8 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"github.com/labstack/gommon/log"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 type TimerData struct {
@@ -78,7 +77,6 @@ func (gb *TimerBlock) GetState() interface{} {
 func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	currentUser, err := user.GetUserInfoFromCtx(ctx)
 	if err != nil {
-		log.Error("user failed: ", err.Error())
 		return nil, err
 	}
 
@@ -103,7 +101,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	var stateBytes []byte
-	stateBytes, err := json.Marshal(gb.State)
+	stateBytes, err = json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
 	}
