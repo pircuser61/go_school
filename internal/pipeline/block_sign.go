@@ -288,7 +288,7 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.SignerGroupIDPath = fmt.Sprintf("%v", groupId)
+		params.SignerGroupID = fmt.Sprintf("%v", groupId)
 	}
 
 	setErr := gb.setSignersByParams(ctx, &setSignersByParamsDTO{
