@@ -54,7 +54,7 @@ func TestValidation_EndExists(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.EndExists() {
+			if tt.Ef.Pipeline.Blocks.EndExists() != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -450,7 +450,8 @@ func TestValidation_SocketFilled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.Ef.Pipeline.Blocks.IsSocketsFilled() != tt.WantValid {
+			isValid, _ := tt.Ef.Pipeline.Blocks.IsSocketsFilled()
+			if isValid != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -513,7 +514,7 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled(context.Background(), sdApi) {
+			if tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled(context.Background(), sdApi) != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -766,11 +767,11 @@ func TestValidation_ParallelNodes(t *testing.T) {
 			},
 			WantValid: false,
 		},
-	{
-		Name:      "Valid",
-		Ef:        valid,
-		WantValid: true,
-	},
+		{
+			Name:      "Valid",
+			Ef:        valid,
+			WantValid: true,
+		},
 		{
 			Name:      "cycle returning from parallel",
 			Ef:        cycleTest,
@@ -780,7 +781,8 @@ func TestValidation_ParallelNodes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.Ef.Pipeline.Blocks.IsParallelNodesCorrect() != tt.WantValid {
+			isValid, _ := tt.Ef.Pipeline.Blocks.IsParallelNodesCorrect()
+			if isValid != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})

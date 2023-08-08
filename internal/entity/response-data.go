@@ -175,6 +175,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 		nodes := make(map[string]*EriusFunc, 0)
 		visitedParallelNodes := make(map[string]EriusFunc, 0)
 		visitedParallelNodes[idx] = parallelNode
+
 		for _, socketOutNodes := range parallelNode.Next {
 			for _, socketOutNode := range socketOutNodes {
 				socketNode, ok := (*bt)[socketOutNode]
