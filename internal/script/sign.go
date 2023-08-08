@@ -27,7 +27,7 @@ func (s SignatureType) String() string {
 const (
 	SignerTypeUser       SignerType = "user"
 	SignerTypeGroup      SignerType = "group"
-	SignerTypeFromSchema SignerType = "from_schema"
+	SignerTypeFromSchema SignerType = "fromSchema"
 
 	AllOfSigningRequired SigningRule = "AllOf"
 	AnyOfSigningRequired SigningRule = "AnyOf"
