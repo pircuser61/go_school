@@ -164,7 +164,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			}
 
 			// эта функция уже запускалась и время ожидания корректного ответа закончилось
-			if !isFirstStart && firstStart != nil && !isTimeToRetry(firstStart.Time, gb.State.WaitCorrectRes) {
+			if !isFirstStart && firstStart != nil && !isTimeToWaitAnswer(firstStart.Time, gb.State.WaitCorrectRes) {
 				em, errEmail := gb.RunContext.People.GetUserEmail(ctx, gb.RunContext.Initiator)
 				if errEmail != nil {
 					log.WithField("login", gb.RunContext.Initiator).Error(errEmail)
@@ -361,8 +361,8 @@ func (gb *ExecutableFunctionBlock) changeCurrentState() {
 	gb.State.HasResponse = true
 }
 
-func isTimeToRetry(createdAt time.Time, waitInDays int) bool {
-	return time.Now().After(createdAt.AddDate(0, 0, waitInDays))
+func isTimeToWaitAnswer(createdAt time.Time, waitInDays int) bool {
+	return time.Now().Before(createdAt.AddDate(0, 0, waitInDays))
 }
 
 func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workId uuid.UUID, sName string) (bool, *entity.Step, error) {

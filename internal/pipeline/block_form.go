@@ -4,8 +4,9 @@ import (
 	c "context"
 	"time"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -40,7 +41,6 @@ type FormData struct {
 	FormExecutorsGroupName string                  `json:"form_executors_group_name"`
 	FormGroupIdPath        *string                 `json:"form_group_id_path,omitempty"`
 	SchemaId               string                  `json:"schema_id"`
-	SchemaName             string                  `json:"schema_name"`
 	Executors              map[string]struct{}     `json:"executors"`
 	Description            string                  `json:"description"`
 	ApplicationBody        map[string]interface{}  `json:"application_body"`

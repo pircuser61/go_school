@@ -111,6 +111,8 @@ func didMeetBlocks(src, dest []string) bool {
 }
 
 func TestProcessBlock(t *testing.T) {
+	const shortTitle = "Нода"
+
 	type fields struct {
 		Entrypoint string
 		RunContext *BlockRunContext
@@ -183,9 +185,10 @@ func TestProcessBlock(t *testing.T) {
 							"start_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockGoStartId,
-								BlockType: script.TypeGo,
-								Title:     BlockGoStartTitle,
+								TypeID:     BlockGoStartId,
+								BlockType:  script.TypeGo,
+								Title:      BlockGoStartTitle,
+								ShortTitle: shortTitle,
 								Sockets: []entity.Socket{
 									{
 										Id:           DefaultSocketID,
@@ -201,9 +204,10 @@ func TestProcessBlock(t *testing.T) {
 							"servicedesk_application_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockGoSdApplicationID,
-								BlockType: script.TypeGo,
-								Title:     BlockGoSdApplicationTitle,
+								TypeID:     BlockGoSdApplicationID,
+								BlockType:  script.TypeGo,
+								Title:      BlockGoSdApplicationTitle,
+								ShortTitle: shortTitle,
 								Sockets: []entity.Socket{
 									{
 										Id:           DefaultSocketID,
@@ -220,9 +224,10 @@ func TestProcessBlock(t *testing.T) {
 							"end_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockGoEndId,
-								BlockType: script.TypeGo,
-								Title:     BlockGoEndTitle,
+								TypeID:     BlockGoEndId,
+								BlockType:  script.TypeGo,
+								Title:      BlockGoEndTitle,
+								ShortTitle: shortTitle,
 							}, nil,
 						)
 
@@ -310,9 +315,10 @@ func TestProcessBlock(t *testing.T) {
 							"start_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockGoStartId,
-								BlockType: script.TypeGo,
-								Title:     BlockGoStartTitle,
+								TypeID:     BlockGoStartId,
+								BlockType:  script.TypeGo,
+								Title:      BlockGoStartTitle,
+								ShortTitle: shortTitle,
 								Sockets: []entity.Socket{
 									{
 										Id:           DefaultSocketID,
@@ -328,9 +334,10 @@ func TestProcessBlock(t *testing.T) {
 							"servicedesk_application_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockGoSdApplicationID,
-								BlockType: script.TypeGo,
-								Title:     BlockGoSdApplicationTitle,
+								TypeID:     BlockGoSdApplicationID,
+								BlockType:  script.TypeGo,
+								Title:      BlockGoSdApplicationTitle,
+								ShortTitle: shortTitle,
 								Sockets: []entity.Socket{
 									{
 										Id:           DefaultSocketID,
@@ -347,9 +354,10 @@ func TestProcessBlock(t *testing.T) {
 							"start_parallel_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockGoBeginParallelTaskId,
-								BlockType: script.TypeGo,
-								Title:     BlockGoBeginParallelTaskTitle,
+								TypeID:     BlockGoBeginParallelTaskId,
+								BlockType:  script.TypeGo,
+								Title:      BlockGoBeginParallelTaskTitle,
+								ShortTitle: shortTitle,
 								Sockets: []entity.Socket{
 									{
 										Id:           DefaultSocketID,
@@ -365,8 +373,9 @@ func TestProcessBlock(t *testing.T) {
 							"approver_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockGoApproverID,
-								BlockType: script.TypeGo,
+								TypeID:     BlockGoApproverID,
+								ShortTitle: shortTitle,
+								BlockType:  script.TypeGo,
 								Sockets: []entity.Socket{
 									{
 										Id:           "approve",
@@ -383,8 +392,9 @@ func TestProcessBlock(t *testing.T) {
 							"execution_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockGoExecutionID,
-								BlockType: script.TypeGo,
+								TypeID:     BlockGoExecutionID,
+								ShortTitle: shortTitle,
+								BlockType:  script.TypeGo,
 								Sockets: []entity.Socket{
 									{
 										Id:           executedSocketID,
@@ -401,9 +411,10 @@ func TestProcessBlock(t *testing.T) {
 							"end_parallel_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockWaitForAllInputsId,
-								BlockType: script.TypeGo,
-								Title:     BlockGoWaitForAllInputsTitle,
+								TypeID:     BlockWaitForAllInputsId,
+								ShortTitle: shortTitle,
+								BlockType:  script.TypeGo,
+								Title:      BlockGoWaitForAllInputsTitle,
 								Sockets: []entity.Socket{
 									{
 										Id:           DefaultSocketID,
@@ -419,9 +430,10 @@ func TestProcessBlock(t *testing.T) {
 							"end_0",
 						).Return(
 							&entity.EriusFunc{
-								TypeID:    BlockGoEndId,
-								BlockType: script.TypeGo,
-								Title:     BlockGoEndTitle,
+								TypeID:     BlockGoEndId,
+								ShortTitle: shortTitle,
+								BlockType:  script.TypeGo,
+								Title:      BlockGoEndTitle,
 							}, nil,
 						)
 

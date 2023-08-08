@@ -93,6 +93,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 	const (
 		example             = "example"
 		title               = "title"
+		shortTitle          = "Нода Исполнение"
 		executorsFromSchema = "form_0.user.username;form_1.user.username"
 		executorFromSchema  = "form_0.user.username"
 	)
@@ -138,12 +139,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Sockets:   next,
-					Input:     nil,
-					Output:    nil,
-					Params:    nil,
-					Title:     title,
+					BlockType:  BlockGoExecutionID,
+					Sockets:    next,
+					Input:      nil,
+					Output:     nil,
+					Params:     nil,
+					Title:      title,
+					ShortTitle: shortTitle,
 				},
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
@@ -157,12 +159,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Sockets:   next,
-					Input:     nil,
-					Output:    nil,
-					Params:    []byte("{}"),
-					Title:     title,
+					BlockType:  BlockGoExecutionID,
+					Sockets:    next,
+					Input:      nil,
+					Output:     nil,
+					Params:     []byte("{}"),
+					Title:      title,
+					ShortTitle: shortTitle,
 				},
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
@@ -182,9 +185,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Storage:           myStorage,
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Title:     title,
-					Sockets:   next,
+					BlockType:  BlockGoExecutionID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -246,9 +250,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					Storage:           myStorage,
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Title:     title,
-					Sockets:   next,
+					BlockType:  BlockGoExecutionID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",
@@ -323,9 +328,10 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					}(),
 				},
 				ef: &entity.EriusFunc{
-					BlockType: BlockGoExecutionID,
-					Title:     title,
-					Sockets:   next,
+					BlockType:  BlockGoExecutionID,
+					Title:      title,
+					ShortTitle: shortTitle,
+					Sockets:    next,
 					Input: []entity.EriusFunctionValue{
 						{
 							Name:   "foo",

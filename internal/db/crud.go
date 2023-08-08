@@ -2529,6 +2529,7 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
     where ((step_type = 'approver' and content -> 'State' -> step_name -> 'approvers' ? $3)
         or (step_type = 'execution' and content -> 'State' -> step_name -> 'executors' ? $3)
         or (step_type = 'form' and content -> 'State' -> step_name -> 'executors' ? $3))
+		or (step_type = 'sign' and content -> 'State' -> step_name -> 'signers' ? $3))
       and work_id = (SELECT id
                      FROM works
                      WHERE work_number = $1
