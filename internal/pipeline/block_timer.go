@@ -94,8 +94,8 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.Started {
 		gb.State.Expired = true
 	} else {
-		if err = gb.startTimer(ctx); err != nil {
-			return nil, err
+		if errStart := gb.startTimer(ctx); errStart != nil {
+			return nil, errStart
 		}
 		gb.State.Started = true
 	}
