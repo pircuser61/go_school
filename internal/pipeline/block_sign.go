@@ -346,44 +346,6 @@ func (gb *GoSignBlock) loadState(raw json.RawMessage) error {
 	return json.Unmarshal(raw, &gb.State)
 }
 
-func (gb *GoSignBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
-	gb.State.Decision = nil
-	gb.State.Comment = nil
-	gb.State.ActualSigner = nil
-	gb.State.SignLog = make([]SignLogEntry, 0)
-
-	var params script.ApproverParams
-	err := json.Unmarshal(ef.Params, &params)
-	if err != nil {
-		return errors.Wrap(err, "can not get approver parameters for block: "+gb.Name)
-	}
-
-	if params.ApproversGroupIDPath != nil && *params.ApproversGroupIDPath != "" {
-		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
-		if grabStorageErr != nil {
-			return grabStorageErr
-		}
-
-		groupId := getVariable(variableStorage, *params.ApproversGroupIDPath)
-		if groupId == nil {
-			return errors.New("can't find group id in variables")
-		}
-		params.ApproversGroupID = fmt.Sprintf("%v", groupId)
-	}
-
-	err = gb.setApproversByParams(ctx, &setApproversByParamsDTO{
-		Type:     params.Type,
-		GroupID:  params.ApproversGroupID,
-		Approver: params.Approver,
-		WorkType: params.WorkType,
-	})
-	if err != nil {
-		return err
-	}
-
-	return gb.handleNotifications(ctx)
-}
-
 // nolint:dupl,unparam // another block
 func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSignBlock, bool, error) {
 	if ef.ShortTitle == "" {
