@@ -127,7 +127,7 @@ func main() {
 	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks)
 	if err != nil {
 		log.WithError(err).Error("can't create scheduler service")
-		// for test return
+		return
 	}
 
 	functionsService, err := functions.NewService(cfg.FunctionStore)
