@@ -10,7 +10,7 @@ func (s *Service) CreateTask(ctx c.Context, task *CreateTask) (id string, err er
 	res, err := s.cli.CreateTask(ctx,
 		&scheduler_v1.CreateTaskRequest{
 			WorkNumber:  task.WorkNumber,
-			TaskId:      task.WorkId,
+			TaskId:      task.WorkID,
 			ActionName:  task.ActionName,
 			WaitSeconds: int32(task.WaitSeconds),
 		},

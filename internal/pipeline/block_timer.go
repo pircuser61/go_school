@@ -3,10 +3,12 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
+	"github.com/labstack/gommon/log"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/net/context"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
@@ -39,7 +41,7 @@ func (gb *TimerBlock) Members() []Member {
 	return nil
 }
 
-func (gb *TimerBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+func (gb *TimerBlock) Deadlines(_ c.Context) ([]Deadline, error) {
 	return []Deadline{}, nil
 }
 
@@ -74,6 +76,19 @@ func (gb *TimerBlock) GetState() interface{} {
 
 //nolint:gocyclo //its ok here
 func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
+	currentUser, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		log.Error("user failed: ", err.Error())
+		return nil, err
+	}
+
+	if currentUser.Username != ServiceAccoutDev &&
+		currentUser.Username != ServiceAccoutStage &&
+		currentUser.Username != ServiceAccout {
+		err = fmt.Errorf("user %s is not service account", currentUser.Username)
+		return nil, err
+	}
+
 	if gb.State.Expired {
 		return nil, errors.New("timer has already expired")
 	}
@@ -101,7 +116,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 func (gb *TimerBlock) startTimer(ctx c.Context) error {
 	_, err := gb.RunContext.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
 		WorkNumber:  gb.RunContext.WorkNumber,
-		WorkId:      gb.RunContext.TaskID.String(),
+		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionFinishTimer),
 		WaitSeconds: int(gb.State.Duration.Seconds()),
 	})

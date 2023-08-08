@@ -2,7 +2,7 @@ package scheduler
 
 type CreateTask struct {
 	WorkNumber  string
-	WorkId      string
+	WorkID      string
 	ActionName  string
 	WaitSeconds int
 }
