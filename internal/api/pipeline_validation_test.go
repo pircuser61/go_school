@@ -54,7 +54,7 @@ func TestValidation_EndExists(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.EndExists() {
+			if tt.Ef.Pipeline.Blocks.EndExists() != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -291,7 +291,7 @@ func TestValidation_IsolationNode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsPipelineComplete() {
+			if tt.Ef.Pipeline.Blocks.IsPipelineComplete() != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -450,7 +450,7 @@ func TestValidation_SocketFilled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsSocketsFilled() {
+			if tt.Ef.Pipeline.Blocks.IsSocketsFilled() != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -513,7 +513,7 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled(context.Background(), sdApi) {
+			if tt.Ef.Pipeline.Blocks.IsSdBlueprintFilled(context.Background(), sdApi) != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
@@ -521,15 +521,247 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 }
 
 func TestValidation_ParallelNodes(t *testing.T) {
-	var tests []struct {
+	tests := []struct {
 		Name      string
 		Ef        entity.EriusScenario
 		WantValid bool
+	}{
+		{
+			Name: "positive case",
+			Ef: entity.EriusScenario{
+				Pipeline: entity.PipelineType{
+					Blocks: entity.BlocksType{
+						"start_0": {
+							TypeID: "start",
+							Next:   map[string][]string{"default": {"begin_parallel_task_0"}},
+							Sockets: []entity.Socket{
+								{
+									Id:           script.DefaultSocketID,
+									Title:        script.DefaultSocketTitle,
+									NextBlockIds: []string{"begin_parallel_task_0"},
+								},
+							},
+						},
+						"begin_parallel_task_0": {
+							TypeID: "begin_parallel_task",
+							Next:   map[string][]string{"default": {"approver_1", "approver_2"}},
+							Sockets: []entity.Socket{
+								{
+									Id:           script.DefaultSocketID,
+									Title:        script.DefaultSocketTitle,
+									NextBlockIds: []string{"approver_1", "approver_2"},
+								},
+							},
+						},
+						"approver_1": {
+							TypeID: "approver",
+							Next: map[string][]string{
+								"approve": {"wait_for_all_inputs_0"},
+								"reject":  {"wait_for_all_inputs_0"},
+							},
+							Sockets: []entity.Socket{
+								{
+									Id:           "approve",
+									Title:        "Согласовать",
+									NextBlockIds: []string{"wait_for_all_inputs_0"},
+								},
+								{
+									Id:           "reject",
+									Title:        "Отклонить",
+									NextBlockIds: []string{"wait_for_all_inputs_0"},
+								},
+							},
+						},
+						"approver_2": {
+							TypeID: "approver",
+							Next: map[string][]string{
+								"approve": {"approver_3"},
+								"reject":  {"approver_3"},
+							},
+							Sockets: []entity.Socket{
+								{
+									Id:           "approve",
+									Title:        "Согласовать",
+									NextBlockIds: []string{"approver_3"},
+								},
+								{
+									Id:           "reject",
+									Title:        "Отклонить",
+									NextBlockIds: []string{"approver_3"},
+								},
+							},
+						},
+						"approver_3": {
+							TypeID: "approver",
+							Next: map[string][]string{
+								"approve": {"approver_2"},
+								"reject":  {"wait_for_all_inputs_0"},
+							},
+							Sockets: []entity.Socket{
+								{
+									Id:           "approve",
+									Title:        "Согласовать",
+									NextBlockIds: []string{"approver_2"},
+								},
+								{
+									Id:           "reject",
+									Title:        "Отклонить",
+									NextBlockIds: []string{"wait_for_all_inputs_0"},
+								},
+							},
+						},
+						"wait_for_all_inputs_0": {
+							TypeID: "wait_for_all_inputs",
+							Next:   map[string][]string{"default": {"end_0"}},
+							Sockets: []entity.Socket{
+								{
+									Id:           script.DefaultSocketID,
+									Title:        script.DefaultSocketTitle,
+									NextBlockIds: []string{"end_0"},
+								},
+							},
+						},
+						"end_0": {
+							TypeID: "end",
+							Sockets: []entity.Socket{
+								{
+									Id:           script.DefaultSocketID,
+									Title:        script.DefaultSocketTitle,
+									NextBlockIds: []string{},
+								},
+							},
+						},
+					},
+				},
+			},
+			WantValid: true,
+		},
+		{
+			Name: "error case, more than one parallel end",
+			Ef: entity.EriusScenario{
+				Pipeline: entity.PipelineType{
+					Blocks: entity.BlocksType{
+						"start_0": {
+							TypeID: "start",
+							Next:   map[string][]string{"default": {"begin_parallel_task_0"}},
+							Sockets: []entity.Socket{
+								{
+									Id:           script.DefaultSocketID,
+									Title:        script.DefaultSocketTitle,
+									NextBlockIds: []string{"begin_parallel_task_0"},
+								},
+							},
+						},
+						"begin_parallel_task_0": {
+							TypeID: "begin_parallel_task",
+							Next:   map[string][]string{"default": {"approver_1", "approver_2"}},
+							Sockets: []entity.Socket{
+								{
+									Id:           script.DefaultSocketID,
+									Title:        script.DefaultSocketTitle,
+									NextBlockIds: []string{"approver_1", "approver_2"},
+								},
+							},
+						},
+						"approver_1": {
+							TypeID: "approver",
+							Next: map[string][]string{
+								"approve": {"wait_for_all_inputs_0"},
+								"reject":  {"wait_for_all_inputs_1"},
+							},
+							Sockets: []entity.Socket{
+								{
+									Id:           "approve",
+									Title:        "Согласовать",
+									NextBlockIds: []string{"wait_for_all_inputs_0"},
+								},
+								{
+									Id:           "reject",
+									Title:        "Отклонить",
+									NextBlockIds: []string{"wait_for_all_inputs_1"},
+								},
+							},
+						},
+						"approver_2": {
+							TypeID: "approver",
+							Next: map[string][]string{
+								"approve": {"approver_3"},
+								"reject":  {"approver_3"},
+							},
+							Sockets: []entity.Socket{
+								{
+									Id:           "approve",
+									Title:        "Согласовать",
+									NextBlockIds: []string{"approver_3"},
+								},
+								{
+									Id:           "reject",
+									Title:        "Отклонить",
+									NextBlockIds: []string{"approver_3"},
+								},
+							},
+						},
+						"approver_3": {
+							TypeID: "approver",
+							Next: map[string][]string{
+								"approve": {"approver_2"},
+								"reject":  {"wait_for_all_inputs_0"},
+							},
+							Sockets: []entity.Socket{
+								{
+									Id:           "approve",
+									Title:        "Согласовать",
+									NextBlockIds: []string{"approver_2"},
+								},
+								{
+									Id:           "reject",
+									Title:        "Отклонить",
+									NextBlockIds: []string{"wait_for_all_inputs_0"},
+								},
+							},
+						},
+						"wait_for_all_inputs_0": {
+							TypeID: "wait_for_all_inputs",
+							Next:   map[string][]string{"default": {"end_0"}},
+							Sockets: []entity.Socket{
+								{
+									Id:           script.DefaultSocketID,
+									Title:        script.DefaultSocketTitle,
+									NextBlockIds: []string{"end_0"},
+								},
+							},
+						},
+						"wait_for_all_inputs_1": {
+							TypeID: "wait_for_all_inputs",
+							Next:   map[string][]string{"default": {"end_0"}},
+							Sockets: []entity.Socket{
+								{
+									Id:           script.DefaultSocketID,
+									Title:        script.DefaultSocketTitle,
+									NextBlockIds: []string{"end_0"},
+								},
+							},
+						},
+						"end_0": {
+							TypeID: "end",
+							Sockets: []entity.Socket{
+								{
+									Id:           script.DefaultSocketID,
+									Title:        script.DefaultSocketTitle,
+									NextBlockIds: []string{},
+								},
+							},
+						},
+					},
+				},
+			},
+			WantValid: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			if tt.WantValid && !tt.Ef.Pipeline.Blocks.IsParallelNodesCorrect() {
+			if tt.Ef.Pipeline.Blocks.IsParallelNodesCorrect() != tt.WantValid {
 				t.Errorf("unexpected invalid %+v", tt.Ef.Pipeline.Blocks)
 			}
 		})
