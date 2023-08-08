@@ -28,6 +28,11 @@ import (
 const statusRunned = "runned"
 const copyPostfix = "копия"
 
+const (
+	ValidateParallelNodeReturnCycle       = "ParallelNodeReturnCycle"
+	ValidateParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
+)
+
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 	ctx, s := trace.StartSpan(req.Context(), "create_pipeline")
 	defer s.End()
@@ -70,9 +75,18 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 		p.Pipeline.FillEmptyPipeline()
 		b, _ = json.Marshal(&p) // nolint // already unmarshalling that struct
 	}
+	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
+	if p.Status == db.StatusApproved && !ok {
+		var e Err
 
-	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
-		e := PipelineValidateError
+		switch valErr {
+		case ValidateParallelNodeReturnCycle:
+			e = ParallelNodeReturnCycle
+		case ValidateParallelNodeExitsNotConnected:
+			e = ParallelNodeExitsNotConnected
+		default:
+			e = PipelineValidateError
+		}
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return

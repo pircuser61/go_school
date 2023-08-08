@@ -388,9 +388,18 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+	ok, valErr := p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc)
+	if p.Status == db.StatusApproved && !ok {
+		var e Err
 
-	if p.Status == db.StatusApproved && !p.Pipeline.Blocks.Validate(ctx, ae.ServiceDesc) {
-		e := PipelineValidateError
+		switch valErr {
+		case ValidateParallelNodeReturnCycle:
+			e = ParallelNodeReturnCycle
+		case ValidateParallelNodeExitsNotConnected:
+			e = ParallelNodeExitsNotConnected
+		default:
+			e = PipelineValidateError
+		}
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
