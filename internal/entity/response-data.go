@@ -175,8 +175,9 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 		nodes := make(map[string]*EriusFunc, 0)
 		visitedParallelNodes := make(map[string]EriusFunc, 0)
 		visitedParallelNodes[idx] = parallelNode
-		for socketOut := range parallelNode.Next {
-			for _, socketOutNode := range parallelNode.Next[socketOut] {
+
+		for _, socketOutNodes := range parallelNode.Next {
+			for _, socketOutNode := range socketOutNodes {
 				socketNode, ok := (*bt)[socketOutNode]
 				if !ok {
 					continue
@@ -190,11 +191,13 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 			if len(nodeKeys) == 0 {
 				break
 			}
+
 			nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
 			delete(nodes, nodeKey)
 			if _, ok := visitedParallelNodes[nodeKey]; ok {
 				continue
 			}
+
 			visitedParallelNodes[nodeKey] = *node
 			if node.TypeID == BlockParallelEndName {
 				if foundedNode != nil && nodeKey != *foundedNode {
@@ -204,8 +207,8 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 			} else if node.TypeID == BlockParallelStartName {
 				continue
 			} else {
-				for socketOut := range node.Next {
-					for _, socketOutNode := range node.Next[socketOut] {
+				for _, socketOutNodes := range node.Next {
+					for _, socketOutNode := range socketOutNodes {
 						socketNode, ok := (*bt)[socketOutNode]
 						if !ok {
 							continue
