@@ -23,8 +23,8 @@ const (
 	StatusRevoke              TaskHumanStatus = "revoke"
 	StatusCancel              TaskHumanStatus = "cancel"
 	StatusSigning             TaskHumanStatus = "signing"
-	StatusSignSigned          TaskHumanStatus = "signed"
-	StatusSignRejected        TaskHumanStatus = "sign-reject"
+	StatusSigned              TaskHumanStatus = "signed"
+	StatusRejected            TaskHumanStatus = "rejected"
 	StatusProcessingError     TaskHumanStatus = "error"
 )
 
@@ -42,8 +42,8 @@ var statusToTaskState = map[TaskHumanStatus]string{
 	StatusRevoke:              "отозвана инициатором",
 	StatusCancel:              "отозвана администратором",
 	StatusSigning:             "на подписании",
-	StatusSignSigned:          "подписана",
-	StatusSignRejected:        "отклонена",
+	StatusSigned:              "подписана",
+	StatusRejected:            "отклонена",
 	StatusProcessingError:     "обработана с ошибкой",
 }
 

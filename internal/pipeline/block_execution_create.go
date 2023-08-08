@@ -18,6 +18,10 @@ import (
 func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoExecutionBlock, bool, error) {
 	log := logger.GetLogger(ctx)
 
+	if ef.ShortTitle == "" {
+		return nil, false, errors.New(ef.Title + " block short title is empty")
+	}
+
 	b := &GoExecutionBlock{
 		Name:    name,
 		Title:   ef.Title,

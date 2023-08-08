@@ -8,7 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -64,14 +69,14 @@ func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 func (gb *GoSignBlock) GetTaskHumanStatus() TaskHumanStatus {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == SignDecisionRejected {
-			return StatusSignRejected
+			return StatusRejected
 		}
 
 		if *gb.State.Decision == SignDecisionError {
 			return StatusProcessingError
 		}
 
-		return StatusSignSigned
+		return StatusSigned
 	}
 	return StatusSigning
 }
@@ -206,6 +211,49 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 	return nil
 }
 
+//nolint:dupl,gocyclo // maybe later
+func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
+	l := logger.GetLogger(ctx)
+
+	if gb.RunContext.skipNotifications {
+		return nil
+	}
+
+	signers := getSliceFromMapOfStrings(gb.State.Signers)
+	var emailAttachment []e.Attachment
+
+	description, err := gb.RunContext.makeNotificationDescription(gb.Name)
+	if err != nil {
+		return err
+	}
+
+	var emails = make(map[string]mail.Template, 0)
+	for _, login := range signers {
+		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		if getUserEmailErr != nil {
+			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
+			continue
+		}
+
+		emails[em] = mail.NewSignerNotificationTpl(
+			gb.RunContext.WorkNumber,
+			gb.RunContext.NotifName,
+			description,
+			gb.RunContext.Sender.SdAddress)
+	}
+
+	if len(emails) == 0 {
+		return nil
+	}
+
+	for i := range emails {
+		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
+			return sendErr
+		}
+	}
+	return nil
+}
+
 //nolint:dupl,gocyclo //its not duplicate
 func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	var params script.SignParams
@@ -223,6 +271,7 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		SigningRule:        params.SigningRule,
 		SignLog:            make([]SignLogEntry, 0),
 		FormsAccessibility: params.FormsAccessibility,
+		SignatureType:      params.SignatureType,
 	}
 
 	if gb.State.SigningRule == "" {
@@ -239,7 +288,7 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		if groupId == nil {
 			return errors.New("can't find group id in variables")
 		}
-		params.SignerGroupIDPath = fmt.Sprintf("%v", groupId)
+		params.SignerGroupID = fmt.Sprintf("%v", groupId)
 	}
 
 	setErr := gb.setSignersByParams(ctx, &setSignersByParamsDTO{
@@ -251,7 +300,7 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		return setErr
 	}
 
-	return nil
+	return gb.handleNotifications(ctx)
 }
 
 func (gb *GoSignBlock) Model() script.FunctionModel {
@@ -299,7 +348,10 @@ func (gb *GoSignBlock) loadState(raw json.RawMessage) error {
 
 // nolint:dupl,unparam // another block
 func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSignBlock, bool, error) {
-	const reEntry = false
+	if ef.ShortTitle == "" {
+		return nil, false, errors.New(ef.Title + " block short title is empty")
+	}
+
 	b := &GoSignBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -317,14 +369,15 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		b.Output[v.Name] = v.Global
 	}
 
+	reEntry := runCtx.UpdateData == nil
 	rawState, ok := runCtx.VarStore.State[name]
-	if ok {
+	if ok && !reEntry {
 		if err := b.loadState(rawState); err != nil {
-			return nil, reEntry, err
+			return nil, false, err
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
-			return nil, reEntry, err
+			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 	}
