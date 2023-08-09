@@ -254,7 +254,6 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 				}
 			}
 		}
-
 	}
 	return true, ""
 }
