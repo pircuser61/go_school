@@ -68,6 +68,7 @@ const (
 	PipelineValidateError         = "PipelineValidateError"
 	ParallelNodeReturnCycle       = "ParallelNodeReturnCycle"
 	ParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
+	OutOfParallelNodesConnection  = "OutOfParallelNodesConnection"
 )
 
 func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (valid bool, textErr string) {
@@ -213,8 +214,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 						if !ok {
 							continue
 						}
-						_, visited := visitedParallelNodes[socketOutNode]
-						if socketNode.TypeID == BlockParallelStartName && visited {
+						if socketOutNode == idx {
 							return false, ParallelNodeReturnCycle
 						}
 						nodes[socketOutNode] = &socketNode
@@ -222,6 +222,39 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 				}
 			}
 		}
+		parallelEndNode := (*bt)[*foundedNode]
+		afterEndNodes := map[string]*EriusFunc{
+			*foundedNode: &parallelEndNode,
+		}
+		visitedEndParallelNodes := make(map[string]EriusFunc, 0)
+
+		for {
+			endNodeKeys := maps.Keys(afterEndNodes)
+			if len(endNodeKeys) == 0 {
+				break
+			}
+			nodeKey, node := endNodeKeys[0], afterEndNodes[endNodeKeys[0]]
+			delete(afterEndNodes, nodeKey)
+			if _, ok := visitedEndParallelNodes[nodeKey]; ok {
+				continue
+			}
+			visitedEndParallelNodes[nodeKey] = *node
+
+			for _, socketOutNodes := range node.Next {
+				for _, socketOutNode := range socketOutNodes {
+					_, ok := visitedParallelNodes[socketOutNode]
+					if ok {
+						return false, OutOfParallelNodesConnection
+					}
+					socketNode, ok := (*bt)[socketOutNode]
+					if !ok {
+						continue
+					}
+					afterEndNodes[socketOutNode] = &socketNode
+				}
+			}
+		}
+
 	}
 	return true, ""
 }
