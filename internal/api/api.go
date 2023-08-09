@@ -569,6 +569,8 @@ type ApproverUpdateParams struct {
 
 // Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 type ArrayItems struct {
+	Format *string `json:"format,omitempty"`
+
 	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 	Items *ArrayItems `json:"items,omitempty"`
 
@@ -949,11 +951,11 @@ type ExternalSystem struct {
 	OutputSchema   *JSONSchema        `json:"output_schema,omitempty"`
 	OutputSettings *EndSystemSettings `json:"output_settings,omitempty"`
 
-	// ID внешней системы
+	// Id внешней системы
 	SystemId string `json:"system_id"`
 }
 
-// ID внешней системы
+// Id внешней системы
 type ExternalSystemId string
 
 // Fill form
@@ -1357,7 +1359,7 @@ type ProcessSettings struct {
 	Sla         int         `json:"sla"`
 	StartSchema *JSONSchema `json:"start_schema,omitempty"`
 
-	// ID версии процесса
+	// Id версии процесса
 	VersionId string `json:"version_id"`
 
 	// Рабочий режим
@@ -1792,7 +1794,7 @@ type GetFormsChangelogParams struct {
 	// Work number
 	WorkNumber string `json:"work_number"`
 
-	// ID of form block (name)
+	// Id of form block (name)
 	BlockId string `json:"block_id"`
 }
 

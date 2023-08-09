@@ -3774,6 +3774,8 @@ components:
         type:
           type: string
           description: Тип элементов массива
+        format:
+          type: string
         properties:
           $ref: '#/components/schemas/JSONSchemaProperties'
         items:
