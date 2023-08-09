@@ -662,6 +662,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		FileRegistry:  ep.FileRegistry,
 		FaaS:          ep.FaaS,
 		HrGate:        ae.HrGate,
+		Scheduler:     ae.Scheduler,
 
 		UpdateData: nil,
 		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,

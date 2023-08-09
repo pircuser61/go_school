@@ -3,16 +3,16 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/net/context"
-
-	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 type TimerData struct {
@@ -40,7 +40,7 @@ func (gb *TimerBlock) Members() []Member {
 	return nil
 }
 
-func (gb *TimerBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+func (gb *TimerBlock) Deadlines(_ c.Context) ([]Deadline, error) {
 	return []Deadline{}, nil
 }
 
@@ -75,6 +75,18 @@ func (gb *TimerBlock) GetState() interface{} {
 
 //nolint:gocyclo //its ok here
 func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
+	currentUser, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if currentUser.Username != ServiceAccoutDev &&
+		currentUser.Username != ServiceAccoutStage &&
+		currentUser.Username != ServiceAccout {
+		err = fmt.Errorf("user %s is not service account", currentUser.Username)
+		return nil, err
+	}
+
 	if gb.State.Expired {
 		return nil, errors.New("timer has already expired")
 	}
@@ -82,12 +94,14 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	if gb.State.Started {
 		gb.State.Expired = true
 	} else {
-		go gb.startTimer(ctx)
+		if errStart := gb.startTimer(ctx); errStart != nil {
+			return nil, errStart
+		}
 		gb.State.Started = true
 	}
 
 	var stateBytes []byte
-	stateBytes, err := json.Marshal(gb.State)
+	stateBytes, err = json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
 	}
@@ -97,11 +111,15 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (gb *TimerBlock) startTimer(ctx c.Context) {
-	log := logger.GetLogger(ctx)
-	log.Info("timer started")
-	time.Sleep(gb.State.Duration)
-	log.Info("timer is up")
+func (gb *TimerBlock) startTimer(ctx c.Context) error {
+	_, err := gb.RunContext.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+		WorkNumber:  gb.RunContext.WorkNumber,
+		WorkID:      gb.RunContext.TaskID.String(),
+		ActionName:  string(entity.TaskUpdateActionFinishTimer),
+		WaitSeconds: int(gb.State.Duration.Seconds()),
+	})
+
+	return err
 }
 
 func (gb *TimerBlock) Model() script.FunctionModel {

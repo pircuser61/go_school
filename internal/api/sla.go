@@ -58,6 +58,7 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		FileRegistry:  ae.FileRegistry,
 		FaaS:          ae.FaaS,
 		HrGate:        ae.HrGate,
+		Scheduler:     ae.Scheduler,
 
 		UpdateData: &script.BlockUpdateData{
 			Action: string(item.Action),

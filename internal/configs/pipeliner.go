@@ -15,6 +15,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 )
@@ -55,6 +56,7 @@ type Pipeliner struct {
 	HrGate                  hrgate.Config        `yaml:"hrgate"`
 	FileRegistry            file_registry.Config `yaml:"file_registry"`
 	IncludePlaceholderBlock bool                 `yaml:"include_placeholder_block"`
+	SchedulerTasks          scheduler.Config     `yaml:"scheduler_tasks"`
 }
 
 type RunEnv struct {

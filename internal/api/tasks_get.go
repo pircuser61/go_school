@@ -676,6 +676,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 		return []string{pipeline.BlockGoSignID}
 	}
 
+	if action == entity.TaskUpdateActionFinishTimer {
+		return []string{pipeline.BlockTimerID}
+	}
+
 	return []string{}
 }
 

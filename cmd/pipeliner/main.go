@@ -32,6 +32,7 @@ import (
 	mail_fetcher "gitlab.services.mts.ru/jocasta/pipeliner/internal/mail/fetcher"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/metrics"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
@@ -123,6 +124,12 @@ func main() {
 		//return
 	}
 
+	schedulerService, err := scheduler.NewService(cfg.SchedulerTasks)
+	if err != nil {
+		log.WithError(err).Error("can't create scheduler service")
+		return
+	}
+
 	functionsService, err := functions.NewService(cfg.FunctionStore)
 	if err != nil {
 		log.WithError(err).Error("can't create functions service")
@@ -183,6 +190,7 @@ func main() {
 		FileRegistry:            fileRegistryService,
 		Integrations:            integrationsService,
 		HrGate:                  hrgateService,
+		Scheduler:               schedulerService,
 		IncludePlaceholderBlock: includePlaceholderBlock,
 	}
 

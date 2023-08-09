@@ -92,6 +92,9 @@ servicedesc:
 function_store:
   url: 'functions:90'
 
+scheduler_tasks:
+  url: 'scheduler:90'
+
 human_tasks:
   url: 'human-tasks:90'
 
