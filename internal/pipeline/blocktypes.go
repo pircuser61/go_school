@@ -52,7 +52,7 @@ const (
 	BlockExecutableFunctionTitle = "executable_function"
 
 	BlockTimerID    = "timer"
-	BlockTimerTitle = "timer"
+	BlockTimerTitle = "Таймер"
 
 	BlockPlaceholderID    = "placeholder"
 	BlockPlaceholderTitle = "placeholder"
