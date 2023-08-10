@@ -1037,7 +1037,7 @@ func (m *MockDB) GetTasks(c context.Context, filters entity.TaskFilter,
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) CheckTaskStepsExecuted(_ context.Context, _ string, _ []string) (bool, error) {
+func (m *MockDB) ParallelIsFinished(_ context.Context, _ string, _ string) (bool, error) {
 	return false, nil
 }
 
