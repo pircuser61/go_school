@@ -54,6 +54,7 @@ type BlocksType map[string]EriusFunc
 
 const (
 	BlockGoStartName       = "start"
+	StartBlock0            = "start_0"
 	BlockGoEndName         = "end"
 	BlockSDName            = "servicedesk_application"
 	BlockParallelStartName = "begin_parallel_task"
@@ -226,11 +227,9 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 		if !afterEndOk {
 			return false, OutOfParallelNodesConnection
 		}
-		startKey := "start_0"
-		if beforeStartOk := bt.validateBeforeStartParallelNodes(&startKey, &idx, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
+		if beforeStartOk := bt.validateBeforeStartParallelNodes(StartBlock0, idx, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
 			return false, OutOfParallelNodesConnection
 		}
-
 	}
 	return true, ""
 }
@@ -272,11 +271,11 @@ func (bt *BlocksType) validateAfterEndParallelNodes(endNode *string,
 	return true, visitedEndParallelNodes
 }
 
-func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx *string,
+func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx string,
 	visitedParallelNodes, visitedAfterEndNodes map[string]EriusFunc) bool {
-	parallelStartNode := (*bt)[*startKey]
+	parallelStartNode := (*bt)[startKey]
 	BeforeStartNodes := map[string]*EriusFunc{
-		*startKey: &parallelStartNode,
+		startKey: &parallelStartNode,
 	}
 	visitedBeforStartParallelNodes := make(map[string]EriusFunc, 0)
 
@@ -294,7 +293,7 @@ func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx *string,
 
 		for _, socketOutNodes := range node.Next {
 			for _, socketOutNode := range socketOutNodes {
-				if socketOutNode == *idx {
+				if socketOutNode == idx {
 					continue
 				}
 				_, ok := visitedParallelNodes[socketOutNode]
@@ -317,7 +316,7 @@ func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx *string,
 }
 
 func (bt *BlocksType) addDefaultStartNode() {
-	(*bt)["start_0"] = EriusFunc{
+	(*bt)[StartBlock0] = EriusFunc{
 		X:         0,
 		Y:         0,
 		TypeID:    BlockGoStartName,
@@ -416,7 +415,7 @@ type PipelineType struct {
 
 func (p *PipelineType) FillEmptyPipeline() {
 	p.Blocks.addDefaultStartNode()
-	p.Entrypoint = "start_0"
+	p.Entrypoint = StartBlock0
 }
 
 // nolint
