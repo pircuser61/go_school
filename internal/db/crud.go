@@ -2112,9 +2112,9 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `with recursive all_nodes as(
+	const q = `with recursive all_nodes as(
 		select distinct key(jsonb_each(v.content #> '{pipeline,blocks}'))::text out_node,
-						jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) as in_node
+			jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) as in_node
 		from works w
 		inner join versions v on w.version_id=v.id
 		where w.work_number=$1
@@ -2139,12 +2139,12 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
 			   a.in_node not like 'begin_parallel_task%' and ign.level!=0)
 	select case when count(*)=0 then true else false end as is_finished
 	from variable_storage vs
-	inner join works w on vs.work_id = w.id
-	inner join inside_gates_nodes ign on vs.step_name=ign.out_node
+		inner join works w on vs.work_id = w.id
+		inner join inside_gates_nodes ign on vs.step_name=ign.out_node
 	where w.work_number=$3 and vs.status='running'`
 
 	var parallelIsFinished bool
-	row := db.Connection.QueryRow(ctx, q, workNumber, blockName, workNumber)
+	row := db.Connection.QueryRow(ctx, q, workNumber, blockName)
 
 	if err := row.Scan(&parallelIsFinished); err != nil {
 		return false, err
