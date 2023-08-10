@@ -222,40 +222,98 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 				}
 			}
 		}
-		parallelEndNode := (*bt)[*foundedNode]
-		afterEndNodes := map[string]*EriusFunc{
-			*foundedNode: &parallelEndNode,
+		afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundedNode, visitedParallelNodes)
+		if !afterEndOk {
+			return false, OutOfParallelNodesConnection
 		}
-		visitedEndParallelNodes := make(map[string]EriusFunc, 0)
+		startKey := "start_0"
+		if beforeStartOk := bt.validateBeforeStartParallelNodes(&startKey, &idx, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
+			return false, OutOfParallelNodesConnection
+		}
 
-		for {
-			endNodeKeys := maps.Keys(afterEndNodes)
-			if len(endNodeKeys) == 0 {
-				break
-			}
-			nodeKey, node := endNodeKeys[0], afterEndNodes[endNodeKeys[0]]
-			delete(afterEndNodes, nodeKey)
-			if _, ok := visitedEndParallelNodes[nodeKey]; ok {
-				continue
-			}
-			visitedEndParallelNodes[nodeKey] = *node
+	}
+	return true, ""
+}
 
-			for _, socketOutNodes := range node.Next {
-				for _, socketOutNode := range socketOutNodes {
-					_, ok := visitedParallelNodes[socketOutNode]
-					if ok {
-						return false, OutOfParallelNodesConnection
-					}
-					socketNode, ok := (*bt)[socketOutNode]
-					if !ok {
-						continue
-					}
-					afterEndNodes[socketOutNode] = &socketNode
+func (bt *BlocksType) validateAfterEndParallelNodes(endNode *string,
+	visitedParallelNodes map[string]EriusFunc) (valid bool, visitedNodes map[string]EriusFunc) {
+	parallelEndNode := (*bt)[*endNode]
+	afterEndNodes := map[string]*EriusFunc{
+		*endNode: &parallelEndNode,
+	}
+	visitedEndParallelNodes := make(map[string]EriusFunc, 0)
+
+	for {
+		endNodeKeys := maps.Keys(afterEndNodes)
+		if len(endNodeKeys) == 0 {
+			break
+		}
+		nodeKey, node := endNodeKeys[0], afterEndNodes[endNodeKeys[0]]
+		delete(afterEndNodes, nodeKey)
+		if _, ok := visitedEndParallelNodes[nodeKey]; ok {
+			continue
+		}
+		visitedEndParallelNodes[nodeKey] = *node
+
+		for _, socketOutNodes := range node.Next {
+			for _, socketOutNode := range socketOutNodes {
+				_, ok := visitedParallelNodes[socketOutNode]
+				if ok {
+					return false, nil
 				}
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				afterEndNodes[socketOutNode] = &socketNode
 			}
 		}
 	}
-	return true, ""
+	return true, visitedEndParallelNodes
+}
+
+func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx *string,
+	visitedParallelNodes, visitedAfterEndNodes map[string]EriusFunc) bool {
+	parallelStartNode := (*bt)[*startKey]
+	BeforeStartNodes := map[string]*EriusFunc{
+		*startKey: &parallelStartNode,
+	}
+	visitedBeforStartParallelNodes := make(map[string]EriusFunc, 0)
+
+	for {
+		startNodeKeys := maps.Keys(BeforeStartNodes)
+		if len(startNodeKeys) == 0 {
+			break
+		}
+		nodeKey, node := startNodeKeys[0], BeforeStartNodes[startNodeKeys[0]]
+		delete(BeforeStartNodes, nodeKey)
+		if _, ok := visitedBeforStartParallelNodes[nodeKey]; ok {
+			continue
+		}
+		visitedBeforStartParallelNodes[nodeKey] = *node
+
+		for _, socketOutNodes := range node.Next {
+			for _, socketOutNode := range socketOutNodes {
+				if socketOutNode == *idx {
+					continue
+				}
+				_, ok := visitedParallelNodes[socketOutNode]
+				if ok {
+					return false
+				}
+				_, alreadyVisited := visitedAfterEndNodes[socketOutNode]
+				if alreadyVisited {
+					continue
+				}
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				BeforeStartNodes[socketOutNode] = &socketNode
+			}
+		}
+	}
+	return true
 }
 
 func (bt *BlocksType) addDefaultStartNode() {
