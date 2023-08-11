@@ -10,7 +10,7 @@ import (
 
 type SignSignatureParams struct {
 	Decision SignDecision `json:"decision"`
-	Comment  string       `json:"comment"`
+	Comment  string       `json:"comment,omitempty"`
 }
 
 func (gb *GoSignBlock) handleSignature() error {

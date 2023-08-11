@@ -3534,7 +3534,6 @@ components:
           description: Comment from signer
       required:
         - decision
-        - comment
 
     AdditionalApproverUpdateParams:
       type: object
