@@ -79,7 +79,7 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 	}
 
 	if gb.State.Decision != nil {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], &gb.State.ActualApprover)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], gb.State.ActualApprover)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
 	}

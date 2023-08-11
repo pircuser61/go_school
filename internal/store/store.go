@@ -202,6 +202,10 @@ func (c *VariableStore) SetValue(name string, value interface{}) {
 	c.Lock()
 	defer c.Unlock()
 
+	for reflect.TypeOf(value).Kind() == reflect.Pointer {
+		value = reflect.ValueOf(value).Elem().Interface()
+	}
+
 	switch v := value.(type) {
 	case string:
 		c.Values[name] = v
