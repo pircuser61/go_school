@@ -145,6 +145,19 @@ func TestGetAttachmentsFromBody(t *testing.T) {
 				"vlozhenie_mnogo": {entity.Attachment{ID: "34b9dd4a-2391-11ed-b54b-04505600ad66"}, entity.Attachment{ID: "366bc146-2391-11ed-b54b-04505600ad66"}},
 			},
 		},
+		{
+			name: "all types",
+			data: `{"recipient": {"email": "snkosya1@mts.ru", "phone": "15857", "mobile": "+79111157031", 
+"tabnum": "415336", "fullname": "Косяк Сергей Николаевич", "position": "ведущий разработчик", 
+"username": "snkosya1"}, "chislo_moe": 12, "stroka_moya": "строка", 
+"vlozhenie_odno": "attachment:34bc6b5b-2391-11ed-b54b-04505600ad66", 
+"vlozhenie_mnogo": ["attachment:34b9dd4a-2391-11ed-b54b-04505600ad66", "attachment:366bc146-2391-11ed-b54b-04505600ad66"]}`,
+			fields: []string{".vlozhenie_odno", ".vlozhenie_mnogo"},
+			want: map[string][]entity.Attachment{
+				"vlozhenie_odno":  {entity.Attachment{ID: "34bc6b5b-2391-11ed-b54b-04505600ad66"}},
+				"vlozhenie_mnogo": {entity.Attachment{ID: "34b9dd4a-2391-11ed-b54b-04505600ad66"}, entity.Attachment{ID: "366bc146-2391-11ed-b54b-04505600ad66"}},
+			},
+		},
 	}
 
 	for _, test := range tests {
