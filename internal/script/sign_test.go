@@ -10,6 +10,7 @@ func TestSignParams_Validate(t *testing.T) {
 		Rule              SigningRule
 		Signer            string
 		SignatureType     SignatureType
+		SignatureCarrier  SignatureCarrier
 		SignerGroupID     string
 		SignerGroupIDPath string
 	}
@@ -155,36 +156,40 @@ func TestSignParams_Validate(t *testing.T) {
 		{
 			name: "UKEP - user",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          SignerTypeUser,
-				Signer:        "test",
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "all",
 			},
 			wantErr: false,
 		},
 		{
 			name: "UKEP - no user",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          SignerTypeUser,
-				Signer:        "",
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "",
+				SignatureCarrier: "all",
 			},
 			wantErr: true,
 		},
 		{
 			name: "UKEP - user",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          SignerTypeUser,
-				Signer:        "test",
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "all",
 			},
 			wantErr: false,
 		},
 		{
 			name: "UKEP - group id",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          SignerTypeGroup,
-				SignerGroupID: "test",
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeGroup,
+				SignerGroupID:    "test",
+				SignatureCarrier: "all",
 			},
 			wantErr: false,
 		},
@@ -194,6 +199,7 @@ func TestSignParams_Validate(t *testing.T) {
 				SignatureType:     SignatureTypeUKEP,
 				Type:              SignerTypeGroup,
 				SignerGroupIDPath: "test",
+				SignatureCarrier:  "all",
 			},
 			wantErr: false,
 		},
@@ -204,59 +210,106 @@ func TestSignParams_Validate(t *testing.T) {
 				Type:              SignerTypeGroup,
 				SignerGroupIDPath: "test",
 				Rule:              "bad rule",
+				SignatureCarrier:  "all",
 			},
 			wantErr: true,
 		},
 		{
 			name: "UKEP - no group",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          SignerTypeGroup,
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeGroup,
+				SignatureCarrier: "all",
 			},
 			wantErr: true,
 		},
 		{
 			name: "UKEP - schema user",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          SignerTypeFromSchema,
-				Signer:        "test",
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeFromSchema,
+				Signer:           "test",
+				SignatureCarrier: "all",
 			},
 			wantErr: false,
 		},
 		{
 			name: "UKEP - schema no user",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          SignerTypeFromSchema,
-				Signer:        "",
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeFromSchema,
+				Signer:           "",
+				SignatureCarrier: "all",
 			},
 			wantErr: true,
 		},
 		{
 			name: "UKEP - schema group",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          SignerTypeFromSchema,
-				Signer:        "test;test",
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeFromSchema,
+				Signer:           "test;test",
+				SignatureCarrier: "all",
 			},
 			wantErr: false,
 		},
 		{
 			name: "UKEP - schema group bad rule",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          SignerTypeFromSchema,
-				Signer:        "test;test",
-				Rule:          "bad rule",
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeFromSchema,
+				Signer:           "test;test",
+				Rule:             "bad rule",
+				SignatureCarrier: "all",
 			},
 			wantErr: true,
 		},
 		{
 			name: "UKEP - bad type",
 			fields: fields{
-				SignatureType: SignatureTypeUKEP,
-				Type:          "test",
+				SignatureType:    SignatureTypeUKEP,
+				Type:             "test",
+				SignatureCarrier: "all",
+			},
+			wantErr: true,
+		},
+		{
+			name: "UKEP - all",
+			fields: fields{
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "all",
+			},
+			wantErr: false,
+		},
+		{
+			name: "UKEP - cloud",
+			fields: fields{
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "cloud",
+			},
+			wantErr: false,
+		},
+		{
+			name: "UKEP - token",
+			fields: fields{
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "token",
+			},
+			wantErr: false,
+		},
+		{
+			name: "UKEP - bad carrier",
+			fields: fields{
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "bad",
 			},
 			wantErr: true,
 		},
@@ -277,9 +330,10 @@ func TestSignParams_Validate(t *testing.T) {
 				SignatureType:     tt.fields.SignatureType,
 				SignerGroupID:     tt.fields.SignerGroupID,
 				SignerGroupIDPath: tt.fields.SignerGroupIDPath,
+				SignatureCarrier:  tt.fields.SignatureCarrier,
 			}
 			if err := a.Validate(); (err != nil) != tt.wantErr {
-				t.Errorf("%v ValidateSchemas()", a)
+				t.Errorf("%v ValidateSchemas()", err)
 			}
 		})
 	}

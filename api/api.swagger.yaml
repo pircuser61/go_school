@@ -4633,6 +4633,13 @@ components:
       required:
         - duration
 
+    SignatureCarrier:
+      type: string
+      enum:
+        - cloud
+        - token
+        - all
+
     SignParams:
       type: object
       description: Singature params
@@ -4652,6 +4659,8 @@ components:
         signerGroupIdPath:
           type: string
           description: Path to singer group id
+        signatureCarrier:
+          $ref: '#/components/schemas/SignatureCarrier'
         signingRule:
           $ref: '#/components/schemas/SigningRule'
         signatureType:
