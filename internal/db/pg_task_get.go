@@ -474,7 +474,7 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 				  ORDER BY vs.time DESC
 				  LIMIT 1
 				  ) descr ON descr.work_id = w.id
-			  WHERE w.id = ANY($1)) blocks_with_work_id
+			  WHERE state IS NOT NULL AND w.id = ANY($1)) blocks_with_work_id
 		WHERE key(blocks) NOT LIKE 'form%%'
 		   OR (
 					key(blocks) LIKE 'form%%'
@@ -485,7 +485,8 @@ func (db *PGCon) GetTasks(ctx c.Context, filters entity.TaskFilter, delegations 
 					   jsonb_array_elements(blocks -> 'additional_info') -> 'attachments' AS additional_info_attachments,
 					   jsonb_array_elements(blocks -> 'approver_log') -> 'attachments'    AS approver_log_attachments,
 					   jsonb_array_elements(blocks -> 'editing_app_log') -> 'attachments' AS editing_app_log_attachments
-				FROM blocks_with_filtered_forms),
+				FROM blocks_with_filtered_forms
+ 				WHERE jsonb_typeof(blocks -> 'application_body') = 'object'),
 		 counts AS (SELECT
 						work_id,
 						SUM(CASE
