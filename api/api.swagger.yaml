@@ -4636,9 +4636,14 @@ components:
     SignatureCarrier:
       type: string
       enum:
+        - all
         - cloud
         - token
-        - all
+
+    SignatureCarrierTranslated:
+      type: string
+      enum: [ "Все", "Облачный", "Токен" ]
+      x-enum-varnames: [ "all", "cloud", "token" ]
 
     SignParams:
       type: object
