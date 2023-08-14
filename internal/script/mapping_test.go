@@ -9,9 +9,9 @@ import (
 )
 
 const jsonInputProperties = `{
-        "A": "A",
-        "B": false,
-        "C": {
+        "start_0.A": "A",
+        "start_0.B": false,
+        "start_0.C": {
             "C-1": "some string",
             "C-2": [
                 1.0,
@@ -59,7 +59,7 @@ const jsonOutputProperties = `{
     }`
 
 const jsonInputProperties2 = `{
-        "param1": {
+        "start_0.param1": {
 			"param1-1": "some string"
 		}
 	}`
@@ -239,7 +239,7 @@ func TestMapData(t *testing.T) {
 					},
 				},
 				input:       input2,
-				required:    nil,
+				required:    []string{"param1"},
 				levelToRoot: 2,
 			},
 			wantErr: assert.Error,
