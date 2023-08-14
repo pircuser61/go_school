@@ -180,12 +180,10 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			}
 		}
 
-		variablesWithFullNames, err := getVariables(gb.RunContext.VarStore)
+		variables, err := getVariables(gb.RunContext.VarStore)
 		if err != nil {
 			return nil, err
 		}
-
-		variables := gb.deleteNodeNamesFromVariables(variablesWithFullNames)
 
 		functionMapping, err := script.MapData(gb.State.Mapping, variables, nil, 1)
 		if err != nil {
