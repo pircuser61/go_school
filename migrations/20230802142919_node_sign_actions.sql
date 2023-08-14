@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 insert into pipeliner.public.dict_actions(id, title, is_public, comment_enabled, attachments_enabled)
-values ('sign_sign', 'Подписать', true, false, false),
+values ('sign_sign', 'Подписать', true, false, true),
        ('sign_reject', 'Отклонить', true, true, false);
 -- +goose StatementEnd
 

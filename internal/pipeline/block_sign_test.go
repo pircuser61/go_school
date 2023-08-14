@@ -13,20 +13,25 @@ func TestSignData_SetDecision(t *testing.T) {
 		login2  = "example2"
 		comment = "test"
 
+		fileID1 = "uuid1"
+
 		invalidLogin = "foobar"
 	)
 
 	type fields struct {
-		Signers      map[string]struct{}
-		Decision     SignDecision
-		ActualSigner string
-		SigningRule  script.SigningRule
-		SignLog      []SignLogEntry
+		Signers          map[string]struct{}
+		Decision         SignDecision
+		ActualSigner     string
+		SigningRule      script.SigningRule
+		SignLog          []SignLogEntry
+		SignatureType    script.SignatureType
+		SignatureCarrier script.SignatureCarrier
 	}
 	type args struct {
-		login    string
-		decision SignDecision
-		comment  string
+		login       string
+		decision    SignDecision
+		comment     string
+		attachments []string
 	}
 	tests := []struct {
 		name             string
@@ -48,6 +53,37 @@ func TestSignData_SetDecision(t *testing.T) {
 				comment:  comment,
 			},
 			wantErr: true,
+		},
+		{
+			name: "signer service account not ukep",
+			fields: fields{
+				Signers: map[string]struct{}{
+					login: {},
+				},
+				SignatureType: script.SignatureTypePEP,
+			},
+			args: args{
+				login:    ServiceAccountDev,
+				decision: SignDecisionSigned,
+				comment:  comment,
+			},
+			wantErr: true,
+		},
+		{
+			name: "signer service account ukep",
+			fields: fields{
+				Signers: map[string]struct{}{
+					login: {},
+				},
+				SignatureType: script.SignatureTypeUKEP,
+			},
+			args: args{
+				login:       ServiceAccountDev,
+				decision:    SignDecisionSigned,
+				comment:     comment,
+				attachments: []string{fileID1},
+			},
+			wantErr: false,
 		},
 		{
 			name: "bad decision",
@@ -91,6 +127,55 @@ func TestSignData_SetDecision(t *testing.T) {
 			},
 			wantErr:          true,
 			expectedDecision: SignDecisionRejected,
+		},
+		{
+			name: "no attachments ukep token",
+			fields: fields{
+				Signers: map[string]struct{}{
+					login: {},
+				},
+				SignatureType:    script.SignatureTypeUKEP,
+				SignatureCarrier: script.SignatureCarrierToken,
+			},
+			args: args{
+				login:    ServiceAccountDev,
+				decision: SignDecisionSigned,
+				comment:  comment,
+			},
+			wantErr: true,
+		},
+		{
+			name: "attachments ukep not token",
+			fields: fields{
+				Signers: map[string]struct{}{
+					login: {},
+				},
+				SignatureType:    script.SignatureTypeUKEP,
+				SignatureCarrier: script.SignatureCarrierAll,
+			},
+			args: args{
+				login:    ServiceAccountDev,
+				decision: SignDecisionSigned,
+				comment:  comment,
+			},
+			wantErr: false,
+		},
+		{
+			name: "attachments ukep token",
+			fields: fields{
+				Signers: map[string]struct{}{
+					login: {},
+				},
+				SignatureType:    script.SignatureTypeUKEP,
+				SignatureCarrier: script.SignatureCarrierToken,
+			},
+			args: args{
+				login:       ServiceAccountDev,
+				decision:    SignDecisionSigned,
+				comment:     comment,
+				attachments: []string{fileID1},
+			},
+			wantErr: false,
 		},
 		{
 			name: "decision signed one user",
@@ -228,17 +313,20 @@ func TestSignData_SetDecision(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &SignData{
-				Signers:     tt.fields.Signers,
-				SignLog:     tt.fields.SignLog,
-				SigningRule: tt.fields.SigningRule,
+				Signers:          tt.fields.Signers,
+				SignLog:          tt.fields.SignLog,
+				SigningRule:      tt.fields.SigningRule,
+				SignatureType:    tt.fields.SignatureType,
+				SignatureCarrier: tt.fields.SignatureCarrier,
 			}
 			if tt.fields.Decision != "" {
 				a.Decision = &tt.fields.Decision
 			}
 
 			if err := a.SetDecision(tt.args.login, &SignSignatureParams{
-				Decision: tt.args.decision,
-				Comment:  tt.args.comment,
+				Decision:    tt.args.decision,
+				Comment:     tt.args.comment,
+				Attachments: tt.args.attachments,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf(
 					"SetDecision(%v, %v, %v), error: %v",

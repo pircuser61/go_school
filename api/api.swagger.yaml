@@ -3532,6 +3532,10 @@ components:
         comment:
           type: string
           description: Comment from signer
+        attachments:
+          type: array
+          items:
+            type: string
       required:
         - decision
 

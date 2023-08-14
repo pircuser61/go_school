@@ -80,9 +80,9 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, err
 	}
 
-	if currentUser.Username != ServiceAccoutDev &&
-		currentUser.Username != ServiceAccoutStage &&
-		currentUser.Username != ServiceAccout {
+	if currentUser.Username != ServiceAccountDev &&
+		currentUser.Username != ServiceAccountStage &&
+		currentUser.Username != ServiceAccount {
 		err = fmt.Errorf("user %s is not service account", currentUser.Username)
 		return nil, err
 	}

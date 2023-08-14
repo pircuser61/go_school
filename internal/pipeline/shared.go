@@ -10,6 +10,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	ServiceAccountDev   = "service-account-jocasta-dev"
+	ServiceAccountStage = "service-account-jocasta-stage"
+	ServiceAccount      = "service-account-jocasta"
+)
+
 type UpdateData struct {
 	Id   uuid.UUID
 	Data interface{}

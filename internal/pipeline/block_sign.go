@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	keyOutputSigner       = "signer"
-	keyOutputSignDecision = "decision"
-	keyOutputSignComment  = "comment"
+	keyOutputSigner          = "signer"
+	keyOutputSignDecision    = "decision"
+	keyOutputSignComment     = "comment"
+	keyOutputSignAttachments = "attachments"
 
 	SignDecisionSigned   SignDecision = "signed"
 	SignDecisionRejected SignDecision = "rejected"
@@ -325,6 +326,11 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 				Name:    keyOutputSignComment,
 				Type:    "string",
 				Comment: "sign comment",
+			},
+			{
+				Name:    keyOutputSignAttachments,
+				Type:    "array",
+				Comment: "signed files",
 			},
 		},
 		Params: &script.FunctionParams{
