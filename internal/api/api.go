@@ -189,6 +189,15 @@ const (
 	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
 )
 
+// Defines values for SignatureCarrier.
+const (
+	SignatureCarrierAll SignatureCarrier = "all"
+
+	SignatureCarrierCloud SignatureCarrier = "cloud"
+
+	SignatureCarrierToken SignatureCarrier = "token"
+)
+
 // Defines values for SignatureType.
 const (
 	SignatureTypePep SignatureType = "pep"
@@ -680,6 +689,7 @@ type CountTasks struct {
 	Approve     int `json:"approve"`
 	Execute     int `json:"execute"`
 	FormExecute int `json:"form_execute"`
+	Sign        int `json:"sign"`
 }
 
 // Created defines model for Created.
@@ -733,7 +743,7 @@ type EriusFunc struct {
 	BlockType  BlockType               `json:"block_type"`
 	Input      *[]EriusFunctionValue   `json:"input,omitempty"`
 	Next       EriusFunc_Next          `json:"next"`
-	Output     *[]EriusFunctionValue   `json:"output,omitempty"`
+	Output     *JSONSchema             `json:"output,omitempty"`
 	ParamType  *string                 `json:"param_type,omitempty"`
 	Params     *map[string]interface{} `json:"params,omitempty"`
 	ShortTitle *string                 `json:"short_title,omitempty"`
@@ -1188,6 +1198,9 @@ type JSONSchemaProperties struct {
 		// Format of param
 		Format *string `json:"format,omitempty"`
 
+		// Format of param
+		Global *string `json:"global,omitempty"`
+
 		// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 		Items *ArrayItems `json:"items,omitempty"`
 
@@ -1513,6 +1526,7 @@ type ShapeEntity struct {
 type SignParams struct {
 	// List of accessibility properties for forms
 	FormsAccessibility []FormsAccessibility `json:"formsAccessibility"`
+	SignatureCarrier   *SignatureCarrier    `json:"signatureCarrier,omitempty"`
 	SignatureType      SignatureType        `json:"signatureType"`
 
 	// Signer value (depends on type)
@@ -1539,8 +1553,10 @@ type SignParams struct {
 
 // Sign update params
 type SignUpdateParams struct {
+	Attachments *[]string `json:"attachments,omitempty"`
+
 	// Comment from signer
-	Comment string `json:"comment"`
+	Comment *string `json:"comment,omitempty"`
 
 	// Approver decision:
 	//  * signed - Согласовано
@@ -1548,6 +1564,9 @@ type SignUpdateParams struct {
 	//  * error - Произошла ошибка
 	Decision SignDecision `json:"decision"`
 }
+
+// SignatureCarrier defines model for SignatureCarrier.
+type SignatureCarrier string
 
 // SignatureType defines model for SignatureType.
 type SignatureType string
@@ -2303,6 +2322,9 @@ func (a JSONSchemaProperties) Get(fieldName string) (value struct {
 	// Format of param
 	Format *string `json:"format,omitempty"`
 
+	// Format of param
+	Global *string `json:"global,omitempty"`
+
 	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 	Items *ArrayItems `json:"items,omitempty"`
 
@@ -2338,6 +2360,9 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 	// Format of param
 	Format *string `json:"format,omitempty"`
 
+	// Format of param
+	Global *string `json:"global,omitempty"`
+
 	// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 	Items *ArrayItems `json:"items,omitempty"`
 
@@ -2366,6 +2391,9 @@ func (a *JSONSchemaProperties) Set(fieldName string, value struct {
 
 			// Format of param
 			Format *string `json:"format,omitempty"`
+
+			// Format of param
+			Global *string `json:"global,omitempty"`
 
 			// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 			Items *ArrayItems `json:"items,omitempty"`
@@ -2408,6 +2436,9 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 			// Format of param
 			Format *string `json:"format,omitempty"`
 
+			// Format of param
+			Global *string `json:"global,omitempty"`
+
 			// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 			Items *ArrayItems `json:"items,omitempty"`
 
@@ -2436,6 +2467,9 @@ func (a *JSONSchemaProperties) UnmarshalJSON(b []byte) error {
 
 				// Format of param
 				Format *string `json:"format,omitempty"`
+
+				// Format of param
+				Global *string `json:"global,omitempty"`
 
 				// Описание типа, который хранится в массиве. Если type = object, тогда поле properties обязательное. Оно нужно для описание конкретного типа объектов, которые хранятся в массиве. Если type = array(многомерный массив у нас то есть), тогда поле items обязательное. Оно описывает тип массивов.
 				Items *ArrayItems `json:"items,omitempty"`

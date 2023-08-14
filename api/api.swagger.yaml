@@ -2799,9 +2799,7 @@ components:
           items:
             $ref: '#/components/schemas/Socket'
         output:
-          type: array
-          items:
-            $ref: '#/components/schemas/EriusFunctionValue'
+          $ref: '#/components/schemas/JSONSchema'
         param_type:
           type: string
         params:
@@ -3771,6 +3769,9 @@ components:
           type:
             type: string
             description: Type of param
+          global:
+            type: string
+            description: Format of param
           format:
             type: string
             description: Format of param

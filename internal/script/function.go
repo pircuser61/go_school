@@ -30,6 +30,7 @@ type JSONSchemaPropertiesValue struct {
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
 	Type        string `json:"type"`
+	Global      string `json:"global,omitempty"`
 
 	Format     string               `json:"format,omitempty"`
 	Default    interface{}          `json:"default,omitempty"`
