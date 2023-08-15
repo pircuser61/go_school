@@ -325,8 +325,9 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 		actions := make([]db.DbMemberAction, 0, len(pl[i].Actions))
 		for _, act := range pl[i].Actions {
 			actions = append(actions, db.DbMemberAction{
-				Id:   act.Id,
-				Type: act.Type,
+				Id:     act.Id,
+				Type:   act.Type,
+				Params: act.Params,
 			})
 		}
 		dbPeople = append(dbPeople, db.DbMember{
@@ -368,8 +369,9 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 		actions := make([]db.DbMemberAction, 0, len(pl[i].Actions))
 		for _, act := range pl[i].Actions {
 			actions = append(actions, db.DbMemberAction{
-				Id:   act.Id,
-				Type: act.Type,
+				Id:     act.Id,
+				Type:   act.Type,
+				Params: act.Params,
 			})
 		}
 		dbPeople = append(dbPeople, db.DbMember{
