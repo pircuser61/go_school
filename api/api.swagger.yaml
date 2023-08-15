@@ -4126,6 +4126,10 @@ components:
         attachments_enabled:
           type: boolean
           description: Возможность прикреплять вложение к действию
+        params:
+          type: object
+          description: Дополнительные параметры действия
+          additionalProperties: true
       required:
         - id
         - button_type

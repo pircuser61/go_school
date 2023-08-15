@@ -76,8 +76,15 @@ type UpdateTaskRate struct {
 }
 
 type DbMemberAction struct {
-	Id   string
-	Type string
+	Id     string
+	Type   string
+	Params map[string]interface{}
+}
+
+type DbTaskAction struct {
+	BlockID string                            `json:"block_id"`
+	Actions []string                          `json:"actions"`
+	Params  map[string]map[string]interface{} `json:"params"`
 }
 
 type DbMember struct {

@@ -1743,21 +1743,31 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			block_id,
 			login,
 			finished,
-			actions
+			actions,
+		    params                 
 		)
 		VALUES (
 			$1, 
 			$2, 
 			$3, 
 			$4, 
-			$5
+			$5,
+		    $6
 		)
 `
 	for _, val := range members {
 		membersId := uuid.New()
 		actions := make(pq.StringArray, 0, len(val.Actions))
+		params := make(map[string]map[string]interface{})
 		for _, act := range val.Actions {
 			actions = append(actions, act.Id+":"+act.Type)
+			if len(act.Params) != 0 {
+				params[act.Id] = act.Params
+			}
+		}
+		paramsData, mErr := json.Marshal(params)
+		if mErr != nil {
+			return mErr
 		}
 		_, err := db.Connection.Exec(
 			ctx,
@@ -1767,6 +1777,7 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			val.Login,
 			val.Finished,
 			actions,
+			paramsData,
 		)
 		if err != nil {
 			return err
