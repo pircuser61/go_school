@@ -88,6 +88,8 @@ func (s *SignData) handleAllOfDecision(login string, params *SignSignatureParams
 	}
 	if overallDecision != "" {
 		s.Decision = &overallDecision
+		s.Comment = &params.Comment
+		s.ActualSigner = &login
 	}
 	return nil
 }

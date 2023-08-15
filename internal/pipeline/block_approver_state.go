@@ -368,6 +368,14 @@ func (a *ApproverData) SetDecision(login string,
 		}
 
 		a.Decision = &overallDecision
+		a.Comment = &comment
+		a.ActualApprover = &login
+		a.DecisionAttachments = []string{}
+		for _, l := range a.ApproverLog {
+			if l.LogType == ApproverLogDecision {
+				a.DecisionAttachments = append(a.DecisionAttachments, l.Attachments...)
+			}
+		}
 	}
 
 	return nil
