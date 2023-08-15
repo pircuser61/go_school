@@ -18,8 +18,9 @@ const (
 )
 
 type MemberAction struct {
-	Id   string
-	Type string
+	Id     string
+	Type   string
+	Params map[string]interface{}
 }
 type Member struct {
 	Login      string

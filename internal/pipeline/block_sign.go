@@ -30,6 +30,9 @@ const (
 
 	signActionSign   = "sign_sign"
 	signActionReject = "sign_reject"
+
+	signatureTypeActionParamsKey    = "signature_type"
+	signatureCarrierActionParamsKey = "signature_carrier"
 )
 
 type GoSignBlock struct {
@@ -126,11 +129,19 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		}
 	}
 
-	return []MemberAction{
-		{
-			Id:   signActionSign,
-			Type: ActionTypePrimary,
+	signAction := MemberAction{
+		Id:   signActionSign,
+		Type: ActionTypePrimary,
+		Params: map[string]interface{}{
+			signatureTypeActionParamsKey: gb.State.SignatureType,
 		},
+	}
+	if gb.State.SignatureType == script.SignatureTypeUKEP {
+		signAction.Params[signatureCarrierActionParamsKey] = gb.State.SignatureCarrier
+	}
+
+	return []MemberAction{
+		signAction,
 		{
 			Id:   signActionReject,
 			Type: ActionTypeSecondary,
