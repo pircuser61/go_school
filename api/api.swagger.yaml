@@ -3532,9 +3532,12 @@ components:
         comment:
           type: string
           description: Comment from signer
+        attachments:
+          type: array
+          items:
+            type: string
       required:
         - decision
-        - comment
 
     AdditionalApproverUpdateParams:
       type: object
@@ -4634,6 +4637,18 @@ components:
       required:
         - duration
 
+    SignatureCarrier:
+      type: string
+      enum:
+        - all
+        - cloud
+        - token
+
+    SignatureCarrierTranslated:
+      type: string
+      enum: [ "Все", "Облачный", "Токен" ]
+      x-enum-varnames: [ "all", "cloud", "token" ]
+
     SignParams:
       type: object
       description: Singature params
@@ -4653,6 +4668,8 @@ components:
         signerGroupIdPath:
           type: string
           description: Path to singer group id
+        signatureCarrier:
+          $ref: '#/components/schemas/SignatureCarrier'
         signingRule:
           $ref: '#/components/schemas/SigningRule'
         signatureType:

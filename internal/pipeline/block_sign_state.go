@@ -15,21 +15,24 @@ func (a SignDecision) String() string {
 }
 
 type SignLogEntry struct {
-	Login     string       `json:"login"`
-	Decision  SignDecision `json:"decision"`
-	Comment   string       `json:"comment"`
-	CreatedAt time.Time    `json:"created_at"`
+	Login       string       `json:"login"`
+	Decision    SignDecision `json:"decision"`
+	Comment     string       `json:"comment"`
+	CreatedAt   time.Time    `json:"created_at"`
+	Attachments []string     `json:"attachments,omitempty"`
 }
 
 type SignData struct {
-	Type          script.SignerType    `json:"type"`
-	Signers       map[string]struct{}  `json:"signers"`
-	SignatureType script.SignatureType `json:"signature_type"`
-	Decision      *SignDecision        `json:"decision,omitempty"`
-	Comment       *string              `json:"comment,omitempty"`
-	ActualSigner  *string              `json:"actual_signer,omitempty"`
-	SigningRule   script.SigningRule   `json:"signing_rule,omitempty"`
-	SignLog       []SignLogEntry       `json:"sign_log,omitempty"`
+	Type             script.SignerType       `json:"type"`
+	Signers          map[string]struct{}     `json:"signers"`
+	SignatureType    script.SignatureType    `json:"signature_type"`
+	Decision         *SignDecision           `json:"decision,omitempty"`
+	Comment          *string                 `json:"comment,omitempty"`
+	ActualSigner     *string                 `json:"actual_signer,omitempty"`
+	Attachments      []string                `json:"attachments,omitempty"`
+	SigningRule      script.SigningRule      `json:"signing_rule,omitempty"`
+	SignatureCarrier script.SignatureCarrier `json:"signature_carrier,omitempty"`
+	SignLog          []SignLogEntry          `json:"sign_log,omitempty"`
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
@@ -43,10 +46,11 @@ func (s *SignData) handleAnyOfDecision(login string, params *SignSignatureParams
 	s.ActualSigner = &login
 
 	var signingLogEntry = SignLogEntry{
-		Login:     login,
-		Decision:  params.Decision,
-		Comment:   params.Comment,
-		CreatedAt: time.Now(),
+		Login:       login,
+		Decision:    params.Decision,
+		Comment:     params.Comment,
+		CreatedAt:   time.Now(),
+		Attachments: params.Attachments,
 	}
 
 	s.SignLog = append(s.SignLog, signingLogEntry)
@@ -61,10 +65,11 @@ func (s *SignData) handleAllOfDecision(login string, params *SignSignatureParams
 	}
 
 	var signingLogEntry = SignLogEntry{
-		Login:     login,
-		Decision:  params.Decision,
-		Comment:   params.Comment,
-		CreatedAt: time.Now(),
+		Login:       login,
+		Decision:    params.Decision,
+		Comment:     params.Comment,
+		CreatedAt:   time.Now(),
+		Attachments: params.Attachments,
 	}
 
 	s.SignLog = append(s.SignLog, signingLogEntry)
@@ -90,7 +95,12 @@ func (s *SignData) handleAllOfDecision(login string, params *SignSignatureParams
 func (s *SignData) SetDecision(login string, params *SignSignatureParams) error {
 	_, signerFound := s.Signers[login]
 	if !signerFound {
-		return NewUserIsNotPartOfProcessErr()
+		if s.SignatureType != script.SignatureTypeUKEP || (s.SignatureType == script.SignatureTypeUKEP &&
+			login != ServiceAccount &&
+			login != ServiceAccountStage &&
+			login != ServiceAccountDev) {
+			return NewUserIsNotPartOfProcessErr()
+		}
 	}
 
 	switch params.Decision {
@@ -99,6 +109,11 @@ func (s *SignData) SetDecision(login string, params *SignSignatureParams) error 
 	case SignDecisionSigned, SignDecisionRejected, SignDecisionError:
 	default:
 		return errors.New("unknown decision")
+	}
+
+	if s.SignatureType == script.SignatureTypeUKEP && s.SignatureCarrier == script.SignatureCarrierToken &&
+		len(params.Attachments) == 0 {
+		return errors.New("attachments for ukep token signing are required")
 	}
 
 	if s.Decision != nil {

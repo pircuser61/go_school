@@ -18,12 +18,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-const (
-	ServiceAccoutDev   = "service-account-jocasta-dev"
-	ServiceAccoutStage = "service-account-jocasta-stage"
-	ServiceAccout      = "service-account-jocasta"
-)
-
 type approverUpdateEditingParams struct {
 	Comment     string   `json:"comment"`
 	Attachments []string `json:"attachments"`
@@ -79,7 +73,7 @@ func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
 	}
 
 	if gb.State.Decision != nil {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], &gb.State.ActualApprover)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], gb.State.ActualApprover)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
 	}
@@ -584,7 +578,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 
 		login := gb.RunContext.UpdateData.ByLogin
-		if login == ServiceAccout || login == ServiceAccoutStage || login == ServiceAccoutDev {
+		if login == ServiceAccount || login == ServiceAccountStage || login == ServiceAccountDev {
 			gb.RunContext.UpdateData.ByLogin = updateParams.Username
 		}
 

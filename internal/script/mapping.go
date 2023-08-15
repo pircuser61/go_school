@@ -57,9 +57,12 @@ func MapData(mapping JSONSchemaProperties, input map[string]interface{},
 			return nil, fmt.Errorf("invalid path to variable %s", paramName)
 		}
 
-		path = path[levelFromRoot:]
+		convPath := []string{fmt.Sprintf("%s.%s", path[0], path[1])}
+		if len(path) > 2 {
+			convPath = append(convPath, path[2:]...)
+		}
 
-		variable, err := getVariable(input, path)
+		variable, err := getVariable(input, convPath)
 		if err != nil {
 			return nil, err
 		}

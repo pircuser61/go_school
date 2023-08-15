@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	keyOutputSigner       = "signer"
-	keyOutputSignDecision = "decision"
-	keyOutputSignComment  = "comment"
+	keyOutputSigner          = "signer"
+	keyOutputSignDecision    = "decision"
+	keyOutputSignComment     = "comment"
+	keyOutputSignAttachments = "attachments"
 
 	SignDecisionSigned   SignDecision = "signed"
 	SignDecisionRejected SignDecision = "rejected"
@@ -272,6 +273,7 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		SignLog:            make([]SignLogEntry, 0),
 		FormsAccessibility: params.FormsAccessibility,
 		SignatureType:      params.SignatureType,
+		SignatureCarrier:   params.SignatureCarrier,
 	}
 
 	if gb.State.SigningRule == "" {
@@ -324,6 +326,11 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 				Name:    keyOutputSignComment,
 				Type:    "string",
 				Comment: "sign comment",
+			},
+			{
+				Name:    keyOutputSignAttachments,
+				Type:    "array",
+				Comment: "signed files",
 			},
 		},
 		Params: &script.FunctionParams{
