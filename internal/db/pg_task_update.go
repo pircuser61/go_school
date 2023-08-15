@@ -49,7 +49,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 	// nolint:gocritic
 	// language=PostgreSQL
 	switch status {
-	case RunStatusCanceled:
+	case RunStatusCanceled, RunStatusFinished, RunStatusStopped:
 		q = `UPDATE works 
 		SET status = $1, finished_at = now(), status_comment = $3, status_author = $4
 		WHERE id = $2`
