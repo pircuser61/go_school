@@ -12,8 +12,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/lib/pq"
-
 	"github.com/pkg/errors"
 
 	"golang.org/x/exp/slices"
@@ -32,8 +30,10 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 		statuses = "('finished', 'no_success', 'error')"
 	}
 	return fmt.Sprintf(`WITH actions AS (
-    SELECT vs.work_id                                                                      AS work_id
+    SELECT vs.work_id                                                                                 AS work_id
+         , vs.step_name                                                                               AS block_id
          , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.params ELSE '{}' END  AS params
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -42,13 +42,16 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
       AND vs.status IN %s
       AND w.child_id IS NULL
       --filter--
-),
-     unique_actions AS (
-         SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
-         FROM actions
-                  LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
-         GROUP BY actions.work_id
-     )`, loginsIn, stepType, statuses)
+)
+     , unique_actions AS (
+    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions
+    FROM actions
+             LEFT JOIN LATERAL (SELECT jsonb_build_object(
+                                               'block_id', actions.block_id,
+                                               'actions', actions.action,
+                                               'params', actions.params) as actions) jsonb_actions ON TRUE
+    GROUP BY actions.work_id
+)`, loginsIn, stepType, statuses)
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
@@ -56,25 +59,30 @@ func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, 
 	var executionLoginsIn = buildInExpression(executionLogins)
 
 	return fmt.Sprintf(`WITH actions AS (
-    SELECT vs.work_id                                                                      AS work_id
+    SELECT vs.work_id                                                                                 AS work_id
+         , vs.step_name                                                                               AS block_id
          , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.params ELSE '{}' END  AS params
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
-    WHERE (m.login = '%s' AND vs.step_type = 'form')
-       OR (m.login = '%s' AND vs.step_type = 'sign')
-       OR (m.login IN %s AND vs.step_type = 'approver')
-       OR (m.login IN %s AND vs.step_type = 'execution')
+    WHERE ((m.login = '%s' AND vs.step_type = 'form')
+        OR (m.login = '%s' AND vs.step_type = 'sign')
+        OR (m.login IN %s AND vs.step_type = 'approver')
+        OR (m.login IN %s AND vs.step_type = 'execution'))
       AND w.work_number = '%s'
       AND vs.status IN ('running', 'idle', 'ready')
-	  AND w.child_id IS NULL
-	),
-     unique_actions AS (
-         SELECT actions.work_id AS work_id, ARRAY_AGG(DISTINCT _unnested.action) AS actions
-         FROM actions
-                  LEFT JOIN LATERAL (SELECT UNNEST(actions.action) as action) _unnested ON TRUE
-         GROUP BY actions.work_id
-     )`, currentUser, currentUser, approverLoginsIn, executionLoginsIn, workNumber)
+      AND w.child_id IS NULL
+)
+   , unique_actions AS (
+    SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions
+    FROM actions
+             LEFT JOIN LATERAL (SELECT jsonb_build_object(
+                                               'block_id', actions.block_id,
+                                               'actions', actions.action,
+                                               'params', actions.params) as actions) jsonb_actions ON TRUE
+    GROUP BY actions.work_id
+)`, currentUser, currentUser, approverLoginsIn, executionLoginsIn, workNumber)
 }
 
 func buildInExpression(items []string) string {
@@ -791,7 +799,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 	et := entity.EriusTask{}
 
 	var nullStringParameters sql.NullString
-	var nullStringActions []sql.NullString
+	var actionData []byte
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -812,7 +820,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.BlueprintID,
 		&et.Rate,
 		&et.RateComment,
-		pq.Array(&nullStringActions),
+		&actionData,
 		&et.IsTest,
 		&et.StatusComment,
 		&et.StatusAuthor,
@@ -822,7 +830,12 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		return nil, err
 	}
 
-	actions := db.actionsToStrings(nullStringActions)
+	var actions []DbTaskAction
+	if actionData != nil {
+		if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
+			return nil, unmErr
+		}
+	}
 
 	computedActions, actionsErr := db.computeActions(ctx, delegators, actions, actionsMap, et.Author)
 	if actionsErr != nil {
@@ -899,7 +912,7 @@ func getActionsToIgnoreIfOtherExist() []IgnoreActionRule {
 	}
 }
 
-func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators, actions []string,
+func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators []string, actions []DbTaskAction,
 	allActions map[string]entity.TaskAction, author string) (result []entity.TaskAction, err error) {
 	const (
 		CancelAppId       = "cancel_app"
@@ -913,24 +926,36 @@ func (db *PGCon) computeActions(ctx c.Context, currentUserDelegators, actions []
 
 	result = make([]entity.TaskAction, 0)
 
-	for _, actionId := range actions {
-		var compositeActionId = strings.Split(actionId, ":")
-		if len(compositeActionId) > 1 {
-			var id = compositeActionId[0]
-			var priority = compositeActionId[1]
-			var actionWithPreferences = allActions[id]
+	metActions := make(map[string]struct{})
 
-			var computedAction = entity.TaskAction{
-				Id:                 id,
-				ButtonType:         priority,
-				Title:              actionWithPreferences.Title,
-				CommentEnabled:     actionWithPreferences.CommentEnabled,
-				AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
-				IsPublic:           actionWithPreferences.IsPublic,
+	for _, blockActions := range actions {
+		for _, action := range blockActions.Actions {
+			var compositeActionId = strings.Split(action, ":")
+			if len(compositeActionId) > 1 {
+				id := compositeActionId[0]
+
+				if _, ok := metActions[id]; ok {
+					continue
+				}
+				metActions[id] = struct{}{}
+
+				priority := compositeActionId[1]
+				actionWithPreferences := allActions[id]
+				actionParams, _ := blockActions.Params[id]
+
+				var computedAction = entity.TaskAction{
+					Id:                 id,
+					ButtonType:         priority,
+					Title:              actionWithPreferences.Title,
+					CommentEnabled:     actionWithPreferences.CommentEnabled,
+					AttachmentsEnabled: actionWithPreferences.AttachmentsEnabled,
+					IsPublic:           actionWithPreferences.IsPublic,
+					Params:             actionParams,
+				}
+
+				computedActions = append(computedActions, computedAction)
+				computedActionIds = append(computedActionIds, computedAction.Id)
 			}
-
-			computedActions = append(computedActions, computedAction)
-			computedActionIds = append(computedActionIds, computedAction.Id)
 		}
 	}
 
@@ -1027,7 +1052,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		et := entity.EriusTask{}
 
 		var nullStringParameters sql.NullString
-		var nullStringActions []sql.NullString
+		var actionData []byte
 
 		err = rows.Scan(
 			&et.ID,
@@ -1046,7 +1071,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.Total,
 			&et.Rate,
 			&et.RateComment,
-			pq.Array(&nullStringActions),
+			&actionData,
 		)
 
 		if err != nil {
@@ -1060,7 +1085,13 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			}
 		}
 
-		actions := db.actionsToStrings(nullStringActions)
+		var actions []DbTaskAction
+		if actionData != nil {
+			if unmErr := json.Unmarshal(actionData, &actions); unmErr != nil {
+				return nil, unmErr
+			}
+		}
+
 		computedActions, actionsErr := db.computeActions(ctx, delegatorsWithUser, actions, actionsMap, et.Author)
 		if actionsErr != nil {
 			return nil, err

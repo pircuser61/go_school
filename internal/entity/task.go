@@ -55,12 +55,13 @@ type CountTasks struct {
 }
 
 type TaskAction struct {
-	Id                 string `json:"id"`
-	Title              string `json:"title"`
-	ButtonType         string `json:"button_type"`
-	CommentEnabled     bool   `json:"comment_enabled"`
-	AttachmentsEnabled bool   `json:"attachments_enabled"`
-	IsPublic           bool   `json:"-"`
+	Id                 string                 `json:"id"`
+	Title              string                 `json:"title"`
+	ButtonType         string                 `json:"button_type"`
+	CommentEnabled     bool                   `json:"comment_enabled"`
+	AttachmentsEnabled bool                   `json:"attachments_enabled"`
+	IsPublic           bool                   `json:"-"`
+	Params             map[string]interface{} `json:"params,omitempty"`
 }
 
 type TaskCompletionInterval struct {
