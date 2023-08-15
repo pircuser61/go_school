@@ -27,7 +27,7 @@ import (
 func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {
-		statuses = "('finished', 'no_success', 'error')"
+		statuses = "('finished', 'cancel', 'no_success', 'error')"
 	}
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                                 AS work_id
@@ -210,7 +210,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	} else if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
 		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
 	} else if fl.SelectAs != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
+		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, utils.MergePointersToSlices(&delegations, fl.ProcessedLogins)), q)
 	} else {
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
 	}
@@ -260,6 +260,12 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
 	}
 
+	varStorageOfProcessedSteps := getProcessedSteps(&fl, delegations)
+	if varStorageOfProcessedSteps != "" {
+		q = strings.Replace(q, "[with_variable_storage]", varStorageOfProcessedSteps, 1)
+		q = strings.Replace(q, "[join_variable_storage]", "JOIN var_storage vs ON vs.work_id = w.id ", 1)
+	}
+
 	if order != "" {
 		q = fmt.Sprintf("%s\n ORDER BY w.started_at %s", q, order)
 	}
@@ -290,7 +296,7 @@ func getProcessingSteps(fl *entity.TaskFilter, delegations []string) string {
 	}
 
 	q := `, var_storage as (
-		SELECT DISTINCT work_id FROM variable_storage 
+		SELECT DISTINCT work_id FROM variable_storage
 		WHERE work_id IS NOT NULL AND status IN ('running', 'wait', 'processing')`
 
 	q = addAssignType(q, fl.CurrentUser, fl.ExecutorTypeAssigned)
@@ -344,6 +350,41 @@ func addProcessingLogins(q string, logins *[]string, delegations []string) strin
 		)`, q,
 		"{"+strings.Join(ls, ",")+"}",
 		"{"+strings.Join(ls, ",")+"}",
+		"{"+strings.Join(ls, ",")+"}",
+	)
+}
+
+func getProcessedSteps(fl *entity.TaskFilter, delegations []string) string {
+	if fl == nil {
+		return ""
+	}
+
+	if fl.ProcessedLogins == nil {
+		return ""
+	}
+
+	q := `, var_storage as (
+                SELECT DISTINCT work_id FROM variable_storage                                                                                                                                                                                              
+                WHERE work_id IS NOT NULL AND status IN ('finished', 'cancel', 'no_success', 'error')`
+
+	q = addProcessedLogins(q, fl.ProcessedLogins)
+
+	q += ")"
+
+	return q
+}
+
+func addProcessedLogins(q string, logins *[]string) string {
+	if logins == nil || len(*logins) == 0 {
+		return q
+	}
+
+	ls := *logins
+
+	ls = utils.UniqueStrings(ls)
+
+	return fmt.Sprintf(`%s AND step_type = 'execution' AND content -> 'State' -> step_name -> 'executors' ?| '%s'`,
+		q,
 		"{"+strings.Join(ls, ",")+"}",
 	)
 }

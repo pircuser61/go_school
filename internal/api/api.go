@@ -680,6 +680,7 @@ type CountTasks struct {
 	Approve     int `json:"approve"`
 	Execute     int `json:"execute"`
 	FormExecute int `json:"form_execute"`
+	Sign        int `json:"sign"`
 }
 
 // Created defines model for Created.
@@ -1540,7 +1541,7 @@ type SignParams struct {
 // Sign update params
 type SignUpdateParams struct {
 	// Comment from signer
-	Comment string `json:"comment"`
+	Comment *string `json:"comment,omitempty"`
 
 	// Approver decision:
 	//  * signed - Согласовано
@@ -2058,6 +2059,9 @@ type GetTasksParams struct {
 
 	// filter in process by logins
 	ProcessingLogins *[]string `json:"processingLogins,omitempty"`
+
+	// filter by processed logins
+	ProcessedLogins *[]string `json:"processedLogins,omitempty"`
 
 	// filter in process by groups ids
 	ProcessingGroupIds *[]string `json:"processingGroupIds,omitempty"`
@@ -4437,6 +4441,17 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 	err = runtime.BindQueryParameter("form", true, false, "processingLogins", r.URL.Query(), &params.ProcessingLogins)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingLogins", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "processedLogins" -------------
+	if paramValue := r.URL.Query().Get("processedLogins"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "processedLogins", r.URL.Query(), &params.ProcessedLogins)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processedLogins", Err: err})
 		return
 	}
 

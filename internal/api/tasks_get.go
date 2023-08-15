@@ -479,6 +479,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		HasAttachments:       p.HasAttachments,
 		InitiatorLogins:      p.InitiatorLogins,
 		ProcessingLogins:     p.ProcessingLogins,
+		ProcessedLogins:      p.ProcessedLogins,
 		ProcessingGroupIds:   p.ProcessingGroupIds,
 		ExecutorTypeAssigned: typeAssigned,
 	}
