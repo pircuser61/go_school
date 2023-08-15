@@ -128,15 +128,16 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 			return []MemberAction{}
 		}
 	}
+
 	signAction := MemberAction{
 		Id:   signActionSign,
 		Type: ActionTypePrimary,
+		Params: map[string]interface{}{
+			signatureTypeActionParamsKey: gb.State.SignatureType,
+		},
 	}
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
-		signAction.Params = map[string]interface{}{
-			signatureCarrierActionParamsKey: gb.State.SignatureCarrier,
-			signatureTypeActionParamsKey:    gb.State.SignatureType,
-		}
+		signAction.Params[signatureCarrierActionParamsKey] = gb.State.SignatureCarrier
 	}
 
 	return []MemberAction{
