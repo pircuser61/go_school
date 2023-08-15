@@ -271,16 +271,16 @@ func (a *ApproverData) SetDecision(login string,
 
 	delegators := delegations.GetDelegators(login)
 
-	var delegateFor = ""
+	delegateFor := make([]string, 0)
 	for approver := range a.Approvers {
 		for _, delegator := range delegators {
 			if delegator == approver && !decisionForPersonExists(delegator, &a.ApproverLog) {
-				delegateFor = delegator
+				delegateFor = append(delegateFor, delegator)
 			}
 		}
 	}
 
-	if !(approverFound || delegateFor != "") && login != AutoApprover {
+	if !(approverFound || len(delegateFor) > 0) && login != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
@@ -300,14 +300,16 @@ func (a *ApproverData) SetDecision(login string,
 		a.ActualApprover = &login
 		a.DecisionAttachments = attach
 
-		var approverLogEntry = ApproverLogEntry{
+		approverLogEntry := ApproverLogEntry{
 			Login:       login,
 			Decision:    decision,
 			Comment:     comment,
 			Attachments: attach,
 			CreatedAt:   time.Now(),
 			LogType:     ApproverLogDecision,
-			DelegateFor: delegateFor,
+		}
+		if len(delegateFor) > 0 && !approverFound {
+			approverLogEntry.DelegateFor = delegateFor[0]
 		}
 
 		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
@@ -320,18 +322,32 @@ func (a *ApproverData) SetDecision(login string,
 				return errors.New(fmt.Sprintf("decision of user %s is already set", login))
 			}
 		}
+		if approverFound {
+			approverLogEntry := ApproverLogEntry{
+				Login:       login,
+				Decision:    decision,
+				Comment:     comment,
+				Attachments: attach,
+				CreatedAt:   time.Now(),
+				LogType:     ApproverLogDecision,
+			}
 
-		var approverLogEntry = ApproverLogEntry{
-			Login:       login,
-			Decision:    decision,
-			Comment:     comment,
-			Attachments: attach,
-			CreatedAt:   time.Now(),
-			LogType:     ApproverLogDecision,
-			DelegateFor: delegateFor,
+			a.ApproverLog = append(a.ApproverLog, approverLogEntry)
 		}
 
-		a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+		for _, d := range delegateFor {
+			approverLogEntry := ApproverLogEntry{
+				Login:       login,
+				Decision:    decision,
+				Comment:     comment,
+				Attachments: attach,
+				CreatedAt:   time.Now(),
+				LogType:     ApproverLogDecision,
+				DelegateFor: d,
+			}
+
+			a.ApproverLog = append(a.ApproverLog, approverLogEntry)
+		}
 
 		var overallDecision ApproverDecision
 		if decision == ApproverDecisionRejected {
@@ -368,6 +384,14 @@ func (a *ApproverData) SetDecision(login string,
 		}
 
 		a.Decision = &overallDecision
+		a.Comment = &comment
+		a.ActualApprover = &login
+		a.DecisionAttachments = []string{}
+		for _, l := range a.ApproverLog {
+			if l.LogType == ApproverLogDecision {
+				a.DecisionAttachments = append(a.DecisionAttachments, l.Attachments...)
+			}
+		}
 	}
 
 	return nil
