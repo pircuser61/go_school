@@ -332,3 +332,51 @@ func TestBlockFunction_Update(t *testing.T) {
 		})
 	}
 }
+
+func TestExecutableFunctionBlock_restoreMapStructure(t *testing.T) {
+	tests := []struct {
+		name      string
+		variables map[string]interface{}
+		want      map[string]interface{}
+	}{
+		{
+			name: "success case",
+			variables: map[string]interface{}{
+				"start_0.application_body.param1": "some_string",
+				"start_0.application_body.param2": map[string]interface{}{
+					"field1": 4,
+					"field2": "string_value",
+				},
+				"form_0": map[string]interface{}{
+					"application_body": map[string]interface{}{
+						"A": 111,
+					},
+				},
+				"param3": 123,
+			},
+			want: map[string]interface{}{
+				"start_0": map[string]interface{}{
+					"application_body": map[string]interface{}{
+						"param1": "some_string",
+						"param2": map[string]interface{}{
+							"field1": 4,
+							"field2": "string_value",
+						},
+					},
+				},
+				"form_0": map[string]interface{}{
+					"application_body": map[string]interface{}{
+						"A": 111,
+					},
+				},
+				"param3": 123,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gb := &ExecutableFunctionBlock{}
+			assert.Equalf(t, tt.want, gb.restoreMapStructure(tt.variables), "restoreMapStructure(%v)", tt.variables)
+		})
+	}
+}

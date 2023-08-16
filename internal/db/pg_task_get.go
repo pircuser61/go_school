@@ -1406,11 +1406,16 @@ func (db *PGCon) GetMergedVariableStorage(ctx c.Context, workId uuid.UUID, block
 	ctx, span := trace.StartSpan(ctx, "get_merged_variable_storage")
 	defer span.End()
 
-	q := fmt.Sprintf(`SELECT jsonb_merge_agg(vs.content) as content FROM variable_storage vs
-    	WHERE work_id = '%s' AND step_name IN %s`, workId, buildInExpression(blockIds))
+	const q = `
+		SELECT jsonb_merge_agg(vs.content) AS content 
+			FROM variable_storage vs
+    	WHERE work_id = '%s' AND step_name IN %s AND
+    	  vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = vs.work_id AND step_name = vs.step_name)`
+
+	query := fmt.Sprintf(q, workId, buildInExpression(blockIds))
 
 	var content []byte
-	if err := db.Connection.QueryRow(ctx, q).Scan(&content); err != nil {
+	if err := db.Connection.QueryRow(ctx, query).Scan(&content); err != nil {
 		return nil, err
 	}
 
