@@ -1897,13 +1897,11 @@ paths:
             items:
               type: string
           description: filter by processed logins
-        - name: processingGroupIds
+        - name: nodeType
           in: query
           schema:
-            type: array
-            items:
-              type: string
-          description: filter in process by groups ids
+            type: string
+          description: filter by node type
         - name: executorTypeAssigned
           in: query
           schema:

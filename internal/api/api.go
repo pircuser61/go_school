@@ -189,6 +189,15 @@ const (
 	RequestExecutionInfoTypeQuestion RequestExecutionInfoType = "question"
 )
 
+// Defines values for SignatureCarrier.
+const (
+	SignatureCarrierAll SignatureCarrier = "all"
+
+	SignatureCarrierCloud SignatureCarrier = "cloud"
+
+	SignatureCarrierToken SignatureCarrier = "token"
+)
+
 // Defines values for SignatureType.
 const (
 	SignatureTypePep SignatureType = "pep"
@@ -1514,6 +1523,7 @@ type ShapeEntity struct {
 type SignParams struct {
 	// List of accessibility properties for forms
 	FormsAccessibility []FormsAccessibility `json:"formsAccessibility"`
+	SignatureCarrier   *SignatureCarrier    `json:"signatureCarrier,omitempty"`
 	SignatureType      SignatureType        `json:"signatureType"`
 
 	// Signer value (depends on type)
@@ -1540,6 +1550,8 @@ type SignParams struct {
 
 // Sign update params
 type SignUpdateParams struct {
+	Attachments *[]string `json:"attachments,omitempty"`
+
 	// Comment from signer
 	Comment *string `json:"comment,omitempty"`
 
@@ -1549,6 +1561,9 @@ type SignUpdateParams struct {
 	//  * error - Произошла ошибка
 	Decision SignDecision `json:"decision"`
 }
+
+// SignatureCarrier defines model for SignatureCarrier.
+type SignatureCarrier string
 
 // SignatureType defines model for SignatureType.
 type SignatureType string
@@ -1688,8 +1703,16 @@ type Action struct {
 	// UUID действия
 	Id string `json:"id"`
 
+	// Дополнительные параметры действия
+	Params *Action_Params `json:"params,omitempty"`
+
 	// Человекочитаемое наименование действия
 	Title *string `json:"title,omitempty"`
+}
+
+// Дополнительные параметры действия
+type Action_Params struct {
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // Approver decision:
@@ -2063,8 +2086,8 @@ type GetTasksParams struct {
 	// filter by processed logins
 	ProcessedLogins *[]string `json:"processedLogins,omitempty"`
 
-	// filter in process by groups ids
-	ProcessingGroupIds *[]string `json:"processingGroupIds,omitempty"`
+	// filter by node type
+	NodeType *string `json:"nodeType,omitempty"`
 
 	// filter type assigned
 	ExecutorTypeAssigned *GetTasksParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
@@ -2683,6 +2706,59 @@ func (a *RunVersionsByPipelineIdRequest_Keys) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for RunVersionsByPipelineIdRequest_Keys to handle AdditionalProperties
 func (a RunVersionsByPipelineIdRequest_Keys) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Action_Params. Returns the specified
+// element and whether it was found
+func (a Action_Params) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Action_Params
+func (a *Action_Params) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Action_Params to handle AdditionalProperties
+func (a *Action_Params) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Action_Params to handle AdditionalProperties
+func (a Action_Params) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -4455,14 +4531,14 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// ------------- Optional query parameter "processingGroupIds" -------------
-	if paramValue := r.URL.Query().Get("processingGroupIds"); paramValue != "" {
+	// ------------- Optional query parameter "nodeType" -------------
+	if paramValue := r.URL.Query().Get("nodeType"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "processingGroupIds", r.URL.Query(), &params.ProcessingGroupIds)
+	err = runtime.BindQueryParameter("form", true, false, "nodeType", r.URL.Query(), &params.NodeType)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingGroupIds", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "nodeType", Err: err})
 		return
 	}
 
