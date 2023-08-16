@@ -669,7 +669,7 @@ func NewInvalidFunctionResp(id, name, sdUrl string) Template {
 
 func NewFormExecutionTakenInWorkTpl(workNumber, workTitle, namePerson, sdUrl string) Template {
 	return Template{
-		Subject: fmt.Sprintf("Заявка № %s - Необходимо предоставить информацию", workNumber),
+		Subject: fmt.Sprintf("Заявка № %s взята в работу", workNumber),
 		Text:    "Уважаемый коллега, заявка № {{.Id}} взята в работу {{.NamePerson}}<br>Для просмотра перейдите по {{.Link}}",
 		Variables: struct {
 			Id         string `json:"id"`
