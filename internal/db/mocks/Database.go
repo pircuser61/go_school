@@ -129,20 +129,20 @@ func (_m *MockedDatabase) CheckPipelineNameExists(_a0 context.Context, _a1 strin
 	return r0, r1
 }
 
-// CheckTaskStepsExecuted provides a mock function with given fields: ctx, workNumber, blocks
-func (_m *MockedDatabase) CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error) {
-	ret := _m.Called(ctx, workNumber, blocks)
+// ParallelIsFinished provides a mock function with given fields: ctx, workNumber, blocks
+func (_m *MockedDatabase) ParallelIsFinished(ctx context.Context, workNumber, blockName string) (bool, error) {
+	ret := _m.Called(ctx, workNumber, blockName)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(context.Context, string, []string) bool); ok {
-		r0 = rf(ctx, workNumber, blocks)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
+		r0 = rf(ctx, workNumber, blockName)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, []string) error); ok {
-		r1 = rf(ctx, workNumber, blocks)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, workNumber, blockName)
 	} else {
 		r1 = ret.Error(1)
 	}
