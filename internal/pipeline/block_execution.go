@@ -69,14 +69,10 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		return []MemberAction{action}
 	}
 
-	return []MemberAction{
+	actions := []MemberAction{
 		{
 			Id:   executionExecuteAction,
 			Type: ActionTypePrimary,
-		},
-		{
-			Id:   executionSendEditAppAction,
-			Type: ActionTypeOther,
 		},
 		{
 			Id:   executionDeclineAction,
@@ -89,7 +85,16 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 		{
 			Id:   executionRequestExecutionInfoAction,
 			Type: ActionTypeOther,
-		}}
+		},
+	}
+	if gb.State.IsEditable {
+		actions = append(actions, MemberAction{
+			Id:   executionSendEditAppAction,
+			Type: ActionTypeOther,
+		})
+	}
+
+	return actions
 }
 
 //nolint:dupl,gocyclo //Need here
