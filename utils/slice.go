@@ -7,18 +7,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func MergePointersToSlices[T any](args ...*[]T) []T {
-	out := make([]T, 0)
-	for i := range args {
-		if args[i] != nil {
-			for j := range *args[i] {
-				out = append(out, (*args[i])[j])
-			}
-		}
-	}
-	return out
-}
-
 func UniqueStrings(inSlice []string) []string {
 	keys := make(map[string]bool)
 	list := make([]string, 0, len(inSlice))

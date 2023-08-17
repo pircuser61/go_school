@@ -261,8 +261,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
 	}
 
-	if (fl.NodeType != nil && fl.ProcessingLogins != nil) ||
-		(fl.NodeType != nil && fl.ExecutorTypeAssigned != nil) {
+	if (fl.NodeType != nil && fl.ProcessingLogins != nil) || fl.ExecutorTypeAssigned != nil {
 		q = getProcessingSteps(q, &fl, delegations)
 	}
 
@@ -295,8 +294,8 @@ func getProcessingSteps(q string, fl *entity.TaskFilter, delegations []string) s
 		SELECT DISTINCT work_id FROM variable_storage
 		WHERE work_id IS NOT NULL AND status IN ('running', 'wait', 'processing')`
 
-	varStorage = addAssignType(q, fl.CurrentUser, *fl.ExecutorTypeAssigned)
-	varStorage = addProcessingLogins(q, *fl.NodeType, *fl.ProcessingLogins, delegations)
+	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
+	varStorage = addProcessingLogins(varStorage, fl.NodeType, fl.ProcessingLogins, delegations)
 
 	varStorage += ")"
 
@@ -307,8 +306,12 @@ func getProcessingSteps(q string, fl *entity.TaskFilter, delegations []string) s
 	return q
 }
 
-func addAssignType(q, login string, typeAssign string) string {
-	if typeAssign == entity.AssignedToMe {
+func addAssignType(q, login string, typeAssign *string) string {
+	if typeAssign == nil {
+		return q
+	}
+
+	if *typeAssign == entity.AssignedToMe {
 		q = fmt.Sprintf(`%s AND step_type = 'execution' 
 			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"new_login": "%s"}]'`,
 			q,
@@ -316,7 +319,7 @@ func addAssignType(q, login string, typeAssign string) string {
 		)
 	}
 
-	if typeAssign == entity.AssignedByMe {
+	if *typeAssign == entity.AssignedByMe {
 		q = fmt.Sprintf(`%s AND step_type = 'execution' 
 			AND content -> 'State' -> step_name -> 'change_executors_logs' @> '[{"old_login": "%s"}]'`,
 			q,
@@ -327,20 +330,21 @@ func addAssignType(q, login string, typeAssign string) string {
 	return q
 }
 
-func addProcessingLogins(q, nodeType string, logins []string, delegations []string) string {
-	if len(logins) == 0 {
+func addProcessingLogins(q string, nodeType *string, logins *[]string, delegations []string) string {
+	if nodeType != nil && logins != nil && len(*logins) == 0 {
 		return q
 	}
 
-	logins = append(logins, delegations...)
-	logins = utils.UniqueStrings(logins)
+	ls := *logins
+	ls = append(ls, delegations...)
+	ls = utils.UniqueStrings(ls)
 
 	return fmt.Sprintf(`
 		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
 		q,
-		nodeType,
-		getActorsNameByStepType(nodeType),
-		"{"+strings.Join(logins, ",")+"}",
+		*nodeType,
+		getActorsNameByStepType(*nodeType),
+		"{"+strings.Join(ls, ",")+"}",
 	)
 }
 
@@ -361,7 +365,7 @@ func getProcessedSteps(q string, fl *entity.TaskFilter) string {
                 SELECT DISTINCT work_id FROM variable_storage                                                                                                                                                                                              
                 WHERE work_id IS NOT NULL AND status IN ('finished', 'cancel', 'no_success', 'error')`
 
-	varStorage = addProcessedLogins(varStorage, fl.ProcessedLogins)
+	varStorage = addProcessedLogins(varStorage, *fl.NodeType, *fl.ProcessedLogins)
 
 	varStorage += ")"
 
@@ -371,17 +375,19 @@ func getProcessedSteps(q string, fl *entity.TaskFilter) string {
 	return q
 }
 
-func addProcessedLogins(q string, logins *[]string) string {
-	if logins == nil || len(*logins) == 0 {
+func addProcessedLogins(q, nodeType string, logins []string) string {
+	if len(logins) == 0 {
 		return q
 	}
 
-	ls := *logins
+	ls := logins
 	ls = utils.UniqueStrings(ls)
 
 	return fmt.Sprintf(`
-		%s AND step_type = 'execution' AND content -> 'State' -> step_name -> 'executors' ?| '%s'`,
+		%s AND step_type = '%s' AND content -> 'State' -> step_name -> '%s' ?| '%s'`,
 		q,
+		nodeType,
+		getActorsNameByStepType(nodeType),
 		"{"+strings.Join(ls, ",")+"}",
 	)
 }
