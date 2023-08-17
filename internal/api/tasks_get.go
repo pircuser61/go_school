@@ -402,16 +402,8 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		}
 		for status := range uniqueS {
 			switch status {
-			case pipeline.StatusSigned:
-				uniqueS[pipeline.StatusApproveSigned] = struct{}{}
-			case pipeline.StatusSigning:
-				uniqueS[pipeline.StatusApproveSign] = struct{}{}
 			case pipeline.StatusRejected:
 				uniqueS[pipeline.StatusApprovementRejected] = struct{}{}
-			case pipeline.StatusApproveSigned:
-				uniqueS[pipeline.StatusSigned] = struct{}{}
-			case pipeline.StatusApproveSign:
-				uniqueS[pipeline.StatusSigning] = struct{}{}
 			case pipeline.StatusApprovementRejected:
 				uniqueS[pipeline.StatusRejected] = struct{}{}
 			default:
