@@ -603,8 +603,8 @@ gitlab.services.mts.ru/abp/mail/pkg v1.19.0 h1:DNccIRhUuijQYAq3v9gnY5AC7xi51UjHi
 gitlab.services.mts.ru/abp/mail/pkg v1.19.0/go.mod h1:YE2ngC0lCO90yQG+eeT8F6343VuR1pi/VuxvqTLDwYE=
 gitlab.services.mts.ru/abp/myosotis v1.4.4 h1:De8ST0tK1aZKnVFvOd1a3FReloOh3hl6G34so5e1Vcs=
 gitlab.services.mts.ru/abp/myosotis v1.4.4/go.mod h1:x1TTaEJ+kgNbCkQViA5eWgnNLAprspL6qJWJWkhVZFE=
-gitlab.services.mts.ru/jocasta/conditions-kit v1.0.2 h1:vD7NG8h7GVI20NkIE/aDyPMtjwdq0eX6+SMo9nq3xRw=
-gitlab.services.mts.ru/jocasta/conditions-kit v1.0.2/go.mod h1:6Q7Q5QkybhdvGpYBOojsDENuKigwRxZCCX+b/F9Y5w0=
+gitlab.services.mts.ru/jocasta/conditions-kit v1.0.3 h1:zIvROYhWcYzKBUbuylVPwF39O5U4HtsPvL6yRcg0mBY=
+gitlab.services.mts.ru/jocasta/conditions-kit v1.0.3/go.mod h1:6Q7Q5QkybhdvGpYBOojsDENuKigwRxZCCX+b/F9Y5w0=
 gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1 h1:KDG7ZfhKbqwB5we4i7mjfEp7P1LLOm3iU+zu4PYD0y0=
 gitlab.services.mts.ru/jocasta/file-registry v1.1.2-rc.1/go.mod h1:/otsOvcT23tOs3a7Mtay4MB+58VKIDkwlnS4gzOS5Kc=
 gitlab.services.mts.ru/jocasta/functions v1.5.0-alpha.2 h1:pYrpp2rBRmSYz+yKxj0U/lyqa+CrStWUJ4nAd5H5j4w=
