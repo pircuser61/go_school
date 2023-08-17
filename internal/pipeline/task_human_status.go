@@ -7,7 +7,6 @@ const (
 	StatusApprovement         TaskHumanStatus = "approvement"
 	StatusApproveView         TaskHumanStatus = "approve-view"
 	StatusApproveInform       TaskHumanStatus = "approve-inform"
-	StatusApproveSign         TaskHumanStatus = "approve-sign"
 	StatusApproveSignUkep     TaskHumanStatus = "approve-sign-ukep"
 	StatusApproveConfirm      TaskHumanStatus = "approve-confirm"
 	StatusExecution           TaskHumanStatus = "processing"
@@ -15,7 +14,6 @@ const (
 	StatusApproved            TaskHumanStatus = "approved"
 	StatusApproveViewed       TaskHumanStatus = "approve-viewed"
 	StatusApproveInformed     TaskHumanStatus = "approve-informed"
-	StatusApproveSigned       TaskHumanStatus = "approve-signed"
 	StatusApproveConfirmed    TaskHumanStatus = "approve-confirmed"
 	StatusApprovementRejected TaskHumanStatus = "approvement-reject"
 	StatusDone                TaskHumanStatus = "done"
@@ -33,7 +31,6 @@ var statusToTaskState = map[TaskHumanStatus]string{
 	StatusApproved:            "согласована",
 	StatusApproveViewed:       "ознакомлено",
 	StatusApproveInformed:     "проинформировано",
-	StatusApproveSigned:       "подписана",
 	StatusApproveConfirmed:    "утверждена",
 	StatusApprovementRejected: "отклонена",
 	StatusExecution:           "взята в работу",
