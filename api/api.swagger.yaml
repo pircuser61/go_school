@@ -1890,13 +1890,17 @@ paths:
             items:
               type: string
           description: filter in process by logins
-        - name: processingGroupIds
+        - name: processedLogins
           in: query
           schema:
             type: array
             items:
               type: string
-          description: filter in process by groups ids
+          description: filter by processed logins
+        - name: selectFor
+          in: query
+          schema:
+            type: string
         - name: executorTypeAssigned
           in: query
           schema:

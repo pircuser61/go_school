@@ -448,6 +448,10 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		}
 	}
 
+	if p.ProcessingLogins != nil && p.ProcessedLogins != nil {
+		return filters, errors.New("can't filter by processingLogins and processedLogins at the same time")
+	}
+
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
 	if err != nil {
 		return filters, err
@@ -469,9 +473,10 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		Status:               statusToEntity(p.Status),
 		Receiver:             p.Receiver,
 		HasAttachments:       p.HasAttachments,
+		SelectFor:            p.SelectFor,
 		InitiatorLogins:      p.InitiatorLogins,
 		ProcessingLogins:     p.ProcessingLogins,
-		ProcessingGroupIds:   p.ProcessingGroupIds,
+		ProcessedLogins:      p.ProcessedLogins,
 		ExecutorTypeAssigned: typeAssigned,
 	}
 
