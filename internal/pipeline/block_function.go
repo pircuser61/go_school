@@ -180,14 +180,14 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			}
 		}
 
-		variablesWithFullNames, err := getVariables(gb.RunContext.VarStore)
+		variables, err := getVariables(gb.RunContext.VarStore)
 		if err != nil {
 			return nil, err
 		}
 
-		variables := gb.deleteNodeNamesFromVariables(variablesWithFullNames)
+		variables = gb.restoreMapStructure(variables)
 
-		functionMapping, err := script.MapData(gb.State.Mapping, variables, nil, 1)
+		functionMapping, err := script.MapData(gb.State.Mapping, variables, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -391,13 +391,23 @@ func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workId uuid.UUID,
 	return countRunFunc > 1, firstRun, nil
 }
 
-func (gb *ExecutableFunctionBlock) deleteNodeNamesFromVariables(variablesWithFullNames map[string]interface{}) map[string]interface{} {
-	variables := make(map[string]interface{}, len(variablesWithFullNames))
-	for name, variable := range variablesWithFullNames {
+func (gb *ExecutableFunctionBlock) restoreMapStructure(variables map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for name, variable := range variables {
 		keyParts := strings.Split(name, ".")
-		nameWithoutNode := strings.Join(keyParts[1:], ".")
-		variables[nameWithoutNode] = variable
+		current := result
+
+		for i, keyPart := range keyParts {
+			if i == len(keyParts)-1 {
+				current[keyPart] = variable
+			} else {
+				if _, ok := current[keyPart]; !ok {
+					current[keyPart] = make(map[string]interface{})
+				}
+				current = current[keyPart].(map[string]interface{})
+			}
+		}
 	}
 
-	return variables
+	return result
 }

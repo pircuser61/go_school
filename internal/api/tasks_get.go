@@ -67,11 +67,12 @@ type step struct {
 }
 
 type action struct {
-	Id                 string `json:"id"`
-	ButtonType         string `json:"button_type"`
-	Title              string `json:"title"`
-	CommentEnabled     bool   `json:"comment_enabled"`
-	AttachmentsEnabled bool   `json:"attachments_enabled"`
+	Id                 string                 `json:"id"`
+	ButtonType         string                 `json:"button_type"`
+	Title              string                 `json:"title"`
+	CommentEnabled     bool                   `json:"comment_enabled"`
+	AttachmentsEnabled bool                   `json:"attachments_enabled"`
+	Params             map[string]interface{} `json:"params,omitempty"`
 }
 
 type taskActions []action
@@ -110,6 +111,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask,
 			Title:              a.Title,
 			CommentEnabled:     a.CommentEnabled,
 			AttachmentsEnabled: a.AttachmentsEnabled,
+			Params:             a.Params,
 		})
 	}
 
@@ -235,7 +237,6 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 	dbTask.Steps = steps
 
 	currentUserDelegateSteps, tErr := ae.getCurrentUserInDelegatesForSteps(ui.Username, &steps, &delegations)
-
 	if tErr != nil {
 		e := GetDelegationsError
 		log.Error(e.errorMessage(tErr))

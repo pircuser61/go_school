@@ -50,7 +50,7 @@ const serviceName = "jocasta.pipeliner"
 //
 //nolint:gocyclo //its ok here
 func main() {
-	configPath := flag.String("c", "./config.yaml", "path to config")
+	configPath := flag.String("c", "cmd/pipeliner/config.yaml", "path to config")
 	flag.Parse()
 
 	log := logger.CreateLogger(nil)

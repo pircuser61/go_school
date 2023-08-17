@@ -292,7 +292,6 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	}
 
 	typedSSOPerson, convertErr := formExecutorSSOPerson.ToUserinfo()
-
 	if convertErr != nil {
 		return convertErr
 	}

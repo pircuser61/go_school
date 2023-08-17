@@ -49,7 +49,7 @@ type TaskStorager interface {
 	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) (*e.EriusTask, error)
-	CheckTaskStepsExecuted(ctx c.Context, workNumber string, blocks []string) (bool, error)
+	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
 	GetTaskStepsToWait(ctx c.Context, workNumber, blockName string) ([]string, error)
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
@@ -76,8 +76,15 @@ type UpdateTaskRate struct {
 }
 
 type DbMemberAction struct {
-	Id   string
-	Type string
+	Id     string
+	Type   string
+	Params map[string]interface{}
+}
+
+type DbTaskAction struct {
+	BlockID string                            `json:"block_id"`
+	Actions []string                          `json:"actions"`
+	Params  map[string]map[string]interface{} `json:"params"`
 }
 
 type DbMember struct {

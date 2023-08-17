@@ -62,8 +62,7 @@ func (gb *GoWaitForAllInputsBlock) GetState() interface{} {
 }
 
 func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, error) {
-	// TODO ???
-	executed, err := gb.RunContext.Storage.CheckTaskStepsExecuted(ctx, gb.RunContext.WorkNumber, gb.State.IncomingBlockIds)
+	executed, err := gb.RunContext.Storage.ParallelIsFinished(ctx, gb.RunContext.WorkNumber, gb.Name)
 	if err != nil {
 		return nil, err
 	}

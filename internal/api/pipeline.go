@@ -31,6 +31,7 @@ const copyPostfix = "копия"
 const (
 	ValidateParallelNodeReturnCycle       = "ParallelNodeReturnCycle"
 	ValidateParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
+	ValidateOutOfParallelNodesConnection  = "OutOfParallelNodesConnection"
 )
 
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
@@ -84,6 +85,8 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 			e = ParallelNodeReturnCycle
 		case ValidateParallelNodeExitsNotConnected:
 			e = ParallelNodeExitsNotConnected
+		case ValidateOutOfParallelNodesConnection:
+			e = OutOfParallelNodesConnection
 		default:
 			e = PipelineValidateError
 		}

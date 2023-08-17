@@ -54,6 +54,7 @@ type BlocksType map[string]EriusFunc
 
 const (
 	BlockGoStartName       = "start"
+	StartBlock0            = "start_0"
 	BlockGoEndName         = "end"
 	BlockSDName            = "servicedesk_application"
 	BlockParallelStartName = "begin_parallel_task"
@@ -68,6 +69,7 @@ const (
 	PipelineValidateError         = "PipelineValidateError"
 	ParallelNodeReturnCycle       = "ParallelNodeReturnCycle"
 	ParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
+	OutOfParallelNodesConnection  = "OutOfParallelNodesConnection"
 )
 
 func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (valid bool, textErr string) {
@@ -213,8 +215,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 						if !ok {
 							continue
 						}
-						_, visited := visitedParallelNodes[socketOutNode]
-						if socketNode.TypeID == BlockParallelStartName && visited {
+						if socketOutNode == idx {
 							return false, ParallelNodeReturnCycle
 						}
 						nodes[socketOutNode] = &socketNode
@@ -222,12 +223,100 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 				}
 			}
 		}
+		afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundedNode, visitedParallelNodes)
+		if !afterEndOk {
+			return false, OutOfParallelNodesConnection
+		}
+		if beforeStartOk := bt.validateBeforeStartParallelNodes(StartBlock0, idx, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
+			return false, OutOfParallelNodesConnection
+		}
 	}
 	return true, ""
 }
 
+func (bt *BlocksType) validateAfterEndParallelNodes(endNode *string,
+	visitedParallelNodes map[string]EriusFunc) (valid bool, visitedNodes map[string]EriusFunc) {
+	parallelEndNode := (*bt)[*endNode]
+	afterEndNodes := map[string]*EriusFunc{
+		*endNode: &parallelEndNode,
+	}
+	visitedEndParallelNodes := make(map[string]EriusFunc, 0)
+
+	for {
+		endNodeKeys := maps.Keys(afterEndNodes)
+		if len(endNodeKeys) == 0 {
+			break
+		}
+		nodeKey, node := endNodeKeys[0], afterEndNodes[endNodeKeys[0]]
+		delete(afterEndNodes, nodeKey)
+		if _, ok := visitedEndParallelNodes[nodeKey]; ok {
+			continue
+		}
+		visitedEndParallelNodes[nodeKey] = *node
+
+		for _, socketOutNodes := range node.Next {
+			for _, socketOutNode := range socketOutNodes {
+				_, ok := visitedParallelNodes[socketOutNode]
+				if ok {
+					return false, nil
+				}
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				afterEndNodes[socketOutNode] = &socketNode
+			}
+		}
+	}
+	return true, visitedEndParallelNodes
+}
+
+func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx string,
+	visitedParallelNodes, visitedAfterEndNodes map[string]EriusFunc) bool {
+	parallelStartNode := (*bt)[startKey]
+	BeforeStartNodes := map[string]*EriusFunc{
+		startKey: &parallelStartNode,
+	}
+	visitedBeforStartParallelNodes := make(map[string]EriusFunc, 0)
+
+	for {
+		startNodeKeys := maps.Keys(BeforeStartNodes)
+		if len(startNodeKeys) == 0 {
+			break
+		}
+		nodeKey, node := startNodeKeys[0], BeforeStartNodes[startNodeKeys[0]]
+		delete(BeforeStartNodes, nodeKey)
+		if _, ok := visitedBeforStartParallelNodes[nodeKey]; ok {
+			continue
+		}
+		visitedBeforStartParallelNodes[nodeKey] = *node
+
+		for _, socketOutNodes := range node.Next {
+			for _, socketOutNode := range socketOutNodes {
+				if socketOutNode == idx {
+					continue
+				}
+				_, ok := visitedParallelNodes[socketOutNode]
+				if ok {
+					return false
+				}
+				_, alreadyVisited := visitedAfterEndNodes[socketOutNode]
+				if alreadyVisited {
+					continue
+				}
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				BeforeStartNodes[socketOutNode] = &socketNode
+			}
+		}
+	}
+	return true
+}
+
 func (bt *BlocksType) addDefaultStartNode() {
-	(*bt)["start_0"] = EriusFunc{
+	(*bt)[StartBlock0] = EriusFunc{
 		X:         0,
 		Y:         0,
 		TypeID:    BlockGoStartName,
@@ -326,7 +415,7 @@ type PipelineType struct {
 
 func (p *PipelineType) FillEmptyPipeline() {
 	p.Blocks.addDefaultStartNode()
-	p.Entrypoint = "start_0"
+	p.Entrypoint = StartBlock0
 }
 
 // nolint

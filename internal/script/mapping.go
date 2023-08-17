@@ -14,14 +14,14 @@ import (
 const dotSeparator = "."
 
 //nolint:gocyclo // ok here
-func MapData(mapping JSONSchemaProperties, input map[string]interface{},
-	required []string, levelFromRoot int) (map[string]interface{}, error) {
+func MapData(mapping JSONSchemaProperties, input map[string]interface{}, required []string,
+) (map[string]interface{}, error) {
 	mappedData := make(map[string]interface{}, len(input))
 
 	for paramName, paramMapping := range mapping {
 		if len(paramMapping.Value) == 0 {
 			if paramMapping.Type == object {
-				variable, err := MapData(paramMapping.Properties, input, paramMapping.Required, levelFromRoot)
+				variable, err := MapData(paramMapping.Properties, input, paramMapping.Required)
 				if err != nil {
 					return nil, err
 				}
@@ -52,12 +52,6 @@ func MapData(mapping JSONSchemaProperties, input map[string]interface{},
 		}
 
 		path := strings.Split(paramMapping.Value, dotSeparator)
-
-		if len(path) <= levelFromRoot {
-			return nil, fmt.Errorf("invalid path to variable %s", paramName)
-		}
-
-		path = path[levelFromRoot:]
 
 		variable, err := getVariable(input, path)
 		if err != nil {

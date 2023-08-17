@@ -218,7 +218,6 @@ func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
 			externalSystem.InputMapping.Properties,
 			appBody,
 			externalSystem.InputMapping.Required,
-			0,
 		)
 		if err != nil {
 			return orderedmap.OrderedMap{}, err

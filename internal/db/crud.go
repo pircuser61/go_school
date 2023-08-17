@@ -1743,21 +1743,31 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			block_id,
 			login,
 			finished,
-			actions
+			actions,
+		    params                 
 		)
 		VALUES (
 			$1, 
 			$2, 
 			$3, 
 			$4, 
-			$5
+			$5,
+		    $6
 		)
 `
 	for _, val := range members {
 		membersId := uuid.New()
 		actions := make(pq.StringArray, 0, len(val.Actions))
+		params := make(map[string]map[string]interface{})
 		for _, act := range val.Actions {
 			actions = append(actions, act.Id+":"+act.Type)
+			if len(act.Params) != 0 {
+				params[act.Id] = act.Params
+			}
+		}
+		paramsData, mErr := json.Marshal(params)
+		if mErr != nil {
+			return mErr
 		}
 		_, err := db.Connection.Exec(
 			ctx,
@@ -1767,6 +1777,7 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			val.Login,
 			val.Finished,
 			actions,
+			paramsData,
 		)
 		if err != nil {
 			return err
@@ -2106,25 +2117,51 @@ WHERE value ? $2`
 	return blocks, nil
 }
 
-func (db *PGCon) CheckTaskStepsExecuted(ctx context.Context, workNumber string, blocks []string) (bool, error) {
-	ctx, span := trace.StartSpan(ctx, "pg_check_task_steps_executed")
+func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName string) (bool, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_parallel_is_finished")
 	defer span.End()
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
-	SELECT count(*)
-	FROM variable_storage vs 
-	WHERE vs.work_id = (
-	    SELECT id FROM works WHERE work_number = $1 AND child_id IS NULL
-	) AND vs.step_name = ANY($2) AND vs.status IN ('finished', 'no_success', 'error') `
-	// TODO: rewrite to handle edits ?
+	const q = `with recursive all_nodes as(
+		select distinct key(jsonb_each(v.content #> '{pipeline,blocks}'))::text out_node,
+			jsonb_array_elements_text(value(jsonb_each(value(jsonb_each(v.content #> '{pipeline,blocks}'))->'next'))) as in_node
+		from works w
+		inner join versions v on w.version_id=v.id
+		where w.work_number=$1
+	),
+	inside_gates_nodes as(
+	   select in_node,
+			  out_node,
+			  1 as level,
+			  Array[in_node] as circle_check
+	   from all_nodes
+	   where in_node=$2
+	   union all
+	   select a.in_node,
+			  a.out_node,
+			  case when a.out_node like 'wait_for_all_inputs%' then ign.level+1
+				   when a.out_node like 'begin_parallel_task%' then ign.level-1
+				   else ign.level end as level,
+			  array_append(ign.circle_check, a.in_node)
+	   from all_nodes a
+				inner join inside_gates_nodes ign on a.in_node=ign.out_node
+	   where array_position(circle_check,a.out_node) is NULL and
+			   a.in_node not like 'begin_parallel_task%' and ign.level!=0)
+	select case when count(*)=0 then true else false end as is_finished
+	from variable_storage vs
+		inner join works w on vs.work_id = w.id
+		inner join inside_gates_nodes ign on vs.step_name=ign.out_node
+	where w.work_number=$3 and vs.status='running'`
 
-	var c int
-	if scanErr := db.Connection.QueryRow(ctx, q, workNumber, blocks).Scan(&c); scanErr != nil {
-		return false, scanErr
+	var parallelIsFinished bool
+	row := db.Connection.QueryRow(ctx, q, workNumber, blockName)
+
+	if err := row.Scan(&parallelIsFinished); err != nil {
+		return false, err
 	}
-	return c == len(blocks), nil
+
+	return parallelIsFinished, nil
 }
 
 func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
@@ -2528,7 +2565,7 @@ func (db *PGCon) CheckUserCanEditForm(ctx context.Context, workNumber, stepName,
     from variable_storage
     where ((step_type = 'approver' and content -> 'State' -> step_name -> 'approvers' ? $3)
         or (step_type = 'execution' and content -> 'State' -> step_name -> 'executors' ? $3)
-        or (step_type = 'form' and content -> 'State' -> step_name -> 'executors' ? $3))
+        or (step_type = 'form' and content -> 'State' -> step_name -> 'executors' ? $3)
 		or (step_type = 'sign' and content -> 'State' -> step_name -> 'signers' ? $3))
       and work_id = (SELECT id
                      FROM works

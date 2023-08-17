@@ -286,10 +286,10 @@ func TestProcessBlock(t *testing.T) {
 							}
 						}).Return(nil)
 
-						res.On("CheckTaskStepsExecuted",
+						res.On("ParallelIsFinished",
 							mock.MatchedBy(func(ctx context.Context) bool { return true }),
 							mock.MatchedBy(func(workNumber string) bool { return true }),
-							mock.MatchedBy(func(ids []string) bool { return true }),
+							mock.MatchedBy(func(blockName string) bool { return true }),
 						).Return(
 							false, nil,
 						)
