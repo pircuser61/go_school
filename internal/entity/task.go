@@ -140,7 +140,7 @@ type GetTaskParams struct {
 	Receiver       *string     `json:"receiver"`
 	HasAttachments *bool       `json:"hasAttachments"`
 
-	NodeType             *string   `json:"nodeType"`
+	SelectFor            *string   `json:"selectFor"`
 	InitiatorLogins      *[]string `json:"initiatorLogins"`
 	ProcessingLogins     *[]string `json:"processingLogins"`
 	ProcessedLogins      *[]string `json:"processedLogins"`

@@ -1897,11 +1897,10 @@ paths:
             items:
               type: string
           description: filter by processed logins
-        - name: nodeType
+        - name: selectFor
           in: query
           schema:
             type: string
-          description: filter by node type
         - name: executorTypeAssigned
           in: query
           schema:

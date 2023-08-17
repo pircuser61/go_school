@@ -481,7 +481,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		Status:               statusToEntity(p.Status),
 		Receiver:             p.Receiver,
 		HasAttachments:       p.HasAttachments,
-		NodeType:             p.NodeType,
+		SelectFor:            p.SelectFor,
 		InitiatorLogins:      p.InitiatorLogins,
 		ProcessingLogins:     p.ProcessingLogins,
 		ProcessedLogins:      p.ProcessedLogins,

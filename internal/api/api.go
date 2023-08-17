@@ -2085,9 +2085,7 @@ type GetTasksParams struct {
 
 	// filter by processed logins
 	ProcessedLogins *[]string `json:"processedLogins,omitempty"`
-
-	// filter by node type
-	NodeType *string `json:"nodeType,omitempty"`
+	SelectFor       *string   `json:"selectFor,omitempty"`
 
 	// filter type assigned
 	ExecutorTypeAssigned *GetTasksParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
@@ -4531,14 +4529,14 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// ------------- Optional query parameter "nodeType" -------------
-	if paramValue := r.URL.Query().Get("nodeType"); paramValue != "" {
+	// ------------- Optional query parameter "selectFor" -------------
+	if paramValue := r.URL.Query().Get("selectFor"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "nodeType", r.URL.Query(), &params.NodeType)
+	err = runtime.BindQueryParameter("form", true, false, "selectFor", r.URL.Query(), &params.SelectFor)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "nodeType", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "selectFor", Err: err})
 		return
 	}
 
