@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -82,17 +83,19 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     BlockGoStartTitle,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    entity.KeyOutputWorkNumber,
-				Type:    "string",
-				Comment: "work number",
-			},
-			{
-				Name:    entity.KeyOutputApplicationInitiator,
-				Type:    "object",
-				Comment: "person object from sso",
-				Format:  "SsoPerson",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				entity.KeyOutputWorkNumber: {
+					Type:        "string",
+					Description: "work number",
+				},
+				entity.KeyOutputApplicationInitiator: {
+					Type:        "object",
+					Description: "person object from sso",
+					Format:      "SsoPerson",
+					Properties:  people.GetSsoPersonSchemaProperties(),
+				},
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 )
@@ -328,9 +329,10 @@ func (bt *BlocksType) addDefaultStartNode() {
 					Global: "start_0.workNumber",
 				},
 				KeyOutputApplicationInitiator: {
-					Global: "start_0.initiator",
-					Type:   "object",
-					Format: "SsoPerson",
+					Global:     "start_0.initiator",
+					Type:       "object",
+					Format:     "SsoPerson",
+					Properties: people.GetSsoPersonSchemaProperties(),
 				},
 			},
 		},
@@ -638,9 +640,10 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 	}
 
 	entryPoint.Output.Properties[KeyOutputApplicationInitiator] = script.JSONSchemaPropertiesValue{
-		Global: es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
-		Type:   "object",
-		Format: "SsoPerson",
+		Global:     es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
+		Type:       "object",
+		Format:     "SsoPerson",
+		Properties: people.GetSsoPersonSchemaProperties(),
 	}
 
 	es.Pipeline.Blocks[es.Pipeline.Entrypoint] = entryPoint

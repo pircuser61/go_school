@@ -10,6 +10,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -194,17 +195,19 @@ func (gb *GoFormBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     gb.Title,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    keyOutputFormExecutor,
-				Type:    "object",
-				Comment: "person object from sso",
-				Format:  "SsoPerson",
-			},
-			{
-				Name:    keyOutputFormBody,
-				Type:    "object",
-				Comment: "form body",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				keyOutputFormExecutor: {
+					Type:        "object",
+					Description: "person object from sso",
+					Format:      "SsoPerson",
+					Properties:  people.GetSsoPersonSchemaProperties(),
+				},
+				keyOutputFormBody: {
+					Type:        "object",
+					Description: "form body",
+				},
 			},
 		},
 		Params: &script.FunctionParams{
