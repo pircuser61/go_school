@@ -1706,8 +1706,16 @@ type Action struct {
 	// UUID действия
 	Id string `json:"id"`
 
+	// Дополнительные параметры действия
+	Params *Action_Params `json:"params,omitempty"`
+
 	// Человекочитаемое наименование действия
 	Title *string `json:"title,omitempty"`
+}
+
+// Дополнительные параметры действия
+type Action_Params struct {
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // Approver decision:
@@ -2713,6 +2721,59 @@ func (a *RunVersionsByPipelineIdRequest_Keys) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for RunVersionsByPipelineIdRequest_Keys to handle AdditionalProperties
 func (a RunVersionsByPipelineIdRequest_Keys) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Action_Params. Returns the specified
+// element and whether it was found
+func (a Action_Params) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Action_Params
+func (a *Action_Params) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Action_Params to handle AdditionalProperties
+func (a *Action_Params) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Action_Params to handle AdditionalProperties
+func (a Action_Params) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 

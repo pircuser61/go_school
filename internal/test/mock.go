@@ -163,11 +163,13 @@ var (
 							Global: "LinearPipeline.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -184,11 +186,13 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block2.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -205,11 +209,13 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block3.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block3.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -259,11 +265,13 @@ var (
 							Global: "IfPipeline.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeBool,
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeBool,
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -288,11 +296,13 @@ var (
 				"BlockTrue": {
 					BlockType: script.TypePython3,
 					Title:     "BlockTrue",
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "BlockTrue.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "BlockTrue.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -300,11 +310,13 @@ var (
 				"BlockFalse": {
 					BlockType: script.TypePython3,
 					Title:     "BlockFalse",
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "BlockTrue.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "BlockTrue.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -355,11 +367,13 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -376,16 +390,17 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "index",
-							Type:   script.TypeNumber,
-							Global: "For.index",
-						},
-						{
-							Name:   "now_on",
-							Type:   script.TypeString,
-							Global: "For.now_on",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"index": {
+								Type:   script.TypeNumber,
+								Global: "For.index",
+							},
+							"now_on": {
+								Type:   script.TypeString,
+								Global: "For.now_on",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -406,7 +421,7 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block3",
 					Input:     []entity.EriusFunctionValue{},
-					Output:    []entity.EriusFunctionValue{},
+					Output:    nil,
 					Next:      map[string][]string{},
 				},
 			},
@@ -462,11 +477,13 @@ var (
 							Global: "PipelineWithPipeline.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -483,11 +500,13 @@ var (
 							Global: "Block1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "Scenario.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "Scenario.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -504,11 +523,13 @@ var (
 							Global: "Scenario.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   "string",
-							Global: "Block2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   "string",
+								Global: "Block2.Output",
+							},
 						},
 					},
 				},
@@ -542,11 +563,13 @@ var (
 				"MasGen1": {
 					BlockType: script.TypePython3,
 					Title:     "MasGen",
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "MasGen1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "MasGen1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -563,16 +586,17 @@ var (
 							Global: "MasGen1.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "index",
-							Type:   script.TypeNumber,
-							Global: "For1.index",
-						},
-						{
-							Name:   "now_on",
-							Type:   script.TypeString,
-							Global: "For1.now_on",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"index": {
+								Type:   script.TypeNumber,
+								Global: "For1.index",
+							},
+							"now_on": {
+								Type:   script.TypeString,
+								Global: "For1.now_on",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -583,11 +607,13 @@ var (
 				"MasGen2": {
 					BlockType: script.TypePython3,
 					Title:     "MasGen",
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "MasGen2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "MasGen2.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -604,16 +630,17 @@ var (
 							Global: "MasGen2.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "index",
-							Type:   script.TypeNumber,
-							Global: "For2.index",
-						},
-						{
-							Name:   "now_on",
-							Type:   script.TypeString,
-							Global: "For2.now_on",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"index": {
+								Type:   script.TypeNumber,
+								Global: "For2.index",
+							},
+							"now_on": {
+								Type:   script.TypeString,
+								Global: "For2.now_on",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -660,11 +687,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block1",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -675,11 +704,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block2",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeBool,
-							Global: "Block2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeBool,
+								Global: "Block2.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -710,11 +741,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "BlockTrue",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "BlockTrue.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "BlockTrue.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -723,11 +756,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "BlockFalse",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeString,
-							Global: "BlockTrue.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeString,
+								Global: "BlockTrue.Output",
+							},
 						},
 					},
 					Next: map[string][]string{},
@@ -779,11 +814,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block1",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "Block1.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "Block1.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -794,11 +831,13 @@ var (
 					BlockType: script.TypePython3,
 					Title:     "Block2",
 					Input:     nil,
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "Block2.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "Block2.Output",
+							},
 						},
 					},
 					Next: map[string][]string{
@@ -820,11 +859,13 @@ var (
 							Global: "Block2.Output",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "Output",
-							Type:   script.TypeArray,
-							Global: "Connector.Output",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"Output": {
+								Type:   script.TypeArray,
+								Global: "Connector.Output",
+							},
 						},
 					},
 					Next: map[string][]string{

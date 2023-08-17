@@ -158,8 +158,10 @@ func createTimerBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	rawState, blockExists := runCtx.VarStore.State[name]

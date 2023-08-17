@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -322,16 +320,18 @@ func (bt *BlocksType) addDefaultStartNode() {
 		TypeID:    BlockGoStartName,
 		BlockType: script.TypeGo,
 		Title:     "Начало",
-		Output: []EriusFunctionValue{
-			{
-				Name:   "workNumber",
-				Type:   "string",
-				Global: "start_0.workNumber",
-			},
-			{
-				Name:   "initiator",
-				Type:   "SsoPerson",
-				Global: "start_0.initiator",
+		Output: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				KeyOutputWorkNumber: {
+					Type:   "string",
+					Global: "start_0.workNumber",
+				},
+				KeyOutputApplicationInitiator: {
+					Global: "start_0.initiator",
+					Type:   "object",
+					Format: "SsoPerson",
+				},
 			},
 		},
 		Sockets: []Socket{
@@ -450,7 +450,7 @@ type EriusFunc struct {
 	Title      string               `json:"title" example:"lock-bts"`
 	ShortTitle string               `json:"short_title,omitempty" example:"lock-bts"`
 	Input      []EriusFunctionValue `json:"input,omitempty"`
-	Output     []EriusFunctionValue `json:"output,omitempty"`
+	Output     *script.JSONSchema   `json:"output,omitempty"`
 	ParamType  string               `json:"param_type,omitempty"`
 	Params     json.RawMessage      `json:"params,omitempty" swaggertype:"object"`
 	Next       map[string][]string  `json:"next,omitempty"`
@@ -630,47 +630,18 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 	}
 
 	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
-	entryPoint.Output = nil
+	entryPoint.Output = es.Settings.StartSchema
 
-	entryPoint.Output = append(
-		entryPoint.Output,
-		EriusFunctionValue{
-			Global: es.Pipeline.Entrypoint + "." + KeyOutputWorkNumber,
-			Name:   KeyOutputWorkNumber,
-			Type:   "string",
-		}, EriusFunctionValue{
-			Global: es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
-			Name:   KeyOutputApplicationInitiator,
-			Type:   "object",
-			Format: "SsoPerson",
-		})
-
-	for propertyName, property := range es.Settings.StartSchema.Properties {
-		name := strings.ToLower(propertyName)
-		format := strings.ToLower(property.Format)
-
-		fieldType := property.Type
-
-		if name == "recipient" {
-			fieldType = "object"
-			format = "SsoPerson"
-		}
-
-		if fieldType == "array" && property.Items != nil {
-			format = property.Items.Format
-		}
-
-		entryPoint.Output = append(entryPoint.Output, EriusFunctionValue{
-			Global: es.Pipeline.Entrypoint + "." + name,
-			Name:   propertyName,
-			Type:   fieldType,
-			Format: format,
-		})
+	entryPoint.Output.Properties[KeyOutputWorkNumber] = script.JSONSchemaPropertiesValue{
+		Type:   "string",
+		Global: es.Pipeline.Entrypoint + "." + KeyOutputWorkNumber,
 	}
 
-	sort.Slice(entryPoint.Output, func(i, j int) bool {
-		return entryPoint.Output[i].Name < entryPoint.Output[j].Name
-	})
+	entryPoint.Output.Properties[KeyOutputApplicationInitiator] = script.JSONSchemaPropertiesValue{
+		Global: es.Pipeline.Entrypoint + "." + KeyOutputApplicationInitiator,
+		Type:   "object",
+		Format: "SsoPerson",
+	}
 
 	es.Pipeline.Blocks[es.Pipeline.Entrypoint] = entryPoint
 

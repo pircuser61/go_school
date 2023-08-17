@@ -191,8 +191,10 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	var params script.NotificationParams
