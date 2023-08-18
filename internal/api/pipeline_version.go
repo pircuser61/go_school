@@ -396,6 +396,8 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 			e = ParallelNodeReturnCycle
 		case ValidateParallelNodeExitsNotConnected:
 			e = ParallelNodeExitsNotConnected
+		case ValidateOutOfParallelNodesConnection:
+			e = OutOfParallelNodesConnection
 		default:
 			e = PipelineValidateError
 		}
