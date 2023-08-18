@@ -223,6 +223,9 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 				}
 			}
 		}
+		if foundedNode == nil {
+			return false, ""
+		}
 		afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundedNode, visitedParallelNodes)
 		if !afterEndOk {
 			return false, OutOfParallelNodesConnection
