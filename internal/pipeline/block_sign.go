@@ -340,6 +340,9 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 				keyOutputSignAttachments: {
 					Type:        "array",
 					Description: "signed files",
+					Items: &script.ArrayItems{
+						Type: "string",
+					},
 				},
 			},
 		},
