@@ -172,7 +172,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 
 	for idx := range parallelStartNodes {
 		parallelNode := parallelStartNodes[idx]
-		var foundedNode *string
+		var foundNode *string
 
 		nodes := make(map[string]*EriusFunc, 0)
 		visitedParallelNodes := make(map[string]EriusFunc, 0)
@@ -202,10 +202,10 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 
 			visitedParallelNodes[nodeKey] = *node
 			if node.TypeID == BlockParallelEndName {
-				if foundedNode != nil && nodeKey != *foundedNode {
+				if foundNode != nil && nodeKey != *foundNode {
 					return false, PipelineValidateError
 				}
-				foundedNode = &nodeKey
+				foundNode = &nodeKey
 			} else if node.TypeID == BlockParallelStartName {
 				continue
 			} else {
@@ -223,7 +223,10 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 				}
 			}
 		}
-		afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundedNode, visitedParallelNodes)
+		if foundNode == nil {
+			return false, ""
+		}
+		afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundNode, visitedParallelNodes)
 		if !afterEndOk {
 			return false, OutOfParallelNodesConnection
 		}
