@@ -318,7 +318,7 @@ var errorDescription = map[Err]string{
 	GetProcessSlaSettingsError:          "Ошибка при получении параметров SLA процесса",
 	PipelineValidateError:               "Невалидная схема пайплайна",
 	StopTaskParsingError:                "Не удалось распарсить запрос",
-	ParallelNodeReturnCycle:             "Нельзя выводить стрелки из параллельности. Используйте ноду условий после конца шлюза",
+	ParallelNodeReturnCycle:             "Линии блоков внутри параллельности должны быть изолированы",
 	ParallelNodeExitsNotConnected:       "Процесс не опубликован. Соедините все ноды в процессе",
 }
 
