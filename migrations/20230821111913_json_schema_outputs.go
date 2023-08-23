@@ -101,6 +101,13 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 					paramValue.Properties = people.GetSsoPersonSchemaProperties()
 				}
 
+				if param.Type == "array" && (param.Name == "attachments" || strings.EqualFold(param.Format, "file")) {
+					paramValue.Items = &script.ArrayItems{
+						Type:   "string",
+						Format: "file",
+					}
+				}
+
 				output.Properties[param.Name] = paramValue
 			}
 
