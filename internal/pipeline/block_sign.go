@@ -322,26 +322,28 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     gb.Title,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    keyOutputSigner,
-				Type:    "string",
-				Comment: "signer login",
-			},
-			{
-				Name:    keyOutputSignDecision,
-				Type:    "string",
-				Comment: "sign result",
-			},
-			{
-				Name:    keyOutputSignComment,
-				Type:    "string",
-				Comment: "sign comment",
-			},
-			{
-				Name:    keyOutputSignAttachments,
-				Type:    "array",
-				Comment: "signed files",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				keyOutputSigner: {
+					Type:        "string",
+					Description: "signer login",
+				},
+				keyOutputSignDecision: {
+					Type:        "string",
+					Description: "sign result",
+				},
+				keyOutputSignComment: {
+					Type:        "string",
+					Description: "sign comment",
+				},
+				keyOutputSignAttachments: {
+					Type:        "array",
+					Description: "signed files",
+					Items: &script.ArrayItems{
+						Type: "string",
+					},
+				},
 			},
 		},
 		Params: &script.FunctionParams{
@@ -383,8 +385,10 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	reEntry := runCtx.UpdateData == nil

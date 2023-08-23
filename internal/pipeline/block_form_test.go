@@ -128,16 +128,17 @@ func Test_createGoFormBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   keyOutputFormExecutor,
-							Type:   "string",
-							Global: global1,
-						},
-						{
-							Name:   keyOutputFormBody,
-							Type:   "string",
-							Global: global2,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputFormExecutor: {
+								Type:   "string",
+								Global: global1,
+							},
+							keyOutputFormBody: {
+								Type:   "string",
+								Global: global2,
+							},
 						},
 					},
 					Params: func() []byte {
@@ -178,16 +179,17 @@ func Test_createGoFormBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   keyOutputFormExecutor,
-							Type:   "string",
-							Global: global1,
-						},
-						{
-							Name:   keyOutputFormBody,
-							Type:   "string",
-							Global: global2,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputFormExecutor: {
+								Type:   "string",
+								Global: global1,
+							},
+							keyOutputFormBody: {
+								Type:   "string",
+								Global: global2,
+							},
 						},
 					},
 					Params: func() []byte {
@@ -254,16 +256,17 @@ func Test_createGoFormBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   keyOutputFormExecutor,
-							Type:   "string",
-							Global: global1,
-						},
-						{
-							Name:   keyOutputFormBody,
-							Type:   "string",
-							Global: global2,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputFormExecutor: {
+								Type:   "string",
+								Global: global1,
+							},
+							keyOutputFormBody: {
+								Type:   "string",
+								Global: global2,
+							},
 						},
 					},
 					Params: func() []byte {
@@ -394,7 +397,6 @@ func TestGoFormBlock_Update(t *testing.T) {
 		login2      = "login2"
 		login3      = "login3"
 		blockId     = "form_0"
-		blockId2    = "servicedesk_application_0"
 		description = "description"
 		fieldName   = "field1"
 		fieldValue  = "some text"

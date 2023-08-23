@@ -478,11 +478,13 @@ func Test_createGoApproverBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   keyOutputApprover,
-							Type:   "string",
-							Global: example,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputApprover: {
+								Type:   "string",
+								Global: example,
+							},
 						},
 					},
 					Params: func() []byte {
@@ -555,11 +557,13 @@ func Test_createGoApproverBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   keyOutputApprover,
-							Type:   "string",
-							Global: example,
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							keyOutputApprover: {
+								Type:   "string",
+								Global: example,
+							},
 						},
 					},
 					Params: func() []byte {

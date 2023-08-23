@@ -218,8 +218,10 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 			epi.Input[p.Name+KeyDelimiter+v.Name] = v.Global
 		}
 
-		for _, v := range bl.Output {
-			epi.Output[v.Name] = v.Global
+		if bl.Output != nil {
+			for propertyName, v := range bl.Output.Properties {
+				epi.Output[propertyName] = v.Global
+			}
 		}
 
 		return &epi, false, nil

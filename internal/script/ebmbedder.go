@@ -41,7 +41,7 @@ type FunctionModel struct {
 	BlockType string               `json:"block_type"`
 	Title     string               `json:"title"`
 	Inputs    []FunctionValueModel `json:"inputs,omitempty"`
-	Outputs   []FunctionValueModel `json:"outputs,omitempty"`
+	Outputs   *JSONSchema          `json:"outputs,omitempty"`
 	ShapeType int                  `json:"shape_type"`
 	ID        string               `json:"id"`
 	Params    *FunctionParams      `json:"params,omitempty"`

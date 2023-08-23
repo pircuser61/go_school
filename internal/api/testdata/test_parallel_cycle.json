@@ -1,37 +1,78 @@
 {
   "id": "f8d583cc-9a69-40e6-8e37-d22259a225c1",
   "name": "JAP-2635",
-  "status": 2,
-  "version_id": "b3c8ab52-1627-4d76-90f6-0efb7ef43ce5",
-  "author": "",
   "tags": [],
+  "input": [],
+  "author": "",
+  "output": [],
+  "status": 2,
   "comment": "",
-  "comment_rejected": "",
   "pipeline": {
     "blocks": {
+      "end_0": {
+        "x": 2602,
+        "y": 44,
+        "next": {},
+        "input": [],
+        "title": "Конец",
+        "output": {
+          "type": "object",
+          "properties": {}
+        },
+        "sockets": [],
+        "type_id": "end",
+        "block_type": "go",
+        "short_title": ""
+      },
       "start_0": {
         "x": 0,
         "y": 0,
-        "title": "Начало",
-        "block_type": "go",
-        "input": [],
-        "output": [
-          {
-            "name": "workNumber",
-            "type": "string",
-            "global": "start_0.workNumber"
-          },
-          {
-            "name": "initiator",
-            "type": "SsoPerson",
-            "global": "start_0.initiator"
-          }
-        ],
-        "type_id": "start",
         "next": {
           "default": [
             "approver_0"
           ]
+        },
+        "input": [],
+        "title": "Начало",
+        "output": {
+          "type": "object",
+          "properties": {
+            "initiator": {
+              "type": "object",
+              "format": "ssoperson",
+              "global": "start_0.initiator",
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "phone": {
+                  "type": "string"
+                },
+                "mobile": {
+                  "type": "string"
+                },
+                "tabnum": {
+                  "type": "string"
+                },
+                "fullname": {
+                  "type": "string"
+                },
+                "position": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "fullOrgUnit": {
+                  "type": "string"
+                }
+              }
+            },
+            "workNumber": {
+              "type": "string",
+              "global": "start_0.workNumber"
+            }
+          }
         },
         "sockets": [
           {
@@ -43,295 +84,164 @@
             ]
           }
         ],
+        "type_id": "start",
+        "block_type": "go",
         "short_title": ""
       },
       "approver_0": {
         "x": 352,
         "y": -33,
-        "title": "Согласование",
-        "block_type": "go",
-        "input": [],
-        "output": [
-          {
-            "name": "approver",
-            "type": "string",
-            "global": "approver_0.approver"
-          },
-          {
-            "name": "decision",
-            "type": "string",
-            "global": "approver_0.decision"
-          },
-          {
-            "name": "comment",
-            "type": "string",
-            "global": "approver_0.comment"
-          }
-        ],
-        "params": {
-          "type": "user",
-          "approver": "sobugreye1",
-          "sla": 0,
-          "check_sla": false,
-          "rework_sla": 16,
-          "check_rework_sla": false,
-          "work_type": null,
-          "repeat_prev_decision": false,
-          "is_editable": false,
-          "approvers_group_id": "",
-          "approvers_group_name": "",
-          "approvers_group_id_path": "",
-          "approve_status_name": "На согласовании",
-          "forms_accessibility": [],
-          "approvementRule": ""
-        },
-        "type_id": "approver",
         "next": {
-          "approve": [
-            "begin_parallel_task_0"
-          ],
           "reject": [
             "begin_parallel_task_0"
+          ],
+          "approve": [
+            "begin_parallel_task_0"
           ]
+        },
+        "input": [],
+        "title": "Согласование",
+        "output": {
+          "type": "object",
+          "properties": {
+            "comment": {
+              "type": "string",
+              "global": "approver_0.comment"
+            },
+            "approver": {
+              "type": "string",
+              "global": "approver_0.approver"
+            },
+            "decision": {
+              "type": "string",
+              "global": "approver_0.decision"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "approver": "sobugreye1",
+          "check_sla": false,
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": false,
+          "approvementRule": "",
+          "check_rework_sla": false,
+          "approvers_group_id": "",
+          "approve_status_name": "На согласовании",
+          "forms_accessibility": [],
+          "approvers_group_name": "",
+          "repeat_prev_decision": false,
+          "approvers_group_id_path": ""
         },
         "sockets": [
           {
             "id": "approve",
             "title": "Согласовать",
+            "actionType": "primary",
             "nextBlockIds": [
               "begin_parallel_task_0"
-            ],
-            "actionType": "primary"
+            ]
           },
           {
             "id": "reject",
             "title": "Отклонить",
+            "actionType": "secondary",
             "nextBlockIds": [
               "begin_parallel_task_0"
-            ],
-            "actionType": "secondary"
+            ]
           }
         ],
+        "type_id": "approver",
+        "block_type": "go",
         "param_type": "approver",
         "short_title": "овыдровдыаол"
-      },
-      "begin_parallel_task_0": {
-        "x": 814,
-        "y": 2,
-        "title": "begin_parallel_task",
-        "block_type": "go",
-        "input": [],
-        "output": [],
-        "type_id": "begin_parallel_task",
-        "next": {
-          "default": [
-            "execution_0",
-            "approver_1"
-          ]
-        },
-        "sockets": [
-          {
-            "id": "default",
-            "title": "Выход по умолчанию",
-            "nextBlockIds": [
-              "execution_0",
-              "approver_1"
-            ],
-            "actionType": ""
-          }
-        ],
-        "short_title": ""
-      },
-      "execution_0": {
-        "x": 1274,
-        "y": -295,
-        "title": "Исполнение",
-        "block_type": "go",
-        "input": [],
-        "output": [
-          {
-            "name": "login",
-            "type": "string",
-            "global": "execution_0.login"
-          },
-          {
-            "name": "decision",
-            "type": "string",
-            "global": "execution_0.decision"
-          },
-          {
-            "name": "comment",
-            "type": "string",
-            "global": "execution_0.comment"
-          }
-        ],
-        "params": {
-          "type": "user",
-          "executors": "sobugreye1",
-          "sla": 0,
-          "check_sla": false,
-          "rework_sla": 16,
-          "check_rework_sla": false,
-          "work_type": null,
-          "repeat_prev_decision": false,
-          "is_editable": false,
-          "executors_group_id": "",
-          "executors_group_name": "",
-          "executors_group_id_path": "",
-          "forms_accessibility": [],
-          "use_actual_executor": false
-        },
-        "type_id": "execution",
-        "next": {
-          "executed": [
-            "wait_for_all_inputs_0"
-          ],
-          "not_executed": [
-            "wait_for_all_inputs_0"
-          ]
-        },
-        "sockets": [
-          {
-            "id": "executed",
-            "title": "Исполнено",
-            "nextBlockIds": [
-              "wait_for_all_inputs_0"
-            ],
-            "actionType": ""
-          },
-          {
-            "id": "not_executed",
-            "title": "Не исполнено",
-            "nextBlockIds": [
-              "wait_for_all_inputs_0"
-            ],
-            "actionType": ""
-          }
-        ],
-        "param_type": "execution",
-        "short_title": "asfsafl"
       },
       "approver_1": {
         "x": 1288,
         "y": 130,
-        "title": "Согласование",
-        "block_type": "go",
-        "input": [],
-        "output": [
-          {
-            "name": "approver",
-            "type": "string",
-            "global": "approver_1.approver"
-          },
-          {
-            "name": "decision",
-            "type": "string",
-            "global": "approver_1.decision"
-          },
-          {
-            "name": "comment",
-            "type": "string",
-            "global": "approver_1.comment"
-          }
-        ],
-        "params": {
-          "type": "user",
-          "approver": "sobugreye1",
-          "sla": 0,
-          "check_sla": false,
-          "rework_sla": 16,
-          "check_rework_sla": false,
-          "work_type": null,
-          "repeat_prev_decision": false,
-          "is_editable": true,
-          "approvers_group_id": "",
-          "approvers_group_name": "",
-          "approvers_group_id_path": "",
-          "approve_status_name": "На согласовании",
-          "forms_accessibility": [],
-          "approvementRule": ""
-        },
-        "type_id": "approver",
         "next": {
-          "approve": [
+          "reject": [
             "execution_1"
           ],
-          "reject": [
+          "approve": [
             "execution_1"
           ],
           "approver_send_edit_app": [
             "approver_0"
           ]
         },
+        "input": [],
+        "title": "Согласование",
+        "output": {
+          "type": "object",
+          "properties": {
+            "comment": {
+              "type": "string",
+              "global": "approver_1.comment"
+            },
+            "approver": {
+              "type": "string",
+              "global": "approver_1.approver"
+            },
+            "decision": {
+              "type": "string",
+              "global": "approver_1.decision"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "approver": "sobugreye1",
+          "check_sla": false,
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": true,
+          "approvementRule": "",
+          "check_rework_sla": false,
+          "approvers_group_id": "",
+          "approve_status_name": "На согласовании",
+          "forms_accessibility": [],
+          "approvers_group_name": "",
+          "repeat_prev_decision": false,
+          "approvers_group_id_path": ""
+        },
         "sockets": [
           {
             "id": "approve",
             "title": "Согласовать",
+            "actionType": "primary",
             "nextBlockIds": [
               "execution_1"
-            ],
-            "actionType": "primary"
+            ]
           },
           {
             "id": "reject",
             "title": "Отклонить",
+            "actionType": "secondary",
             "nextBlockIds": [
               "execution_1"
-            ],
-            "actionType": "secondary"
+            ]
           },
           {
             "id": "approver_send_edit_app",
             "title": "На доработку",
+            "actionType": "other",
             "nextBlockIds": [
               "approver_0"
-            ],
-            "actionType": "other"
+            ]
           }
         ],
+        "type_id": "approver",
+        "block_type": "go",
         "param_type": "approver",
         "short_title": "afdsasdfasdf"
       },
-      "execution_1": {
-        "x": 1715,
-        "y": 213,
-        "title": "Исполнение",
-        "block_type": "go",
-        "input": [],
-        "output": [
-          {
-            "name": "login",
-            "type": "string",
-            "global": "execution_1.login"
-          },
-          {
-            "name": "decision",
-            "type": "string",
-            "global": "execution_1.decision"
-          },
-          {
-            "name": "comment",
-            "type": "string",
-            "global": "execution_1.comment"
-          }
-        ],
-        "params": {
-          "type": "user",
-          "executors": "sobugreye1",
-          "sla": 0,
-          "check_sla": false,
-          "rework_sla": 16,
-          "check_rework_sla": false,
-          "work_type": null,
-          "repeat_prev_decision": false,
-          "is_editable": false,
-          "executors_group_id": "",
-          "executors_group_name": "",
-          "executors_group_id_path": "",
-          "forms_accessibility": [],
-          "use_actual_executor": false
-        },
-        "type_id": "execution",
+      "execution_0": {
+        "x": 1274,
+        "y": -295,
         "next": {
           "executed": [
             "wait_for_all_inputs_0"
@@ -340,67 +250,194 @@
             "wait_for_all_inputs_0"
           ]
         },
+        "input": [],
+        "title": "Исполнение",
+        "output": {
+          "type": "object",
+          "properties": {
+            "login": {
+              "type": "string",
+              "global": "execution_0.login"
+            },
+            "comment": {
+              "type": "string",
+              "global": "execution_0.comment"
+            },
+            "decision": {
+              "type": "string",
+              "global": "execution_0.decision"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "check_sla": false,
+          "executors": "sobugreye1",
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": false,
+          "check_rework_sla": false,
+          "executors_group_id": "",
+          "forms_accessibility": [],
+          "use_actual_executor": false,
+          "executors_group_name": "",
+          "repeat_prev_decision": false,
+          "executors_group_id_path": ""
+        },
         "sockets": [
           {
             "id": "executed",
             "title": "Исполнено",
+            "actionType": "",
             "nextBlockIds": [
               "wait_for_all_inputs_0"
-            ],
-            "actionType": ""
+            ]
           },
           {
             "id": "not_executed",
             "title": "Не исполнено",
+            "actionType": "",
             "nextBlockIds": [
               "wait_for_all_inputs_0"
-            ],
-            "actionType": ""
+            ]
           }
         ],
+        "type_id": "execution",
+        "block_type": "go",
+        "param_type": "execution",
+        "short_title": "asfsafl"
+      },
+      "execution_1": {
+        "x": 1715,
+        "y": 213,
+        "next": {
+          "executed": [
+            "wait_for_all_inputs_0"
+          ],
+          "not_executed": [
+            "wait_for_all_inputs_0"
+          ]
+        },
+        "input": [],
+        "title": "Исполнение",
+        "output": {
+          "type": "object",
+          "properties": {
+            "login": {
+              "type": "string",
+              "global": "execution_1.login"
+            },
+            "comment": {
+              "type": "string",
+              "global": "execution_1.comment"
+            },
+            "decision": {
+              "type": "string",
+              "global": "execution_1.decision"
+            }
+          }
+        },
+        "params": {
+          "sla": 0,
+          "type": "user",
+          "check_sla": false,
+          "executors": "sobugreye1",
+          "work_type": null,
+          "rework_sla": 16,
+          "is_editable": false,
+          "check_rework_sla": false,
+          "executors_group_id": "",
+          "forms_accessibility": [],
+          "use_actual_executor": false,
+          "executors_group_name": "",
+          "repeat_prev_decision": false,
+          "executors_group_id_path": ""
+        },
+        "sockets": [
+          {
+            "id": "executed",
+            "title": "Исполнено",
+            "actionType": "",
+            "nextBlockIds": [
+              "wait_for_all_inputs_0"
+            ]
+          },
+          {
+            "id": "not_executed",
+            "title": "Не исполнено",
+            "actionType": "",
+            "nextBlockIds": [
+              "wait_for_all_inputs_0"
+            ]
+          }
+        ],
+        "type_id": "execution",
+        "block_type": "go",
         "param_type": "execution",
         "short_title": "asfasfasfd"
       },
-      "wait_for_all_inputs_0": {
-        "x": 2344,
-        "y": 39,
-        "title": "wait_for_all_inputs",
-        "block_type": "go",
-        "input": [],
-        "output": [],
-        "type_id": "wait_for_all_inputs",
+      "begin_parallel_task_0": {
+        "x": 814,
+        "y": 2,
         "next": {
           "default": [
-            "end_0"
+            "execution_0",
+            "approver_1"
           ]
+        },
+        "input": [],
+        "title": "begin_parallel_task",
+        "output": {
+          "type": "object",
+          "properties": {}
         },
         "sockets": [
           {
             "id": "default",
             "title": "Выход по умолчанию",
+            "actionType": "",
             "nextBlockIds": [
-              "end_0"
-            ],
-            "actionType": ""
+              "execution_0",
+              "approver_1"
+            ]
           }
         ],
+        "type_id": "begin_parallel_task",
+        "block_type": "go",
         "short_title": ""
       },
-      "end_0": {
-        "x": 2602,
-        "y": 44,
-        "title": "Конец",
-        "block_type": "go",
+      "wait_for_all_inputs_0": {
+        "x": 2344,
+        "y": 39,
+        "next": {
+          "default": [
+            "end_0"
+          ]
+        },
         "input": [],
-        "output": [],
-        "type_id": "end",
-        "next": {},
-        "sockets": [],
+        "title": "wait_for_all_inputs",
+        "output": {
+          "type": "object",
+          "properties": {}
+        },
+        "sockets": [
+          {
+            "id": "default",
+            "title": "Выход по умолчанию",
+            "actionType": "",
+            "nextBlockIds": [
+              "end_0"
+            ]
+          }
+        ],
+        "type_id": "wait_for_all_inputs",
+        "block_type": "go",
         "short_title": ""
       }
     },
     "entrypoint": "start_0"
   },
-  "input": [],
-  "output": []
+  "version_id": "b3c8ab52-1627-4d76-90f6-0efb7ef43ce5",
+  "comment_rejected": ""
 }

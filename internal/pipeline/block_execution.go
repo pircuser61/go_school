@@ -258,21 +258,21 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     gb.Title,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    keyOutputExecutionLogin,
-				Type:    "string",
-				Comment: "executor login",
-			},
-			{
-				Name:    keyOutputExecutionDecision,
-				Type:    "string",
-				Comment: "execution status",
-			},
-			{
-				Name:    keyOutputExecutionComment,
-				Type:    "string",
-				Comment: "execution status comment",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				keyOutputExecutionLogin: {
+					Type:        "string",
+					Description: "executor login",
+				},
+				keyOutputExecutionDecision: {
+					Type:        "string",
+					Description: "execution status",
+				},
+				keyOutputExecutionComment: {
+					Type:        "string",
+					Description: "execution status comment",
+				},
 			},
 		},
 		Params: &script.FunctionParams{

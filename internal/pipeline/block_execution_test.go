@@ -196,11 +196,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "foo",
-							Type:   "string",
-							Global: "bar",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"foo": {
+								Type:   "string",
+								Global: "bar",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -261,11 +263,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "foo",
-							Type:   "string",
-							Global: "bar",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"foo": {
+								Type:   "string",
+								Global: "bar",
+							},
 						},
 					},
 					Params: func() []byte {
@@ -339,11 +343,13 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 							Global: "bar",
 						},
 					},
-					Output: []entity.EriusFunctionValue{
-						{
-							Name:   "foo",
-							Type:   "string",
-							Global: "bar",
+					Output: &script.JSONSchema{
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"foo": {
+								Type:   "string",
+								Global: "bar",
+							},
 						},
 					},
 					Params: func() []byte {

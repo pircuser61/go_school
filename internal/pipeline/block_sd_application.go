@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
@@ -121,27 +122,27 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     BlockGoSdApplicationTitle,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    keyOutputBlueprintID,
-				Type:    "string",
-				Comment: "application pipeline id",
-			},
-			{
-				Name:    keyOutputSdApplicationDesc,
-				Type:    "string",
-				Comment: "application description",
-			},
-			{
-				Name:    keyOutputSdApplication,
-				Type:    "object",
-				Comment: "application body",
-			},
-			{
-				Name:    keyOutputSdApplicationExecutor,
-				Type:    "object",
-				Comment: "person object from sso",
-				Format:  "SsoPerson",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				keyOutputBlueprintID: {
+					Type:        "string",
+					Description: "application pipeline id",
+				},
+				keyOutputSdApplicationDesc: {
+					Type:        "string",
+					Description: "application description",
+				},
+				keyOutputSdApplication: {
+					Type:        "object",
+					Description: "application body",
+				},
+				keyOutputSdApplicationExecutor: {
+					Type:        "object",
+					Description: "person object from sso",
+					Format:      "SsoPerson",
+					Properties:  people.GetSsoPersonSchemaProperties(),
+				},
 			},
 		},
 		Params: &script.FunctionParams{
@@ -174,8 +175,10 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *Block
 		b.Input[v.Name] = v.Global
 	}
 
-	for _, v := range ef.Output {
-		b.Output[v.Name] = v.Global
+	if ef.Output != nil {
+		for propertyName, v := range ef.Output.Properties {
+			b.Output[propertyName] = v.Global
+		}
 	}
 
 	var params script.SdApplicationParams

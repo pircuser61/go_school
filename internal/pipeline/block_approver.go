@@ -291,21 +291,21 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 		BlockType: script.TypeGo,
 		Title:     gb.Title,
 		Inputs:    nil,
-		Outputs: []script.FunctionValueModel{
-			{
-				Name:    keyOutputApprover,
-				Type:    "string",
-				Comment: "approver login which made a decision",
-			},
-			{
-				Name:    keyOutputDecision,
-				Type:    "string",
-				Comment: "block decision",
-			},
-			{
-				Name:    keyOutputComment,
-				Type:    "string",
-				Comment: "approver comment",
+		Outputs: &script.JSONSchema{
+			Type: "object",
+			Properties: script.JSONSchemaProperties{
+				keyOutputApprover: {
+					Type:        "string",
+					Description: "approver login which made a decision",
+				},
+				keyOutputDecision: {
+					Type:        "string",
+					Description: "block decision",
+				},
+				keyOutputComment: {
+					Type:        "string",
+					Description: "approver comment",
+				},
 			},
 		},
 		Params: &script.FunctionParams{
