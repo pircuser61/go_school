@@ -340,7 +340,7 @@ func getPositiveProcessingStatus(decision string) (status TaskHumanStatus) {
 	case script.SettingStatusApproveInform:
 		return StatusApproveInform
 	case script.SettingStatusApproveSign:
-		return StatusApproveSign
+		return StatusSigning
 	case script.SettingStatusApproveSignUkep:
 		return StatusApproveSignUkep
 	default:
@@ -358,7 +358,7 @@ func getPositiveFinishStatus(decision ApproverDecision) (status TaskHumanStatus)
 	case ApproverDecisionInformed:
 		return StatusApproveInformed
 	case ApproverDecisionSigned, ApproverDecisionSignedUkep:
-		return StatusApproveSigned
+		return StatusSigned
 	case ApproverDecisionConfirmed:
 		return StatusApproveConfirmed
 	default:

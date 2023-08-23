@@ -402,16 +402,8 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		}
 		for status := range uniqueS {
 			switch status {
-			case pipeline.StatusSigned:
-				uniqueS[pipeline.StatusApproveSigned] = struct{}{}
-			case pipeline.StatusSigning:
-				uniqueS[pipeline.StatusApproveSign] = struct{}{}
 			case pipeline.StatusRejected:
 				uniqueS[pipeline.StatusApprovementRejected] = struct{}{}
-			case pipeline.StatusApproveSigned:
-				uniqueS[pipeline.StatusSigned] = struct{}{}
-			case pipeline.StatusApproveSign:
-				uniqueS[pipeline.StatusSigning] = struct{}{}
 			case pipeline.StatusApprovementRejected:
 				uniqueS[pipeline.StatusRejected] = struct{}{}
 			default:
@@ -456,6 +448,10 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		}
 	}
 
+	if p.ProcessingLogins != nil && p.ProcessedLogins != nil {
+		return filters, errors.New("can't filter by processingLogins and processedLogins at the same time")
+	}
+
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
 	if err != nil {
 		return filters, err
@@ -477,9 +473,10 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		Status:               statusToEntity(p.Status),
 		Receiver:             p.Receiver,
 		HasAttachments:       p.HasAttachments,
+		SelectFor:            p.SelectFor,
 		InitiatorLogins:      p.InitiatorLogins,
 		ProcessingLogins:     p.ProcessingLogins,
-		ProcessingGroupIds:   p.ProcessingGroupIds,
+		ProcessedLogins:      p.ProcessedLogins,
 		ExecutorTypeAssigned: typeAssigned,
 	}
 

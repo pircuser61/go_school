@@ -2086,8 +2086,9 @@ type GetTasksParams struct {
 	// filter in process by logins
 	ProcessingLogins *[]string `json:"processingLogins,omitempty"`
 
-	// filter in process by groups ids
-	ProcessingGroupIds *[]string `json:"processingGroupIds,omitempty"`
+	// filter by processed logins
+	ProcessedLogins *[]string `json:"processedLogins,omitempty"`
+	SelectFor       *string   `json:"selectFor,omitempty"`
 
 	// filter type assigned
 	ExecutorTypeAssigned *GetTasksParamsExecutorTypeAssigned `json:"executorTypeAssigned,omitempty"`
@@ -4535,14 +4536,25 @@ func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// ------------- Optional query parameter "processingGroupIds" -------------
-	if paramValue := r.URL.Query().Get("processingGroupIds"); paramValue != "" {
+	// ------------- Optional query parameter "processedLogins" -------------
+	if paramValue := r.URL.Query().Get("processedLogins"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "processingGroupIds", r.URL.Query(), &params.ProcessingGroupIds)
+	err = runtime.BindQueryParameter("form", true, false, "processedLogins", r.URL.Query(), &params.ProcessedLogins)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processingGroupIds", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processedLogins", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "selectFor" -------------
+	if paramValue := r.URL.Query().Get("selectFor"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "selectFor", r.URL.Query(), &params.SelectFor)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "selectFor", Err: err})
 		return
 	}
 
