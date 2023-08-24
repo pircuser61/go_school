@@ -1137,7 +1137,7 @@ type FunctionModel struct {
 	BlockType BlockType             `json:"block_type"`
 	Id        string                `json:"id"`
 	Inputs    *[]FunctionValueModel `json:"inputs,omitempty"`
-	Outputs   *[]FunctionValueModel `json:"outputs,omitempty"`
+	Output    *JSONSchema           `json:"output,omitempty"`
 	Params    *FunctionParams       `json:"params,omitempty"`
 	ShapeType int                   `json:"shape_type"`
 	Sockets   []Socket              `json:"sockets"`
