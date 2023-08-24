@@ -82,7 +82,7 @@ func upJsonSchemaOutputs(tx *sql.Tx) error {
 		}
 
 		for blockName := range pipeline.Blocks {
-			if pipeline.Blocks[blockName].Output == nil {
+			if strings.TrimSpace(blockName) == "" || pipeline.Blocks[blockName].Output == nil {
 				continue
 			}
 
@@ -158,7 +158,7 @@ func downJsonSchemaOutputs(tx *sql.Tx) error {
 		}
 
 		for blockName := range pipeline.Blocks {
-			if pipeline.Blocks[blockName].Output == nil {
+			if strings.TrimSpace(blockName) == "" || pipeline.Blocks[blockName].Output == nil {
 				continue
 			}
 
