@@ -75,16 +75,10 @@ func (gb *TimerBlock) GetState() interface{} {
 
 //nolint:gocyclo //its ok here
 func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
-	currentUser, err := user.GetUserInfoFromCtx(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if gb.State.Started && currentUser.Username != ServiceAccountDev &&
-		currentUser.Username != ServiceAccountStage &&
-		currentUser.Username != ServiceAccount {
-		err = fmt.Errorf("user %s is not service account", currentUser.Username)
-		return nil, err
+	if gb.State.Started {
+		if err := gb.checkUserIsServiceAccount(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	if gb.State.Expired {
@@ -100,8 +94,7 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 		gb.State.Started = true
 	}
 
-	var stateBytes []byte
-	stateBytes, err = json.Marshal(gb.State)
+	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +113,22 @@ func (gb *TimerBlock) startTimer(ctx c.Context) error {
 	})
 
 	return err
+}
+
+func (gb *TimerBlock) checkUserIsServiceAccount(ctx c.Context) error {
+	currentUser, err := user.GetUserInfoFromCtx(ctx)
+	if err != nil {
+		return err
+	}
+
+	if currentUser.Username != ServiceAccountDev &&
+		currentUser.Username != ServiceAccountStage &&
+		currentUser.Username != ServiceAccount {
+		err = fmt.Errorf("user %s is not service account", currentUser.Username)
+		return err
+	}
+
+	return nil
 }
 
 func (gb *TimerBlock) Model() script.FunctionModel {
