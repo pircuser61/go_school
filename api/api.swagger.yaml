@@ -1854,6 +1854,20 @@ paths:
           in: query
           schema:
             type: string
+            enum:
+              - approver
+              - finished_approver
+              - executor
+              - finished_executor
+              - form_executor
+              - finished_form_executor
+              - signer_phys
+              - finished_signer_phys
+              - signer_jur
+              - finished_signer_jur
+              - initiators
+              - group_executor
+              - finished_group_executor
         - name: forCarousel
           in: query
           schema:
@@ -1909,6 +1923,15 @@ paths:
               - assigned_to_me
               - assigned_by_me
           description: filter type assigned
+        - name: signatureCarrier
+          in: query
+          schema:
+            type: string
+            enum:
+              - cloud
+              - token
+              - all
+          description: signature carrier (used for selectAs = signer_jur)
       responses:
         200:
           description: OK

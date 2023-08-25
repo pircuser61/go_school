@@ -369,9 +369,9 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 	if filters.SelectAs != nil {
 		switch *filters.SelectAs {
-		case "approver", "finished_approver":
+		case entity.SelectAsValApprover, entity.SelectAsValFinishedApprover:
 			delegations = delegations.FilterByType("approvement")
-		case "executor", "finished_executor":
+		case entity.SelectAsValExecutor, entity.SelectAsValFinishedExecutor:
 			delegations = delegations.FilterByType("execution")
 		default:
 			delegations = delegations[:0]
@@ -447,9 +447,39 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 			return filters, errors.New("invalid value in typeAssigned filter")
 		}
 	}
+	var signatureCarrier *string
+	if p.SignatureCarrier != nil {
+		at := string(*p.SignatureCarrier)
+		signatureCarrier = &at
+		if *signatureCarrier != entity.SignatureCarrierCloud &&
+			*signatureCarrier != entity.SignatureCarrierToken &&
+			*signatureCarrier != entity.SignatureCarrierAll {
+			return filters, errors.New("invalid value in SignatureCarrier filter")
+		}
+	}
 
 	if p.ProcessingLogins != nil && p.ProcessedLogins != nil {
 		return filters, errors.New("can't filter by processingLogins and processedLogins at the same time")
+	}
+	var selectAs *string
+	if p.SelectAs != nil {
+		at := string(*p.SelectAs)
+		selectAs = &at
+		if *selectAs != entity.SelectAsValApprover &&
+			*selectAs != entity.SelectAsValFinishedApprover &&
+			*selectAs != entity.SelectAsValExecutor &&
+			*selectAs != entity.SelectAsValFinishedExecutor &&
+			*selectAs != entity.SelectAsValFormExecutor &&
+			*selectAs != entity.SelectAsValFinishedFormExecutor &&
+			*selectAs != entity.SelectAsValSignerPhys &&
+			*selectAs != entity.SelectAsValFinishedSignerPhys &&
+			*selectAs != entity.SelectAsValSignerJur &&
+			*selectAs != entity.SelectAsValFinishedSignerJur &&
+			*selectAs != entity.SelectAsValInitiators &&
+			*selectAs != entity.SelectAsValGroupExecutor &&
+			*selectAs != entity.SelectAsValFinishedGroupExecutor {
+			return filters, errors.New("invalid value in SelectAs filter")
+		}
 	}
 
 	ui, err := user.GetEffectiveUserInfoFromCtx(req.Context())
@@ -467,7 +497,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		Limit:                &limit,
 		Offset:               &offset,
 		TaskIDs:              p.TaskIDs,
-		SelectAs:             p.SelectAs,
+		SelectAs:             selectAs,
 		Archived:             p.Archived,
 		ForCarousel:          p.ForCarousel,
 		Status:               statusToEntity(p.Status),
@@ -478,6 +508,7 @@ func (p *GetTasksParams) toEntity(req *http.Request) (entity.TaskFilter, error) 
 		ProcessingLogins:     p.ProcessingLogins,
 		ProcessedLogins:      p.ProcessedLogins,
 		ExecutorTypeAssigned: typeAssigned,
+		SignatureCarrier:     signatureCarrier,
 	}
 
 	return filters, nil
