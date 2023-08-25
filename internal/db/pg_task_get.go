@@ -41,7 +41,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
       AND vs.step_type = '%s'
       AND vs.status IN %s
       AND w.child_id IS NULL
-      --filter--
+      --unique-actions-filter--
 )
      , unique_actions AS (
     SELECT actions.work_id AS work_id, JSONB_AGG(jsonb_actions.actions) AS actions
@@ -114,39 +114,47 @@ func getUniqueActions(selectFilter string, logins []string) string {
 	var loginsIn = buildInExpression(logins)
 
 	switch selectFilter {
-	case "approver":
+	case entity.SelectAsValApprover:
 		return uniqueActionsByRole(loginsIn, "approver", false)
-	case "finished_approver":
+	case entity.SelectAsValFinishedApprover:
 		return uniqueActionsByRole(loginsIn, "approver", true)
-	case "executor":
+	case entity.SelectAsValExecutor:
 		return uniqueActionsByRole(loginsIn, "execution", false)
-	case "finished_executor":
+	case entity.SelectAsValFinishedExecutor:
 		return uniqueActionsByRole(loginsIn, "execution", true)
-	case "form_executor":
+	case entity.SelectAsValFormExecutor:
 		return uniqueActionsByRole(loginsIn, "form", false)
-	case "finished_form_executor":
+	case entity.SelectAsValFinishedFormExecutor:
 		return uniqueActionsByRole(loginsIn, "form", true)
-	case "signer_phys":
+	case entity.SelectAsValSignerPhys:
 		q := uniqueActionsByRole(loginsIn, "sign", false)
-		q = strings.Replace(q, "--filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --filter--", 1)
+		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
 		return q
-	case "signer_jur":
+	case entity.SelectAsValFinishedSignerPhys:
+		q := uniqueActionsByRole(loginsIn, "sign", true)
+		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
+		return q
+	case entity.SelectAsValSignerJur:
 		q := uniqueActionsByRole(loginsIn, "sign", false)
-		q = strings.Replace(q, "--filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --filter--", 1)
+		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
 		return q
-	case "initiators":
+	case entity.SelectAsValFinishedSignerJur:
+		q := uniqueActionsByRole(loginsIn, "sign", true)
+		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
+		return q
+	case entity.SelectAsValInitiators:
 		return fmt.Sprintf(`WITH unique_actions AS (
 			SELECT id AS work_id, '[]' AS actions
 			FROM works
 			WHERE status = 1 AND author IN %s AND child_id IS NULL
 		)`, loginsIn)
-	case "group_executor":
+	case entity.SelectAsValGroupExecutor:
 		return `WITH unique_actions AS (
 			SELECT id AS work_id, '[]' AS actions
 			FROM works
 			WHERE status = 1 AND child_id IS NULL
 		)`
-	case "finished_group_executor":
+	case entity.SelectAsValFinishedGroupExecutor:
 		return `WITH unique_actions AS (
 			SELECT id AS work_id, '[]' AS actions
 			FROM works
@@ -219,6 +227,13 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, []string{}), q)
 	} else {
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
+	}
+
+	if fl.SignatureCarrier != nil && *fl.SelectAs == entity.SelectAsValSignerJur {
+		q = strings.Replace(q, "--unique-actions-filter--",
+			fmt.Sprintf("AND vs.content -> 'State' -> vs.step_name ->> 'signature_carrier' = '%s' --unique-actions-filter--",
+				*fl.SignatureCarrier),
+			1)
 	}
 
 	if fl.TaskIDs != nil {
