@@ -338,7 +338,11 @@ const (
 
 // Defines values for CompareBooleanOperator.
 const (
+	CompareBooleanOperatorНеПустое CompareBooleanOperator = "Не Пустое"
+
 	CompareBooleanOperatorНеРавно CompareBooleanOperator = "Не равно"
+
+	CompareBooleanOperatorПустое CompareBooleanOperator = "Пустое"
 
 	CompareBooleanOperatorРавно CompareBooleanOperator = "Равно"
 )
@@ -353,7 +357,11 @@ const (
 
 	CompareDateOperatorМеньшеИлиРавно CompareDateOperator = "Меньше или равно"
 
+	CompareDateOperatorНеПустое CompareDateOperator = "Не Пустое"
+
 	CompareDateOperatorНеРавно CompareDateOperator = "Не равно"
+
+	CompareDateOperatorПустое CompareDateOperator = "Пустое"
 
 	CompareDateOperatorРавно CompareDateOperator = "Равно"
 )
@@ -368,7 +376,11 @@ const (
 
 	CompareIntegerOperatorМеньшеИлиРавно CompareIntegerOperator = "Меньше или равно"
 
+	CompareIntegerOperatorНеПустое CompareIntegerOperator = "Не Пустое"
+
 	CompareIntegerOperatorНеРавно CompareIntegerOperator = "Не равно"
+
+	CompareIntegerOperatorПустое CompareIntegerOperator = "Пустое"
 
 	CompareIntegerOperatorРавно CompareIntegerOperator = "Равно"
 )
@@ -383,16 +395,24 @@ const (
 
 	CompareNumberOperatorМеньшеИлиРавно CompareNumberOperator = "Меньше или равно"
 
+	CompareNumberOperatorНеПустое CompareNumberOperator = "Не Пустое"
+
 	CompareNumberOperatorНеРавно CompareNumberOperator = "Не равно"
+
+	CompareNumberOperatorПустое CompareNumberOperator = "Пустое"
 
 	CompareNumberOperatorРавно CompareNumberOperator = "Равно"
 )
 
 // Defines values for CompareStringOperator.
 const (
+	CompareStringOperatorНеПустое CompareStringOperator = "Не Пустое"
+
 	CompareStringOperatorНеРавно CompareStringOperator = "Не равно"
 
 	CompareStringOperatorНеСодержит CompareStringOperator = "Не Содержит"
+
+	CompareStringOperatorПустое CompareStringOperator = "Пустое"
 
 	CompareStringOperatorРавно CompareStringOperator = "Равно"
 
