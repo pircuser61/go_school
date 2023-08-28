@@ -4,8 +4,8 @@ import (
 	c "context"
 	"encoding/json"
 	"errors"
-
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 )
 
 type SignSignatureParams struct {
@@ -63,4 +63,43 @@ func (gb *GoSignBlock) Update(_ c.Context) (interface{}, error) {
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	return nil, nil
+}
+
+//nolint:dupl,gocyclo //its not duplicate
+func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
+	if gb.State.CheckSLA == nil || !*gb.State.CheckSLA {
+		gb.State.SLAChecked = true
+		return nil
+	}
+
+	if gb.State.SLA != nil && *gb.State.SLA >= 8 {
+		emails := make([]string, 0, len(gb.State.Signers))
+		logins := getSliceFromMapOfStrings(gb.State.Signers)
+
+		for i := range logins {
+			eml, err := gb.RunContext.People.GetUserEmail(ctx, logins[i])
+			if err != nil {
+				continue
+			}
+			emails = append(emails, eml)
+		}
+
+		if len(emails) == 0 {
+			return nil
+		}
+		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+			mail.NewSignSLAExpiredTemplate(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Sender.SdAddress,
+			),
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	gb.State.SLAChecked = true
+
+	return nil
 }
