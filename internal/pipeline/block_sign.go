@@ -341,7 +341,17 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 					Type:        "array",
 					Description: "signed files",
 					Items: &script.ArrayItems{
-						Type: "string",
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"file_id": {
+								Type:        "string",
+								Description: "file id in file Registry",
+							},
+							"external_link": {
+								Type:        "string",
+								Description: "link to file in another system",
+							},
+						},
 					},
 				},
 			},
