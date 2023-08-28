@@ -218,22 +218,22 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 	return b, reEntry, nil
 }
 
-func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []string, skippedFiles []string) {
+func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []entity.Attachment, skippedFiles []entity.Attachment) {
 	const attachmentsLimitMB = 35
 	var limitCounter float64
-	skippedFiles = make([]string, 0)
+	skippedFiles = make([]entity.Attachment, 0)
 
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].Size < files[j].Size
 	})
 
-	requiredFiles = make([]string, 0, len(files))
+	requiredFiles = make([]entity.Attachment, 0, len(files))
 	for i := range files {
 		limitCounter += float64(files[i].Size) / 1024 / 1024
 		if limitCounter <= attachmentsLimitMB {
-			requiredFiles = append(requiredFiles, files[i].FileId) // store fileIDs to get files later
+			requiredFiles = append(requiredFiles, entity.Attachment{FileId: files[i].FileId}) // store fileIDs to get files later
 		} else {
-			skippedFiles = append(skippedFiles, files[i].Name) // store file names to use them in notification
+			skippedFiles = append(skippedFiles, entity.Attachment{FileId: files[i].FileId}) // store file names to use them in notification
 		}
 	}
 

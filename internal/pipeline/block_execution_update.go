@@ -8,8 +8,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -91,9 +92,9 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 }
 
 type ExecutorChangeParams struct {
-	NewExecutorLogin string   `json:"new_executor_login"`
-	Comment          string   `json:"comment"`
-	Attachments      []string `json:"attachments,omitempty"`
+	NewExecutorLogin string              `json:"new_executor_login"`
+	Comment          string              `json:"comment"`
+	Attachments      []entity.Attachment `json:"attachments,omitempty"`
 }
 
 func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
@@ -152,9 +153,9 @@ func (a *ExecutionData) SetChangeExecutor(oldLogin string, in *ExecutorChangePar
 }
 
 type ExecutionUpdateParams struct {
-	Decision    ExecutionDecision `json:"decision"`
-	Comment     string            `json:"comment"`
-	Attachments []string          `json:"attachments"`
+	Decision    ExecutionDecision   `json:"decision"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
 }
 
 //nolint:dupl //its not duplicate
@@ -463,10 +464,10 @@ func (gb *GoExecutionBlock) updateDecision() error {
 }
 
 type RequestInfoUpdateParams struct {
-	Comment       string          `json:"comment"`
-	ReqType       RequestInfoType `json:"req_type"`
-	Attachments   []string        `json:"attachments"`
-	ExecutorLogin string          `json:"executor_login"`
+	Comment       string              `json:"comment"`
+	ReqType       RequestInfoType     `json:"req_type"`
+	Attachments   []entity.Attachment `json:"attachments"`
+	ExecutorLogin string              `json:"executor_login"`
 }
 
 //nolint:gocyclo //its ok here
@@ -728,8 +729,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 }
 
 type executorUpdateEditParams struct {
-	Comment     string   `json:"comment"`
-	Attachments []string `json:"attachments"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
 }
 
 //nolint:gocyclo //its ok here

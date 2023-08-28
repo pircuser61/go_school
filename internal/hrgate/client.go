@@ -329,7 +329,7 @@ type Absence struct {
 
 // AbsenceAdditionalAttributes defines model for AbsenceAdditionalAttributes.
 type AbsenceAdditionalAttributes struct {
-	// ID объекта
+	// FileId объекта
 	AssignmentID UUID `json:"assignmentID"`
 
 	// Дата приказа на отсутствие
@@ -620,7 +620,7 @@ type BasicObject struct {
 	// Дата удаления объекта
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	Id UUID `json:"id"`
 
 	// Дата изменения объекта
@@ -635,7 +635,7 @@ type BasicObjectWithoutRequiredCreatedAtUpdatedAt struct {
 	// Дата удаления объекта
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	Id UUID `json:"id"`
 
 	// Дата изменения объекта
@@ -717,14 +717,14 @@ type ChangeableAbsence struct {
 	// Кол-во дней отсутствия
 	Days *int `json:"days,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	EmployeeID               UUID                          `json:"employeeID"`
 	ListAdditionalAttributes []AbsenceAdditionalAttributes `json:"listAdditionalAttributes"`
 
-	// ID объекта
+	// FileId объекта
 	ParentAbsenceID *UUID `json:"parentAbsenceID,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	TypeID UUID `json:"typeID"`
 }
 
@@ -766,7 +766,7 @@ type ChangeableAllowance struct {
 	// Буквенный код валюты в соответствии с ISO 4217, заполнено только если kind = cash
 	Currency *string `json:"currency,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	DonorStaffUnitID *UUID                   `json:"donorStaffUnitID,omitempty"`
 	Kind             ChangeableAllowanceKind `json:"kind"`
 
@@ -808,25 +808,25 @@ type ChangeableAssignment struct {
 	// Версия объекта назначения
 	AssignmentObjectVersion *string `json:"assignmentObjectVersion,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	BalanceUnitID *UUID `json:"balanceUnitID,omitempty"`
 
 	// Версия объекта бюджета
 	BudjetObjectVersion *string `json:"budjetObjectVersion,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	CategoryID *UUID `json:"categoryID,omitempty"`
 
 	// Тип совместительства назначения, вычисляется на основе атрибутов assignment category и primary.
 	CombinationStatus *CombinationStatus `json:"combinationStatus,omitempty"`
 
-	// ID договора
+	// FileId договора
 	ContractID *string `json:"contractID,omitempty"`
 
-	// ID центра затрат
+	// FileId центра затрат
 	CostCenterId *string `json:"costCenterId,omitempty"`
 
-	// ID сотрудника-руководителя, указывается только для сотрудников на договоре ГПХ
+	// FileId сотрудника-руководителя, указывается только для сотрудников на договоре ГПХ
 	DgphSupervisorID *string `json:"dgphSupervisorID,omitempty"`
 
 	// Районный коэффициент
@@ -841,7 +841,7 @@ type ChangeableAssignment struct {
 	// Начало действия электронной подписи документов
 	ESignAllowedStart *openapi_types.Date `json:"eSignAllowedStart,omitempty"`
 
-	// ID сотрудника
+	// FileId сотрудника
 	EmployeeId *string `json:"employeeId,omitempty"`
 
 	// Дата найма
@@ -850,7 +850,7 @@ type ChangeableAssignment struct {
 	// признак временного назначения
 	IsTemporary *bool `json:"isTemporary,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	LeavingReasonID *UUID `json:"leavingReasonID,omitempty"`
 
 	// id локации
@@ -859,7 +859,7 @@ type ChangeableAssignment struct {
 	// employeeId руководителя
 	ManagerId *string `json:"managerId,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	PayTypeID *UUID `json:"payTypeID,omitempty"`
 
 	// Данное назначение является основным для сотрудника
@@ -868,7 +868,7 @@ type ChangeableAssignment struct {
 	// Дата окончания испытательного срока
 	ProbationEndDate *openapi_types.Date `json:"probationEndDate,omitempty"`
 
-	// ID продукта
+	// FileId продукта
 	ProductID *string `json:"productID,omitempty"`
 
 	// Планируемая дата увольнения
@@ -877,22 +877,22 @@ type ChangeableAssignment struct {
 	// Категория персонала
 	StaffCategory *string `json:"staffCategory,omitempty"`
 
-	// ID штатной единицы
+	// FileId штатной единицы
 	StaffUnitId *string `json:"staffUnitId,omitempty"`
 
-	// ID статуса назначения
+	// FileId статуса назначения
 	StatusId *string `json:"statusId,omitempty"`
 
 	// Табельный номер
 	TabNum *string `json:"tabNum,omitempty"`
 
-	// ID типа назначения
+	// FileId типа назначения
 	TypeId *string `json:"typeId,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	UnitID *UUID `json:"unitID,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	VirtualBalanceUnitID *UUID `json:"virtualBalanceUnitID,omitempty"`
 }
 
@@ -969,7 +969,7 @@ type ChangeableCalendar struct {
 	// Календарь является основным. Основной пятидневный
 	Primary *bool `json:"primary,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	UnitID UUID `json:"unitID"`
 
 	// Тип рабочей недели
@@ -978,7 +978,7 @@ type ChangeableCalendar struct {
 
 // ChangeableCalendarDay defines model for ChangeableCalendarDay.
 type ChangeableCalendarDay struct {
-	// ID календаря
+	// FileId календаря
 	CalendarID string `json:"calendarID"`
 
 	// Дата
@@ -1001,13 +1001,13 @@ type ChangeableCluster struct {
 
 // ChangeableContract defines model for ChangeableContract.
 type ChangeableContract struct {
-	// ID сотрудника
+	// FileId сотрудника
 	EmployeeId *string `json:"employeeId,omitempty"`
 
 	// контракт действует по
 	EndDate *openapi_types.Date `json:"endDate,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	LocationID *UUID `json:"locationID,omitempty"`
 
 	// порядковый номер договора
@@ -1019,10 +1019,10 @@ type ChangeableContract struct {
 	// контракт действует с
 	StartDate *openapi_types.Date `json:"startDate,omitempty"`
 
-	// ID статуса контракта
+	// FileId статуса контракта
 	StatusId *string `json:"statusId,omitempty"`
 
-	// ID типа контракта
+	// FileId типа контракта
 	TypeId *string `json:"typeId,omitempty"`
 }
 
@@ -1091,7 +1091,7 @@ type ChangeableDistWork struct {
 	// период активности объекта
 	Activity *Activity `json:"activity,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	AssignmentID UUID `json:"assignmentID"`
 
 	// дата
@@ -1106,7 +1106,7 @@ type ChangeableDistWork struct {
 	// номер
 	Number *string `json:"number,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	PersonID UUID `json:"personID"`
 
 	// график работы
@@ -1127,7 +1127,7 @@ type ChangeableDocument struct {
 	// Дата рождения
 	DateOfBirth *openapi_types.Date `json:"dateOfBirth,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	DisabilityCategoryID *UUID `json:"disabilityCategoryID,omitempty"`
 
 	// Информация о трудовой книжке
@@ -1187,7 +1187,7 @@ type ChangeableEmployee struct {
 	// Табельный номер сотрудника
 	TabNum *string `json:"tabNum,omitempty"`
 
-	// ID типа сотрудника
+	// FileId типа сотрудника
 	TypeID *string `json:"typeID,omitempty"`
 }
 
@@ -1229,7 +1229,7 @@ type ChangeableGrade struct {
 	// Название грейда
 	Name string `json:"name"`
 
-	// ID объекта
+	// FileId объекта
 	UnitID *UUID `json:"unitID,omitempty"`
 }
 
@@ -1244,13 +1244,13 @@ type ChangeableHierarchy struct {
 
 // ChangeableHierarchyLink defines model for ChangeableHierarchyLink.
 type ChangeableHierarchyLink struct {
-	// ID подразделения-наследника, находящегося в иерархическом подчинении у подразделения родителя
+	// FileId подразделения-наследника, находящегося в иерархическом подчинении у подразделения родителя
 	ChildID string `json:"childID"`
 
-	// ID иерархии подразделений
+	// FileId иерархии подразделений
 	HierarchyID string `json:"hierarchyID"`
 
-	// ID подразделения-родителя, выше стоящего в иерархии
+	// FileId подразделения-родителя, выше стоящего в иерархии
 	ParentID *string `json:"parentID,omitempty"`
 }
 
@@ -1295,7 +1295,7 @@ type ChangeableHourlyRate struct {
 	// Название населенного пункта
 	SettlementName *string `json:"settlementName,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	UnitID UUID `json:"unitID"`
 }
 
@@ -1379,7 +1379,7 @@ type ChangeableLocation struct {
 
 // Изменяемые параметры офиса
 type ChangeableOffice struct {
-	// ID локации, где находится офис
+	// FileId локации, где находится офис
 	LocationID string `json:"locationID"`
 
 	// Наименование офиса
@@ -1388,7 +1388,7 @@ type ChangeableOffice struct {
 
 // ChangeableOrganization defines model for ChangeableOrganization.
 type ChangeableOrganization struct {
-	// ID календаря
+	// FileId календаря
 	CalendarId *string `json:"calendarId,omitempty"`
 
 	// ИНН
@@ -1406,7 +1406,7 @@ type ChangeableOrganization struct {
 
 // ChangeablePAOBonusPaymentCategory defines model for ChangeablePAOBonusPaymentCategory.
 type ChangeablePAOBonusPaymentCategory struct {
-	// ID премирования ПАО
+	// FileId премирования ПАО
 	Code string `json:"code"`
 
 	// название категории премирования
@@ -1427,7 +1427,7 @@ type ChangeablePerson struct {
 	// Код физлица 1С
 	Code1C *string `json:"code1C,omitempty"`
 
-	// ID физлица, который считается оригинальным в случае дублирования
+	// FileId физлица, который считается оригинальным в случае дублирования
 	DeduplicatedID *string `json:"deduplicatedID,omitempty"`
 
 	// Имя
@@ -1442,7 +1442,7 @@ type ChangeablePerson struct {
 	// Отчество/дополнительные имена
 	MiddleNames *string `json:"middleNames,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	PictureID *UUID `json:"pictureID,omitempty"`
 
 	// Дата обновления фото
@@ -1496,23 +1496,23 @@ type ChangeablePersonalSchedule struct {
 	// период активности объекта
 	Activity *Activity `json:"activity,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	AssignmentID UUID `json:"assignmentID"`
 
-	// ID объекта
+	// FileId объекта
 	EarningPolicyID *UUID `json:"earningPolicyID,omitempty"`
 
 	// Суммированный учет
 	NormDay *bool `json:"normDay,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	ScheduleID UUID `json:"scheduleID"`
 
-	// ID типа рабочего графика, используется только для записи
+	// FileId типа рабочего графика, используется только для записи
 	ShiftTypeID *string                             `json:"shiftTypeID,omitempty"`
 	WeekType    *ChangeablePersonalScheduleWeekType `json:"weekType,omitempty"`
 
-	// ID длительность рабочей недели, используется только для записи
+	// FileId длительность рабочей недели, используется только для записи
 	WorkWeekHoursID *string `json:"workWeekHoursID,omitempty"`
 }
 
@@ -1595,19 +1595,19 @@ type ChangeableSchedule struct {
 	// Описание формата и размера перерывов за смену
 	BreakDescription string `json:"breakDescription"`
 
-	// ID объекта
+	// FileId объекта
 	CalendarID *UUID `json:"calendarID,omitempty"`
 
 	// Описание расписания
 	Description string `json:"description"`
 
-	// ID объекта
+	// FileId объекта
 	ShiftTypeID *UUID `json:"shiftTypeID,omitempty"`
 
 	// Название расписания
 	Title string `json:"title"`
 
-	// ID объекта
+	// FileId объекта
 	UnitID *UUID `json:"unitID,omitempty"`
 }
 
@@ -1619,7 +1619,7 @@ type ChangeableScheduleDay struct {
 	// ссылка на рабочие часы указанной даты, в слу
 	HoursID *string `json:"hoursID,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	ScheduleID UUID `json:"scheduleID"`
 }
 
@@ -1657,13 +1657,13 @@ type ChangeableStaffUnit struct {
 		Start *openapi_types.Date `json:"start,omitempty"`
 	} `json:"activity,omitempty"`
 
-	// ID штатной единицы административного руководителя
+	// FileId штатной единицы административного руководителя
 	AdministrativeSupervisorID *string `json:"administrativeSupervisorID,omitempty"`
 
-	// ID статуса доступности штатной единицы
+	// FileId статуса доступности штатной единицы
 	AvailabilityID *string `json:"availabilityID,omitempty"`
 
-	// ID категории премирования сотрудников бэкофиса
+	// FileId категории премирования сотрудников бэкофиса
 	BackBonusPaymentCategoryID *string `json:"backBonusPaymentCategoryID,omitempty"`
 
 	// Бюджет штатной единицы
@@ -1672,10 +1672,10 @@ type ChangeableStaffUnit struct {
 	// Буквенный код валюты бюджета ШЕ в соответствии с ISO 4217
 	BudgetCurrency *string `json:"budgetCurrency,omitempty"`
 
-	// ID для budman
+	// FileId для budman
 	BudmanID *string `json:"budmanID,omitempty"`
 
-	// ID календаря
+	// FileId календаря
 	CalendarId *string `json:"calendarId,omitempty"`
 
 	// Дата вывода штатной единицы
@@ -1693,13 +1693,13 @@ type ChangeableStaffUnit struct {
 	// Код оборудования
 	EquipmentCategory *string `json:"equipmentCategory,omitempty"`
 
-	// ID функционального блока на ШЕ
+	// FileId функционального блока на ШЕ
 	FunctionalBlockID *string `json:"functionalBlockID,omitempty"`
 
-	// ID штатной единицы функционального руководителя
+	// FileId штатной единицы функционального руководителя
 	FunctionalSupervisorID *string `json:"functionalSupervisorID,omitempty"`
 
-	// ID грейда
+	// FileId грейда
 	GradeId *string `json:"gradeId,omitempty"`
 
 	// код дополнительных выходных за вредные условия труда
@@ -1744,13 +1744,13 @@ type ChangeableStaffUnit struct {
 	// Причина ввода штатной единицы
 	OpenReason *string `json:"openReason,omitempty"`
 
-	// ID категории премирования ПАО
+	// FileId категории премирования ПАО
 	PaoBonusPaymentCategoryID *string `json:"paoBonusPaymentCategoryID,omitempty"`
 
-	// ID должности
+	// FileId должности
 	PositionId *string `json:"positionId,omitempty"`
 
-	// ID  продукта PPInfo ввода ШЕ
+	// FileId  продукта PPInfo ввода ШЕ
 	ProductEntityID *string `json:"productEntityID,omitempty"`
 
 	// Планируемая дата вывода штатной единицы
@@ -1759,7 +1759,7 @@ type ChangeableStaffUnit struct {
 	// Номер штатной единицы
 	StaffCode *string `json:"staffCode,omitempty"`
 
-	// ID ШЕ предшественника
+	// FileId ШЕ предшественника
 	StaffPredecessorID *string `json:"staffPredecessorID,omitempty"`
 
 	// Идентификатор роли
@@ -1771,16 +1771,16 @@ type ChangeableStaffUnit struct {
 	// Дата начала доступности ШЕ
 	StaffStartDate *openapi_types.Date `json:"staffStartDate,omitempty"`
 
-	// ID руководящей штатной единицы
+	// FileId руководящей штатной единицы
 	SupervisorStaffID *string `json:"supervisorStaffID,omitempty"`
 
 	// Идентификатор вакансии в TEAM
 	TeamVacancyCode *string `json:"teamVacancyCode,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	TypeID *UUID `json:"typeID,omitempty"`
 
-	// ID отдела к которому относится штатная единица
+	// FileId отдела к которому относится штатная единица
 	UnitId string `json:"unitId"`
 
 	// период активности объекта
@@ -1797,16 +1797,16 @@ type ChangeableStaffWithHistory struct {
 
 // Табельщик. Сущность представляет связь между сотрудником и подразделением/назначением, на который назначен данный сотрудник(timekeeperID)
 type ChangeableTimekeeper struct {
-	// ID объекта
+	// FileId объекта
 	AssignmentID *UUID `json:"assignmentID,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	GroupID UUID `json:"groupID"`
 
-	// ID сотрудника (сущность Employee)
+	// FileId сотрудника (сущность Employee)
 	TimekeeperID string `json:"timekeeperID"`
 
-	// ID объекта
+	// FileId объекта
 	UnitID UUID `json:"unitID"`
 }
 
@@ -1824,28 +1824,28 @@ type ChangeableUnit struct {
 	// Наименование подразделения для BPM Eludia. Будет удалено в ближайшей перспективе
 	AltDescription *string `json:"altDescription,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	BalanceUnitID *UUID `json:"balanceUnitID,omitempty"`
 
-	// ID для budman
+	// FileId для budman
 	BudmanID *string `json:"budmanID,omitempty"`
 
-	// ID кластера посчитанный по основной иерархии
+	// FileId кластера посчитанный по основной иерархии
 	CalcClusterID *string `json:"calcClusterID,omitempty"`
 
-	// ID календаря
+	// FileId календаря
 	CalendarId *string `json:"calendarId,omitempty"`
 
-	// ID кластера
+	// FileId кластера
 	ClusterId *string `json:"clusterId,omitempty"`
 
-	// ID центра затрат
+	// FileId центра затрат
 	CostCenterId *string `json:"costCenterId,omitempty"`
 
 	// Описание подразделения/отдела
 	Description *string `json:"description,omitempty"`
 
-	// ID функционального блока
+	// FileId функционального блока
 	FunctionalBlockID *string `json:"functionalBlockID,omitempty"`
 
 	// Признак видимости подразделения на портале Пульс
@@ -1857,28 +1857,28 @@ type ChangeableUnit struct {
 	// Code организации
 	OrgCode *string `json:"orgCode,omitempty"`
 
-	// ID организации, в структуре которой находится подразделение
+	// FileId организации, в структуре которой находится подразделение
 	OrganizationID *string `json:"organizationID,omitempty"`
 
-	// ID родительского подразделения/отдела
+	// FileId родительского подразделения/отдела
 	ParentId *string `json:"parentId,omitempty"`
 
-	// ID продукта
+	// FileId продукта
 	ProductID *string `json:"productID,omitempty"`
 
 	// Сокращенное имя организации
 	ShortName *string `json:"shortName,omitempty"`
 
-	// ID **штатной единицы** руководителя
+	// FileId **штатной единицы** руководителя
 	SupervisorId *string `json:"supervisorId,omitempty"`
 
 	// Название подразделения/отдела
 	Title *string `json:"title,omitempty"`
 
-	// ID типа подразделения
+	// FileId типа подразделения
 	UnitTypeId *string `json:"unitTypeId,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	VirtualBalanceUnitID *UUID `json:"virtualBalanceUnitID,omitempty"`
 }
 
@@ -1893,7 +1893,7 @@ type ChangeableVHI struct {
 	// период активности объекта
 	Activity Activity `json:"activity"`
 
-	// ID объекта
+	// FileId объекта
 	AssignmentID UUID `json:"assignmentID"`
 
 	// категория ДМС - пакет услуг, входящих в полис
@@ -1911,7 +1911,7 @@ type ChangeableVacationBalance struct {
 	// идентификатор типа отсутствия
 	AbsenceTypeID string `json:"absenceTypeID"`
 
-	// ID объекта
+	// FileId объекта
 	AssignmentID UUID `json:"assignmentID"`
 
 	// количество оставшихся дней отпуска данного типа в году
@@ -1923,10 +1923,10 @@ type ChangeableVacationBalance struct {
 
 // ChangeableVacationPeriod defines model for ChangeableVacationPeriod.
 type ChangeableVacationPeriod struct {
-	// ID объекта
+	// FileId объекта
 	AbsenceID UUID `json:"absenceID"`
 
-	// ID объекта
+	// FileId объекта
 	AssignmentID UUID                  `json:"assignmentID"`
 	Periods      []LegalVacationPeriod `json:"periods"`
 }
@@ -1990,7 +1990,7 @@ type ComplexAssignmentV2 struct {
 
 // вычисляемые параметры
 type ComputedUnit struct {
-	// ID объекта
+	// FileId объекта
 	UnitManagerId *UUID `json:"unitManagerId,omitempty"`
 }
 
@@ -2044,7 +2044,7 @@ type CostCenter struct {
 
 // CreatedItem defines model for CreatedItem.
 type CreatedItem struct {
-	// ID созданного объекта
+	// FileId созданного объекта
 	Id string `json:"id"`
 }
 
@@ -2137,7 +2137,7 @@ type Documents struct {
 	// Дата создания записи о документах
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 
-	// ID человека, к которому относятся документы
+	// FileId человека, к которому относятся документы
 	PersonID string `json:"personID"`
 
 	// Дата изменения записи о документах
@@ -2190,7 +2190,7 @@ type EmployeePersonalData struct {
 	// Почта сотрудника
 	Email *string `json:"email,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	EmployeeID UUID `json:"employeeID"`
 
 	// Логин сотрудника
@@ -2413,7 +2413,7 @@ type HierarchyLinkToUpdate struct {
 
 // HistoryID defines model for HistoryID.
 type HistoryID struct {
-	// ID исторической записи (только с параметром history)
+	// FileId исторической записи (только с параметром history)
 	HistoryID *string `json:"historyID,omitempty"`
 }
 
@@ -2446,10 +2446,10 @@ type IDsList []string
 
 // Объект для встраивания в сущности на update, чтобы не передавать поля createdAt, updatedAt, которые заполняются на уровне сервиса
 type Identifier struct {
-	// ID объекта
+	// FileId объекта
 	Id UUID `json:"id"`
 
-	// ID объекта
+	// FileId объекта
 	TaskID *UUID `json:"taskID,omitempty"`
 }
 
@@ -2578,10 +2578,10 @@ type Offices struct {
 
 // OperationIdentifier defines model for OperationIdentifier.
 type OperationIdentifier struct {
-	// временный ID сущности batch операции для однозначного определения ответа
+	// временный FileId сущности batch операции для однозначного определения ответа
 	OperationID string `json:"operationID"`
 
-	// ID объекта
+	// FileId объекта
 	TaskID *UUID `json:"taskID,omitempty"`
 }
 
@@ -2713,16 +2713,16 @@ type PersonMilitary struct {
 	// Информация о категории годности к службе и типе документа
 	Military MilitaryData `json:"military"`
 
-	// ID объекта
+	// FileId объекта
 	PersonID UUID `json:"personID"`
 }
 
 // Объект для картинки у person
 type PersonPictureID struct {
-	// ID объекта
+	// FileId объекта
 	PersonID UUID `json:"personID"`
 
-	// ID объекта
+	// FileId объекта
 	PictureID UUID `json:"pictureID"`
 
 	// Дата обновления фото
@@ -3163,9 +3163,9 @@ type TaskState string
 // Результат выполнения задачи. Доступно только в Complete состоянии
 type TaskStatus string
 
-// ID задача в рамках которой были выполнены действия над объектом
+// FileId задача в рамках которой были выполнены действия над объектом
 type TaskID struct {
-	// ID объекта
+	// FileId объекта
 	TaskID *UUID `json:"taskID,omitempty"`
 }
 
@@ -3177,7 +3177,7 @@ type TaskStatusRespBody struct {
 	// события произошедшие в процессе выполнения задачи
 	Events *[]Event `json:"events,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	Id UUID `json:"id"`
 
 	// произвольное сообщение
@@ -3236,7 +3236,7 @@ type TimekeeperToCreate struct {
 	ChangeableTimekeeper `yaml:",inline"`
 }
 
-// ID объекта
+// FileId объекта
 type UUID string
 
 // Unit defines model for Unit.
@@ -3251,7 +3251,7 @@ type Unit struct {
 
 // UnitPath defines model for UnitPath.
 type UnitPath struct {
-	// ID подразделения/отдела
+	// FileId подразделения/отдела
 	UnitId string `json:"unitId"`
 
 	// Отсортированный массив подразделений от корневого до требуемого
@@ -3321,7 +3321,7 @@ type VacationBalance struct {
 	// Embedded struct due to allOf(#/components/schemas/ChangeableVacationBalance)
 	ChangeableVacationBalance `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
-	// ID объекта
+	// FileId объекта
 	EmployeeID *UUID `json:"employeeID,omitempty"`
 }
 
@@ -3348,7 +3348,7 @@ type VacationPeriod struct {
 	// Embedded struct due to allOf(#/components/schemas/ChangeableVacationPeriod)
 	ChangeableVacationPeriod `yaml:",inline"`
 	// Embedded fields due to inline allOf schema
-	// ID объекта
+	// FileId объекта
 	EmployeeID *UUID `json:"employeeID,omitempty"`
 }
 
@@ -3804,7 +3804,7 @@ type PostApplicantsJSONBody struct {
 	// Отчество/дополнительные имена
 	MiddleNames *string `json:"middleNames,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	OfficeID *UUID   `json:"officeID,omitempty"`
 	Phone    *string `json:"phone,omitempty"`
 
@@ -3814,10 +3814,10 @@ type PostApplicantsJSONBody struct {
 	// СНИЛС в формате 00000000000. Без разделителей, пробелов, только 11 чисел
 	Snils *string `json:"snils,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	StaffUnitID *UUID `json:"staffUnitID,omitempty"`
 
-	// ID объекта
+	// FileId объекта
 	UnitID UUID `json:"unitID"`
 }
 
@@ -4764,7 +4764,7 @@ type GetDgphDonorsParams struct {
 	// список id назначений для фильтрации
 	AssIDs *AssignmentIDs `json:"assIDs,omitempty"`
 
-	// список ID физ лиц
+	// список FileId физ лиц
 	PersonIDs *PersonIDsParam `json:"personIDs,omitempty"`
 
 	// фильтр по списку идентификаторов организаций /organizations
@@ -4793,7 +4793,7 @@ type GetDistWorkParams struct {
 	// список id назначений для фильтрации
 	AssIDs *AssignmentIDs `json:"assIDs,omitempty"`
 
-	// список ID физ лиц
+	// список FileId физ лиц
 	PersonIDs *PersonIDsParam `json:"personIDs,omitempty"`
 
 	// Сгруппированные параметры фильтрации
@@ -4863,7 +4863,7 @@ type GetEmployeesParams struct {
 	// фильтр по списку идентификаторов типов сотрудников
 	EmployeeTypeIDs *EmployeeTypeIdsFilterParam `json:"employeeTypeIDs,omitempty"`
 
-	// список ID физ лиц
+	// список FileId физ лиц
 	PersonIDs *PersonIDsParam `json:"personIDs,omitempty"`
 
 	// Сгруппированные параметры фильтрации
@@ -5040,7 +5040,7 @@ type GetOrganizationsParams struct {
 	// Фильтры *from* выдают ответ **включающий** заданную дату, фильтры *to* - **не включая** указанную дату
 	QueryFilters *QueryFilters `json:"queryFilters,omitempty"`
 
-	// Фильтр по ID подразделения
+	// Фильтр по FileId подразделения
 	//
 	// Для подразделения из фильтра будет найдено корневое подразделение в переданной в **hierarchyID** иерархии
 	//
@@ -5101,7 +5101,7 @@ type GetPersonEducationParams struct {
 	// Фильтры *from* выдают ответ **включающий** заданную дату, фильтры *to* - **не включая** указанную дату
 	QueryFilters *QueryFilters `json:"queryFilters,omitempty"`
 
-	// список ID физ лиц
+	// список FileId физ лиц
 	PersonIDs *PersonIDsParam `json:"personIDs,omitempty"`
 }
 
@@ -5400,10 +5400,10 @@ type GetTimekeepersParams struct {
 	// список id юнитов для фильтрации
 	UnitIDs *UnitIDs `json:"unitIDs,omitempty"`
 
-	// список ID групп табельщиков для фильтрации
+	// список FileId групп табельщиков для фильтрации
 	GroupIDs *IDsList `json:"groupIDs,omitempty"`
 
-	// список ID сотрудников(Employee) для фильтрации
+	// список FileId сотрудников(Employee) для фильтрации
 	TimekeeperIDs *IDsList `json:"timekeeperIDs,omitempty"`
 
 	// фильтр по списку идентификаторов организаций /organizations

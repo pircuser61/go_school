@@ -257,6 +257,6 @@ type TaskRunContext struct {
 }
 
 type Attachment struct {
-	ID           string  `json:"id"`
-	ExternalLink *string `json:"external-link"`
+	FileId       string  `json:"file_id"`
+	ExternalLink *string `json:"external_link"`
 }

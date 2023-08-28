@@ -9,9 +9,9 @@ import (
 )
 
 type SignSignatureParams struct {
-	Decision    SignDecision `json:"decision"`
-	Comment     string       `json:"comment,omitempty"`
-	Attachments []string     `json:"attachments"`
+	Decision    SignDecision        `json:"decision"`
+	Comment     string              `json:"comment,omitempty"`
+	Attachments []entity.Attachment `json:"attachments"`
 }
 
 func (gb *GoSignBlock) handleSignature() error {
@@ -30,7 +30,7 @@ func (gb *GoSignBlock) handleSignature() error {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], gb.State.ActualSigner)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
-		resAttachments := make([]string, 0)
+		resAttachments := make([]entity.Attachment, 0)
 		for _, l := range gb.State.SignLog {
 			resAttachments = append(resAttachments, l.Attachments...)
 		}

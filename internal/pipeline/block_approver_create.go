@@ -79,7 +79,7 @@ func (gb *GoApproverBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 
 	gb.State.Decision = nil
 	gb.State.Comment = nil
-	gb.State.DecisionAttachments = make([]string, 0)
+	gb.State.DecisionAttachments = make([]entity.Attachment, 0)
 	gb.State.ActualApprover = nil
 	gb.State.ApproverLog = make([]ApproverLogEntry, 0)
 

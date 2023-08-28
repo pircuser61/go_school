@@ -505,8 +505,8 @@ const (
 // Add Approver params
 type AddApproversParams struct {
 	// logins of additional approvers
-	AdditionalApprovers []string `json:"additionalApprovers"`
-	Attachments         []string `json:"attachments"`
+	AdditionalApprovers []string      `json:"additionalApprovers"`
+	Attachments         []Attachments `json:"attachments"`
 
 	// Question from approver
 	Question string `json:"question"`
@@ -514,7 +514,7 @@ type AddApproversParams struct {
 
 // Approver update params
 type AdditionalApproverUpdateParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachments `json:"attachments"`
 
 	// Comment from approver
 	Comment string `json:"comment"`
@@ -610,15 +610,15 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
 type ApproverUpdateParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachments `json:"attachments"`
 
 	// Comment from approver
 	Comment string `json:"comment"`
@@ -646,6 +646,15 @@ type ArrayItems struct {
 
 	// Тип элементов массива
 	Type string `json:"type"`
+}
+
+// Attachments defines model for Attachments.
+type Attachments struct {
+	// Ссылка на файл в сторонней системе
+	ExternalLink string `json:"external_link"`
+
+	// Id файла в file registry
+	FileId string `json:"file_id"`
 }
 
 // BlockContextResponse defines model for BlockContextResponse.
@@ -979,14 +988,14 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
-//  * from_schema - Selected by initiator
+//   - user - Single user
+//   - group - Execution group ID
+//   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
 type ExecutionUpdateParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachments `json:"attachments"`
 
 	// Comment from executor
 	Comment string `json:"comment"`
@@ -999,7 +1008,7 @@ type ExecutionUpdateParams struct {
 
 // Executor change params
 type ExecutorChangeParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachments `json:"attachments"`
 
 	// Comment from executor
 	Comment string `json:"comment"`
@@ -1059,11 +1068,11 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   * User - Single user
-//   * group - Form group ID
-//   * Initiator - Process initiator
-//   * From_schema - Selected by initiator
-//   * Auto_Fill - Auto Fill form by system
+//   - User - Single user
+//   - group - Form group ID
+//   - Initiator - Process initiator
+//   - From_schema - Selected by initiator
+//   - Auto_Fill - Auto Fill form by system
 type FormExecutorType string
 
 // Form params
@@ -1454,7 +1463,7 @@ type RequestExecutionInfoType string
 
 // Executor request info params
 type RequestInfoUpdateParams struct {
-	Attachments []string `json:"attachments"`
+	Attachments []Attachments `json:"attachments"`
 
 	// Comment from executor
 	Comment string `json:"comment"`
@@ -1476,7 +1485,7 @@ type ResponsePipelineSearch struct {
 // RunNewVersionByPrevVersionRequest defines model for RunNewVersionByPrevVersionRequest.
 type RunNewVersionByPrevVersionRequest struct {
 	ApplicationBody  map[string]interface{}                 `json:"application_body"`
-	AttachmentFields []string                               `json:"attachment_fields"`
+	AttachmentFields []Attachments                          `json:"attachment_fields"`
 	Description      string                                 `json:"description"`
 	Keys             RunNewVersionByPrevVersionRequest_Keys `json:"keys"`
 	WorkNumber       string                                 `json:"work_number"`
@@ -1505,7 +1514,7 @@ type RunVersionBody map[string]interface{}
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
 	ApplicationBody   map[string]interface{}              `json:"application_body"`
-	AttachmentFields  []string                            `json:"attachment_fields"`
+	AttachmentFields  []Attachments                       `json:"attachment_fields"`
 	Description       string                              `json:"description"`
 	IsTestApplication *bool                               `json:"is_test_application,omitempty"`
 	Keys              RunVersionsByPipelineIdRequest_Keys `json:"keys"`
@@ -1573,7 +1582,7 @@ type SignParams struct {
 
 // Sign update params
 type SignUpdateParams struct {
-	Attachments *[]string `json:"attachments,omitempty"`
+	Attachments *[]Attachments `json:"attachments,omitempty"`
 
 	// Comment from signer
 	Comment *string `json:"comment,omitempty"`
@@ -1592,9 +1601,9 @@ type SignatureCarrier string
 type SignatureType string
 
 // Signer type:
-//   * user - Single user
-//   * group - Group ID
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Group ID
+//   - FromSchema - Selected by initiator
 type SignerType string
 
 // Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
@@ -1739,18 +1748,18 @@ type Action_Params struct {
 }
 
 // Approver decision:
-//  * approved - Согласовать
-//  * rejected - Отклонить
+//   - approved - Согласовать
+//   - rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//  * approve - Согласовать
-//  * reject - Отклонить
-//  * viewed - Ознакомлен
-//  * informed - Проинформирован
-//  * sign - Подписать
-//  * confirm - Утвердить
-//  * sign_ukep - Подписать УКЭП
+//   - approve - Согласовать
+//   - reject - Отклонить
+//   - viewed - Ознакомлен
+//   - informed - Проинформирован
+//   - sign - Подписать
+//   - confirm - Утвердить
+//   - sign_ukep - Подписать УКЭП
 type ApproverDecision string
 
 // Block type (language)
@@ -1833,8 +1842,8 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1865,17 +1874,17 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Approver decision:
-//  * signed - Согласовано
-//  * rejected - Отклонено
-//  * error - Произошла ошибка
+//   - signed - Согласовано
+//   - rejected - Отклонено
+//   - error - Произошла ошибка
 type SignDecision string
 
 // Task human readable status
