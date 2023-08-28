@@ -910,7 +910,7 @@ func TestIF_DebugRun(t *testing.T) {
 		{
 			name:          "compare with empty string and number (number-nil string pair)",
 			wantErr:       false,
-			wantedGroupID: "test-group-1",
+			wantedGroupID: "",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -1192,7 +1192,7 @@ func TestIF_DebugRun(t *testing.T) {
 		{
 			name:          "compare with int and bool (int-bool pair)",
 			wantErr:       false,
-			wantedGroupID: "test-group-1",
+			wantedGroupID: "",
 			args: args{
 				name: example,
 				ef: &entity.EriusFunc{
@@ -2146,6 +2146,146 @@ func TestIF_DebugRun(t *testing.T) {
 				ctx: context.Background(),
 				runCtx: func() *store.VariableStore {
 					res := store.NewStore()
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "compare date variable and nil - equal",
+			wantErr:       false,
+			wantedGroupID: "",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []conditions_kit.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []conditions_kit.Condition{
+										{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
+													DataType: "date",
+												},
+												VariableRef: "data.testStringVariable1",
+											},
+											RightOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
+													DataType: "date",
+												},
+												VariableRef: "data.testStringVariable3",
+											},
+											Operator: "Equal",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					res.SetValue("data.testStringVariable1", "11.08.2022")
+					res.SetValue("data.testStringVariable2", "11.08.2022")
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "variable - exists",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []conditions_kit.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []conditions_kit.Condition{
+										{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
+													DataType: "date",
+												},
+												VariableRef: "data.testStringVariable1",
+											},
+											RightOperand: &conditions_kit.VariableOperand{},
+											Operator:     "Exists",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					res.SetValue("data.testStringVariable1", "11.08.2022")
+					res.SetValue("data.testStringVariable2", "11.08.2022")
+
+					return res
+				}(),
+			},
+		},
+		{
+			name:          "variable - not exists",
+			wantErr:       false,
+			wantedGroupID: "test-group-1",
+			args: args{
+				name: example,
+				ef: &entity.EriusFunc{
+					BlockType: BlockGoIfID,
+					Title:     title,
+					Params: func() []byte {
+						r, _ := json.Marshal(&conditions_kit.ConditionParams{
+							Type: "conditions",
+							ConditionGroups: []conditions_kit.ConditionGroup{
+								{
+									Id:              "test-group-1",
+									LogicalOperator: "or",
+									Conditions: []conditions_kit.Condition{
+										{
+											LeftOperand: &conditions_kit.VariableOperand{
+												OperandBase: conditions_kit.OperandBase{
+													DataType: "date",
+												},
+												VariableRef: "data.testStringVariable3",
+											},
+											RightOperand: &conditions_kit.VariableOperand{},
+											Operator:     "NotExists",
+										},
+									},
+								},
+							},
+						})
+
+						return r
+					}(),
+				},
+				ctx: context.Background(),
+				runCtx: func() *store.VariableStore {
+					res := store.NewStore()
+					res.SetValue("data.testStringVariable1", "11.08.2022")
+					res.SetValue("data.testStringVariable2", "11.08.2022")
+
 					return res
 				}(),
 			},
