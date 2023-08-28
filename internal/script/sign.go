@@ -145,5 +145,18 @@ func (s *SignParams) Validate() error {
 		return fmt.Errorf("unknown signature type: %s", s.SignatureType)
 	}
 
+	if s.CheckSLA != nil && *s.CheckSLA {
+		if s.SLA == nil || *s.SLA == 0 {
+			return errors.New("sla can`t be zero or nil")
+		}
+
+		if s.WorkType == nil || *s.WorkType == "" {
+			return errors.New("work type can`t be empty or nil")
+		}
+
+		if s.AutoReject == nil {
+			return errors.New("auto reject can`t be nil")
+		}
+	}
 	return nil
 }

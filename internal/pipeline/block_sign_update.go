@@ -40,7 +40,7 @@ func (gb *GoSignBlock) handleSignature() error {
 	return nil
 }
 
-func (gb *GoSignBlock) Update(_ c.Context) (interface{}, error) {
+func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
@@ -48,6 +48,10 @@ func (gb *GoSignBlock) Update(_ c.Context) (interface{}, error) {
 
 	//nolint:gocritic //for future actions
 	switch data.Action {
+	case string(entity.TaskUpdateActionSLABreach):
+		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
 	case string(entity.TaskUpdateActionSign):
 		if errUpdate := gb.handleSignature(); errUpdate != nil {
 			return nil, errUpdate
