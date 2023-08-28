@@ -59,6 +59,11 @@ type SignParams struct {
 	SignerGroupIDPath string `json:"signerGroupIdPath,omitempty"`
 
 	FormsAccessibility []FormAccessibility `json:"formsAccessibility"`
+
+	SLA        *int    `json:"sla"`
+	CheckSLA   *bool   `json:"check_sla"`
+	AutoReject *bool   `json:"auto_reject"`
+	WorkType   *string `json:"work_type"`
 }
 
 func (s *SignParams) checkSignerTypeUserValid() error {

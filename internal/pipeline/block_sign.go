@@ -251,7 +251,10 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			description,
-			gb.RunContext.Sender.SdAddress)
+			gb.RunContext.Sender.SdAddress,
+			"",
+			gb.State.AutoReject != nil && *gb.State.AutoReject,
+		)
 	}
 
 	if len(emails) == 0 {
@@ -285,6 +288,10 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		FormsAccessibility: params.FormsAccessibility,
 		SignatureType:      params.SignatureType,
 		SignatureCarrier:   params.SignatureCarrier,
+		SLA:                params.SLA,
+		CheckSLA:           params.CheckSLA,
+		AutoReject:         params.AutoReject,
+		WorkType:           params.WorkType,
 	}
 
 	if gb.State.SigningRule == "" {

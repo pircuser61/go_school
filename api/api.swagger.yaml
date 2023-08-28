@@ -4709,6 +4709,18 @@ components:
           description: List of accessibility properties for forms
           items:
             $ref: '#/components/schemas/FormsAccessibility'
+        sla:
+          type: integer
+          description: Sign SLA (in working hours)
+          minimum: 1
+        check_sla:
+          type: boolean
+          description: Is active SLA
+        autoReject:
+          type: boolean
+          description: reject after expire sla
+        work_type:
+          $ref: "#/components/schemas/WorkType"
       required:
         - signerType
         - signatureType
