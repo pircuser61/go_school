@@ -46,7 +46,7 @@ type SignData struct {
 	WorkType   *string `json:"work_type"`
 }
 
-func (s *SignData) handleAnyOfDecision(login string, params *SignSignatureParams) {
+func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams) {
 	s.Decision = &params.Decision
 	s.Comment = &params.Comment
 	s.ActualSigner = &login
@@ -62,7 +62,7 @@ func (s *SignData) handleAnyOfDecision(login string, params *SignSignatureParams
 	s.SignLog = append(s.SignLog, signingLogEntry)
 }
 
-func (s *SignData) handleAllOfDecision(login string, params *SignSignatureParams) error {
+func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams) error {
 	for i := 0; i < len(s.SignLog); i++ {
 		entry := s.SignLog[i]
 		if entry.Login == login {
@@ -100,7 +100,7 @@ func (s *SignData) handleAllOfDecision(login string, params *SignSignatureParams
 	return nil
 }
 
-func (s *SignData) SetDecision(login string, params *SignSignatureParams) error {
+func (s *SignData) SetDecision(login string, params *signSignatureParams) error {
 	_, signerFound := s.Signers[login]
 	if !signerFound {
 		if s.SignatureType != script.SignatureTypeUKEP || (s.SignatureType == script.SignatureTypeUKEP &&

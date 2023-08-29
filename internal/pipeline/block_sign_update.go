@@ -8,14 +8,14 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 )
 
-type SignSignatureParams struct {
+type signSignatureParams struct {
 	Decision    SignDecision `json:"decision"`
 	Comment     string       `json:"comment,omitempty"`
 	Attachments []string     `json:"attachments"`
 }
 
 func (gb *GoSignBlock) handleSignature() error {
-	var updateParams SignSignatureParams
+	var updateParams signSignatureParams
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateParams)
 	if err != nil {
@@ -52,6 +52,10 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 		if errUpdate := gb.handleBreachedSLA(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
+	case string(entity.TaskUpdateActionDayBeforeSLABreach):
+		if errUpdate := gb.handleNotifications(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
 	case string(entity.TaskUpdateActionSign):
 		if errUpdate := gb.handleSignature(); errUpdate != nil {
 			return nil, errUpdate
@@ -76,7 +80,7 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		return nil
 	}
 
-	if gb.State.SLA != nil && *gb.State.SLA >= 8 {
+	if gb.State.SLA != nil {
 		emails := make([]string, 0, len(gb.State.Signers))
 		logins := getSliceFromMapOfStrings(gb.State.Signers)
 
@@ -103,7 +107,37 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		}
 	}
 
+	if gb.State.AutoReject != nil && *gb.State.AutoReject {
+		gb.RunContext.UpdateData.ByLogin = autoSigner
+		if setErr := gb.setSignerDecision(
+			&signSignatureParams{
+				Decision: SignDecisionRejected,
+				Comment:  AutoActionComment,
+			}); setErr != nil {
+			return setErr
+		}
+	}
+
 	gb.State.SLAChecked = true
+
+	return nil
+}
+
+func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
+	if errUpdate := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u); errUpdate != nil {
+		return errUpdate
+	}
+
+	if gb.State.Decision != nil {
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], gb.State.ActualSigner)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
+		resAttachments := make([]string, 0)
+		for _, l := range gb.State.SignLog {
+			resAttachments = append(resAttachments, l.Attachments...)
+		}
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignAttachments], resAttachments)
+	}
 
 	return nil
 }

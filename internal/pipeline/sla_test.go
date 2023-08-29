@@ -162,7 +162,7 @@ func Test_ComputeDeadline(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if deadline := ComputeDeadline(tt.fields.Start, tt.fields.SLA, nil); deadline != tt.wanted {
+			if deadline := ComputeMaxDateFormatted(tt.fields.Start, tt.fields.SLA, nil); deadline != tt.wanted {
 				t.Errorf("compute deadline returned unexpected result")
 			}
 		})

@@ -301,7 +301,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				Mailto:     gb.RunContext.Sender.FetchEmail,
 				BlockName:  BlockGoFormID,
 				Login:      login,
-				Deadline:   ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
+				Deadline:   ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			})
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(

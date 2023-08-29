@@ -300,6 +300,6 @@ func CheckBreachSLA(start, current time.Time, sla int, slaInfoPtr *SLAInfo) bool
 	return current.UTC().After(deadline)
 }
 
-func ComputeDeadline(start time.Time, sla int, slaInfoPtr *SLAInfo) string {
+func ComputeMaxDateFormatted(start time.Time, sla int, slaInfoPtr *SLAInfo) string {
 	return ComputeMaxDate(start, float32(sla), slaInfoPtr).Format(ddmmyyFormat)
 }
