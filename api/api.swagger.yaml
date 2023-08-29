@@ -3349,7 +3349,7 @@ components:
         attachments:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
       required:
         - comment
         - attachments
@@ -3542,7 +3542,7 @@ components:
         attachments:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
         - comment
@@ -3560,7 +3560,7 @@ components:
         attachments:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
 
@@ -3576,7 +3576,7 @@ components:
         attachments:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
         - comment
@@ -3594,7 +3594,7 @@ components:
         attachments:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
         - comment
@@ -3615,7 +3615,7 @@ components:
         attachments:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
       required:
         - additionalApprovers
         - question
@@ -3695,7 +3695,7 @@ components:
         attachments:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
       required:
         - newExecutorLogin
         - comment
@@ -3716,7 +3716,7 @@ components:
         attachments:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
       required:
         - reqType
         - comment
@@ -3979,7 +3979,7 @@ components:
         attachment_fields:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
     RunNewVersionByPrevVersionRequest:
       required: [ work_number,description,application_body,keys,attachment_fields ]
       type: object
@@ -3998,7 +3998,7 @@ components:
         attachment_fields:
           type: array
           items:
-            $ref: '#/components/schemas/Attachments'
+            $ref: '#/components/schemas/Attachment'
     eriusTaskResponse:
       type: object
       properties:
@@ -4164,7 +4164,7 @@ components:
         - comment_enabled
         - attachments_enabled
 
-    Attachments:
+    Attachment:
       type: object
       properties:
         file_id:
@@ -4173,10 +4173,7 @@ components:
         external_link:
           type: string
           description: "Ссылка на файл в сторонней системе"
-      required:
-        - file_id
-        - external_link
-        -
+
     blockType:
       type: string
       description: Block type (language)

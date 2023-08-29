@@ -102,10 +102,9 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	if len(skippedFiles) > 0 {
 		text = fmt.Sprintf("%s <p>%s</p>", text, "Список файлов, которые не были доставлены в нотификацию:")
 		for i := range skippedFiles {
-			text = fmt.Sprintf("%s <p>%d. %s</p>", text, i+1, skippedFiles[i].FileId)
+			text = fmt.Sprintf("%s <p>%d. %s</p>", text, i+1, skippedFiles[i])
 		}
 	}
-
 	text = mail.AddStyles(text)
 	return text, files, nil
 }
@@ -218,10 +217,10 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 	return b, reEntry, nil
 }
 
-func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []entity.Attachment, skippedFiles []entity.Attachment) {
+func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []entity.Attachment, skippedFiles []string) {
 	const attachmentsLimitMB = 35
 	var limitCounter float64
-	skippedFiles = make([]entity.Attachment, 0)
+	skippedFiles = make([]string, 0)
 
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].Size < files[j].Size
@@ -233,7 +232,7 @@ func sortAndFilterAttachments(files []file_registry.FileInfo) (requiredFiles []e
 		if limitCounter <= attachmentsLimitMB {
 			requiredFiles = append(requiredFiles, entity.Attachment{FileId: files[i].FileId}) // store fileIDs to get files later
 		} else {
-			skippedFiles = append(skippedFiles, entity.Attachment{FileId: files[i].FileId}) // store file names to use them in notification
+			skippedFiles = append(skippedFiles, files[i].Name) // store file names to use them in notification
 		}
 	}
 

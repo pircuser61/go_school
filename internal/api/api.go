@@ -505,8 +505,8 @@ const (
 // Add Approver params
 type AddApproversParams struct {
 	// logins of additional approvers
-	AdditionalApprovers []string      `json:"additionalApprovers"`
-	Attachments         []Attachments `json:"attachments"`
+	AdditionalApprovers []string     `json:"additionalApprovers"`
+	Attachments         []Attachment `json:"attachments"`
 
 	// Question from approver
 	Question string `json:"question"`
@@ -514,7 +514,7 @@ type AddApproversParams struct {
 
 // Approver update params
 type AdditionalApproverUpdateParams struct {
-	Attachments []Attachments `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from approver
 	Comment string `json:"comment"`
@@ -618,7 +618,7 @@ type ApproverType string
 
 // Approver update params
 type ApproverUpdateParams struct {
-	Attachments []Attachments `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from approver
 	Comment string `json:"comment"`
@@ -648,13 +648,13 @@ type ArrayItems struct {
 	Type string `json:"type"`
 }
 
-// Attachments defines model for Attachments.
-type Attachments struct {
+// Attachment defines model for Attachment.
+type Attachment struct {
 	// Ссылка на файл в сторонней системе
-	ExternalLink string `json:"external_link"`
+	ExternalLink *string `json:"external_link,omitempty"`
 
 	// Id файла в file registry
-	FileId string `json:"file_id"`
+	FileId *string `json:"file_id,omitempty"`
 }
 
 // BlockContextResponse defines model for BlockContextResponse.
@@ -995,7 +995,7 @@ type ExecutionParamsType string
 
 // Executor update params
 type ExecutionUpdateParams struct {
-	Attachments []Attachments `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from executor
 	Comment string `json:"comment"`
@@ -1008,7 +1008,7 @@ type ExecutionUpdateParams struct {
 
 // Executor change params
 type ExecutorChangeParams struct {
-	Attachments []Attachments `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from executor
 	Comment string `json:"comment"`
@@ -1463,7 +1463,7 @@ type RequestExecutionInfoType string
 
 // Executor request info params
 type RequestInfoUpdateParams struct {
-	Attachments []Attachments `json:"attachments"`
+	Attachments []Attachment `json:"attachments"`
 
 	// Comment from executor
 	Comment string `json:"comment"`
@@ -1485,7 +1485,7 @@ type ResponsePipelineSearch struct {
 // RunNewVersionByPrevVersionRequest defines model for RunNewVersionByPrevVersionRequest.
 type RunNewVersionByPrevVersionRequest struct {
 	ApplicationBody  map[string]interface{}                 `json:"application_body"`
-	AttachmentFields []Attachments                          `json:"attachment_fields"`
+	AttachmentFields []Attachment                           `json:"attachment_fields"`
 	Description      string                                 `json:"description"`
 	Keys             RunNewVersionByPrevVersionRequest_Keys `json:"keys"`
 	WorkNumber       string                                 `json:"work_number"`
@@ -1514,7 +1514,7 @@ type RunVersionBody map[string]interface{}
 // RunVersionsByPipelineIdRequest defines model for RunVersionsByPipelineIdRequest.
 type RunVersionsByPipelineIdRequest struct {
 	ApplicationBody   map[string]interface{}              `json:"application_body"`
-	AttachmentFields  []Attachments                       `json:"attachment_fields"`
+	AttachmentFields  []Attachment                        `json:"attachment_fields"`
 	Description       string                              `json:"description"`
 	IsTestApplication *bool                               `json:"is_test_application,omitempty"`
 	Keys              RunVersionsByPipelineIdRequest_Keys `json:"keys"`
@@ -1582,7 +1582,7 @@ type SignParams struct {
 
 // Sign update params
 type SignUpdateParams struct {
-	Attachments *[]Attachments `json:"attachments,omitempty"`
+	Attachments *[]Attachment `json:"attachments,omitempty"`
 
 	// Comment from signer
 	Comment *string `json:"comment,omitempty"`
