@@ -2152,7 +2152,7 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
 	from variable_storage vs
 		inner join works w on vs.work_id = w.id
 		inner join inside_gates_nodes ign on vs.step_name=ign.out_node
-	where w.work_number=$3 and vs.status='running'`
+	where w.work_number=$1 and vs.status='running'`
 
 	var parallelIsFinished bool
 	row := db.Connection.QueryRow(ctx, q, workNumber, blockName)
