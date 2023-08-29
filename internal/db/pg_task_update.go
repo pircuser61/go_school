@@ -26,7 +26,7 @@ func (db *PGCon) deleteFinishedPipelineDeadlines(ctx c.Context, taskID uuid.UUID
 	return err
 }
 
-func (db *PGCon) deleteFinishedPipelineMembers(ctx context.Context, taskID uuid.UUID) error {
+func (db *PGCon) deleteFinishedPipelineMembers(ctx c.Context, taskID uuid.UUID) error {
 	ctx, span := trace.StartSpan(ctx, "delete_finished_pipeline_members")
 	defer span.End()
 
