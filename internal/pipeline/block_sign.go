@@ -4,7 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
 	"strings"
 	"time"
 
@@ -165,7 +164,7 @@ func (gb *GoSignBlock) Members() []Member {
 }
 
 //nolint:dupl,gocyclo //Need here
-func (gb *GoSignBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
+func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {

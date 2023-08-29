@@ -4,8 +4,6 @@ import (
 	c "context"
 	"encoding/json"
 
-	"golang.org/x/net/context"
-
 	"go.opencensus.io/trace"
 
 	"github.com/google/uuid"
@@ -15,7 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
-func (db *PGCon) deleteFinishedPipelineDeadlines(ctx context.Context, taskID uuid.UUID) error {
+func (db *PGCon) deleteFinishedPipelineDeadlines(ctx c.Context, taskID uuid.UUID) error {
 	ctx, span := trace.StartSpan(ctx, "delete_finished_pipeline_deadlines")
 	defer span.End()
 
