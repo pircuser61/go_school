@@ -198,6 +198,19 @@ func (c *VariableStore) GetBoolWithInput(inMap map[string]string, key string) (b
 	return c.GetBool(inKey)
 }
 
+// we need to convert structs to maps, structs can be in arrays or other structs
+func converter(data interface{}) interface{} {
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return data
+	}
+	var newData interface{}
+	if unmErr := json.Unmarshal(bytes, &newData); unmErr != nil {
+		return data
+	}
+	return newData
+}
+
 func (c *VariableStore) SetValue(name string, value interface{}) {
 	c.Lock()
 	defer c.Unlock()
@@ -218,7 +231,7 @@ func (c *VariableStore) SetValue(name string, value interface{}) {
 	case int:
 		c.Values[name] = v
 	default:
-		c.Values[name] = value
+		c.Values[name] = converter(value)
 	}
 }
 
