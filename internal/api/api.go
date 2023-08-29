@@ -610,10 +610,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -979,9 +979,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
-//  * from_schema - Selected by initiator
+//   - user - Single user
+//   - group - Execution group ID
+//   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -1059,11 +1059,11 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   * User - Single user
-//   * group - Form group ID
-//   * Initiator - Process initiator
-//   * From_schema - Selected by initiator
-//   * Auto_Fill - Auto Fill form by system
+//   - User - Single user
+//   - group - Form group ID
+//   - Initiator - Process initiator
+//   - From_schema - Selected by initiator
+//   - Auto_Fill - Auto Fill form by system
 type FormExecutorType string
 
 // Form params
@@ -1544,6 +1544,12 @@ type ShapeEntity struct {
 
 // Singature params
 type SignParams struct {
+	// reject after expire sla
+	AutoReject *bool `json:"autoReject,omitempty"`
+
+	// Is active SLA
+	CheckSla *bool `json:"check_sla,omitempty"`
+
 	// List of accessibility properties for forms
 	FormsAccessibility []FormsAccessibility `json:"formsAccessibility"`
 	SignatureCarrier   *SignatureCarrier    `json:"signatureCarrier,omitempty"`
@@ -1569,6 +1575,12 @@ type SignParams struct {
 
 	// Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
 	SigningRule *SigningRule `json:"signingRule,omitempty"`
+
+	// Sign SLA (in working hours)
+	Sla *int `json:"sla,omitempty"`
+
+	// Рабочий режим
+	WorkType *WorkType `json:"work_type,omitempty"`
 }
 
 // Sign update params
@@ -1592,9 +1604,9 @@ type SignatureCarrier string
 type SignatureType string
 
 // Signer type:
-//   * user - Single user
-//   * group - Group ID
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Group ID
+//   - FromSchema - Selected by initiator
 type SignerType string
 
 // Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
@@ -1739,18 +1751,18 @@ type Action_Params struct {
 }
 
 // Approver decision:
-//  * approved - Согласовать
-//  * rejected - Отклонить
+//   - approved - Согласовать
+//   - rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//  * approve - Согласовать
-//  * reject - Отклонить
-//  * viewed - Ознакомлен
-//  * informed - Проинформирован
-//  * sign - Подписать
-//  * confirm - Утвердить
-//  * sign_ukep - Подписать УКЭП
+//   - approve - Согласовать
+//   - reject - Отклонить
+//   - viewed - Ознакомлен
+//   - informed - Проинформирован
+//   - sign - Подписать
+//   - confirm - Утвердить
+//   - sign_ukep - Подписать УКЭП
 type ApproverDecision string
 
 // Block type (language)
@@ -1833,8 +1845,8 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1865,17 +1877,17 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Approver decision:
-//  * signed - Согласовано
-//  * rejected - Отклонено
-//  * error - Произошла ошибка
+//   - signed - Согласовано
+//   - rejected - Отклонено
+//   - error - Произошла ошибка
 type SignDecision string
 
 // Task human readable status

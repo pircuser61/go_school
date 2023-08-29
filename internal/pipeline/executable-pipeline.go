@@ -6,8 +6,6 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
@@ -64,7 +62,7 @@ func (gb *ExecutablePipeline) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutablePipeline) Deadlines(_ context.Context) ([]Deadline, error) {
+func (gb *ExecutablePipeline) Deadlines(_ c.Context) ([]Deadline, error) {
 	return []Deadline{}, nil
 }
 

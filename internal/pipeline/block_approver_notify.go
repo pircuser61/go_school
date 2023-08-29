@@ -107,7 +107,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				Name:                      gb.RunContext.NotifName,
 				Status:                    gb.State.ApproveStatusName,
 				Action:                    statusToTaskAction[StatusApprovement],
-				DeadLine:                  ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
+				DeadLine:                  ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 				SdUrl:                     gb.RunContext.Sender.SdAddress,
 				Mailto:                    gb.RunContext.Sender.FetchEmail,
 				Login:                     login,

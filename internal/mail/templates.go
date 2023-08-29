@@ -363,24 +363,36 @@ type NewAppPersonStatusTpl struct {
 	LastWorks []*entity.EriusTask
 }
 
-func NewSignerNotificationTpl(id, name, description, sdUrl string) Template {
+func NewSignerNotificationTpl(id, name, description, sdUrl, slaDate string, autoReject bool) Template {
+	autoRejectText := ""
+
+	if autoReject {
+		autoRejectText = "После истечения срока заявка будет автоматически отклонена.<br>"
+	}
+
 	return Template{
 		Subject: fmt.Sprintf("Заявка №%s %s ожидает подписания", id, name),
 		Text: `Уважаемый коллега, заявка {{.Id}} {{.Name}} <b>ожидает подписания</b>.<br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
+				Срок подписания до {{.SLADate}} <br>
+				{{.AutoReject}}
 				Текст заявки:<br>
 <pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
 
 		Variables: struct {
-			Id          string
-			Name        string
-			Link        string
-			Description string
+			Id             string
+			Name           string
+			Link           string
+			Description    string
+			SLADate        string
+			AutoRejectText string
 		}{
-			Id:          id,
-			Name:        name,
-			Link:        fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
-			Description: description,
+			Id:             id,
+			Name:           name,
+			Link:           fmt.Sprintf(TaskUrlTemplate, sdUrl, id),
+			Description:    description,
+			SLADate:        slaDate,
+			AutoRejectText: autoRejectText,
 		},
 	}
 }
@@ -712,6 +724,22 @@ func NewRejectPipelineGroupTemplate(workNumber, workTitle, sdUrl string) Templat
 	return Template{
 		Subject: fmt.Sprintf("Заявка № %s %s - отозвана", workNumber, workTitle),
 		Text:    "Уважаемый коллега, заявка №{{.Id}} {{.Name}} отозвана<br>Для просмотра перейдите по <a href={{.Link}}>ссылке</a>",
+		Variables: struct {
+			Id   string `json:"id"`
+			Name string `json:"name"`
+			Link string `json:"link"`
+		}{
+			Id:   workNumber,
+			Name: workTitle,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+		},
+	}
+}
+
+func NewSignSLAExpiredTemplate(workNumber, workTitle, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("По заявке № %s %s- истекло время подписания", workNumber, workTitle),
+		Text:    "Истекло время подписания заявки {{.Name}}<br>Для просмотра перейдите по <a href={{.Link}}>ссылке</a>",
 		Variables: struct {
 			Id   string `json:"id"`
 			Name string `json:"name"`
