@@ -4183,7 +4183,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FunctionValueModel'
-        output:
+        outputs:
           $ref: '#/components/schemas/JSONSchema'
         params:
           $ref: '#/components/schemas/FunctionParams'
