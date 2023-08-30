@@ -11,8 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/gommon/log"
 
-	"github.com/pkg/errors"
-
 	"go.opencensus.io/trace"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -21,7 +19,6 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
@@ -296,22 +293,6 @@ func (ae *APIEnv) DeletePipeline(w http.ResponseWriter, req *http.Request, pipel
 		return
 	}
 
-	childPipelines, err := scenarioUsage(ctx, ae.DB, id)
-	if err != nil {
-		e := SearchingForPipelinesUsageError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-	if len(childPipelines) > 0 {
-		e := ScenarioIsUsedInOtherError
-		log.Error(e.errorMessage(err))
-		_ = e.sendError(w)
-
-		return
-	}
-
 	err = ae.DB.RemovePipelineTags(ctx, id)
 	if err != nil {
 		e := TagDetachError
@@ -498,37 +479,6 @@ func (ae *APIEnv) listPipelines(ctx context.Context,
 	}
 
 	return drafts, nil
-}
-
-func scenarioUsage(ctx context.Context, pipelineStorager db.PipelineStorager, id uuid.UUID) ([]entity.EriusScenario, error) {
-	ctx, span := trace.StartSpan(ctx, "scenario usage")
-	defer span.End()
-
-	p, err := pipelineStorager.GetPipeline(ctx, id)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to get pipeline")
-	}
-
-	workedVersions, err := pipelineStorager.GetWorkedVersions(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	res := make([]entity.EriusScenario, 0)
-
-	for i := range workedVersions {
-		for j := range workedVersions[i].Pipeline.Blocks {
-			block := workedVersions[i].Pipeline.Blocks[j]
-			if block.BlockType == script.TypeScenario &&
-				block.Title == p.Name {
-				res = append(res, workedVersions[i])
-
-				break
-			}
-		}
-	}
-
-	return res, nil
 }
 
 func (ae *APIEnv) PipelineNameExists(w http.ResponseWriter, r *http.Request, params PipelineNameExistsParams) {
