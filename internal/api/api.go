@@ -1548,7 +1548,7 @@ type SignParams struct {
 	AutoReject *bool `json:"autoReject,omitempty"`
 
 	// Is active SLA
-	CheckSla *bool `json:"check_sla,omitempty"`
+	CheckSLA *bool `json:"checkSLA,omitempty"`
 
 	// List of accessibility properties for forms
 	FormsAccessibility []FormsAccessibility `json:"formsAccessibility"`
@@ -1580,7 +1580,7 @@ type SignParams struct {
 	Sla *int `json:"sla,omitempty"`
 
 	// Рабочий режим
-	WorkType *WorkType `json:"work_type,omitempty"`
+	WorkType *WorkType `json:"workType,omitempty"`
 }
 
 // Sign update params

@@ -61,9 +61,9 @@ type SignParams struct {
 	FormsAccessibility []FormAccessibility `json:"formsAccessibility"`
 
 	SLA        *int    `json:"sla"`
-	CheckSLA   *bool   `json:"check_sla"`
-	AutoReject *bool   `json:"auto_reject"`
-	WorkType   *string `json:"work_type"`
+	CheckSLA   *bool   `json:"checkSLA"`
+	AutoReject *bool   `json:"autoReject"`
+	WorkType   *string `json:"workType"`
 }
 
 func (s *SignParams) checkSignerTypeUserValid() error {
