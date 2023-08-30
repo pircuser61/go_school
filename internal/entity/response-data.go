@@ -635,6 +635,14 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 	}
 
 	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
+	for k, v := range entryPoint.Output.Properties {
+		val, ok := es.Settings.StartSchema.Properties[k]
+		if !ok {
+			continue
+		}
+		val.Global = v.Global
+		es.Settings.StartSchema.Properties[k] = val
+	}
 	entryPoint.Output = es.Settings.StartSchema
 
 	entryPoint.Output.Properties[KeyOutputWorkNumber] = script.JSONSchemaPropertiesValue{
