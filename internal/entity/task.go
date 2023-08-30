@@ -260,3 +260,22 @@ type Attachment struct {
 	FileId       string  `json:"file_id"`
 	ExternalLink *string `json:"external_link"`
 }
+
+func (at *Attachment) UnmarshalJSON(b []byte) error {
+	var atTemp struct {
+		FileId       string  `json:"file_id"`
+		ExternalLink *string `json:"external_link"`
+	}
+
+	var stTemp string
+	if err := json.Unmarshal(b, &atTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		at.FileId = stTemp
+		return nil
+	}
+	at.FileId = atTemp.FileId
+	at.ExternalLink = atTemp.ExternalLink
+	return nil
+}

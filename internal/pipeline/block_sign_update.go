@@ -23,20 +23,6 @@ func (gb *GoSignBlock) handleSignature() error {
 		return errors.New("can't assert provided update data")
 	}
 
-	if errSet := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, &updateParams); errSet != nil {
-		return errSet
-	}
-
-	if gb.State.Decision != nil {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], gb.State.ActualSigner)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
-		resAttachments := make([]entity.Attachment, 0)
-		for _, l := range gb.State.SignLog {
-			resAttachments = append(resAttachments, l.Attachments...)
-		}
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignAttachments], resAttachments)
-	}
 	if setErr := gb.setSignerDecision(updateParams); setErr != nil {
 		return setErr
 	}
@@ -135,7 +121,7 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], gb.State.ActualSigner)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
-		resAttachments := make([]string, 0)
+		resAttachments := make([]entity.Attachment, 0)
 		for _, l := range gb.State.SignLog {
 			resAttachments = append(resAttachments, l.Attachments...)
 		}
