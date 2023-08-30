@@ -4713,13 +4713,13 @@ components:
           type: integer
           description: Sign SLA (in working hours)
           minimum: 1
-        check_sla:
+        checkSLA:
           type: boolean
           description: Is active SLA
         autoReject:
           type: boolean
           description: reject after expire sla
-        work_type:
+        workType:
           $ref: "#/components/schemas/WorkType"
       required:
         - signerType
