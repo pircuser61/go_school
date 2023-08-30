@@ -5,6 +5,11 @@ import (
 )
 
 func TestSignParams_Validate(t *testing.T) {
+	checkSLA := true
+	autoReject := false
+	workType := "8/5"
+	sla := 16
+
 	type fields struct {
 		Type              SignerType
 		Rule              SigningRule
@@ -13,6 +18,10 @@ func TestSignParams_Validate(t *testing.T) {
 		SignatureCarrier  SignatureCarrier
 		SignerGroupID     string
 		SignerGroupIDPath string
+		CheckSLA          *bool
+		SLA               *int
+		WorkType          *string
+		AutoReject        *bool
 	}
 	tests := []struct {
 		name    string
@@ -304,6 +313,62 @@ func TestSignParams_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "check sla success",
+			fields: fields{
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "token",
+				CheckSLA:         &checkSLA,
+				SLA:              &sla,
+				WorkType:         &workType,
+				AutoReject:       &autoReject,
+			},
+			wantErr: false,
+		},
+		{
+			name: "sla failed",
+			fields: fields{
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "token",
+				CheckSLA:         &checkSLA,
+				SLA:              nil,
+				WorkType:         &workType,
+				AutoReject:       &autoReject,
+			},
+			wantErr: true,
+		},
+		{
+			name: "workType sla failed",
+			fields: fields{
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "token",
+				CheckSLA:         &checkSLA,
+				SLA:              &sla,
+				WorkType:         nil,
+				AutoReject:       &autoReject,
+			},
+			wantErr: true,
+		},
+		{
+			name: "autoReject sla failed",
+			fields: fields{
+				SignatureType:    SignatureTypeUKEP,
+				Type:             SignerTypeUser,
+				Signer:           "test",
+				SignatureCarrier: "token",
+				CheckSLA:         &checkSLA,
+				SLA:              &sla,
+				WorkType:         &workType,
+				AutoReject:       nil,
+			},
+			wantErr: true,
+		},
+		{
 			name: "UKEP - bad carrier",
 			fields: fields{
 				SignatureType:    SignatureTypeUKEP,
@@ -331,6 +396,10 @@ func TestSignParams_Validate(t *testing.T) {
 				SignerGroupID:     tt.fields.SignerGroupID,
 				SignerGroupIDPath: tt.fields.SignerGroupIDPath,
 				SignatureCarrier:  tt.fields.SignatureCarrier,
+				CheckSLA:          tt.fields.CheckSLA,
+				WorkType:          tt.fields.WorkType,
+				SLA:               tt.fields.SLA,
+				AutoReject:        tt.fields.AutoReject,
 			}
 			if err := a.Validate(); (err != nil) != tt.wantErr {
 				t.Errorf("%v ValidateSchemas()", err)

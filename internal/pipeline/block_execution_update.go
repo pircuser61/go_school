@@ -708,7 +708,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			Name:        gb.RunContext.NotifName,
 			Status:      string(StatusExecution),
 			Action:      statusToTaskAction[StatusExecution],
-			DeadLine:    ComputeDeadline(time.Now(), gb.State.SLA, slaInfoPtr),
+			DeadLine:    ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			Description: description,
 			SdUrl:       gb.RunContext.Sender.SdAddress,
 			Mailto:      gb.RunContext.Sender.FetchEmail,

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -19,6 +20,8 @@ import (
 )
 
 const (
+	autoSigner = "auto_signer"
+
 	keyOutputSigner          = "signer"
 	keyOutputSignDecision    = "decision"
 	keyOutputSignComment     = "comment"
@@ -160,8 +163,44 @@ func (gb *GoSignBlock) Members() []Member {
 	return members
 }
 
-func (gb *GoSignBlock) Deadlines(_ c.Context) ([]Deadline, error) {
-	return nil, nil
+//nolint:dupl,gocyclo //Need here
+func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
+	deadlines := make([]Deadline, 0, 2)
+
+	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
+		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+			Service: gb.RunContext.HrGate,
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: WorkHourType(*gb.State.WorkType),
+		})
+
+		if getSlaInfoErr != nil {
+			return nil, getSlaInfoErr
+		}
+
+		deadline := ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
+		if !gb.State.SLAChecked {
+			deadlines = append(deadlines,
+				Deadline{
+					Deadline: deadline,
+					Action:   entity.TaskUpdateActionSLABreach,
+				},
+			)
+		}
+
+		if *gb.State.SLA > 8 {
+			notifyBeforeDayExpireSLA := deadline.Add(-8 * time.Hour)
+			deadlines = append(deadlines,
+				Deadline{
+					Deadline: notifyBeforeDayExpireSLA,
+					Action:   entity.TaskUpdateActionDayBeforeSLABreach,
+				},
+			)
+		}
+	}
+
+	return deadlines, nil
 }
 
 type setSignersByParamsDTO struct {
@@ -239,6 +278,16 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		return err
 	}
 
+	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+		Service: gb.RunContext.HrGate,
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		WorkType: WorkHourType(*gb.State.WorkType),
+	})
+	if getSlaInfoErr != nil {
+		return getSlaInfoErr
+	}
+
 	var emails = make(map[string]mail.Template, 0)
 	for _, login := range signers {
 		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
@@ -251,7 +300,10 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			description,
-			gb.RunContext.Sender.SdAddress)
+			gb.RunContext.Sender.SdAddress,
+			ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr),
+			gb.State.AutoReject != nil && *gb.State.AutoReject,
+		)
 	}
 
 	if len(emails) == 0 {
@@ -285,6 +337,10 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 		FormsAccessibility: params.FormsAccessibility,
 		SignatureType:      params.SignatureType,
 		SignatureCarrier:   params.SignatureCarrier,
+		SLA:                params.SLA,
+		CheckSLA:           params.CheckSLA,
+		AutoReject:         params.AutoReject,
+		WorkType:           params.WorkType,
 	}
 
 	if gb.State.SigningRule == "" {

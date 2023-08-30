@@ -296,8 +296,8 @@ func Test_createGoFormBlock(t *testing.T) {
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
 						s.SetValue("sd.form_0", map[string]interface{}{
-							"a": 100,
-							"b": 200,
+							"a": float64(100),
+							"b": float64(200),
 						})
 						return s
 					}(),
@@ -318,8 +318,8 @@ func Test_createGoFormBlock(t *testing.T) {
 					SchemaId:         schemaId,
 					Executors:        map[string]struct{}{"auto_fill": {}},
 					ApplicationBody: map[string]interface{}{
-						"a": 100,
-						"b": 200,
+						"a": float64(100),
+						"b": float64(200),
 					},
 					WorkType:      "8/5",
 					IsFilled:      true,
@@ -340,8 +340,8 @@ func Test_createGoFormBlock(t *testing.T) {
 					ChangesLog: []ChangesLogItem{
 						{
 							ApplicationBody: map[string]interface{}{
-								"a": 100,
-								"b": 200,
+								"a": float64(100),
+								"b": float64(200),
 							},
 							CreatedAt:   timeNow,
 							Executor:    "auto_fill",

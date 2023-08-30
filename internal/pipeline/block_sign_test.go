@@ -324,7 +324,7 @@ func TestSignData_SetDecision(t *testing.T) {
 				a.Decision = &tt.fields.Decision
 			}
 
-			if err := a.SetDecision(tt.args.login, &SignSignatureParams{
+			if err := a.SetDecision(tt.args.login, &signSignatureParams{
 				Decision:    tt.args.decision,
 				Comment:     tt.args.comment,
 				Attachments: tt.args.attachments,

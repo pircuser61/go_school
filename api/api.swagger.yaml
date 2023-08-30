@@ -4193,7 +4193,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FunctionValueModel'
-        output:
+        outputs:
           $ref: '#/components/schemas/JSONSchema'
         params:
           $ref: '#/components/schemas/FunctionParams'
@@ -4719,6 +4719,18 @@ components:
           description: List of accessibility properties for forms
           items:
             $ref: '#/components/schemas/FormsAccessibility'
+        sla:
+          type: integer
+          description: Sign SLA (in working hours)
+          minimum: 1
+        checkSLA:
+          type: boolean
+          description: Is active SLA
+        autoReject:
+          type: boolean
+          description: reject after expire sla
+        workType:
+          $ref: "#/components/schemas/WorkType"
       required:
         - signerType
         - signatureType

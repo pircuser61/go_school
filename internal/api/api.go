@@ -1166,7 +1166,7 @@ type FunctionModel struct {
 	BlockType BlockType             `json:"block_type"`
 	Id        string                `json:"id"`
 	Inputs    *[]FunctionValueModel `json:"inputs,omitempty"`
-	Output    *JSONSchema           `json:"output,omitempty"`
+	Outputs   *JSONSchema           `json:"outputs,omitempty"`
 	Params    *FunctionParams       `json:"params,omitempty"`
 	ShapeType int                   `json:"shape_type"`
 	Sockets   []Socket              `json:"sockets"`
@@ -1553,6 +1553,12 @@ type ShapeEntity struct {
 
 // Singature params
 type SignParams struct {
+	// reject after expire sla
+	AutoReject *bool `json:"autoReject,omitempty"`
+
+	// Is active SLA
+	CheckSLA *bool `json:"checkSLA,omitempty"`
+
 	// List of accessibility properties for forms
 	FormsAccessibility []FormsAccessibility `json:"formsAccessibility"`
 	SignatureCarrier   *SignatureCarrier    `json:"signatureCarrier,omitempty"`
@@ -1578,6 +1584,12 @@ type SignParams struct {
 
 	// Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
 	SigningRule *SigningRule `json:"signingRule,omitempty"`
+
+	// Sign SLA (in working hours)
+	Sla *int `json:"sla,omitempty"`
+
+	// Рабочий режим
+	WorkType *WorkType `json:"workType,omitempty"`
 }
 
 // Sign update params

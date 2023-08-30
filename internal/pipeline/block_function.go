@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
@@ -65,7 +63,7 @@ func (gb *ExecutableFunctionBlock) Members() []Member {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) Deadlines(_ context.Context) ([]Deadline, error) {
+func (gb *ExecutableFunctionBlock) Deadlines(_ c.Context) ([]Deadline, error) {
 	return []Deadline{}, nil
 }
 
