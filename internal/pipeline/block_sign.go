@@ -296,12 +296,17 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			continue
 		}
 
+		slaDeadline := ""
+		if gb.State.SLA != nil {
+			slaDeadline = ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr)
+		}
+
 		emails[em] = mail.NewSignerNotificationTpl(
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			description,
 			gb.RunContext.Sender.SdAddress,
-			ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr),
+			slaDeadline,
 			gb.State.AutoReject != nil && *gb.State.AutoReject,
 		)
 	}

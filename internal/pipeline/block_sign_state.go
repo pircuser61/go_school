@@ -39,11 +39,11 @@ type SignData struct {
 	SignerGroupID   string `json:"signer_group_id,omitempty"`
 	SignerGroupName string `json:"signer_group_name,omitempty"`
 
-	SLA        *int    `json:"sla"`
-	CheckSLA   *bool   `json:"check_sla"`
+	SLA        *int    `json:"sla,omitempty"`
+	CheckSLA   *bool   `json:"check_sla,omitempty"`
 	SLAChecked bool    `json:"sla_checked"`
-	AutoReject *bool   `json:"auto_reject"`
-	WorkType   *string `json:"work_type"`
+	AutoReject *bool   `json:"auto_reject,omitempty"`
+	WorkType   *string `json:"work_type,omitempty"`
 }
 
 func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams) {
