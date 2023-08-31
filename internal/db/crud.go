@@ -2154,7 +2154,7 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
         from variable_storage vs
                  inner join works w on vs.work_id = w.id
                  inner join inside_gates_nodes ign on vs.step_name=ign.out_node
-        where w.work_number=$1 and w.child_id is null and vs.status='running'
+        where w.work_number=$1 and w.child_id is null and vs.status in('running', 'idle', 'ready')
     ) as is_finished,
     (
         select case when count(*) = (select count(*) from inside_gates_nodes where out_node like 'begin_parallel_task_%')
