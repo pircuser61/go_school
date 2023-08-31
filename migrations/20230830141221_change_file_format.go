@@ -46,80 +46,43 @@ func upChangeFileFormat(tx *sql.Tx) error {
 			return err
 		}
 		for key, val := range resultState {
+			var data interface{}
 			switch {
 			case strings.Contains(key, "approver"):
 				{
-					var data pipeline.ApproverData
-					err := json.Unmarshal(val, &data)
-					if err != nil {
-						return err
-					}
-
-					resJson, mErr := json.Marshal(data)
-					if mErr != nil {
-						return mErr
-					}
-					resultMap[key] = resJson
+					data = &pipeline.ApproverData{}
 				}
 			case strings.Contains(key, "execution"):
 				{
-					var data pipeline.ExecutionData
-					err := json.Unmarshal(val, &data)
-					if err != nil {
-						return err
-					}
-
-					resJson, mErr := json.Marshal(data)
-					if mErr != nil {
-						return mErr
-					}
-					resultMap[key] = resJson
+					data = &pipeline.ExecutionData{}
 				}
 			case strings.Contains(key, "sign"):
 				{
-					var data pipeline.SignData
-					err := json.Unmarshal(val, &data)
-					if err != nil {
-						return err
-					}
-
-					resJson, mErr := json.Marshal(data)
-					if mErr != nil {
-						return mErr
-					}
-					resultMap[key] = resJson
+					data = &pipeline.SignData{}
 				}
 
 			case strings.Contains(key, "form"):
 				{
-					var data pipeline.FormData
-					err := json.Unmarshal(val, &data)
-					if err != nil {
-						return err
-					}
-
-					resJson, mErr := json.Marshal(data)
-					if mErr != nil {
-						return mErr
-					}
-					resultMap[key] = resJson
+					data = &pipeline.FormData{}
 				}
 
 			case strings.Contains(key, "function"):
 				{
-					var data pipeline.ExecutableFunction
-					err := json.Unmarshal(val, &data)
-					if err != nil {
-						return err
-					}
-
-					resJson, mErr := json.Marshal(data)
-					if mErr != nil {
-						return mErr
-					}
-					resultMap[key] = resJson
+					data = &pipeline.ExecutableFunction{}
 				}
-			default:
+			}
+			if data != nil {
+				err := json.Unmarshal(val, &data)
+				if err != nil {
+					return err
+				}
+
+				resJson, mErr := json.Marshal(data)
+				if mErr != nil {
+					return mErr
+				}
+				resultMap[key] = resJson
+			} else {
 				resultMap[key] = val
 			}
 		}
