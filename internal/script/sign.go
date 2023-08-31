@@ -153,10 +153,6 @@ func (s *SignParams) Validate() error {
 		if s.WorkType == nil || *s.WorkType == "" {
 			return errors.New("work type can`t be empty or nil")
 		}
-
-		if s.AutoReject == nil {
-			return errors.New("auto reject can`t be nil")
-		}
 	}
 	return nil
 }
