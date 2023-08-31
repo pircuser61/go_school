@@ -55,7 +55,10 @@ func upChangeFileFormat(tx *sql.Tx) error {
 						return err
 					}
 
-					resJson, _ := json.Marshal(data)
+					resJson, mErr := json.Marshal(data)
+					if mErr != nil {
+						return mErr
+					}
 					resultMap[key] = resJson
 				}
 			case strings.Contains(key, "execution"):
@@ -66,7 +69,10 @@ func upChangeFileFormat(tx *sql.Tx) error {
 						return err
 					}
 
-					resJson, _ := json.Marshal(data)
+					resJson, mErr := json.Marshal(data)
+					if mErr != nil {
+						return mErr
+					}
 					resultMap[key] = resJson
 				}
 			case strings.Contains(key, "sign"):
@@ -77,7 +83,10 @@ func upChangeFileFormat(tx *sql.Tx) error {
 						return err
 					}
 
-					resJson, _ := json.Marshal(data)
+					resJson, mErr := json.Marshal(data)
+					if mErr != nil {
+						return mErr
+					}
 					resultMap[key] = resJson
 				}
 
@@ -89,7 +98,10 @@ func upChangeFileFormat(tx *sql.Tx) error {
 						return err
 					}
 
-					resJson, _ := json.Marshal(data)
+					resJson, mErr := json.Marshal(data)
+					if mErr != nil {
+						return mErr
+					}
 					resultMap[key] = resJson
 				}
 
@@ -101,7 +113,10 @@ func upChangeFileFormat(tx *sql.Tx) error {
 						return err
 					}
 
-					resJson, _ := json.Marshal(data)
+					resJson, mErr := json.Marshal(data)
+					if mErr != nil {
+						return mErr
+					}
 					resultMap[key] = resJson
 				}
 			default:

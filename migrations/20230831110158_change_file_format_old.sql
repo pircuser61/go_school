@@ -6,4 +6,5 @@ update variable_storage set content = regexp_replace(content::text, '"attachment
 
 -- +goose Down
 -- +goose StatementBegin
+SELECT 'down SQL query';
 -- +goose StatementEnd

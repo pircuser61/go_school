@@ -257,14 +257,14 @@ type TaskRunContext struct {
 }
 
 type Attachment struct {
-	FileId       string  `json:"file_id"`
-	ExternalLink *string `json:"external_link"`
+	FileId       string `json:"file_id,omitempty"`
+	ExternalLink string `json:"external_link,omitempty"`
 }
 
 func (at *Attachment) UnmarshalJSON(b []byte) error {
 	var atTemp struct {
-		FileId       string  `json:"file_id"`
-		ExternalLink *string `json:"external_link"`
+		FileId       string `json:"file_id"`
+		ExternalLink string `json:"external_link"`
 	}
 
 	var stTemp string
