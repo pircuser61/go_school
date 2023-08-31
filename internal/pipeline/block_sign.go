@@ -167,7 +167,7 @@ func (gb *GoSignBlock) Members() []Member {
 func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
-	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
+	if gb.checkSLA() && gb.State.WorkType != nil && gb.State.SLA != nil {
 		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
 			Service: gb.RunContext.HrGate,
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
@@ -370,6 +370,10 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	return gb.handleNotifications(ctx)
+}
+
+func (gb *GoSignBlock) checkSLA() bool {
+	return gb.State.CheckSLA != nil && *gb.State.CheckSLA
 }
 
 func (gb *GoSignBlock) Model() script.FunctionModel {
