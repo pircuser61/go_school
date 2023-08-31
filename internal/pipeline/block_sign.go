@@ -278,14 +278,19 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		return err
 	}
 
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(*gb.State.WorkType),
-	})
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+	slaDeadline := ""
+
+	if gb.State.SLA != nil && gb.State.WorkType != nil {
+		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+			Service: gb.RunContext.HrGate,
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: WorkHourType(*gb.State.WorkType),
+		})
+		if getSlaInfoErr != nil {
+			return getSlaInfoErr
+		}
+		slaDeadline = ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr)
 	}
 
 	var emails = make(map[string]mail.Template, 0)
@@ -294,11 +299,6 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
-		}
-
-		slaDeadline := ""
-		if gb.State.SLA != nil {
-			slaDeadline = ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr)
 		}
 
 		emails[em] = mail.NewSignerNotificationTpl(
