@@ -53,12 +53,7 @@ func (gb *TimerBlock) GetStatus() Status {
 }
 
 func (gb *TimerBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State.Expired {
-		return StatusDone
-	} else {
-		return StatusExecution
-		// может лучше? return StatusWait
-	}
+	return ""
 }
 
 func (gb *TimerBlock) Next(_ *store.VariableStore) ([]string, bool) {
