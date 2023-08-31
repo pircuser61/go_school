@@ -17,6 +17,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -52,6 +53,7 @@ type ExecutablePipeline struct {
 	HumanTasks    *human_tasks.Service
 	Integrations  *integrations.Service
 	FileRegistry  *file_registry.Service
+	Scheduler     *scheduler.Service
 
 	FaaS string
 
