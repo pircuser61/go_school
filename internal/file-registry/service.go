@@ -88,7 +88,7 @@ func (s *Service) GetAttachmentsInfo(ctx context.Context, attachments map[string
 		aa := attachments[k]
 		filesInfo := make([]FileInfo, 0, len(aa))
 		for _, a := range aa {
-			fileInfo, err := s.getAttachmentInfo(ctxLocal, a.FileId)
+			fileInfo, err := s.getAttachmentInfo(ctxLocal, a.FileID)
 			if err != nil {
 				return nil, err
 			}
@@ -142,7 +142,7 @@ func (s *Service) GetAttachments(ctx context.Context, attachments []entity.Attac
 
 	for i := range attachments {
 		a := attachments[i]
-		file, err := s.getAttachment(ctxLocal, a.FileId)
+		file, err := s.getAttachment(ctxLocal, a.FileID)
 		if err != nil {
 			return nil, err
 		}

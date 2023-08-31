@@ -16,7 +16,7 @@ func TestAttachment_UnmarshalJSON(t *testing.T) {
 			name: "full valid",
 			json: []byte("{\"file_id\": \"file\", \"external_link\": \"link\"}"),
 			want: Attachment{
-				FileId:       "file",
+				FileID:       "file",
 				ExternalLink: "link",
 			},
 			wantErr: false,
@@ -25,7 +25,7 @@ func TestAttachment_UnmarshalJSON(t *testing.T) {
 			name: "from string",
 			json: []byte("{\"file_id\": \"file\"}"),
 			want: Attachment{
-				FileId:       "file",
+				FileID:       "file",
 				ExternalLink: "",
 			},
 			wantErr: false,

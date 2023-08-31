@@ -27,7 +27,6 @@ func upChangeFileFormat(tx *sql.Tx) error {
 	}
 	defer rows.Close()
 	for rows.Next() {
-
 		resultMap := map[string]json.RawMessage{}
 		resultState := map[string]json.RawMessage{}
 		var state string
@@ -47,29 +46,22 @@ func upChangeFileFormat(tx *sql.Tx) error {
 		}
 		for key, val := range resultState {
 			var data interface{}
+
 			switch {
 			case strings.Contains(key, "approver"):
-				{
-					data = &pipeline.ApproverData{}
-				}
+				data = &pipeline.ApproverData{}
+
 			case strings.Contains(key, "execution"):
-				{
-					data = &pipeline.ExecutionData{}
-				}
+				data = &pipeline.ExecutionData{}
+
 			case strings.Contains(key, "sign"):
-				{
-					data = &pipeline.SignData{}
-				}
+				data = &pipeline.SignData{}
 
 			case strings.Contains(key, "form"):
-				{
-					data = &pipeline.FormData{}
-				}
+				data = &pipeline.FormData{}
 
 			case strings.Contains(key, "function"):
-				{
-					data = &pipeline.ExecutableFunction{}
-				}
+				data = &pipeline.ExecutableFunction{}
 			}
 			if data != nil {
 				err := json.Unmarshal(val, &data)
