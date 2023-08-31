@@ -375,7 +375,7 @@ func NewSignerNotificationTpl(id, name, description, sdUrl, slaDate string, auto
 		Text: `Уважаемый коллега, заявка {{.Id}} {{.Name}} <b>ожидает подписания</b>.<br>
 				Для просмотра перейдите по <a href={{.Link}}>ссылке</a><br>
 				Срок подписания до {{.SLADate}} <br>
-				{{.AutoReject}}
+				{{.AutoRejectText}}
 				Текст заявки:<br>
 <pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`,
 

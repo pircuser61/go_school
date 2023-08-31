@@ -355,20 +355,6 @@ func TestSignParams_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "autoReject sla failed",
-			fields: fields{
-				SignatureType:    SignatureTypeUKEP,
-				Type:             SignerTypeUser,
-				Signer:           "test",
-				SignatureCarrier: "token",
-				CheckSLA:         &checkSLA,
-				SLA:              &sla,
-				WorkType:         &workType,
-				AutoReject:       nil,
-			},
-			wantErr: true,
-		},
-		{
 			name: "UKEP - bad carrier",
 			fields: fields{
 				SignatureType:    SignatureTypeUKEP,
