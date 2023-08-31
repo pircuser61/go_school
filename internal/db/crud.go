@@ -2169,7 +2169,7 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
 	var createdAllBranches bool
 	row := db.Connection.QueryRow(ctx, q, workNumber, blockName)
 
-	if err := row.Scan(&parallelIsFinished, createdAllBranches); err != nil {
+	if err := row.Scan(&parallelIsFinished, &createdAllBranches); err != nil {
 		return false, err
 	}
 
