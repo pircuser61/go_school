@@ -63,8 +63,10 @@ const (
 	GetClientIDError
 	ProcessSettingsSaveError
 	ProcessSettingsParseError
+	ProcessSettingsConvertError
 	ExternalSystemSettingsSaveError
 	ExternalSystemSettingsParseError
+	ExternalSystemSettingsConvertError
 	ExternalSystemAddingError
 	ExternalSystemRemoveError
 	JSONSchemaValidationError
@@ -167,8 +169,10 @@ var errorText = map[Err]string{
 	GetClientIDError:                    "can't get ClientID",
 	ProcessSettingsSaveError:            "can't save process settings",
 	ProcessSettingsParseError:           "can't parse process settings data",
+	ProcessSettingsConvertError:         "can't convert process settings data",
 	ExternalSystemSettingsSaveError:     "can't save external system settings",
 	ExternalSystemSettingsParseError:    "can't parse external systems settings data",
+	ExternalSystemSettingsConvertError:  "can't convert external systems settings data",
 	ExternalSystemAddingError:           "can't add external system to version",
 	ExternalSystemRemoveError:           "can't remove external system from the list",
 	JSONSchemaValidationError:           "json schema validation error",
@@ -270,8 +274,10 @@ var errorDescription = map[Err]string{
 	GetClientIDError:                    "Не удалось получить CliendID",
 	ProcessSettingsSaveError:            "Не удалось сохранить настройки процесса",
 	ProcessSettingsParseError:           "Не удалось получить данные из тела запроса",
+	ProcessSettingsConvertError:         "Не удалось преобразовать данные из тела запроса",
 	ExternalSystemSettingsSaveError:     "Не удалось сохранить настройки внешней системы",
 	ExternalSystemSettingsParseError:    "Не удалось получить данные из тела запроса",
+	ExternalSystemSettingsConvertError:  "Не удалось преобразовать данные из тела запроса",
 	ExternalSystemAddingError:           "Не удалось подключить внешнюю систему к версии процесса",
 	ExternalSystemRemoveError:           "Не удалось удалить внешнюю систему из списка подключенных",
 	JSONSchemaValidationError:           "Ошибка валидации JSON-схемы",
