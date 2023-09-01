@@ -297,7 +297,7 @@ func createExecutableFunctionBlock(name string, ef *entity.EriusFunc, runCtx *Bl
 
 	rawState, blockExists := runCtx.VarStore.State[name]
 	reEntry := blockExists && runCtx.UpdateData == nil
-	if blockExists {
+	if blockExists && !reEntry {
 		if err := b.loadState(rawState); err != nil {
 			return nil, false, err
 		}
