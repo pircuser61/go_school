@@ -170,7 +170,7 @@ func createTimerBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext
 
 	rawState, blockExists := runCtx.VarStore.State[name]
 	reEntry := blockExists && runCtx.UpdateData == nil
-	if blockExists {
+	if blockExists && !reEntry {
 		if err := b.loadState(rawState); err != nil {
 			return nil, false, err
 		}
