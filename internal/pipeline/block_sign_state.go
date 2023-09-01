@@ -103,7 +103,7 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 func (s *SignData) SetDecision(login string, params *signSignatureParams) error {
 	_, signerFound := s.Signers[login]
 	isAutoDecision := login == autoSigner
-	if !signerFound && isAutoDecision {
+	if !signerFound && !isAutoDecision {
 		if s.SignatureType != script.SignatureTypeUKEP || (s.SignatureType == script.SignatureTypeUKEP &&
 			login != ServiceAccount &&
 			login != ServiceAccountStage &&
