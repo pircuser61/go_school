@@ -98,11 +98,11 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 
 	if gb.State.AutoReject != nil && *gb.State.AutoReject {
 		gb.RunContext.UpdateData.ByLogin = autoSigner
-		if setErr := gb.setSignerDecision(
-			&signSignatureParams{
-				Decision: SignDecisionRejected,
-				Comment:  AutoActionComment,
-			}); setErr != nil {
+		gb.State.ActualSigner = &gb.RunContext.UpdateData.ByLogin
+		if setErr := gb.setSignerDecision(&signSignatureParams{
+			Decision: SignDecisionRejected,
+			Comment:  AutoActionComment,
+		}); setErr != nil {
 			return setErr
 		}
 	}
