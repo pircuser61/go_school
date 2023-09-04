@@ -53,12 +53,7 @@ func (gb *TimerBlock) GetStatus() Status {
 }
 
 func (gb *TimerBlock) GetTaskHumanStatus() TaskHumanStatus {
-	if gb.State.Expired {
-		return StatusDone
-	} else {
-		return StatusExecution
-		// может лучше? return StatusWait
-	}
+	return ""
 }
 
 func (gb *TimerBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -175,7 +170,7 @@ func createTimerBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext
 
 	rawState, blockExists := runCtx.VarStore.State[name]
 	reEntry := blockExists && runCtx.UpdateData == nil
-	if blockExists {
+	if blockExists && !reEntry {
 		if err := b.loadState(rawState); err != nil {
 			return nil, false, err
 		}

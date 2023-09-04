@@ -167,7 +167,7 @@ func (gb *GoSignBlock) Members() []Member {
 func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
-	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
+	if gb.checkSLA() && gb.State.WorkType != nil && gb.State.SLA != nil {
 		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
 			Service: gb.RunContext.HrGate,
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
@@ -278,14 +278,19 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		return err
 	}
 
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(*gb.State.WorkType),
-	})
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+	slaDeadline := ""
+
+	if gb.State.SLA != nil && gb.State.WorkType != nil {
+		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
+			Service: gb.RunContext.HrGate,
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: WorkHourType(*gb.State.WorkType),
+		})
+		if getSlaInfoErr != nil {
+			return getSlaInfoErr
+		}
+		slaDeadline = ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr)
 	}
 
 	var emails = make(map[string]mail.Template, 0)
@@ -301,7 +306,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			gb.RunContext.NotifName,
 			description,
 			gb.RunContext.Sender.SdAddress,
-			ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr),
+			slaDeadline,
 			gb.State.AutoReject != nil && *gb.State.AutoReject,
 		)
 	}
@@ -370,6 +375,10 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	}
 
 	return gb.handleNotifications(ctx)
+}
+
+func (gb *GoSignBlock) checkSLA() bool {
+	return gb.State.CheckSLA != nil && *gb.State.CheckSLA
 }
 
 func (gb *GoSignBlock) Model() script.FunctionModel {

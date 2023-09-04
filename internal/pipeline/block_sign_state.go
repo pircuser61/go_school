@@ -40,11 +40,11 @@ type SignData struct {
 	SignerGroupID   string `json:"signer_group_id,omitempty"`
 	SignerGroupName string `json:"signer_group_name,omitempty"`
 
-	SLA        *int    `json:"sla"`
-	CheckSLA   *bool   `json:"check_sla"`
+	SLA        *int    `json:"sla,omitempty"`
+	CheckSLA   *bool   `json:"check_sla,omitempty"`
 	SLAChecked bool    `json:"sla_checked"`
-	AutoReject *bool   `json:"auto_reject"`
-	WorkType   *string `json:"work_type"`
+	AutoReject *bool   `json:"auto_reject,omitempty"`
+	WorkType   *string `json:"work_type,omitempty"`
 }
 
 func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams) {
@@ -103,7 +103,8 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 
 func (s *SignData) SetDecision(login string, params *signSignatureParams) error {
 	_, signerFound := s.Signers[login]
-	if !signerFound {
+	isAutoDecision := login == autoSigner
+	if !signerFound && !isAutoDecision {
 		if s.SignatureType != script.SignatureTypeUKEP || (s.SignatureType == script.SignatureTypeUKEP &&
 			login != ServiceAccount &&
 			login != ServiceAccountStage &&
@@ -133,6 +134,10 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 
 	if params.Decision == SignDecisionSigned {
 		params.Comment = ""
+	}
+
+	if isAutoDecision {
+		s.handleAnyOfDecision(login, params)
 	}
 
 	if signingRule == script.AnyOfSigningRequired {
