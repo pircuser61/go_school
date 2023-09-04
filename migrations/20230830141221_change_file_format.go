@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pressly/goose/v3"
@@ -184,6 +185,36 @@ type SignData struct {
 	WorkType   json.RawMessage `json:"work_type,omitempty"`
 }
 
+func (at *ApproverLogEntry) UnmarshalJSON(b []byte) error {
+	var atTemp struct {
+		Login          json.RawMessage     `json:"login"`
+		Decision       json.RawMessage     `json:"decision"`
+		Comment        json.RawMessage     `json:"comment"`
+		CreatedAt      json.RawMessage     `json:"created_at"`
+		Attachments    []entity.Attachment `json:"attachments"`
+		AddedApprovers json.RawMessage     `json:"added_approvers"`
+		LogType        json.RawMessage     `json:"log_type"`
+		DelegateFor    json.RawMessage     `json:"delegate_for"`
+	}
+
+	var stTemp string
+	if err := json.Unmarshal(b, &atTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		*at = atTemp
+		return nil
+	}
+	*at = atTemp
+	return nil
+}
+
 type SignLogEntry struct {
 	Login       json.RawMessage     `json:"login"`
 	Decision    json.RawMessage     `json:"decision"`
@@ -234,7 +265,6 @@ func upChangeFileFormat(tx *sql.Tx) error {
 
 			case strings.Contains(key, "sign"):
 				data = &SignData{}
-
 			}
 			if data != nil {
 				err := json.Unmarshal(val, &data)
@@ -242,7 +272,6 @@ func upChangeFileFormat(tx *sql.Tx) error {
 					fmt.Println(Id)
 					return err
 				}
-
 				resJson, mErr := json.Marshal(data)
 				if mErr != nil {
 					return mErr
