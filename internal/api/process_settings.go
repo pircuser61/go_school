@@ -172,8 +172,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	err = sendResponse(w, http.StatusOK, nil)
-	if err != nil {
+	if err := sendResponse(w, http.StatusOK, processSettings); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
