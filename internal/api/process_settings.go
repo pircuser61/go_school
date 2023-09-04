@@ -1,7 +1,7 @@
 package api
 
 import (
-	"context"
+	c "context"
 	"encoding/json"
 
 	"io"
@@ -19,6 +19,26 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
+
+func (ae *APIEnv) convertProcessSettingsToFlat(ctx c.Context, ps *entity.ProcessSettings) error {
+	if ps.StartSchemaRaw != nil {
+		start, err := ae.Forms.MakeFlatSchema(ctx, ps.StartSchemaRaw)
+		if err != nil {
+			return errors.Wrap(err, "couldn't convert start schema")
+		}
+		ps.StartSchema = start
+	}
+
+	if ps.EndSchemaRaw != nil {
+		end, err := ae.Forms.MakeFlatSchema(ctx, ps.EndSchemaRaw)
+		if err != nil {
+			return errors.Wrap(err, "couldn't convert end schema")
+		}
+		ps.EndSchema = end
+	}
+
+	return nil
+}
 
 func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_settings")
@@ -114,11 +134,19 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	var processSettings entity.ProcessSettings
+	var processSettings *entity.ProcessSettings
 	err = json.Unmarshal(b, &processSettings)
 	if err != nil {
 		e := ProcessSettingsParseError
 		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if convErr := ae.convertProcessSettingsToFlat(ctx, processSettings); convErr != nil {
+		e := ProcessSettingsConvertError
+		log.Error(e.errorMessage(convErr))
 		_ = e.sendError(w)
 
 		return
@@ -135,7 +163,7 @@ func (ae *APIEnv) SaveVersionSettings(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	saveVersionErr := ae.DB.SaveVersionSettings(ctx, processSettings, (*string)(params.SchemaFlag))
+	saveVersionErr := ae.DB.SaveVersionSettings(ctx, *processSettings, (*string)(params.SchemaFlag))
 	if saveVersionErr != nil {
 		e := ProcessSettingsSaveError
 		log.Error(e.errorMessage(saveVersionErr))
@@ -358,7 +386,7 @@ func (ae *APIEnv) SaveVersionMainSettings(w http.ResponseWriter, req *http.Reque
 		}
 	}()
 
-	defer func(transaction db.Database, ctx context.Context) {
+	defer func(transaction db.Database, ctx c.Context) {
 		_ = transaction.RollbackTransaction(ctx)
 	}(transaction, ctx)
 

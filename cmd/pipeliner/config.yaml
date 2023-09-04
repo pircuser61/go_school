@@ -107,6 +107,9 @@ imap:
 integrations:
   url: 'integrations:90'
 
+forms:
+  url: 'forms:90'
+
 hrgate:
   hr_gate_url: "https://hr-gate.stage.autobp.mts.ru"
   scope: "hr-gate"
