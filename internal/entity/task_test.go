@@ -32,7 +32,7 @@ func TestAttachment_UnmarshalJSON(t *testing.T) {
 		},
 		{
 			name:    "from string not valid",
-			json:    []byte("text"),
+			json:    []byte("\"text\""),
 			want:    Attachment{},
 			wantErr: true,
 		},
