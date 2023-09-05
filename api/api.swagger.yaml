@@ -1006,7 +1006,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/httpResponse'
+                $ref: '#/components/schemas/ProcessSettings'
         400:
           description: Bad Request
           content:
@@ -4413,25 +4413,25 @@ components:
       type: string
       description: Used operator to compare integer operands
       enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Пустое", "Не Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"  ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     compareNumberOperator:
       type: string
       description: Used operator to compare number operands
       enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Пустое", "Не Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"  ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     compareBooleanOperator:
       type: string
       description: Used operator to compare bool operands
       enum: [ "Равно", "Не равно", "Пустое", "Не Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "Exists", "NotExists"  ]
+      x-enum-varnames: [ "Equal", "NotEqual", "Exists", "NotExists" ]
 
     compareDateOperator:
       type: string
       description: Used operator to compare date operands
       enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Пустое", "Не Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"  ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     ConditionParams:
       type: object

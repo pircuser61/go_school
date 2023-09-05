@@ -189,7 +189,7 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 			)
 		}
 
-		if *gb.State.SLA > 8 {
+		if *gb.State.SLA > 8 && !gb.State.DayBeforeSLAChecked {
 			notifyBeforeDayExpireSLA := deadline.Add(-8 * time.Hour)
 			deadlines = append(deadlines,
 				Deadline{
@@ -259,6 +259,19 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 		gb.State.Signers = approversFromSchema
 	}
 
+	return nil
+}
+
+func (gb *GoSignBlock) handleDayBeforeSLANotifications(ctx c.Context) error {
+	if gb.State.DayBeforeSLAChecked {
+		return nil
+	}
+
+	if err := gb.handleNotifications(ctx); err != nil {
+		return err
+	}
+
+	gb.State.DayBeforeSLAChecked = true
 	return nil
 }
 

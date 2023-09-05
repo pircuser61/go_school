@@ -42,7 +42,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionDayBeforeSLABreach):
-		if errUpdate := gb.handleNotifications(ctx); errUpdate != nil {
+		if errUpdate := gb.handleDayBeforeSLANotifications(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSign):
@@ -66,6 +66,10 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.CheckSLA == nil || !*gb.State.CheckSLA {
 		gb.State.SLAChecked = true
+		return nil
+	}
+
+	if gb.State.SLAChecked {
 		return nil
 	}
 
