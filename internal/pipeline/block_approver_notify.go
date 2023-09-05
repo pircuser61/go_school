@@ -7,6 +7,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
@@ -130,7 +131,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins, attachsId []string) error {
+func (gb *GoApproverBlock) notifyAdditionalApprovers(ctx c.Context, logins []string, attachsId []entity.Attachment) error {
 	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
 	if err != nil {
 		return err

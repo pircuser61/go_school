@@ -133,7 +133,7 @@ func TestApproverData_SetDecision(t *testing.T) {
 				ActualApprover: tt.fields.ActualApprover,
 			}
 
-			if err := a.SetDecision(tt.args.login, tt.args.decision.ToDecision(), tt.args.comment, []string{}, tt.args.delegations); (err != nil) != tt.wantErr {
+			if err := a.SetDecision(tt.args.login, tt.args.decision.ToDecision(), tt.args.comment, []entity.Attachment{}, tt.args.delegations); (err != nil) != tt.wantErr {
 				t.Errorf(
 					"SetDecision(%v, %v, %v)",
 					tt.args.login,

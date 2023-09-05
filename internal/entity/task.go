@@ -257,6 +257,29 @@ type TaskRunContext struct {
 }
 
 type Attachment struct {
-	ID           string  `json:"id"`
-	ExternalLink *string `json:"external-link"`
+	FileID       string `json:"file_id,omitempty"`
+	ExternalLink string `json:"external_link,omitempty"`
+}
+
+func (at *Attachment) UnmarshalJSON(b []byte) error {
+	var atTemp struct {
+		FileID       string `json:"file_id"`
+		ExternalLink string `json:"external_link"`
+	}
+
+	var stTemp string
+	if err := json.Unmarshal(b, &atTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		_, errParse := uuid.Parse(stTemp)
+		if errParse != nil {
+			return errParse
+		}
+		at.FileID = stTemp
+		return nil
+	}
+	at.FileID = atTemp.FileID
+	at.ExternalLink = atTemp.ExternalLink
+	return nil
 }

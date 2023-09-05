@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
@@ -19,35 +20,35 @@ func (a ExecutionDecision) String() string {
 }
 
 type ExecutorEditApp struct {
-	Executor    string    `json:"executor"`
-	Comment     string    `json:"comment"`
-	Attachments []string  `json:"attachments"`
-	CreatedAt   time.Time `json:"created_at"`
-	DelegateFor string    `json:"delegate_for"`
+	Executor    string              `json:"executor"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
+	CreatedAt   time.Time           `json:"created_at"`
+	DelegateFor string              `json:"delegate_for"`
 }
 
 type RequestExecutionInfoLog struct {
-	Login       string          `json:"login"`
-	Comment     string          `json:"comment"`
-	CreatedAt   time.Time       `json:"created_at"`
-	ReqType     RequestInfoType `json:"req_type"`
-	Attachments []string        `json:"attachments"`
-	DelegateFor string          `json:"delegate_for"`
+	Login       string              `json:"login"`
+	Comment     string              `json:"comment"`
+	CreatedAt   time.Time           `json:"created_at"`
+	ReqType     RequestInfoType     `json:"req_type"`
+	Attachments []entity.Attachment `json:"attachments"`
+	DelegateFor string              `json:"delegate_for"`
 }
 
 type ChangeExecutorLog struct {
-	OldLogin    string    `json:"old_login"`
-	NewLogin    string    `json:"new_login"`
-	Comment     string    `json:"comment"`
-	Attachments []string  `json:"attachments"`
-	CreatedAt   time.Time `json:"created_at"`
+	OldLogin    string              `json:"old_login"`
+	NewLogin    string              `json:"new_login"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
+	CreatedAt   time.Time           `json:"created_at"`
 }
 
 type ExecutionData struct {
 	ExecutionType       script.ExecutionType `json:"execution_type"`
 	Executors           map[string]struct{}  `json:"executors"`
 	Decision            *ExecutionDecision   `json:"decision,omitempty"`
-	DecisionAttachments []string             `json:"decision_attachments,omitempty"`
+	DecisionAttachments []entity.Attachment  `json:"decision_attachments,omitempty"`
 	DecisionComment     *string              `json:"comment,omitempty"`
 	ActualExecutor      *string              `json:"actual_executor,omitempty"`
 	DelegateFor         string               `json:"delegate_for"`

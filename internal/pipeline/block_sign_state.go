@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -15,11 +16,11 @@ func (a SignDecision) String() string {
 }
 
 type SignLogEntry struct {
-	Login       string       `json:"login"`
-	Decision    SignDecision `json:"decision"`
-	Comment     string       `json:"comment"`
-	CreatedAt   time.Time    `json:"created_at"`
-	Attachments []string     `json:"attachments,omitempty"`
+	Login       string              `json:"login"`
+	Decision    SignDecision        `json:"decision"`
+	Comment     string              `json:"comment"`
+	CreatedAt   time.Time           `json:"created_at"`
+	Attachments []entity.Attachment `json:"attachments,omitempty"`
 }
 
 type SignData struct {
@@ -29,7 +30,7 @@ type SignData struct {
 	Decision         *SignDecision           `json:"decision,omitempty"`
 	Comment          *string                 `json:"comment,omitempty"`
 	ActualSigner     *string                 `json:"actual_signer,omitempty"`
-	Attachments      []string                `json:"attachments,omitempty"`
+	Attachments      []entity.Attachment     `json:"attachments,omitempty"`
 	SigningRule      script.SigningRule      `json:"signing_rule,omitempty"`
 	SignatureCarrier script.SignatureCarrier `json:"signature_carrier,omitempty"`
 	SignLog          []SignLogEntry          `json:"sign_log,omitempty"`

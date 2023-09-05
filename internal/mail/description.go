@@ -48,9 +48,9 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 				if !ok {
 					continue
 				}
-				aa[k] = []entity.Attachment{{ID: attachmentIDString}}
+				aa[k] = []entity.Attachment{{FileID: attachmentIDString}}
 			case string:
-				aa[k] = []entity.Attachment{{ID: strings.TrimPrefix(val, attachmentPrefix)}}
+				aa[k] = []entity.Attachment{{FileID: strings.TrimPrefix(val, attachmentPrefix)}}
 			case []interface{}:
 				a := make([]entity.Attachment, 0)
 				for _, item := range val {
@@ -70,7 +70,7 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 					default:
 						continue
 					}
-					a = append(a, entity.Attachment{ID: attachmentID})
+					a = append(a, entity.Attachment{FileID: attachmentID})
 				}
 				aa[k] = a
 			}

@@ -15,6 +15,8 @@ import (
 	"github.com/pkg/errors"
 
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 )
 
 type AttachmentData struct {
@@ -29,7 +31,7 @@ type ActionPayload struct {
 	Decision       string                    `json:"decision"`
 	Comment        string                    `json:"comment"`
 	Login          string                    `json:"login"`
-	AttachmentsIds []string                  `json:"attachments"`
+	AttachmentsIds []entity.Attachment       `json:"attachments"`
 	Attachments    map[string]AttachmentData `json:"-"`
 }
 
@@ -275,18 +277,18 @@ func (s *service) getAttachments(ctx c.Context, mb map[*imap.BodySectionName]ima
 	log := logger.GetLogger(ctx)
 
 	for _, r := range mb {
-		entity, err := message.Read(r)
+		messageEntity, err := message.Read(r)
 		if err != nil {
 			log.Error(errors.Wrap(err, "can`t read attachments"))
 			continue
 		}
 
-		if entity == nil {
-			log.Error(errors.Wrap(err, "can`t read attachments entity is nil"))
+		if messageEntity == nil {
+			log.Error(errors.Wrap(err, "can`t read attachments messageEntity is nil"))
 			continue
 		}
 
-		multiPartReader := entity.MultipartReader()
+		multiPartReader := messageEntity.MultipartReader()
 		if multiPartReader == nil {
 			log.Error(errors.Wrap(err, "can`t read attachments multiPartReader is nil"))
 			continue
