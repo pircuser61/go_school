@@ -272,6 +272,10 @@ func (at *Attachment) UnmarshalJSON(b []byte) error {
 		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
 			return err
 		}
+		_, errParse := uuid.Parse(stTemp)
+		if errParse != nil {
+			return errParse
+		}
 		at.FileID = stTemp
 		return nil
 	}
