@@ -1006,7 +1006,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProcessSettings'
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExternalSystem'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
