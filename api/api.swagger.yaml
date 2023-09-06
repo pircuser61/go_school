@@ -4406,31 +4406,31 @@ components:
     compareStringOperator:
       type: string
       description: Used operator to compare string operands
-      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит", "Пустое", "Не Пустое" ]
+      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит", "Не Пустое", "Пустое" ]
       x-enum-varnames: [ "Equal", "NotEqual", "Contain", "NotContain", "Exists", "NotExists" ]
 
     compareIntegerOperator:
       type: string
       description: Used operator to compare integer operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Пустое", "Не Пустое" ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
       x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     compareNumberOperator:
       type: string
       description: Used operator to compare number operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Пустое", "Не Пустое" ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
       x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     compareBooleanOperator:
       type: string
       description: Used operator to compare bool operands
-      enum: [ "Равно", "Не равно", "Пустое", "Не Пустое" ]
+      enum: [ "Равно", "Не равно", "Не Пустое", "Пустое" ]
       x-enum-varnames: [ "Equal", "NotEqual", "Exists", "NotExists" ]
 
     compareDateOperator:
       type: string
       description: Used operator to compare date operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Пустое", "Не Пустое" ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
       x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     ConditionParams:
