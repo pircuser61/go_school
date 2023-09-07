@@ -4068,6 +4068,9 @@ components:
         status_comment:
           type: string
           description: Комментарий статуса
+        process_deadline:
+          type: string
+          description: Плановая дата завершения процесса
       required:
         - id
         - version_id

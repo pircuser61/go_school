@@ -51,7 +51,7 @@ type taskResp struct {
 	AvailableActions taskActions            `json:"available_actions"`
 	StatusComment    string                 `json:"status_comment"`
 	StatusAuthor     string                 `json:"status_author"`
-	ProcessDeadline  string                 `json:"process_deadline"`
+	ProcessDeadline  time.Time              `json:"process_deadline"`
 }
 
 type step struct {
@@ -80,7 +80,7 @@ type action struct {
 type taskActions []action
 type taskSteps []step
 
-func (taskResp) toResponse(in *entity.EriusTask, usrDegSteps map[string]bool, sNames map[string]string, dln string) *taskResp {
+func (taskResp) toResponse(in *entity.EriusTask, usrDegSteps map[string]bool, sNames map[string]string, dln time.Time) *taskResp {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
 	for i := range in.Steps {
@@ -284,7 +284,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	deadline := ae.SLAService.ComputeMaxDateFormatted(dbTask.StartedAt, versionSettings.Sla, slaInfoPtr)
+	deadline := ae.SLAService.ComputeMaxDate(dbTask.StartedAt, float32(versionSettings.Sla), slaInfoPtr)
 
 	resp := &taskResp{}
 	if err = sendResponse(w, http.StatusOK,
