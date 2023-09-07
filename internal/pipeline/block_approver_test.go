@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"testing"
 	"time"
 
@@ -531,7 +532,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 							Title: script.RejectSocketTitle,
 						},
 					},
-					WorkType: string(WorkTypeN85),
+					WorkType: string(sla.WorkTypeN85),
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -609,7 +610,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 							Title: script.RejectSocketTitle,
 						},
 					},
-					WorkType: string(WorkTypeN85),
+					WorkType: string(sla.WorkTypeN85),
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
