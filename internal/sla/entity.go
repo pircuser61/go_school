@@ -24,7 +24,7 @@ type SLAInfo struct {
 	Weekends         []time.Weekday       `json:"weekends"`
 }
 
-type GetSLAInfoDTOStruct struct {
+type InfoDto struct {
 	TaskCompletionIntervals []entity.TaskCompletionInterval
 	WorkType                WorkHourType
 }

@@ -10,7 +10,7 @@ import (
 )
 
 type Service interface {
-	GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTOStruct) (*SLAInfo, error)
+	GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO InfoDto) (*SLAInfo, error)
 	ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAInfo) time.Time
 	ComputeMaxDateFormatted(start time.Time, sla int, slaInfoPtr *SLAInfo) string
 	CheckBreachSLA(start, current time.Time, sla int, slaInfoPtr *SLAInfo) bool

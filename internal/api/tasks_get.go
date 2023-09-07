@@ -30,7 +30,7 @@ const (
 	hiddenUserLogin = "hidden_user"
 )
 
-type taskResponse struct {
+type taskResp struct {
 	ID               uuid.UUID              `json:"id"`
 	VersionID        uuid.UUID              `json:"version_id"`
 	StartedAt        time.Time              `json:"started_at"`
@@ -80,7 +80,7 @@ type action struct {
 type taskActions []action
 type taskSteps []step
 
-func (taskResponse) toResponse(in *entity.EriusTask, usrDelegateSteps map[string]bool, sNames map[string]string, deadline string) *taskResponse {
+func (taskResp) toResponse(in *entity.EriusTask, usrDegSteps map[string]bool, sNames map[string]string, dln string) *taskResp {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
 	for i := range in.Steps {
@@ -100,7 +100,7 @@ func (taskResponse) toResponse(in *entity.EriusTask, usrDelegateSteps map[string
 			Steps:                     in.Steps[i].Steps,
 			HasError:                  in.Steps[i].HasError,
 			Status:                    pipeline.Status(in.Steps[i].Status),
-			IsDelegateOfAnyStepMember: usrDelegateSteps[in.Steps[i].Name],
+			IsDelegateOfAnyStepMember: usrDegSteps[in.Steps[i].Name],
 			ShortTitle:                sNames[in.Steps[i].Name],
 		})
 	}
@@ -116,7 +116,7 @@ func (taskResponse) toResponse(in *entity.EriusTask, usrDelegateSteps map[string
 		})
 	}
 
-	out := &taskResponse{
+	out := &taskResp{
 		ID:               in.ID,
 		VersionID:        in.VersionID,
 		StartedAt:        in.StartedAt,
@@ -137,7 +137,7 @@ func (taskResponse) toResponse(in *entity.EriusTask, usrDelegateSteps map[string
 		AvailableActions: actions,
 		StatusComment:    in.StatusComment,
 		StatusAuthor:     in.StatusAuthor,
-		ProcessDeadline:  deadline,
+		ProcessDeadline:  dln,
 	}
 
 	return out
@@ -267,7 +267,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		return
 	}
 
-	slaInfoPtr, getSlaInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
+	slaInfoPtr, getSlaInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{
 			{
 				StartedAt:  dbTask.StartedAt,
@@ -286,7 +286,7 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 	deadline := ae.SLAService.ComputeMaxDateFormatted(dbTask.StartedAt, versionSettings.Sla, slaInfoPtr)
 
-	resp := &taskResponse{}
+	resp := &taskResp{}
 	if err = sendResponse(w, http.StatusOK,
 		resp.toResponse(dbTask, currentUserDelegateSteps, shortNameMap, deadline)); err != nil {
 		e := UnknownError

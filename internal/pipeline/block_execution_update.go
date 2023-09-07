@@ -565,7 +565,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
@@ -691,7 +691,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return emailErr
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),

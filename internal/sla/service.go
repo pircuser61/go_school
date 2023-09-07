@@ -22,8 +22,8 @@ func NewSlaService(hrGate *hrgate.Service) Service {
 	}
 }
 
-func (s *service) GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTOStruct) (*SLAInfo, error) {
-	notUseCalendarDays, getNotUseErr := GetSLAInfoDTO.WorkType.GetNotUseCalendarDays()
+func (s *service) GetSLAInfoPtr(ctx context.Context, dto InfoDto) (*SLAInfo, error) {
+	notUseCalendarDays, getNotUseErr := dto.WorkType.GetNotUseCalendarDays()
 	if getNotUseErr != nil {
 		return nil, getNotUseErr
 	}
@@ -32,18 +32,18 @@ func (s *service) GetSLAInfoPtr(ctx context.Context, GetSLAInfoDTO GetSLAInfoDTO
 	var getCalendarDaysErr error
 	if !notUseCalendarDays {
 		calendarDays, getCalendarDaysErr = s.HrGate.GetDefaultCalendarDaysForGivenTimeIntervals(ctx,
-			GetSLAInfoDTO.TaskCompletionIntervals,
+			dto.TaskCompletionIntervals,
 		)
 		if getCalendarDaysErr != nil {
 			return nil, getCalendarDaysErr
 		}
 	}
 
-	startWorkHour, endWorkHour, getWorkingHoursErr := GetSLAInfoDTO.WorkType.GetWorkingHours()
+	startWorkHour, endWorkHour, getWorkingHoursErr := dto.WorkType.GetWorkingHours()
 	if getWorkingHoursErr != nil {
 		return nil, getWorkingHoursErr
 	}
-	weekends, getWeekendsErr := GetSLAInfoDTO.WorkType.GetWeekends()
+	weekends, getWeekendsErr := dto.WorkType.GetWeekends()
 	if getWeekendsErr != nil {
 		return nil, getWeekendsErr
 	}
@@ -69,7 +69,8 @@ func (s *service) ComputeMaxDate(start time.Time, sla float32, slaInfoPtr *SLAIn
 			slaInfoPtr.GetEndWorkHour(deadline),
 			slaInfoPtr.GetWeekends()
 		if notWorkingHours(deadline, calendarDays, startWorkHour, endWorkHour, weekends) {
-			datesDay := deadline.AddDate(0, 0, 1)            // default = next day
+			datesDay := deadline.AddDate(0, 0, 1) // default = next day
+
 			if beforeWorkingHours(deadline, startWorkHour) { // but in case it's now early in the morning...
 				datesDay = deadline
 			}

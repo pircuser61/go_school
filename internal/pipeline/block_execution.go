@@ -122,7 +122,7 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	}
 
 	if gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 			WorkType: sla.WorkHourType(gb.State.WorkType),

@@ -85,7 +85,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails := make(map[string]mail.Template, 0)
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),

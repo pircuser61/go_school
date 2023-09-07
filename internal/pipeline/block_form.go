@@ -125,7 +125,7 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 			WorkType: sla.WorkHourType(gb.State.WorkType),
@@ -284,7 +284,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		if isGroupExecutors {
-			slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
+			slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 					FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 				WorkType: sla.WorkHourType(gb.State.WorkType),
