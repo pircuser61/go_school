@@ -4089,6 +4089,7 @@ components:
         - rate
         - rate_comment
         - status_comment
+        - process_deadline
 
     httpError:
       type: object
