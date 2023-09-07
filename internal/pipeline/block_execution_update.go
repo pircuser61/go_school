@@ -15,6 +15,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -489,7 +490,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 		}
 
 		if len(gb.State.RequestExecutionInfoLogs) > 0 {
-			workHours := getWorkHoursBetweenDates(
+			workHours := gb.RunContext.SLAService.GetWorkHoursBetweenDates(
 				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
 				time.Now(),
 				nil,
@@ -564,17 +565,16 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(gb.State.WorkType),
+		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
-	workHours := getWorkHoursBetweenDates(gb.RunContext.currBlockStartTime, time.Now(), slaInfoPtr)
+	workHours := gb.RunContext.SLAService.GetWorkHoursBetweenDates(gb.RunContext.currBlockStartTime, time.Now(), slaInfoPtr)
 	gb.State.IncreaseSLA(workHours)
 
 	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
@@ -691,11 +691,10 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return emailErr
 	}
 
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(gb.State.WorkType),
+		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
 	if getSlaInfoErr != nil {
@@ -707,7 +706,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			Name:        gb.RunContext.NotifName,
 			Status:      string(StatusExecution),
 			Action:      statusToTaskAction[StatusExecution],
-			DeadLine:    ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+			DeadLine:    gb.RunContext.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			Description: description,
 			SdUrl:       gb.RunContext.Sender.SdAddress,
 			Mailto:      gb.RunContext.Sender.FetchEmail,

@@ -16,6 +16,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -168,18 +169,17 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-			Service: gb.RunContext.HrGate,
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: WorkHourType(*gb.State.WorkType),
+			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
 
 		if getSlaInfoErr != nil {
 			return nil, getSlaInfoErr
 		}
 
-		deadline := ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
+		deadline := gb.RunContext.SLAService.ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
 				Deadline{
@@ -278,11 +278,10 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		return err
 	}
 
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(*gb.State.WorkType),
+		WorkType: sla.WorkHourType(*gb.State.WorkType),
 	})
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
@@ -301,7 +300,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			gb.RunContext.NotifName,
 			description,
 			gb.RunContext.Sender.SdAddress,
-			ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr),
+			gb.RunContext.SLAService.ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr),
 			gb.State.AutoReject != nil && *gb.State.AutoReject,
 		)
 	}

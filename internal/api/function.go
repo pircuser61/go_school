@@ -94,6 +94,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		FaaS:          ae.FaaS,
 		HrGate:        ae.HrGate,
 		Scheduler:     ae.Scheduler,
+		SLAService:    ae.SLAService,
 
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,

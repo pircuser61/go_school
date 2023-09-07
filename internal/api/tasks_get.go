@@ -21,6 +21,7 @@ import (
 	ht "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
@@ -29,7 +30,7 @@ const (
 	hiddenUserLogin = "hidden_user"
 )
 
-type eriusTaskResponse struct {
+type taskResponse struct {
 	ID               uuid.UUID              `json:"id"`
 	VersionID        uuid.UUID              `json:"version_id"`
 	StartedAt        time.Time              `json:"started_at"`
@@ -50,6 +51,7 @@ type eriusTaskResponse struct {
 	AvailableActions taskActions            `json:"available_actions"`
 	StatusComment    string                 `json:"status_comment"`
 	StatusAuthor     string                 `json:"status_author"`
+	ProcessDeadline  string                 `json:"process_deadline"`
 }
 
 type step struct {
@@ -78,8 +80,7 @@ type action struct {
 type taskActions []action
 type taskSteps []step
 
-func (eriusTaskResponse) toResponse(in *entity.EriusTask,
-	currentUserDelegateSteps map[string]bool, shortNames map[string]string) *eriusTaskResponse {
+func (taskResponse) toResponse(in *entity.EriusTask, usrDelegateSteps map[string]bool, sNames map[string]string, deadline string) *taskResponse {
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
 	for i := range in.Steps {
@@ -99,8 +100,8 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask,
 			Steps:                     in.Steps[i].Steps,
 			HasError:                  in.Steps[i].HasError,
 			Status:                    pipeline.Status(in.Steps[i].Status),
-			IsDelegateOfAnyStepMember: currentUserDelegateSteps[in.Steps[i].Name],
-			ShortTitle:                shortNames[in.Steps[i].Name],
+			IsDelegateOfAnyStepMember: usrDelegateSteps[in.Steps[i].Name],
+			ShortTitle:                sNames[in.Steps[i].Name],
 		})
 	}
 
@@ -115,7 +116,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask,
 		})
 	}
 
-	out := &eriusTaskResponse{
+	out := &taskResponse{
 		ID:               in.ID,
 		VersionID:        in.VersionID,
 		StartedAt:        in.StartedAt,
@@ -136,6 +137,7 @@ func (eriusTaskResponse) toResponse(in *entity.EriusTask,
 		AvailableActions: actions,
 		StatusComment:    in.StatusComment,
 		StatusAuthor:     in.StatusAuthor,
+		ProcessDeadline:  deadline,
 	}
 
 	return out
@@ -256,9 +258,37 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		}
 	}
 
-	resp := &eriusTaskResponse{}
+	versionSettings, errSla := ae.DB.GetSlaVersionSettings(ctx, dbTask.VersionID.String())
+	if errSla != nil {
+		e := GetProcessSlaSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	slaInfoPtr, getSlaInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{
+			{
+				StartedAt:  dbTask.StartedAt,
+				FinishedAt: dbTask.StartedAt.Add(time.Hour * 24 * 100),
+			},
+		},
+		WorkType: sla.WorkHourType(versionSettings.WorkType),
+	})
+	if getSlaInfoErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(getSlaInfoErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	deadline := ae.SLAService.ComputeMaxDateFormatted(dbTask.StartedAt, versionSettings.Sla, slaInfoPtr)
+
+	resp := &taskResponse{}
 	if err = sendResponse(w, http.StatusOK,
-		resp.toResponse(dbTask, currentUserDelegateSteps, shortNameMap)); err != nil {
+		resp.toResponse(dbTask, currentUserDelegateSteps, shortNameMap, deadline)); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
@@ -742,9 +772,9 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	var mean = pipeline.ComputeMeanTaskCompletionTime(taskTimeIntervals, *calendarDays)
+	var mean = ae.SLAService.ComputeMeanTaskCompletionTime(taskTimeIntervals, *calendarDays)
 
-	if err := sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: mean.MeanWorkHours}); err != nil {
+	if err = sendResponse(w, http.StatusOK, script.TaskSolveTime{MeanWorkHours: mean.MeanWorkHours}); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)

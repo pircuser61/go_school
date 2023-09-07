@@ -1,4 +1,4 @@
-package pipeline
+package sla
 
 import (
 	"testing"
@@ -412,7 +412,7 @@ func Test_ComputeMaxDate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			startHour, endHour, _ := tt.fields.workHourType.GetWorkingHours()
 			weekends, _ := tt.fields.workHourType.GetWeekends()
-			totalSLA, _ := tt.fields.workHourType.GetTotalSLAInHours(tt.fields.days)
+			totalSLA, _ := tt.fields.workHourType.getTotalSLAInHours(tt.fields.days)
 			if gotDate := ComputeMaxDate(tt.fields.from, float32(totalSLA), &SLAInfo{
 				StartWorkHourPtr: &startHour,
 				EndWorkHourPtr:   &endHour,

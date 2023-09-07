@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"net/http"
 	"time"
 
@@ -45,6 +46,7 @@ type APIEnv struct {
 	Integrations            *integrations.Service
 	HrGate                  *hrgate.Service
 	Scheduler               *scheduler.Service
+	SLAService              sla.Service
 	IncludePlaceholderBlock bool
 }
 

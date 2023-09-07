@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"flag"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"os"
 	"os/signal"
 	"syscall"
@@ -171,6 +172,8 @@ func main() {
 		return
 	}
 
+	slaService := sla.NewSlaService(hrgateService)
+
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
 	APIEnv := &api.APIEnv{
@@ -192,6 +195,7 @@ func main() {
 		HrGate:                  hrgateService,
 		Scheduler:               schedulerService,
 		IncludePlaceholderBlock: includePlaceholderBlock,
+		SLAService:              slaService,
 	}
 
 	serverParam := api.ServerParam{

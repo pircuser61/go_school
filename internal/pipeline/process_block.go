@@ -30,6 +30,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -56,6 +57,7 @@ type BlockRunContext struct {
 	Delegations        human_tasks.Delegations
 	HrGate             *hrgate.Service
 	Scheduler          *scheduler.Service
+	SLAService         sla.Service
 	IsTest             bool
 	NotifName          string
 }

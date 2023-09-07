@@ -6,6 +6,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -105,26 +106,26 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
-					2*8, nil),
+				Deadline: gb.RunContext.SLAService.ComputeMaxDate(
+					gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 2*8, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 3*8, nil),
-			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
+			Deadline: gb.RunContext.SLAService.ComputeMaxDate(
+				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 3*8, nil),
+			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 
 		return deadlines, nil
 	}
 
 	if gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-			Service: gb.RunContext.HrGate,
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: WorkHourType(gb.State.WorkType),
+			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
 		if getSlaInfoErr != nil {
@@ -132,7 +133,8 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		}
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
+				Deadline{Deadline: gb.RunContext.SLAService.ComputeMaxDate(
+					gb.RunContext.currBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -140,8 +142,8 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
-					slaInfoPtr),
+				Deadline{Deadline: gb.RunContext.SLAService.ComputeMaxDate(
+					gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
@@ -150,7 +152,8 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 	if gb.State.IsEditable && gb.State.CheckReworkSLA && gb.State.EditingApp != nil {
 		deadlines = append(deadlines,
-			Deadline{Deadline: ComputeMaxDate(gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil),
+			Deadline{Deadline: gb.RunContext.SLAService.ComputeMaxDate(
+				gb.State.EditingApp.CreatedAt, float32(gb.State.ReworkSLA), nil),
 				Action: entity.TaskUpdateActionReworkSLABreach,
 			},
 		)
@@ -160,15 +163,16 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
-					2*8, nil),
+				Deadline: gb.RunContext.SLAService.ComputeMaxDate(
+					gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 2*8, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: ComputeMaxDate(gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 3*8, nil),
-			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
+			Deadline: gb.RunContext.SLAService.ComputeMaxDate(
+				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 3*8, nil),
+			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}
 

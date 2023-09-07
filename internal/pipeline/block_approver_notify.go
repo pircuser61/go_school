@@ -9,6 +9,7 @@ import (
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
@@ -84,17 +85,16 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails := make(map[string]mail.Template, 0)
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(gb.State.WorkType),
+		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
-	for _, login := range loginsToNotify {
+	for _, login = range loginsToNotify {
 		email, getEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getEmailErr != nil {
 			l.WithField("login", login).WithError(getEmailErr).Warning("couldn't get email")
@@ -107,7 +107,7 @@ func (gb *GoApproverBlock) handleNotifications(ctx c.Context) error {
 				Name:                      gb.RunContext.NotifName,
 				Status:                    gb.State.ApproveStatusName,
 				Action:                    statusToTaskAction[StatusApprovement],
-				DeadLine:                  ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+				DeadLine:                  gb.RunContext.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 				SdUrl:                     gb.RunContext.Sender.SdAddress,
 				Mailto:                    gb.RunContext.Sender.FetchEmail,
 				Login:                     login,

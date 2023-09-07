@@ -13,6 +13,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -124,11 +125,10 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-			Service: gb.RunContext.HrGate,
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: WorkHourType(gb.State.WorkType),
+			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
 		if getSlaInfoErr != nil {
@@ -137,7 +137,7 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA),
+				Deadline{Deadline: gb.RunContext.SLAService.ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA),
 					slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
@@ -146,7 +146,7 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
-				Deadline{Deadline: ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
+				Deadline{Deadline: gb.RunContext.SLAService.ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
 					slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
@@ -284,11 +284,10 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 		}
 
 		if isGroupExecutors {
-			slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-				Service: gb.RunContext.HrGate,
+			slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.GetSLAInfoDTOStruct{
 				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 					FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-				WorkType: WorkHourType(gb.State.WorkType),
+				WorkType: sla.WorkHourType(gb.State.WorkType),
 			})
 
 			if getSlaInfoErr != nil {
@@ -301,7 +300,7 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 				Mailto:     gb.RunContext.Sender.FetchEmail,
 				BlockName:  BlockGoFormID,
 				Login:      login,
-				Deadline:   ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+				Deadline:   gb.RunContext.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			})
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
