@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"flag"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"os"
 	"os/signal"
 	"syscall"
@@ -36,6 +35,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"

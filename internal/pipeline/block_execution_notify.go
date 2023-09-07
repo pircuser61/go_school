@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	c "context"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -10,6 +9,7 @@ import (
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
 
 //nolint:dupl,gocyclo // maybe later

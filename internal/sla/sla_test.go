@@ -9,6 +9,7 @@ import (
 )
 
 func Test_CheckBreachSLA(t *testing.T) {
+	sla := NewSlaService(nil)
 	type fields struct {
 		Start   time.Time
 		Current time.Time
@@ -94,7 +95,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if check := CheckBreachSLA(tt.fields.Start, tt.fields.Current, tt.fields.SLA, nil); check != tt.wantedCheck {
+			if check := sla.CheckBreachSLA(tt.fields.Start, tt.fields.Current, tt.fields.SLA, nil); check != tt.wantedCheck {
 				t.Errorf("check SLA returned unexpected result")
 			}
 		})
@@ -102,6 +103,7 @@ func Test_CheckBreachSLA(t *testing.T) {
 }
 
 func Test_ComputeDeadline(t *testing.T) {
+	sla := NewSlaService(nil)
 	type fields struct {
 		Start time.Time
 		SLA   int
@@ -162,7 +164,7 @@ func Test_ComputeDeadline(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if deadline := ComputeMaxDateFormatted(tt.fields.Start, tt.fields.SLA, nil); deadline != tt.wanted {
+			if deadline := sla.ComputeMaxDateFormatted(tt.fields.Start, tt.fields.SLA, nil); deadline != tt.wanted {
 				t.Errorf("compute deadline returned unexpected result")
 			}
 		})
@@ -170,6 +172,7 @@ func Test_ComputeDeadline(t *testing.T) {
 }
 
 func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
+	sla := NewSlaService(nil)
 	type fields struct {
 		from       time.Time
 		to         time.Time
@@ -326,7 +329,7 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotWorkHours := getWorkHoursBetweenDates(tt.fields.from, tt.fields.to, tt.fields.slaInfoPtr); gotWorkHours != tt.wantWorkHours {
+			if gotWorkHours := sla.GetWorkHoursBetweenDates(tt.fields.from, tt.fields.to, tt.fields.slaInfoPtr); gotWorkHours != tt.wantWorkHours {
 				t.Errorf("getWorkHoursBetweenDates() = %v, want %v", gotWorkHours, tt.wantWorkHours)
 			}
 		})
@@ -334,6 +337,7 @@ func Test_getWorkWorkHoursBetweenDates(t *testing.T) {
 }
 
 func Test_ComputeMaxDate(t *testing.T) {
+	sla := NewSlaService(nil)
 	type fields struct {
 		from         time.Time
 		workHourType *WorkHourType
@@ -413,7 +417,7 @@ func Test_ComputeMaxDate(t *testing.T) {
 			startHour, endHour, _ := tt.fields.workHourType.GetWorkingHours()
 			weekends, _ := tt.fields.workHourType.GetWeekends()
 			totalSLA, _ := tt.fields.workHourType.getTotalSLAInHours(tt.fields.days)
-			if gotDate := ComputeMaxDate(tt.fields.from, float32(totalSLA), &SLAInfo{
+			if gotDate := sla.ComputeMaxDate(tt.fields.from, float32(totalSLA), &SLAInfo{
 				StartWorkHourPtr: &startHour,
 				EndWorkHourPtr:   &endHour,
 				Weekends:         weekends,
