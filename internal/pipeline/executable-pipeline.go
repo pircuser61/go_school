@@ -180,6 +180,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			FaaS:          gb.FaaS,
 			HrGate:        gb.RunContext.HrGate,
 			Scheduler:     gb.RunContext.Scheduler,
+			SLAService:    gb.RunContext.SLAService,
 			UpdateData:    nil,
 			IsTest:        isTest,
 			NotifName:     notifName,

@@ -36,6 +36,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/server"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
@@ -178,6 +179,8 @@ func main() {
 		return
 	}
 
+	slaService := sla.NewSlaService(hrgateService)
+
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
 
 	APIEnv := &api.APIEnv{
@@ -199,6 +202,7 @@ func main() {
 		HrGate:                  hrgateService,
 		Scheduler:               schedulerService,
 		IncludePlaceholderBlock: includePlaceholderBlock,
+		SLAService:              slaService,
 		Forms:                   formsService,
 	}
 

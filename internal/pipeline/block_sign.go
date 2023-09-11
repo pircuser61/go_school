@@ -16,6 +16,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -167,19 +168,18 @@ func (gb *GoSignBlock) Members() []Member {
 func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
-	if gb.checkSLA() && gb.State.WorkType != nil && gb.State.SLA != nil {
-		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-			Service: gb.RunContext.HrGate,
+	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: WorkHourType(*gb.State.WorkType),
+			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
 
 		if getSlaInfoErr != nil {
 			return nil, getSlaInfoErr
 		}
 
-		deadline := ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
+		deadline := gb.RunContext.SLAService.ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
 				Deadline{
@@ -294,16 +294,15 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	slaDeadline := ""
 
 	if gb.State.SLA != nil && gb.State.WorkType != nil {
-		slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-			Service: gb.RunContext.HrGate,
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-			WorkType: WorkHourType(*gb.State.WorkType),
+			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
 		if getSlaInfoErr != nil {
 			return getSlaInfoErr
 		}
-		slaDeadline = ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr)
+		slaDeadline = gb.RunContext.SLAService.ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr)
 	}
 
 	var emails = make(map[string]mail.Template, 0)
@@ -333,6 +332,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			return sendErr
 		}
 	}
+
 	return nil
 }
 

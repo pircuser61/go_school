@@ -234,6 +234,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		FaaS:          ae.FaaS,
 		HrGate:        ae.HrGate,
 		Scheduler:     ae.Scheduler,
+		SLAService:    ae.SLAService,
 
 		UpdateData: &script.BlockUpdateData{
 			ByLogin:    data.login,

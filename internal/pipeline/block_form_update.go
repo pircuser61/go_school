@@ -12,6 +12,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
 
 type updateFillFormParams struct {
@@ -242,17 +243,16 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(gb.State.WorkType),
+		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
-	workHours := getWorkHoursBetweenDates(
+	workHours := gb.RunContext.SLAService.GetWorkHoursBetweenDates(
 		gb.RunContext.currBlockStartTime,
 		time.Now(),
 		slaInfoPtr,
@@ -311,11 +311,10 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 		return emailErr
 	}
 
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(gb.State.WorkType),
+		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
 	if getSlaInfoErr != nil {
@@ -324,7 +323,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		gb.RunContext.Sender.SdAddress,
-		ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, gb.State.SLA, slaInfoPtr),
+		gb.RunContext.SLAService.ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, gb.State.SLA, slaInfoPtr),
 	)
 
 	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, nil, tpl); sendErr != nil {

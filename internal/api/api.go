@@ -1827,6 +1827,9 @@ type EriusTaskResponse struct {
 	// Параметры заявки
 	Parameters map[string]interface{} `json:"parameters"`
 
+	// Плановая дата завершения процесса
+	ProcessDeadline string `json:"process_deadline"`
+
 	// Оценка для выполненной заявки
 	Rate int `json:"rate"`
 

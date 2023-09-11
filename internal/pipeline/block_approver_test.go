@@ -19,6 +19,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	humanTasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
@@ -531,7 +532,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 							Title: script.RejectSocketTitle,
 						},
 					},
-					WorkType: string(WorkTypeN85),
+					WorkType: string(sla.WorkTypeN85),
 				},
 				Sockets: entity.ConvertSocket(next),
 			},
@@ -609,7 +610,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 							Title: script.RejectSocketTitle,
 						},
 					},
-					WorkType: string(WorkTypeN85),
+					WorkType: string(sla.WorkTypeN85),
 				},
 				Sockets: entity.ConvertSocket(next),
 			},

@@ -499,7 +499,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return linkErr
 		}
 
-		workHours := getWorkHoursBetweenDates(
+		workHours := gb.RunContext.SLAService.GetWorkHoursBetweenDates(
 			gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt,
 			time.Now(),
 			nil,

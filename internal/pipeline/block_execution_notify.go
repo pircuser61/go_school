@@ -9,6 +9,7 @@ import (
 	e "gitlab.services.mts.ru/abp/mail/pkg/email"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 )
 
 //nolint:dupl,gocyclo // maybe later
@@ -77,17 +78,16 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		}
 	}
 
-	slaInfoPtr, getSlaInfoErr := GetSLAInfoPtr(ctx, GetSLAInfoDTOStruct{
-		Service: gb.RunContext.HrGate,
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: WorkHourType(gb.State.WorkType),
+		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
-	for _, login := range loginsToNotify {
+	for _, login = range loginsToNotify {
 		email, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
@@ -113,7 +113,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Name:        gb.RunContext.NotifName,
 					Status:      string(StatusExecution),
 					Action:      statusToTaskAction[StatusExecution],
-					DeadLine:    ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+					DeadLine:    gb.RunContext.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 					Description: description,
 					SdUrl:       gb.RunContext.Sender.SdAddress,
 					Mailto:      gb.RunContext.Sender.FetchEmail,

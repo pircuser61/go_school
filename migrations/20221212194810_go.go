@@ -2,12 +2,11 @@ package migrations
 
 import (
 	"database/sql"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
-
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 )
 
 func init() {
@@ -15,6 +14,7 @@ func init() {
 }
 
 func upGo(tx *sql.Tx) error {
+	slaSrv := sla.NewSlaService(nil)
 	type ResultRowStruct struct {
 		Id        uuid.UUID
 		TimeStart time.Time
@@ -43,7 +43,7 @@ func upGo(tx *sql.Tx) error {
 			rows.Close()
 			return scanErr
 		}
-		halfSLADeadline = pipeline.ComputeMaxDate(resultRow.TimeStart, float32(resultRow.SLA)/2, nil)
+		halfSLADeadline = slaSrv.ComputeMaxDate(resultRow.TimeStart, float32(resultRow.SLA)/2, nil)
 		resultRows = append(resultRows, UpdateStruct{
 			Id:              resultRow.Id,
 			HalfSLADeadline: halfSLADeadline,

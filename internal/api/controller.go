@@ -24,6 +24,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/people"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
@@ -46,6 +47,7 @@ type APIEnv struct {
 	Integrations            *integrations.Service
 	HrGate                  *hrgate.Service
 	Scheduler               *scheduler.Service
+	SLAService              sla.Service
 	Forms                   *forms.Service
 	IncludePlaceholderBlock bool
 }
