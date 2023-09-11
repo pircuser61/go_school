@@ -398,6 +398,8 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 			e = ParallelNodeExitsNotConnected
 		case ValidateOutOfParallelNodesConnection:
 			e = OutOfParallelNodesConnection
+		case ValidateParallelOutOfStartInsert:
+			e = ParallelOutOfStartInsert
 		default:
 			e = PipelineValidateError
 		}

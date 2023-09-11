@@ -69,6 +69,7 @@ const (
 	ParallelNodeReturnCycle       = "ParallelNodeReturnCycle"
 	ParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
 	OutOfParallelNodesConnection  = "OutOfParallelNodesConnection"
+	ParallelOutOfStartInsert      = "ParallelOutOfStartInsert"
 )
 
 func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (valid bool, textErr string) {
@@ -225,18 +226,18 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 		if foundNode == nil {
 			return false, ""
 		}
-		afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundNode, visitedParallelNodes)
+		afterEndOk, visitedEndNodes := bt.validateAfterEndParallelNodes(foundNode, &idx, visitedParallelNodes)
 		if !afterEndOk {
 			return false, OutOfParallelNodesConnection
 		}
-		if beforeStartOk := bt.validateBeforeStartParallelNodes(StartBlock0, idx, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
-			return false, OutOfParallelNodesConnection
+		if beforeStartOk, textStartErr := bt.validateBeforeStartParallelNodes(StartBlock0, idx, *foundNode, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
+			return false, textStartErr
 		}
 	}
 	return true, ""
 }
 
-func (bt *BlocksType) validateAfterEndParallelNodes(endNode *string,
+func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,
 	visitedParallelNodes map[string]EriusFunc) (valid bool, visitedNodes map[string]EriusFunc) {
 	parallelEndNode := (*bt)[*endNode]
 	afterEndNodes := map[string]*EriusFunc{
@@ -258,6 +259,9 @@ func (bt *BlocksType) validateAfterEndParallelNodes(endNode *string,
 
 		for _, socketOutNodes := range node.Next {
 			for _, socketOutNode := range socketOutNodes {
+				if socketOutNode == *idx {
+					continue
+				}
 				_, ok := visitedParallelNodes[socketOutNode]
 				if ok {
 					return false, nil
@@ -273,8 +277,8 @@ func (bt *BlocksType) validateAfterEndParallelNodes(endNode *string,
 	return true, visitedEndParallelNodes
 }
 
-func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx string,
-	visitedParallelNodes, visitedAfterEndNodes map[string]EriusFunc) bool {
+func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx, endNode string,
+	visitedParallelNodes, visitedAfterEndNodes map[string]EriusFunc) (valid bool, textErr string) {
 	parallelStartNode := (*bt)[startKey]
 	BeforeStartNodes := map[string]*EriusFunc{
 		startKey: &parallelStartNode,
@@ -298,9 +302,12 @@ func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx string,
 				if socketOutNode == idx {
 					continue
 				}
+				if socketOutNode == endNode {
+					return false, ParallelOutOfStartInsert
+				}
 				_, ok := visitedParallelNodes[socketOutNode]
 				if ok {
-					return false
+					return false, OutOfParallelNodesConnection
 				}
 				_, alreadyVisited := visitedAfterEndNodes[socketOutNode]
 				if alreadyVisited {
@@ -314,7 +321,7 @@ func (bt *BlocksType) validateBeforeStartParallelNodes(startKey, idx string,
 			}
 		}
 	}
-	return true
+	return true, ""
 }
 
 func (bt *BlocksType) addDefaultStartNode() {
