@@ -150,13 +150,13 @@ func (user *SSOUserTyped) GetFullName() string {
 
 func GetSsoPersonSchemaProperties() map[string]script.JSONSchemaPropertiesValue {
 	return map[string]script.JSONSchemaPropertiesValue{
-		"fullname":    {Type: "string"},
-		"username":    {Type: "string"},
-		"email":       {Type: "string"},
-		"mobile":      {Type: "string"},
-		"fullOrgUnit": {Type: "string"},
-		"position":    {Type: "string"},
-		"phone":       {Type: "string"},
-		"tabnum":      {Type: "string"},
+		"fullname":    {Type: "string", Title: "Полное имя"},
+		"username":    {Type: "string", Title: "Логин"},
+		"email":       {Type: "string", Title: "email"},
+		"mobile":      {Type: "string", Title: "Номер мобильного телефона"},
+		"fullOrgUnit": {Type: "string", Title: "Подразделение"},
+		"position":    {Type: "string", Title: "Должность"},
+		"phone":       {Type: "string", Title: "Телефон"},
+		"tabnum":      {Type: "string", Title: "Табельный номер"},
 	}
 }

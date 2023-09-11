@@ -13,6 +13,7 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -47,6 +48,7 @@ type APIEnv struct {
 	HrGate                  *hrgate.Service
 	Scheduler               *scheduler.Service
 	SLAService              sla.Service
+	Forms                   *forms.Service
 	IncludePlaceholderBlock bool
 }
 

@@ -189,7 +189,7 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 			)
 		}
 
-		if *gb.State.SLA > 8 {
+		if *gb.State.SLA > 8 && !gb.State.DayBeforeSLAChecked {
 			notifyBeforeDayExpireSLA := deadline.Add(-8 * time.Hour)
 			deadlines = append(deadlines,
 				Deadline{
@@ -262,6 +262,19 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 	return nil
 }
 
+func (gb *GoSignBlock) handleDayBeforeSLANotifications(ctx c.Context) error {
+	if gb.State.DayBeforeSLAChecked {
+		return nil
+	}
+
+	if err := gb.handleNotifications(ctx); err != nil {
+		return err
+	}
+
+	gb.State.DayBeforeSLAChecked = true
+	return nil
+}
+
 //nolint:dupl,gocyclo // maybe later
 func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
@@ -278,13 +291,18 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		return err
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
-		WorkType: sla.WorkHourType(*gb.State.WorkType),
-	})
-	if getSlaInfoErr != nil {
-		return getSlaInfoErr
+	slaDeadline := ""
+
+	if gb.State.SLA != nil && gb.State.WorkType != nil {
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
+				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			WorkType: sla.WorkHourType(*gb.State.WorkType),
+		})
+		if getSlaInfoErr != nil {
+			return getSlaInfoErr
+		}
+		slaDeadline = gb.RunContext.SLAService.ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr)
 	}
 
 	var emails = make(map[string]mail.Template, 0)
@@ -300,7 +318,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			gb.RunContext.NotifName,
 			description,
 			gb.RunContext.Sender.SdAddress,
-			gb.RunContext.SLAService.ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr),
+			slaDeadline,
 			gb.State.AutoReject != nil && *gb.State.AutoReject,
 		)
 	}
@@ -314,6 +332,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			return sendErr
 		}
 	}
+
 	return nil
 }
 
@@ -371,6 +390,10 @@ func (gb *GoSignBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	return gb.handleNotifications(ctx)
 }
 
+func (gb *GoSignBlock) checkSLA() bool {
+	return gb.State.CheckSLA != nil && *gb.State.CheckSLA
+}
+
 func (gb *GoSignBlock) Model() script.FunctionModel {
 	return script.FunctionModel{
 		ID:        BlockGoSignID,
@@ -396,7 +419,17 @@ func (gb *GoSignBlock) Model() script.FunctionModel {
 					Type:        "array",
 					Description: "signed files",
 					Items: &script.ArrayItems{
-						Type: "string",
+						Type: "object",
+						Properties: map[string]script.JSONSchemaPropertiesValue{
+							"file_id": {
+								Type:        "string",
+								Description: "file id in file Registry",
+							},
+							"external_link": {
+								Type:        "string",
+								Description: "link to file in another system",
+							},
+						},
 					},
 				},
 			},

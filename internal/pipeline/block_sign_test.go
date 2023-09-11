@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -31,7 +32,7 @@ func TestSignData_SetDecision(t *testing.T) {
 		login       string
 		decision    SignDecision
 		comment     string
-		attachments []string
+		attachments []entity.Attachment
 	}
 	tests := []struct {
 		name             string
@@ -81,7 +82,7 @@ func TestSignData_SetDecision(t *testing.T) {
 				login:       ServiceAccountDev,
 				decision:    SignDecisionSigned,
 				comment:     comment,
-				attachments: []string{fileID1},
+				attachments: []entity.Attachment{{FileID: fileID1}},
 			},
 			wantErr: false,
 		},
@@ -173,7 +174,7 @@ func TestSignData_SetDecision(t *testing.T) {
 				login:       ServiceAccountDev,
 				decision:    SignDecisionSigned,
 				comment:     comment,
-				attachments: []string{fileID1},
+				attachments: []entity.Attachment{{FileID: fileID1}},
 			},
 			wantErr: false,
 		},

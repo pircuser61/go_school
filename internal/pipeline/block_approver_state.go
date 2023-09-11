@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -108,11 +109,11 @@ const (
 )
 
 type ApproverEditingApp struct {
-	Approver    string    `json:"approver"`
-	Comment     string    `json:"comment"`
-	Attachments []string  `json:"attachments"`
-	CreatedAt   time.Time `json:"created_at"`
-	DelegateFor string    `json:"delegate_for"`
+	Approver    string              `json:"approver"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
+	CreatedAt   time.Time           `json:"created_at"`
+	DelegateFor string              `json:"delegate_for"`
 }
 
 type AdditionalInfoType string
@@ -131,32 +132,32 @@ const (
 )
 
 type AdditionalInfo struct {
-	Id          string             `json:"id"`
-	Login       string             `json:"login"`
-	Comment     string             `json:"comment"`
-	Attachments []string           `json:"attachments"`
-	LinkId      *string            `json:"link_id,omitempty"`
-	Type        AdditionalInfoType `json:"type"`
-	CreatedAt   time.Time          `json:"created_at"`
-	DelegateFor string             `json:"delegate_for"`
+	Id          string              `json:"id"`
+	Login       string              `json:"login"`
+	Comment     string              `json:"comment"`
+	Attachments []entity.Attachment `json:"attachments"`
+	LinkId      *string             `json:"link_id,omitempty"`
+	Type        AdditionalInfoType  `json:"type"`
+	CreatedAt   time.Time           `json:"created_at"`
+	DelegateFor string              `json:"delegate_for"`
 }
 
 type ApproverLogEntry struct {
-	Login          string           `json:"login"`
-	Decision       ApproverDecision `json:"decision"`
-	Comment        string           `json:"comment"`
-	CreatedAt      time.Time        `json:"created_at"`
-	Attachments    []string         `json:"attachments"`
-	AddedApprovers []string         `json:"added_approvers"`
-	LogType        ApproverLogType  `json:"log_type"`
-	DelegateFor    string           `json:"delegate_for"`
+	Login          string              `json:"login"`
+	Decision       ApproverDecision    `json:"decision"`
+	Comment        string              `json:"comment"`
+	CreatedAt      time.Time           `json:"created_at"`
+	Attachments    []entity.Attachment `json:"attachments"`
+	AddedApprovers []string            `json:"added_approvers"`
+	LogType        ApproverLogType     `json:"log_type"`
+	DelegateFor    string              `json:"delegate_for"`
 }
 
 type ApproverData struct {
 	Type                script.ApproverType    `json:"type"`
 	Approvers           map[string]struct{}    `json:"approvers"`
 	Decision            *ApproverDecision      `json:"decision,omitempty"`
-	DecisionAttachments []string               `json:"decision_attachments,omitempty"`
+	DecisionAttachments []entity.Attachment    `json:"decision_attachments,omitempty"`
 	Comment             *string                `json:"comment,omitempty"`
 	ActualApprover      *string                `json:"actual_approver,omitempty"`
 	ApprovementRule     script.ApprovementRule `json:"approvementRule,omitempty"`
@@ -201,14 +202,14 @@ type Action struct {
 }
 
 type AdditionalApprover struct {
-	ApproverLogin     string            `json:"approver_login"`
-	BaseApproverLogin string            `json:"base_approver_login"`
-	Question          *string           `json:"question"`
-	Comment           *string           `json:"comment"`
-	Attachments       []string          `json:"attachments"`
-	Decision          *ApproverDecision `json:"decision"`
-	CreatedAt         time.Time         `json:"created_at"`
-	DecisionTime      *time.Time        `json:"decision_time"`
+	ApproverLogin     string              `json:"approver_login"`
+	BaseApproverLogin string              `json:"base_approver_login"`
+	Question          *string             `json:"question"`
+	Comment           *string             `json:"comment"`
+	Attachments       []entity.Attachment `json:"attachments"`
+	Decision          *ApproverDecision   `json:"decision"`
+	CreatedAt         time.Time           `json:"created_at"`
+	DecisionTime      *time.Time          `json:"decision_time"`
 }
 
 func (a *ApproverData) GetDecision() *ApproverDecision {
@@ -266,7 +267,7 @@ func (a *ApproverData) userIsDelegate(login string, delegations human_tasks.Dele
 
 //nolint:gocyclo //its ok here
 func (a *ApproverData) SetDecision(login string,
-	decision ApproverDecision, comment string, attach []string, delegations human_tasks.Delegations) error {
+	decision ApproverDecision, comment string, attach []entity.Attachment, delegations human_tasks.Delegations) error {
 	_, approverFound := a.Approvers[login]
 
 	delegators := delegations.GetDelegators(login)
@@ -386,7 +387,7 @@ func (a *ApproverData) SetDecision(login string,
 		a.Decision = &overallDecision
 		a.Comment = &comment
 		a.ActualApprover = &login
-		a.DecisionAttachments = []string{}
+		a.DecisionAttachments = []entity.Attachment{}
 		for _, l := range a.ApproverLog {
 			if l.LogType == ApproverLogDecision {
 				a.DecisionAttachments = append(a.DecisionAttachments, l.Attachments...)

@@ -399,7 +399,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					},
 					SLA:                 1,
 					FormsAccessibility:  make([]script.FormAccessibility, 1),
-					DecisionAttachments: make([]string, 0),
+					DecisionAttachments: make([]entity.Attachment, 0),
 					IsTakenInWork:       true,
 				},
 			},

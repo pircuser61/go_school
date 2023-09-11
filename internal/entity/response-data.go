@@ -489,6 +489,39 @@ type ProcessSettings struct {
 	Name               string             `json:"name"`
 	SLA                int                `json:"sla"`
 	WorkType           string             `json:"work_type"`
+
+	StartSchemaRaw []byte `json:"-"`
+	EndSchemaRaw   []byte `json:"-"`
+}
+
+func (ps *ProcessSettings) UnmarshalJSON(bytes []byte) error {
+	temp := struct {
+		Id                 string           `json:"version_id"`
+		StartSchema        *json.RawMessage `json:"start_schema"`
+		EndSchema          *json.RawMessage `json:"end_schema"`
+		ResubmissionPeriod int              `json:"resubmission_period"`
+		Name               string           `json:"name"`
+		SLA                int              `json:"sla"`
+		WorkType           string           `json:"work_type"`
+	}{}
+
+	if err := json.Unmarshal(bytes, &temp); err != nil {
+		return err
+	}
+
+	ps.Id = temp.Id
+	ps.ResubmissionPeriod = temp.ResubmissionPeriod
+	ps.Name = temp.Name
+	ps.SLA = temp.SLA
+	ps.WorkType = temp.WorkType
+
+	if temp.StartSchema != nil {
+		ps.StartSchemaRaw = *temp.StartSchema
+	}
+	if temp.EndSchema != nil {
+		ps.EndSchemaRaw = *temp.EndSchema
+	}
+	return nil
 }
 
 func (ps *ProcessSettings) ValidateSLA() bool {
@@ -632,12 +665,12 @@ const (
 func (es EriusScenario) FillEntryPointOutput() (err error) {
 	entryPoint := es.Pipeline.Blocks[es.Pipeline.Entrypoint]
 	if es.Settings.StartSchema != nil {
-		for k, v := range entryPoint.Output.Properties {
+		for k := range entryPoint.Output.Properties {
 			val, ok := es.Settings.StartSchema.Properties[k]
 			if !ok {
 				continue
 			}
-			val.Global = v.Global
+			val.Global = es.Pipeline.Entrypoint + "." + k
 			es.Settings.StartSchema.Properties[k] = val
 		}
 		entryPoint.Output = es.Settings.StartSchema

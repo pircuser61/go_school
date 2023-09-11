@@ -542,6 +542,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		log.Error(e.errorMessage(err))
 		return nil, errors.Wrap(err, e.error())
 	}
+	log.Info("executablePipeline is nil ", executablePipeline == nil)
 
 	return &entity.RunResponse{
 		PipelineID: executablePipeline.PipelineID,
@@ -606,6 +607,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	ep.HumanTasks = ae.HumanTasks
 	ep.Integrations = ae.Integrations
 	ep.FileRegistry = ae.FileRegistry
+	ep.Scheduler = ae.Scheduler
 
 	if dto.makeNewWork {
 		ep.WorkNumber = dto.workNumber

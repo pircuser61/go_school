@@ -1006,7 +1006,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/httpResponse'
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExternalSystem'
+                  status_code:
+                    type: integer
         400:
           description: Bad Request
           content:
@@ -3349,7 +3354,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - comment
         - attachments
@@ -3542,7 +3547,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
         - comment
@@ -3560,7 +3565,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
 
@@ -3576,7 +3581,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
         - comment
@@ -3594,7 +3599,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - decision
         - comment
@@ -3615,7 +3620,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - additionalApprovers
         - question
@@ -3695,7 +3700,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - newExecutorLogin
         - comment
@@ -3716,7 +3721,7 @@ components:
         attachments:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
       required:
         - reqType
         - comment
@@ -3979,7 +3984,7 @@ components:
         attachment_fields:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
     RunNewVersionByPrevVersionRequest:
       required: [ work_number,description,application_body,keys,attachment_fields ]
       type: object
@@ -3998,7 +4003,7 @@ components:
         attachment_fields:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Attachment'
     eriusTaskResponse:
       type: object
       properties:
@@ -4167,6 +4172,16 @@ components:
         - button_type
         - comment_enabled
         - attachments_enabled
+
+    Attachment:
+      type: object
+      properties:
+        file_id:
+          type: string
+          description: "Id файла в file registry"
+        external_link:
+          type: string
+          description: "Ссылка на файл в сторонней системе"
 
     blockType:
       type: string
@@ -4400,32 +4415,32 @@ components:
     compareStringOperator:
       type: string
       description: Used operator to compare string operands
-      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит", "Пустое", "Не Пустое" ]
+      enum: [ "Равно", "Не равно", "Содержит", "Не Содержит", "Не Пустое", "Пустое" ]
       x-enum-varnames: [ "Equal", "NotEqual", "Contain", "NotContain", "Exists", "NotExists" ]
 
     compareIntegerOperator:
       type: string
       description: Used operator to compare integer operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Пустое", "Не Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"  ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     compareNumberOperator:
       type: string
       description: Used operator to compare number operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Пустое", "Не Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"  ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     compareBooleanOperator:
       type: string
       description: Used operator to compare bool operands
-      enum: [ "Равно", "Не равно", "Пустое", "Не Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "Exists", "NotExists"  ]
+      enum: [ "Равно", "Не равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "Exists", "NotExists" ]
 
     compareDateOperator:
       type: string
       description: Used operator to compare date operands
-      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Пустое", "Не Пустое" ]
-      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists"  ]
+      enum: [ "Равно", "Не равно", "Больше", "Больше или равно", "Меньше", "Меньше или равно", "Не Пустое", "Пустое" ]
+      x-enum-varnames: [ "Equal", "NotEqual", "More", "MoreOrEqual", "Less", "LessOrEqual", "Exists", "NotExists" ]
 
     ConditionParams:
       type: object

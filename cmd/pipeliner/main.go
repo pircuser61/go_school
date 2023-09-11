@@ -22,6 +22,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/httpclient"
@@ -172,6 +173,12 @@ func main() {
 		return
 	}
 
+	formsService, err := forms.NewService(cfg.Forms)
+	if err != nil {
+		log.WithError(err).Error("can't create forms service")
+		return
+	}
+
 	slaService := sla.NewSlaService(hrgateService)
 
 	includePlaceholderBlock := cfg.IncludePlaceholderBlock
@@ -196,6 +203,7 @@ func main() {
 		Scheduler:               schedulerService,
 		IncludePlaceholderBlock: includePlaceholderBlock,
 		SLAService:              slaService,
+		Forms:                   formsService,
 	}
 
 	serverParam := api.ServerParam{

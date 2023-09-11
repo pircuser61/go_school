@@ -4,14 +4,15 @@ import (
 	c "context"
 	"encoding/json"
 	"errors"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 )
 
 type signSignatureParams struct {
-	Decision    SignDecision `json:"decision"`
-	Comment     string       `json:"comment,omitempty"`
-	Attachments []string     `json:"attachments"`
+	Decision    SignDecision        `json:"decision"`
+	Comment     string              `json:"comment,omitempty"`
+	Attachments []entity.Attachment `json:"attachments"`
 }
 
 func (gb *GoSignBlock) handleSignature() error {
@@ -25,7 +26,6 @@ func (gb *GoSignBlock) handleSignature() error {
 	if setErr := gb.setSignerDecision(updateParams); setErr != nil {
 		return setErr
 	}
-
 	return nil
 }
 
@@ -42,7 +42,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionDayBeforeSLABreach):
-		if errUpdate := gb.handleNotifications(ctx); errUpdate != nil {
+		if errUpdate := gb.handleDayBeforeSLANotifications(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSign):
@@ -66,6 +66,10 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 	if gb.State.CheckSLA == nil || !*gb.State.CheckSLA {
 		gb.State.SLAChecked = true
+		return nil
+	}
+
+	if gb.State.SLAChecked {
 		return nil
 	}
 
@@ -98,11 +102,11 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 
 	if gb.State.AutoReject != nil && *gb.State.AutoReject {
 		gb.RunContext.UpdateData.ByLogin = autoSigner
-		if setErr := gb.setSignerDecision(
-			&signSignatureParams{
-				Decision: SignDecisionRejected,
-				Comment:  AutoActionComment,
-			}); setErr != nil {
+		gb.State.ActualSigner = &gb.RunContext.UpdateData.ByLogin
+		if setErr := gb.setSignerDecision(&signSignatureParams{
+			Decision: SignDecisionRejected,
+			Comment:  AutoActionComment,
+		}); setErr != nil {
 			return setErr
 		}
 	}
@@ -121,7 +125,7 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSigner], gb.State.ActualSigner)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignDecision], gb.State.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputSignComment], gb.State.Comment)
-		resAttachments := make([]string, 0)
+		resAttachments := make([]entity.Attachment, 0)
 		for _, l := range gb.State.SignLog {
 			resAttachments = append(resAttachments, l.Attachments...)
 		}

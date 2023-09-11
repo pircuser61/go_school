@@ -7,6 +7,7 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	file_registry "gitlab.services.mts.ru/jocasta/pipeliner/internal/file-registry"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/forms"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/functions"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/hrgate"
 	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
@@ -57,6 +58,7 @@ type Pipeliner struct {
 	FileRegistry            file_registry.Config `yaml:"file_registry"`
 	IncludePlaceholderBlock bool                 `yaml:"include_placeholder_block"`
 	SchedulerTasks          scheduler.Config     `yaml:"scheduler_tasks"`
+	Forms                   forms.Config         `yaml:"forms"`
 }
 
 type RunEnv struct {

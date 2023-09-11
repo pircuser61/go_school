@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
@@ -15,11 +16,11 @@ func (a SignDecision) String() string {
 }
 
 type SignLogEntry struct {
-	Login       string       `json:"login"`
-	Decision    SignDecision `json:"decision"`
-	Comment     string       `json:"comment"`
-	CreatedAt   time.Time    `json:"created_at"`
-	Attachments []string     `json:"attachments,omitempty"`
+	Login       string              `json:"login"`
+	Decision    SignDecision        `json:"decision"`
+	Comment     string              `json:"comment"`
+	CreatedAt   time.Time           `json:"created_at"`
+	Attachments []entity.Attachment `json:"attachments,omitempty"`
 }
 
 type SignData struct {
@@ -29,7 +30,7 @@ type SignData struct {
 	Decision         *SignDecision           `json:"decision,omitempty"`
 	Comment          *string                 `json:"comment,omitempty"`
 	ActualSigner     *string                 `json:"actual_signer,omitempty"`
-	Attachments      []string                `json:"attachments,omitempty"`
+	Attachments      []entity.Attachment     `json:"attachments,omitempty"`
 	SigningRule      script.SigningRule      `json:"signing_rule,omitempty"`
 	SignatureCarrier script.SignatureCarrier `json:"signature_carrier,omitempty"`
 	SignLog          []SignLogEntry          `json:"sign_log,omitempty"`
@@ -39,11 +40,13 @@ type SignData struct {
 	SignerGroupID   string `json:"signer_group_id,omitempty"`
 	SignerGroupName string `json:"signer_group_name,omitempty"`
 
-	SLA        *int    `json:"sla"`
-	CheckSLA   *bool   `json:"check_sla"`
-	SLAChecked bool    `json:"sla_checked"`
-	AutoReject *bool   `json:"auto_reject"`
-	WorkType   *string `json:"work_type"`
+	SLA        *int    `json:"sla,omitempty"`
+	CheckSLA   *bool   `json:"check_sla,omitempty"`
+	AutoReject *bool   `json:"auto_reject,omitempty"`
+	WorkType   *string `json:"work_type,omitempty"`
+
+	SLAChecked          bool `json:"sla_checked"`
+	DayBeforeSLAChecked bool `json:"before_day_sla_checked"`
 }
 
 func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams) {
@@ -102,7 +105,8 @@ func (s *SignData) handleAllOfDecision(login string, params *signSignatureParams
 
 func (s *SignData) SetDecision(login string, params *signSignatureParams) error {
 	_, signerFound := s.Signers[login]
-	if !signerFound {
+	isAutoDecision := login == autoSigner
+	if !signerFound && !isAutoDecision {
 		if s.SignatureType != script.SignatureTypeUKEP || (s.SignatureType == script.SignatureTypeUKEP &&
 			login != ServiceAccount &&
 			login != ServiceAccountStage &&
@@ -132,6 +136,10 @@ func (s *SignData) SetDecision(login string, params *signSignatureParams) error 
 
 	if params.Decision == SignDecisionSigned {
 		params.Comment = ""
+	}
+
+	if isAutoDecision {
+		s.handleAnyOfDecision(login, params)
 	}
 
 	if signingRule == script.AnyOfSigningRequired {

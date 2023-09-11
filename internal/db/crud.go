@@ -2146,22 +2146,37 @@ func (db *PGCon) ParallelIsFinished(ctx context.Context, workNumber, blockName s
 			  array_append(ign.circle_check, a.in_node)
 	   from all_nodes a
 				inner join inside_gates_nodes ign on a.in_node=ign.out_node
-	   where array_position(circle_check,a.out_node) is NULL and
+	   where array_position(circle_check,a.out_node) is null and
 			   a.in_node not like 'begin_parallel_task%' and ign.level!=0)
-	select case when count(*)=0 then true else false end as is_finished
-	from variable_storage vs
-		inner join works w on vs.work_id = w.id
-		inner join inside_gates_nodes ign on vs.step_name=ign.out_node
-	where w.work_number=$1 and vs.status='running'`
+	select
+    (
+        select case when count(*)=0 then true else false end
+        from variable_storage vs
+                 inner join works w on vs.work_id = w.id
+                 inner join inside_gates_nodes ign on vs.step_name=ign.out_node
+        where w.work_number=$1 and w.child_id is null and vs.status in('running', 'idle', 'ready')
+    ) as is_finished,
+    (
+        select case when count(distinct vs.step_name) = 
+			(select count(distinct inside_gates_nodes.in_node) 
+				from inside_gates_nodes 
+			where out_node like 'begin_parallel_task_%')
+        then true else false end
+    	from variable_storage vs
+                 inner join works w on vs.work_id = w.id
+                 inner join inside_gates_nodes ign on vs.step_name=ign.in_node
+        where w.work_number=$1 and w.child_id is null and ign.out_node like 'begin_parallel_task_%'
+	) as created_all_branches`
 
 	var parallelIsFinished bool
+	var createdAllBranches bool
 	row := db.Connection.QueryRow(ctx, q, workNumber, blockName)
 
-	if err := row.Scan(&parallelIsFinished); err != nil {
+	if err := row.Scan(&parallelIsFinished, &createdAllBranches); err != nil {
 		return false, err
 	}
 
-	return parallelIsFinished, nil
+	return parallelIsFinished && createdAllBranches, nil
 }
 
 func (db *PGCon) GetTaskStepById(ctx context.Context, id uuid.UUID) (*entity.Step, error) {
