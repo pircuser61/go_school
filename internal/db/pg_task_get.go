@@ -274,11 +274,12 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s AND w.author=$%d ", q, len(args))
 	}
 
-	if (fl.SelectFor != nil && fl.ProcessingLogins != nil) || fl.ExecutorTypeAssigned != nil {
+	if (fl.SelectFor != nil && (fl.ProcessingLogins != nil || fl.ProcessingGroupIds != nil)) ||
+		fl.ExecutorTypeAssigned != nil {
 		q = getProcessingSteps(q, &fl, delegations)
 	}
 
-	if fl.SelectFor != nil && fl.ProcessedLogins != nil {
+	if fl.SelectFor != nil && (fl.ProcessedLogins != nil || fl.ProcessedGroupIds != nil) {
 		q = getProcessedSteps(q, &fl)
 	}
 
@@ -309,6 +310,7 @@ func getProcessingSteps(q string, fl *entity.TaskFilter, delegations []string) s
 
 	varStorage = addAssignType(varStorage, fl.CurrentUser, fl.ExecutorTypeAssigned)
 	varStorage = addProcessingLogins(varStorage, fl.SelectFor, fl.ProcessingLogins, delegations)
+	varStorage = addProcessingGroups(varStorage, fl.SelectFor, fl.ProcessingGroupIds)
 
 	varStorage += ")"
 
@@ -363,6 +365,26 @@ func addProcessingLogins(q string, selectFor *string, logins *[]string, delegati
 	)
 }
 
+func addProcessingGroups(q string, selectFor *string, groupIds *[]string) string {
+	if selectFor == nil || groupIds == nil || len(*groupIds) == 0 {
+		return q
+	}
+
+	ids := *groupIds
+	for i := range ids {
+		ids[i] = fmt.Sprintf("'%s'", ids[i])
+	}
+
+	stepType := getStepTypeBySelectForFilter(*selectFor)
+
+	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
+		q,
+		stepType,
+		getGroupActorsNameByStepType(stepType),
+		strings.Join(ids, ","),
+	)
+}
+
 func getStepTypeBySelectForFilter(selectFor string) string {
 	switch selectFor {
 	case "group_executor":
@@ -385,12 +407,23 @@ func getActorsNameByStepType(stepName string) string {
 	return ""
 }
 
+func getGroupActorsNameByStepType(stepName string) string {
+	switch stepName {
+	case "execution":
+		return "executors_group_id"
+	case "approver":
+		return "approvers_group_id"
+	}
+	return ""
+}
+
 func getProcessedSteps(q string, fl *entity.TaskFilter) string {
 	varStorage := `, var_storage as (
                 SELECT DISTINCT work_id FROM variable_storage                                                                                                                                                                                              
                 WHERE work_id IS NOT NULL AND status IN ('finished', 'cancel', 'no_success', 'error')`
 
 	varStorage = addProcessedLogins(varStorage, fl.SelectFor, fl.ProcessedLogins)
+	varStorage = addProcessedGroups(varStorage, fl.SelectFor, fl.ProcessedGroupIds)
 
 	varStorage += ")"
 
@@ -419,8 +452,8 @@ func addProcessedLogins(q string, selectFor *string, logins *[]string) string {
 	)
 }
 
-func addProcessingGroups(q string, groupIds *[]string) string {
-	if groupIds == nil || len(*groupIds) == 0 {
+func addProcessedGroups(q string, selectFor *string, groupIds *[]string) string {
+	if selectFor == nil || groupIds == nil || len(*groupIds) == 0 {
 		return q
 	}
 
@@ -429,13 +462,12 @@ func addProcessingGroups(q string, groupIds *[]string) string {
 		ids[i] = fmt.Sprintf("'%s'", ids[i])
 	}
 
-	return fmt.Sprintf(`%s AND step_type IN('execution', 'approver') 
-		AND (
-			(step_type = 'execution' AND content -> 'State' -> step_name ->> 'executors_group_id'::varchar IN(%s)) OR 
-			(step_type = 'approver' AND content -> 'State' -> step_name ->> 'approvers_group_id'::varchar IN(%s))
-		)`,
+	stepType := getStepTypeBySelectForFilter(*selectFor)
+
+	return fmt.Sprintf(`%s AND step_type = '%s' AND content -> 'State' -> step_name ->> '%s'::varchar IN(%s)`,
 		q,
-		strings.Join(ids, ","),
+		stepType,
+		getGroupActorsNameByStepType(stepType),
 		strings.Join(ids, ","),
 	)
 }
