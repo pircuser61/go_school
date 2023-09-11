@@ -121,6 +121,7 @@ const (
 	ParallelNodeReturnCycle
 	ParallelNodeExitsNotConnected
 	OutOfParallelNodesConnection
+	ParallelOutOfStartInsert
 )
 
 //nolint:dupl //its not duplicate
@@ -224,6 +225,7 @@ var errorText = map[Err]string{
 	ParallelNodeReturnCycle:             "invalid pipeline schema: returning back from parallel",
 	ParallelNodeExitsNotConnected:       "invalid pipeline schema: node exits are not connected",
 	OutOfParallelNodesConnection:        "invalid pipeline schema: nodes outside of parallel connects with inside nodes",
+	ParallelOutOfStartInsert:            "invalid pipeline schema: nodes outside of parallel connects with parallel end",
 }
 
 // JOKE.
@@ -330,6 +332,7 @@ var errorDescription = map[Err]string{
 	ParallelNodeExitsNotConnected:       "Процесс не опубликован. Соедините все ноды в процессе",
 	// nolint
 	OutOfParallelNodesConnection: "Процесс не опубликован. Есть ноды, которые не располагаются внутри параллельности или не проходят через начало/конец шлюза, но связаны с блоками внутри параллельности.",
+	ParallelOutOfStartInsert:     "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
 }
 
 var errorStatus = map[Err]int{
