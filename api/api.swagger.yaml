@@ -1909,6 +1909,13 @@ paths:
             items:
               type: string
           description: filter in process by logins
+        - name: processingGroupIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter in process by group ids
         - name: processedLogins
           in: query
           schema:
@@ -1916,6 +1923,13 @@ paths:
             items:
               type: string
           description: filter by processed logins
+        - name: processedGroupIds
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: filter by processed group ids
         - name: selectFor
           in: query
           schema:

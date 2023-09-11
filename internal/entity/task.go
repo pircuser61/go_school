@@ -146,6 +146,7 @@ type GetTaskParams struct {
 	ProcessingLogins     *[]string `json:"processingLogins"`
 	ProcessedLogins      *[]string `json:"processedLogins"`
 	ProcessingGroupIds   *[]string `json:"processingGroupIds"`
+	ProcessedGroupIds    *[]string `json:"processedGroupIds"`
 	ExecutorTypeAssigned *string   `json:"executorTypeAssigned"`
 }
 
