@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 
 	"io"
 	"net/http"
@@ -547,4 +548,32 @@ func validateEndingSettings(s *entity.ExternalSystem) {
 		s.OutputSettings.Method == "" {
 		s.OutputSettings = nil
 	}
+}
+
+func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionID string, systemID string) {
+	ctx, s := trace.StartSpan(r.Context(), "allow_run_as_others")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer r.Body.Close()
+
+	var allowRunAsOthers bool
+	err = json.Unmarshal(b, &allowRunAsOthers)
+	if err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	fmt.Println(versionID, systemID, allowRunAsOthers)
 }

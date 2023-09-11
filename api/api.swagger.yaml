@@ -1283,6 +1283,61 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+  /pipelines/version/{versionID}/system/{systemID}/runAsOthers:
+    post:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Allow the system to launch requests from a 3rd party
+      description: Разрешить системе запуск заявок от третьего лица
+      operationId: allow-run-as-others
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+        - name: systemID
+          in: path
+          description: system ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 916ad995-8d13-49fb-82ee-edd4f97649e2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllowRunAsOthers'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
   /pipelines/version/{versionID}/system/{systemID}/endRoutes:
     put:
       tags:
@@ -3055,6 +3110,8 @@ components:
           $ref: '#/components/schemas/JSONSchema'
         output_settings:
           $ref: '#/components/schemas/EndSystemSettings'
+        allow_run_as_others:
+          $ref: '#/components/schemas/AllowRunAsOthers'
       required:
         - system_id
         - name
@@ -3866,6 +3923,10 @@ components:
         - microservice_id
         - URL
         - method
+
+    AllowRunAsOthers:
+      type: boolean
+      description: Разрешить системе запуск заявки от третьего лица
 
     RequestExecutionInfoType:
       type: string
