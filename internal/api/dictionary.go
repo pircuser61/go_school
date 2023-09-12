@@ -6,11 +6,69 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"go.opencensus.io/trace"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type GetApproveActionNamesResponse struct {
 	Id    string `json:"id"`
 	Title string `json:"title"`
+}
+
+func (ae *APIEnv) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "get_task_event_schema")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	schema := script.JSONSchema{
+		Type: "object",
+		Properties: map[string]script.JSONSchemaPropertiesValue{
+			"task_id": {
+				Type:   "string",
+				Format: "uuid",
+				Title:  "Идентификатор процесса",
+			},
+			"work_number": {
+				Type:  "string",
+				Title: "Номер заявки ",
+			},
+			"node_name": {
+				Type:  "string",
+				Title: "Название ноды",
+			},
+			"node_start": {
+				Type:   "string",
+				Format: "date",
+				Title:  "Дата старта ноды",
+			},
+			"node_end": {
+				Type:   "string",
+				Format: "date",
+				Title:  "Дата окончания ноды",
+			},
+			"task_status": {
+				Type:  "string",
+				Title: "Статус процесса",
+			},
+			"node_status": {
+				Type:  "string",
+				Title: "Статус ноды",
+			},
+			"node_output": {
+				Type:  "object",
+				Title: "Выходные параметры ноды",
+			},
+		},
+	}
+
+	if err := sendResponse(w, http.StatusOK, schema); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }
 
 //nolint:dupl //its not duplicate

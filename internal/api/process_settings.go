@@ -40,6 +40,10 @@ func (ae *APIEnv) convertProcessSettingsToFlat(ctx c.Context, ps *entity.Process
 	return nil
 }
 
+func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request, versionID string) {
+//	TODO
+}
+
 func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_settings")
 	defer s.End()

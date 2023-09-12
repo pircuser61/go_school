@@ -1,7 +1,5 @@
 package main
 
-//go:generate swag init -g ./cmd/pipeliner/main.go -o ./docs -d ../../.
-
 import (
 	"context"
 	"flag"
