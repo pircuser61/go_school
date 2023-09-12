@@ -13,8 +13,6 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 type runNewVersionsByPrevVersionRequest struct {
@@ -227,18 +225,9 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if externalSystem != nil && externalSystem.AllowRunAsOthers {
-		var ui *sso.UserInfo
-		ui, err = user.GetEffectiveUserInfoFromCtx(ctx)
-		if err != nil {
-			e := GetUserinfoErr
-			log.Error(e.errorMessage(err))
-			_ = e.sendError(w)
-
-			return
-		}
-
-		ctx = user.SetUserInfoToCtx(ctx, ui)
+	var allowRunAsOthers bool
+	if externalSystem != nil {
+		allowRunAsOthers = externalSystem.AllowRunAsOthers
 	}
 
 	var mappedApplicationBody orderedmap.OrderedMap
@@ -260,10 +249,11 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 
 	v, execErr := ae.execVersion(ctx, &execVersionDTO{
-		version:  version,
-		withStop: false,
-		w:        w,
-		req:      r,
+		version:          version,
+		withStop:         false,
+		w:                w,
+		req:              r,
+		allowRunAsOthers: allowRunAsOthers,
 		runCtx: entity.TaskRunContext{
 			ClientID: clientID,
 			InitialApplication: entity.InitialApplication{

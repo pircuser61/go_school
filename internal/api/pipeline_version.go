@@ -27,6 +27,7 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -509,9 +510,10 @@ type execVersionDTO struct {
 	w   http.ResponseWriter
 	req *http.Request
 
-	makeNewWork bool
-	workNumber  string
-	runCtx      entity.TaskRunContext
+	makeNewWork      bool
+	allowRunAsOthers bool
+	workNumber       string
+	runCtx           entity.TaskRunContext
 }
 
 // nolint //need big cyclo,need equal string for all usages
@@ -529,7 +531,14 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 
 	log.Info("--- running pipeline:", dto.version.Name)
 
-	usr, err := user.GetUserInfoFromCtx(ctxLocal)
+	var usr *sso.UserInfo
+	var err error
+	if dto.allowRunAsOthers {
+		usr, err = user.GetEffectiveUserInfoFromCtx(ctx)
+	} else {
+		usr, err = user.GetUserInfoFromCtx(ctxLocal)
+	}
+
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
