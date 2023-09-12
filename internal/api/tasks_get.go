@@ -457,6 +457,44 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		return
 	}
 
+	versionsSLA := make(map[string]*entity.SlaVersionSettings)
+
+	for i := range resp.Tasks {
+		if _, exists := versionsSLA[resp.Tasks[i].VersionID.String()]; !exists {
+			versionSettings, errSla := ae.DB.GetSlaVersionSettings(ctx, resp.Tasks[i].VersionID.String())
+			if errSla != nil {
+				e := GetProcessSlaSettingsError
+				log.Error(e.errorMessage(err))
+				_ = e.sendError(w)
+
+				return
+			}
+
+			versionsSLA[resp.Tasks[i].VersionID.String()] = &versionSettings
+		}
+
+		slaInfoPtr, getSlaInfoErr := ae.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{
+				{
+					StartedAt:  resp.Tasks[i].StartedAt,
+					FinishedAt: resp.Tasks[i].StartedAt.Add(time.Hour * 24 * 100),
+				},
+			},
+			WorkType: sla.WorkHourType(versionsSLA[resp.Tasks[i].VersionID.String()].WorkType),
+		})
+		if getSlaInfoErr != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(getSlaInfoErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		deadline := ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].Sla), slaInfoPtr)
+		resp.Tasks[i].ProcessDeadline = deadline
+
+	}
+
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
 		e := UnknownError
 		log.Error(e.errorMessage(err))
