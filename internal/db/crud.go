@@ -880,6 +880,20 @@ WHERE version_id = $2;
 		return err
 	}
 
+	// nolint:gocritic
+	// language=PostgreSQL
+	qCopyPrevTaskSubSettings := `
+INSERT INTO external_system_task_subscriptions (id, version_id, system_id, microservice_id, path, 
+                                                method, notification_schema, mapping, nodes)
+SELECT uuid_generate_v4(), $1, system_id, microservice_id, path, method, notification_schema, mapping, nodes 
+FROM external_system_task_subscriptions
+WHERE version_id = $2`
+
+	_, err = db.Connection.Exec(c, qCopyPrevTaskSubSettings, newVersionID, oldVersionID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
