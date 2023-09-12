@@ -104,6 +104,8 @@ type EriusTask struct {
 	IsTest                 bool                `json:"-"`
 	StatusComment          string              `json:"status_comment"`
 	StatusAuthor           string              `json:"status_author"`
+
+	ProcessDeadline time.Time `json:"process_deadline"`
 }
 
 func (et *EriusTask) IsRun() bool {
