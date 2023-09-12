@@ -13,6 +13,8 @@ import (
 	"gitlab.services.mts.ru/abp/myosotis/logger"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
 
 type runNewVersionsByPrevVersionRequest struct {
@@ -215,8 +217,32 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	var externalSystem *entity.ExternalSystem
+	externalSystem, err = ae.getExternalSystem(ctx, clientID, version.VersionID.String())
+	if err != nil {
+		e := GetExternalSystemsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if externalSystem != nil && externalSystem.AllowRunAsOthers {
+		var ui *sso.UserInfo
+		ui, err = user.GetEffectiveUserInfoFromCtx(ctx)
+		if err != nil {
+			e := GetUserinfoErr
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		ctx = user.SetUserInfoToCtx(ctx, ui)
+	}
+
 	var mappedApplicationBody orderedmap.OrderedMap
-	mappedApplicationBody, err = ae.processMappings(ctx, clientID, *version, req.ApplicationBody)
+	mappedApplicationBody, err = ae.processMappings(externalSystem, *version, req.ApplicationBody)
 	if err != nil {
 		e := MappingError
 		log.Error(e.errorMessage(err))

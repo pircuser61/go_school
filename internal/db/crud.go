@@ -2944,7 +2944,7 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 	// language=PostgreSQL
 	query := `
 	SELECT input_schema, output_schema, input_mapping, output_mapping,
-	microservice_id, ending_url, sending_method
+	microservice_id, ending_url, sending_method, allow_run_as_others
 	FROM external_systems
 	WHERE version_id = $1 AND system_id = $2`
 
@@ -2959,6 +2959,7 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 		&externalSystemSettings.OutputSettings.MicroserviceId,
 		&externalSystemSettings.OutputSettings.URL,
 		&externalSystemSettings.OutputSettings.Method,
+		&externalSystemSettings.AllowRunAsOthers,
 	)
 	if err != nil {
 		return externalSystemSettings, err
@@ -3147,6 +3148,29 @@ func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 	_, err = db.Connection.Exec(ctx, query, s.MicroserviceId, s.URL, s.Method, versionID, systemID)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) AllowRunAsOthers(ctx context.Context, versionID, systemID string, allowRunAsOthers bool) (err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_allow_run_as_others")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	UPDATE external_systems
+	SET allow_run_as_others = $1
+	WHERE version_id = $2 AND system_id = $3`
+
+	commandTag, err := db.Connection.Exec(ctx, query, allowRunAsOthers, versionID, systemID)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return errCantFindExternalSystem
 	}
 
 	return nil

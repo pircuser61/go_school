@@ -112,6 +112,7 @@ const (
 	NoProcessNodesForMonitoringError
 	GetEntryPointOutputError
 	UpdateEndingSystemSettingsError
+	UpdateRunAsOthersSettingsError
 	ValidationEndingSystemSettingsError
 	SearchingForPipelinesUsageError
 	ValidationSlaProcessSettingsError
@@ -216,6 +217,7 @@ var errorText = map[Err]string{
 	NoProcessNodesForMonitoringError:    "can't find nodes for monitoring",
 	GetEntryPointOutputError:            "can't fill entry point output",
 	UpdateEndingSystemSettingsError:     "can't update ending system settings",
+	UpdateRunAsOthersSettingsError:      "failed to update settings for requests from a 3rd party",
 	ValidationEndingSystemSettingsError: "not enough data to update ending settings",
 	SearchingForPipelinesUsageError:     "can't find usages of pipeline",
 	ValidationSlaProcessSettingsError:   "wrong data for version SLA settings",
@@ -322,6 +324,7 @@ var errorDescription = map[Err]string{
 	NoProcessNodesForMonitoringError:    "Не удалось найти ноды для мониторинга даного процесса",
 	GetEntryPointOutputError:            "Не удалось заполнить output стартовой ноды",
 	UpdateEndingSystemSettingsError:     "Не удалось обновить настройки завершения процесса в системе",
+	UpdateRunAsOthersSettingsError:      "Не удалось обновить настройки запуска заявки от третьего лица",
 	ValidationEndingSystemSettingsError: "Ошибка при валидации параметров для обновления настроек системы",
 	SearchingForPipelinesUsageError:     "Ошибка при поиске использования пайплайна",
 	ValidationSlaProcessSettingsError:   "Ошибка при валидации параметров SLA процесса",

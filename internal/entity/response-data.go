@@ -549,7 +549,7 @@ type ExternalSystem struct {
 
 	OutputSettings *EndSystemSettings `json:"output_settings,omitempty"`
 
-	AllowRunAsOthers bool `json:"allow_run_as_others,omitempty"`
+	AllowRunAsOthers bool `json:"allow_run_as_others"`
 }
 
 type EndSystemSettings struct {

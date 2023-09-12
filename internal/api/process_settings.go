@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 
 	"io"
 	"net/http"
@@ -97,9 +96,10 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 		}
 		validateEndingSettings(&externalSystemSettings)
 		externalSystems = append(externalSystems, entity.ExternalSystem{
-			Id:             id.String(),
-			Name:           systemsNames[id.String()],
-			OutputSettings: externalSystemSettings.OutputSettings,
+			Id:               id.String(),
+			Name:             systemsNames[id.String()],
+			AllowRunAsOthers: externalSystemSettings.AllowRunAsOthers,
+			OutputSettings:   externalSystemSettings.OutputSettings,
 		})
 	}
 
@@ -575,5 +575,12 @@ func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versi
 		return
 	}
 
-	fmt.Println(versionID, systemID, allowRunAsOthers)
+	err = ae.DB.AllowRunAsOthers(ctx, versionID, systemID, allowRunAsOthers)
+	if err != nil {
+		e := UpdateRunAsOthersSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }

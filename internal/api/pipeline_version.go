@@ -155,26 +155,34 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 }
 
-func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
-	version entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+func (ae *APIEnv) getExternalSystem(ctx c.Context, clientID, versionID string) (*entity.ExternalSystem, error) {
 	system, err := ae.Integrations.RpcIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId: clientID,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "system not found") { // TODO: delete
-			return applicationBody, nil
+			return nil, nil
 		}
 
-		return orderedmap.OrderedMap{}, err
+		return nil, err
 	}
 
-	externalSystem, err := ae.DB.GetExternalSystemSettings(ctx, version.VersionID.String(), system.Integration.IntegrationId)
+	externalSystem, err := ae.DB.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) { // TODO: delete
-			return applicationBody, nil
+			return nil, nil
 		}
 
-		return orderedmap.OrderedMap{}, err
+		return nil, err
+	}
+
+	return &externalSystem, nil
+}
+
+func (ae *APIEnv) processMappings(externalSystem *entity.ExternalSystem,
+	version entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+	if externalSystem == nil {
+		return applicationBody, nil
 	}
 
 	if externalSystem.InputSchema == nil && version.Settings.StartSchema == nil { // TODO: delete

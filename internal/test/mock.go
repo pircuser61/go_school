@@ -943,6 +943,10 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) AllowRunAsOthers(ctx context.Context, versionID, systemID string, allowRunAsOthers bool) error {
+	return nil
+}
+
 func (_m *MockDB) GetTaskMembers(ctx context.Context, workNumber string) ([]db.DbMember, error) {
 	return nil, nil
 }
