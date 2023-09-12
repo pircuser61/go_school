@@ -68,6 +68,8 @@ type ExecutableFunctionParams struct {
 	Function       FunctionParam          `json:"function"`
 	WaitCorrectRes int                    `json:"waitCorrectRes"`
 	Constants      map[string]interface{} `json:"constants"`
+	CheckSLA       bool                   `json:"check_sla"`
+	SLA            int                    `json:"sla"` //seconds
 }
 
 type FunctionParam struct {

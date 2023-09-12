@@ -3761,12 +3761,21 @@ components:
         constants:
           type: object
           description: Constant values for function parameters (key of object is variable name)
+        check_sla:
+          type: boolean
+          description: Is active SLA
+        sla:
+          type: integer
+          description: in seconds
+          minimum: 1
       required:
         - name
         - version
         - mapping
         - waitCorrectRes
         - constants
+        - check_sla
+        - sla
 
     JSONSchema:
       type: object

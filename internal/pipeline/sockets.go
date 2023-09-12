@@ -12,4 +12,5 @@ const (
 	notExecutedSocketID      = "not_executed"
 	requestAddInfoSocketID   = "req_add_info"
 	errorSocketID            = "error"
+	funcTimeExpired          = "func_time_expired"
 )

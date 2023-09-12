@@ -3,6 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"sort"
 	"strings"
 	"time"
@@ -41,10 +42,14 @@ type ExecutableFunction struct {
 	Contracts      string                      `json:"contracts"`
 	WaitCorrectRes int                         `json:"waitCorrectRes"`
 	Constants      map[string]interface{}      `json:"constants"`
+	CheckSLA       bool                        `json:"check_sla"`
+	SLA            int                         `json:"sla"`
+	TimeExpired    bool                        `json:"time_expired"`
 }
 
 type FunctionUpdateParams struct {
-	Mapping map[string]interface{} `json:"mapping"`
+	ActionName string                 `json:"action_name"`
+	Mapping    map[string]interface{} `json:"mapping"`
 }
 
 type ExecutableFunctionBlock struct {
@@ -68,6 +73,10 @@ func (gb *ExecutableFunctionBlock) Deadlines(_ c.Context) ([]Deadline, error) {
 }
 
 func (gb *ExecutableFunctionBlock) GetStatus() Status {
+	if gb.State.TimeExpired {
+		return StatusFinished
+	}
+
 	if gb.State.Async && gb.State.HasAck && !gb.State.HasResponse {
 		return StatusIdle
 	}
@@ -80,6 +89,10 @@ func (gb *ExecutableFunctionBlock) GetStatus() Status {
 }
 
 func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
+	if gb.State.TimeExpired {
+		return StatusDone
+	}
+
 	if gb.State.Async && gb.State.HasAck && !gb.State.HasResponse {
 		return StatusWait
 	}
@@ -92,7 +105,12 @@ func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool) {
-	nexts, ok := script.GetNexts(gb.Sockets, DefaultSocketID)
+	key := DefaultSocketID
+	if gb.State.TimeExpired {
+		key = funcTimeExpired
+	}
+
+	nexts, ok := script.GetNexts(gb.Sockets, key)
 	if !ok {
 		return nil, false
 	}
@@ -108,42 +126,47 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 	log := logger.GetLogger(ctx)
 
 	if gb.RunContext.UpdateData != nil {
-		var updateDataParams FunctionUpdateParams
-		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateDataParams)
+		var updateData FunctionUpdateParams
+		updateDataUnmarshalErr := json.Unmarshal(gb.RunContext.UpdateData.Parameters, &updateData)
 		if updateDataUnmarshalErr != nil {
 			return nil, updateDataUnmarshalErr
 		}
 
-		gb.changeCurrentState()
+		switch updateData.ActionName {
+		case string(entity.TaskUpdateActionFinishFunction):
+			gb.State.TimeExpired = true
+		default:
+			gb.changeCurrentState()
 
-		if gb.State.HasResponse {
-			var expectedOutput map[string]script.ParamMetadata
-			outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
-			if outputUnmarshalErr != nil {
-				return nil, outputUnmarshalErr
-			}
+			if gb.State.HasResponse {
+				var expectedOutput map[string]script.ParamMetadata
+				outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
+				if outputUnmarshalErr != nil {
+					return nil, outputUnmarshalErr
+				}
 
-			var resultOutput = make(map[string]interface{})
+				var resultOutput = make(map[string]interface{})
 
-			for k := range expectedOutput {
-				param, ok := updateDataParams.Mapping[k]
-				if !ok {
+				for k := range expectedOutput {
+					param, ok := updateData.Mapping[k]
+					if !ok {
+						return nil, errors.New("function returned not all of expected results")
+					}
+
+					if err := utils.CheckVariableType(param, expectedOutput[k]); err != nil {
+						return nil, err
+					}
+
+					resultOutput[k] = param
+				}
+
+				if len(resultOutput) != len(expectedOutput) {
 					return nil, errors.New("function returned not all of expected results")
 				}
 
-				if err := utils.CheckVariableType(param, expectedOutput[k]); err != nil {
-					return nil, err
+				for k, v := range resultOutput {
+					gb.RunContext.VarStore.SetValue(gb.Output[k], v)
 				}
-
-				resultOutput[k] = param
-			}
-
-			if len(resultOutput) != len(expectedOutput) {
-				return nil, errors.New("function returned not all of expected results")
-			}
-
-			for k, v := range resultOutput {
-				gb.RunContext.VarStore.SetValue(gb.Output[k], v)
 			}
 		}
 	} else {
@@ -190,8 +213,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, err
 		}
 
-		err = gb.fillMapWithConstants(functionMapping)
-		if err != nil {
+		if err = gb.fillMapWithConstants(functionMapping); err != nil {
 			return nil, err
 		}
 
@@ -266,7 +288,10 @@ func (gb *ExecutableFunctionBlock) Model() script.FunctionModel {
 				Mapping: script.JSONSchemaProperties{},
 			},
 		},
-		Sockets: []script.Socket{script.DefaultSocket},
+		Sockets: []script.Socket{
+			script.FuncExecutedSocket,
+			script.FuncTimeExpiredSocket,
+		},
 	}
 }
 
@@ -348,6 +373,20 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		Contracts:      function.Contracts,
 		WaitCorrectRes: params.WaitCorrectRes,
 		Constants:      params.Constants,
+		CheckSLA:       params.CheckSLA,
+		SLA:            params.SLA,
+	}
+
+	if gb.State.CheckSLA {
+		_, err = gb.RunContext.Scheduler.CreateTask(c.Background(), &scheduler.CreateTask{
+			WorkNumber:  gb.RunContext.WorkNumber,
+			WorkID:      gb.RunContext.TaskID.String(),
+			ActionName:  string(entity.TaskUpdateActionFinishFunction),
+			WaitSeconds: gb.State.SLA,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

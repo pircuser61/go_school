@@ -184,6 +184,7 @@ const (
 	TaskUpdateActionFormExecutorStartWork      TaskUpdateAction = "form_executor_start_work"
 	TaskUpdateActionSign                       TaskUpdateAction = "sign"
 	TaskUpdateActionFinishTimer                TaskUpdateAction = "finish_timer"
+	TaskUpdateActionFinishFunction             TaskUpdateAction = "finish_function"
 )
 
 var (
@@ -202,6 +203,7 @@ var (
 		TaskUpdateActionFormExecutorStartWork: {},
 		TaskUpdateActionSign:                  {},
 		TaskUpdateActionFinishTimer:           {},
+		TaskUpdateActionFinishFunction:        {},
 	}
 )
 

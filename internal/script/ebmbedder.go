@@ -98,6 +98,11 @@ const (
 
 	DefaultSocketID    = "default"
 	DefaultSocketTitle = "Выход по умолчанию"
+
+	funcTimeExpiredSocketID    = "func_time_expired"
+	funcTimeExpiredSocketTitle = "Закончилось время"
+
+	funcExecutedSocketTitle = "Выполнено"
 )
 
 var (
@@ -126,6 +131,9 @@ var (
 
 	//nolint:gochecknoglobals //new common socket
 	ErrorSocket = Socket{Id: errorSocketID, Title: errorSocketTitle}
+
+	FuncExecutedSocket    = Socket{Id: DefaultSocketID, Title: funcExecutedSocketTitle}
+	FuncTimeExpiredSocket = Socket{Id: funcTimeExpiredSocketID, Title: funcTimeExpiredSocketTitle}
 
 	DelegationsCollection = "delegations_collection"
 )
