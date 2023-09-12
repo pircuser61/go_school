@@ -925,6 +925,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
   /pipelines/version/{versionID}/settings:
     get:
       tags:
@@ -1030,6 +1031,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
+  /pipeline/version/{versionID}/settings/task-subscriptions:
+    post:
+      tags:
+        - pipeline
+        - process_settings
+      summary: Save process task subscription settings
+      description: Сохранить основные настройки процесса
+      operationId: save-version-task-subscription-settings
+      parameters:
+        - name: versionID
+          in: path
+          description: Version ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Modified Task Subscription Settings
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExternalSystemSubscriptionParams'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpResponse'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /pipeline/version/{versionID}/settings/main:
     post:
       tags:
@@ -1077,6 +1129,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
   /pipelines/version/{versionID}/system:
     post:
       tags:
@@ -2419,6 +2472,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/httpError'
+
+  /dictionaries/schema/task-event:
+    get:
+      tags:
+        - dictionaries
+      summary: Get task event json schema
+      description: Получить типовую json schem'у для ивентов нод
+      operationId: get-task-event-schema
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JSONSchema'
+                  status_code:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
+
   /dictionaries/approve-action-names:
     get:
       tags:
@@ -2987,20 +3074,85 @@ components:
       items:
         $ref: '#/components/schemas/EriusVersionInfo'
 
+    NodeEvent:
+      type: string
+      description: Возможный ивент ноды
+      enum: ["start", "end"]
+
+    NodeSubscriptionEvents:
+      type: object
+      properties:
+        node_id:
+          type: string
+          description: ID ноды в процессе
+        notify:
+          type: boolean
+          description: Нужно ли уведомлять о событиях по ноде
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeEvent'
+      required:
+        - node_id
+        - notify
+
+    ExternalSystemSubscriptionParams:
+      type: object
+      description: Настройки подписки системы на изменения в заявках
+      properties:
+        system_id:
+          type: string
+          format: uuid
+          description: ID системы
+        microservice_id:
+          type: string
+          format: uuid
+          description: ID микросервиса
+        path:
+          type: string
+          description: Путь, по которому надо присылать ивенты
+        method:
+          type: string
+          description: Какой http метод использовать
+          enum: [ "POST" ]
+        notification_schema:
+          $ref: '#/components/schemas/JSONSchema'
+        mapping:
+          $ref: '#/components/schemas/JSONSchemaProperties'
+        nodes:
+          type: array
+          description: Ноды и ивенты, на которые нужна подписка
+          items:
+            $ref: '#/components/schemas/NodeSubscriptionEvents'
+      required:
+        - system_id
+        - microservice_id
+        - path
+        - method
+        - notification_schema
+        - mapping
+        - nodes
+
     ProcessSettingsWithExternalSystems:
       type: object
       description: Настройки старта версии пайплайна(процесса)
       properties:
+        process_settings:
+          $ref: '#/components/schemas/ProcessSettings'
         external_systems:
           type: array
           items:
             $ref: '#/components/schemas/ExternalSystem'
           description: Внешние системы, которые используют данный пайплайн
-        process_settings:
-          $ref: '#/components/schemas/ProcessSettings'
+        tasks_subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalSystemSubscriptionParams'
+          description: Подписки систем на изменения в заявках, заведенных по процессу
       required:
-        - external_systems
         - process_settings
+        - external_systems
+        - tasks_subscriptions
 
     ProcessSettings:
       type: object
