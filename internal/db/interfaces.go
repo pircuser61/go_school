@@ -2,6 +2,7 @@ package db
 
 import (
 	c "context"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/google/uuid"
@@ -218,6 +219,7 @@ type Database interface {
 	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
 	RemoveExternalSystemTaskSubscriptions(ctx c.Context, versionID string, systemID string) error
 	SaveExternalSystemSettings(ctx c.Context, versionID string, settings e.ExternalSystem, schemaFlag *string) error
+	SaveExternalSystemSubscriptionParams(ctx context.Context, versionID string, params *e.ExternalSystemSubscriptionParams) error
 	RemoveObsoleteMapping(ctx c.Context, id string) error
 	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, versionID, excludeWorkNumber string) ([]*e.EriusTask, error)
 	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)

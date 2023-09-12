@@ -3020,6 +3020,26 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 	return externalSystemSettings, nil
 }
 
+func (db *PGCon) SaveExternalSystemSubscriptionParams(ctx context.Context, versionID string,
+	params *entity.ExternalSystemSubscriptionParams) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_subscription_params")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `INSERT INTO external_system_task_subscriptions 
+    (id, version_id, system_id, microservice_id, path, method, notification_schema, mapping, nodes) 
+    values 
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+
+	_, err := db.Connection.Exec(ctx, q, uuid.New().String(), versionID, params.SystemID, params.MicroserviceID,
+		params.Path, params.Method, params.NotificationSchema, params.Mapping, params.Nodes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db *PGCon) SaveExternalSystemSettings(
 	ctx context.Context, versionID string, system entity.ExternalSystem, schemaFlag *string) error {
 	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_settings")
@@ -3073,9 +3093,14 @@ func (db *PGCon) RemoveExternalSystemTaskSubscriptions(ctx context.Context, vers
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	query := `DELETE FROM external_system_task_subscriptions WHERE version_id = $1 AND system_id = $2`
+	query := `DELETE FROM external_system_task_subscriptions WHERE version_id = $1`
+	args := []interface{}{versionID}
+	if systemID != "" {
+		query += " AND system_id = $2"
+		args = append(args, systemID)
+	}
 
-	_, err := db.Connection.Exec(ctx, query, versionID, systemID)
+	_, err := db.Connection.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}

@@ -2045,9 +2045,6 @@ type GetTasksForMonitoringParamsStatus string
 // SaveVersionMainSettingsJSONBody defines parameters for SaveVersionMainSettings.
 type SaveVersionMainSettingsJSONBody ProcessSettings
 
-// SaveVersionTaskSubscriptionSettingsJSONBody defines parameters for SaveVersionTaskSubscriptionSettings.
-type SaveVersionTaskSubscriptionSettingsJSONBody []ExternalSystemSubscriptionParams
-
 // ListPipelinesParams defines parameters for ListPipelines.
 type ListPipelinesParams struct {
 	// Show my pipelines only
@@ -2109,6 +2106,9 @@ type SaveVersionSettingsParams struct {
 
 // SaveVersionSettingsParamsSchemaFlag defines parameters for SaveVersionSettings.
 type SaveVersionSettingsParamsSchemaFlag string
+
+// SaveVersionTaskSubscriptionSettingsJSONBody defines parameters for SaveVersionTaskSubscriptionSettings.
+type SaveVersionTaskSubscriptionSettingsJSONBody []ExternalSystemSubscriptionParams
 
 // AddExternalSystemToVersionJSONBody defines parameters for AddExternalSystemToVersion.
 type AddExternalSystemToVersionJSONBody ExternalSystemId
@@ -2219,9 +2219,6 @@ type StartDebugTaskJSONRequestBody StartDebugTaskJSONBody
 // SaveVersionMainSettingsJSONRequestBody defines body for SaveVersionMainSettings for application/json ContentType.
 type SaveVersionMainSettingsJSONRequestBody SaveVersionMainSettingsJSONBody
 
-// SaveVersionTaskSubscriptionSettingsJSONRequestBody defines body for SaveVersionTaskSubscriptionSettings for application/json ContentType.
-type SaveVersionTaskSubscriptionSettingsJSONRequestBody SaveVersionTaskSubscriptionSettingsJSONBody
-
 // CreatePipelineJSONRequestBody defines body for CreatePipeline for application/json ContentType.
 type CreatePipelineJSONRequestBody CreatePipelineJSONBody
 
@@ -2236,6 +2233,9 @@ type CreatePipelineVersionJSONRequestBody CreatePipelineVersionJSONBody
 
 // SaveVersionSettingsJSONRequestBody defines body for SaveVersionSettings for application/json ContentType.
 type SaveVersionSettingsJSONRequestBody SaveVersionSettingsJSONBody
+
+// SaveVersionTaskSubscriptionSettingsJSONRequestBody defines body for SaveVersionTaskSubscriptionSettings for application/json ContentType.
+type SaveVersionTaskSubscriptionSettingsJSONRequestBody SaveVersionTaskSubscriptionSettingsJSONBody
 
 // AddExternalSystemToVersionJSONRequestBody defines body for AddExternalSystemToVersion for application/json ContentType.
 type AddExternalSystemToVersionJSONRequestBody AddExternalSystemToVersionJSONBody
@@ -3000,9 +3000,6 @@ type ServerInterface interface {
 	// Save process main settings
 	// (POST /pipeline/version/{versionID}/settings/main)
 	SaveVersionMainSettings(w http.ResponseWriter, r *http.Request, versionID string)
-	// Save process task subscription settings
-	// (POST /pipeline/version/{versionID}/settings/task-subscriptions)
-	SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request, versionID string)
 	// Get list of pipelines
 	// (GET /pipelines)
 	ListPipelines(w http.ResponseWriter, r *http.Request, params ListPipelinesParams)
@@ -3036,6 +3033,9 @@ type ServerInterface interface {
 	// Save process settings(start and end schemas)
 	// (POST /pipelines/version/{versionID}/settings)
 	SaveVersionSettings(w http.ResponseWriter, r *http.Request, versionID string, params SaveVersionSettingsParams)
+	// Save process task subscription settings
+	// (POST /pipelines/version/{versionID}/settings/task-subscriptions)
+	SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request, versionID string)
 	// Add external system to version
 	// (POST /pipelines/version/{versionID}/system)
 	AddExternalSystemToVersion(w http.ResponseWriter, r *http.Request, versionID string)
@@ -3583,32 +3583,6 @@ func (siw *ServerInterfaceWrapper) SaveVersionMainSettings(w http.ResponseWriter
 	handler(w, r.WithContext(ctx))
 }
 
-// SaveVersionTaskSubscriptionSettings operation middleware
-func (siw *ServerInterfaceWrapper) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "versionID" -------------
-	var versionID string
-
-	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
-		return
-	}
-
-	var handler = func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SaveVersionTaskSubscriptionSettings(w, r, versionID)
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler(w, r.WithContext(ctx))
-}
-
 // ListPipelines operation middleware
 func (siw *ServerInterfaceWrapper) ListPipelines(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -3976,6 +3950,32 @@ func (siw *ServerInterfaceWrapper) SaveVersionSettings(w http.ResponseWriter, r 
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SaveVersionSettings(w, r, versionID, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SaveVersionTaskSubscriptionSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveVersionTaskSubscriptionSettings(w, r, versionID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5146,9 +5146,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/pipeline/version/{versionID}/settings/main", wrapper.SaveVersionMainSettings)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/pipeline/version/{versionID}/settings/task-subscriptions", wrapper.SaveVersionTaskSubscriptionSettings)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/pipelines", wrapper.ListPipelines)
 	})
 	r.Group(func(r chi.Router) {
@@ -5180,6 +5177,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings", wrapper.SaveVersionSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings/task-subscriptions", wrapper.SaveVersionTaskSubscriptionSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/system", wrapper.AddExternalSystemToVersion)

@@ -1032,7 +1032,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
-  /pipeline/version/{versionID}/settings/task-subscriptions:
+  /pipelines/version/{versionID}/settings/task-subscriptions:
     post:
       tags:
         - pipeline

@@ -1396,6 +1396,11 @@ func (m *MockDB) SaveVersionMainSettings(ctx context.Context, params entity.Proc
 	return errNotImplemented
 }
 
+func (m *MockDB) SaveExternalSystemSubscriptionParams(ctx context.Context, versionID string,
+	params *entity.ExternalSystemSubscriptionParams) error {
+	return nil
+}
+
 func (m *MockDB) CheckPipelineNameExists(ctx context.Context, name string, checkNotDeleted bool) (*bool, error) {
 	return nil, errNotImplemented
 }

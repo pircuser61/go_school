@@ -1857,6 +1857,21 @@ func (_m *MockedDatabase) SaveStepContext(ctx context.Context, dto *db.SaveStepR
 	return r0, r1, r2
 }
 
+// SaveExternalSystemSubscriptionParams provides a mock function with given fields: ctx, versionID, params
+func (_m *MockedDatabase) SaveExternalSystemSubscriptionParams(ctx context.Context, versionID string,
+	params *entity.ExternalSystemSubscriptionParams) error {
+	ret := _m.Called(ctx, versionID, params)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, *entity.ExternalSystemSubscriptionParams) error); ok {
+		r0 = rf(ctx, versionID, params)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SaveVersionMainSettings provides a mock function with given fields: ctx, settings
 func (_m *MockedDatabase) SaveVersionMainSettings(ctx context.Context, settings entity.ProcessSettings) error {
 	ret := _m.Called(ctx, settings)

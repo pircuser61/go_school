@@ -40,8 +40,92 @@ func (ae *APIEnv) convertProcessSettingsToFlat(ctx c.Context, ps *entity.Process
 	return nil
 }
 
-func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request, versionID string) {
-	//	TODO
+func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
+	ctx, s := trace.StartSpan(req.Context(), "save_version_task_subscription_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(req.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	defer req.Body.Close()
+
+	var settings []*entity.ExternalSystemSubscriptionParams
+	err = json.Unmarshal(b, &settings)
+	if err != nil {
+		e := ExternalSystemSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// TODO: validation?
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't start transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "SaveVersionTaskSubscriptionSettings").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
+	defer func(transaction db.Database, ctx c.Context) {
+		_ = transaction.RollbackTransaction(ctx)
+	}(txStorage, ctx)
+
+	if rmErr := ae.DB.RemoveExternalSystemTaskSubscriptions(ctx, versionID, ""); rmErr != nil {
+		e := ExternalSystemSettingsSaveError
+		log.Error(e.errorMessage(rmErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	for _, s := range settings {
+		err = ae.DB.SaveExternalSystemSubscriptionParams(ctx, versionID, s)
+		if err != nil {
+			e := ExternalSystemSettingsSaveError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+
+	if err = txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't commit transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, nil)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
 }
 
 func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
