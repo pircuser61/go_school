@@ -550,7 +550,7 @@ func validateEndingSettings(s *entity.ExternalSystem) {
 	}
 }
 
-func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionID string, systemID string) {
+func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
 	ctx, s := trace.StartSpan(r.Context(), "allow_run_as_others")
 	defer s.End()
 

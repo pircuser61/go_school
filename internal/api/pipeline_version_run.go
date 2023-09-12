@@ -231,7 +231,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 
 	var mappedApplicationBody orderedmap.OrderedMap
-	mappedApplicationBody, err = ae.processMappings(externalSystem, *version, req.ApplicationBody)
+	mappedApplicationBody, err = ae.processMappings(externalSystem, version, req.ApplicationBody)
 	if err != nil {
 		e := MappingError
 		log.Error(e.errorMessage(err))

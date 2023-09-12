@@ -27,7 +27,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/pipeline"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/user"
 )
@@ -181,7 +180,7 @@ func (ae *APIEnv) getExternalSystem(ctx c.Context, clientID, versionID string) (
 }
 
 func (ae *APIEnv) processMappings(externalSystem *entity.ExternalSystem,
-	version entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+	version *entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
 	if externalSystem == nil {
 		return applicationBody, nil
 	}
@@ -531,18 +530,22 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 
 	log.Info("--- running pipeline:", dto.version.Name)
 
-	var usr *sso.UserInfo
-	var err error
-	if dto.allowRunAsOthers {
-		usr, err = user.GetEffectiveUserInfoFromCtx(ctx)
-	} else {
-		usr, err = user.GetUserInfoFromCtx(ctxLocal)
-	}
-
+	usr, err := user.GetUserInfoFromCtx(ctxLocal)
 	if err != nil {
 		e := NoUserInContextError
 		log.Error(e.errorMessage(err))
 		return nil, errors.Wrap(err, e.error())
+	}
+
+	var realAuthor string
+	if dto.allowRunAsOthers {
+		realAuthor = usr.Username
+		usr, err = user.GetEffectiveUserInfoFromCtx(ctx)
+		if err != nil {
+			e := NoUserInContextError
+			log.Error(e.errorMessage(err))
+			return nil, errors.Wrap(err, e.error())
+		}
 	}
 
 	arg := &execVersionInternalDTO{
@@ -551,6 +554,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		vars:          pipelineVars,
 		syncExecution: dto.withStop,
 		userName:      usr.Username,
+		realUserName:  realAuthor,
 		makeNewWork:   dto.makeNewWork,
 		workNumber:    dto.workNumber,
 		runCtx:        dto.runCtx,
@@ -576,6 +580,7 @@ type execVersionInternalDTO struct {
 	vars          map[string]interface{}
 	syncExecution bool
 	userName      string
+	realUserName  string
 	makeNewWork   bool
 	workNumber    string
 	runCtx        entity.TaskRunContext
@@ -649,6 +654,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	// use ctx as we need userinfo
 	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
 		Author:     dto.userName,
+		RealAuthor: dto.realUserName,
 		IsDebug:    false,
 		Params:     parameters,
 		WorkNumber: dto.workNumber,
