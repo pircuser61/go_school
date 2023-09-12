@@ -923,6 +923,9 @@ type EriusVersionInfo struct {
 
 // Chosen function to be executed
 type ExecutableFunctionParams struct {
+	// Is active SLA
+	CheckSla bool `json:"check_sla"`
+
 	// Constant values for function parameters (key of object is variable name)
 	Constants map[string]interface{} `json:"constants"`
 
@@ -931,6 +934,9 @@ type ExecutableFunctionParams struct {
 
 	// Function name
 	Name string `json:"name"`
+
+	// in seconds
+	Sla int `json:"sla"`
 
 	// Used function version
 	Version string `json:"version"`

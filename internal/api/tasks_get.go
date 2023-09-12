@@ -783,6 +783,10 @@ func getTaskStepNameByAction(action entity.TaskUpdateAction) []string {
 		return []string{pipeline.BlockTimerID}
 	}
 
+	if action == entity.TaskUpdateActionFuncSLAExpired {
+		return []string{pipeline.BlockExecutableFunctionID}
+	}
+
 	return []string{}
 }
 
