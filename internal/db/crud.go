@@ -2936,6 +2936,45 @@ func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([
 	return systemIDs, nil
 }
 
+func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID,
+	systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_task_subscriptions")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT system_id, microservice_id, path,
+	method, notification_schema, mapping, nodes
+	FROM external_system_task_subscriptions
+	WHERE version_id = $1 AND system_id = $2`
+
+	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
+
+	params := entity.ExternalSystemSubscriptionParams{
+		NotificationSchema: script.JSONSchema{},
+		Mapping:            script.JSONSchemaProperties{},
+		Nodes:              make([]entity.NodeSubscriptionEvents, 0),
+	}
+	err := row.Scan(
+		&params.SystemID,
+		&params.MicroserviceID,
+		&params.Path,
+		&params.Method,
+		&params.NotificationSchema,
+		&params.Mapping,
+		&params.Nodes,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.ExternalSystemSubscriptionParams{}, nil
+		}
+		return params, err
+	}
+
+	return params, nil
+}
+
 func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, systemID string) (entity.ExternalSystem, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_settings")
 	defer span.End()
@@ -3009,6 +3048,22 @@ func (db *PGCon) SaveExternalSystemSettings(
 
 	if commandTag.RowsAffected() == 0 {
 		return errCantFindExternalSystem
+	}
+
+	return nil
+}
+
+func (db *PGCon) RemoveExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_remove_external_system_task_subscriptions")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `DELETE FROM external_system_task_subscriptions WHERE version_id = $1 AND system_id = $2`
+
+	_, err := db.Connection.Exec(ctx, query, versionID, systemID)
+	if err != nil {
+		return err
 	}
 
 	return nil

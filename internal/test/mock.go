@@ -981,8 +981,16 @@ func (_m *MockDB) RemoveExternalSystem(ctx context.Context, versionID, systemID 
 	return nil
 }
 
+func (_m *MockDB) RemoveExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) error {
+	return nil
+}
+
 func (_m *MockDB) GetExternalSystemSettings(ctx context.Context, versionID, systemID string) (entity.ExternalSystem, error) {
 	return entity.ExternalSystem{}, nil
+}
+
+func (_m *MockDB) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+	return entity.ExternalSystemSubscriptionParams{}, nil
 }
 
 func (_m *MockDB) GetExternalSystemsIDs(ctx context.Context, versionID string) ([]uuid.UUID, error) {
