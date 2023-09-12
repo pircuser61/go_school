@@ -99,8 +99,8 @@ const (
 	DefaultSocketID    = "default"
 	DefaultSocketTitle = "Выход по умолчанию"
 
-	funcTimeExpiredSocketID    = "func_time_expired"
-	funcTimeExpiredSocketTitle = "Закончилось время"
+	funcSLAExpiredSocketID    = "func_sla_expired"
+	funcSLAExpiredSocketTitle = "Закончилось время"
 
 	funcExecutedSocketTitle = "Выполнено"
 )
@@ -133,7 +133,7 @@ var (
 	ErrorSocket = Socket{Id: errorSocketID, Title: errorSocketTitle}
 
 	FuncExecutedSocket    = Socket{Id: DefaultSocketID, Title: funcExecutedSocketTitle}
-	FuncTimeExpiredSocket = Socket{Id: funcTimeExpiredSocketID, Title: funcTimeExpiredSocketTitle}
+	FuncTimeExpiredSocket = Socket{Id: funcSLAExpiredSocketID, Title: funcSLAExpiredSocketTitle}
 
 	DelegationsCollection = "delegations_collection"
 )

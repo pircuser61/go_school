@@ -3,7 +3,7 @@ package pipeline
 import (
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
+	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 	"sort"
 	"strings"
 	"time"
@@ -17,9 +17,9 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/kafka"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
-	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
 type FunctionRetryPolicy string
@@ -133,40 +133,11 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 
 		switch updateData.ActionName {
-		case string(entity.TaskUpdateActionFinishFunction):
+		case string(entity.TaskUpdateActionFuncSLAExpired):
 			gb.State.TimeExpired = true
 		default:
-			gb.changeCurrentState()
-
-			if gb.State.HasResponse {
-				var expectedOutput map[string]script.ParamMetadata
-				outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
-				if outputUnmarshalErr != nil {
-					return nil, outputUnmarshalErr
-				}
-
-				var resultOutput = make(map[string]interface{})
-
-				for k := range expectedOutput {
-					param, ok := updateData.Mapping[k]
-					if !ok {
-						return nil, errors.New("function returned not all of expected results")
-					}
-
-					if err := utils.CheckVariableType(param, expectedOutput[k]); err != nil {
-						return nil, err
-					}
-
-					resultOutput[k] = param
-				}
-
-				if len(resultOutput) != len(expectedOutput) {
-					return nil, errors.New("function returned not all of expected results")
-				}
-
-				for k, v := range resultOutput {
-					gb.RunContext.VarStore.SetValue(gb.Output[k], v)
-				}
+			if err := gb.setStateByResponse(&updateData); err != nil {
+				return nil, err
 			}
 		}
 	} else {
@@ -381,7 +352,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 		_, err = gb.RunContext.Scheduler.CreateTask(c.Background(), &scheduler.CreateTask{
 			WorkNumber:  gb.RunContext.WorkNumber,
 			WorkID:      gb.RunContext.TaskID.String(),
-			ActionName:  string(entity.TaskUpdateActionFinishFunction),
+			ActionName:  string(entity.TaskUpdateActionFuncSLAExpired),
 			WaitSeconds: gb.State.SLA,
 		})
 		if err != nil {
@@ -392,12 +363,45 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 	return nil
 }
 
-func (gb *ExecutableFunctionBlock) changeCurrentState() {
+func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdateParams) error {
 	if gb.State.Async && !gb.State.HasAck {
 		gb.State.HasAck = true
-		return
+	} else {
+		gb.State.HasResponse = true
 	}
-	gb.State.HasResponse = true
+
+	if gb.State.HasResponse {
+		var expectedOutput map[string]script.ParamMetadata
+		outputUnmarshalErr := json.Unmarshal([]byte(gb.State.Function.Output), &expectedOutput)
+		if outputUnmarshalErr != nil {
+			return outputUnmarshalErr
+		}
+
+		var resultOutput = make(map[string]interface{})
+
+		for k := range expectedOutput {
+			param, ok := updateData.Mapping[k]
+			if !ok {
+				return errors.New("function returned not all of expected results")
+			}
+
+			if err := utils.CheckVariableType(param, expectedOutput[k]); err != nil {
+				return err
+			}
+
+			resultOutput[k] = param
+		}
+
+		if len(resultOutput) != len(expectedOutput) {
+			return errors.New("function returned not all of expected results")
+		}
+
+		for k, v := range resultOutput {
+			gb.RunContext.VarStore.SetValue(gb.Output[k], v)
+		}
+	}
+
+	return nil
 }
 
 func isTimeToWaitAnswer(createdAt time.Time, waitInDays int) bool {
