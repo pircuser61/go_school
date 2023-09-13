@@ -71,7 +71,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 
 	if len(gb.State.ApplicationBody) > 0 {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
-			event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			event, eventErr := gb.RunContext.MakeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
 			if eventErr != nil {
 				return nil, eventErr
 			}
@@ -254,8 +254,8 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 	gb.State.IsTakenInWork = true
 
 	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
@@ -263,7 +263,7 @@ func (gb *GoFormBlock) formExecutorStartWork(ctx c.Context) (err error) {
 		return getSlaInfoErr
 	}
 	workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
-		gb.RunContext.currBlockStartTime,
+		gb.RunContext.CurrBlockStartTime,
 		time.Now(),
 		slaInfoPtr,
 	)
@@ -322,8 +322,8 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	}
 
 	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+			FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
 	})
 
@@ -333,7 +333,7 @@ func (gb *GoFormBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork strin
 	tpl = mail.NewFormPersonExecutionNotificationTemplate(gb.RunContext.WorkNumber,
 		gb.RunContext.NotifName,
 		gb.RunContext.Services.Sender.SdAddress,
-		gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, gb.State.SLA,
+		gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime, gb.State.SLA,
 			slaInfoPtr),
 	)
 

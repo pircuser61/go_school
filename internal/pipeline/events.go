@@ -12,7 +12,7 @@ const (
 	eventEnd   = "end"
 )
 
-func (runCtx *BlockRunContext) makeNodeStartEvent(ctx c.Context, node string, humanStatus TaskHumanStatus,
+func (runCtx *BlockRunContext) MakeNodeStartEvent(ctx c.Context, node string, humanStatus TaskHumanStatus,
 	nodeStatus Status) (entity.NodeEvent, error) {
 	if humanStatus == "" {
 		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
@@ -32,7 +32,7 @@ func (runCtx *BlockRunContext) makeNodeStartEvent(ctx c.Context, node string, hu
 	}, nil
 }
 
-func (runCtx *BlockRunContext) makeNodeEndEvent(ctx c.Context, node string, humanStatus TaskHumanStatus,
+func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, node string, humanStatus TaskHumanStatus,
 	nodeStatus Status) (entity.NodeEvent, error) {
 	if humanStatus == "" {
 		hStatus, err := runCtx.Services.Storage.GetTaskHumanStatus(ctx, runCtx.TaskID)
@@ -48,7 +48,7 @@ func (runCtx *BlockRunContext) makeNodeEndEvent(ctx c.Context, node string, huma
 		TaskID:     runCtx.TaskID.String(),
 		WorkNumber: runCtx.WorkNumber,
 		NodeName:   node,
-		NodeStart:  runCtx.currBlockStartTime.Format(time.RFC3339),
+		NodeStart:  runCtx.CurrBlockStartTime.Format(time.RFC3339),
 		NodeEnd:    time.Now().Format(time.RFC3339),
 		TaskStatus: string(humanStatus),
 		NodeStatus: string(nodeStatus),

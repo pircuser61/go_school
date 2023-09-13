@@ -108,7 +108,7 @@ func (gb *IF) Update(ctx context.Context) (interface{}, error) {
 	gb.State.ChosenGroupID = chosenGroupID
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		event, eventErr := gb.RunContext.MakeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -180,7 +180,7 @@ func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, run
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
 		if err != nil {
 			return nil, false, err
 		}

@@ -177,8 +177,8 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
 		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
 
@@ -186,7 +186,7 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 			return nil, getSlaInfoErr
 		}
 
-		deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
+		deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
 				Deadline{
@@ -302,14 +302,14 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 
 	if gb.State.SLA != nil && gb.State.WorkType != nil {
 		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
 		})
 		if getSlaInfoErr != nil {
 			return getSlaInfoErr
 		}
-		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime,
+		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.CurrBlockStartTime,
 			*gb.State.SLA, slaInfoPtr)
 	}
 
@@ -505,7 +505,7 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
 			if err != nil {
 				return nil, false, err
 			}

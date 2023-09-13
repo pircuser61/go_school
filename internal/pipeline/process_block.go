@@ -80,7 +80,7 @@ type BlockRunContext struct {
 	VarStore   *store.VariableStore
 	UpdateData *script.BlockUpdateData
 
-	currBlockStartTime time.Time
+	CurrBlockStartTime time.Time
 
 	skipNotifications bool // for tests
 	skipProduce       bool // for tests too :)
@@ -378,7 +378,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 		runCtx.VarStore.ReplaceState(name, state)
 	}
 
-	runCtx.currBlockStartTime = time.Now() // will be used only for the block creation
+	runCtx.CurrBlockStartTime = time.Now() // will be used only for the block creation
 	deadlines, deadlinesErr := block.Deadlines(ctx)
 	if deadlinesErr != nil {
 		return nil, uuid.Nil, deadlinesErr
@@ -388,7 +388,7 @@ func initBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *BlockRu
 	if err != nil {
 		return nil, uuid.Nil, err
 	}
-	runCtx.currBlockStartTime = startTime
+	runCtx.CurrBlockStartTime = startTime
 	return block, id, nil
 }
 

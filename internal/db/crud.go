@@ -2311,6 +2311,40 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 	return &s, nil
 }
 
+func (db *PGCon) GetCancelledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_cancelled_task_steps")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT
+			vs.step_name, 
+			vs.time
+		FROM variable_storage vs  
+			WHERE vs.work_id = (SELECT id FROM works WHERE work_number = $1) AND vs.status = 'cancel'`
+
+	rows, err := db.Connection.Query(ctx, query, workNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := make([]entity.Step, 0)
+	for rows.Next() {
+		s := entity.Step{}
+		if scanErr := rows.Scan(&s.Name, &s.Time); scanErr != nil {
+			return nil, scanErr
+		}
+		res = append(res, s)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return res, nil
+}
+
 //nolint:dupl //its not duplicate
 func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_name")

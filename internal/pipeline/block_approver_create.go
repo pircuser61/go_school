@@ -60,7 +60,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 			b.RunContext.VarStore.AddStep(b.Name)
 
 			if _, ok := b.expectedEvents[eventStart]; ok {
-				event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+				event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
 				if err != nil {
 					return nil, false, err
 				}
@@ -74,7 +74,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
 			if err != nil {
 				return nil, false, err
 			}
@@ -390,7 +390,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 		gb.State.Decision = parentState.Decision
 
 		if _, ok = gb.expectedEvents[eventEnd]; ok {
-			event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			event, eventErr := gb.RunContext.MakeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
 			if eventErr != nil {
 				return false
 			}

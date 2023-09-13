@@ -1345,6 +1345,29 @@ func (_m *MockedDatabase) GetTaskStepById(ctx context.Context, id uuid.UUID) (*e
 	return r0, r1
 }
 
+// GetCancelledTaskSteps provides a mock function with given fields: ctx, workNumber
+func (_m *MockedDatabase) GetCancelledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
+	ret := _m.Called(ctx, workNumber)
+
+	var r0 []entity.Step
+	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.Step); ok {
+		r0 = rf(ctx, workNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Step)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, workNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetTaskStepByName provides a mock function with given fields: ctx, workID, stepName
 func (_m *MockedDatabase) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ret := _m.Called(ctx, workID, stepName)

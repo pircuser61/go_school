@@ -132,8 +132,8 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 	if gb.State.CheckSLA {
 		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
@@ -143,7 +143,7 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
 				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.currBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
+					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -152,7 +152,7 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines,
 				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr),
+					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
