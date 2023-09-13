@@ -182,6 +182,10 @@ func structToMap(variable interface{}) map[string]interface{} {
 func getBlockOutput(varStore *store.VariableStore, node string) map[string]interface{} {
 	res := make(map[string]interface{})
 
+	if varStore == nil {
+		return res
+	}
+
 	storage, _ := varStore.GrabStorage()
 	for k, v := range storage {
 		if strings.HasPrefix(k, node) {

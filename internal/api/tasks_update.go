@@ -4,9 +4,11 @@ import (
 	c "context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"go.opencensus.io/trace"
 
@@ -517,6 +519,7 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 
 	runCtx := pipeline.BlockRunContext{
 		WorkNumber: workNumber,
+		TaskID:     dbTask.ID,
 		Services: pipeline.RunContextServices{
 			Integrations: ae.Integrations,
 			Storage:      ae.DB,
@@ -599,6 +602,13 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 	}
 }
 
+type stoppedTask struct {
+	FinishedAt time.Time `json:"finished_at"`
+	Status     string    `json:"status"`
+	WorkNumber string    `json:"work_number"`
+	ID         uuid.UUID `json:"-"`
+}
+
 func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
 	defer s.End()
@@ -631,8 +641,10 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := TasksStopped{
-		Tasks: make([]TaskStatus, 0, len(req.Tasks)),
+	resp := struct {
+		Tasks []stoppedTask `json:"tasks"`
+	}{
+		Tasks: make([]stoppedTask, 0, len(req.Tasks)),
 	}
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
@@ -667,10 +679,11 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if dbTask.FinishedAt != nil {
-			resp.Tasks = append(resp.Tasks, TaskStatus{
+			resp.Tasks = append(resp.Tasks, stoppedTask{
 				FinishedAt: *dbTask.FinishedAt,
 				Status:     dbTask.HumanStatus,
 				WorkNumber: dbTask.WorkNumber,
+				ID:         dbTask.ID,
 			})
 			continue
 		}
@@ -728,10 +741,11 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 			log.WithError(sendNotifErr).Error("couldn't send notification")
 		}
 
-		resp.Tasks = append(resp.Tasks, TaskStatus{
+		resp.Tasks = append(resp.Tasks, stoppedTask{
 			FinishedAt: *updatedTask.FinishedAt,
 			Status:     updatedTask.HumanStatus,
 			WorkNumber: updatedTask.WorkNumber,
+			ID:         dbTask.ID,
 		})
 	}
 
@@ -742,9 +756,11 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, task := range resp.Tasks {
+	for i := range resp.Tasks {
+		task := resp.Tasks[i]
 		runCtx := pipeline.BlockRunContext{
 			WorkNumber: task.WorkNumber,
+			TaskID:     task.ID,
 			Services: pipeline.RunContextServices{
 				Integrations: ae.Integrations,
 				Storage:      ae.DB,

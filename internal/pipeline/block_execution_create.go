@@ -389,7 +389,7 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 		gb.State.Decision = parentState.Decision
 
 		if _, ok = gb.expectedEvents[eventEnd]; ok {
-			event, eventErr := gb.RunContext.MakeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
 			if eventErr != nil {
 				return false
 			}
