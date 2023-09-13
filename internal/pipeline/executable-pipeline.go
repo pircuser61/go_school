@@ -59,7 +59,6 @@ type ExecutablePipeline struct {
 
 	RunContext *BlockRunContext
 
-	expectedEvents map[string]struct{}
 	happenedEvents []entity.NodeEvent
 }
 
@@ -176,7 +175,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			WorkTitle:  gb.Name,
 			Initiator:  gb.RunContext.Initiator,
 			Services: RunContextServices{
-				Storage:    gb.Storage,
+				Storage:       gb.Storage,
 				Sender:        gb.Sender,
 				Kafka:         gb.Kafka,
 				People:        gb.People,
@@ -191,11 +190,11 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 				SLAService:    gb.RunContext.Services.SLAService,
 			},
 
-			VarStore:   gb.VarStore,
+			VarStore: gb.VarStore,
 
-			UpdateData:    nil,
-			IsTest:        isTest,
-			NotifName:     notifName,
+			UpdateData: nil,
+			IsTest:     isTest,
+			NotifName:  notifName,
 		})
 		if err != nil {
 			return err

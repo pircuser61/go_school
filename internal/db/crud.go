@@ -2311,7 +2311,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 	return &s, nil
 }
 
-func (db *PGCon) GetCancelledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
+func (db *PGCon) GetCanceledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_cancelled_task_steps")
 	defer span.End()
 

@@ -1070,7 +1070,7 @@ func (_m *MockDB) GetParentTaskStepByName(_ context.Context, _ uuid.UUID, _ stri
 	return &entity.Step{}, nil
 }
 
-func (_m *MockDB) GetCancelledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
+func (_m *MockDB) GetCanceledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
 	return nil, nil
 }
 

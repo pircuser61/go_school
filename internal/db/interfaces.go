@@ -38,7 +38,7 @@ type TaskStorager interface {
 	GetTaskStepById(ctx c.Context, id uuid.UUID) (*e.Step, error)
 	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
-	GetCancelledTaskSteps(ctx c.Context, workNumber string) ([]e.Step, error)
+	GetCanceledTaskSteps(ctx c.Context, workNumber string) ([]e.Step, error)
 	GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*e.EriusTasks, error)
 	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
 

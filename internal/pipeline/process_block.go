@@ -92,7 +92,7 @@ type BlockRunContext struct {
 }
 
 func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.NodeEvent, error) {
-	steps, err := runCtx.Services.Storage.GetCancelledTaskSteps(ctx, runCtx.WorkNumber)
+	steps, err := runCtx.Services.Storage.GetCanceledTaskSteps(ctx, runCtx.WorkNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.N
 			continue
 		}
 		runCtx.CurrBlockStartTime = s.Time
-		event, eventErr := runCtx.MakeNodeEndEvent(ctx, s.Name, StatusRevoke, StatusCancelled)
+		event, eventErr := runCtx.MakeNodeEndEvent(ctx, s.Name, StatusRevoke, StatusCanceled)
 		if eventErr != nil {
 			return nil, eventErr
 		}
