@@ -2,7 +2,6 @@ package api
 
 import (
 	c "context"
-	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -49,6 +48,7 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		VarStore:   item.VarStore,
 
 		Services: pipeline.RunContextServices{
+			HTTPClient:    ae.HTTPClient,
 			Storage:       txStorage,
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
@@ -63,6 +63,7 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
 		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 
 		UpdateData: &script.BlockUpdateData{
 			Action: string(item.Action),
@@ -98,7 +99,7 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		}
 	}
 
-	fmt.Println(runCtx.BlockRunResults.NodeEvents)
+	runCtx.NotifyEvents(ctx)
 }
 
 //nolint:gocyclo,staticcheck //its ok here

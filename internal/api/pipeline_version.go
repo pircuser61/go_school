@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -687,6 +686,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		VarStore:   variableStorage,
 
 		Services: pipeline.RunContextServices{
+			HTTPClient:    ep.HTTPClient,
 			Sender:        ep.Sender,
 			Kafka:         ep.Kafka,
 			People:        ep.People,
@@ -701,6 +701,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 			SLAService:    ae.SLAService,
 			Storage:       txStorage,
 		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 
 		UpdateData: nil,
 		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
@@ -735,7 +736,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		return nil, e, err
 	}
 
-	fmt.Println(runCtx.BlockRunResults.NodeEvents)
+	runCtx.NotifyEvents(ctx)
 
 	return &ep, 0, nil
 }

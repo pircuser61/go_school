@@ -175,6 +175,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			WorkTitle:  gb.Name,
 			Initiator:  gb.RunContext.Initiator,
 			Services: RunContextServices{
+				HTTPClient:    gb.RunContext.Services.HTTPClient,
 				Storage:       gb.Storage,
 				Sender:        gb.Sender,
 				Kafka:         gb.Kafka,
@@ -189,6 +190,7 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 				Scheduler:     gb.RunContext.Services.Scheduler,
 				SLAService:    gb.RunContext.Services.SLAService,
 			},
+			BlockRunResults: &BlockRunResults{},
 
 			VarStore: gb.VarStore,
 

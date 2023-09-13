@@ -3,7 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"io"
 	"net/http"
@@ -227,6 +226,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		Delegations: data.delegations,
 
 		Services: pipeline.RunContextServices{
+			HTTPClient:    ae.HTTPClient,
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
 			People:        ae.People,
@@ -241,6 +241,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 			SLAService:    ae.SLAService,
 			Storage:       txStorage,
 		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 
 		UpdateData: &script.BlockUpdateData{
 			ByLogin:    data.login,
@@ -290,7 +291,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		return false
 	}
 
-	fmt.Println(runCtx.BlockRunResults.NodeEvents)
+	runCtx.NotifyEvents(ctx)
 	return true
 }
 
@@ -521,9 +522,11 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		WorkNumber: workNumber,
 		TaskID:     dbTask.ID,
 		Services: pipeline.RunContextServices{
+			HTTPClient:   ae.HTTPClient,
 			Integrations: ae.Integrations,
 			Storage:      ae.DB,
 		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 	}
 	if fillErr := runCtx.FillTaskEvents(ctxLocal); fillErr != nil {
 		return fillErr
@@ -533,7 +536,9 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 	if err != nil {
 		return err
 	}
-	fmt.Println(nodeEvents)
+
+	runCtx.BlockRunResults.NodeEvents = nodeEvents
+	runCtx.NotifyEvents(ctxLocal)
 
 	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
 	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
@@ -762,9 +767,11 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 			WorkNumber: task.WorkNumber,
 			TaskID:     task.ID,
 			Services: pipeline.RunContextServices{
+				HTTPClient:   ae.HTTPClient,
 				Integrations: ae.Integrations,
 				Storage:      ae.DB,
 			},
+			BlockRunResults: &pipeline.BlockRunResults{},
 		}
 		if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
 			log.WithError(fillErr).Error("couldn't fill task events data")
@@ -781,7 +788,8 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Println(nodeEvents)
+		runCtx.BlockRunResults.NodeEvents = nodeEvents
+		runCtx.NotifyEvents(ctx)
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {

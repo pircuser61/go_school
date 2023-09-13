@@ -1,10 +1,20 @@
 package pipeline
 
 import (
+	"bytes"
 	c "context"
+	"encoding/json"
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+	"net/http"
+	"net/url"
+	"path"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+
+	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
+	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
 )
 
 const (
@@ -54,4 +64,123 @@ func (runCtx *BlockRunContext) MakeNodeEndEvent(ctx c.Context, node string, huma
 		NodeStatus: string(nodeStatus),
 		NodeOutput: outputs,
 	}, nil
+}
+
+func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
+	log := logger.GetLogger(ctx)
+
+	reqUrl, err := url.Parse(runCtx.TaskSubscriptionData.MicroserviceURL)
+	if err != nil {
+		log.WithError(err).Error("couldn't parse url to send event notification")
+		return
+	}
+	reqUrl.Path = path.Join(reqUrl.Path, runCtx.TaskSubscriptionData.NotificationPath)
+
+	for i := range runCtx.BlockRunResults.NodeEvents {
+		event := runCtx.BlockRunResults.NodeEvents[i]
+		data, mapErr := script.MapData(runCtx.TaskSubscriptionData.Mapping, event.ToMap(), []string{})
+		if mapErr != nil {
+			log.WithError(mapErr).Error("couldn't map data")
+			continue
+		}
+		body, jsonErr := json.Marshal(data)
+		if jsonErr != nil {
+			log.WithError(jsonErr).Error("couldn't marshal data")
+			continue
+		}
+		req, reqErr := http.NewRequestWithContext(ctx, runCtx.TaskSubscriptionData.Method, reqUrl.String(),
+			bytes.NewBuffer(body))
+		if reqErr != nil {
+			log.WithError(reqErr).Error("couldn't create request")
+			continue
+		}
+		resp, respErr := runCtx.Services.HTTPClient.Do(req)
+		if respErr != nil {
+			log.WithError(respErr).Error("couldn't make request")
+			continue
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			log.WithError(respErr).Error("didn't get 200 for request")
+		}
+	}
+	return
+}
+
+func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.NodeEvent, error) {
+	steps, err := runCtx.Services.Storage.GetCanceledTaskSteps(ctx, runCtx.WorkNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeEvents := make([]entity.NodeEvent, 0, len(steps))
+
+	for _, s := range steps {
+		notify := false
+		for _, event := range runCtx.TaskSubscriptionData.ExpectedEvents {
+			if event.NodeID == s.Name && event.Notify {
+				for _, ev := range event.Events {
+					if ev == eventEnd {
+						notify = true
+					}
+				}
+			}
+		}
+		if !notify {
+			continue
+		}
+		runCtx.CurrBlockStartTime = s.Time
+		event, eventErr := runCtx.MakeNodeEndEvent(ctx, s.Name, StatusRevoke, StatusCanceled)
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		nodeEvents = append(nodeEvents, event)
+	}
+
+	return nodeEvents, nil
+}
+
+func (runCtx *BlockRunContext) FillTaskEvents(ctx c.Context) error {
+	taskRunCtx, err := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
+	if err != nil {
+		return err
+	}
+
+	sResp, err := runCtx.Services.Integrations.RpcIntCli.GetIntegrationByClientId(ctx,
+		&integration_v1.GetIntegrationByClientIdRequest{ClientId: taskRunCtx.ClientID})
+	if err != nil {
+		return err
+	}
+	if sResp == nil || sResp.Integration == nil {
+		return nil
+	}
+
+	expectedEvents, err := runCtx.Services.Storage.GetTaskEventsParamsByWorkNumber(ctx,
+		runCtx.WorkNumber, sResp.Integration.IntegrationId)
+	if err != nil {
+		return err
+	}
+	if expectedEvents.SystemID == "" {
+		return nil
+	}
+
+	mResp, err := runCtx.Services.Integrations.RpcMicrCli.GetMicroservice(ctx,
+		&microservice_v1.GetMicroserviceRequest{MicroserviceId: expectedEvents.MicroserviceID})
+	if err != nil {
+		return err
+	}
+	if mResp == nil || mResp.Microservice == nil || mResp.Microservice.Creds == nil || mResp.Microservice.Creds.Prod == nil {
+		return nil
+	}
+
+	runCtx.TaskSubscriptionData.TaskRunClientID = taskRunCtx.ClientID
+	runCtx.TaskSubscriptionData.SystemID = sResp.Integration.IntegrationId
+	runCtx.TaskSubscriptionData.MicroserviceID = expectedEvents.MicroserviceID
+	runCtx.TaskSubscriptionData.MicroserviceURL = mResp.Microservice.Creds.Prod.Addr
+	runCtx.TaskSubscriptionData.NotificationPath = expectedEvents.Path
+	runCtx.TaskSubscriptionData.Mapping = expectedEvents.Mapping
+	runCtx.TaskSubscriptionData.NotificationSchema = expectedEvents.NotificationSchema
+	runCtx.TaskSubscriptionData.ExpectedEvents = expectedEvents.Nodes
+	runCtx.TaskSubscriptionData.Method = expectedEvents.Method
+	return nil
 }

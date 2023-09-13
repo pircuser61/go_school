@@ -3,8 +3,6 @@ package api
 import (
 	c "context"
 	"encoding/json"
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
@@ -83,6 +81,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		Initiator:  step.Initiator,
 		VarStore:   storage,
 		Services: pipeline.RunContextServices{
+			HTTPClient:    ae.HTTPClient,
 			Storage:       ae.DB,
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
@@ -97,6 +96,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 			Scheduler:     ae.Scheduler,
 			SLAService:    ae.SLAService,
 		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 
 		UpdateData: &script.BlockUpdateData{
 			Parameters: mapping,
@@ -140,7 +140,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		return commitErr
 	}
 
-	fmt.Println(runCtx.BlockRunResults.NodeEvents)
+	runCtx.NotifyEvents(ctx)
 
 	return nil
 }
