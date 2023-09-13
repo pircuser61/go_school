@@ -510,6 +510,11 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		return err
 	}
 
+	if commitErr := txStorage.CommitTransaction(ctxLocal); commitErr != nil {
+		log.WithError(commitErr).Error("couldn't commit transaction")
+		return commitErr
+	}
+
 	runCtx := pipeline.BlockRunContext{
 		WorkNumber: workNumber,
 		Services: pipeline.RunContextServices{
@@ -518,51 +523,12 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		},
 	}
 	if fillErr := runCtx.FillTaskEvents(ctxLocal); fillErr != nil {
-		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
-			log.WithField("funcName", "UpdateTaskHumanStatus").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
 		return fillErr
 	}
 
-	steps, err := txStorage.GetCancelledTaskSteps(ctxLocal, workNumber)
+	nodeEvents, err := runCtx.GetCancelledStepsEvents(ctxLocal)
 	if err != nil {
-		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
-			log.WithField("funcName", "GetCancelledTaskSteps").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
 		return err
-	}
-
-	if commitErr := txStorage.CommitTransaction(ctxLocal); commitErr != nil {
-		log.WithError(commitErr).Error("couldn't commit transaction")
-		return commitErr
-	}
-
-	nodeEvents := make([]entity.NodeEvent, 0, len(steps))
-
-	for _, s := range steps {
-		notify := false
-		for _, event := range runCtx.TaskSubscriptionData.ExpectedEvents {
-			if event.NodeID == s.Name && event.Notify {
-				for _, ev := range event.Events {
-					if ev == string(NodeEventEnd) {
-						notify = true
-					}
-				}
-			}
-		}
-		if !notify {
-			continue
-		}
-		runCtx.CurrBlockStartTime = s.Time
-		event, eventErr := runCtx.MakeNodeEndEvent(ctxLocal, s.Name, pipeline.StatusRevoke, pipeline.StatusCancelled)
-		if eventErr != nil {
-			return eventErr
-		}
-		nodeEvents = append(nodeEvents, event)
 	}
 	fmt.Println(nodeEvents)
 
@@ -774,6 +740,32 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		e := UnknownError
 		_ = e.sendError(w)
 		return
+	}
+
+	for _, task := range resp.Tasks {
+		runCtx := pipeline.BlockRunContext{
+			WorkNumber: task.WorkNumber,
+			Services: pipeline.RunContextServices{
+				Integrations: ae.Integrations,
+				Storage:      ae.DB,
+			},
+		}
+		if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
+			log.WithError(fillErr).Error("couldn't fill task events data")
+			e := UnknownError
+			_ = e.sendError(w)
+			return
+		}
+
+		nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
+		if eventErr != nil {
+			log.WithError(eventErr).Error("couldn't get cancelled steps events")
+			e := UnknownError
+			_ = e.sendError(w)
+			return
+		}
+
+		fmt.Println(nodeEvents)
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {

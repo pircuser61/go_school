@@ -91,6 +91,39 @@ type BlockRunContext struct {
 	TaskSubscriptionData TaskSubscriptionData
 }
 
+func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.NodeEvent, error) {
+	steps, err := runCtx.Services.Storage.GetCancelledTaskSteps(ctx, runCtx.WorkNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeEvents := make([]entity.NodeEvent, 0, len(steps))
+
+	for _, s := range steps {
+		notify := false
+		for _, event := range runCtx.TaskSubscriptionData.ExpectedEvents {
+			if event.NodeID == s.Name && event.Notify {
+				for _, ev := range event.Events {
+					if ev == eventEnd {
+						notify = true
+					}
+				}
+			}
+		}
+		if !notify {
+			continue
+		}
+		runCtx.CurrBlockStartTime = s.Time
+		event, eventErr := runCtx.MakeNodeEndEvent(ctx, s.Name, StatusRevoke, StatusCancelled)
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		nodeEvents = append(nodeEvents, event)
+	}
+
+	return nodeEvents, nil
+}
+
 func (runCtx *BlockRunContext) FillTaskEvents(ctx c.Context) error {
 	taskRunCtx, err := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
 	if err != nil {

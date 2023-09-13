@@ -63,6 +63,18 @@ func (gb *GoEndBlock) Update(ctx c.Context) (interface{}, error) {
 		return nil, err
 	}
 
+	nodeEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, event := range nodeEvents {
+		// event for this node will spawn later
+		if event.NodeName == gb.Name {
+			continue
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
 		event, eventErr := gb.RunContext.MakeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
 		if eventErr != nil {

@@ -309,6 +309,18 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 		return err
 	}
 
+	nodeEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
+	if err != nil {
+		return err
+	}
+	for _, event := range nodeEvents {
+		// event for this node will spawn later
+		if event.NodeName == gb.Name {
+			continue
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	return nil
 }
 
@@ -396,6 +408,18 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
+	}
+
+	nodeEvents, err := gb.RunContext.GetCancelledStepsEvents(ctx)
+	if err != nil {
+		return err
+	}
+	for _, event := range nodeEvents {
+		// event for this node will spawn later
+		if event.NodeName == gb.Name {
+			continue
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
 	return nil
