@@ -4,8 +4,6 @@ import (
 	"bytes"
 	c "context"
 	"encoding/json"
-	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	"net/http"
 	"net/url"
 	"path"
@@ -13,8 +11,11 @@ import (
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	integration_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/integration/v1"
 	microservice_v1 "gitlab.services.mts.ru/jocasta/integrations/pkg/proto/gen/microservice/v1"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 const (
@@ -173,14 +174,16 @@ func (runCtx *BlockRunContext) FillTaskEvents(ctx c.Context) error {
 		return nil
 	}
 
-	runCtx.TaskSubscriptionData.TaskRunClientID = taskRunCtx.ClientID
-	runCtx.TaskSubscriptionData.SystemID = sResp.Integration.IntegrationId
-	runCtx.TaskSubscriptionData.MicroserviceID = expectedEvents.MicroserviceID
-	runCtx.TaskSubscriptionData.MicroserviceURL = mResp.Microservice.Creds.Prod.Addr
-	runCtx.TaskSubscriptionData.NotificationPath = expectedEvents.Path
-	runCtx.TaskSubscriptionData.Mapping = expectedEvents.Mapping
-	runCtx.TaskSubscriptionData.NotificationSchema = expectedEvents.NotificationSchema
-	runCtx.TaskSubscriptionData.ExpectedEvents = expectedEvents.Nodes
-	runCtx.TaskSubscriptionData.Method = expectedEvents.Method
+	runCtx.TaskSubscriptionData = TaskSubscriptionData{
+		TaskRunClientID:    taskRunCtx.ClientID,
+		SystemID:           sResp.Integration.IntegrationId,
+		MicroserviceID:     expectedEvents.MicroserviceID,
+		MicroserviceURL:    mResp.Microservice.Creds.Prod.Addr,
+		NotificationPath:   expectedEvents.Path,
+		Method:             expectedEvents.Method,
+		Mapping:            expectedEvents.Mapping,
+		NotificationSchema: expectedEvents.NotificationSchema,
+		ExpectedEvents:     expectedEvents.Nodes,
+	}
 	return nil
 }
