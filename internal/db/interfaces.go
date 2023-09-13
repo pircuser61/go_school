@@ -214,8 +214,11 @@ type Database interface {
 	AddExternalSystemToVersion(ctx c.Context, versionID string, systemID string) error
 	GetExternalSystemsIDs(ctx c.Context, versionID string) ([]uuid.UUID, error)
 	GetExternalSystemSettings(ctx c.Context, versionID string, systemID string) (e.ExternalSystem, error)
+	GetExternalSystemTaskSubscriptions(ctx c.Context, versionID string, systemID string) (e.ExternalSystemSubscriptionParams, error)
 	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
+	RemoveExternalSystemTaskSubscriptions(ctx c.Context, versionID string, systemID string) error
 	SaveExternalSystemSettings(ctx c.Context, versionID string, settings e.ExternalSystem, schemaFlag *string) error
+	SaveExternalSystemSubscriptionParams(ctx c.Context, versionID string, params *e.ExternalSystemSubscriptionParams) error
 	RemoveObsoleteMapping(ctx c.Context, id string) error
 	GetWorksForUserWithGivenTimeRange(ctx c.Context, hours int, login, versionID, excludeWorkNumber string) ([]*e.EriusTask, error)
 	CheckPipelineNameExists(c.Context, string, bool) (*bool, error)

@@ -82,6 +82,11 @@ const (
 	ExecutionParamsTypeUser ExecutionParamsType = "user"
 )
 
+// Defines values for ExternalSystemSubscriptionParamsMethod.
+const (
+	ExternalSystemSubscriptionParamsMethodPOST ExternalSystemSubscriptionParamsMethod = "POST"
+)
+
 // Defines values for FormAccessType.
 const (
 	FormAccessTypeNone FormAccessType = "None"
@@ -164,6 +169,13 @@ const (
 	MonitoringTableTaskStatusНеизвестныйСтатус MonitoringTableTaskStatus = "Неизвестный статус"
 
 	MonitoringTableTaskStatusОстановлен MonitoringTableTaskStatus = "Остановлен"
+)
+
+// Defines values for NodeEvent.
+const (
+	NodeEventEnd NodeEvent = "end"
+
+	NodeEventStart NodeEvent = "start"
 )
 
 // Defines values for NumberOperandDataType.
@@ -610,10 +622,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   - user - Single user
-//   - group - Approver group ID
-//   - head - Receiver's head
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Approver group ID
+//   * head - Receiver's head
+//   * FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -994,9 +1006,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//   - user - Single user
-//   - group - Execution group ID
-//   - from_schema - Selected by initiator
+//  * user - Single user
+//  * group - Execution group ID
+//  * from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -1041,6 +1053,31 @@ type ExternalSystem struct {
 // Id внешней системы
 type ExternalSystemId string
 
+// Настройки подписки системы на изменения в заявках
+type ExternalSystemSubscriptionParams struct {
+	// Представляет из себя набор ключ-значение, где ключ - это название переменной/поля объекта, а значение - это структура, которая описывает переменную(или поле объекта). Причём, если переменная - это объект, тогда должно быть заполнено поле propeties(описание полей). Если переменная - массив, тогда должно быть заполнено поле items(описание типа, который хранится в массиве).
+	Mapping JSONSchemaProperties `json:"mapping"`
+
+	// Какой http метод использовать
+	Method ExternalSystemSubscriptionParamsMethod `json:"method"`
+
+	// ID микросервиса
+	MicroserviceId string `json:"microservice_id"`
+
+	// Ноды и ивенты, на которые нужна подписка
+	Nodes              []NodeSubscriptionEvents `json:"nodes"`
+	NotificationSchema JSONSchema               `json:"notification_schema"`
+
+	// Путь, по которому надо присылать ивенты
+	Path string `json:"path"`
+
+	// ID системы
+	SystemId string `json:"system_id"`
+}
+
+// Какой http метод использовать
+type ExternalSystemSubscriptionParamsMethod string
+
 // Fill form
 type FillFormUpdateParams struct {
 	ApplicationBody map[string]interface{} `json:"application_body"`
@@ -1074,11 +1111,11 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   - User - Single user
-//   - group - Form group ID
-//   - Initiator - Process initiator
-//   - From_schema - Selected by initiator
-//   - Auto_Fill - Auto Fill form by system
+//   * User - Single user
+//   * group - Form group ID
+//   * Initiator - Process initiator
+//   * From_schema - Selected by initiator
+//   * Auto_Fill - Auto Fill form by system
 type FormExecutorType string
 
 // Form params
@@ -1389,6 +1426,20 @@ type NameExists struct {
 	Exists bool `json:"exists"`
 }
 
+// Возможный ивент ноды
+type NodeEvent string
+
+// NodeSubscriptionEvents defines model for NodeSubscriptionEvents.
+type NodeSubscriptionEvents struct {
+	Events *[]NodeEvent `json:"events,omitempty"`
+
+	// ID ноды в процессе
+	NodeId string `json:"node_id"`
+
+	// Нужно ли уведомлять о событиях по ноде
+	Notify bool `json:"notify"`
+}
+
 // Notification params
 type NotificationParams struct {
 	// Emails to get notifications
@@ -1456,6 +1507,9 @@ type ProcessSettingsWithExternalSystems struct {
 
 	// Настройки старта версии пайплайна(процесса)
 	ProcessSettings ProcessSettings `json:"process_settings"`
+
+	// Подписки систем на изменения в заявках, заведенных по процессу
+	TasksSubscriptions []ExternalSystemSubscriptionParams `json:"tasks_subscriptions"`
 }
 
 // RateApplicationRequest defines model for RateApplicationRequest.
@@ -1619,9 +1673,9 @@ type SignatureCarrier string
 type SignatureType string
 
 // Signer type:
-//   - user - Single user
-//   - group - Group ID
-//   - FromSchema - Selected by initiator
+//   * user - Single user
+//   * group - Group ID
+//   * FromSchema - Selected by initiator
 type SignerType string
 
 // Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
@@ -1766,18 +1820,18 @@ type Action_Params struct {
 }
 
 // Approver decision:
-//   - approved - Согласовать
-//   - rejected - Отклонить
+//  * approved - Согласовать
+//  * rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//   - approve - Согласовать
-//   - reject - Отклонить
-//   - viewed - Ознакомлен
-//   - informed - Проинформирован
-//   - sign - Подписать
-//   - confirm - Утвердить
-//   - sign_ukep - Подписать УКЭП
+//  * approve - Согласовать
+//  * reject - Отклонить
+//  * viewed - Ознакомлен
+//  * informed - Проинформирован
+//  * sign - Подписать
+//  * confirm - Утвердить
+//  * sign_ukep - Подписать УКЭП
 type ApproverDecision string
 
 // Block type (language)
@@ -1863,8 +1917,8 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
-//   - executed - executor executed block
-//   - rejected - executor rejected block
+//  * executed - executor executed block
+//  * rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1895,17 +1949,17 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
-//   - 1 - Draft
-//   - 2 - Approved
-//   - 3 - Deleted
-//   - 4 - Rejected
-//   - 5 - On approve
+//  * 1 - Draft
+//  * 2 - Approved
+//  * 3 - Deleted
+//  * 4 - Rejected
+//  * 5 - On approve
 type ScenarioStatus int
 
 // Approver decision:
-//   - signed - Согласовано
-//   - rejected - Отклонено
-//   - error - Произошла ошибка
+//  * signed - Согласовано
+//  * rejected - Отклонено
+//  * error - Произошла ошибка
 type SignDecision string
 
 // Task human readable status
@@ -2062,6 +2116,9 @@ type SaveVersionSettingsParams struct {
 // SaveVersionSettingsParamsSchemaFlag defines parameters for SaveVersionSettings.
 type SaveVersionSettingsParamsSchemaFlag string
 
+// SaveVersionTaskSubscriptionSettingsJSONBody defines parameters for SaveVersionTaskSubscriptionSettings.
+type SaveVersionTaskSubscriptionSettingsJSONBody []ExternalSystemSubscriptionParams
+
 // AddExternalSystemToVersionJSONBody defines parameters for AddExternalSystemToVersion.
 type AddExternalSystemToVersionJSONBody ExternalSystemId
 
@@ -2191,6 +2248,9 @@ type CreatePipelineVersionJSONRequestBody CreatePipelineVersionJSONBody
 
 // SaveVersionSettingsJSONRequestBody defines body for SaveVersionSettings for application/json ContentType.
 type SaveVersionSettingsJSONRequestBody SaveVersionSettingsJSONBody
+
+// SaveVersionTaskSubscriptionSettingsJSONRequestBody defines body for SaveVersionTaskSubscriptionSettings for application/json ContentType.
+type SaveVersionTaskSubscriptionSettingsJSONRequestBody SaveVersionTaskSubscriptionSettingsJSONBody
 
 // AddExternalSystemToVersionJSONRequestBody defines body for AddExternalSystemToVersion for application/json ContentType.
 type AddExternalSystemToVersionJSONRequestBody AddExternalSystemToVersionJSONBody
@@ -2925,6 +2985,9 @@ type ServerInterface interface {
 	// Get approve statuses dictionary
 	// (GET /dictionaries/approve-statuses)
 	GetApproveStatuses(w http.ResponseWriter, r *http.Request)
+	// Get task event json schema
+	// (GET /dictionaries/schema/task-event)
+	GetTaskEventSchema(w http.ResponseWriter, r *http.Request)
 	// Get forms changelog
 	// (GET /forms/changelog)
 	GetFormsChangelog(w http.ResponseWriter, r *http.Request, params GetFormsChangelogParams)
@@ -2985,6 +3048,9 @@ type ServerInterface interface {
 	// Save process settings(start and end schemas)
 	// (POST /pipelines/version/{versionID}/settings)
 	SaveVersionSettings(w http.ResponseWriter, r *http.Request, versionID string, params SaveVersionSettingsParams)
+	// Save process task subscription settings
+	// (POST /pipelines/version/{versionID}/settings/task-subscriptions)
+	SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request, versionID string)
 	// Add external system to version
 	// (POST /pipelines/version/{versionID}/system)
 	AddExternalSystemToVersion(w http.ResponseWriter, r *http.Request, versionID string)
@@ -3192,6 +3258,21 @@ func (siw *ServerInterfaceWrapper) GetApproveStatuses(w http.ResponseWriter, r *
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetApproveStatuses(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetTaskEventSchema operation middleware
+func (siw *ServerInterfaceWrapper) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTaskEventSchema(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3884,6 +3965,32 @@ func (siw *ServerInterfaceWrapper) SaveVersionSettings(w http.ResponseWriter, r 
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SaveVersionSettings(w, r, versionID, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// SaveVersionTaskSubscriptionSettings operation middleware
+func (siw *ServerInterfaceWrapper) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveVersionTaskSubscriptionSettings(w, r, versionID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5046,6 +5153,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/dictionaries/approve-statuses", wrapper.GetApproveStatuses)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dictionaries/schema/task-event", wrapper.GetTaskEventSchema)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/forms/changelog", wrapper.GetFormsChangelog)
 	})
 	r.Group(func(r chi.Router) {
@@ -5104,6 +5214,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings", wrapper.SaveVersionSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/version/{versionID}/settings/task-subscriptions", wrapper.SaveVersionTaskSubscriptionSettings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/pipelines/version/{versionID}/system", wrapper.AddExternalSystemToVersion)

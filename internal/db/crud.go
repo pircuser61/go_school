@@ -880,6 +880,20 @@ WHERE version_id = $2;
 		return err
 	}
 
+	// nolint:gocritic
+	// language=PostgreSQL
+	qCopyPrevTaskSubSettings := `
+INSERT INTO external_system_task_subscriptions (id, version_id, system_id, microservice_id, path, 
+                                                method, notification_schema, mapping, nodes)
+SELECT uuid_generate_v4(), $1, system_id, microservice_id, path, method, notification_schema, mapping, nodes 
+FROM external_system_task_subscriptions
+WHERE version_id = $2`
+
+	_, err = db.Connection.Exec(c, qCopyPrevTaskSubSettings, newVersionID, oldVersionID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -2936,6 +2950,45 @@ func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([
 	return systemIDs, nil
 }
 
+func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID,
+	systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_task_subscriptions")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT system_id, microservice_id, path,
+	method, notification_schema, mapping, nodes
+	FROM external_system_task_subscriptions
+	WHERE version_id = $1 AND system_id = $2`
+
+	row := db.Connection.QueryRow(ctx, query, versionID, systemID)
+
+	params := entity.ExternalSystemSubscriptionParams{
+		NotificationSchema: script.JSONSchema{},
+		Mapping:            script.JSONSchemaProperties{},
+		Nodes:              make([]entity.NodeSubscriptionEvents, 0),
+	}
+	err := row.Scan(
+		&params.SystemID,
+		&params.MicroserviceID,
+		&params.Path,
+		&params.Method,
+		&params.NotificationSchema,
+		&params.Mapping,
+		&params.Nodes,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.ExternalSystemSubscriptionParams{}, nil
+		}
+		return params, err
+	}
+
+	return params, nil
+}
+
 func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, systemID string) (entity.ExternalSystem, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_settings")
 	defer span.End()
@@ -2965,6 +3018,26 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 	}
 
 	return externalSystemSettings, nil
+}
+
+func (db *PGCon) SaveExternalSystemSubscriptionParams(ctx context.Context, versionID string,
+	params *entity.ExternalSystemSubscriptionParams) error {
+	ctx, span := trace.StartSpan(ctx, "pg_save_external_system_subscription_params")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `INSERT INTO external_system_task_subscriptions 
+    (id, version_id, system_id, microservice_id, path, method, notification_schema, mapping, nodes) 
+    values 
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+
+	_, err := db.Connection.Exec(ctx, q, uuid.New().String(), versionID, params.SystemID, params.MicroserviceID,
+		params.Path, params.Method, params.NotificationSchema, params.Mapping, params.Nodes)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *PGCon) SaveExternalSystemSettings(
@@ -3009,6 +3082,27 @@ func (db *PGCon) SaveExternalSystemSettings(
 
 	if commandTag.RowsAffected() == 0 {
 		return errCantFindExternalSystem
+	}
+
+	return nil
+}
+
+func (db *PGCon) RemoveExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) error {
+	ctx, span := trace.StartSpan(ctx, "pg_remove_external_system_task_subscriptions")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `DELETE FROM external_system_task_subscriptions WHERE version_id = $1`
+	args := []interface{}{versionID}
+	if systemID != "" {
+		query += " AND system_id = $2"
+		args = append(args, systemID)
+	}
+
+	_, err := db.Connection.Exec(ctx, query, args...)
+	if err != nil {
+		return err
 	}
 
 	return nil
