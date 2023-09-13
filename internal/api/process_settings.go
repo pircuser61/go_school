@@ -185,9 +185,10 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 		}
 		validateEndingSettings(&externalSystemSettings)
 		externalSystems = append(externalSystems, entity.ExternalSystem{
-			Id:             id.String(),
-			Name:           systemsNames[id.String()],
-			OutputSettings: externalSystemSettings.OutputSettings,
+			Id:               id.String(),
+			Name:             systemsNames[id.String()],
+			AllowRunAsOthers: externalSystemSettings.AllowRunAsOthers,
+			OutputSettings:   externalSystemSettings.OutputSettings,
 		})
 
 		subscriptionSettings, err := ae.DB.GetExternalSystemTaskSubscriptions(ctx, versionID, id.String())
@@ -687,5 +688,40 @@ func validateEndingSettings(s *entity.ExternalSystem) {
 		s.OutputSettings.URL == "" ||
 		s.OutputSettings.Method == "" {
 		s.OutputSettings = nil
+	}
+}
+
+func (ae *APIEnv) AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionID, systemID string) {
+	ctx, s := trace.StartSpan(r.Context(), "allow_run_as_others")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+		return
+	}
+	defer r.Body.Close()
+
+	var allowRunAsOthers bool
+	err = json.Unmarshal(b, &allowRunAsOthers)
+	if err != nil {
+		e := ProcessSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	err = ae.DB.AllowRunAsOthers(ctx, versionID, systemID, allowRunAsOthers)
+	if err != nil {
+		e := UpdateRunAsOthersSettingsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
 }

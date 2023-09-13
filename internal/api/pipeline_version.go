@@ -160,26 +160,34 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 }
 
-func (ae *APIEnv) processMappings(ctx c.Context, clientID string,
-	version entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+func (ae *APIEnv) getExternalSystem(ctx c.Context, clientID, versionID string) (*entity.ExternalSystem, error) {
 	system, err := ae.Integrations.RpcIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId: clientID,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "system not found") { // TODO: delete
-			return applicationBody, nil
+			return nil, nil
 		}
 
-		return orderedmap.OrderedMap{}, err
+		return nil, err
 	}
 
-	externalSystem, err := ae.DB.GetExternalSystemSettings(ctx, version.VersionID.String(), system.Integration.IntegrationId)
+	externalSystem, err := ae.DB.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) { // TODO: delete
-			return applicationBody, nil
+			return nil, nil
 		}
 
-		return orderedmap.OrderedMap{}, err
+		return nil, err
+	}
+
+	return &externalSystem, nil
+}
+
+func (ae *APIEnv) processMappings(externalSystem *entity.ExternalSystem,
+	version *entity.EriusScenario, applicationBody orderedmap.OrderedMap) (orderedmap.OrderedMap, error) {
+	if externalSystem == nil {
+		return applicationBody, nil
 	}
 
 	if externalSystem.InputSchema == nil && version.Settings.StartSchema == nil { // TODO: delete
@@ -506,9 +514,10 @@ type execVersionDTO struct {
 	w   http.ResponseWriter
 	req *http.Request
 
-	makeNewWork bool
-	workNumber  string
-	runCtx      entity.TaskRunContext
+	makeNewWork      bool
+	allowRunAsOthers bool
+	workNumber       string
+	runCtx           entity.TaskRunContext
 }
 
 // nolint //need big cyclo,need equal string for all usages
@@ -533,15 +542,28 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		return nil, errors.Wrap(err, e.error())
 	}
 
+	// if X-As-Other was used, then we will store the name of the real user here
+	var realAuthor string
+	if dto.allowRunAsOthers {
+		realAuthor = usr.Username
+		usr, err = user.GetEffectiveUserInfoFromCtx(ctx)
+		if err != nil {
+			e := NoUserInContextError
+			log.Error(e.errorMessage(err))
+			return nil, errors.Wrap(err, e.error())
+		}
+	}
+
 	arg := &execVersionInternalDTO{
-		reqID:         reqID,
-		p:             dto.version,
-		vars:          pipelineVars,
-		syncExecution: dto.withStop,
-		userName:      usr.Username,
-		makeNewWork:   dto.makeNewWork,
-		workNumber:    dto.workNumber,
-		runCtx:        dto.runCtx,
+		reqID:          reqID,
+		p:              dto.version,
+		vars:           pipelineVars,
+		syncExecution:  dto.withStop,
+		authorName:     usr.Username,
+		realAuthorName: realAuthor,
+		makeNewWork:    dto.makeNewWork,
+		workNumber:     dto.workNumber,
+		runCtx:         dto.runCtx,
 	}
 
 	executablePipeline, e, err := ae.execVersionInternal(ctxLocal, arg)
@@ -559,14 +581,15 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 }
 
 type execVersionInternalDTO struct {
-	reqID         string
-	p             *entity.EriusScenario
-	vars          map[string]interface{}
-	syncExecution bool
-	userName      string
-	makeNewWork   bool
-	workNumber    string
-	runCtx        entity.TaskRunContext
+	reqID          string
+	p              *entity.EriusScenario
+	vars           map[string]interface{}
+	syncExecution  bool
+	authorName     string
+	realAuthorName string
+	makeNewWork    bool
+	workNumber     string
+	runCtx         entity.TaskRunContext
 }
 
 func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
@@ -636,7 +659,8 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	// use ctx as we need userinfo
 	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
-		Author:     dto.userName,
+		Author:     dto.authorName,
+		RealAuthor: dto.realAuthorName,
 		IsDebug:    false,
 		Params:     parameters,
 		WorkNumber: dto.workNumber,
@@ -658,7 +682,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		TaskID:     ep.TaskID,
 		WorkNumber: ep.WorkNumber,
 		WorkTitle:  ep.Name,
-		Initiator:  dto.userName,
+		Initiator:  dto.authorName,
 		Storage:    txStorage,
 		VarStore:   variableStorage,
 

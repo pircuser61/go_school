@@ -103,6 +103,7 @@ func (gb *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
 
 type CreateTaskDTO struct {
 	Author     string
+	RealAuthor string
 	IsDebug    bool
 	Params     []byte
 	WorkNumber string
@@ -116,6 +117,7 @@ func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 		TaskID:     gb.TaskID,
 		VersionID:  gb.VersionID,
 		Author:     dto.Author,
+		RealAuthor: dto.RealAuthor,
 		WorkNumber: dto.WorkNumber,
 		IsDebug:    dto.IsDebug,
 		Params:     dto.Params,

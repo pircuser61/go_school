@@ -215,8 +215,23 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	var externalSystem *entity.ExternalSystem
+	externalSystem, err = ae.getExternalSystem(ctx, clientID, version.VersionID.String())
+	if err != nil {
+		e := GetExternalSystemsError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	var allowRunAsOthers bool
+	if externalSystem != nil {
+		allowRunAsOthers = externalSystem.AllowRunAsOthers
+	}
+
 	var mappedApplicationBody orderedmap.OrderedMap
-	mappedApplicationBody, err = ae.processMappings(ctx, clientID, *version, req.ApplicationBody)
+	mappedApplicationBody, err = ae.processMappings(externalSystem, version, req.ApplicationBody)
 	if err != nil {
 		e := MappingError
 		log.Error(e.errorMessage(err))
@@ -234,10 +249,11 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 
 	v, execErr := ae.execVersion(ctx, &execVersionDTO{
-		version:  version,
-		withStop: false,
-		w:        w,
-		req:      r,
+		version:          version,
+		withStop:         false,
+		w:                w,
+		req:              r,
+		allowRunAsOthers: allowRunAsOthers,
 		runCtx: entity.TaskRunContext{
 			ClientID: clientID,
 			InitialApplication: entity.InitialApplication{
