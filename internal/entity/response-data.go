@@ -483,9 +483,26 @@ type EriusFunctionValue struct {
 	Format string `json:"format" example:"string"`
 }
 
+type NodeSubscriptionEvents struct {
+	NodeID string   `json:"node_id"`
+	Notify bool     `json:"notify"`
+	Events []string `json:"events"`
+}
+
+type ExternalSystemSubscriptionParams struct {
+	SystemID           string                      `json:"system_id"`
+	MicroserviceID     string                      `json:"microservice_id"`
+	Path               string                      `json:"path"`
+	Method             string                      `json:"method"`
+	NotificationSchema script.JSONSchema           `json:"notification_schema"`
+	Mapping            script.JSONSchemaProperties `json:"mapping"`
+	Nodes              []NodeSubscriptionEvents    `json:"nodes"`
+}
+
 type ProcessSettingsWithExternalSystems struct {
-	ExternalSystems []ExternalSystem `json:"external_systems"`
-	ProcessSettings ProcessSettings  `json:"process_settings"`
+	ExternalSystems    []ExternalSystem                   `json:"external_systems"`
+	ProcessSettings    ProcessSettings                    `json:"process_settings"`
+	TasksSubscriptions []ExternalSystemSubscriptionParams `json:"tasks_subscriptions"`
 }
 
 type ProcessSettings struct {

@@ -603,7 +603,7 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
 	if transactionErr != nil {
-		log.WithError(err).Error("couldn't start transaction")
+		log.WithError(transactionErr).Error("couldn't start transaction")
 		e := UnknownError
 		_ = e.sendError(w)
 		return

@@ -40,6 +40,94 @@ func (ae *APIEnv) convertProcessSettingsToFlat(ctx c.Context, ps *entity.Process
 	return nil
 }
 
+func (ae *APIEnv) SaveVersionTaskSubscriptionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
+	ctx, s := trace.StartSpan(req.Context(), "save_version_task_subscription_settings")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	b, err := io.ReadAll(req.Body)
+	if err != nil {
+		e := RequestReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	defer req.Body.Close()
+
+	var settings []*entity.ExternalSystemSubscriptionParams
+	err = json.Unmarshal(b, &settings)
+	if err != nil {
+		e := ExternalSystemSettingsParseError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	// TODO: validation?
+
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't start transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "SaveVersionTaskSubscriptionSettings").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
+	defer func(transaction db.Database, ctx c.Context) {
+		_ = transaction.RollbackTransaction(ctx)
+	}(txStorage, ctx)
+
+	if rmErr := ae.DB.RemoveExternalSystemTaskSubscriptions(ctx, versionID, ""); rmErr != nil {
+		e := ExternalSystemSettingsSaveError
+		log.Error(e.errorMessage(rmErr))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	for _, s := range settings {
+		err = ae.DB.SaveExternalSystemSubscriptionParams(ctx, versionID, s)
+		if err != nil {
+			e := ExternalSystemSettingsSaveError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+	}
+
+	if err = txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't commit transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+
+	err = sendResponse(w, http.StatusOK, nil)
+	if err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
 func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, versionID string) {
 	ctx, s := trace.StartSpan(req.Context(), "get_version_settings")
 	defer s.End()
@@ -85,6 +173,7 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 	}
 
 	externalSystems := make([]entity.ExternalSystem, 0, len(externalSystemsIds))
+	externalSystemsTaskSubs := make([]entity.ExternalSystemSubscriptionParams, 0, len(externalSystemsIds))
 	for _, id := range externalSystemsIds {
 		externalSystemSettings, err := ae.DB.GetExternalSystemSettings(ctx, versionID, id.String())
 		if err != nil {
@@ -100,11 +189,24 @@ func (ae *APIEnv) GetVersionSettings(w http.ResponseWriter, req *http.Request, v
 			Name:           systemsNames[id.String()],
 			OutputSettings: externalSystemSettings.OutputSettings,
 		})
+
+		subscriptionSettings, err := ae.DB.GetExternalSystemTaskSubscriptions(ctx, versionID, id.String())
+		if err != nil {
+			e := GetExternalSystemSettingsError
+			log.Error(e.errorMessage(err))
+			_ = e.sendError(w)
+
+			return
+		}
+		if subscriptionSettings.SystemID != "" {
+			externalSystemsTaskSubs = append(externalSystemsTaskSubs, subscriptionSettings)
+		}
 	}
 
 	result := entity.ProcessSettingsWithExternalSystems{
-		ExternalSystems: externalSystems,
-		ProcessSettings: processSettings,
+		ExternalSystems:    externalSystems,
+		ProcessSettings:    processSettings,
+		TasksSubscriptions: externalSystemsTaskSubs,
 	}
 
 	if err := sendResponse(w, http.StatusOK, result); err != nil {
@@ -246,12 +348,51 @@ func (ae *APIEnv) RemoveExternalSystem(w http.ResponseWriter, req *http.Request,
 
 	log := logger.GetLogger(ctx)
 
-	err := ae.DB.RemoveExternalSystem(ctx, versionID, systemID)
+	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	if transactionErr != nil {
+		log.WithError(transactionErr).Error("couldn't start transaction")
+		e := UnknownError
+		_ = e.sendError(w)
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			log = log.WithField("funcName", "RemoveExternalSystem").
+				WithField("panic handle", true)
+			log.Error(r)
+			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+				log.WithError(errors.New("couldn't rollback tx")).
+					Error(txErr)
+			}
+		}
+	}()
+
+	defer func(transaction db.Database, ctx c.Context) {
+		_ = transaction.RollbackTransaction(ctx)
+	}(txStorage, ctx)
+
+	err := txStorage.RemoveExternalSystemTaskSubscriptions(ctx, versionID, systemID)
 	if err != nil {
 		e := ExternalSystemRemoveError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 
+		return
+	}
+
+	err = txStorage.RemoveExternalSystem(ctx, versionID, systemID)
+	if err != nil {
+		e := ExternalSystemRemoveError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+
+	if err = txStorage.CommitTransaction(ctx); err != nil {
+		log.WithError(err).Error("couldn't commit transaction")
+		e := UnknownError
+		_ = e.sendError(w)
 		return
 	}
 

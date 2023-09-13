@@ -135,6 +135,11 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 			log.Error(txErr)
 		}
+		e := PipelineReadError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
 	}
 
 	created, err := ae.DB.GetPipelineVersion(ctx, p.VersionID, true)
