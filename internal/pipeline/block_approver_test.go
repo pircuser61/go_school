@@ -360,7 +360,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoApproverID,
@@ -382,7 +384,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoApproverID,
@@ -404,7 +408,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoApproverID,
@@ -435,7 +441,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoApproverID,
@@ -466,7 +474,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          varStore,
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoApproverID,
@@ -509,6 +519,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 				Output: map[string]string{
 					keyOutputApprover: example,
 				},
+				happenedEvents: make([]entity.NodeEvent, 0),
 				State: &ApproverData{
 					Type: script.ApproverTypeFromSchema,
 					Approvers: map[string]struct{}{
@@ -545,7 +556,9 @@ func Test_createGoApproverBlock(t *testing.T) {
 				runCtx: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoApproverID,
@@ -588,6 +601,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 				Output: map[string]string{
 					keyOutputApprover: example,
 				},
+				happenedEvents: make([]entity.NodeEvent, 0),
 				State: &ApproverData{
 					Type: script.ApproverTypeUser,
 					Approvers: map[string]struct{}{
@@ -620,7 +634,7 @@ func Test_createGoApproverBlock(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			got, _, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
+			got, _, err := createGoApproverBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx, nil)
 			if got != nil {
 				got.RunContext = nil
 			}
@@ -664,18 +678,20 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							nil, errors.New("unknown error"),
-						)
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								nil, errors.New("unknown error"),
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 			args: args{
@@ -704,48 +720,50 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							&entity.Step{
-								Time: time.Time{},
-								Type: BlockGoApproverID,
-								Name: stepName,
-								State: map[string]json.RawMessage{
-									stepName: func() []byte {
-										r, _ := json.Marshal(&ApproverData{
-											Type: script.ApproverTypeUser,
-											Approvers: map[string]struct{}{
-												exampleApprover:       {},
-												secondExampleApprover: {},
-											},
-											ApprovementRule: script.AnyOfApprovementRequired,
-										})
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoApproverID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ApproverData{
+												Type: script.ApproverTypeUser,
+												Approvers: map[string]struct{}{
+													exampleApprover:       {},
+													secondExampleApprover: {},
+												},
+												ApprovementRule: script.AnyOfApprovementRequired,
+											})
 
-										return r
-									}(),
-								},
-								Errors:      nil,
-								Steps:       nil,
-								BreakPoints: nil,
-								HasError:    false,
-								Status:      "",
-							}, nil,
-						)
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
 
-						res.On("UpdateStepContext",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.AnythingOfType("*db.UpdateStepRequest"),
-						).Return(
-							nil,
-						)
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 
@@ -779,48 +797,50 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							&entity.Step{
-								Time: time.Time{},
-								Type: BlockGoApproverID,
-								Name: stepName,
-								State: map[string]json.RawMessage{
-									stepName: func() []byte {
-										r, _ := json.Marshal(&ApproverData{
-											Type: script.ApproverTypeUser,
-											Approvers: map[string]struct{}{
-												exampleApprover:       {},
-												secondExampleApprover: {},
-											},
-											ApprovementRule: script.AnyOfApprovementRequired,
-										})
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoApproverID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ApproverData{
+												Type: script.ApproverTypeUser,
+												Approvers: map[string]struct{}{
+													exampleApprover:       {},
+													secondExampleApprover: {},
+												},
+												ApprovementRule: script.AnyOfApprovementRequired,
+											})
 
-										return r
-									}(),
-								},
-								Errors:      nil,
-								Steps:       nil,
-								BreakPoints: nil,
-								HasError:    false,
-								Status:      "",
-							}, nil,
-						)
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
 
-						res.On("UpdateStepContext",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.AnythingOfType("*db.UpdateStepRequest"),
-						).Return(
-							nil,
-						)
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 
@@ -852,46 +872,48 @@ func TestGoApproverBlock_Update(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepById",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							stepId,
-						).Return(
-							&entity.Step{
-								Time: time.Time{},
-								Type: BlockGoApproverID,
-								Name: stepName,
-								State: map[string]json.RawMessage{
-									stepName: func() []byte {
-										r, _ := json.Marshal(&ApproverData{
-											Type: script.ApproverTypeUser,
-											Approvers: map[string]struct{}{
-												exampleApprover: {},
-											},
-										})
+							res.On("GetTaskStepById",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								stepId,
+							).Return(
+								&entity.Step{
+									Time: time.Time{},
+									Type: BlockGoApproverID,
+									Name: stepName,
+									State: map[string]json.RawMessage{
+										stepName: func() []byte {
+											r, _ := json.Marshal(&ApproverData{
+												Type: script.ApproverTypeUser,
+												Approvers: map[string]struct{}{
+													exampleApprover: {},
+												},
+											})
 
-										return r
-									}(),
-								},
-								Errors:      nil,
-								Steps:       nil,
-								BreakPoints: nil,
-								HasError:    false,
-								Status:      "",
-							}, nil,
-						)
+											return r
+										}(),
+									},
+									Errors:      nil,
+									Steps:       nil,
+									BreakPoints: nil,
+									HasError:    false,
+									Status:      "",
+								}, nil,
+							)
 
-						res.On("UpdateStepContext",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.AnythingOfType("*db.UpdateStepRequest"),
-						).Return(
-							nil,
-						)
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.AnythingOfType("*db.UpdateStepRequest"),
+							).Return(
+								nil,
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 

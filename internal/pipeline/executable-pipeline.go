@@ -58,6 +58,13 @@ type ExecutablePipeline struct {
 	FaaS string
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *ExecutablePipeline) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *ExecutablePipeline) Members() []Member {
@@ -168,21 +175,24 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			WorkNumber: gb.WorkNumber,
 			WorkTitle:  gb.Name,
 			Initiator:  gb.RunContext.Initiator,
-			Storage:    gb.Storage,
+			Services: RunContextServices{
+				Storage:    gb.Storage,
+				Sender:        gb.Sender,
+				Kafka:         gb.Kafka,
+				People:        gb.People,
+				ServiceDesc:   gb.ServiceDesc,
+				FunctionStore: gb.FunctionStore,
+				HumanTasks:    gb.HumanTasks,
+				Integrations:  gb.Integrations,
+				FileRegistry:  gb.FileRegistry,
+				FaaS:          gb.FaaS,
+				HrGate:        gb.RunContext.Services.HrGate,
+				Scheduler:     gb.RunContext.Services.Scheduler,
+				SLAService:    gb.RunContext.Services.SLAService,
+			},
+
 			VarStore:   gb.VarStore,
 
-			Sender:        gb.Sender,
-			Kafka:         gb.Kafka,
-			People:        gb.People,
-			ServiceDesc:   gb.ServiceDesc,
-			FunctionStore: gb.FunctionStore,
-			HumanTasks:    gb.HumanTasks,
-			Integrations:  gb.Integrations,
-			FileRegistry:  gb.FileRegistry,
-			FaaS:          gb.FaaS,
-			HrGate:        gb.RunContext.HrGate,
-			Scheduler:     gb.RunContext.Scheduler,
-			SLAService:    gb.RunContext.SLAService,
 			UpdateData:    nil,
 			IsTest:        isTest,
 			NotifName:     notifName,

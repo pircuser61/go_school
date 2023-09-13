@@ -688,6 +688,28 @@ func (_m *MockedDatabase) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c
 	return r0, r1
 }
 
+// GetTaskEventsByWorkNumber provides a mock function with given fields: ctx, workNumber, systemID
+func (_m *MockedDatabase) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber string, systemID string) (
+	entity.ExternalSystemSubscriptionParams, error) {
+	ret := _m.Called(ctx, workNumber, systemID)
+
+	var r0 entity.ExternalSystemSubscriptionParams
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) entity.ExternalSystemSubscriptionParams); ok {
+		r0 = rf(ctx, workNumber, systemID)
+	} else {
+		r0 = ret.Get(0).(entity.ExternalSystemSubscriptionParams)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, workNumber, systemID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetExternalSystemTaskSubscriptions provides a mock function with given fields: ctx, versionID, systemID
 func (_m *MockedDatabase) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID string, systemID string) (entity.ExternalSystemSubscriptionParams, error) {
 	ret := _m.Called(ctx, versionID, systemID)
@@ -1239,6 +1261,27 @@ func (_m *MockedDatabase) GetTaskStatus(ctx context.Context, taskID uuid.UUID) (
 		r0 = rf(ctx, taskID)
 	} else {
 		r0 = ret.Get(0).(int)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTaskHumanStatus provides a mock function with given fields: ctx, taskID
+func (_m *MockedDatabase) GetTaskHumanStatus(ctx context.Context, taskID uuid.UUID) (string, error) {
+	ret := _m.Called(ctx, taskID)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) string); ok {
+		r0 = rf(ctx, taskID)
+	} else {
+		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error

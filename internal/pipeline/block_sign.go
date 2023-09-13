@@ -48,6 +48,13 @@ type GoSignBlock struct {
 	State   *SignData
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoSignBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoSignBlock) GetState() interface{} {
@@ -169,7 +176,7 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA != nil && *gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
@@ -179,7 +186,7 @@ func (gb *GoSignBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 			return nil, getSlaInfoErr
 		}
 
-		deadline := gb.RunContext.SLAService.ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
+		deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(*gb.State.SLA), slaInfoPtr)
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
 				Deadline{
@@ -216,7 +223,7 @@ func (gb *GoSignBlock) setSignersByParams(ctx c.Context, dto *setSignersByParams
 			dto.Signer: {},
 		}
 	case script.SignerTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
+		workGroup, errGroup := gb.RunContext.Services.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get signer group with id: "+dto.GroupID)
 		}
@@ -294,7 +301,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	slaDeadline := ""
 
 	if gb.State.SLA != nil && gb.State.WorkType != nil {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 			WorkType: sla.WorkHourType(*gb.State.WorkType),
@@ -302,12 +309,13 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 		if getSlaInfoErr != nil {
 			return getSlaInfoErr
 		}
-		slaDeadline = gb.RunContext.SLAService.ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime, *gb.State.SLA, slaInfoPtr)
+		slaDeadline = gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(gb.RunContext.currBlockStartTime,
+			*gb.State.SLA, slaInfoPtr)
 	}
 
 	var emails = make(map[string]mail.Template, 0)
 	for _, login := range signers {
-		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
@@ -317,7 +325,7 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 			gb.RunContext.WorkNumber,
 			gb.RunContext.NotifName,
 			description,
-			gb.RunContext.Sender.SdAddress,
+			gb.RunContext.Services.Sender.SdAddress,
 			slaDeadline,
 			gb.State.AutoReject != nil && *gb.State.AutoReject,
 		)
@@ -328,7 +336,8 @@ func (gb *GoSignBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+			emails[i]); sendErr != nil {
 			return sendErr
 		}
 	}
@@ -455,7 +464,8 @@ func (gb *GoSignBlock) loadState(raw json.RawMessage) error {
 }
 
 // nolint:dupl,unparam // another block
-func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSignBlock, bool, error) {
+func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoSignBlock, bool, error) {
 	if ef.ShortTitle == "" {
 		return nil, false, errors.New(ef.Title + " block short title is empty")
 	}
@@ -467,6 +477,9 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
@@ -490,6 +503,14 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
+
+		if _, ok := b.expectedEvents[eventStart]; ok {
+			event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			if err != nil {
+				return nil, false, err
+			}
+			b.happenedEvents = append(b.happenedEvents, event)
+		}
 	}
 
 	return b, reEntry, nil

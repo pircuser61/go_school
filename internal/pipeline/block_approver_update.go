@@ -107,7 +107,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 			logins = append(logins, additionalApprover.ApproverLogin)
 		}
 
-		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
+		delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 		if err != nil {
 			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
 		}
@@ -116,7 +116,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 
 		var approverEmail string
 		for i := range logins {
-			approverEmail, err = gb.RunContext.People.GetUserEmail(ctx, logins[i])
+			approverEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
 				continue
@@ -127,11 +127,11 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		err = gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+		err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
-				gb.RunContext.Sender.SdAddress,
+				gb.RunContext.Services.Sender.SdAddress,
 				gb.State.ApproveStatusName,
 			),
 		)
@@ -181,7 +181,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			logins = append(logins, additionalApprover.ApproverLogin)
 		}
 
-		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
+		delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 		if err != nil {
 			log.WithError(err).Info(fn, fmt.Sprintf("approvers %v have no delegates", logins))
 		}
@@ -190,7 +190,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 
 		var approverEmail string
 		for i := range logins {
-			approverEmail, err = gb.RunContext.People.GetUserEmail(ctx, logins[i])
+			approverEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("approver login %s not found", logins[i]))
 				continue
@@ -202,17 +202,17 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 			return nil
 		}
 
-		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 		if getVersionErr != nil {
 			return getVersionErr
 		}
 
-		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
 
-		taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+		taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 		if getDataErr != nil {
 			return getDataErr
 		}
@@ -229,7 +229,7 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 
 		if processSettings.ResubmissionPeriod > 0 {
 			var getWorksErr error
-			lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
+			lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
 				ctx,
 				processSettings.ResubmissionPeriod,
 				login,
@@ -240,11 +240,11 @@ func (gb *GoApproverBlock) handleHalfBreachedSLA(ctx c.Context) (err error) {
 				return getWorksErr
 			}
 		}
-		errSend := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+		errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
 			mail.NewApprovementHalfSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
-				gb.RunContext.Sender.SdAddress,
+				gb.RunContext.Services.Sender.SdAddress,
 				gb.State.ApproveStatusName,
 				lastWorksForUser,
 			),
@@ -275,7 +275,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 	comment := fmt.Sprintf("заявка автоматически перенесена в архив по истечении %d дней", gb.State.ReworkSLA/8)
 	gb.State.Comment = &comment
 
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Services.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 
@@ -283,7 +283,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 		return stopErr
 	}
 
-	if stopErr := gb.RunContext.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Services.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 
@@ -293,7 +293,7 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 	var err error
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
 			continue
@@ -302,8 +302,9 @@ func (gb *GoApproverBlock) handleReworkSLABreached(ctx c.Context) error {
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -324,7 +325,7 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Contex
 
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		em, err := gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
 			continue
@@ -333,8 +334,9 @@ func (gb *GoApproverBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Contex
 		emails = append(emails, em)
 	}
 
-	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
-	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber,
+		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
+	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -355,7 +357,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 	gb.State.Decision = &decision
 	gb.State.Comment = &comment
 
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Services.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 
@@ -363,12 +365,12 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 		return stopErr
 	}
 
-	if stopErr := gb.RunContext.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Services.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 
 	approvers := getSliceFromMapOfStrings(gb.State.Approvers)
-	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, approvers)
+	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, approvers)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
@@ -381,7 +383,7 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 	var err error
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
 			continue
@@ -389,8 +391,9 @@ func (gb *GoApproverBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error 
 
 		emails = append(emails, em)
 	}
-	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress)
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -422,7 +425,8 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 			return err
 		}
 	} else {
-		if editErr := gb.State.setEditToNextBlock(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams); editErr != nil {
+		if editErr := gb.State.setEditToNextBlock(gb.RunContext.UpdateData.ByLogin, delegateFor,
+			updateParams); editErr != nil {
 			return editErr
 		}
 
@@ -499,7 +503,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return linkErr
 		}
 
-		workHours := gb.RunContext.SLAService.GetWorkHoursBetweenDates(
+		workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
 			gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt,
 			time.Now(),
 			nil,
@@ -653,6 +657,16 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
+	if gb.State.Decision != nil {
+		if _, ok := gb.expectedEvents[eventEnd]; ok {
+			event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			if eventErr != nil {
+				return nil, eventErr
+			}
+			gb.happenedEvents = append(gb.happenedEvents, event)
+		}
+	}
 
 	return nil, nil
 }

@@ -89,6 +89,14 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	return nil, nil
 }
 
@@ -175,7 +183,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		emails := make([]string, 0, len(gb.State.Executors))
 		logins := getSliceFromMapOfStrings(gb.State.Executors)
 
-		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
+		delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 		if err != nil {
 			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
 		}
@@ -184,7 +192,7 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 
 		var executorEmail string
 		for i := range logins {
-			executorEmail, err = gb.RunContext.People.GetUserEmail(ctx, logins[i])
+			executorEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
 				continue
@@ -195,14 +203,14 @@ func (gb *GoExecutionBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		err = gb.RunContext.Sender.SendNotification(
+		err = gb.RunContext.Services.Sender.SendNotification(
 			ctx,
 			emails,
 			nil,
 			mail.NewExecutionSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
-				gb.RunContext.Sender.SdAddress,
+				gb.RunContext.Services.Sender.SdAddress,
 			))
 		if err != nil {
 			return err
@@ -229,7 +237,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 		emails := make([]string, 0, len(gb.State.Executors))
 		logins := getSliceFromMapOfStrings(gb.State.Executors)
 
-		delegations, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, logins)
+		delegations, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, logins)
 		if err != nil {
 			log.WithError(err).Info(fn, fmt.Sprintf("executors %v have no delegates", logins))
 		}
@@ -238,7 +246,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 
 		var executorEmail string
 		for i := range logins {
-			executorEmail, err = gb.RunContext.People.GetUserEmail(ctx, logins[i])
+			executorEmail, err = gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				log.WithError(err).Warning(fn, fmt.Sprintf("executor login %s not found", logins[i]))
 				continue
@@ -250,17 +258,17 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 			return nil
 		}
 
-		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 		if getVersionErr != nil {
 			return getVersionErr
 		}
 
-		processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+		processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
 
-		taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+		taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 		if getDataErr != nil {
 			return getDataErr
 		}
@@ -277,7 +285,7 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 
 		if processSettings.ResubmissionPeriod > 0 {
 			var getWorksErr error
-			lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+			lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
 				processSettings.ResubmissionPeriod,
 				login,
 				task.VersionID.String(),
@@ -287,14 +295,14 @@ func (gb *GoExecutionBlock) handleHalfSLABreached(ctx c.Context) error {
 				return getWorksErr
 			}
 		}
-		err = gb.RunContext.Sender.SendNotification(
+		err = gb.RunContext.Services.Sender.SendNotification(
 			ctx,
 			emails,
 			nil,
 			mail.NewExecutiontHalfSLATpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
-				gb.RunContext.Sender.SdAddress,
+				gb.RunContext.Services.Sender.SdAddress,
 				lastWorksForUser,
 			))
 		if err != nil {
@@ -322,7 +330,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 	comment := fmt.Sprintf("заявка автоматически перенесена в архив по истечении %d дней", gb.State.ReworkSLA/8)
 	gb.State.DecisionComment = &comment
 
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Services.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 
@@ -330,7 +338,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 		return stopErr
 	}
 
-	if stopErr := gb.RunContext.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Services.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 
@@ -340,7 +348,7 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 	var err error
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
 			continue
@@ -348,8 +356,9 @@ func (gb *GoExecutionBlock) handleReworkSLABreached(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress, gb.State.ReworkSLA)
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	tpl := mail.NewReworkSLATpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress, gb.State.ReworkSLA)
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -370,7 +379,7 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Conte
 
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
+		email, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
 			continue
@@ -378,8 +387,9 @@ func (gb *GoExecutionBlock) handleBreachedDayBeforeSLARequestAddInfo(ctx c.Conte
 
 		emails = append(emails, email)
 	}
-	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
-	err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	tpl := mail.NewDayBeforeRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress)
+	err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -400,7 +410,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 	gb.State.Decision = &decision
 	gb.State.DecisionComment = &comment
 
-	if stopErr := gb.RunContext.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Services.Storage.StopTaskBlocks(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 
@@ -408,12 +418,12 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 		return stopErr
 	}
 
-	if stopErr := gb.RunContext.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
+	if stopErr := gb.RunContext.Services.Storage.SendTaskToArchive(ctx, gb.RunContext.TaskID); stopErr != nil {
 		return stopErr
 	}
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
-	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
+	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
@@ -426,7 +436,7 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 	var err error
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			log.WithError(err).Warning(fn, fmt.Sprintf("login %s not found", login))
 			continue
@@ -434,8 +444,9 @@ func (gb *GoExecutionBlock) HandleBreachedSLARequestAddInfo(ctx c.Context) error
 
 		emails = append(emails, em)
 	}
-	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl)
+	tpl := mail.NewRequestAddInfoSLABreached(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress)
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl)
 	if err != nil {
 		return err
 	}
@@ -451,7 +462,8 @@ func (gb *GoExecutionBlock) updateDecision() error {
 		return errors.New("can't assert provided update data")
 	}
 
-	if errSet := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, &updateParams, gb.RunContext.Delegations); errSet != nil {
+	if errSet := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, &updateParams,
+		gb.RunContext.Delegations); errSet != nil {
 		return errSet
 	}
 
@@ -481,7 +493,8 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 		return errors.New("can't assert provided update requestExecutionInfo data")
 	}
 
-	if errSet := gb.State.SetRequestExecutionInfo(gb.RunContext.UpdateData.ByLogin, delegations, &updateParams); errSet != nil {
+	if errSet := gb.State.SetRequestExecutionInfo(gb.RunContext.UpdateData.ByLogin, delegations,
+		&updateParams); errSet != nil {
 		return errSet
 	}
 
@@ -491,7 +504,7 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 		}
 
 		if len(gb.State.RequestExecutionInfoLogs) > 0 {
-			workHours := gb.RunContext.SLAService.GetWorkHoursBetweenDates(
+			workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
 				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
 				time.Now(),
 				nil,
@@ -550,7 +563,8 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
-	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
+	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin,
+		getSliceFromMapOfStrings(gb.State.Executors))
 	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
 	}
@@ -566,7 +580,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 
 	gb.State.IsTakenInWork = true
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
@@ -575,7 +589,8 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	if getSlaInfoErr != nil {
 		return getSlaInfoErr
 	}
-	workHours := gb.RunContext.SLAService.GetWorkHoursBetweenDates(gb.RunContext.currBlockStartTime, time.Now(), slaInfoPtr)
+	workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(gb.RunContext.currBlockStartTime,
+		time.Now(), slaInfoPtr)
 	gb.State.IncreaseSLA(workHours)
 
 	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
@@ -593,7 +608,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	executors := getSliceFromMapOfStrings(logins)
 	log.WithField("func", "emailGroupExecutors").WithField("logins", logins)
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
+	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if err != nil {
 		return err
 	}
@@ -605,7 +620,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	emails := make([]string, 0, len(executors))
 	for _, login := range loginsToNotify {
 		if login != loginTakenInWork {
-			email, emailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+			email, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 			if emailErr != nil {
 				return emailErr
 			}
@@ -624,7 +639,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return err
 	}
 
-	author, err := gb.RunContext.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
+	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.UpdateData.ByLogin)
 	if err != nil {
 		return err
 	}
@@ -634,17 +649,17 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		return err
 	}
 
-	task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 	if getVersionErr != nil {
 		return getVersionErr
 	}
 
-	processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
 	if getVersionErr != nil {
 		return getVersionErr
 	}
 
-	taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if getDataErr != nil {
 		return getDataErr
 	}
@@ -661,7 +676,7 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
-		lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(ctx,
+		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(ctx,
 			processSettings.ResubmissionPeriod,
 			login,
 			task.VersionID.String(),
@@ -675,24 +690,24 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		WorkNumber:   gb.RunContext.WorkNumber,
 		Name:         gb.RunContext.NotifName,
-		SdUrl:        gb.RunContext.Sender.SdAddress,
+		SdUrl:        gb.RunContext.Services.Sender.SdAddress,
 		Description:  description,
 		ExecutorName: typedAuthor.GetFullName(),
 		Initiator:    gb.RunContext.Initiator,
 		LastWorks:    lastWorksForUser,
-		Mailto:       gb.RunContext.Sender.FetchEmail,
+		Mailto:       gb.RunContext.Services.Sender.FetchEmail,
 	})
 
-	if errSend := gb.RunContext.Sender.SendNotification(ctx, emails, emailAttachment, tpl); errSend != nil {
+	if errSend := gb.RunContext.Services.Sender.SendNotification(ctx, emails, emailAttachment, tpl); errSend != nil {
 		return errSend
 	}
 
-	emailTakenInWork, emailErr := gb.RunContext.People.GetUserEmail(ctx, loginTakenInWork)
+	emailTakenInWork, emailErr := gb.RunContext.Services.People.GetUserEmail(ctx, loginTakenInWork)
 	if emailErr != nil {
 		return emailErr
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
@@ -707,10 +722,10 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			Name:        gb.RunContext.NotifName,
 			Status:      string(StatusExecution),
 			Action:      statusToTaskAction[StatusExecution],
-			DeadLine:    gb.RunContext.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+			DeadLine:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			Description: description,
-			SdUrl:       gb.RunContext.Sender.SdAddress,
-			Mailto:      gb.RunContext.Sender.FetchEmail,
+			SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+			Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 			Login:       loginTakenInWork,
 			IsEditable:  gb.State.GetIsEditable(),
 
@@ -720,7 +735,8 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 			LastWorks:                 lastWorksForUser,
 		})
 
-	if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{emailTakenInWork}, emailAttachment, tpl); sendErr != nil {
+	if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx,
+		[]string{emailTakenInWork}, emailAttachment, tpl); sendErr != nil {
 		return sendErr
 	}
 
@@ -746,14 +762,16 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 	byLogin := gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[byLogin]
 
-	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(byLogin, getSliceFromMapOfStrings(gb.State.Executors))
+	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(byLogin,
+		getSliceFromMapOfStrings(gb.State.Executors))
 	if !(executorFound || isDelegate) && byLogin != AutoApprover {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
 	// возврат на доработку всей заявки инициатору
 	if gb.isNextBlockServiceDesk() {
-		if editErr := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams); editErr != nil {
+		if editErr := gb.State.setEditAppToInitiator(gb.RunContext.UpdateData.ByLogin, delegateFor,
+			updateParams); editErr != nil {
 			return editErr
 		}
 
@@ -761,7 +779,8 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 			return err
 		}
 	} else {
-		if editErr := gb.State.setEditToNextBlock(gb.RunContext.UpdateData.ByLogin, delegateFor, updateParams); editErr != nil {
+		if editErr := gb.State.setEditToNextBlock(gb.RunContext.UpdateData.ByLogin, delegateFor,
+			updateParams); editErr != nil {
 			return editErr
 		}
 

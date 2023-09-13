@@ -993,7 +993,13 @@ func (_m *MockDB) GetExternalSystemSettings(ctx context.Context, versionID, syst
 	return entity.ExternalSystem{}, nil
 }
 
-func (_m *MockDB) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+func (_m *MockDB) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber, systemID string) (
+	entity.ExternalSystemSubscriptionParams, error) {
+	return entity.ExternalSystemSubscriptionParams{}, nil
+}
+
+func (_m *MockDB) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) (
+	entity.ExternalSystemSubscriptionParams, error) {
 	return entity.ExternalSystemSubscriptionParams{}, nil
 }
 
@@ -1345,6 +1351,10 @@ func (m *MockDB) GetUsersWithReadWriteFormAccess(
 
 func (m *MockDB) StopTaskBlocks(_ context.Context, _ uuid.UUID) error {
 	return errNotImplemented
+}
+
+func (m *MockDB) GetTaskHumanStatus(_ context.Context, _ uuid.UUID) (string, error) {
+	return "", errNotImplemented
 }
 
 func (m *MockDB) GetTaskStatus(_ context.Context, _ uuid.UUID) (int, error) {

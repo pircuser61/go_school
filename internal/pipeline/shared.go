@@ -6,8 +6,12 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+
 	"github.com/iancoleman/orderedmap"
+
 	"github.com/pkg/errors"
+
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
 
 const (
@@ -170,6 +174,20 @@ func structToMap(variable interface{}) map[string]interface{} {
 	res := make(map[string]interface{})
 	if unmErr := json.Unmarshal(bytes, &res); unmErr != nil {
 		return nil
+	}
+
+	return res
+}
+
+func getBlockOutput(varStore *store.VariableStore, node string) map[string]interface{} {
+	res := make(map[string]interface{})
+
+	storage, _ := varStore.GrabStorage()
+	for k, v := range storage {
+		if strings.HasPrefix(k, node) {
+			newK := strings.Replace(k, node+".", "", 1)
+			res[newK] = v
+		}
 	}
 
 	return res

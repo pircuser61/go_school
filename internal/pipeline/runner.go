@@ -52,4 +52,5 @@ type Runner interface {
 	UpdateManual() bool
 	Members() []Member
 	Deadlines(ctx context.Context) ([]Deadline, error)
+	GetNewEvents() []entity.NodeEvent
 }

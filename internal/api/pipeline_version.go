@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -683,27 +684,40 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		WorkNumber: ep.WorkNumber,
 		WorkTitle:  ep.Name,
 		Initiator:  dto.authorName,
-		Storage:    txStorage,
 		VarStore:   variableStorage,
 
-		Sender:        ep.Sender,
-		Kafka:         ep.Kafka,
-		People:        ep.People,
-		ServiceDesc:   ep.ServiceDesc,
-		FunctionStore: ep.FunctionStore,
-		HumanTasks:    ep.HumanTasks,
-		Integrations:  ep.Integrations,
-		FileRegistry:  ep.FileRegistry,
-		FaaS:          ep.FaaS,
-		HrGate:        ae.HrGate,
-		Scheduler:     ae.Scheduler,
-		SLAService:    ae.SLAService,
+		Services: pipeline.RunContextServices{
+			Sender:        ep.Sender,
+			Kafka:         ep.Kafka,
+			People:        ep.People,
+			ServiceDesc:   ep.ServiceDesc,
+			FunctionStore: ep.FunctionStore,
+			HumanTasks:    ep.HumanTasks,
+			Integrations:  ep.Integrations,
+			FileRegistry:  ep.FileRegistry,
+			FaaS:          ep.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+			Storage:       txStorage,
+		},
 
 		UpdateData: nil,
 		IsTest:     dto.runCtx.InitialApplication.IsTestApplication,
 		NotifName:  notifName,
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
+
+	if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "FillTaskEvents").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+		log.WithError(fillErr).Error("couldn't fill task events")
+		e := PipelineRunError
+		return nil, e, err
+	}
 
 	err = pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {
@@ -720,6 +734,9 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
+
+	fmt.Println(runCtx.BlockRunResults.NodeEvents)
+
 	return &ep, 0, nil
 }
 

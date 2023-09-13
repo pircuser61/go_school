@@ -41,6 +41,13 @@ type GoSdApplicationBlock struct {
 	State   *ApplicationData
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoSdApplicationBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoSdApplicationBlock) Members() []Member {
@@ -79,7 +86,7 @@ func (gb *GoSdApplicationBlock) GetState() interface{} {
 }
 
 func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error) {
-	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	data, err := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't get task run context")
 	}
@@ -93,7 +100,7 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 		return nil, unmErr
 	}
 
-	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
+	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +120,15 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 	}
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
+
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	return nil, nil
 }
 
@@ -156,7 +172,8 @@ func (gb *GoSdApplicationBlock) Model() script.FunctionModel {
 }
 
 //nolint:unparam // its ok
-func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoSdApplicationBlock, bool, error) {
+func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoSdApplicationBlock, bool, error) {
 	log := logger.CreateLogger(nil)
 	log.WithField("params", string(ef.Params)).Info("sd_application parameters")
 
@@ -169,6 +186,9 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *Block
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
@@ -196,6 +216,14 @@ func createGoSdApplicationBlock(name string, ef *entity.EriusFunc, runCtx *Block
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
+	}
 
 	return b, reEntry, nil
 }

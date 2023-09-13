@@ -18,6 +18,13 @@ type GoStartBlock struct {
 	Output     map[string]string
 	Sockets    []script.Socket
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoStartBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoStartBlock) Members() []Member {
@@ -53,12 +60,12 @@ func (gb *GoStartBlock) GetState() interface{} {
 }
 
 func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
-	data, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	data, err := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't get task run context")
 	}
 
-	personData, err := gb.RunContext.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
+	personData, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +80,14 @@ func (gb *GoStartBlock) Update(ctx context.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputWorkNumber], gb.RunContext.WorkNumber)
 	gb.RunContext.VarStore.SetValue(gb.Output[entity.KeyOutputApplicationInitiator], personData)
+
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
 
 	return nil, nil
 }
@@ -103,7 +118,8 @@ func (gb *GoStartBlock) Model() script.FunctionModel {
 }
 
 //nolint:dupl,unparam //its not duplicate
-func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoStartBlock, bool, error) {
+func createGoStartBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoStartBlock, bool, error) {
 	b := &GoStartBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -111,6 +127,9 @@ func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunConte
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
@@ -124,6 +143,14 @@ func createGoStartBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunConte
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
+	}
 
 	return b, false, nil
 }

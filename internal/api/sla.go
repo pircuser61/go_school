@@ -2,6 +2,7 @@ package api
 
 import (
 	c "context"
+	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -45,27 +46,39 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		WorkNumber: item.WorkNumber,
 		WorkTitle:  item.WorkTitle,
 		Initiator:  item.Initiator,
-		Storage:    txStorage,
 		VarStore:   item.VarStore,
 
-		Sender:        ae.Mail,
-		Kafka:         ae.Kafka,
-		People:        ae.People,
-		ServiceDesc:   ae.ServiceDesc,
-		FunctionStore: ae.FunctionStore,
-		HumanTasks:    ae.HumanTasks,
-		Integrations:  ae.Integrations,
-		FileRegistry:  ae.FileRegistry,
-		FaaS:          ae.FaaS,
-		HrGate:        ae.HrGate,
-		Scheduler:     ae.Scheduler,
-		SLAService:    ae.SLAService,
+		Services: pipeline.RunContextServices{
+			Storage:       txStorage,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
+			FileRegistry:  ae.FileRegistry,
+			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+		},
 
 		UpdateData: &script.BlockUpdateData{
 			Action: string(item.Action),
 		},
 		IsTest:    item.IsTest,
 		NotifName: notifName,
+	}
+
+	if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "FillTaskEvents").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+		log.WithError(fillErr).Error("couldn't fill task events")
+		return
 	}
 
 	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
@@ -84,6 +97,8 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 			log.Error(txErr)
 		}
 	}
+
+	fmt.Println(runCtx.BlockRunResults.NodeEvents)
 }
 
 //nolint:gocyclo,staticcheck //its ok here

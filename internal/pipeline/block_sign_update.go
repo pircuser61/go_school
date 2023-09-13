@@ -59,6 +59,14 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	return nil, nil
 }
 
@@ -78,7 +86,7 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		logins := getSliceFromMapOfStrings(gb.State.Signers)
 
 		for i := range logins {
-			eml, err := gb.RunContext.People.GetUserEmail(ctx, logins[i])
+			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
 			if err != nil {
 				continue
 			}
@@ -88,11 +96,11 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		if len(emails) == 0 {
 			return nil
 		}
-		err := gb.RunContext.Sender.SendNotification(ctx, emails, nil,
+		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
 			mail.NewSignSLAExpiredTemplate(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.WorkTitle,
-				gb.RunContext.Sender.SdAddress,
+				gb.RunContext.Services.Sender.SdAddress,
 			),
 		)
 		if err != nil {

@@ -30,6 +30,13 @@ type TimerBlock struct {
 	State   *TimerData
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *TimerBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 type TimerParams struct {
@@ -96,11 +103,19 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	return nil, nil
 }
 
 func (gb *TimerBlock) startTimer(ctx c.Context) error {
-	_, err := gb.RunContext.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+	_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionFinishTimer),
@@ -148,7 +163,8 @@ func (gb *TimerBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func createTimerBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*TimerBlock, bool, error) {
+func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*TimerBlock, bool, error) {
 	b := &TimerBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -156,6 +172,9 @@ func createTimerBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
@@ -179,6 +198,14 @@ func createTimerBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext
 			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
+
+		if _, ok := b.expectedEvents[eventStart]; ok {
+			event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			if err != nil {
+				return nil, false, err
+			}
+			b.happenedEvents = append(b.happenedEvents, event)
+		}
 	}
 
 	return b, reEntry, nil

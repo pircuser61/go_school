@@ -12,7 +12,8 @@ import (
 )
 
 // nolint:dupl // another block
-func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoFormBlock, bool, error) {
+func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoFormBlock, bool, error) {
 	if ef.ShortTitle == "" {
 		return nil, false, errors.New(ef.Title + " block short title is empty")
 	}
@@ -24,6 +25,9 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
@@ -50,12 +54,28 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 				return nil, false, err
 			}
 			b.RunContext.VarStore.AddStep(b.Name)
+
+			if _, ok := b.expectedEvents[eventStart]; ok {
+				event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+				if err != nil {
+					return nil, false, err
+				}
+				b.happenedEvents = append(b.happenedEvents, event)
+			}
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
 			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
+
+		if _, ok := b.expectedEvents[eventStart]; ok {
+			event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			if err != nil {
+				return nil, false, err
+			}
+			b.happenedEvents = append(b.happenedEvents, event)
+		}
 	}
 
 	return b, reEntry, nil
@@ -159,12 +179,13 @@ func (gb *GoFormBlock) createState(ctx c.Context, ef *entity.EriusFunc) error {
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
-		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 		if getVersionErr != nil {
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(ctx,
+			task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
@@ -211,7 +232,7 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeGroup:
 		gb.State.FormGroupId = dto.Value
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.Value)
+		workGroup, errGroup := gb.RunContext.Services.ServiceDesc.GetWorkGroup(ctx, dto.Value)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get form group with id: "+dto.Value)
 		}

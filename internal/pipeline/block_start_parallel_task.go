@@ -17,6 +17,13 @@ type GoBeginParallelTaskBlock struct {
 	Output     map[string]string
 	Sockets    []script.Socket
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoBeginParallelTaskBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoBeginParallelTaskBlock) Members() []Member {
@@ -51,7 +58,15 @@ func (gb *GoBeginParallelTaskBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoBeginParallelTaskBlock) Update(_ context.Context) (interface{}, error) {
+func (gb *GoBeginParallelTaskBlock) Update(ctx context.Context) (interface{}, error) {
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
+
 	return nil, nil
 }
 
@@ -69,7 +84,8 @@ func (gb *GoBeginParallelTaskBlock) Model() script.FunctionModel {
 }
 
 //nolint:dupl,unparam //its not duplicate
-func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoBeginParallelTaskBlock, bool, error) {
+func createGoStartParallelBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoBeginParallelTaskBlock, bool, error) {
 	const reEntry = false
 
 	b := &GoBeginParallelTaskBlock{
@@ -79,6 +95,9 @@ func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *Block
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
@@ -92,5 +111,13 @@ func createGoStartParallelBlock(name string, ef *entity.EriusFunc, runCtx *Block
 	}
 
 	b.RunContext.VarStore.AddStep(b.Name)
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
+	}
 	return b, reEntry, nil
 }

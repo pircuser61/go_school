@@ -3,6 +3,7 @@ package api
 import (
 	c "context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -216,34 +217,37 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		return false
 	}
 	runCtx := &pipeline.BlockRunContext{
-		TaskID:     data.task.ID,
-		WorkNumber: data.workNumber,
-		WorkTitle:  data.task.Name,
-		Initiator:  data.task.Author,
-		Storage:    txStorage,
-		VarStore:   storage,
+		TaskID:      data.task.ID,
+		WorkNumber:  data.workNumber,
+		WorkTitle:   data.task.Name,
+		Initiator:   data.task.Author,
+		VarStore:    storage,
+		Delegations: data.delegations,
 
-		Sender:        ae.Mail,
-		Kafka:         ae.Kafka,
-		People:        ae.People,
-		ServiceDesc:   ae.ServiceDesc,
-		FunctionStore: ae.FunctionStore,
-		HumanTasks:    ae.HumanTasks,
-		Integrations:  ae.Integrations,
-		FileRegistry:  ae.FileRegistry,
-		FaaS:          ae.FaaS,
-		HrGate:        ae.HrGate,
-		Scheduler:     ae.Scheduler,
-		SLAService:    ae.SLAService,
+		Services: pipeline.RunContextServices{
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
+			FileRegistry:  ae.FileRegistry,
+			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+			Storage:       txStorage,
+		},
 
 		UpdateData: &script.BlockUpdateData{
 			ByLogin:    data.login,
 			Action:     string(data.updData.Action),
 			Parameters: data.updData.Parameters,
 		},
-		Delegations: data.delegations,
-		IsTest:      data.task.IsTest,
-		NotifName:   data.task.Name,
+
+		IsTest:    data.task.IsTest,
+		NotifName: data.task.Name,
 	}
 
 	blockFunc, ok := data.scenario.Pipeline.Blocks[data.step.Name]
@@ -255,6 +259,16 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		}
 		log.WithError(errors.New("couldn't get block from pipeline")).
 			Error("couldn't get block to update")
+		return false
+	}
+
+	if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "FillTaskEvents").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+		log.WithError(fillErr).Error("couldn't fill task events")
 		return false
 	}
 
@@ -273,6 +287,8 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		log.WithError(err).Error("couldn't update block, CommitTransaction")
 		return false
 	}
+
+	fmt.Println(runCtx.BlockRunResults.NodeEvents)
 	return true
 }
 

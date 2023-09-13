@@ -44,6 +44,7 @@ type TaskStorager interface {
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
 	GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error)
+	GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error)
 	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) (*e.EriusTask, error)
@@ -215,6 +216,7 @@ type Database interface {
 	GetExternalSystemsIDs(ctx c.Context, versionID string) ([]uuid.UUID, error)
 	GetExternalSystemSettings(ctx c.Context, versionID string, systemID string) (e.ExternalSystem, error)
 	GetExternalSystemTaskSubscriptions(ctx c.Context, versionID string, systemID string) (e.ExternalSystemSubscriptionParams, error)
+	GetTaskEventsParamsByWorkNumber(ctx c.Context, workNumber string, systemID string) (e.ExternalSystemSubscriptionParams, error)
 	RemoveExternalSystem(ctx c.Context, versionID string, systemID string) error
 	RemoveExternalSystemTaskSubscriptions(ctx c.Context, versionID string, systemID string) error
 	SaveExternalSystemSettings(ctx c.Context, versionID string, settings e.ExternalSystem, schemaFlag *string) error

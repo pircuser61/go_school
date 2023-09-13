@@ -15,7 +15,8 @@ import (
 )
 
 // nolint:dupl // another block
-func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoApproverBlock, bool, error) {
+func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoApproverBlock, bool, error) {
 	if ef.ShortTitle == "" {
 		return nil, false, errors.New(ef.Title + " block short title is empty")
 	}
@@ -27,6 +28,9 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
@@ -54,12 +58,28 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 				return nil, false, err
 			}
 			b.RunContext.VarStore.AddStep(b.Name)
+
+			if _, ok := b.expectedEvents[eventStart]; ok {
+				event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+				if err != nil {
+					return nil, false, err
+				}
+				b.happenedEvents = append(b.happenedEvents, event)
+			}
 		}
 	} else {
 		if err := b.createState(ctx, ef); err != nil {
 			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
+
+		if _, ok := b.expectedEvents[eventStart]; ok {
+			event, err := runCtx.makeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			if err != nil {
+				return nil, false, err
+			}
+			b.happenedEvents = append(b.happenedEvents, event)
+		}
 
 		// TODO: выпилить когда сделаем циклы
 		// это для возврата на доработку при которой мы создаем новый процесс
@@ -200,12 +220,13 @@ func (gb *GoApproverBlock) createState(ctx c.Context, ef *entity.EriusFunc) erro
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
-		task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+		task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 		if getVersionErr != nil {
 			return getVersionErr
 		}
 
-		processSLASettings, getVersionErr := gb.RunContext.Storage.GetSlaVersionSettings(ctx, task.VersionID.String())
+		processSLASettings, getVersionErr := gb.RunContext.Services.Storage.GetSlaVersionSettings(
+			ctx, task.VersionID.String())
 		if getVersionErr != nil {
 			return getVersionErr
 		}
@@ -230,7 +251,7 @@ func (gb *GoApproverBlock) setApproversByParams(ctx c.Context, dto *setApprovers
 		}
 	case script.ApproverTypeHead:
 	case script.ApproverTypeGroup:
-		workGroup, errGroup := gb.RunContext.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
+		workGroup, errGroup := gb.RunContext.Services.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)
 		if errGroup != nil {
 			return errors.Wrap(errGroup, "can`t get approvers group with id: "+dto.GroupID)
 		}
@@ -300,7 +321,7 @@ func (gb *GoApproverBlock) setEditingAppLogFromPreviousBlock(ctx c.Context) {
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		return
 	}
@@ -331,7 +352,7 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 	var parentStep *entity.Step
 	var err error
 
-	parentStep, err = gb.RunContext.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
 		return false
@@ -367,6 +388,14 @@ func (gb *GoApproverBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecision
 		gb.State.ActualApprover = &actualApprover
 		gb.State.Comment = &comment
 		gb.State.Decision = parentState.Decision
+
+		if _, ok = gb.expectedEvents[eventEnd]; ok {
+			event, eventErr := gb.RunContext.makeNodeStartEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			if eventErr != nil {
+				return false
+			}
+			gb.happenedEvents = append(gb.happenedEvents, event)
+		}
 	}
 
 	return true

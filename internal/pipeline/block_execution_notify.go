@@ -21,7 +21,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
 	executors := getSliceFromMapOfStrings(gb.State.Executors)
-	delegates, getDelegationsErr := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, executors)
+	delegates, getDelegationsErr := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx, executors)
 	if getDelegationsErr != nil {
 		return getDelegationsErr
 	}
@@ -39,17 +39,17 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	emails := make(map[string]mail.Template, 0)
 	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution) || len(gb.State.Executors) > 1
 
-	task, getVersionErr := gb.RunContext.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
+	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 	if getVersionErr != nil {
 		return getVersionErr
 	}
 
-	processSettings, getVersionErr := gb.RunContext.Storage.GetVersionSettings(ctx, task.VersionID.String())
+	processSettings, getVersionErr := gb.RunContext.Services.Storage.GetVersionSettings(ctx, task.VersionID.String())
 	if getVersionErr != nil {
 		return getVersionErr
 	}
 
-	taskRunContext, getDataErr := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	taskRunContext, getDataErr := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if getDataErr != nil {
 		return getDataErr
 	}
@@ -66,7 +66,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 
 	if processSettings.ResubmissionPeriod > 0 {
 		var getWorksErr error
-		lastWorksForUser, getWorksErr = gb.RunContext.Storage.GetWorksForUserWithGivenTimeRange(
+		lastWorksForUser, getWorksErr = gb.RunContext.Services.Storage.GetWorksForUserWithGivenTimeRange(
 			ctx,
 			processSettings.ResubmissionPeriod,
 			login,
@@ -78,7 +78,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		}
 	}
 
-	slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+	slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 		TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
 			FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
 		WorkType: sla.WorkHourType(gb.State.WorkType),
@@ -88,7 +88,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 		return getSlaInfoErr
 	}
 	for _, login = range loginsToNotify {
-		email, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		email, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
@@ -98,10 +98,10 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 				&mail.ExecutorNotifTemplate{
 					WorkNumber:  gb.RunContext.WorkNumber,
 					Name:        gb.RunContext.NotifName,
-					SdUrl:       gb.RunContext.Sender.SdAddress,
+					SdUrl:       gb.RunContext.Services.Sender.SdAddress,
 					BlockID:     BlockGoExecutionID,
 					Description: description,
-					Mailto:      gb.RunContext.Sender.FetchEmail,
+					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 					Login:       login,
 					LastWorks:   lastWorksForUser,
 				},
@@ -113,10 +113,10 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Name:        gb.RunContext.NotifName,
 					Status:      string(StatusExecution),
 					Action:      statusToTaskAction[StatusExecution],
-					DeadLine:    gb.RunContext.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+					DeadLine:    gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 					Description: description,
-					SdUrl:       gb.RunContext.Sender.SdAddress,
-					Mailto:      gb.RunContext.Sender.FetchEmail,
+					SdUrl:       gb.RunContext.Services.Sender.SdAddress,
+					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 					Login:       login,
 					IsEditable:  gb.State.GetIsEditable(),
 
@@ -129,7 +129,8 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+			emails[i]); sendErr != nil {
 			return sendErr
 		}
 	}
@@ -140,7 +141,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 	l := logger.GetLogger(ctx)
 
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
+	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsFromLogin(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return err
 	}
@@ -150,7 +151,7 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 	var em string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		em, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		em, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			l.WithField("login", login).WithError(err).Warning("couldn't get email")
 			continue
@@ -158,9 +159,10 @@ func (gb *GoExecutionBlock) notifyNeedRework(ctx c.Context) error {
 
 		emails = append(emails, em)
 	}
-	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
+	tpl := mail.NewSendToInitiatorEditTpl(gb.RunContext.WorkNumber, gb.RunContext.NotifName,
+		gb.RunContext.Services.Sender.SdAddress)
 
-	if err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
 		return err
 	}
 
@@ -172,7 +174,7 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err := gb.RunContext.People.GetUserEmail(ctx, login)
+		email, err := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			return err
 		}
@@ -180,9 +182,9 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 		emails = append(emails, email)
 	}
 	tpl := mail.NewRequestExecutionInfoTpl(gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
+		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-	if err := gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+	if err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
 		return err
 	}
 
@@ -190,7 +192,8 @@ func (gb *GoExecutionBlock) notifyNeedMoreInfo(ctx c.Context) error {
 }
 
 func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
-	delegates, err := gb.RunContext.HumanTasks.GetDelegationsByLogins(ctx, getSliceFromMapOfStrings(gb.State.Executors))
+	delegates, err := gb.RunContext.Services.HumanTasks.GetDelegationsByLogins(ctx,
+		getSliceFromMapOfStrings(gb.State.Executors))
 	if err != nil {
 		return err
 	}
@@ -200,7 +203,7 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 	var email string
 	emails := make([]string, 0, len(loginsToNotify))
 	for _, login := range loginsToNotify {
-		email, err = gb.RunContext.People.GetUserEmail(ctx, login)
+		email, err = gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if err != nil {
 			continue
 		}
@@ -208,9 +211,9 @@ func (gb *GoExecutionBlock) notifyNewInfoReceived(ctx c.Context) error {
 		emails = append(emails, email)
 	}
 	tpl := mail.NewAnswerExecutionInfoTpl(gb.RunContext.WorkNumber,
-		gb.RunContext.NotifName, gb.RunContext.Sender.SdAddress)
+		gb.RunContext.NotifName, gb.RunContext.Services.Sender.SdAddress)
 
-	if err = gb.RunContext.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
+	if err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil, tpl); err != nil {
 		return err
 	}
 
