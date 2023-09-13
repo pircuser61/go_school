@@ -537,6 +537,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		return nil, errors.Wrap(err, e.error())
 	}
 
+	// if X-As-Other was used, then we will store the name of the real user here
 	var realAuthor string
 	if dto.allowRunAsOthers {
 		realAuthor = usr.Username
@@ -549,15 +550,15 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 	}
 
 	arg := &execVersionInternalDTO{
-		reqID:         reqID,
-		p:             dto.version,
-		vars:          pipelineVars,
-		syncExecution: dto.withStop,
-		userName:      usr.Username,
-		realUserName:  realAuthor,
-		makeNewWork:   dto.makeNewWork,
-		workNumber:    dto.workNumber,
-		runCtx:        dto.runCtx,
+		reqID:          reqID,
+		p:              dto.version,
+		vars:           pipelineVars,
+		syncExecution:  dto.withStop,
+		authorName:     usr.Username,
+		realAuthorName: realAuthor,
+		makeNewWork:    dto.makeNewWork,
+		workNumber:     dto.workNumber,
+		runCtx:         dto.runCtx,
 	}
 
 	executablePipeline, e, err := ae.execVersionInternal(ctxLocal, arg)
@@ -575,15 +576,15 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 }
 
 type execVersionInternalDTO struct {
-	reqID         string
-	p             *entity.EriusScenario
-	vars          map[string]interface{}
-	syncExecution bool
-	userName      string
-	realUserName  string
-	makeNewWork   bool
-	workNumber    string
-	runCtx        entity.TaskRunContext
+	reqID          string
+	p              *entity.EriusScenario
+	vars           map[string]interface{}
+	syncExecution  bool
+	authorName     string
+	realAuthorName string
+	makeNewWork    bool
+	workNumber     string
+	runCtx         entity.TaskRunContext
 }
 
 func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO) (*pipeline.ExecutablePipeline, Err, error) {
@@ -653,8 +654,8 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	// use ctx as we need userinfo
 	if err = ep.CreateTask(ctx, &pipeline.CreateTaskDTO{
-		Author:     dto.userName,
-		RealAuthor: dto.realUserName,
+		Author:     dto.authorName,
+		RealAuthor: dto.realAuthorName,
 		IsDebug:    false,
 		Params:     parameters,
 		WorkNumber: dto.workNumber,
@@ -676,7 +677,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		TaskID:     ep.TaskID,
 		WorkNumber: ep.WorkNumber,
 		WorkTitle:  ep.Name,
-		Initiator:  dto.userName,
+		Initiator:  dto.authorName,
 		Storage:    txStorage,
 		VarStore:   variableStorage,
 
