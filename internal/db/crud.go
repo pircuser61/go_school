@@ -2311,6 +2311,40 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 	return &s, nil
 }
 
+func (db *PGCon) GetCanceledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_cancelled_task_steps")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT
+			vs.step_name, 
+			vs.time
+		FROM variable_storage vs  
+			WHERE vs.work_id = (SELECT id FROM works WHERE work_number = $1) AND vs.status = 'cancel'`
+
+	rows, err := db.Connection.Query(ctx, query, workNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := make([]entity.Step, 0)
+	for rows.Next() {
+		s := entity.Step{}
+		if scanErr := rows.Scan(&s.Name, &s.Time); scanErr != nil {
+			return nil, scanErr
+		}
+		res = append(res, s)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return res, nil
+}
+
 //nolint:dupl //its not duplicate
 func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_name")
@@ -2949,6 +2983,45 @@ func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([
 	}
 
 	return systemIDs, nil
+}
+
+func (db *PGCon) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber,
+	systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_events_params_by_work_number")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT system_id, microservice_id, path,
+	method, notification_schema, mapping, nodes
+	FROM external_system_task_subscriptions
+	WHERE version_id = (SELECT version_id FROM works WHERE work_number = $1) AND system_id = $2`
+
+	row := db.Connection.QueryRow(ctx, query, workNumber, systemID)
+
+	params := entity.ExternalSystemSubscriptionParams{
+		NotificationSchema: script.JSONSchema{},
+		Mapping:            script.JSONSchemaProperties{},
+		Nodes:              make([]entity.NodeSubscriptionEvents, 0),
+	}
+	err := row.Scan(
+		&params.SystemID,
+		&params.MicroserviceID,
+		&params.Path,
+		&params.Method,
+		&params.NotificationSchema,
+		&params.Mapping,
+		&params.Nodes,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.ExternalSystemSubscriptionParams{}, nil
+		}
+		return params, err
+	}
+
+	return params, nil
 }
 
 func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID,

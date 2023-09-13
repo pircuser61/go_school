@@ -40,7 +40,8 @@ var (
 	StatusRunning   Status = "running"
 	StatusFinished  Status = "finished"
 	StatusNoSuccess Status = "no_success"
-	StatusError     Status = "error"
+	StatusError    Status = "error"
+	StatusCanceled Status = "cancel"
 )
 
 type Runner interface {
@@ -52,4 +53,5 @@ type Runner interface {
 	UpdateManual() bool
 	Members() []Member
 	Deadlines(ctx context.Context) ([]Deadline, error)
+	GetNewEvents() []entity.NodeEvent
 }

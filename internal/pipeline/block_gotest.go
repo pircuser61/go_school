@@ -18,6 +18,13 @@ type GoTestBlock struct {
 	Sockets []script.Socket
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoTestBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoTestBlock) Members() []Member {
@@ -101,12 +108,20 @@ func (gb *GoTestBlock) GetState() interface{} {
 	return nil
 }
 
-func (gb *GoTestBlock) Update(_ context.Context) (interface{}, error) {
+func (gb *GoTestBlock) Update(ctx context.Context) (interface{}, error) {
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
 	return nil, nil
 }
 
 //nolint:unparam // its ok
-func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (b *GoTestBlock, reEntry bool, err error) {
+func createGoTestBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (b *GoTestBlock, reEntry bool, err error) {
 	b = &GoTestBlock{
 		Name:       name,
 		Title:      ef.Title,
@@ -114,6 +129,9 @@ func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContex
 		Output:     map[string]string{},
 		Sockets:    entity.ConvertSocket(ef.Sockets),
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
@@ -124,6 +142,14 @@ func createGoTestBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContex
 		for propertyName, v := range ef.Output.Properties {
 			b.Output[propertyName] = v.Global
 		}
+	}
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
 	}
 
 	return b, reEntry, nil

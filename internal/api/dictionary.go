@@ -39,12 +39,12 @@ func (ae *APIEnv) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 			},
 			"node_start": {
 				Type:   "string",
-				Format: "date",
+				Format: "date-time",
 				Title:  "Дата старта ноды",
 			},
 			"node_end": {
 				Type:   "string",
-				Format: "date",
+				Format: "date-time",
 				Title:  "Дата окончания ноды",
 			},
 			"task_status": {

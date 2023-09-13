@@ -6,6 +6,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	"go.opencensus.io/trace"
 
@@ -216,34 +219,39 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		return false
 	}
 	runCtx := &pipeline.BlockRunContext{
-		TaskID:     data.task.ID,
-		WorkNumber: data.workNumber,
-		WorkTitle:  data.task.Name,
-		Initiator:  data.task.Author,
-		Storage:    txStorage,
-		VarStore:   storage,
+		TaskID:      data.task.ID,
+		WorkNumber:  data.workNumber,
+		WorkTitle:   data.task.Name,
+		Initiator:   data.task.Author,
+		VarStore:    storage,
+		Delegations: data.delegations,
 
-		Sender:        ae.Mail,
-		Kafka:         ae.Kafka,
-		People:        ae.People,
-		ServiceDesc:   ae.ServiceDesc,
-		FunctionStore: ae.FunctionStore,
-		HumanTasks:    ae.HumanTasks,
-		Integrations:  ae.Integrations,
-		FileRegistry:  ae.FileRegistry,
-		FaaS:          ae.FaaS,
-		HrGate:        ae.HrGate,
-		Scheduler:     ae.Scheduler,
-		SLAService:    ae.SLAService,
+		Services: pipeline.RunContextServices{
+			HTTPClient:    ae.HTTPClient,
+			Sender:        ae.Mail,
+			Kafka:         ae.Kafka,
+			People:        ae.People,
+			ServiceDesc:   ae.ServiceDesc,
+			FunctionStore: ae.FunctionStore,
+			HumanTasks:    ae.HumanTasks,
+			Integrations:  ae.Integrations,
+			FileRegistry:  ae.FileRegistry,
+			FaaS:          ae.FaaS,
+			HrGate:        ae.HrGate,
+			Scheduler:     ae.Scheduler,
+			SLAService:    ae.SLAService,
+			Storage:       txStorage,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
 
 		UpdateData: &script.BlockUpdateData{
 			ByLogin:    data.login,
 			Action:     string(data.updData.Action),
 			Parameters: data.updData.Parameters,
 		},
-		Delegations: data.delegations,
-		IsTest:      data.task.IsTest,
-		NotifName:   data.task.Name,
+
+		IsTest:    data.task.IsTest,
+		NotifName: data.task.Name,
 	}
 
 	blockFunc, ok := data.scenario.Pipeline.Blocks[data.step.Name]
@@ -255,6 +263,16 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		}
 		log.WithError(errors.New("couldn't get block from pipeline")).
 			Error("couldn't get block to update")
+		return false
+	}
+
+	if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
+		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
+			log.WithField("funcName", "FillTaskEvents").
+				WithError(errors.New("couldn't rollback tx")).
+				Error(txErr)
+		}
+		log.WithError(fillErr).Error("couldn't fill task events")
 		return false
 	}
 
@@ -273,6 +291,8 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		log.WithError(err).Error("couldn't update block, CommitTransaction")
 		return false
 	}
+
+	runCtx.NotifyEvents(ctx)
 	return true
 }
 
@@ -493,10 +513,33 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		}
 		return err
 	}
+
 	if commitErr := txStorage.CommitTransaction(ctxLocal); commitErr != nil {
 		log.WithError(commitErr).Error("couldn't commit transaction")
 		return commitErr
 	}
+
+	runCtx := pipeline.BlockRunContext{
+		WorkNumber: workNumber,
+		TaskID:     dbTask.ID,
+		Services: pipeline.RunContextServices{
+			HTTPClient:   ae.HTTPClient,
+			Integrations: ae.Integrations,
+			Storage:      ae.DB,
+		},
+		BlockRunResults: &pipeline.BlockRunResults{},
+	}
+	if fillErr := runCtx.FillTaskEvents(ctxLocal); fillErr != nil {
+		return fillErr
+	}
+
+	nodeEvents, err := runCtx.GetCancelledStepsEvents(ctxLocal)
+	if err != nil {
+		return err
+	}
+
+	runCtx.BlockRunResults.NodeEvents = nodeEvents
+	runCtx.NotifyEvents(ctxLocal)
 
 	em := mail.NewRejectPipelineGroupTemplate(dbTask.WorkNumber, dbTask.Name, ae.Mail.SdAddress)
 	err = ae.Mail.SendNotification(ctxLocal, emails, nil, em)
@@ -565,6 +608,13 @@ func (ae *APIEnv) RateApplication(w http.ResponseWriter, r *http.Request, workNu
 	}
 }
 
+type stoppedTask struct {
+	FinishedAt time.Time `json:"finished_at"`
+	Status     string    `json:"status"`
+	WorkNumber string    `json:"work_number"`
+	ID         uuid.UUID `json:"-"`
+}
+
 func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 	ctx, s := trace.StartSpan(r.Context(), "stop_tasks")
 	defer s.End()
@@ -597,8 +647,10 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := TasksStopped{
-		Tasks: make([]TaskStatus, 0, len(req.Tasks)),
+	resp := struct {
+		Tasks []stoppedTask `json:"tasks"`
+	}{
+		Tasks: make([]stoppedTask, 0, len(req.Tasks)),
 	}
 
 	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
@@ -633,10 +685,11 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if dbTask.FinishedAt != nil {
-			resp.Tasks = append(resp.Tasks, TaskStatus{
+			resp.Tasks = append(resp.Tasks, stoppedTask{
 				FinishedAt: *dbTask.FinishedAt,
 				Status:     dbTask.HumanStatus,
 				WorkNumber: dbTask.WorkNumber,
+				ID:         dbTask.ID,
 			})
 			continue
 		}
@@ -694,10 +747,11 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 			log.WithError(sendNotifErr).Error("couldn't send notification")
 		}
 
-		resp.Tasks = append(resp.Tasks, TaskStatus{
+		resp.Tasks = append(resp.Tasks, stoppedTask{
 			FinishedAt: *updatedTask.FinishedAt,
 			Status:     updatedTask.HumanStatus,
 			WorkNumber: updatedTask.WorkNumber,
+			ID:         dbTask.ID,
 		})
 	}
 
@@ -706,6 +760,37 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 		e := UnknownError
 		_ = e.sendError(w)
 		return
+	}
+
+	for i := range resp.Tasks {
+		task := resp.Tasks[i]
+		runCtx := pipeline.BlockRunContext{
+			WorkNumber: task.WorkNumber,
+			TaskID:     task.ID,
+			Services: pipeline.RunContextServices{
+				HTTPClient:   ae.HTTPClient,
+				Integrations: ae.Integrations,
+				Storage:      ae.DB,
+			},
+			BlockRunResults: &pipeline.BlockRunResults{},
+		}
+		if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
+			log.WithError(fillErr).Error("couldn't fill task events data")
+			e := UnknownError
+			_ = e.sendError(w)
+			return
+		}
+
+		nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
+		if eventErr != nil {
+			log.WithError(eventErr).Error("couldn't get cancelled steps events")
+			e := UnknownError
+			_ = e.sendError(w)
+			return
+		}
+
+		runCtx.BlockRunResults.NodeEvents = nodeEvents
+		runCtx.NotifyEvents(ctx)
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {

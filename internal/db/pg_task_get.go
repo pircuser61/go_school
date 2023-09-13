@@ -1279,6 +1279,23 @@ func (db *PGCon) GetTaskSteps(ctx c.Context, id uuid.UUID) (entity.TaskSteps, er
 	return el, nil
 }
 
+func (db *PGCon) GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "get_task_status")
+	defer span.End()
+
+	q := `
+		SELECT human_status
+		FROM works
+		WHERE id = $1`
+
+	var status string
+
+	if err := db.Connection.QueryRow(ctx, q, taskID).Scan(&status); err != nil {
+		return "", err
+	}
+	return status, nil
+}
+
 func (db *PGCon) GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error) {
 	ctx, span := trace.StartSpan(ctx, "get_task_status")
 	defer span.End()
