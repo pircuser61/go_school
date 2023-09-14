@@ -943,6 +943,11 @@ type MockDB struct {
 	pipelines []entity.EriusScenario
 }
 
+func (_m *MockDB) GetBlockState(ctx context.Context, blockId string) (entity.BlockState, error) {
+	r0 := make(entity.BlockState, 0)
+	return r0, nil
+}
+
 func (_m *MockDB) GetTaskMembers(ctx context.Context, workNumber string) ([]db.DbMember, error) {
 	return nil, nil
 }

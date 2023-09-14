@@ -1447,6 +1447,11 @@ func (_m *MockedDatabase) GetTasksForMonitoring(ctx context.Context, filters *en
 	return r0, r1
 }
 
+func (_m *MockedDatabase) GetBlockState(ctx context.Context, blockId string) (entity.BlockState, error) {
+	r0 := make(entity.BlockState, 0)
+	return r0, nil
+}
+
 // GetUnfinishedTaskStepsByWorkIdAndStepType provides a mock function with given fields: ctx, id, stepType, action
 func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string, action entity.TaskUpdateAction) (entity.TaskSteps, error) {
 	ret := _m.Called(ctx, id, stepType, action)
