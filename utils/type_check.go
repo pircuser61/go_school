@@ -116,8 +116,8 @@ func simpleTypeHandler(variable *interface{}, originalValue TypeValue) (err erro
 	}
 
 	varKind := reflect.TypeOf(*variable).Kind()
-	var intVariable int64
 	if simpleType == reflect.Int && varKind == reflect.Float64 {
+		var intVariable int64
 		s := fmt.Sprintf("%v", *variable)
 		if intVariable, err = strconv.ParseInt(s, 10, 64); err != nil {
 			return fmt.Errorf("can not convert variable to int %v %T", *variable, *variable)
