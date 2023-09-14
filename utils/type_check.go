@@ -107,6 +107,8 @@ var simpleTypesMapping = map[string]reflect.Kind{
 	boolType:    reflect.Bool,
 }
 
+// We're using pointer because we sometimes need to change type inside interface
+// from float to integer
 func simpleTypeHandler(variable *interface{}, originalValue TypeValue) (err error) {
 	simpleType, ok := simpleTypesMapping[originalValue.GetType()]
 	if !ok {
@@ -114,13 +116,13 @@ func simpleTypeHandler(variable *interface{}, originalValue TypeValue) (err erro
 	}
 
 	varKind := reflect.TypeOf(*variable).Kind()
-	var intVariable int
+	var intVariable int64
 	if simpleType == reflect.Int && varKind == reflect.Float64 {
-		s := fmt.Sprintf("%.0f", *variable)
-		if intVariable, err = strconv.Atoi(s); err != nil {
+		s := fmt.Sprintf("%v", *variable)
+		if intVariable, err = strconv.ParseInt(s, 10, 64); err != nil {
 			return fmt.Errorf("can not convert variable to int %v %T", *variable, *variable)
 		}
-		*variable = intVariable
+		*variable = int(intVariable)
 	}
 
 	if reflect.TypeOf(*variable).Kind() != simpleType {
