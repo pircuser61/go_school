@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 )
 
 type TypeValue interface {
@@ -41,7 +42,7 @@ func GetJsonType(value interface{}) string {
 	}
 }
 
-func CheckVariableType(variable interface{}, originalValue TypeValue) error {
+func CheckVariableType(variable *interface{}, originalValue TypeValue) error {
 	tHandler, ok := typesHandlersMapping[originalValue.GetType()]
 	if !ok {
 		return fmt.Errorf("unexpected type %v", originalValue.GetType())
@@ -60,21 +61,21 @@ var typesHandlersMapping = map[string]typeHandler{
 	objectType: nestedTypeHandler,
 }
 
-type typeHandler func(variable interface{}, originalValue TypeValue) error
+type typeHandler func(variable *interface{}, originalValue TypeValue) error
 
 var nestedTypesMapping = map[string]reflect.Kind{
 	objectType: reflect.Map,
 }
 
-func nestedTypeHandler(variable interface{}, originalValue TypeValue) error {
+func nestedTypeHandler(variable *interface{}, originalValue TypeValue) error {
 	nestedType := nestedTypesMapping[originalValue.GetType()]
-	variableType := reflect.TypeOf(variable)
+	variableType := reflect.TypeOf(*variable)
 	if variableType.Kind() != nestedType {
-		return fmt.Errorf("unexpected type of variable %v %T", variable, variable)
+		return fmt.Errorf("unexpected type of variable %v %T", *variable, *variable)
 	}
 
 	if nestedType == reflect.Map {
-		err := handleMap(variable, originalValue)
+		err := handleMap(*variable, originalValue)
 		if err != nil {
 			return err
 		}
@@ -89,8 +90,8 @@ func handleMap(variable interface{}, originalValue TypeValue) error {
 		if _, ok := variableObject[k]; !ok {
 			return fmt.Errorf("%v key not found in variable %v", k, variable)
 		}
-
-		err := simpleTypeHandler(variableObject[k], v.(TypeValue))
+		object := variableObject[k]
+		err := simpleTypeHandler(&object, v.(TypeValue))
 		if err != nil {
 			return err
 		}
@@ -106,14 +107,24 @@ var simpleTypesMapping = map[string]reflect.Kind{
 	boolType:    reflect.Bool,
 }
 
-func simpleTypeHandler(variable interface{}, originalValue TypeValue) error {
+func simpleTypeHandler(variable *interface{}, originalValue TypeValue) (err error) {
 	simpleType, ok := simpleTypesMapping[originalValue.GetType()]
 	if !ok {
 		return nil
 	}
 
-	if reflect.TypeOf(variable).Kind() != simpleType {
-		return fmt.Errorf("unexpected type of variable %v %T", variable, variable)
+	varKind := reflect.TypeOf(*variable).Kind()
+	var intVariable int
+	if simpleType == reflect.Int && varKind == reflect.Float64 {
+		s := fmt.Sprintf("%.0f", *variable)
+		if intVariable, err = strconv.Atoi(s); err != nil {
+			return fmt.Errorf("can not convert variable to int %v %T", *variable, *variable)
+		}
+		*variable = intVariable
+	}
+
+	if reflect.TypeOf(*variable).Kind() != simpleType {
+		return fmt.Errorf("unexpected type of variable %v %T", *variable, *variable)
 	}
 
 	return nil

@@ -414,7 +414,7 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdate
 				return errors.New("function returned not all of expected results")
 			}
 
-			if err := utils.CheckVariableType(param, expectedOutput[k]); err != nil {
+			if err := utils.CheckVariableType(&param, expectedOutput[k]); err != nil {
 				return err
 			}
 
