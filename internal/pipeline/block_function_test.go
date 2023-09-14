@@ -80,21 +80,23 @@ func TestBlockFunction_Update(t *testing.T) {
 						})
 						return s
 					}(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepByName",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							workId,
-							stepName,
-						).Return(
-							&entity.Step{
-								ID: uuid.New(),
-							}, nil,
-						)
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workId,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 			args: args{
@@ -138,21 +140,23 @@ func TestBlockFunction_Update(t *testing.T) {
 						})
 						return s
 					}(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepByName",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							workId,
-							stepName,
-						).Return(
-							&entity.Step{
-								ID: uuid.New(),
-							}, nil,
-						)
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workId,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 			args: args{
@@ -288,21 +292,23 @@ func TestBlockFunction_Update(t *testing.T) {
 						})
 						return s
 					}(),
-					Storage: func() db.Database {
-						res := &mocks.MockedDatabase{}
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := &mocks.MockedDatabase{}
 
-						res.On("GetTaskStepByName",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							workId,
-							stepName,
-						).Return(
-							&entity.Step{
-								ID: uuid.New(),
-							}, nil,
-						)
+							res.On("GetTaskStepByName",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								workId,
+								stepName,
+							).Return(
+								&entity.Step{
+									ID: uuid.New(),
+								}, nil,
+							)
 
-						return res
-					}(),
+							return res
+						}(),
+					},
 				},
 			},
 			args: args{

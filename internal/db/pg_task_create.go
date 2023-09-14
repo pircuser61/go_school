@@ -15,6 +15,7 @@ type CreateTaskDTO struct {
 	TaskID     uuid.UUID
 	VersionID  uuid.UUID
 	Author     string
+	RealAuthor string
 	WorkNumber string
 	IsDebug    bool
 	Params     []byte
@@ -123,7 +124,8 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 			author, 
 			debug, 
 			parameters,
-			run_context		                  
+			run_context,
+			real_author
 		)
 		VALUES (
 			$1, 
@@ -133,7 +135,8 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 			$5, 
 			$6, 
 			$7,
-			$8
+			$8,
+		    $9
 		)
 	RETURNING work_number
 `
@@ -149,6 +152,7 @@ func (db *PGCon) insertTask(c context.Context, dto *CreateTaskDTO) (workNumber s
 		dto.IsDebug,
 		dto.Params,
 		dto.RunCtx,
+		dto.RealAuthor,
 	)
 
 	var worksNumber string

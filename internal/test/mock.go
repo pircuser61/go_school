@@ -948,6 +948,10 @@ func (_m *MockDB) GetBlockState(ctx context.Context, blockId string) (entity.Blo
 	return r0, nil
 }
 
+func (_m *MockDB) AllowRunAsOthers(ctx context.Context, versionID, systemID string, allowRunAsOthers bool) error {
+	return nil
+}
+
 func (_m *MockDB) GetTaskMembers(ctx context.Context, workNumber string) ([]db.DbMember, error) {
 	return nil, nil
 }
@@ -994,7 +998,13 @@ func (_m *MockDB) GetExternalSystemSettings(ctx context.Context, versionID, syst
 	return entity.ExternalSystem{}, nil
 }
 
-func (_m *MockDB) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+func (_m *MockDB) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber, systemID string) (
+	entity.ExternalSystemSubscriptionParams, error) {
+	return entity.ExternalSystemSubscriptionParams{}, nil
+}
+
+func (_m *MockDB) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID, systemID string) (
+	entity.ExternalSystemSubscriptionParams, error) {
 	return entity.ExternalSystemSubscriptionParams{}, nil
 }
 
@@ -1063,6 +1073,10 @@ func (_m *MockDB) GetApprovedVersions(c context.Context) ([]entity.EriusScenario
 
 func (_m *MockDB) GetParentTaskStepByName(_ context.Context, _ uuid.UUID, _ string) (*entity.Step, error) {
 	return &entity.Step{}, nil
+}
+
+func (_m *MockDB) GetCanceledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
+	return nil, nil
 }
 
 func (_m *MockDB) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
@@ -1346,6 +1360,10 @@ func (m *MockDB) GetUsersWithReadWriteFormAccess(
 
 func (m *MockDB) StopTaskBlocks(_ context.Context, _ uuid.UUID) error {
 	return errNotImplemented
+}
+
+func (m *MockDB) GetTaskHumanStatus(_ context.Context, _ uuid.UUID) (string, error) {
+	return "", errNotImplemented
 }
 
 func (m *MockDB) GetTaskStatus(_ context.Context, _ uuid.UUID) (int, error) {

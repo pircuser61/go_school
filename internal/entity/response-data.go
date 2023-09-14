@@ -556,13 +556,17 @@ func (ps *ProcessSettings) ValidateSLA() bool {
 }
 
 type ExternalSystem struct {
-	Id             string             `json:"system_id"`
-	Name           string             `json:"name,omitempty"`
-	InputSchema    *script.JSONSchema `json:"input_schema,omitempty"`
-	OutputSchema   *script.JSONSchema `json:"output_schema,omitempty"`
-	InputMapping   *script.JSONSchema `json:"input_mapping,omitempty"`
-	OutputMapping  *script.JSONSchema `json:"output_mapping,omitempty"`
+	Id   string `json:"system_id"`
+	Name string `json:"name,omitempty"`
+
+	InputSchema   *script.JSONSchema `json:"input_schema,omitempty"`
+	OutputSchema  *script.JSONSchema `json:"output_schema,omitempty"`
+	InputMapping  *script.JSONSchema `json:"input_mapping,omitempty"`
+	OutputMapping *script.JSONSchema `json:"output_mapping,omitempty"`
+
 	OutputSettings *EndSystemSettings `json:"output_settings,omitempty"`
+
+	AllowRunAsOthers bool `json:"allow_run_as_others"`
 }
 
 type EndSystemSettings struct {

@@ -547,6 +547,9 @@ type AllUsageResponse_Pipelines struct {
 	AdditionalProperties map[string][]string `json:"-"`
 }
 
+// Разрешить системе запуск заявки от третьего лица
+type AllowRunAsOthers bool
+
 // ApproveActionNamesResponse defines model for ApproveActionNamesResponse.
 type ApproveActionNamesResponse struct {
 	// approve action id
@@ -1048,8 +1051,10 @@ type ExecutorChangeParams struct {
 
 // ExternalSystem defines model for ExternalSystem.
 type ExternalSystem struct {
-	InputMapping *JSONSchema `json:"input_mapping,omitempty"`
-	InputSchema  *JSONSchema `json:"input_schema,omitempty"`
+	// Разрешить системе запуск заявки от третьего лица
+	AllowRunAsOthers *AllowRunAsOthers `json:"allow_run_as_others,omitempty"`
+	InputMapping     *JSONSchema       `json:"input_mapping,omitempty"`
+	InputSchema      *JSONSchema       `json:"input_schema,omitempty"`
 
 	// Название системы
 	Name           string             `json:"name"`
@@ -2163,6 +2168,9 @@ type SaveExternalSystemSettingsParamsSchemaFlag string
 // SaveExternalSystemEndSettingsJSONBody defines parameters for SaveExternalSystemEndSettings.
 type SaveExternalSystemEndSettingsJSONBody EndSystemSettings
 
+// AllowRunAsOthersJSONBody defines parameters for AllowRunAsOthers.
+type AllowRunAsOthersJSONBody AllowRunAsOthers
+
 // RunNewVersionByPrevVersionJSONBody defines parameters for RunNewVersionByPrevVersion.
 type RunNewVersionByPrevVersionJSONBody RunNewVersionByPrevVersionRequest
 
@@ -2286,6 +2294,9 @@ type SaveExternalSystemSettingsJSONRequestBody SaveExternalSystemSettingsJSONBod
 
 // SaveExternalSystemEndSettingsJSONRequestBody defines body for SaveExternalSystemEndSettings for application/json ContentType.
 type SaveExternalSystemEndSettingsJSONRequestBody SaveExternalSystemEndSettingsJSONBody
+
+// AllowRunAsOthersJSONRequestBody defines body for AllowRunAsOthers for application/json ContentType.
+type AllowRunAsOthersJSONRequestBody AllowRunAsOthersJSONBody
 
 // RunNewVersionByPrevVersionJSONRequestBody defines body for RunNewVersionByPrevVersion for application/json ContentType.
 type RunNewVersionByPrevVersionJSONRequestBody RunNewVersionByPrevVersionJSONBody
@@ -3151,6 +3162,9 @@ type ServerInterface interface {
 	// Save external systems settings for end of process
 	// (PUT /pipelines/version/{versionID}/system/{systemID}/endRoutes)
 	SaveExternalSystemEndSettings(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
+	// Allow the system to launch requests from a 3rd party
+	// (POST /pipelines/version/{versionID}/system/{systemID}/runAsOthers)
+	AllowRunAsOthers(w http.ResponseWriter, r *http.Request, versionID string, systemID string)
 	// Delete Pipeline
 	// (DELETE /pipelines/{pipelineID})
 	DeletePipeline(w http.ResponseWriter, r *http.Request, pipelineID string)
@@ -4323,6 +4337,41 @@ func (siw *ServerInterfaceWrapper) SaveExternalSystemEndSettings(w http.Response
 	handler(w, r.WithContext(ctx))
 }
 
+// AllowRunAsOthers operation middleware
+func (siw *ServerInterfaceWrapper) AllowRunAsOthers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "versionID" -------------
+	var versionID string
+
+	err = runtime.BindStyledParameter("simple", false, "versionID", chi.URLParam(r, "versionID"), &versionID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionID", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "systemID" -------------
+	var systemID string
+
+	err = runtime.BindStyledParameter("simple", false, "systemID", chi.URLParam(r, "systemID"), &systemID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "systemID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AllowRunAsOthers(w, r, versionID, systemID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
 // DeletePipeline operation middleware
 func (siw *ServerInterfaceWrapper) DeletePipeline(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -5346,6 +5395,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}/endRoutes", wrapper.SaveExternalSystemEndSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/pipelines/version/{versionID}/system/{systemID}/runAsOthers", wrapper.AllowRunAsOthers)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/pipelines/{pipelineID}", wrapper.DeletePipeline)

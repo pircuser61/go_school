@@ -182,7 +182,9 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoExecutionID,
@@ -225,9 +227,12 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				Output: map[string]string{
 					"foo": "bar",
 				},
-				Sockets: entity.ConvertSocket(next),
+				happenedEvents: make([]entity.NodeEvent, 0),
+				Sockets:        entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
@@ -249,7 +254,9 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 				},
 				ef: &entity.EriusFunc{
 					BlockType:  BlockGoExecutionID,
@@ -292,9 +299,12 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				Output: map[string]string{
 					"foo": "bar",
 				},
-				Sockets: entity.ConvertSocket(next),
+				happenedEvents: make([]entity.NodeEvent, 0),
+				Sockets:        entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
-					Storage:           myStorage,
+					Services: RunContextServices{
+						Storage: myStorage,
+					},
 					WorkNumber:        "J001",
 					skipNotifications: true,
 					VarStore:          varStore,
@@ -372,7 +382,8 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 				Output: map[string]string{
 					"foo": "bar",
 				},
-				Sockets: entity.ConvertSocket(next),
+				happenedEvents: make([]entity.NodeEvent, 0),
+				Sockets:        entity.ConvertSocket(next),
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore: func() *store.VariableStore {
@@ -409,7 +420,7 @@ func TestGoExecutionBlock_createGoExecutionBlock(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := c.Background()
-			got, _, _ := createGoExecutionBlock(ctx, test.args.name, test.args.ef, test.args.runCtx)
+			got, _, _ := createGoExecutionBlock(ctx, test.args.name, test.args.ef, test.args.runCtx, nil)
 			assert.Equal(t, test.want, got)
 		})
 	}

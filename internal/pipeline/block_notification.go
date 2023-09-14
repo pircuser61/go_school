@@ -34,6 +34,13 @@ type GoNotificationBlock struct {
 	State   *NotificationData
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoNotificationBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoNotificationBlock) Members() []Member {
@@ -57,7 +64,7 @@ func (gb *GoNotificationBlock) GetTaskHumanStatus() TaskHumanStatus {
 }
 
 func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email.Attachment, error) {
-	author, err := gb.RunContext.People.GetUser(ctx, gb.RunContext.Initiator)
+	author, err := gb.RunContext.Services.People.GetUser(ctx, gb.RunContext.Initiator)
 	if err != nil {
 		return "", nil, err
 	}
@@ -68,9 +75,9 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	}
 
 	text := mail.MakeBodyHeader(typedAuthor.Username, typedAuthor.Attributes.FullName,
-		gb.RunContext.Sender.GetApplicationLink(gb.RunContext.WorkNumber), gb.State.Text)
+		gb.RunContext.Services.Sender.GetApplicationLink(gb.RunContext.WorkNumber), gb.State.Text)
 
-	body, err := gb.RunContext.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
+	body, err := gb.RunContext.Services.Storage.GetTaskRunContext(ctx, gb.RunContext.WorkNumber)
 	if err != nil {
 		return "", nil, err
 	}
@@ -80,7 +87,7 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 
 	aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody, body.InitialApplication.AttachmentFields)
 
-	attachmentsInfo, err := gb.RunContext.FileRegistry.GetAttachmentsInfo(ctx, aa)
+	attachmentsInfo, err := gb.RunContext.Services.FileRegistry.GetAttachmentsInfo(ctx, aa)
 	if err != nil {
 		return "", nil, err
 	}
@@ -92,7 +99,7 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 
 	requiredFiles, skippedFiles := sortAndFilterAttachments(filesInfo)
 
-	files, err := gb.RunContext.FileRegistry.GetAttachments(ctx, requiredFiles)
+	files, err := gb.RunContext.Services.FileRegistry.GetAttachments(ctx, requiredFiles)
 	if err != nil {
 		return "", nil, err
 	}
@@ -126,7 +133,7 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 
 	for _, person := range gb.State.People {
 		emailAddr := ""
-		emailAddr, err := gb.RunContext.People.GetUserEmail(ctx, person)
+		emailAddr, err := gb.RunContext.Services.People.GetUserEmail(ctx, person)
 		if err != nil {
 			log.Println("can't get email of user", person)
 			continue
@@ -144,11 +151,19 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 		return nil, errors.New("couldn't compile notification text")
 	}
 
-	err = gb.RunContext.Sender.SendNotification(ctx, emails, files, mail.Template{
+	err = gb.RunContext.Services.Sender.SendNotification(ctx, emails, files, mail.Template{
 		Subject:   gb.State.Subject,
 		Text:      text,
 		Variables: nil,
 	})
+
+	if _, ok := gb.expectedEvents[eventEnd]; ok {
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		if eventErr != nil {
+			return nil, eventErr
+		}
+		gb.happenedEvents = append(gb.happenedEvents, event)
+	}
 	return nil, err
 }
 
@@ -173,7 +188,8 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 }
 
 // nolint:dupl,unparam // another block
-func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockRunContext) (*GoNotificationBlock, bool, error) {
+func createGoNotificationBlock(ctx context.Context, name string, ef *entity.EriusFunc, runCtx *BlockRunContext,
+	expectedEvents map[string]struct{}) (*GoNotificationBlock, bool, error) {
 	const reEntry = false
 
 	b := &GoNotificationBlock{
@@ -184,6 +200,9 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 		Sockets: entity.ConvertSocket(ef.Sockets),
 
 		RunContext: runCtx,
+
+		expectedEvents: expectedEvents,
+		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
 	for _, v := range ef.Input {
@@ -213,6 +232,14 @@ func createGoNotificationBlock(name string, ef *entity.EriusFunc, runCtx *BlockR
 		Subject: params.Subject,
 	}
 	b.RunContext.VarStore.AddStep(b.Name)
+
+	if _, ok := b.expectedEvents[eventStart]; ok {
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		if err != nil {
+			return nil, false, err
+		}
+		b.happenedEvents = append(b.happenedEvents, event)
+	}
 
 	return b, reEntry, nil
 }

@@ -78,6 +78,13 @@ type GoFormBlock struct {
 	State   *FormData
 
 	RunContext *BlockRunContext
+
+	expectedEvents map[string]struct{}
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *GoFormBlock) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *GoFormBlock) Members() []Member {
@@ -125,9 +132,9 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	if gb.State.CheckSLA {
-		slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-				FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
@@ -137,7 +144,8 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: gb.RunContext.SLAService.ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA),
+				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime,
+					float32(gb.State.SLA),
 					slaInfoPtr),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
@@ -146,7 +154,8 @@ func (gb *GoFormBlock) Deadlines(ctx c.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked && gb.State.SLA >= 8 {
 			deadlines = append(deadlines,
-				Deadline{Deadline: gb.RunContext.SLAService.ComputeMaxDate(gb.RunContext.currBlockStartTime, float32(gb.State.SLA)/2,
+				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime,
+					float32(gb.State.SLA)/2,
 					slaInfoPtr),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
@@ -277,16 +286,16 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 
 	var emails = make(map[string]mail.Template, 0)
 	for _, login := range executors {
-		em, getUserEmailErr := gb.RunContext.People.GetUserEmail(ctx, login)
+		em, getUserEmailErr := gb.RunContext.Services.People.GetUserEmail(ctx, login)
 		if getUserEmailErr != nil {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
 
 		if isGroupExecutors {
-			slaInfoPtr, getSlaInfoErr := gb.RunContext.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
-				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.currBlockStartTime,
-					FinishedAt: gb.RunContext.currBlockStartTime.Add(time.Hour * 24 * 100)}},
+			slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
+				TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
+					FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
 				WorkType: sla.WorkHourType(gb.State.WorkType),
 			})
 
@@ -296,17 +305,17 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 			emails[em] = mail.NewFormExecutionNeedTakeInWorkTpl(&mail.NewFormExecutionNeedTakeInWorkDto{
 				WorkNumber: gb.RunContext.WorkNumber,
 				WorkTitle:  gb.RunContext.NotifName,
-				SdUrl:      gb.RunContext.Sender.SdAddress,
-				Mailto:     gb.RunContext.Sender.FetchEmail,
+				SdUrl:      gb.RunContext.Services.Sender.SdAddress,
+				Mailto:     gb.RunContext.Services.Sender.FetchEmail,
 				BlockName:  BlockGoFormID,
 				Login:      login,
-				Deadline:   gb.RunContext.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
+				Deadline:   gb.RunContext.Services.SLAService.ComputeMaxDateFormatted(time.Now(), gb.State.SLA, slaInfoPtr),
 			})
 		} else {
 			emails[em] = mail.NewRequestFormExecutionInfoTpl(
 				gb.RunContext.WorkNumber,
 				gb.RunContext.NotifName,
-				gb.RunContext.Sender.SdAddress)
+				gb.RunContext.Services.Sender.SdAddress)
 		}
 	}
 
@@ -315,7 +324,8 @@ func (gb *GoFormBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	for i := range emails {
-		if sendErr := gb.RunContext.Sender.SendNotification(ctx, []string{i}, emailAttachment, emails[i]); sendErr != nil {
+		if sendErr := gb.RunContext.Services.Sender.SendNotification(ctx, []string{i}, emailAttachment,
+			emails[i]); sendErr != nil {
 			return sendErr
 		}
 	}

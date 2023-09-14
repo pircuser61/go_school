@@ -845,7 +845,7 @@ func (db *PGCon) copyProcessSettingsFromOldVersion(c context.Context, newVersion
 
 	qCopyExternalSystems := `
 	INSERT INTO external_systems (id, version_id, system_id, input_schema, output_schema, input_mapping, output_mapping,
-                              microservice_id, ending_url, sending_method)
+                              microservice_id, ending_url, sending_method, allow_run_as_others)
 SELECT uuid_generate_v4(),
        $1,
        system_id,
@@ -855,7 +855,8 @@ SELECT uuid_generate_v4(),
        output_mapping,
        microservice_id,
        ending_url,
-       sending_method
+       sending_method,
+       allow_run_as_others
 FROM external_systems
 WHERE version_id = $2;
 	`
@@ -2310,6 +2311,40 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 	return &s, nil
 }
 
+func (db *PGCon) GetCanceledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_cancelled_task_steps")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	const query = `
+		SELECT
+			vs.step_name, 
+			vs.time
+		FROM variable_storage vs  
+			WHERE vs.work_id = (SELECT id FROM works WHERE work_number = $1) AND vs.status = 'cancel'`
+
+	rows, err := db.Connection.Query(ctx, query, workNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := make([]entity.Step, 0)
+	for rows.Next() {
+		s := entity.Step{}
+		if scanErr := rows.Scan(&s.Name, &s.Time); scanErr != nil {
+			return nil, scanErr
+		}
+		res = append(res, s)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return res, nil
+}
+
 //nolint:dupl //its not duplicate
 func (db *PGCon) GetTaskStepByName(ctx context.Context, workID uuid.UUID, stepName string) (*entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_task_step_by_name")
@@ -2950,6 +2985,45 @@ func (db *PGCon) GetExternalSystemsIDs(ctx context.Context, versionID string) ([
 	return systemIDs, nil
 }
 
+func (db *PGCon) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber,
+	systemID string) (entity.ExternalSystemSubscriptionParams, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_task_events_params_by_work_number")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	SELECT system_id, microservice_id, path,
+	method, notification_schema, mapping, nodes
+	FROM external_system_task_subscriptions
+	WHERE version_id = (SELECT version_id FROM works WHERE work_number = $1) AND system_id = $2`
+
+	row := db.Connection.QueryRow(ctx, query, workNumber, systemID)
+
+	params := entity.ExternalSystemSubscriptionParams{
+		NotificationSchema: script.JSONSchema{},
+		Mapping:            script.JSONSchemaProperties{},
+		Nodes:              make([]entity.NodeSubscriptionEvents, 0),
+	}
+	err := row.Scan(
+		&params.SystemID,
+		&params.MicroserviceID,
+		&params.Path,
+		&params.Method,
+		&params.NotificationSchema,
+		&params.Mapping,
+		&params.Nodes,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.ExternalSystemSubscriptionParams{}, nil
+		}
+		return params, err
+	}
+
+	return params, nil
+}
+
 func (db *PGCon) GetExternalSystemTaskSubscriptions(ctx context.Context, versionID,
 	systemID string) (entity.ExternalSystemSubscriptionParams, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_external_system_task_subscriptions")
@@ -2997,7 +3071,7 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 	// language=PostgreSQL
 	query := `
 	SELECT input_schema, output_schema, input_mapping, output_mapping,
-	microservice_id, ending_url, sending_method
+	microservice_id, ending_url, sending_method, allow_run_as_others
 	FROM external_systems
 	WHERE version_id = $1 AND system_id = $2`
 
@@ -3012,6 +3086,7 @@ func (db *PGCon) GetExternalSystemSettings(ctx context.Context, versionID, syste
 		&externalSystemSettings.OutputSettings.MicroserviceId,
 		&externalSystemSettings.OutputSettings.URL,
 		&externalSystemSettings.OutputSettings.Method,
+		&externalSystemSettings.AllowRunAsOthers,
 	)
 	if err != nil {
 		return externalSystemSettings, err
@@ -3241,6 +3316,29 @@ func (db *PGCon) UpdateEndingSystemSettings(ctx context.Context, versionID, syst
 	_, err = db.Connection.Exec(ctx, query, s.MicroserviceId, s.URL, s.Method, versionID, systemID)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (db *PGCon) AllowRunAsOthers(ctx context.Context, versionID, systemID string, allowRunAsOthers bool) (err error) {
+	ctx, span := trace.StartSpan(ctx, "pg_allow_run_as_others")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	query := `
+	UPDATE external_systems
+	SET allow_run_as_others = $1
+	WHERE version_id = $2 AND system_id = $3`
+
+	commandTag, err := db.Connection.Exec(ctx, query, allowRunAsOthers, versionID, systemID)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return errCantFindExternalSystem
 	}
 
 	return nil

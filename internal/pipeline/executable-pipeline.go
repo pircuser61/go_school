@@ -58,6 +58,12 @@ type ExecutablePipeline struct {
 	FaaS string
 
 	RunContext *BlockRunContext
+
+	happenedEvents []entity.NodeEvent
+}
+
+func (gb *ExecutablePipeline) GetNewEvents() []entity.NodeEvent {
+	return gb.happenedEvents
 }
 
 func (gb *ExecutablePipeline) Members() []Member {
@@ -103,6 +109,7 @@ func (gb *ExecutablePipeline) GetTaskHumanStatus() TaskHumanStatus {
 
 type CreateTaskDTO struct {
 	Author     string
+	RealAuthor string
 	IsDebug    bool
 	Params     []byte
 	WorkNumber string
@@ -116,6 +123,7 @@ func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) erro
 		TaskID:     gb.TaskID,
 		VersionID:  gb.VersionID,
 		Author:     dto.Author,
+		RealAuthor: dto.RealAuthor,
 		WorkNumber: dto.WorkNumber,
 		IsDebug:    dto.IsDebug,
 		Params:     dto.Params,
@@ -166,24 +174,29 @@ func (gb *ExecutablePipeline) CreateBlocks(ctx c.Context, source map[string]enti
 			WorkNumber: gb.WorkNumber,
 			WorkTitle:  gb.Name,
 			Initiator:  gb.RunContext.Initiator,
-			Storage:    gb.Storage,
-			VarStore:   gb.VarStore,
+			Services: RunContextServices{
+				HTTPClient:    gb.RunContext.Services.HTTPClient,
+				Storage:       gb.Storage,
+				Sender:        gb.Sender,
+				Kafka:         gb.Kafka,
+				People:        gb.People,
+				ServiceDesc:   gb.ServiceDesc,
+				FunctionStore: gb.FunctionStore,
+				HumanTasks:    gb.HumanTasks,
+				Integrations:  gb.Integrations,
+				FileRegistry:  gb.FileRegistry,
+				FaaS:          gb.FaaS,
+				HrGate:        gb.RunContext.Services.HrGate,
+				Scheduler:     gb.RunContext.Services.Scheduler,
+				SLAService:    gb.RunContext.Services.SLAService,
+			},
+			BlockRunResults: &BlockRunResults{},
 
-			Sender:        gb.Sender,
-			Kafka:         gb.Kafka,
-			People:        gb.People,
-			ServiceDesc:   gb.ServiceDesc,
-			FunctionStore: gb.FunctionStore,
-			HumanTasks:    gb.HumanTasks,
-			Integrations:  gb.Integrations,
-			FileRegistry:  gb.FileRegistry,
-			FaaS:          gb.FaaS,
-			HrGate:        gb.RunContext.HrGate,
-			Scheduler:     gb.RunContext.Scheduler,
-			SLAService:    gb.RunContext.SLAService,
-			UpdateData:    nil,
-			IsTest:        isTest,
-			NotifName:     notifName,
+			VarStore: gb.VarStore,
+
+			UpdateData: nil,
+			IsTest:     isTest,
+			NotifName:  notifName,
 		})
 		if err != nil {
 			return err

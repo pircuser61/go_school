@@ -92,6 +92,11 @@ func makeStorage() *mocks.MockedDatabase {
 		Sla:      8,
 	}, nil)
 
+	res.On("GetCanceledTaskSteps",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(workNumber string) bool { return true }),
+	).Return(nil, nil)
+
 	return res
 }
 
@@ -166,102 +171,105 @@ func TestProcessBlock(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage: func() db.Database {
-						res := makeStorage()
+					Services: RunContextServices{
 
-						res.On("UpdateStepContext",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
-						).Run(func(args mock.Arguments) {
-							req := args.Get(1).(*db.UpdateStepRequest)
-							if req.Status == string(StatusFinished) {
-								latestBlock = req.StepName
-							}
-						}).Return(nil)
+						Storage: func() db.Database {
+							res := makeStorage()
 
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"start_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockGoStartId,
-								BlockType:  script.TypeGo,
-								Title:      BlockGoStartTitle,
-								ShortTitle: shortTitle,
-								Sockets: []entity.Socket{
-									{
-										Id:           DefaultSocketID,
-										NextBlockIds: []string{"servicedesk_application_0"},
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
+							).Run(func(args mock.Arguments) {
+								req := args.Get(1).(*db.UpdateStepRequest)
+								if req.Status == string(StatusFinished) {
+									latestBlock = req.StepName
+								}
+							}).Return(nil)
+
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"start_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoStartId,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoStartTitle,
+									ShortTitle: shortTitle,
+									Sockets: []entity.Socket{
+										{
+											Id:           DefaultSocketID,
+											NextBlockIds: []string{"servicedesk_application_0"},
+										},
 									},
-								},
-							}, nil,
-						)
+								}, nil,
+							)
 
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"servicedesk_application_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockGoSdApplicationID,
-								BlockType:  script.TypeGo,
-								Title:      BlockGoSdApplicationTitle,
-								ShortTitle: shortTitle,
-								Sockets: []entity.Socket{
-									{
-										Id:           DefaultSocketID,
-										NextBlockIds: []string{"end_0"},
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"servicedesk_application_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoSdApplicationID,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoSdApplicationTitle,
+									ShortTitle: shortTitle,
+									Sockets: []entity.Socket{
+										{
+											Id:           DefaultSocketID,
+											NextBlockIds: []string{"end_0"},
+										},
 									},
-								},
-								Params: sdAppParams,
-							}, nil,
-						)
+									Params: sdAppParams,
+								}, nil,
+							)
 
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"end_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockGoEndId,
-								BlockType:  script.TypeGo,
-								Title:      BlockGoEndTitle,
-								ShortTitle: shortTitle,
-							}, nil,
-						)
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"end_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoEndId,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoEndTitle,
+									ShortTitle: shortTitle,
+								}, nil,
+							)
 
-						res.On("CheckIsArchived",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							uuid.Nil,
-						).Return(false, nil)
-						return res
-					}(),
-					ServiceDesc: func() *servicedesc.Service {
-						sdMock := servicedesc.Service{
-							SdURL: "",
-						}
-						httpClient := http.DefaultClient
-						mockTransport := serviceDeskMocks.RoundTripper{}
-						fResponse := func(*http.Request) *http.Response {
-							b, _ := json.Marshal(servicedesc.SsoPerson{})
-							body := io.NopCloser(bytes.NewReader(b))
-							defer body.Close()
-							return &http.Response{
-								Status:     http.StatusText(http.StatusOK),
-								StatusCode: http.StatusOK,
-								Body:       body,
+							res.On("CheckIsArchived",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								uuid.Nil,
+							).Return(false, nil)
+							return res
+						}(),
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
 							}
-						}
-						f_error := func(*http.Request) error {
-							return nil
-						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
-						httpClient.Transport = &mockTransport
-						sdMock.Cli = httpClient
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
 
-						return &sdMock
-					}(),
+							return &sdMock
+						}(),
+					},
 				},
 			},
 		},
@@ -272,203 +280,205 @@ func TestProcessBlock(t *testing.T) {
 				RunContext: &BlockRunContext{
 					skipNotifications: true,
 					VarStore:          store.NewStore(),
-					Storage: func() db.Database {
-						res := makeStorage()
+					Services: RunContextServices{
+						Storage: func() db.Database {
+							res := makeStorage()
 
-						res.On("UpdateStepContext",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
-						).Run(func(args mock.Arguments) {
-							req := args.Get(1).(*db.UpdateStepRequest)
-							if req.Status == string(StatusFinished) {
-								latestBlock = req.StepName
-								metBlocks = append(metBlocks, req.StepName)
+							res.On("UpdateStepContext",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(data *db.UpdateStepRequest) bool { return true }),
+							).Run(func(args mock.Arguments) {
+								req := args.Get(1).(*db.UpdateStepRequest)
+								if req.Status == string(StatusFinished) {
+									latestBlock = req.StepName
+									metBlocks = append(metBlocks, req.StepName)
+								}
+							}).Return(nil)
+
+							res.On("ParallelIsFinished",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								mock.MatchedBy(func(blockName string) bool { return true }),
+							).Return(
+								false, nil,
+							)
+							currCall := res.ExpectedCalls[len(res.ExpectedCalls)-1]
+							currCall = currCall.Run(func(args mock.Arguments) {
+								currCall.ReturnArguments[0] =
+									didMeetBlocks([]string{"approver_0", "execution_0"}, metBlocks)
+							})
+
+							res.ExpectedCalls[len(res.ExpectedCalls)-1] = currCall
+
+							res.On("GetTaskStepsToWait",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								mock.MatchedBy(func(name string) bool { return true }),
+							).Return(
+								[]string{"approver_0", "execution_0"}, nil,
+							)
+
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"start_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoStartId,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoStartTitle,
+									ShortTitle: shortTitle,
+									Sockets: []entity.Socket{
+										{
+											Id:           DefaultSocketID,
+											NextBlockIds: []string{"servicedesk_application_0"},
+										},
+									},
+								}, nil,
+							)
+
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"servicedesk_application_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoSdApplicationID,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoSdApplicationTitle,
+									ShortTitle: shortTitle,
+									Sockets: []entity.Socket{
+										{
+											Id:           DefaultSocketID,
+											NextBlockIds: []string{"start_parallel_0"},
+										},
+									},
+									Params: sdAppParams,
+								}, nil,
+							)
+
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"start_parallel_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoBeginParallelTaskId,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoBeginParallelTaskTitle,
+									ShortTitle: shortTitle,
+									Sockets: []entity.Socket{
+										{
+											Id:           DefaultSocketID,
+											NextBlockIds: []string{"approver_0", "execution_0"},
+										},
+									},
+								}, nil,
+							)
+
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"approver_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoApproverID,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Sockets: []entity.Socket{
+										{
+											Id:           "approve",
+											NextBlockIds: []string{"end_parallel_0"},
+										},
+									},
+									Params: approveParams,
+								}, nil,
+							)
+
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"execution_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoExecutionID,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Sockets: []entity.Socket{
+										{
+											Id:           executedSocketID,
+											NextBlockIds: []string{"end_parallel_0"},
+										},
+									},
+									Params: execParams,
+								}, nil,
+							)
+
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"end_parallel_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockWaitForAllInputsId,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoWaitForAllInputsTitle,
+									Sockets: []entity.Socket{
+										{
+											Id:           DefaultSocketID,
+											NextBlockIds: []string{"end_0"},
+										},
+									},
+								}, nil,
+							)
+
+							res.On("GetBlockDataFromVersion",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								mock.MatchedBy(func(workNumber string) bool { return true }),
+								"end_0",
+							).Return(
+								&entity.EriusFunc{
+									TypeID:     BlockGoEndId,
+									ShortTitle: shortTitle,
+									BlockType:  script.TypeGo,
+									Title:      BlockGoEndTitle,
+								}, nil,
+							)
+
+							res.On("CheckIsArchived",
+								mock.MatchedBy(func(ctx context.Context) bool { return true }),
+								uuid.Nil,
+							).Return(false, nil)
+
+							return res
+						}(),
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
 							}
-						}).Return(nil)
-
-						res.On("ParallelIsFinished",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							mock.MatchedBy(func(blockName string) bool { return true }),
-						).Return(
-							false, nil,
-						)
-						currCall := res.ExpectedCalls[len(res.ExpectedCalls)-1]
-						currCall = currCall.Run(func(args mock.Arguments) {
-							currCall.ReturnArguments[0] =
-								didMeetBlocks([]string{"approver_0", "execution_0"}, metBlocks)
-						})
-
-						res.ExpectedCalls[len(res.ExpectedCalls)-1] = currCall
-
-						res.On("GetTaskStepsToWait",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							mock.MatchedBy(func(name string) bool { return true }),
-						).Return(
-							[]string{"approver_0", "execution_0"}, nil,
-						)
-
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"start_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockGoStartId,
-								BlockType:  script.TypeGo,
-								Title:      BlockGoStartTitle,
-								ShortTitle: shortTitle,
-								Sockets: []entity.Socket{
-									{
-										Id:           DefaultSocketID,
-										NextBlockIds: []string{"servicedesk_application_0"},
-									},
-								},
-							}, nil,
-						)
-
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"servicedesk_application_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockGoSdApplicationID,
-								BlockType:  script.TypeGo,
-								Title:      BlockGoSdApplicationTitle,
-								ShortTitle: shortTitle,
-								Sockets: []entity.Socket{
-									{
-										Id:           DefaultSocketID,
-										NextBlockIds: []string{"start_parallel_0"},
-									},
-								},
-								Params: sdAppParams,
-							}, nil,
-						)
-
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"start_parallel_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockGoBeginParallelTaskId,
-								BlockType:  script.TypeGo,
-								Title:      BlockGoBeginParallelTaskTitle,
-								ShortTitle: shortTitle,
-								Sockets: []entity.Socket{
-									{
-										Id:           DefaultSocketID,
-										NextBlockIds: []string{"approver_0", "execution_0"},
-									},
-								},
-							}, nil,
-						)
-
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"approver_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockGoApproverID,
-								ShortTitle: shortTitle,
-								BlockType:  script.TypeGo,
-								Sockets: []entity.Socket{
-									{
-										Id:           "approve",
-										NextBlockIds: []string{"end_parallel_0"},
-									},
-								},
-								Params: approveParams,
-							}, nil,
-						)
-
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"execution_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockGoExecutionID,
-								ShortTitle: shortTitle,
-								BlockType:  script.TypeGo,
-								Sockets: []entity.Socket{
-									{
-										Id:           executedSocketID,
-										NextBlockIds: []string{"end_parallel_0"},
-									},
-								},
-								Params: execParams,
-							}, nil,
-						)
-
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"end_parallel_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockWaitForAllInputsId,
-								ShortTitle: shortTitle,
-								BlockType:  script.TypeGo,
-								Title:      BlockGoWaitForAllInputsTitle,
-								Sockets: []entity.Socket{
-									{
-										Id:           DefaultSocketID,
-										NextBlockIds: []string{"end_0"},
-									},
-								},
-							}, nil,
-						)
-
-						res.On("GetBlockDataFromVersion",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							mock.MatchedBy(func(workNumber string) bool { return true }),
-							"end_0",
-						).Return(
-							&entity.EriusFunc{
-								TypeID:     BlockGoEndId,
-								ShortTitle: shortTitle,
-								BlockType:  script.TypeGo,
-								Title:      BlockGoEndTitle,
-							}, nil,
-						)
-
-						res.On("CheckIsArchived",
-							mock.MatchedBy(func(ctx context.Context) bool { return true }),
-							uuid.Nil,
-						).Return(false, nil)
-
-						return res
-					}(),
-					ServiceDesc: func() *servicedesc.Service {
-						sdMock := servicedesc.Service{
-							SdURL: "",
-						}
-						httpClient := http.DefaultClient
-						mockTransport := serviceDeskMocks.RoundTripper{}
-						fResponse := func(*http.Request) *http.Response {
-							b, _ := json.Marshal(servicedesc.SsoPerson{})
-							body := io.NopCloser(bytes.NewReader(b))
-							defer body.Close()
-							return &http.Response{
-								Status:     http.StatusText(http.StatusOK),
-								StatusCode: http.StatusOK,
-								Body:       body,
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+								}
 							}
-						}
-						f_error := func(*http.Request) error {
-							return nil
-						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
-						httpClient.Transport = &mockTransport
-						sdMock.Cli = httpClient
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
 
-						return &sdMock
-					}(),
+							return &sdMock
+						}(),
+					},
 				},
 				Updates: map[string]script.BlockUpdateData{
 					"approver_0": {
@@ -490,7 +500,7 @@ func TestProcessBlock(t *testing.T) {
 		latestBlock = ""
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			entrypointData, blockErr := tt.fields.RunContext.Storage.GetBlockDataFromVersion(
+			entrypointData, blockErr := tt.fields.RunContext.Services.Storage.GetBlockDataFromVersion(
 				ctx, "", tt.fields.Entrypoint)
 			if blockErr != nil {
 				t.Fatal(blockErr)
@@ -500,7 +510,7 @@ func TestProcessBlock(t *testing.T) {
 				t.Fatal(procErr)
 			}
 			for name, params := range tt.fields.Updates {
-				blockData, updateErr := tt.fields.RunContext.Storage.GetBlockDataFromVersion(ctx, "", name)
+				blockData, updateErr := tt.fields.RunContext.Services.Storage.GetBlockDataFromVersion(ctx, "", name)
 				if updateErr != nil {
 					t.Fatal(updateErr)
 				}

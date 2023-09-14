@@ -204,8 +204,10 @@ func Test_createGoFormBlock(t *testing.T) {
 					Sockets: next,
 				},
 				runCtx: &BlockRunContext{
-					WorkNumber:        workNumber,
-					Storage:           databaseMock,
+					WorkNumber: workNumber,
+					Services: RunContextServices{
+						Storage: databaseMock,
+					},
 					skipNotifications: true,
 					VarStore: func() *store.VariableStore {
 						s := store.NewStore()
@@ -224,6 +226,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					keyOutputFormExecutor: global1,
 					keyOutputFormBody:     global2,
 				},
+				happenedEvents: make([]entity.NodeEvent, 0),
 				State: &FormData{
 					FormExecutorType:   script.FormExecutorTypeFromSchema,
 					SchemaId:           schemaId,
@@ -313,6 +316,7 @@ func Test_createGoFormBlock(t *testing.T) {
 					keyOutputFormExecutor: global1,
 					keyOutputFormBody:     global2,
 				},
+				happenedEvents: make([]entity.NodeEvent, 0),
 				State: &FormData{
 					FormExecutorType: script.FormExecutorTypeAutoFillUser,
 					SchemaId:         schemaId,
@@ -364,12 +368,12 @@ func Test_createGoFormBlock(t *testing.T) {
 			cli.On("GetDelegations", mock.Anything, mock.Anything).Return(&delegationht.GetDelegationsResponse{
 				Delegations: []*delegationht.Delegation{},
 			}, nil)
-			tt.args.runCtx.HumanTasks = &humanTasks.Service{
+			tt.args.runCtx.Services.HumanTasks = &humanTasks.Service{
 				C:   nil,
 				Cli: &cli,
 			}
 
-			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx)
+			got, _, err := createGoFormBlock(ctx, tt.args.name, tt.args.ef, tt.args.runCtx, nil)
 			if got != nil {
 				got.RunContext = nil
 				if got.State != nil && len(got.State.ChangesLog) > 0 {
@@ -548,32 +552,34 @@ func TestGoFormBlock_Update(t *testing.T) {
 						),
 					},
 					VarStore: store.NewStore(),
-					ServiceDesc: func() *servicedesc.Service {
-						sdMock := servicedesc.Service{
-							SdURL: "",
-						}
-						httpClient := http.DefaultClient
-						mockTransport := serviceDeskMocks.RoundTripper{}
-						fResponse := func(*http.Request) *http.Response {
-							b, _ := json.Marshal(servicedesc.SsoPerson{})
-							body := io.NopCloser(bytes.NewReader(b))
-							defer body.Close()
-							return &http.Response{
-								Status:     http.StatusText(http.StatusOK),
-								StatusCode: http.StatusOK,
-								Body:       body,
-								Close:      true,
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
 							}
-						}
-						f_error := func(*http.Request) error {
-							return nil
-						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
-						httpClient.Transport = &mockTransport
-						sdMock.Cli = httpClient
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								defer body.Close()
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+									Close:      true,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
 
-						return &sdMock
-					}(),
+							return &sdMock
+						}(),
+					},
 				},
 			},
 			want:    nil,
@@ -646,31 +652,33 @@ func TestGoFormBlock_Update(t *testing.T) {
 						),
 					},
 					VarStore: store.NewStore(),
-					ServiceDesc: func() *servicedesc.Service {
-						sdMock := servicedesc.Service{
-							SdURL: "",
-						}
-						httpClient := http.DefaultClient
-						mockTransport := serviceDeskMocks.RoundTripper{}
-						fResponse := func(*http.Request) *http.Response {
-							b, _ := json.Marshal(servicedesc.SsoPerson{})
-							body := io.NopCloser(bytes.NewReader(b))
-							return &http.Response{
-								Status:     http.StatusText(http.StatusOK),
-								StatusCode: http.StatusOK,
-								Body:       body,
-								Close:      true,
+					Services: RunContextServices{
+						ServiceDesc: func() *servicedesc.Service {
+							sdMock := servicedesc.Service{
+								SdURL: "",
 							}
-						}
-						f_error := func(*http.Request) error {
-							return nil
-						}
-						mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
-						httpClient.Transport = &mockTransport
-						sdMock.Cli = httpClient
+							httpClient := http.DefaultClient
+							mockTransport := serviceDeskMocks.RoundTripper{}
+							fResponse := func(*http.Request) *http.Response {
+								b, _ := json.Marshal(servicedesc.SsoPerson{})
+								body := io.NopCloser(bytes.NewReader(b))
+								return &http.Response{
+									Status:     http.StatusText(http.StatusOK),
+									StatusCode: http.StatusOK,
+									Body:       body,
+									Close:      true,
+								}
+							}
+							f_error := func(*http.Request) error {
+								return nil
+							}
+							mockTransport.On("RoundTrip", mock.Anything).Return(fResponse, f_error)
+							httpClient.Transport = &mockTransport
+							sdMock.Cli = httpClient
 
-						return &sdMock
-					}(),
+							return &sdMock
+						}(),
+					},
 				},
 			},
 			want:    nil,
@@ -840,7 +848,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 			}
 
 			gb.RunContext.skipNotifications = true
-			gb.RunContext.Storage = mockedDb
+			gb.RunContext.Services.Storage = mockedDb
 
 			got, err := gb.Update(ctx)
 

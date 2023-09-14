@@ -41,6 +41,64 @@ type JSONSchemaPropertiesValue struct {
 	Value string `json:"value,omitempty"`
 }
 
+func (jspv JSONSchemaPropertiesValue) MarshalJSON() ([]byte, error) {
+	if jspv.Properties != nil {
+		withProps := struct {
+			Title       string `json:"title,omitempty"`
+			Description string `json:"description,omitempty"`
+			Type        string `json:"type"`
+			Global      string `json:"global,omitempty"`
+
+			Format     string               `json:"format,omitempty"`
+			Default    interface{}          `json:"default,omitempty"`
+			Required   []string             `json:"required,omitempty"`
+			Items      *ArrayItems          `json:"items,omitempty"`
+			Properties JSONSchemaProperties `json:"properties"`
+
+			Value string `json:"value,omitempty"`
+		}{
+			Title:       jspv.Title,
+			Description: jspv.Description,
+			Type:        jspv.Type,
+			Global:      jspv.Global,
+			Format:      jspv.Format,
+			Default:     jspv.Default,
+			Required:    jspv.Required,
+			Items:       jspv.Items,
+			Properties:  jspv.Properties,
+			Value:       jspv.Value,
+		}
+		return json.Marshal(withProps)
+	}
+
+	noProps := struct {
+		Title       string `json:"title,omitempty"`
+		Description string `json:"description,omitempty"`
+		Type        string `json:"type"`
+		Global      string `json:"global,omitempty"`
+
+		Format     string               `json:"format,omitempty"`
+		Default    interface{}          `json:"default,omitempty"`
+		Required   []string             `json:"required,omitempty"`
+		Items      *ArrayItems          `json:"items,omitempty"`
+		Properties JSONSchemaProperties `json:"properties,omitempty"`
+
+		Value string `json:"value,omitempty"`
+	}{
+		Title:       jspv.Title,
+		Description: jspv.Description,
+		Type:        jspv.Type,
+		Global:      jspv.Global,
+		Format:      jspv.Format,
+		Default:     jspv.Default,
+		Required:    jspv.Required,
+		Items:       jspv.Items,
+		Properties:  jspv.Properties,
+		Value:       jspv.Value,
+	}
+	return json.Marshal(noProps)
+}
+
 type ArrayItems struct {
 	Items      *ArrayItems          `json:"items,omitempty"`
 	Properties JSONSchemaProperties `json:"properties,omitempty"`
