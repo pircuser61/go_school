@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/net/context"
 
 	e "gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
@@ -13,6 +14,7 @@ import (
 type DictionaryStorager interface {
 	GetApproveActionNames(ctx c.Context) ([]e.ApproveActionName, error)
 	GetApproveStatuses(ctx c.Context) ([]e.ApproveStatus, error)
+	GetNodeDecisions(ctx context.Context) ([]e.NodeDecision, error)
 }
 
 type PipelineStorager interface {

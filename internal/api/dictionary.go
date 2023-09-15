@@ -141,3 +141,37 @@ func (ae *APIEnv) GetApproveStatuses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// GetNodeDecisions returns all decisions by nodes.
+func (ae *APIEnv) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "get_node_decisions")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	data, err := ae.DB.GetNodeDecisions(ctx)
+	if err != nil {
+		log.Error(err)
+		_ = UnknownError.sendError(w)
+
+		return
+	}
+
+	res := make([]NodeDecisions, 0, len(data))
+	for i := range data {
+		res = append(res, NodeDecisions{
+			Id:          data[i].Id,
+			NodeType:    data[i].NodeType,
+			Decision:    data[i].Decision,
+			DecisionRus: data[i].DecisionRus,
+		})
+	}
+
+	if err = sendResponse(w, http.StatusOK, res); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}

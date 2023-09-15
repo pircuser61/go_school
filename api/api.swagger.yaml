@@ -5406,8 +5406,8 @@ components:
       type: object
       properties:
         id:
-          type: number
-          example: 1
+          type: string
+          example: "1"
           description: "Айди решения нод"
         node_type:
           type: string

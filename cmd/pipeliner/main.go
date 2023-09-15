@@ -36,7 +36,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sso"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/test"
 	"gitlab.services.mts.ru/jocasta/pipeliner/statistic"
 )
 
@@ -113,9 +112,7 @@ func main() {
 	}
 
 	// don't forget to update mock
-	// TODO: remove MockDB and use MockedDatabase in tests
 	var _ db.Database = (*mocks.MockedDatabase)(nil)
-	var _ db.Database = (*test.MockDB)(nil)
 
 	kafkaService, err := kafka.NewService(log, cfg.Kafka)
 	if err != nil {
