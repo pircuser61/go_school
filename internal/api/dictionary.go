@@ -56,8 +56,9 @@ func (ae *APIEnv) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 				Title: "Статус ноды",
 			},
 			"node_output": {
-				Type:  "object",
-				Title: "Выходные параметры ноды",
+				Type:       "object",
+				Title:      "Выходные параметры ноды",
+				Properties: script.JSONSchemaProperties{},
 			},
 		},
 	}

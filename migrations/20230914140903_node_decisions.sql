@@ -4,10 +4,10 @@ CREATE TABLE IF NOT EXISTS dict_node_decisions (
     id uuid NOT NULL PRIMARY KEY,
     node_type TEXT,
     decision TEXT,
-    decision_title TEXT
+    title TEXT
 );
 
-INSERT INTO dict_node_decisions (id, node_type, decision, decision_title)
+INSERT INTO dict_node_decisions (id, node_type, decision, title)
 VALUES
     (uuid_generate_v4(), 'execution', 'executed', 'Исполнено'),
     (uuid_generate_v4(), 'execution', 'rejected', 'Отклонено'),
