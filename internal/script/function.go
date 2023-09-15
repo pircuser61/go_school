@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -42,61 +44,18 @@ type JSONSchemaPropertiesValue struct {
 }
 
 func (jspv JSONSchemaPropertiesValue) MarshalJSON() ([]byte, error) {
-	if jspv.Properties != nil {
-		withProps := struct {
-			Title       string `json:"title,omitempty"`
-			Description string `json:"description,omitempty"`
-			Type        string `json:"type"`
-			Global      string `json:"global,omitempty"`
-
-			Format     string               `json:"format,omitempty"`
-			Default    interface{}          `json:"default,omitempty"`
-			Required   []string             `json:"required,omitempty"`
-			Items      *ArrayItems          `json:"items,omitempty"`
-			Properties JSONSchemaProperties `json:"properties"`
-
-			Value string `json:"value,omitempty"`
-		}{
-			Title:       jspv.Title,
-			Description: jspv.Description,
-			Type:        jspv.Type,
-			Global:      jspv.Global,
-			Format:      jspv.Format,
-			Default:     jspv.Default,
-			Required:    jspv.Required,
-			Items:       jspv.Items,
-			Properties:  jspv.Properties,
-			Value:       jspv.Value,
+	dataToMarshal := make(map[string]interface{})
+	for i := 0; i < reflect.ValueOf(jspv).NumField(); i++ {
+		field := reflect.TypeOf(jspv).Field(i)
+		value := reflect.ValueOf(jspv).Field(i)
+		// handle Properties being not null but an empty struct (omitempty omits both cases)
+		if strings.HasSuffix(field.Tag.Get("json"), "omitempty") && value.IsZero() {
+			continue
 		}
-		return json.Marshal(withProps)
+		dataToMarshal[strings.Replace(field.Tag.Get("json"), ",omitempty", "", 1)] =
+			value.Interface()
 	}
-
-	noProps := struct {
-		Title       string `json:"title,omitempty"`
-		Description string `json:"description,omitempty"`
-		Type        string `json:"type"`
-		Global      string `json:"global,omitempty"`
-
-		Format     string               `json:"format,omitempty"`
-		Default    interface{}          `json:"default,omitempty"`
-		Required   []string             `json:"required,omitempty"`
-		Items      *ArrayItems          `json:"items,omitempty"`
-		Properties JSONSchemaProperties `json:"properties,omitempty"`
-
-		Value string `json:"value,omitempty"`
-	}{
-		Title:       jspv.Title,
-		Description: jspv.Description,
-		Type:        jspv.Type,
-		Global:      jspv.Global,
-		Format:      jspv.Format,
-		Default:     jspv.Default,
-		Required:    jspv.Required,
-		Items:       jspv.Items,
-		Properties:  jspv.Properties,
-		Value:       jspv.Value,
-	}
-	return json.Marshal(noProps)
+	return json.Marshal(dataToMarshal)
 }
 
 type ArrayItems struct {
