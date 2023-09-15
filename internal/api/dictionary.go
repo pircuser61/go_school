@@ -160,10 +160,10 @@ func (ae *APIEnv) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
 	res := make([]NodeDecisions, 0, len(data))
 	for i := range data {
 		res = append(res, NodeDecisions{
-			Id:          data[i].Id,
-			NodeType:    data[i].NodeType,
-			Decision:    data[i].Decision,
-			DecisionRus: data[i].DecisionRus,
+			Id:            data[i].Id,
+			NodeType:      data[i].NodeType,
+			Decision:      data[i].Decision,
+			DecisionTitle: data[i].DecisionTitle,
 		})
 	}
 

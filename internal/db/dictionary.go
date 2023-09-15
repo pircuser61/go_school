@@ -96,7 +96,7 @@ func (db *PGCon) GetNodeDecisions(ctx context.Context) ([]entity.NodeDecision, e
 	for rows.Next() {
 		item := entity.NodeDecision{}
 
-		if scanErr := rows.Scan(&item.Id, &item.NodeType, &item.Decision, &item.DecisionRus); scanErr != nil {
+		if scanErr := rows.Scan(&item.Id, &item.NodeType, &item.Decision, &item.DecisionTitle); scanErr != nil {
 			return nil, scanErr
 		}
 

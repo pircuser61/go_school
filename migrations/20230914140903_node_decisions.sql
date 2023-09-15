@@ -1,28 +1,28 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS decisions (
-    id SERIAL NOT NULL PRIMARY KEY,
+    id uuid NOT NULL PRIMARY KEY,
     node_type TEXT,
     decision TEXT,
-    decision_rus TEXT
+    decision_title TEXT
 );
 
-INSERT INTO decisions (node_type, decision, decision_rus)
+INSERT INTO decisions (id, node_type, decision, decision_title)
 VALUES
-    ('Execution', 'executed', 'Исполнено'),
-    ('Execution', 'rejected', 'Отклонено'),
-    ('Execution', 'sent_edit', 'На доработку'),
-    ('Approve', 'approved', 'Согласовано'),
-    ('Approve', 'rejected', 'Отклонено'),
-    ('Approve', 'viewed', 'Ознакомлено'),
-    ('Approve', 'informed', 'Проинформировано'),
-    ('Approve', 'signed', 'Подписано'),
-    ('Approve', 'signed_ukep', 'Подписано УКЭП'),
-    ('Approve', 'confirmed', 'Утверждено'),
-    ('Approve', 'sent_to_edit', 'На доработку'),
-    ('Sign', 'signed', 'Подписано'),
-    ('Sign', 'rejected', 'Отклонено'),
-    ('Sign', 'error', 'Ошибка');
+    (uuid_generate_v4(), 'Execution', 'executed', 'Исполнено'),
+    (uuid_generate_v4(), 'Execution', 'rejected', 'Отклонено'),
+    (uuid_generate_v4(), 'Execution', 'sent_edit', 'На доработку'),
+    (uuid_generate_v4(), 'Approve', 'approved', 'Согласовано'),
+    (uuid_generate_v4(), 'Approve', 'rejected', 'Отклонено'),
+    (uuid_generate_v4(), 'Approve', 'viewed', 'Ознакомлено'),
+    (uuid_generate_v4(), 'Approve', 'informed', 'Проинформировано'),
+    (uuid_generate_v4(), 'Approve', 'signed', 'Подписано'),
+    (uuid_generate_v4(), 'Approve', 'signed_ukep', 'Подписано УКЭП'),
+    (uuid_generate_v4(), 'Approve', 'confirmed', 'Утверждено'),
+    (uuid_generate_v4(), 'Approve', 'sent_to_edit', 'На доработку'),
+    (uuid_generate_v4(), 'Sign', 'signed', 'Подписано'),
+    (uuid_generate_v4(), 'Sign', 'rejected', 'Отклонено'),
+    (uuid_generate_v4(), 'Sign', 'error', 'Ошибка');
 -- +goose StatementEnd
 
 -- +goose Down

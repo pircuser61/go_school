@@ -5407,7 +5407,8 @@ components:
       properties:
         id:
           type: string
-          example: "1"
+          format: uuid
+          example: "5547e7a4-338d-4b1a-b7c2-d0a7ef7fe063"
           description: "Айди решения нод"
         node_type:
           type: string
@@ -5415,7 +5416,7 @@ components:
         decision:
           type: string
           description: "Название решения"
-        decision_rus:
+        decision_title:
           type: string
           description: "Название решения на русском"
       required:

@@ -1437,7 +1437,7 @@ type NodeDecisions struct {
 	Decision string `json:"decision"`
 
 	// Название решения на русском
-	DecisionRus string `json:"decision_rus"`
+	DecisionTitle string `json:"decision_title"`
 
 	// Айди решения нод
 	Id string `json:"id"`
