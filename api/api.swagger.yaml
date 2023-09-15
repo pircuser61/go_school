@@ -2666,7 +2666,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/NodeDecisions'
+                    $ref: '#/components/schemas/NodeDecision'
                   status_code:
                     type: integer
         400:
@@ -5402,7 +5402,7 @@ components:
         - 8/5
         - 12/5
 
-    NodeDecisions:
+    NodeDecision:
       type: object
       properties:
         id:
