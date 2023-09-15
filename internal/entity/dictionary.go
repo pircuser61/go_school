@@ -11,8 +11,8 @@ type ApproveStatus struct {
 }
 
 type NodeDecision struct {
-	Decision      string
-	DecisionTitle string
-	Id            string
-	NodeType      string
+	Decision string
+	Title    string
+	Id       string
+	NodeType string
 }

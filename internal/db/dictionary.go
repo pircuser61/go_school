@@ -96,14 +96,14 @@ func (db *PGCon) GetNodeDecisions(ctx context.Context) ([]entity.NodeDecision, e
 	for rows.Next() {
 		item := entity.NodeDecision{}
 
-		if scanErr := rows.Scan(&item.Id, &item.NodeType, &item.Decision, &item.DecisionTitle); scanErr != nil {
+		if scanErr := rows.Scan(&item.Id, &item.NodeType, &item.Decision, &item.Title); scanErr != nil {
 			return nil, scanErr
 		}
 
 		items = append(items, item)
 	}
 
-	if rowsErr := rows.Err(); err != nil {
+	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, rowsErr
 	}
 

@@ -5416,11 +5416,11 @@ components:
         decision:
           type: string
           description: "Название решения"
-        decision_title:
+        title:
           type: string
           description: "Название решения на русском"
       required:
         - id
         - node_type
         - decision
-        - decision_rus
+        - title
