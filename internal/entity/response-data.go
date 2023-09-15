@@ -243,6 +243,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 	return true, ""
 }
 
+// nolint
 func (bt *BlocksType) validateMixingPathParallelNodes(parallelStartNodes map[string]EriusFunc, parallelMap map[string]string) (valid bool) {
 	for idx := range parallelStartNodes {
 		parallelNode := parallelStartNodes[idx]
@@ -275,44 +276,49 @@ func (bt *BlocksType) validateMixingPathParallelNodes(parallelStartNodes map[str
 
 					visitedParallelNodes[nodeKey] = *node
 					visitedBranchNodes[nodeKey] = *node
-					if node.TypeID == BlockParallelEndName {
+					switch node.TypeID {
+					case BlockParallelEndName:
 						continue
-					} else if node.TypeID == BlockParallelStartName {
-						nodeParallEndKey := parallelMap[nodeKey]
-						nodeParallEnd := (*bt)[nodeParallEndKey]
-						for _, socketOutBranchNodes := range nodeParallEnd.Next {
-							for _, socketOutBranchNode := range socketOutBranchNodes {
-								if socketOutBranchNode == parallelMap[idx] {
-									continue
+					case BlockParallelStartName:
+						{
+							nodeParallEndKey := parallelMap[nodeKey]
+							nodeParallEnd := (*bt)[nodeParallEndKey]
+							for _, socketOutBranchNodes := range nodeParallEnd.Next {
+								for _, socketOutBranchNode := range socketOutBranchNodes {
+									if socketOutBranchNode == parallelMap[idx] {
+										continue
+									}
+									_, okParallel := visitedParallelNodes[socketOutBranchNode]
+									_, okBranch := visitedBranchNodes[socketOutBranchNode]
+									if okParallel && !okBranch {
+										return false
+									}
+									socketBranchNode, ok := (*bt)[socketOutBranchNode]
+									if !ok {
+										continue
+									}
+									nodes[socketOutBranchNode] = &socketBranchNode
 								}
-								_, okParallel := visitedParallelNodes[socketOutBranchNode]
-								_, okBranch := visitedBranchNodes[socketOutBranchNode]
-								if okParallel && !okBranch {
-									return false
-								}
-								socketBranchNode, ok := (*bt)[socketOutBranchNode]
-								if !ok {
-									continue
-								}
-								nodes[socketOutBranchNode] = &socketBranchNode
 							}
 						}
-					} else {
-						for _, socketOutBranchNodes := range node.Next {
-							for _, socketOutBranchNode := range socketOutBranchNodes {
-								if socketOutBranchNode == parallelMap[idx] {
-									continue
+					default:
+						{
+							for _, socketOutBranchNodes := range node.Next {
+								for _, socketOutBranchNode := range socketOutBranchNodes {
+									if socketOutBranchNode == parallelMap[idx] {
+										continue
+									}
+									_, okParallel := visitedParallelNodes[socketOutBranchNode]
+									_, okBranch := visitedBranchNodes[socketOutBranchNode]
+									if okParallel && !okBranch {
+										return false
+									}
+									socketBranchNode, ok := (*bt)[socketOutBranchNode]
+									if !ok {
+										continue
+									}
+									nodes[socketOutBranchNode] = &socketBranchNode
 								}
-								_, okParallel := visitedParallelNodes[socketOutBranchNode]
-								_, okBranch := visitedBranchNodes[socketOutBranchNode]
-								if okParallel && !okBranch {
-									return false
-								}
-								socketBranchNode, ok := (*bt)[socketOutBranchNode]
-								if !ok {
-									continue
-								}
-								nodes[socketOutBranchNode] = &socketBranchNode
 							}
 						}
 					}
