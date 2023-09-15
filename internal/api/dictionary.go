@@ -152,7 +152,7 @@ func (ae *APIEnv) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
 	data, err := ae.DB.GetNodeDecisions(ctx)
 	if err != nil {
 		log.Error(err)
-		_ = UnknownError.sendError(w)
+		_ = GetDecisionsError.sendError(w)
 
 		return
 	}
