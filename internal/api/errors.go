@@ -123,6 +123,7 @@ const (
 	ParallelNodeExitsNotConnected
 	OutOfParallelNodesConnection
 	ParallelOutOfStartInsert
+	GetDecisionsError
 	GetBlockStateError
 )
 
@@ -229,6 +230,7 @@ var errorText = map[Err]string{
 	ParallelNodeExitsNotConnected:       "invalid pipeline schema: node exits are not connected",
 	OutOfParallelNodesConnection:        "invalid pipeline schema: nodes outside of parallel connects with inside nodes",
 	ParallelOutOfStartInsert:            "invalid pipeline schema: nodes outside of parallel connects with parallel end",
+	GetDecisionsError:                   "can't get node decisions",
 	GetBlockStateError:                  "can't get block state",
 }
 
@@ -338,7 +340,8 @@ var errorDescription = map[Err]string{
 	// nolint
 	OutOfParallelNodesConnection: "Процесс не опубликован. Есть ноды, которые не располагаются внутри параллельности или не проходят через начало/конец шлюза, но связаны с блоками внутри параллельности.",
 	ParallelOutOfStartInsert:     "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
-	GetBlockStateError:           "Не удалось получить стейт блока",
+	GetDecisionsError:            "Не удалось получить список решений нод",
+	GetBlockStateError:           "can't get block state",
 }
 
 var errorStatus = map[Err]int{

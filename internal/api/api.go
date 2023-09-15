@@ -1457,6 +1457,21 @@ type NameExists struct {
 	Exists bool `json:"exists"`
 }
 
+// NodeDecisions defines model for NodeDecisions.
+type NodeDecisions struct {
+	// Название решения
+	Decision string `json:"decision"`
+
+	// Название решения на русском
+	Title string `json:"title"`
+
+	// Айди решения нод
+	Id string `json:"id"`
+
+	// Тип ноды
+	NodeType string `json:"node_type"`
+}
+
 // Возможный ивент ноды
 type NodeEvent string
 
@@ -3075,6 +3090,9 @@ type ServerInterface interface {
 	// Get approve statuses dictionary
 	// (GET /dictionaries/approve-statuses)
 	GetApproveStatuses(w http.ResponseWriter, r *http.Request)
+	// Get list of node decisions
+	// (GET /dictionaries/get-node-decisions)
+	GetNodeDecisions(w http.ResponseWriter, r *http.Request)
 	// Get task event json schema
 	// (GET /dictionaries/schema/task-event)
 	GetTaskEventSchema(w http.ResponseWriter, r *http.Request)
@@ -3354,6 +3372,21 @@ func (siw *ServerInterfaceWrapper) GetApproveStatuses(w http.ResponseWriter, r *
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetApproveStatuses(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetNodeDecisions operation middleware
+func (siw *ServerInterfaceWrapper) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNodeDecisions(w, r)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5308,6 +5341,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/dictionaries/approve-statuses", wrapper.GetApproveStatuses)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dictionaries/get-node-decisions", wrapper.GetNodeDecisions)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/dictionaries/schema/task-event", wrapper.GetTaskEventSchema)

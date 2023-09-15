@@ -56,8 +56,9 @@ func (ae *APIEnv) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 				Title: "Статус ноды",
 			},
 			"node_output": {
-				Type:  "object",
-				Title: "Выходные параметры ноды",
+				Type:       "object",
+				Title:      "Выходные параметры ноды",
+				Properties: script.JSONSchemaProperties{},
 			},
 		},
 	}
@@ -130,6 +131,40 @@ func (ae *APIEnv) GetApproveStatuses(w http.ResponseWriter, r *http.Request) {
 		res = append(res, GetApproveStatusesResponse{
 			Id:    data[i].Id,
 			Title: data[i].Title,
+		})
+	}
+
+	if err = sendResponse(w, http.StatusOK, res); err != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(err))
+		_ = e.sendError(w)
+
+		return
+	}
+}
+
+// GetNodeDecisions returns all decisions by nodes.
+func (ae *APIEnv) GetNodeDecisions(w http.ResponseWriter, r *http.Request) {
+	ctx, s := trace.StartSpan(r.Context(), "get_node_decisions")
+	defer s.End()
+
+	log := logger.GetLogger(ctx)
+
+	data, err := ae.DB.GetNodeDecisions(ctx)
+	if err != nil {
+		log.Error(err)
+		_ = GetDecisionsError.sendError(w)
+
+		return
+	}
+
+	res := make([]NodeDecisions, 0, len(data))
+	for i := range data {
+		res = append(res, NodeDecisions{
+			Id:       data[i].Id,
+			NodeType: data[i].NodeType,
+			Decision: data[i].Decision,
+			Title:    data[i].Title,
 		})
 	}
 

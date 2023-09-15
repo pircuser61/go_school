@@ -75,3 +75,37 @@ func (db *PGCon) GetApproveStatuses(ctx context.Context) ([]entity.ApproveStatus
 
 	return items, nil
 }
+
+func (db *PGCon) GetNodeDecisions(ctx context.Context) ([]entity.NodeDecision, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_node_decisions")
+	defer span.End()
+
+	const query = `
+		SELECT id, node_type, decision, title
+		FROM dict_node_decisions
+	`
+
+	rows, err := db.Connection.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]entity.NodeDecision, 0)
+
+	for rows.Next() {
+		item := entity.NodeDecision{}
+
+		if scanErr := rows.Scan(&item.Id, &item.NodeType, &item.Decision, &item.Title); scanErr != nil {
+			return nil, scanErr
+		}
+
+		items = append(items, item)
+	}
+
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	return items, nil
+}
