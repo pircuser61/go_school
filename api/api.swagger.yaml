@@ -2650,6 +2650,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/httpError'
 
+  /dictionaries/get-node-decisions:
+    get:
+      tags:
+        - dictionaries
+      summary: Get list of node decisions
+      description: Получить список всех решений нод
+      operationId: get-node-decisions
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NodeDecisions'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+
   /monitoring/tasks/block/{blockId}/context:
     get:
       operationId: GetBlockContext
@@ -5363,3 +5401,25 @@ components:
         - 24/7
         - 8/5
         - 12/5
+
+    NodeDecisions:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+          description: "Айди решения нод"
+        node_type:
+          type: string
+          description: "Тип ноды"
+        decision:
+          type: string
+          description: "Название решения"
+        decision_rus:
+          type: string
+          description: "Название решения на русском"
+      required:
+        - id
+        - node_type
+        - decision
+        - decision_rus
