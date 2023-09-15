@@ -321,7 +321,7 @@ func (ae *APIEnv) GetBlockState(w http.ResponseWriter, r *http.Request, blockId 
 
 	state, err := ae.DB.GetBlockState(ctx, id.String())
 	if err != nil {
-		e := GetBlockContextError
+		e := GetBlockStateError
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
