@@ -308,10 +308,10 @@ func (gb *GoApproverBlock) notifyNeedRework(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoApproverBlock) notifyNewInfoReceived(ctx c.Context) error {
+func (gb *GoApproverBlock) notifyNewInfoReceived(ctx c.Context, approverLogin string) error {
 	l := logger.GetLogger(ctx)
 
-	logins := []string{gb.RunContext.UpdateData.ByLogin}
+	logins := []string{approverLogin}
 	for i := range gb.State.AdditionalApprovers {
 		logins = append(logins, gb.State.AdditionalApprovers[i].ApproverLogin)
 	}
