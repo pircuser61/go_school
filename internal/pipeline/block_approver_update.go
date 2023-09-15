@@ -522,7 +522,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 		}
 
 		linkId = updateParams.LinkId
-		linkErr := setLinkIdRequest(id, *updateParams.LinkId, gb.State.AddInfo)
+		approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkId, gb.State.AddInfo)
 		if linkErr != nil {
 			return linkErr
 		}
@@ -534,7 +534,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 		)
 		gb.State.IncreaseSLA(workHours)
 
-		if err = gb.notifyNewInfoReceived(ctx); err != nil {
+		if err = gb.notifyNewInfoReceived(ctx, approverLogin); err != nil {
 			return err
 		}
 	}
@@ -553,15 +553,15 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 	return nil
 }
 
-func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) error {
+func setLinkIdRequest(replyId, linkId string, addInfo []AdditionalInfo) (string, error) {
 	for i := range addInfo {
 		if addInfo[i].Id == linkId {
 			addInfo[i].LinkId = &replyId
-			return nil
+			return addInfo[i].Login, nil
 		}
 	}
 
-	return errors.New("not found request by linkId")
+	return "", errors.New("not found request by linkId")
 }
 
 func (gb *GoApproverBlock) actionAcceptable(action ApproverAction) bool {
