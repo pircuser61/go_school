@@ -625,10 +625,10 @@ type ApproverParams struct {
 }
 
 // Approver type:
-//   * user - Single user
-//   * group - Approver group ID
-//   * head - Receiver's head
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Approver group ID
+//   - head - Receiver's head
+//   - FromSchema - Selected by initiator
 type ApproverType string
 
 // Approver update params
@@ -681,6 +681,17 @@ type BlockContextResponse struct {
 // Ноды
 type BlockContextResponse_Blocks struct {
 	AdditionalProperties map[string]MonitoringBlockOutput `json:"-"`
+}
+
+// BlockStateResponse defines model for BlockStateResponse.
+type BlockStateResponse struct {
+	// Стейт блока
+	State *BlockStateResponse_State `json:"state,omitempty"`
+}
+
+// Стейт блока
+type BlockStateResponse_State struct {
+	AdditionalProperties map[string]MonitoringBlockState `json:"-"`
 }
 
 // Basic boolean operand, can provide working compare types for this type
@@ -1009,9 +1020,9 @@ type ExecutionParams struct {
 }
 
 // Execution type:
-//  * user - Single user
-//  * group - Execution group ID
-//  * from_schema - Selected by initiator
+//   - user - Single user
+//   - group - Execution group ID
+//   - from_schema - Selected by initiator
 type ExecutionParamsType string
 
 // Executor update params
@@ -1116,11 +1127,11 @@ type FormChangelogItem struct {
 }
 
 // Form executor type:
-//   * User - Single user
-//   * group - Form group ID
-//   * Initiator - Process initiator
-//   * From_schema - Selected by initiator
-//   * Auto_Fill - Auto Fill form by system
+//   - User - Single user
+//   - group - Form group ID
+//   - Initiator - Process initiator
+//   - From_schema - Selected by initiator
+//   - Auto_Fill - Auto Fill form by system
 type FormExecutorType string
 
 // Form params
@@ -1315,6 +1326,21 @@ type MonitoringBlockOutput struct {
 
 // MonitoringBlockParam defines model for MonitoringBlockParam.
 type MonitoringBlockParam struct {
+	// Описание поля
+	Description string `json:"description"`
+
+	// Имя поля
+	Name string `json:"name"`
+
+	// Тип поля
+	Type string `json:"type"`
+
+	// Значение поля
+	Value interface{} `json:"value"`
+}
+
+// MonitoringBlockState defines model for MonitoringBlockState.
+type MonitoringBlockState struct {
 	// Описание поля
 	Description string `json:"description"`
 
@@ -1678,9 +1704,9 @@ type SignatureCarrier string
 type SignatureType string
 
 // Signer type:
-//   * user - Single user
-//   * group - Group ID
-//   * FromSchema - Selected by initiator
+//   - user - Single user
+//   - group - Group ID
+//   - FromSchema - Selected by initiator
 type SignerType string
 
 // Count of singers which will participate in signing will depends of signing type. 'Any of' will check only first sign action, when 'all of' will be waiting for all signers.
@@ -1825,18 +1851,18 @@ type Action_Params struct {
 }
 
 // Approver decision:
-//  * approved - Согласовать
-//  * rejected - Отклонить
+//   - approved - Согласовать
+//   - rejected - Отклонить
 type AdditionalApproverDecision string
 
 // Approver decision:
-//  * approve - Согласовать
-//  * reject - Отклонить
-//  * viewed - Ознакомлен
-//  * informed - Проинформирован
-//  * sign - Подписать
-//  * confirm - Утвердить
-//  * sign_ukep - Подписать УКЭП
+//   - approve - Согласовать
+//   - reject - Отклонить
+//   - viewed - Ознакомлен
+//   - informed - Проинформирован
+//   - sign - Подписать
+//   - confirm - Утвердить
+//   - sign_ukep - Подписать УКЭП
 type ApproverDecision string
 
 // Block type (language)
@@ -1922,8 +1948,8 @@ type EriusTaskResponse struct {
 type EriusTaskResponseStatus string
 
 // Executor decision:
-//  * executed - executor executed block
-//  * rejected - executor rejected block
+//   - executed - executor executed block
+//   - rejected - executor rejected block
 type ExecutionDecision string
 
 // HttpError defines model for httpError.
@@ -1954,17 +1980,17 @@ type Pipeline_Blocks struct {
 }
 
 // Tag status:
-//  * 1 - Draft
-//  * 2 - Approved
-//  * 3 - Deleted
-//  * 4 - Rejected
-//  * 5 - On approve
+//   - 1 - Draft
+//   - 2 - Approved
+//   - 3 - Deleted
+//   - 4 - Rejected
+//   - 5 - On approve
 type ScenarioStatus int
 
 // Approver decision:
-//  * signed - Согласовано
-//  * rejected - Отклонено
-//  * error - Произошла ошибка
+//   - signed - Согласовано
+//   - rejected - Отклонено
+//   - error - Произошла ошибка
 type SignDecision string
 
 // Task human readable status
@@ -2390,6 +2416,59 @@ func (a *BlockContextResponse_Blocks) UnmarshalJSON(b []byte) error {
 
 // Override default JSON handling for BlockContextResponse_Blocks to handle AdditionalProperties
 func (a BlockContextResponse_Blocks) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for BlockStateResponse_State. Returns the specified
+// element and whether it was found
+func (a BlockStateResponse_State) Get(fieldName string) (value MonitoringBlockState, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BlockStateResponse_State
+func (a *BlockStateResponse_State) Set(fieldName string, value MonitoringBlockState) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockState)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BlockStateResponse_State to handle AdditionalProperties
+func (a *BlockStateResponse_State) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockState)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockState
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BlockStateResponse_State to handle AdditionalProperties
+func (a BlockStateResponse_State) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
@@ -3020,6 +3099,9 @@ type ServerInterface interface {
 	// Get inputs and outputs of block
 	// (GET /monitoring/tasks/block/{blockId}/params)
 	GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request, blockId string)
+	// Получение стейта блока
+	// (GET /monitoring/tasks/block/{blockId}/state)
+	GetBlockState(w http.ResponseWriter, r *http.Request, blockId string)
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
@@ -3551,6 +3633,32 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockBlockIdParams(w http.R
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMonitoringTasksBlockBlockIdParams(w, r, blockId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetBlockState operation middleware
+func (siw *ServerInterfaceWrapper) GetBlockState(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "blockId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBlockState(w, r, blockId)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5224,6 +5332,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/params", wrapper.GetMonitoringTasksBlockBlockIdParams)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/state", wrapper.GetBlockState)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)

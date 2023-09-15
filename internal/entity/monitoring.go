@@ -57,3 +57,10 @@ type BlockInputValue struct {
 	Name  string
 	Value interface{}
 }
+
+type BlockState []BlockStateValue
+
+type BlockStateValue struct {
+	Name  string
+	Value interface{}
+}
