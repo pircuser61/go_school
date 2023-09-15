@@ -260,6 +260,7 @@ func (bt *BlocksType) validateMixingPathParallelNodes(parallelStartNodes map[str
 				nodes[socketOutNode] = &socketNode
 
 				var visitedBranchNodes = make(map[string]EriusFunc, 0)
+
 				for {
 					nodeKeys := maps.Keys(nodes)
 					if len(nodeKeys) == 0 {
@@ -316,7 +317,6 @@ func (bt *BlocksType) validateMixingPathParallelNodes(parallelStartNodes map[str
 						}
 					}
 				}
-
 			}
 		}
 	}

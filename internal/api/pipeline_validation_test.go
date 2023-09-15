@@ -555,6 +555,38 @@ func TestValidation_ParallelNodes(t *testing.T) {
 	var outOfParallelStart entity.EriusScenario
 	json.Unmarshal(bytes, &outOfParallelStart)
 
+	MixedBranchBad1Address := "testdata/test_parallel_mixed_branches_bad1.json"
+	bytes, err = os.ReadFile(MixedBranchBad1Address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var MixedBranchBad1 entity.EriusScenario
+	json.Unmarshal(bytes, &MixedBranchBad1)
+
+	MixedBranchValid1Address := "testdata/test_parallel_mixed_branches_valid1.json"
+	bytes, err = os.ReadFile(MixedBranchValid1Address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var MixedBranchValid1 entity.EriusScenario
+	json.Unmarshal(bytes, &MixedBranchValid1)
+
+	MixedBranchValid2Address := "testdata/test_parallel_mixed_branches_valid2.json"
+	bytes, err = os.ReadFile(MixedBranchValid2Address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var MixedBranchValid2 entity.EriusScenario
+	json.Unmarshal(bytes, &MixedBranchValid2)
+
+	MixedBranchBad2Address := "testdata/test_parallel_mixed_branches_bad2.json"
+	bytes, err = os.ReadFile(MixedBranchBad2Address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var MixedBranchBad2 entity.EriusScenario
+	json.Unmarshal(bytes, &MixedBranchBad2)
+
 	tests := []struct {
 		Name      string
 		Ef        entity.EriusScenario
@@ -809,6 +841,26 @@ func TestValidation_ParallelNodes(t *testing.T) {
 		{
 			Name:      "cycle returning from parallel",
 			Ef:        cycleTest,
+			WantValid: false,
+		},
+		{
+			Name:      "mixed branch bad between paralls bad 1",
+			Ef:        MixedBranchBad1,
+			WantValid: false,
+		},
+		{
+			Name:      "mixed branch valid 1",
+			Ef:        MixedBranchValid1,
+			WantValid: true,
+		},
+		{
+			Name:      "mixed branch sent_to_edit valid 2",
+			Ef:        MixedBranchValid2,
+			WantValid: true,
+		},
+		{
+			Name:      "mixed branch inside parall bad 2",
+			Ef:        MixedBranchBad2,
 			WantValid: false,
 		},
 	}
