@@ -413,6 +413,8 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 			e = OutOfParallelNodesConnection
 		case ValidateParallelOutOfStartInsert:
 			e = ParallelOutOfStartInsert
+		case ValidateParallelPathMixed:
+			e = ParallelPathMixed
 		default:
 			e = PipelineValidateError
 		}
