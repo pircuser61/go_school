@@ -82,7 +82,7 @@ func (db *PGCon) GetNodeDecisions(ctx context.Context) ([]entity.NodeDecision, e
 
 	const query = `
 		SELECT id, node_type, decision, decision_rus
-		FROM decisions
+		FROM dict_node_decisions
 	`
 
 	rows, err := db.Connection.Query(ctx, query)
