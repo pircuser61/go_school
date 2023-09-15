@@ -683,6 +683,17 @@ type BlockContextResponse_Blocks struct {
 	AdditionalProperties map[string]MonitoringBlockOutput `json:"-"`
 }
 
+// BlockStateResponse defines model for BlockStateResponse.
+type BlockStateResponse struct {
+	// Стейт блока
+	State *BlockStateResponse_State `json:"state,omitempty"`
+}
+
+// Стейт блока
+type BlockStateResponse_State struct {
+	AdditionalProperties map[string]MonitoringBlockState `json:"-"`
+}
+
 // Basic boolean operand, can provide working compare types for this type
 type BooleanOperand struct {
 	DataType    BooleanOperandDataType    `json:"dataType"`
@@ -1315,6 +1326,21 @@ type MonitoringBlockOutput struct {
 
 // MonitoringBlockParam defines model for MonitoringBlockParam.
 type MonitoringBlockParam struct {
+	// Описание поля
+	Description string `json:"description"`
+
+	// Имя поля
+	Name string `json:"name"`
+
+	// Тип поля
+	Type string `json:"type"`
+
+	// Значение поля
+	Value interface{} `json:"value"`
+}
+
+// MonitoringBlockState defines model for MonitoringBlockState.
+type MonitoringBlockState struct {
 	// Описание поля
 	Description string `json:"description"`
 
@@ -2417,6 +2443,59 @@ func (a BlockContextResponse_Blocks) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for BlockStateResponse_State. Returns the specified
+// element and whether it was found
+func (a BlockStateResponse_State) Get(fieldName string) (value MonitoringBlockState, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for BlockStateResponse_State
+func (a *BlockStateResponse_State) Set(fieldName string, value MonitoringBlockState) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]MonitoringBlockState)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for BlockStateResponse_State to handle AdditionalProperties
+func (a *BlockStateResponse_State) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]MonitoringBlockState)
+		for fieldName, fieldBuf := range object {
+			var fieldVal MonitoringBlockState
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for BlockStateResponse_State to handle AdditionalProperties
+func (a BlockStateResponse_State) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for EriusFunc_Next. Returns the specified
 // element and whether it was found
 func (a EriusFunc_Next) Get(fieldName string) (value []string, found bool) {
@@ -3038,6 +3117,9 @@ type ServerInterface interface {
 	// Get inputs and outputs of block
 	// (GET /monitoring/tasks/block/{blockId}/params)
 	GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, r *http.Request, blockId string)
+	// Получение стейта блока
+	// (GET /monitoring/tasks/block/{blockId}/state)
+	GetBlockState(w http.ResponseWriter, r *http.Request, blockId string)
 	// Get task for monitoring
 	// (GET /monitoring/tasks/{workNumber})
 	GetMonitoringTask(w http.ResponseWriter, r *http.Request, workNumber string)
@@ -3584,6 +3666,32 @@ func (siw *ServerInterfaceWrapper) GetMonitoringTasksBlockBlockIdParams(w http.R
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMonitoringTasksBlockBlockIdParams(w, r, blockId)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetBlockState operation middleware
+func (siw *ServerInterfaceWrapper) GetBlockState(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
+
+	err = runtime.BindStyledParameter("simple", false, "blockId", chi.URLParam(r, "blockId"), &blockId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "blockId", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBlockState(w, r, blockId)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5260,6 +5368,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/params", wrapper.GetMonitoringTasksBlockBlockIdParams)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/monitoring/tasks/block/{blockId}/state", wrapper.GetBlockState)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/monitoring/tasks/{workNumber}", wrapper.GetMonitoringTask)

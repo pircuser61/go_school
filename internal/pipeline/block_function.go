@@ -413,8 +413,9 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdate
 			if !ok {
 				return errors.New("function returned not all of expected results")
 			}
-
-			if err := utils.CheckVariableType(param, expectedOutput[k]); err != nil {
+			// We're using pointer because we sometimes need to change type inside interface
+			// from float to integer (func simpleTypeHandler)
+			if err := utils.CheckVariableType(&param, expectedOutput[k]); err != nil {
 				return err
 			}
 

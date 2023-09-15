@@ -2734,6 +2734,52 @@ paths:
                 $ref: '#/components/schemas/httpError'
       x-codegen-request-body-name: variables
 
+  /monitoring/tasks/block/{blockId}/state:
+    get:
+      operationId: GetBlockState
+      tags:
+        - monitoring
+      summary: Получение стейта блока
+      description: Получение стейта блока
+      parameters:
+        - name: blockId
+          in: path
+          description: block ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BlockStateResponse'
+                  status_code:
+                    type: integer
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/httpError'
+      x-codegen-request-body-name: variables
+
   /monitoring/tasks/block/{blockId}/params:
     get:
       tags:
@@ -5313,7 +5359,43 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/MonitoringBlockOutput'
 
+    BlockStateResponse:
+      type: object
+      properties:
+        state:
+          type: object
+          description: Стейт блока
+          additionalProperties:
+            $ref: '#/components/schemas/MonitoringBlockState'
+
     MonitoringBlockOutput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя поля
+        type:
+          type: string
+          description: Тип поля
+        description:
+          type: string
+          description: Описание поля
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: integer
+            - type: array
+            - type: object
+            - type: boolean
+          description: Значение поля
+      required:
+        - name
+        - type
+        - description
+        - value
+
+    MonitoringBlockState:
       type: object
       properties:
         name:

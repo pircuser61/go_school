@@ -1706,6 +1706,36 @@ func (db *PGCon) GetBlockOutputs(ctx c.Context, blockId, blockName string) (enti
 	return blockOutputs, nil
 }
 
+func (db *PGCon) GetBlockState(ctx c.Context, blockId string) (entity.BlockState, error) {
+	ctx, span := trace.StartSpan(ctx, "pg_get_block_state")
+	defer span.End()
+
+	state := make(entity.BlockState, 0)
+	params := make(map[string]interface{}, 0)
+
+	const q = `
+		SELECT content -> 'State' -> step_name
+		FROM variable_storage
+		WHERE id = $1;
+	`
+
+	if err := db.Connection.QueryRow(ctx, q, blockId).Scan(&params); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return state, nil
+		}
+		return nil, err
+	}
+
+	for i := range params {
+		state = append(state, entity.BlockStateValue{
+			Name:  i,
+			Value: params[i],
+		})
+	}
+
+	return state, nil
+}
+
 func (db *PGCon) GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, error) {
 	q := `SELECT m.login, vs.step_type FROM works
     		JOIN variable_storage vs ON works.id = vs.work_id
