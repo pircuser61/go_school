@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"regexp"
 	"strings"
@@ -299,10 +298,6 @@ func (ae *APIEnv) GetMonitoringTasksBlockBlockIdParams(w http.ResponseWriter, re
 		_ = e.sendError(w)
 		return
 	}
-}
-
-type StateSteps struct {
-	State map[string]json.RawMessage `json:"State"`
 }
 
 func (ae *APIEnv) GetBlockState(w http.ResponseWriter, r *http.Request, blockId string) {
