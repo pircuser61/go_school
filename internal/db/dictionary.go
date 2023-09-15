@@ -103,5 +103,9 @@ func (db *PGCon) GetNodeDecisions(ctx context.Context) ([]entity.NodeDecision, e
 		items = append(items, item)
 	}
 
+	if rowsErr := rows.Err(); err != nil {
+		return nil, rowsErr
+	}
+
 	return items, nil
 }
