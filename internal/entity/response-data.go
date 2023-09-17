@@ -70,7 +70,7 @@ const (
 	ParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
 	OutOfParallelNodesConnection  = "OutOfParallelNodesConnection"
 	ParallelOutOfStartInsert      = "ParallelOutOfStartInsert"
-	ParallelPathMixed             = "ParallelPathMixed"
+	ParallelPathIntersected       = "ParallelPathIntersected"
 )
 
 func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (valid bool, textErr string) {
@@ -236,9 +236,9 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 		}
 		parallelExitsAsBlock[idx] = *foundNode
 	}
-	mixOk := bt.validateIntersectingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
-	if !mixOk {
-		return false, ParallelPathMixed
+	intersectOk := bt.validateIntersectingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
+	if !intersectOk {
+		return false, ParallelPathIntersected
 	}
 	return true, ""
 }
