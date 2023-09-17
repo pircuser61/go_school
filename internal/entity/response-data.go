@@ -236,7 +236,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 		}
 		parallelExitsAsBlock[idx] = *foundNode
 	}
-	mixOk := bt.validateMixingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
+	mixOk := bt.validateIntersectingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
 	if !mixOk {
 		return false, ParallelPathMixed
 	}
@@ -244,7 +244,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 }
 
 // nolint
-func (bt *BlocksType) validateMixingPathParallelNodes(parallelStartNodes map[string]EriusFunc, parallelMap map[string]string) (valid bool) {
+func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes map[string]EriusFunc, parallelMap map[string]string) (valid bool) {
 	for idx := range parallelStartNodes {
 		parallelNode := parallelStartNodes[idx]
 
