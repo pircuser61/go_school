@@ -1457,19 +1457,19 @@ type NameExists struct {
 	Exists bool `json:"exists"`
 }
 
-// NodeDecisions defines model for NodeDecisions.
-type NodeDecisions struct {
+// NodeDecision defines model for NodeDecision.
+type NodeDecision struct {
 	// Название решения
 	Decision string `json:"decision"`
-
-	// Название решения на русском
-	Title string `json:"title"`
 
 	// Айди решения нод
 	Id string `json:"id"`
 
 	// Тип ноды
 	NodeType string `json:"node_type"`
+
+	// Название решения на русском
+	Title string `json:"title"`
 }
 
 // Возможный ивент ноды
