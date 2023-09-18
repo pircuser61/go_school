@@ -781,22 +781,22 @@ func TestValidation_ParallelNodes(t *testing.T) {
 		},
 		{
 			Name:      "intersected branch bad between paralls bad 1",
-			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_mixed_branches_bad1.json"),
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_bad1.json"),
 			WantValid: false,
 		},
 		{
 			Name:      "intersected branch valid 1",
-			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_mixed_branches_valid1.json"),
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_valid1.json"),
 			WantValid: true,
 		},
 		{
 			Name:      "intersected branch sent_to_edit valid 2",
-			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_mixed_branches_valid2.json"),
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_valid2.json"),
 			WantValid: true,
 		},
 		{
 			Name:      "intersected branch inside parall bad 2",
-			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_mixed_branches_bad2.json"),
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_bad2.json"),
 			WantValid: false,
 		},
 	}
