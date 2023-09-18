@@ -30,6 +30,7 @@ const (
 	ValidateParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
 	ValidateOutOfParallelNodesConnection  = "OutOfParallelNodesConnection"
 	ValidateParallelOutOfStartInsert      = "ParallelOutOfStartInsert"
+	ValidateParallelPathIntersected       = "ParallelPathIntersected"
 )
 
 func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
@@ -87,6 +88,8 @@ func (ae *APIEnv) CreatePipeline(w http.ResponseWriter, req *http.Request) {
 			e = OutOfParallelNodesConnection
 		case ValidateParallelOutOfStartInsert:
 			e = ParallelOutOfStartInsert
+		case ValidateParallelPathIntersected:
+			e = ParallelPathIntersected
 		default:
 			e = PipelineValidateError
 		}

@@ -523,38 +523,6 @@ func TestValidation_SdBlueprintFilled(t *testing.T) {
 }
 
 func TestValidation_ParallelNodes(t *testing.T) {
-	validAddress := "testdata/test_parallel_valid.json"
-	bytes, err := os.ReadFile(validAddress)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var valid entity.EriusScenario
-	json.Unmarshal(bytes, &valid)
-
-	cycleAddress := "testdata/test_parallel_cycle.json"
-	bytes, err = os.ReadFile(cycleAddress)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var cycleTest entity.EriusScenario
-	json.Unmarshal(bytes, &cycleTest)
-
-	outOfEndAddress := "testdata/test_parallel_out_of_end.json"
-	bytes, err = os.ReadFile(outOfEndAddress)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var outOfParallelEnd entity.EriusScenario
-	json.Unmarshal(bytes, &outOfParallelEnd)
-
-	outOfStartAddress := "testdata/test_parallel_out_of_start.json"
-	bytes, err = os.ReadFile(outOfStartAddress)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var outOfParallelStart entity.EriusScenario
-	json.Unmarshal(bytes, &outOfParallelStart)
-
 	tests := []struct {
 		Name      string
 		Ef        entity.EriusScenario
@@ -793,22 +761,42 @@ func TestValidation_ParallelNodes(t *testing.T) {
 		},
 		{
 			Name:      "Valid",
-			Ef:        valid,
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_valid.json"),
 			WantValid: true,
 		},
 		{
 			Name:      "outOfParallelEnd",
-			Ef:        outOfParallelEnd,
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_out_of_end.json"),
 			WantValid: false,
 		},
 		{
 			Name:      "outOfParallelStart",
-			Ef:        outOfParallelStart,
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_out_of_start.json"),
 			WantValid: false,
 		},
 		{
 			Name:      "cycle returning from parallel",
-			Ef:        cycleTest,
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_cycle.json"),
+			WantValid: false,
+		},
+		{
+			Name:      "intersected branch bad between paralls bad 1",
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_bad1.json"),
+			WantValid: false,
+		},
+		{
+			Name:      "intersected branch valid 1",
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_valid1.json"),
+			WantValid: true,
+		},
+		{
+			Name:      "intersected branch sent_to_edit valid 2",
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_valid2.json"),
+			WantValid: true,
+		},
+		{
+			Name:      "intersected branch inside parall bad 2",
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_bad2.json"),
 			WantValid: false,
 		},
 	}
@@ -821,4 +809,17 @@ func TestValidation_ParallelNodes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func unmarshalFromTestFile(t *testing.T, in string) *entity.EriusScenario {
+	bytes, err := os.ReadFile(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result entity.EriusScenario
+	err = json.Unmarshal(bytes, &result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &result
 }

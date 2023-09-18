@@ -70,6 +70,7 @@ const (
 	ParallelNodeExitsNotConnected = "ParallelNodeExitsNotConnected"
 	OutOfParallelNodesConnection  = "OutOfParallelNodesConnection"
 	ParallelOutOfStartInsert      = "ParallelOutOfStartInsert"
+	ParallelPathIntersected       = "ParallelPathIntersected"
 )
 
 func (bt *BlocksType) Validate(ctx context.Context, sd *servicedesc.Service) (valid bool, textErr string) {
@@ -169,7 +170,7 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 	if len(parallelStartNodes) == 0 {
 		return true, ""
 	}
-
+	var parallelExitsAsBlock = make(map[string]string, 0)
 	for idx := range parallelStartNodes {
 		parallelNode := parallelStartNodes[idx]
 		var foundNode *string
@@ -233,8 +234,99 @@ func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
 		if beforeStartOk, textStartErr := bt.validateBeforeStartParallelNodes(StartBlock0, idx, *foundNode, visitedParallelNodes, visitedEndNodes); !beforeStartOk {
 			return false, textStartErr
 		}
+		parallelExitsAsBlock[idx] = *foundNode
+	}
+	intersectOk := bt.validateIntersectingPathParallelNodes(parallelStartNodes, parallelExitsAsBlock)
+	if !intersectOk {
+		return false, ParallelPathIntersected
 	}
 	return true, ""
+}
+
+// nolint
+func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes map[string]EriusFunc, parallelMap map[string]string) (valid bool) {
+	for idx := range parallelStartNodes {
+		parallelNode := parallelStartNodes[idx]
+
+		nodes := make(map[string]*EriusFunc, 0)
+		visitedParallelNodes := make(map[string]EriusFunc, 0)
+		visitedParallelNodes[idx] = parallelNode
+
+		for _, socketOutNodes := range parallelNode.Next {
+			for _, socketOutNode := range socketOutNodes {
+				socketNode, ok := (*bt)[socketOutNode]
+				if !ok {
+					continue
+				}
+				nodes[socketOutNode] = &socketNode
+
+				var visitedBranchNodes = make(map[string]EriusFunc, 0)
+
+				for {
+					nodeKeys := maps.Keys(nodes)
+					if len(nodeKeys) == 0 {
+						break
+					}
+
+					nodeKey, node := nodeKeys[0], nodes[nodeKeys[0]]
+					delete(nodes, nodeKey)
+					if _, ok := visitedParallelNodes[nodeKey]; ok {
+						continue
+					}
+
+					visitedParallelNodes[nodeKey] = *node
+					visitedBranchNodes[nodeKey] = *node
+					switch node.TypeID {
+					case BlockParallelEndName:
+						continue
+					case BlockParallelStartName:
+						{
+							nodeParallEndKey := parallelMap[nodeKey]
+							nodeParallEnd := (*bt)[nodeParallEndKey]
+							for _, socketOutBranchNodes := range nodeParallEnd.Next {
+								for _, socketOutBranchNode := range socketOutBranchNodes {
+									if socketOutBranchNode == parallelMap[idx] {
+										continue
+									}
+									_, okParallel := visitedParallelNodes[socketOutBranchNode]
+									_, okBranch := visitedBranchNodes[socketOutBranchNode]
+									if okParallel && !okBranch {
+										return false
+									}
+									socketBranchNode, ok := (*bt)[socketOutBranchNode]
+									if !ok {
+										continue
+									}
+									nodes[socketOutBranchNode] = &socketBranchNode
+								}
+							}
+						}
+					default:
+						{
+							for _, socketOutBranchNodes := range node.Next {
+								for _, socketOutBranchNode := range socketOutBranchNodes {
+									if socketOutBranchNode == parallelMap[idx] {
+										continue
+									}
+									_, okParallel := visitedParallelNodes[socketOutBranchNode]
+									_, okBranch := visitedBranchNodes[socketOutBranchNode]
+									if okParallel && !okBranch {
+										return false
+									}
+									socketBranchNode, ok := (*bt)[socketOutBranchNode]
+									if !ok {
+										continue
+									}
+									nodes[socketOutBranchNode] = &socketBranchNode
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return true
 }
 
 func (bt *BlocksType) validateAfterEndParallelNodes(endNode, idx *string,

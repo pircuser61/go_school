@@ -125,6 +125,7 @@ const (
 	ParallelOutOfStartInsert
 	GetDecisionsError
 	GetBlockStateError
+	ParallelPathIntersected
 )
 
 //nolint:dupl //its not duplicate
@@ -232,6 +233,7 @@ var errorText = map[Err]string{
 	ParallelOutOfStartInsert:            "invalid pipeline schema: nodes outside of parallel connects with parallel end",
 	GetDecisionsError:                   "can't get node decisions",
 	GetBlockStateError:                  "can't get block state",
+	ParallelPathIntersected:             "invalid pipeline schema: parallel path's are intersected",
 }
 
 // JOKE.
@@ -342,6 +344,7 @@ var errorDescription = map[Err]string{
 	ParallelOutOfStartInsert:     "Процесс не опубликован. Есть ноды, которые соеденены с нодой конец параллельности, но не проходят через ноду начало параллельности",
 	GetDecisionsError:            "Не удалось получить список решений нод",
 	GetBlockStateError:           "can't get block state",
+	ParallelPathIntersected:      "Процесс не опубликован. Внутри параллельности один из сокетов ведет на другую ветвь внутри параллельности",
 }
 
 var errorStatus = map[Err]int{
