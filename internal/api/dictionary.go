@@ -21,41 +21,57 @@ func (ae *APIEnv) GetTaskEventSchema(w http.ResponseWriter, r *http.Request) {
 
 	log := logger.GetLogger(ctx)
 
-	schema := script.JSONSchema{
+	type eventSchemaProperties struct {
+		TaskID     script.JSONSchemaPropertiesValue `json:"task_id"`
+		TaskStatus script.JSONSchemaPropertiesValue `json:"task_status"`
+		WorkNumber script.JSONSchemaPropertiesValue `json:"work_number"`
+		NodeName   script.JSONSchemaPropertiesValue `json:"node_name"`
+		NodeStart  script.JSONSchemaPropertiesValue `json:"node_start"`
+		NodeEnd    script.JSONSchemaPropertiesValue `json:"node_end"`
+		NodeStatus script.JSONSchemaPropertiesValue `json:"node_status"`
+		NodeOutput script.JSONSchemaPropertiesValue `json:"node_output"`
+	}
+
+	type eventSchema struct {
+		Type       string                `json:"type"`
+		Properties eventSchemaProperties `json:"properties"`
+	}
+
+	schema := eventSchema{
 		Type: "object",
-		Properties: map[string]script.JSONSchemaPropertiesValue{
-			"task_id": {
+		Properties: eventSchemaProperties{
+			TaskID: script.JSONSchemaPropertiesValue{
 				Type:   "string",
 				Format: "uuid",
 				Title:  "Идентификатор процесса",
 			},
-			"work_number": {
+			WorkNumber: script.JSONSchemaPropertiesValue{
 				Type:  "string",
 				Title: "Номер заявки ",
 			},
-			"node_name": {
+			NodeName: script.JSONSchemaPropertiesValue{
 				Type:  "string",
 				Title: "Название ноды",
 			},
-			"node_start": {
+			NodeStart: script.JSONSchemaPropertiesValue{
 				Type:   "string",
 				Format: "date-time",
 				Title:  "Дата старта ноды",
 			},
-			"node_end": {
+			NodeEnd: script.JSONSchemaPropertiesValue{
 				Type:   "string",
 				Format: "date-time",
 				Title:  "Дата окончания ноды",
 			},
-			"task_status": {
+			TaskStatus: script.JSONSchemaPropertiesValue{
 				Type:  "string",
 				Title: "Статус процесса",
 			},
-			"node_status": {
+			NodeStatus: script.JSONSchemaPropertiesValue{
 				Type:  "string",
 				Title: "Статус ноды",
 			},
-			"node_output": {
+			NodeOutput: script.JSONSchemaPropertiesValue{
 				Type:       "object",
 				Title:      "Выходные параметры ноды",
 				Properties: script.JSONSchemaProperties{},
