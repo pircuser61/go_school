@@ -471,8 +471,7 @@ func (runCtx *BlockRunContext) makeNotificationDescription(nodeName string) (str
 	return descr, nil
 }
 
-func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context,
-	step, stepType string, status TaskHumanStatus) error {
+func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context, step, stepType string, status TaskHumanStatus) error {
 	const (
 		FormStepType     = "form"
 		FunctionStepType = "executable_function"
@@ -503,7 +502,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context,
 		return nil
 	}
 
-	var emailAttachment []e.Attachment
+	var attach []e.Attachment
 
 	description, err := runCtx.makeNotificationDescription(step)
 	if err != nil {
@@ -529,7 +528,7 @@ func (runCtx *BlockRunContext) handleInitiatorNotify(ctx c.Context,
 		description,
 		runCtx.Services.Sender.SdAddress)
 
-	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, emailAttachment, tmpl); sendErr != nil {
+	if sendErr := runCtx.Services.Sender.SendNotification(ctx, emails, attach, tmpl); sendErr != nil {
 		return sendErr
 	}
 
