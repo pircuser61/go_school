@@ -799,6 +799,11 @@ func TestValidation_ParallelNodes(t *testing.T) {
 			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_bad2.json"),
 			WantValid: false,
 		},
+		{
+			Name:      "intersected branch inside parall bad 3",
+			Ef:        *unmarshalFromTestFile(t, "testdata/test_parallel_intersected_branches_bad3.json"),
+			WantValid: false,
+		},
 	}
 
 	for _, tt := range tests {
