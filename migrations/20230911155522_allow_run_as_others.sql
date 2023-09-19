@@ -5,6 +5,9 @@ ALTER TABLE external_systems
 
 ALTER TABLE works
     ADD COLUMN IF NOT EXISTS real_author VARCHAR(256) DEFAULT '';
+
+UPDATE works SET real_author = author
+    WHERE real_author = '';
 -- +goose StatementEnd
 
 -- +goose Down
