@@ -254,6 +254,10 @@ func (bt *BlocksType) validateIntersectingPathParallelNodes(parallelStartNodes m
 
 		for _, socketOutNodes := range parallelNode.Next {
 			for _, socketOutNode := range socketOutNodes {
+				_, ok := visitedParallelNodes[socketOutNode]
+				if ok {
+					return false
+				}
 				socketNode, ok := (*bt)[socketOutNode]
 				if !ok {
 					continue
