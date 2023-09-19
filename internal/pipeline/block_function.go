@@ -48,8 +48,8 @@ type ExecutableFunction struct {
 }
 
 type FunctionUpdateParams struct {
-	ActionName string                 `json:"action_name"`
-	Mapping    map[string]interface{} `json:"mapping"`
+	Action  string                 `json:"action"`
+	Mapping map[string]interface{} `json:"mapping"`
 }
 
 type ExecutableFunctionBlock struct {
@@ -139,7 +139,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, updateDataUnmarshalErr
 		}
 
-		switch updateData.ActionName {
+		switch updateData.Action {
 		case string(entity.TaskUpdateActionFuncSLAExpired):
 			gb.State.TimeExpired = true
 		default:
