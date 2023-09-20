@@ -413,7 +413,7 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdate
 		for k := range expectedOutput {
 			param, ok := updateData.Mapping[k]
 			if !ok {
-				return errors.New("function returned not all of expected results")
+				continue
 			}
 			// We're using pointer because we sometimes need to change type inside interface
 			// from float to integer (func simpleTypeHandler)
@@ -422,10 +422,6 @@ func (gb *ExecutableFunctionBlock) setStateByResponse(updateData *FunctionUpdate
 			}
 
 			resultOutput[k] = param
-		}
-
-		if len(resultOutput) != len(expectedOutput) {
-			return errors.New("function returned not all of expected results")
 		}
 
 		for k, v := range resultOutput {
