@@ -2996,7 +2996,7 @@ func (db *PGCon) GetTaskEventsParamsByWorkNumber(ctx context.Context, workNumber
 	SELECT system_id, microservice_id, path,
 	method, notification_schema, mapping, nodes
 	FROM external_system_task_subscriptions
-	WHERE version_id = (SELECT version_id FROM works WHERE work_number = $1) AND system_id = $2`
+	WHERE version_id = (SELECT version_id FROM works WHERE work_number = $1 limit 1) AND system_id = $2`
 
 	row := db.Connection.QueryRow(ctx, query, workNumber, systemID)
 
