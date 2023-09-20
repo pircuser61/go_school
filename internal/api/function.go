@@ -82,7 +82,7 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		VarStore:   storage,
 		Services: pipeline.RunContextServices{
 			HTTPClient:    ae.HTTPClient,
-			Storage:       ae.DB,
+			Storage:       txStorage,
 			Sender:        ae.Mail,
 			Kafka:         ae.Kafka,
 			People:        ae.People,
