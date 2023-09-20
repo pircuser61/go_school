@@ -139,7 +139,9 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, updateDataUnmarshalErr
 		}
 
-		switch updateData.Action {
+		log.Info("update function action: " + gb.RunContext.UpdateData.Action)
+
+		switch gb.RunContext.UpdateData.Action {
 		case string(entity.TaskUpdateActionFuncSLAExpired):
 			gb.State.TimeExpired = true
 		default:
