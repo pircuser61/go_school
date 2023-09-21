@@ -141,45 +141,49 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.N
 	return nodeEvents, nil
 }
 
-func (runCtx *BlockRunContext) FillTaskEvents(ctx c.Context) (err error) {
+func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
+	var err error
 	defer func() {
-		if err != nil || runCtx.TaskSubscriptionData.ExpectedEvents == nil {
+		if err != nil {
 			log := logger.GetLogger(ctx)
+			log.WithField("workNumber", runCtx.WorkNumber).Error(err)
+		}
+
+		if runCtx.TaskSubscriptionData.ExpectedEvents == nil {
 			runCtx.TaskSubscriptionData.ExpectedEvents = make([]entity.NodeSubscriptionEvents, 0)
-			log.Warning("FillTaskEvents got empty ExpectedEvents")
 		}
 	}()
 
 	taskRunCtx, err := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
 	if err != nil {
-		return err
+		return
 	}
 
 	sResp, err := runCtx.Services.Integrations.RpcIntCli.GetIntegrationByClientId(ctx,
 		&integration_v1.GetIntegrationByClientIdRequest{ClientId: taskRunCtx.ClientID})
 	if err != nil {
-		return err
+		return
 	}
 	if sResp == nil || sResp.Integration == nil {
-		return nil
+		return
 	}
 
 	expectedEvents, err := runCtx.Services.Storage.GetTaskEventsParamsByWorkNumber(ctx,
 		runCtx.WorkNumber, sResp.Integration.IntegrationId)
 	if err != nil {
-		return err
+		return
 	}
 	if expectedEvents.SystemID == "" {
-		return nil
+		return
 	}
 
 	resp, err := runCtx.Services.Integrations.RpcMicrCli.GetMicroservice(ctx,
 		&microservice_v1.GetMicroserviceRequest{MicroserviceId: expectedEvents.MicroserviceID})
 	if err != nil {
-		return err
+		return
 	}
 	if resp == nil || resp.Microservice == nil || resp.Microservice.Creds == nil || resp.Microservice.Creds.Prod == nil {
-		return nil
+		return
 	}
 
 	runCtx.TaskSubscriptionData = TaskSubscriptionData{
@@ -193,5 +197,6 @@ func (runCtx *BlockRunContext) FillTaskEvents(ctx c.Context) (err error) {
 		NotificationSchema: expectedEvents.NotificationSchema,
 		ExpectedEvents:     expectedEvents.Nodes,
 	}
-	return nil
+
+	return
 }

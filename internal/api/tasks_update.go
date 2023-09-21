@@ -266,15 +266,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 		return false
 	}
 
-	if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "FillTaskEvents").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		log.WithError(fillErr).Error("couldn't fill task events")
-		return false
-	}
+	runCtx.SetTaskEvents(ctx)
 
 	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, data.step.Name, &blockFunc, runCtx, true)
 	if blockErr != nil {
@@ -529,9 +521,8 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		},
 		BlockRunResults: &pipeline.BlockRunResults{},
 	}
-	if fillErr := runCtx.FillTaskEvents(ctxLocal); fillErr != nil {
-		return fillErr
-	}
+
+	runCtx.SetTaskEvents(ctx)
 
 	nodeEvents, err := runCtx.GetCancelledStepsEvents(ctxLocal)
 	if err != nil {
@@ -774,12 +765,8 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 			},
 			BlockRunResults: &pipeline.BlockRunResults{},
 		}
-		if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
-			log.WithError(fillErr).Error("couldn't fill task events data")
-			e := UnknownError
-			_ = e.sendError(w)
-			return
-		}
+
+		runCtx.SetTaskEvents(ctx)
 
 		nodeEvents, eventErr := runCtx.GetCancelledStepsEvents(ctx)
 		if eventErr != nil {

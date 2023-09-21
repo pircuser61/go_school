@@ -103,15 +103,8 @@ func (ae *APIEnv) FunctionReturnHandler(ctx c.Context, message kafka.RunnerInMes
 		},
 		IsTest: step.IsTest,
 	}
-	if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "FillTaskEvents").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		log.WithError(fillErr).Error("couldn't fill task events")
-		return nil
-	}
+
+	runCtx.SetTaskEvents(ctx)
 
 	blockFunc, err := ae.DB.GetBlockDataFromVersion(ctx, step.WorkNumber, step.Name)
 	if err != nil {
