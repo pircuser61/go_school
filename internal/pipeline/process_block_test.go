@@ -94,7 +94,7 @@ func makeStorage() *mocks.MockedDatabase {
 
 	res.On("GetCanceledTaskSteps",
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
-		mock.MatchedBy(func(workNumber string) bool { return true }),
+		mock.MatchedBy(func(taskID uuid.UUID) bool { return true }),
 	).Return(nil, nil)
 
 	return res

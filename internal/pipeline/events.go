@@ -109,7 +109,7 @@ func (runCtx BlockRunContext) NotifyEvents(ctx c.Context) {
 }
 
 func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.NodeEvent, error) {
-	steps, err := runCtx.Services.Storage.GetCanceledTaskSteps(ctx, runCtx.WorkNumber)
+	steps, err := runCtx.Services.Storage.GetCanceledTaskSteps(ctx, runCtx.TaskID)
 	if err != nil {
 		return nil, err
 	}
