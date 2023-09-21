@@ -711,16 +711,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 	}
 	blockData := dto.p.Pipeline.Blocks[ep.EntryPoint]
 
-	if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "FillTaskEvents").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		log.WithError(fillErr).Error("couldn't fill task events")
-		e := PipelineRunError
-		return nil, e, err
-	}
+	runCtx.SetTaskEvents(ctx)
 
 	err = pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
 	if err != nil {

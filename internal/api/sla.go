@@ -72,15 +72,7 @@ func (ae *APIEnv) handleBreachSlA(ctx c.Context, item db.StepBreachedSLA) {
 		NotifName: notifName,
 	}
 
-	if fillErr := runCtx.FillTaskEvents(ctx); fillErr != nil {
-		if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
-			log.WithField("funcName", "FillTaskEvents").
-				WithError(errors.New("couldn't rollback tx")).
-				Error(txErr)
-		}
-		log.WithError(fillErr).Error("couldn't fill task events")
-		return
-	}
+	runCtx.SetTaskEvents(ctx)
 
 	blockErr := pipeline.ProcessBlockWithEndMapping(ctx, item.StepName, item.BlockData, runCtx, true)
 	if blockErr != nil {

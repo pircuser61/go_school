@@ -141,49 +141,62 @@ func (runCtx BlockRunContext) GetCancelledStepsEvents(ctx c.Context) ([]entity.N
 	return nodeEvents, nil
 }
 
-func (runCtx *BlockRunContext) FillTaskEvents(ctx c.Context) error {
+func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
+	var err error
+	defer func() {
+		if err != nil {
+			log := logger.GetLogger(ctx).WithField("funcName", "setTaskEvents")
+			log.WithField("workNumber", runCtx.WorkNumber).Error(err)
+		}
+
+		if runCtx.TaskSubscriptionData.ExpectedEvents == nil {
+			runCtx.TaskSubscriptionData.ExpectedEvents = make([]entity.NodeSubscriptionEvents, 0)
+		}
+	}()
+
 	taskRunCtx, err := runCtx.Services.Storage.GetTaskRunContext(ctx, runCtx.WorkNumber)
 	if err != nil {
-		return err
+		return
 	}
 
 	sResp, err := runCtx.Services.Integrations.RpcIntCli.GetIntegrationByClientId(ctx,
 		&integration_v1.GetIntegrationByClientIdRequest{ClientId: taskRunCtx.ClientID})
 	if err != nil {
-		return err
+		return
 	}
 	if sResp == nil || sResp.Integration == nil {
-		return nil
+		return
 	}
 
 	expectedEvents, err := runCtx.Services.Storage.GetTaskEventsParamsByWorkNumber(ctx,
 		runCtx.WorkNumber, sResp.Integration.IntegrationId)
 	if err != nil {
-		return err
+		return
 	}
 	if expectedEvents.SystemID == "" {
-		return nil
+		return
 	}
 
-	mResp, err := runCtx.Services.Integrations.RpcMicrCli.GetMicroservice(ctx,
+	resp, err := runCtx.Services.Integrations.RpcMicrCli.GetMicroservice(ctx,
 		&microservice_v1.GetMicroserviceRequest{MicroserviceId: expectedEvents.MicroserviceID})
 	if err != nil {
-		return err
+		return
 	}
-	if mResp == nil || mResp.Microservice == nil || mResp.Microservice.Creds == nil || mResp.Microservice.Creds.Prod == nil {
-		return nil
+	if resp == nil || resp.Microservice == nil || resp.Microservice.Creds == nil || resp.Microservice.Creds.Prod == nil {
+		return
 	}
 
 	runCtx.TaskSubscriptionData = TaskSubscriptionData{
 		TaskRunClientID:    taskRunCtx.ClientID,
 		SystemID:           sResp.Integration.IntegrationId,
 		MicroserviceID:     expectedEvents.MicroserviceID,
-		MicroserviceURL:    mResp.Microservice.Creds.Prod.Addr,
+		MicroserviceURL:    resp.Microservice.Creds.Prod.Addr,
 		NotificationPath:   expectedEvents.Path,
 		Method:             expectedEvents.Method,
 		Mapping:            expectedEvents.Mapping,
 		NotificationSchema: expectedEvents.NotificationSchema,
 		ExpectedEvents:     expectedEvents.Nodes,
 	}
-	return nil
+
+	return
 }
