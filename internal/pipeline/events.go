@@ -145,7 +145,7 @@ func (runCtx *BlockRunContext) SetTaskEvents(ctx c.Context) {
 	var err error
 	defer func() {
 		if err != nil {
-			log := logger.GetLogger(ctx)
+			log := logger.GetLogger(ctx).WithField("funcName", "setTaskEvents")
 			log.WithField("workNumber", runCtx.WorkNumber).Error(err)
 		}
 
