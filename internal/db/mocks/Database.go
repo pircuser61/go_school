@@ -624,25 +624,25 @@ func (_m *MockedDatabase) GetBlocksOutputs(ctx context.Context, blockId string) 
 	return r0, r1
 }
 
-// GetCanceledTaskSteps provides a mock function with given fields: ctx, workNumber
-func (_m *MockedDatabase) GetCanceledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
-	ret := _m.Called(ctx, workNumber)
+// GetCanceledTaskSteps provides a mock function with given fields: ctx, uuid.UUID
+func (_m *MockedDatabase) GetCanceledTaskSteps(ctx context.Context, taskID uuid.UUID) ([]entity.Step, error) {
+	ret := _m.Called(ctx, taskID)
 
 	var r0 []entity.Step
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]entity.Step, error)); ok {
-		return rf(ctx, workNumber)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]entity.Step, error)); ok {
+		return rf(ctx, taskID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []entity.Step); ok {
-		r0 = rf(ctx, workNumber)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) []entity.Step); ok {
+		r0 = rf(ctx, taskID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]entity.Step)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, workNumber)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, taskID)
 	} else {
 		r1 = ret.Error(1)
 	}

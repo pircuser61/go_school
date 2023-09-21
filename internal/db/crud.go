@@ -2311,7 +2311,7 @@ func (db *PGCon) GetParentTaskStepByName(ctx context.Context,
 	return &s, nil
 }
 
-func (db *PGCon) GetCanceledTaskSteps(ctx context.Context, workNumber string) ([]entity.Step, error) {
+func (db *PGCon) GetCanceledTaskSteps(ctx context.Context, taskID uuid.UUID) ([]entity.Step, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_cancelled_task_steps")
 	defer span.End()
 
@@ -2322,9 +2322,9 @@ func (db *PGCon) GetCanceledTaskSteps(ctx context.Context, workNumber string) ([
 			vs.step_name, 
 			vs.time
 		FROM variable_storage vs  
-			WHERE vs.work_id = (SELECT id FROM works WHERE work_number = $1) AND vs.status = 'cancel'`
+			WHERE vs.work_id = $1 AND vs.status = 'cancel'`
 
-	rows, err := db.Connection.Query(ctx, query, workNumber)
+	rows, err := db.Connection.Query(ctx, query, taskID)
 	if err != nil {
 		return nil, err
 	}
