@@ -236,14 +236,9 @@ func (gb *GoFormBlock) handleAutoFillForm() error {
 		return err
 	}
 
-	formMapping := make(map[string]interface{})
-
-	for k := range gb.State.Mapping {
-		varPath := gb.State.Mapping[k]
-
-		variableValue := getVariable(variables, varPath.Value)
-
-		formMapping[k] = variableValue
+	formMapping, err := script.MapData(gb.State.Mapping, script.RestoreMapStructure(variables), []string{})
+	if err != nil {
+		return err
 	}
 
 	gb.State.ApplicationBody = formMapping
