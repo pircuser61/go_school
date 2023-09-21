@@ -573,7 +573,11 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 		log.Error(e.errorMessage(err))
 		return nil, errors.Wrap(err, e.error())
 	}
-	log.Info("executablePipeline is nil ", executablePipeline == nil)
+
+	if executablePipeline == nil {
+		log.Error("got no pipeline")
+		return nil, errors.New("No pipeline started")
+	}
 
 	return &entity.RunResponse{
 		PipelineID: executablePipeline.PipelineID,
