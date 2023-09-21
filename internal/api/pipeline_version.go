@@ -718,8 +718,6 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 				Error(txErr)
 		}
 		log.WithError(fillErr).Error("couldn't fill task events")
-		e := PipelineRunError
-		return nil, e, err
 	}
 
 	err = pipeline.ProcessBlockWithEndMapping(ctx, ep.EntryPoint, &blockData, runCtx, false)
