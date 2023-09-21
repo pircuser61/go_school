@@ -799,6 +799,12 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 		}
 		entryPoint.Output = es.Settings.StartSchema
 	}
+	if entryPoint.Output == nil {
+		entryPoint.Output = &script.JSONSchema{
+			Type:       "object",
+			Properties: make(map[string]script.JSONSchemaPropertiesValue),
+		}
+	}
 
 	entryPoint.Output.Properties[KeyOutputWorkNumber] = script.JSONSchemaPropertiesValue{
 		Type:   "string",
