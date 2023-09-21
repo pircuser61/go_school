@@ -2683,6 +2683,10 @@ func (db *PGCon) GetBlockDataFromVersion(ctx context.Context, workNumber, blockN
 	if scanErr := db.Connection.QueryRow(ctx, q, blockName, workNumber).Scan(&f); scanErr != nil {
 		return nil, scanErr
 	}
+
+	if f == nil {
+		return nil, errors.New("couldn't find block data")
+	}
 	return f, nil
 }
 
