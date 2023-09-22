@@ -187,7 +187,7 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, err
 		}
 
-		variables = gb.restoreMapStructure(variables)
+		variables = script.RestoreMapStructure(variables)
 
 		functionMapping, err := script.MapData(gb.State.Mapping, variables, nil)
 		if err != nil {
@@ -460,25 +460,4 @@ func (gb *ExecutableFunctionBlock) isFirstStart(ctx c.Context, workId uuid.UUID,
 	}
 
 	return countRunFunc > 1, firstRun, nil
-}
-
-func (gb *ExecutableFunctionBlock) restoreMapStructure(variables map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	for name, variable := range variables {
-		keyParts := strings.Split(name, ".")
-		current := result
-
-		for i, keyPart := range keyParts {
-			if i == len(keyParts)-1 {
-				current[keyPart] = variable
-			} else {
-				if _, ok := current[keyPart]; !ok {
-					current[keyPart] = make(map[string]interface{})
-				}
-				current = current[keyPart].(map[string]interface{})
-			}
-		}
-	}
-
-	return result
 }

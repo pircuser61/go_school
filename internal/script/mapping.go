@@ -13,6 +13,27 @@ import (
 
 const dotSeparator = "."
 
+func RestoreMapStructure(variables map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for name, variable := range variables {
+		keyParts := strings.Split(name, ".")
+		current := result
+
+		for i, keyPart := range keyParts {
+			if i == len(keyParts)-1 {
+				current[keyPart] = variable
+			} else {
+				if _, ok := current[keyPart]; !ok {
+					current[keyPart] = make(map[string]interface{})
+				}
+				current = current[keyPart].(map[string]interface{})
+			}
+		}
+	}
+
+	return result
+}
+
 //nolint:gocyclo // ok here
 func MapData(mapping JSONSchemaProperties, input map[string]interface{}, required []string,
 ) (map[string]interface{}, error) {

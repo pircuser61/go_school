@@ -381,8 +381,7 @@ func TestExecutableFunctionBlock_restoreMapStructure(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gb := &ExecutableFunctionBlock{}
-			assert.Equalf(t, tt.want, gb.restoreMapStructure(tt.variables), "restoreMapStructure(%v)", tt.variables)
+			assert.Equalf(t, tt.want, script.RestoreMapStructure(tt.variables), "restoreMapStructure(%v)", tt.variables)
 		})
 	}
 }
