@@ -85,7 +85,7 @@ func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email
 	descr := mail.MakeDescription(body.InitialApplication.ApplicationBody)
 	text = mail.WrapDescription(text, descr)
 
-	aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody, body.InitialApplication.AttachmentFields)
+	aa := mail.GetAttachmentsFromBody(body.InitialApplication.ApplicationBody)
 
 	attachmentsInfo, err := gb.RunContext.Services.FileRegistry.GetAttachmentsInfo(ctx, aa)
 	if err != nil {
