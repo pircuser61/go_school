@@ -1677,9 +1677,9 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	if _, ok := map[string]struct{}{
 		"finished": {}, "no_success": {}, "error": {},
 	}[dto.Status]; ok {
-		query = fmt.Sprintf(query, "--update_col--", ",updated_at", 1)
-		query = fmt.Sprintf(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
 		args = append(args, timestamp)
+		query = strings.Replace(query, "--update_col--", ",updated_at", 1)
+		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
 	}
 
 	_, err := db.Connection.Exec(
