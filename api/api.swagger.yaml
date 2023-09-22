@@ -3232,7 +3232,7 @@ components:
     NodeEvent:
       type: string
       description: Возможный ивент ноды
-      enum: ["start", "end"]
+      enum: [ "start", "end" ]
 
     NodeSubscriptionEvents:
       type: object
@@ -4464,6 +4464,8 @@ components:
           type: object
           properties: { }
         time:
+          type: string
+        updateTime:
           type: string
         type:
           type: string

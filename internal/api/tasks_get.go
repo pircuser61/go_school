@@ -56,6 +56,7 @@ type taskResp struct {
 
 type step struct {
 	Time                      time.Time                  `json:"time"`
+	UpdateTime                *time.Time                 `json:"update_time"`
 	Type                      string                     `json:"type"`
 	Name                      string                     `json:"name"`
 	IsDelegateOfAnyStepMember bool                       `json:"is_delegate_of_any_step_member"`
@@ -84,14 +85,9 @@ func (taskResp) toResponse(in *entity.EriusTask, usrDegSteps map[string]bool, sN
 	steps := make([]step, 0, len(in.Steps))
 	actions := make([]action, 0, len(in.Actions))
 	for i := range in.Steps {
-		actionTime := in.Steps[i].Time
-
-		if in.Steps[i].UpdatedAt != nil {
-			actionTime = *in.Steps[i].UpdatedAt
-		}
-
 		steps = append(steps, step{
-			Time:                      actionTime,
+			Time:                      in.Steps[i].Time,
+			UpdateTime:                in.Steps[i].UpdatedAt,
 			Type:                      in.Steps[i].Type,
 			Name:                      in.Steps[i].Name,
 			State:                     in.Steps[i].State,
