@@ -24,23 +24,15 @@ func (u userFromSD) String() string {
 	return fmt.Sprintf("%s (%s)", u.Fullname, u.Username)
 }
 
-func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[string][]entity.Attachment {
+func GetAttachmentsFromBody(body orderedmap.OrderedMap) map[string][]entity.Attachment {
 	aa := make(map[string][]entity.Attachment)
-
-	ff := make(map[string]struct{})
-	for _, f := range fields {
-		ff[strings.Trim(f, ".")] = struct{}{}
-	}
 
 	iter := func(body orderedmap.OrderedMap) {
 		for _, k := range body.Keys() {
-			if _, ok := ff[k]; !ok {
-				continue
-			}
 			v, _ := body.Get(k)
 			switch val := v.(type) {
 			case orderedmap.OrderedMap:
-				attachmentID, ok := val.Get("id")
+				attachmentID, ok := val.Get("file_id")
 				if !ok {
 					continue
 				}
@@ -50,6 +42,9 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 				}
 				aa[k] = []entity.Attachment{{FileID: attachmentIDString}}
 			case string:
+				if !strings.HasPrefix(val, attachmentPrefix) {
+					continue
+				}
 				aa[k] = []entity.Attachment{{FileID: strings.TrimPrefix(val, attachmentPrefix)}}
 			case []interface{}:
 				a := make([]entity.Attachment, 0)
@@ -57,9 +52,12 @@ func GetAttachmentsFromBody(body orderedmap.OrderedMap, fields []string) map[str
 					var attachmentID string
 					switch itemTyped := item.(type) {
 					case string:
+						if !strings.HasPrefix(itemTyped, attachmentPrefix) {
+							continue
+						}
 						attachmentID = strings.TrimPrefix(itemTyped, attachmentPrefix)
 					case orderedmap.OrderedMap:
-						value, ok := itemTyped.Get("id")
+						value, ok := itemTyped.Get("file_id")
 						if !ok {
 							continue
 						}
