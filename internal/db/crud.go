@@ -1636,7 +1636,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 	timestamp := time.Now()
 	// nolint:gocritic
 	// language=PostgreSQL
-	const query = `
+	query := `
 		INSERT INTO variable_storage (
 			id, 
 			work_id, 
@@ -1647,6 +1647,7 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			break_points, 
 			has_error,
 			status
+			--update_col--
 		)
 		VALUES (
 			$1, 
@@ -1658,12 +1659,10 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 			$7,
 			$8,
 			$9
+			--update_val--
 		)
 `
-
-	_, err := db.Connection.Exec(
-		ctx,
-		query,
+	args := []interface{}{
 		id,
 		dto.WorkID,
 		dto.StepType,
@@ -1673,6 +1672,20 @@ func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uui
 		dto.BreakPoints,
 		dto.HasError,
 		dto.Status,
+	}
+
+	if _, ok := map[string]struct{}{
+		"finished": {}, "no_success": {}, "error": {},
+	}[dto.Status]; ok {
+		args = append(args, timestamp)
+		query = strings.Replace(query, "--update_col--", ",updated_at", 1)
+		query = strings.Replace(query, "--update_val--", fmt.Sprintf(",$%d", len(args)), 1)
+	}
+
+	_, err := db.Connection.Exec(
+		ctx,
+		query,
+		args...,
 	)
 	if err != nil {
 		return NullUuid, time.Time{}, err
