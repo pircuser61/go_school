@@ -822,3 +822,188 @@ func (es EriusScenario) FillEntryPointOutput() (err error) {
 
 	return nil
 }
+
+type NodeGroup struct {
+	EndNode   string       `json:"end_node"`
+	Nodes     []*NodeGroup `json:"nodes"`
+	Prev      string       `json:"prev"`
+	StartNode string       `json:"start_node"`
+}
+
+func (bt *BlocksType) GetGroups() (NodeGroups []*NodeGroup) {
+	blocks := map[string]EriusFunc{
+		StartBlock0: (*bt)[StartBlock0],
+	}
+	visitedNodes := make(map[string]*EriusFunc, 0)
+	prevNodeMap := make(map[string]string, 0)
+
+	NodeGroups = make([]*NodeGroup, 0)
+	for {
+		nodeKeys := maps.Keys(blocks)
+		if len(nodeKeys) == 0 {
+			break
+		}
+		nodeKey, node := nodeKeys[0], blocks[nodeKeys[0]]
+		delete(blocks, nodeKey)
+		visitedNodes[nodeKey] = &node
+		if node.TypeID == BlockParallelStartName {
+			NodeGroupParallel, exitParallelIdx := bt.fillParallGroups(nodeKey, prevNodeMap[nodeKey], &node)
+			NodeGroups = append(NodeGroups, NodeGroupParallel)
+			endNode := (*bt)[exitParallelIdx]
+			for _, socketOutNodes := range endNode.Next {
+				for _, socketOutNode := range socketOutNodes {
+					_, ok := visitedNodes[socketOutNode]
+					if ok {
+						continue
+					}
+					socketNode, ok := (*bt)[socketOutNode]
+					if !ok {
+						continue
+					}
+					blocks[socketOutNode] = socketNode
+					prevNodeMap[socketOutNode] = exitParallelIdx
+				}
+			}
+		} else {
+			NodeGroups = append(NodeGroups, &NodeGroup{
+				EndNode:   nodeKey,
+				Nodes:     nil,
+				Prev:      prevNodeMap[nodeKey],
+				StartNode: nodeKey,
+			})
+			for _, socketOutNodes := range node.Next {
+				for _, socketOutNode := range socketOutNodes {
+					_, ok := visitedNodes[socketOutNode]
+					if ok {
+						continue
+					}
+					socketNode, ok := (*bt)[socketOutNode]
+					if !ok {
+						continue
+					}
+					blocks[socketOutNode] = socketNode
+					prevNodeMap[socketOutNode] = nodeKey
+				}
+			}
+		}
+
+	}
+	return NodeGroups
+}
+
+func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFunc) (NodeGroupParallel *NodeGroup, exitParallelIdx string) {
+	blocks := map[string]*EriusFunc{
+		nodeKey: block,
+	}
+	visitedNodes := map[string]*EriusFunc{
+		nodeKey: block,
+	}
+	prevNodeMap := map[string]string{
+		nodeKey: prevNode,
+	}
+
+	NodeGroupParallel = &NodeGroup{
+		EndNode:   "",
+		Nodes:     []*NodeGroup{},
+		Prev:      prevNode,
+		StartNode: nodeKey,
+	}
+
+	for {
+		startNodeKeys := maps.Keys(blocks)
+		if len(startNodeKeys) == 0 {
+			break
+		}
+		parallNodeKey, parallNode := startNodeKeys[0], blocks[startNodeKeys[0]]
+		if parallNode.TypeID == BlockParallelEndName && len(startNodeKeys) != 1 {
+			parallNodeKey, parallNode = startNodeKeys[1], blocks[startNodeKeys[1]]
+		}
+		delete(blocks, parallNodeKey)
+		visitedNodes[parallNodeKey] = parallNode
+
+		switch parallNode.TypeID {
+		case BlockParallelEndName:
+			{
+				NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
+					EndNode:   parallNodeKey,
+					Nodes:     nil,
+					Prev:      prevNodeMap[parallNodeKey],
+					StartNode: parallNodeKey,
+				})
+				NodeGroupParallel.EndNode = parallNodeKey
+				exitParallelIdx = parallNodeKey
+
+				return
+			}
+		case BlockParallelStartName:
+			{
+				if parallNodeKey != nodeKey {
+					newNodeGroupParallel, newExitParallelIdx := bt.fillParallGroups(parallNodeKey, prevNodeMap[parallNodeKey], parallNode)
+					NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, newNodeGroupParallel)
+					endNode := (*bt)[newExitParallelIdx]
+					for _, socketOutNodes := range endNode.Next {
+						for _, socketOutNode := range socketOutNodes {
+							_, ok := visitedNodes[socketOutNode]
+							if ok {
+								continue
+							}
+							socketNode, ok := (*bt)[socketOutNode]
+							if !ok {
+								continue
+							}
+							blocks[socketOutNode] = &socketNode
+							prevNodeMap[socketOutNode] = newExitParallelIdx
+						}
+					}
+				} else {
+					NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
+						EndNode:   parallNodeKey,
+						Nodes:     nil,
+						Prev:      prevNodeMap[parallNodeKey],
+						StartNode: parallNodeKey,
+					})
+					for _, socketOutNodes := range parallNode.Next {
+						for _, socketOutNode := range socketOutNodes {
+							_, ok := visitedNodes[socketOutNode]
+							if ok {
+								continue
+							}
+							socketNode, ok := (*bt)[socketOutNode]
+							if !ok {
+								continue
+							}
+							blocks[socketOutNode] = &socketNode
+							prevNodeMap[socketOutNode] = parallNodeKey
+						}
+					}
+
+				}
+			}
+		default:
+			{
+				NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
+					EndNode:   parallNodeKey,
+					Nodes:     nil,
+					Prev:      prevNodeMap[parallNodeKey],
+					StartNode: parallNodeKey,
+				})
+				for _, socketOutNodes := range parallNode.Next {
+					for _, socketOutNode := range socketOutNodes {
+						_, ok := visitedNodes[socketOutNode]
+						if ok {
+							continue
+						}
+						socketNode, ok := (*bt)[socketOutNode]
+						if !ok {
+							continue
+						}
+						blocks[socketOutNode] = &socketNode
+						prevNodeMap[socketOutNode] = parallNodeKey
+					}
+				}
+			}
+		}
+
+	}
+	return
+}

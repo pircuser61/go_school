@@ -423,6 +423,8 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	groups := p.Pipeline.Blocks.GetGroups()
+
 	canEdit, err := ae.DB.VersionEditable(ctx, p.VersionID)
 	if err != nil {
 		e := UnknownError
@@ -454,7 +456,7 @@ func (ae *APIEnv) EditVersion(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = ae.DB.UpdateDraft(ctx, &p, updated)
+	err = ae.DB.UpdateDraft(ctx, &p, updated, groups)
 	if err != nil {
 		e := PipelineWriteError
 		log.Error(e.errorMessage(err))

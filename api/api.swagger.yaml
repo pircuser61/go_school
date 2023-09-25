@@ -3515,6 +3515,8 @@ components:
           type: integer
         attachments_count:
           type: integer
+        node_group:
+            $ref: '#/components/schemas/NodeGroup'
       required:
         - id
         - version_id
@@ -3530,6 +3532,18 @@ components:
         - steps
         - work_number
         - blueprint_id
+
+    NodeGroup:
+      type: object
+      properties:
+        nodes:
+            $ref: '#/components/schemas/NodeGroup'
+        start_node:
+          type: string
+        end_node:
+          type: string
+        prev:
+          type: string
 
     EriusTasks:
       type: object
