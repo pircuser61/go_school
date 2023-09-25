@@ -37,7 +37,6 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 	}
 
 	emails := make(map[string]mail.Template, 0)
-	isGroupExecutors := string(gb.State.ExecutionType) == string(entity.GroupExecution) || len(gb.State.Executors) > 1
 
 	task, getVersionErr := gb.RunContext.Services.Storage.GetVersionByWorkNumber(ctx, gb.RunContext.WorkNumber)
 	if getVersionErr != nil {
@@ -93,7 +92,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
-		if isGroupExecutors {
+		if !gb.State.IsTakenInWork {
 			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
 				&mail.ExecutorNotifTemplate{
 					WorkNumber:  gb.RunContext.WorkNumber,
