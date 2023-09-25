@@ -111,7 +111,7 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
 	_, executorFound := gb.State.Executors[currentLogin]
 
 	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin, getSliceFromMapOfStrings(gb.State.Executors))
-	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
+	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
@@ -788,7 +788,7 @@ func (gb *GoExecutionBlock) toEditApplication(ctx c.Context) (err error) {
 
 	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(byLogin,
 		getSliceFromMapOfStrings(gb.State.Executors))
-	if !(executorFound || isDelegate) && byLogin != AutoApprover {
+	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
