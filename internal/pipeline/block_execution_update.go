@@ -583,13 +583,12 @@ func (a *ExecutionData) SetRequestExecutionInfo(login string, delegations human_
 }
 
 func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
-	log := logger.GetLogger(ctx)
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
 	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin,
 		getSliceFromMapOfStrings(gb.State.Executors))
-	if !(executorFound || isDelegate) && currentLogin != AutoApprover {
+	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
@@ -617,9 +616,10 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 		time.Now(), slaInfoPtr)
 	gb.State.IncreaseSLA(workHours)
 
-	if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
-		log.Error(err)
-		return err
+	if !gb.RunContext.skipNotifications {
+		if err = gb.emailGroupExecutors(ctx, gb.RunContext.UpdateData.ByLogin, executorLogins); err != nil {
+			return err
+		}
 	}
 
 	return nil

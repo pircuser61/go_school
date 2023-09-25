@@ -224,7 +224,6 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		}
 
 		gb.State.Executors = resolvedEntities
-		gb.State.IsTakenInWork = true
 	case script.FormExecutorTypeAutoFillUser:
 		if err := gb.handleAutoFillForm(); err != nil {
 			return err
@@ -253,7 +252,6 @@ func (gb *GoFormBlock) setExecutorsByParams(ctx c.Context, dto *setFormExecutors
 		gb.State.Executors = map[string]struct{}{
 			dto.Value: {},
 		}
-		gb.State.IsTakenInWork = true
 	}
 
 	return nil
