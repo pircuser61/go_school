@@ -20,10 +20,17 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/db/mocks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	human_tasks "gitlab.services.mts.ru/jocasta/pipeliner/internal/human-tasks"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 	serviceDeskMocks "gitlab.services.mts.ru/jocasta/pipeliner/internal/servicedesc/mocks"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/sla"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/store"
 )
+
+type TestUpdateData struct {
+	BlockName    string
+	UpdateParams script.BlockUpdateData
+}
 
 func makeStorage() *mocks.MockedDatabase {
 	res := &mocks.MockedDatabase{}
@@ -121,7 +128,7 @@ func TestProcessBlock(t *testing.T) {
 	type fields struct {
 		Entrypoint string
 		RunContext *BlockRunContext
-		Updates    map[string]script.BlockUpdateData
+		Updates    []TestUpdateData
 	}
 
 	sdAppParams, err := json.Marshal(script.SdApplicationParams{BlueprintID: "123"})
@@ -478,18 +485,43 @@ func TestProcessBlock(t *testing.T) {
 
 							return &sdMock
 						}(),
+						SLAService: func() sla.Service {
+							slaMock := sla.NewSlaService(nil)
+							return slaMock
+						}(),
+						HumanTasks: func() *human_tasks.Service {
+							service, _ := human_tasks.NewService(human_tasks.Config{})
+							return service
+						}(),
 					},
+					Delegations: func() human_tasks.Delegations {
+						return human_tasks.Delegations{}
+					}(),
 				},
-				Updates: map[string]script.BlockUpdateData{
-					"approver_0": {
-						ByLogin:    "tester",
-						Action:     string(entity.TaskUpdateActionApprovement),
-						Parameters: approveUpdParams,
+				Updates: []TestUpdateData{
+					{
+						BlockName: "approver_0",
+						UpdateParams: script.BlockUpdateData{
+							ByLogin:    "tester",
+							Action:     string(entity.TaskUpdateActionApprovement),
+							Parameters: approveUpdParams,
+						},
 					},
-					"execution_0": {
-						ByLogin:    "tester",
-						Action:     string(entity.TaskUpdateActionExecution),
-						Parameters: executeUpdParams,
+					{
+						BlockName: "execution_0",
+						UpdateParams: script.BlockUpdateData{
+							ByLogin:    "tester",
+							Action:     string(entity.TaskUpdateActionExecutorStartWork),
+							Parameters: executeUpdParams,
+						},
+					},
+					{
+						BlockName: "execution_0",
+						UpdateParams: script.BlockUpdateData{
+							ByLogin:    "tester",
+							Action:     string(entity.TaskUpdateActionExecution),
+							Parameters: executeUpdParams,
+						},
 					},
 				},
 			},
@@ -509,13 +541,13 @@ func TestProcessBlock(t *testing.T) {
 				tt.fields.RunContext, false); procErr != nil {
 				t.Fatal(procErr)
 			}
-			for name, params := range tt.fields.Updates {
-				blockData, updateErr := tt.fields.RunContext.Services.Storage.GetBlockDataFromVersion(ctx, "", name)
+			for i, _ := range tt.fields.Updates {
+				blockData, updateErr := tt.fields.RunContext.Services.Storage.GetBlockDataFromVersion(ctx, "", tt.fields.Updates[i].BlockName)
 				if updateErr != nil {
 					t.Fatal(updateErr)
 				}
-				tt.fields.RunContext.UpdateData = &params
-				if procErr := ProcessBlockWithEndMapping(context.Background(), name, blockData,
+				tt.fields.RunContext.UpdateData = &tt.fields.Updates[i].UpdateParams
+				if procErr := ProcessBlockWithEndMapping(context.Background(), tt.fields.Updates[i].BlockName, blockData,
 					tt.fields.RunContext, true); procErr != nil {
 					t.Fatal(procErr)
 				}

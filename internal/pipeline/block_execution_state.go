@@ -113,7 +113,7 @@ func (a *ExecutionData) SetDecision(login string, in *ExecutionUpdateParams, del
 	_, executorFound := a.Executors[login]
 
 	delegateFor, isDelegate := delegations.FindDelegatorFor(login, getSliceFromMapOfStrings(a.Executors))
-	if !(executorFound || isDelegate) && login != AutoApprover {
+	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 

@@ -121,7 +121,7 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 		params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
 	}
-	executorChosenFlag := false
+
 	if gb.State.UseActualExecutor {
 		execs, prevErr := gb.RunContext.Services.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
 		if prevErr != nil {
@@ -129,20 +129,17 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 		}
 		if len(execs) == 1 {
 			gb.State.Executors = execs
-			executorChosenFlag = true
-			gb.State.IsTakenInWork = true
 		}
 	}
-	if !executorChosenFlag {
-		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-			Type:     params.Type,
-			GroupID:  params.ExecutorsGroupID,
-			Executor: params.Executors,
-			WorkType: params.WorkType,
-		})
-		if err != nil {
-			return err
-		}
+
+	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+		Type:     params.Type,
+		GroupID:  params.ExecutorsGroupID,
+		Executor: params.Executors,
+		WorkType: params.WorkType,
+	})
+	if err != nil {
+		return err
 	}
 
 	return gb.handleNotifications(ctx)
@@ -175,7 +172,6 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		RepeatPrevDecision: params.RepeatPrevDecision,
 		UseActualExecutor:  params.UseActualExecutor,
 	}
-	executorChosenFlag := false
 
 	if params.ExecutorsGroupIDPath != nil && *params.ExecutorsGroupIDPath != "" {
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
@@ -198,21 +194,19 @@ func (gb *GoExecutionBlock) createState(ctx c.Context, ef *entity.EriusFunc) err
 		}
 		if len(execs) == 1 {
 			gb.State.Executors = execs
-			executorChosenFlag = true
-			gb.State.IsTakenInWork = true
 		}
 	}
-	if !executorChosenFlag {
-		err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
-			Type:     params.Type,
-			GroupID:  params.ExecutorsGroupID,
-			Executor: params.Executors,
-			WorkType: params.WorkType,
-		})
-		if err != nil {
-			return err
-		}
+
+	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
+		Type:     params.Type,
+		GroupID:  params.ExecutorsGroupID,
+		Executor: params.Executors,
+		WorkType: params.WorkType,
+	})
+	if err != nil {
+		return err
 	}
+
 	if params.WorkType != nil {
 		gb.State.WorkType = *params.WorkType
 	} else {
@@ -247,7 +241,6 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		gb.State.Executors = map[string]struct{}{
 			dto.Executor: {},
 		}
-		gb.State.IsTakenInWork = true
 	case script.ExecutionTypeFromSchema:
 		variableStorage, grabStorageErr := gb.RunContext.VarStore.GrabStorage()
 		if grabStorageErr != nil {
@@ -271,9 +264,6 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 			}
 		}
 		gb.State.Executors = executorsFromSchema
-		if len(gb.State.Executors) == 1 {
-			gb.State.IsTakenInWork = true
-		}
 
 	case script.ExecutionTypeGroup:
 		workGroup, errGroup := gb.RunContext.Services.ServiceDesc.GetWorkGroup(ctx, dto.GroupID)

@@ -23,6 +23,10 @@ func NewSlaService(hrGate *hrgate.Service) Service {
 }
 
 func (s *service) GetSLAInfoPtr(ctx context.Context, dto InfoDto) (*SLAInfo, error) {
+	if s.HrGate == nil {
+		return &SLAInfo{}, nil
+	}
+
 	notUseCalendarDays, getNotUseErr := dto.WorkType.GetNotUseCalendarDays()
 	if getNotUseErr != nil {
 		return nil, getNotUseErr
