@@ -103,12 +103,14 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
-	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
-		if eventErr != nil {
-			return nil, eventErr
+	if gb.State.Expired {
+		if _, ok := gb.expectedEvents[eventEnd]; ok {
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			if eventErr != nil {
+				return nil, eventErr
+			}
+			gb.happenedEvents = append(gb.happenedEvents, event)
 		}
-		gb.happenedEvents = append(gb.happenedEvents, event)
 	}
 
 	return nil, nil
