@@ -197,6 +197,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			count(*) over() as total,
 			w.rate,
 			w.rate_comment,
+			v.node_groups,
 		    ua.actions
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
@@ -212,7 +213,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 			LIMIT 1
 		) descr ON descr.work_id = w.id
-		WHERE w.child_id IS NULL`
+		WHERE w.child_id IS NULL And v.id = 'c6f7e9f5-40e1-437b-8fd0-a25f25fac830'`
 
 	order := "ASC"
 	if fl.Order != nil {
@@ -1153,7 +1154,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 	for rows.Next() {
 		et := entity.EriusTask{}
-
+		var nodeGroups string
 		var nullStringParameters sql.NullString
 		var actionData []byte
 
@@ -1174,6 +1175,7 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.Total,
 			&et.Rate,
 			&et.RateComment,
+			&nodeGroups,
 			&actionData,
 		)
 
@@ -1203,6 +1205,11 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		et.Actions = computedActions
 		et.IsDelegate = filters.CurrentUser != et.Author
 		ets.Tasks = append(ets.Tasks, et)
+		et.NodeGroup = make([]*entity.NodeGroup, 0)
+		err = json.Unmarshal([]byte(nodeGroups), &et.NodeGroup)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &ets, nil

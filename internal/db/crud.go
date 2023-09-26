@@ -1602,6 +1602,33 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	return tx.Commit(c)
 }
 
+func (db *PGCon) UpdateGroupsForEmptyVersions(c context.Context,
+	versionID string, groups []*entity.NodeGroup) error {
+	c, span := trace.StartSpan(c, "pg_update_draft")
+	defer span.End()
+
+	tx, err := db.Connection.Begin(c)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(c) // nolint:errcheck // rollback err
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	UPDATE versions 
+	SET 
+		node_groups = $1
+	WHERE id = $2`
+
+	_, err = tx.Exec(c, q, groups, versionID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(c)
+}
+
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_save_step_context")
 	defer span.End()

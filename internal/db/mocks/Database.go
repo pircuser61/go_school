@@ -2350,6 +2350,20 @@ func (_m *MockedDatabase) UpdateEndingSystemSettings(ctx context.Context, versio
 	return r0
 }
 
+// UpdateGroupsForEmptyVersions provides a mock function with given fields: ctx, versionID, groups
+func (_m *MockedDatabase) UpdateGroupsForEmptyVersions(ctx context.Context, versionID string, groups []*entity.NodeGroup) error {
+	ret := _m.Called(ctx, versionID, groups)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []*entity.NodeGroup) error); ok {
+		r0 = rf(ctx, versionID, groups)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // UpdateStepContext provides a mock function with given fields: ctx, dto
 func (_m *MockedDatabase) UpdateStepContext(ctx context.Context, dto *db.UpdateStepRequest) error {
 	ret := _m.Called(ctx, dto)

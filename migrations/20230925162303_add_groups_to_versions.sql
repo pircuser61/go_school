@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE versions
-    ADD COLUMN IF NOT EXISTS node_groups jsonb NOT NULL DEFAULT '{}'::jsonb;
+    ADD COLUMN IF NOT EXISTS node_groups jsonb NOT NULL DEFAULT '[]'::jsonb;
 -- +goose StatementEnd
 
 -- +goose Down

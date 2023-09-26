@@ -903,7 +903,7 @@ type EriusTask struct {
 	Id            string                 `json:"id"`
 	LastChangedAt string                 `json:"last_changed_at"`
 	Name          string                 `json:"name"`
-	NodeGroup     *NodeGroup             `json:"node_group,omitempty"`
+	NodeGroup     *[]NodeGroup           `json:"node_group,omitempty"`
 	Parameters    map[string]interface{} `json:"parameters"`
 	Rate          *int                   `json:"rate,omitempty"`
 	StartedAt     string                 `json:"started_at"`

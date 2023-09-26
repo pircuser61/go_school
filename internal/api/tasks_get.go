@@ -489,6 +489,28 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 		deadline := ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].Sla), slaInfoPtr)
 		resp.Tasks[i].ProcessDeadline = deadline
 
+		if len(resp.Tasks[i].NodeGroup) == 0 {
+			scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, resp.Tasks[i].WorkNumber)
+			if getVersionErr != nil {
+				e := UnknownError
+				log.Error(e.errorMessage(getVersionErr))
+				_ = e.sendError(w)
+
+				return
+			}
+			groups := scenario.Pipeline.Blocks.GetGroups()
+			updateGroupsErr := ae.DB.UpdateGroupsForEmptyVersions(ctx, scenario.VersionID.String(), groups)
+			if updateGroupsErr != nil {
+				e := UnknownError
+				log.Error(e.errorMessage(updateGroupsErr))
+				_ = e.sendError(w)
+
+				return
+			}
+
+			resp.Tasks[i].NodeGroup = groups
+		}
+
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {

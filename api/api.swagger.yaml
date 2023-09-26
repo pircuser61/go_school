@@ -3516,7 +3516,9 @@ components:
         attachments_count:
           type: integer
         node_group:
-            $ref: '#/components/schemas/NodeGroup'
+          type: array
+          items:
+              $ref: '#/components/schemas/NodeGroup'
       required:
         - id
         - version_id

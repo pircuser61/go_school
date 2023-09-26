@@ -232,4 +232,5 @@ type Database interface {
 	SaveSlaVersionSettings(ctx c.Context, versionID string, s e.SlaVersionSettings) (err error)
 	GetSlaVersionSettings(ctx c.Context, versionID string) (s e.SlaVersionSettings, err error)
 	GetTaskMembers(ctx c.Context, workNumber string) ([]DbMember, error)
+	UpdateGroupsForEmptyVersions(ctx c.Context, versionID string, groups []*e.NodeGroup) error
 }
