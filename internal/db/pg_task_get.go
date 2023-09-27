@@ -219,14 +219,16 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		order = *fl.Order
 	}
 
-	if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
-		q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
-	} else if fl.SelectAs != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
-	} else if fl.SelectFor != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, []string{}), q)
-	} else {
-		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
+	if fl.Archived == nil || !*fl.Archived {
+		if fl.InitiatorLogins != nil && len(*fl.InitiatorLogins) > 0 {
+			q = fmt.Sprintf("%s %s", getUniqueActions("initiators", *fl.InitiatorLogins), q)
+		} else if fl.SelectAs != nil {
+			q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
+		} else if fl.SelectFor != nil {
+			q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, []string{}), q)
+		} else {
+			q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
+		}
 	}
 
 	if fl.SignatureCarrier != nil && *fl.SelectAs == entity.SelectAsValSignerJur {
@@ -250,14 +252,24 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		args = append(args, time.Unix(int64(fl.Created.Start), 0).UTC(), time.Unix(int64(fl.Created.End), 0).UTC())
 		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
 	}
-	if fl.Archived != nil {
-		switch *fl.Archived {
-		case true:
-			q = fmt.Sprintf("%s AND (w.archived = true OR (now()::TIMESTAMP - w.finished_at::TIMESTAMP) > '3 days')", q)
-		case false:
-			q = fmt.Sprintf(`%s AND (w.finished_at IS NULL 
-							OR (w.archived = false AND (now()::TIMESTAMP - w.finished_at::TIMESTAMP) < '3 days'))`, q)
+	if fl.Archived != nil && *fl.Archived {
+		switch *fl.SelectAs {
+
+		case entity.SelectAsValFinishedApprover:
+
+		case entity.SelectAsValFinishedExecutor:
+			q = fmt.Sprintf("%s AND %s", compileArchivedExecutor(delegations), q)
+		case entity.SelectAsValFinishedGroupExecutor:
+
+		case entity.SelectAsValFinishedFormExecutor:
+
+		case entity.SelectAsValFinishedSignerPhys:
+
+		case entity.SelectAsValFinishedSignerJur:
+
 		}
+
+		q = fmt.Sprintf("%s AND w.finished_at IS NULL", q)
 	}
 
 	if fl.ForCarousel != nil && *fl.ForCarousel {
@@ -301,6 +313,10 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	q = strings.Replace(q, "[join_variable_storage]", "", 1)
 
 	return q, args
+}
+
+func compileArchivedExecutor(logins []string) string {
+	return ""
 }
 
 func getProcessingSteps(q string, fl *entity.TaskFilter, delegations []string) string {
