@@ -871,9 +871,45 @@ func TestValidation_GroupNodes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			groups := tt.Ef.Pipeline.Blocks.GetGroups()
-			if !cmp.Equal(groups, tt.WantedGroup) {
+			if !checkEqualityOfGroups(groups, tt.WantedGroup) {
 				t.Errorf("unexpected group %v, \n  %v", groups, tt.WantedGroup)
 			}
 		})
 	}
+}
+
+type NodeGroupMap struct {
+	EndNode   string                  `json:"end_node"`
+	Nodes     map[string]NodeGroupMap `json:"nodes"`
+	Prev      string                  `json:"prev"`
+	StartNode string                  `json:"start_node"`
+}
+
+func checkEqualityOfGroups(g1, g2 []*entity.NodeGroup) bool {
+
+	if len(g1) != len(g2) {
+		return false
+	}
+	gm1 := groupSliceToMap(g1)
+	gm2 := groupSliceToMap(g2)
+	if cmp.Equal(gm1, gm2) {
+		return true
+	}
+	return false
+}
+
+func groupSliceToMap(g []*entity.NodeGroup) map[string]NodeGroupMap {
+	if g == nil {
+		return nil
+	}
+	gmap := map[string]NodeGroupMap{}
+	for i := range g {
+		gmap[g[i].StartNode] = NodeGroupMap{
+			EndNode:   g[i].EndNode,
+			Nodes:     groupSliceToMap(g[i].Nodes),
+			Prev:      g[i].Prev,
+			StartNode: g[i].StartNode,
+		}
+	}
+	return gmap
 }

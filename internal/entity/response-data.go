@@ -929,7 +929,7 @@ func (bt *BlocksType) fillParallGroups(nodeKey, prevNode string, block *EriusFun
 			NodeGroupParallel.Nodes = append(NodeGroupParallel.Nodes, &NodeGroup{
 				EndNode:   parallNodeKey,
 				Nodes:     nil,
-				Prev:      prevNodeMap[parallNodeKey],
+				Prev:      "",
 				StartNode: parallNodeKey,
 			})
 			NodeGroupParallel.EndNode = parallNodeKey
