@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/hrishin/httpmock"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -827,4 +828,52 @@ func unmarshalFromTestFile(t *testing.T, in string) *entity.EriusScenario {
 		t.Fatal(err)
 	}
 	return &result
+}
+
+func unmarshalGroupsFromTestFile(t *testing.T, in string) []*entity.NodeGroup {
+	bytes, err := os.ReadFile(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result []*entity.NodeGroup
+	err = json.Unmarshal(bytes, &result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+
+func TestValidation_GroupNodes(t *testing.T) {
+	tests := []struct {
+		Name        string
+		Ef          entity.EriusScenario
+		WantedGroup []*entity.NodeGroup
+	}{
+		{
+			Name:        "OnlyOneLine",
+			Ef:          *unmarshalFromTestFile(t, "testdata/test_groups_one_line.json"),
+			WantedGroup: unmarshalGroupsFromTestFile(t, "testdata/test_groups_one_line_result.json"),
+		},
+
+		{
+			Name:        "OneParallel",
+			Ef:          *unmarshalFromTestFile(t, "testdata/test_groups_one_parallel.json"),
+			WantedGroup: unmarshalGroupsFromTestFile(t, "testdata/test_groups_one_parallel_result.json"),
+		},
+
+		{
+			Name:        "ParallelInside",
+			Ef:          *unmarshalFromTestFile(t, "testdata/test_groups_parallel_inside.json"),
+			WantedGroup: unmarshalGroupsFromTestFile(t, "testdata/test_groups_parallel_inside_result.json"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			groups := tt.Ef.Pipeline.Blocks.GetGroups()
+			if !cmp.Equal(groups, tt.WantedGroup) {
+				t.Errorf("unexpected group %v, \n  %v", groups, tt.WantedGroup)
+			}
+		})
+	}
 }
