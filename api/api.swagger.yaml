@@ -3539,6 +3539,8 @@ components:
       type: object
       properties:
         nodes:
+          type: array
+          items:
             $ref: '#/components/schemas/NodeGroup'
         start_node:
           type: string
@@ -3546,6 +3548,9 @@ components:
           type: string
         prev:
           type: string
+      required:
+        - start_node
+        - end_node
 
     EriusTasks:
       type: object

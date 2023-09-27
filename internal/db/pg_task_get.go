@@ -213,7 +213,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			WHERE vs.work_id = w.id AND vs.step_type = 'servicedesk_application' AND vs.status != 'skipped'
 			LIMIT 1
 		) descr ON descr.work_id = w.id
-		WHERE w.child_id IS NULL And v.id = 'c6f7e9f5-40e1-437b-8fd0-a25f25fac830'`
+		WHERE w.child_id IS NULL`
 
 	order := "ASC"
 	if fl.Order != nil {
@@ -870,7 +870,8 @@ func (db *PGCon) GetTask(
  			run_context -> 'initial_application' -> 'is_test_application' as isTest,
  			w.status_comment,
 			w.status_author,
- 			v.content
+ 			v.content,
+ 			v.node_groups
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -904,6 +905,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 
 	var nullStringParameters sql.NullString
 	var actionData []byte
+	var nodeGroups string
 
 	row := db.Connection.QueryRow(ctx, q, workNumber)
 
@@ -929,6 +931,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.StatusComment,
 		&et.StatusAuthor,
 		&et.VersionContent,
+		&nodeGroups,
 	)
 	if err != nil {
 		return nil, err
@@ -954,7 +957,11 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 			return nil, err
 		}
 	}
-
+	et.NodeGroup = make([]*entity.NodeGroup, 0)
+	err = json.Unmarshal([]byte(nodeGroups), &et.NodeGroup)
+	if err != nil {
+		return nil, err
+	}
 	return &et, nil
 }
 
@@ -1154,7 +1161,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 
 	for rows.Next() {
 		et := entity.EriusTask{}
-		var nodeGroups string
 		var nullStringParameters sql.NullString
 		var actionData []byte
 
@@ -1175,7 +1181,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 			&et.Total,
 			&et.Rate,
 			&et.RateComment,
-			&nodeGroups,
 			&actionData,
 		)
 
@@ -1205,11 +1210,6 @@ func (db *PGCon) getTasks(ctx c.Context, filters *entity.TaskFilter,
 		et.Actions = computedActions
 		et.IsDelegate = filters.CurrentUser != et.Author
 		ets.Tasks = append(ets.Tasks, et)
-		et.NodeGroup = make([]*entity.NodeGroup, 0)
-		err = json.Unmarshal([]byte(nodeGroups), &et.NodeGroup)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return &ets, nil

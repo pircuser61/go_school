@@ -1604,14 +1604,8 @@ func (db *PGCon) UpdateDraft(c context.Context,
 
 func (db *PGCon) UpdateGroupsForEmptyVersions(c context.Context,
 	versionID string, groups []*entity.NodeGroup) error {
-	c, span := trace.StartSpan(c, "pg_update_draft")
+	c, span := trace.StartSpan(c, "pg_update_groups_for_empty_versions")
 	defer span.End()
-
-	tx, err := db.Connection.Begin(c)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(c) // nolint:errcheck // rollback err
 
 	// nolint:gocritic
 	// language=PostgreSQL
@@ -1621,12 +1615,12 @@ func (db *PGCon) UpdateGroupsForEmptyVersions(c context.Context,
 		node_groups = $1
 	WHERE id = $2`
 
-	_, err = tx.Exec(c, q, groups, versionID)
+	_, err := db.Connection.Exec(c, q, groups, versionID)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit(c)
+	return nil
 }
 
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {

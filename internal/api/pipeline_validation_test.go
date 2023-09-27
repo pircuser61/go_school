@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	"github.com/hrishin/httpmock"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -886,7 +887,6 @@ type NodeGroupMap struct {
 }
 
 func checkEqualityOfGroups(g1, g2 []*entity.NodeGroup) bool {
-
 	if len(g1) != len(g2) {
 		return false
 	}

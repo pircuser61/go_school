@@ -1478,10 +1478,10 @@ type NodeEvent string
 
 // NodeGroup defines model for NodeGroup.
 type NodeGroup struct {
-	EndNode   *string    `json:"end_node,omitempty"`
-	Nodes     *NodeGroup `json:"nodes,omitempty"`
-	Prev      *string    `json:"prev,omitempty"`
-	StartNode *string    `json:"start_node,omitempty"`
+	EndNode   string       `json:"end_node"`
+	Nodes     *[]NodeGroup `json:"nodes,omitempty"`
+	Prev      *string      `json:"prev,omitempty"`
+	StartNode string       `json:"start_node"`
 }
 
 // NodeSubscriptionEvents defines model for NodeSubscriptionEvents.

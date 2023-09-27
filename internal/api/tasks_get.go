@@ -52,6 +52,7 @@ type taskResp struct {
 	StatusComment    string                 `json:"status_comment"`
 	StatusAuthor     string                 `json:"status_author"`
 	ProcessDeadline  time.Time              `json:"process_deadline"`
+	NodeGroup        []NodeGroup            `json:"node_group"`
 }
 
 type step struct {
@@ -134,9 +135,27 @@ func (taskResp) toResponse(in *entity.EriusTask, usrDegSteps map[string]bool, sN
 		StatusComment:    in.StatusComment,
 		StatusAuthor:     in.StatusAuthor,
 		ProcessDeadline:  dln,
+		NodeGroup:        groupsToResponce(in.NodeGroup),
 	}
 
 	return out
+}
+
+func groupsToResponce(groups []*entity.NodeGroup) []NodeGroup {
+	if groups == nil {
+		return nil
+	}
+	var resp []NodeGroup
+	for i := range groups {
+		insideNodes := groupsToResponce(groups[i].Nodes)
+		resp = append(resp, NodeGroup{
+			EndNode:   groups[i].EndNode,
+			Nodes:     &insideNodes,
+			Prev:      &groups[i].Prev,
+			StartNode: groups[i].StartNode,
+		})
+	}
+	return resp
 }
 
 func (ae *APIEnv) GetTaskFormSchema(w http.ResponseWriter, req *http.Request, workNumber, formID string) {
@@ -213,6 +232,28 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 		log.Error(e.errorMessage(err))
 		_ = e.sendError(w)
 		return
+	}
+
+	if len(dbTask.NodeGroup) == 0 {
+		scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, dbTask.WorkNumber)
+		if getVersionErr != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(getVersionErr))
+			_ = e.sendError(w)
+
+			return
+		}
+		groups := scenario.Pipeline.Blocks.GetGroups()
+		updateGroupsErr := ae.DB.UpdateGroupsForEmptyVersions(ctx, scenario.VersionID.String(), groups)
+		if updateGroupsErr != nil {
+			e := UnknownError
+			log.Error(e.errorMessage(updateGroupsErr))
+			_ = e.sendError(w)
+
+			return
+		}
+
+		dbTask.NodeGroup = groups
 	}
 
 	steps, err := ae.DB.GetTaskSteps(ctx, dbTask.ID)
@@ -488,28 +529,6 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 		deadline := ae.SLAService.ComputeMaxDate(resp.Tasks[i].StartedAt, float32(versionsSLA[resp.Tasks[i].VersionID.String()].Sla), slaInfoPtr)
 		resp.Tasks[i].ProcessDeadline = deadline
-
-		if len(resp.Tasks[i].NodeGroup) == 0 {
-			scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, resp.Tasks[i].WorkNumber)
-			if getVersionErr != nil {
-				e := UnknownError
-				log.Error(e.errorMessage(getVersionErr))
-				_ = e.sendError(w)
-
-				return
-			}
-			groups := scenario.Pipeline.Blocks.GetGroups()
-			updateGroupsErr := ae.DB.UpdateGroupsForEmptyVersions(ctx, scenario.VersionID.String(), groups)
-			if updateGroupsErr != nil {
-				e := UnknownError
-				log.Error(e.errorMessage(updateGroupsErr))
-				_ = e.sendError(w)
-
-				return
-			}
-
-			resp.Tasks[i].NodeGroup = groups
-		}
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
