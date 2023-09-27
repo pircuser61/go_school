@@ -510,7 +510,6 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 			resp.Tasks[i].NodeGroup = groups
 		}
-
 	}
 
 	if err = sendResponse(w, http.StatusOK, resp); err != nil {
