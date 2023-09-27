@@ -303,6 +303,9 @@ type NodeEvent struct {
 }
 
 func (ne NodeEvent) ToMap() map[string]interface{} {
+	if ne.NodeOutput == nil {
+		ne.NodeOutput = make(map[string]interface{})
+	}
 	res := make(map[string]interface{})
 	for i := 0; i < reflect.TypeOf(ne).NumField(); i++ {
 		f := reflect.TypeOf(ne).Field(i)
