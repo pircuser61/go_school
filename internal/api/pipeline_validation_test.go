@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/hrishin/httpmock"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -827,4 +829,87 @@ func unmarshalFromTestFile(t *testing.T, in string) *entity.EriusScenario {
 		t.Fatal(err)
 	}
 	return &result
+}
+
+func unmarshalGroupsFromTestFile(t *testing.T, in string) []*entity.NodeGroup {
+	bytes, err := os.ReadFile(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result []*entity.NodeGroup
+	err = json.Unmarshal(bytes, &result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+
+func TestValidation_GroupNodes(t *testing.T) {
+	tests := []struct {
+		Name        string
+		Ef          entity.EriusScenario
+		WantedGroup []*entity.NodeGroup
+	}{
+		{
+			Name:        "OnlyOneLine",
+			Ef:          *unmarshalFromTestFile(t, "testdata/test_groups_one_line.json"),
+			WantedGroup: unmarshalGroupsFromTestFile(t, "testdata/test_groups_one_line_result.json"),
+		},
+
+		{
+			Name:        "OneParallel",
+			Ef:          *unmarshalFromTestFile(t, "testdata/test_groups_one_parallel.json"),
+			WantedGroup: unmarshalGroupsFromTestFile(t, "testdata/test_groups_one_parallel_result.json"),
+		},
+
+		{
+			Name:        "ParallelInside",
+			Ef:          *unmarshalFromTestFile(t, "testdata/test_groups_parallel_inside.json"),
+			WantedGroup: unmarshalGroupsFromTestFile(t, "testdata/test_groups_parallel_inside_result.json"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			groups := tt.Ef.Pipeline.Blocks.GetGroups()
+			if !checkEqualityOfGroups(groups, tt.WantedGroup) {
+				t.Errorf("unexpected group %v, \n  %v", groups, tt.WantedGroup)
+			}
+		})
+	}
+}
+
+type NodeGroupMap struct {
+	EndNode   string                  `json:"end_node"`
+	Nodes     map[string]NodeGroupMap `json:"nodes"`
+	Prev      string                  `json:"prev"`
+	StartNode string                  `json:"start_node"`
+}
+
+func checkEqualityOfGroups(g1, g2 []*entity.NodeGroup) bool {
+	if len(g1) != len(g2) {
+		return false
+	}
+	gm1 := groupSliceToMap(g1)
+	gm2 := groupSliceToMap(g2)
+	if cmp.Equal(gm1, gm2) {
+		return true
+	}
+	return false
+}
+
+func groupSliceToMap(g []*entity.NodeGroup) map[string]NodeGroupMap {
+	if g == nil {
+		return nil
+	}
+	gmap := map[string]NodeGroupMap{}
+	for i := range g {
+		gmap[g[i].StartNode] = NodeGroupMap{
+			EndNode:   g[i].EndNode,
+			Nodes:     groupSliceToMap(g[i].Nodes),
+			Prev:      g[i].Prev,
+			StartNode: g[i].StartNode,
+		}
+	}
+	return gmap
 }

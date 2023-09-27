@@ -1559,7 +1559,7 @@ func (db *PGCon) RemovePipelineTags(c context.Context, id uuid.UUID) error {
 }
 
 func (db *PGCon) UpdateDraft(c context.Context,
-	p *entity.EriusScenario, pipelineData []byte) error {
+	p *entity.EriusScenario, pipelineData []byte, groups []*entity.NodeGroup) error {
 	c, span := trace.StartSpan(c, "pg_update_draft")
 	defer span.End()
 
@@ -1578,10 +1578,11 @@ func (db *PGCon) UpdateDraft(c context.Context,
 		content = $2, 
 		comment = $3,
 		is_actual = $4,
-		updated_at = $5
-	WHERE id = $6`
+		updated_at = $5,
+		node_groups = $6
+	WHERE id = $7`
 
-	_, err = tx.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), p.VersionID)
+	_, err = tx.Exec(c, q, p.Status, pipelineData, p.Comment, p.Status == StatusApproved, time.Now(), groups, p.VersionID)
 	if err != nil {
 		return err
 	}
@@ -1599,6 +1600,27 @@ func (db *PGCon) UpdateDraft(c context.Context,
 	}
 
 	return tx.Commit(c)
+}
+
+func (db *PGCon) UpdateGroupsForEmptyVersions(c context.Context,
+	versionID string, groups []*entity.NodeGroup) error {
+	c, span := trace.StartSpan(c, "pg_update_groups_for_empty_versions")
+	defer span.End()
+
+	// nolint:gocritic
+	// language=PostgreSQL
+	q := `
+	UPDATE versions 
+	SET 
+		node_groups = $1
+	WHERE id = $2`
+
+	_, err := db.Connection.Exec(c, q, groups, versionID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *PGCon) SaveStepContext(ctx context.Context, dto *SaveStepRequest) (uuid.UUID, time.Time, error) {
