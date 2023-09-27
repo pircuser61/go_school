@@ -197,7 +197,6 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 			count(*) over() as total,
 			w.rate,
 			w.rate_comment,
-			v.node_groups,
 		    ua.actions
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
