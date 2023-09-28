@@ -92,7 +92,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 			l.WithField("login", login).WithError(getUserEmailErr).Warning("couldn't get email")
 			continue
 		}
-		if !gb.State.IsTakenInWork {
+		if !gb.State.IsTakenInWork && gb.State.ExecutionType == "group" {
 			emails[email] = mail.NewExecutionNeedTakeInWorkTpl(
 				&mail.ExecutorNotifTemplate{
 					WorkNumber:  gb.RunContext.WorkNumber,
