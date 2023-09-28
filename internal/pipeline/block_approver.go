@@ -43,32 +43,46 @@ func (gb *GoApproverBlock) GetNewEvents() []entity.NodeEvent {
 }
 
 func (gb *GoApproverBlock) Members() []Member {
+	addedMembers := make(map[string]struct{})
 	members := make([]Member, 0)
 	for login := range gb.State.Approvers {
 		members = append(members, Member{
-			Login:      login,
-			IsFinished: gb.isApprovementBaseFinished(login),
-			Actions:    gb.approvementBaseActions(login),
+			Login:     login,
+			Actions:   gb.approvementBaseActions(login),
+			UserActed: gb.isApprovementBaseActed(login),
 		})
+		addedMembers[login] = struct{}{}
 	}
+	// Что по Доп согласующим? у них тоже только при выполнении хотя бы какого-нибудь действия только выводить
 	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
 		addApprover := gb.State.AdditionalApprovers[i]
 		members = append(members, Member{
-			Login:      addApprover.ApproverLogin,
-			IsFinished: gb.isApprovementAddFinished(&addApprover),
-			Actions:    gb.approvementAddActions(&addApprover),
+			Login:     addApprover.ApproverLogin,
+			Actions:   gb.approvementAddActions(&addApprover),
+			UserActed: gb.isApprovementAddActed(&addApprover),
 		})
+		addedMembers[addApprover.ApproverLogin] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.ApproverLog); i++ {
+		approverLog := gb.State.ApproverLog[i]
+		if _, ok := addedMembers[approverLog.Login]; ok == true {
+			continue
+		}
+		members = append(members, Member{
+			Login:     approverLog.Login,
+			Actions:   []MemberAction{},
+			UserActed: true,
+		})
+		addedMembers[approverLog.Login] = struct{}{}
 	}
 	return members
 }
 
-func (gb *GoApproverBlock) isApprovementBaseFinished(login string) bool {
-	if gb.State.Decision != nil {
-		return true
-	}
+func (gb *GoApproverBlock) isApprovementBaseActed(login string) bool {
 	for i := 0; i < len(gb.State.ApproverLog); i++ {
 		log := gb.State.ApproverLog[i]
-		if (log.Login == login || log.DelegateFor == login) && log.LogType == ApproverLogDecision {
+		if (log.Login == login || log.DelegateFor == login) && (log.LogType == ApproverLogDecision || log.LogType == ApproverLogAddApprover) {
 			return true
 		}
 	}
@@ -101,8 +115,8 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 	})
 }
 
-func (gb *GoApproverBlock) isApprovementAddFinished(a *AdditionalApprover) bool {
-	if gb.State.Decision != nil || a.Decision != nil {
+func (gb *GoApproverBlock) isApprovementAddActed(a *AdditionalApprover) bool {
+	if a.Decision != nil {
 		return true
 	}
 	return false

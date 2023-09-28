@@ -23,9 +23,9 @@ type MemberAction struct {
 	Params map[string]interface{}
 }
 type Member struct {
-	Login      string
-	IsFinished bool
-	Actions    []MemberAction
+	Login     string
+	Actions   []MemberAction
+	UserActed bool
 }
 
 type Deadline struct {
@@ -40,8 +40,8 @@ var (
 	StatusRunning   Status = "running"
 	StatusFinished  Status = "finished"
 	StatusNoSuccess Status = "no_success"
-	StatusError    Status = "error"
-	StatusCanceled Status = "cancel"
+	StatusError     Status = "error"
+	StatusCanceled  Status = "cancel"
 )
 
 type Runner interface {
