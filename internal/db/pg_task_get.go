@@ -24,12 +24,6 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-const (
-	blockGoApproverID  = "approver"
-	blockGoFormID      = "form"
-	blockGoExecutionID = "execution"
-)
-
 func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {

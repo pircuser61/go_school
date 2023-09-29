@@ -44,11 +44,9 @@ func (m *membersFormData) getMembers(blockId string) (res []member) {
 }
 
 type membersSignData struct {
-	Signers      map[string]struct{} `json:"signers"`
-	Decision     *string             `json:"decision,omitempty"`
-	ActualSigner *string             `json:"actual_signer,omitempty"`
-	SignLog      []signLogEntry      `json:"sign_log,omitempty"`
-	Type         string              `json:"type"`
+	Decision     *string        `json:"decision,omitempty"`
+	ActualSigner *string        `json:"actual_signer,omitempty"`
+	SignLog      []signLogEntry `json:"sign_log,omitempty"`
 }
 
 type signLogEntry struct {
@@ -70,7 +68,6 @@ func (m *membersSignData) getMembers(blockId string) (res []member) {
 }
 
 type membersExecutionData struct {
-	Executors                map[string]struct{}       `json:"executors"`
 	Decision                 *string                   `json:"decision,omitempty"`
 	ActualExecutor           *string                   `json:"actual_executor,omitempty"`
 	EditingAppLog            []executorEditApp         `json:"editing_app_log,omitempty"`
@@ -94,16 +91,6 @@ type changeExecutorsLogs struct {
 
 func (m *membersExecutionData) getMembers(blockId string) (res []member) {
 	if m.Decision != nil {
-		for login := range m.Executors {
-			res = append(res, member{
-				Id:       uuid.New().String(),
-				BlockId:  blockId,
-				Login:    login,
-				Finished: true,
-				IsActed:  true,
-			})
-		}
-
 		for i := range m.RequestExecutionInfoLogs {
 			if m.RequestExecutionInfoLogs[i].ReqType == "question" {
 				res = append(res, member{
@@ -141,7 +128,6 @@ func (m *membersExecutionData) getMembers(blockId string) (res []member) {
 }
 
 type membersApproverData struct {
-	Approvers           map[string]struct{}  `json:"approvers"`
 	Decision            *string              `json:"decision,omitempty"`
 	ApproverLog         []approverLogEntry   `json:"approver_log,omitempty"`
 	AdditionalApprovers []additionalApprover `json:"additional_approvers"`
@@ -257,7 +243,21 @@ func upMembers(tx *sql.Tx) error {
 					return err
 				}
 
-				members = append(members, data.getMembers("")...)
+				const getBlockId = `
+				select id from variable_storage where work_id = $1 and 
+					step_name = $2
+					time = (select max(time) 
+						from variable_storage 
+						where work_id = $1 and step_name = $2
+				)`
+
+				blockId := ""
+				row := tx.QueryRow(getBlockId, workId, key)
+				if err := row.Scan(&blockId); err != nil {
+					return err
+				}
+
+				members = append(members, data.getMembers(blockId)...)
 			} else {
 				fmt.Printf("key: %s is not recognized \n", key)
 			}
@@ -302,9 +302,5 @@ func uniqMembers(in []member) (out []member) {
 }
 
 func downMembers(tx *sql.Tx) error {
-	const q = `delete from members where is_migrated = true`
-
-	_, execErr := tx.Exec(q)
-
-	return execErr
+	return nil
 }
