@@ -4,9 +4,9 @@ import (
 	c "context"
 	"encoding/json"
 	"errors"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 )
 
 type signSignatureParams struct {
@@ -81,33 +81,6 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		return nil
 	}
 
-	if gb.State.SLA != nil {
-		emails := make([]string, 0, len(gb.State.Signers))
-		logins := getSliceFromMapOfStrings(gb.State.Signers)
-
-		for i := range logins {
-			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
-			if err != nil {
-				continue
-			}
-			emails = append(emails, eml)
-		}
-
-		if len(emails) == 0 {
-			return nil
-		}
-		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
-			mail.NewSignSLAExpiredTemplate(
-				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
-				gb.RunContext.Services.Sender.SdAddress,
-			),
-		)
-		if err != nil {
-			return err
-		}
-	}
-
 	if gb.State.AutoReject != nil && *gb.State.AutoReject {
 		gb.RunContext.UpdateData.ByLogin = autoSigner
 		gb.State.ActualSigner = &gb.RunContext.UpdateData.ByLogin
@@ -120,6 +93,30 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 	}
 
 	gb.State.SLAChecked = true
+
+	if gb.State.SLA != nil {
+		emails := make([]string, 0, len(gb.State.Signers))
+		logins := getSliceFromMapOfStrings(gb.State.Signers)
+
+		for i := range logins {
+			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
+			if err != nil {
+				continue
+			}
+			emails = append(emails, eml)
+		}
+
+		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
+			mail.NewSignSLAExpiredTemplate(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Services.Sender.SdAddress,
+			),
+		)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
