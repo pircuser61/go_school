@@ -247,10 +247,6 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", q, len(args))
 	}
 
-	if fl.Archived == nil && fl.SelectAs != nil {
-		q = fmt.Sprintf("%s %s", makeArchivedFilter(*fl.SelectAs, delegations), q)
-	}
-
 	if fl.Name != nil {
 		name := strings.Replace(*fl.Name, "_", "!_", -1)
 		name = strings.Replace(name, "%", "!%", -1)
@@ -313,38 +309,6 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	q = strings.Replace(q, "[join_variable_storage]", "", 1)
 
 	return q, args
-}
-
-func makeArchivedFilter(selectAs string, logins []string) string {
-	makeFilter := func(blockType string, logins []string) string {
-		return fmt.Sprintf(`AND w.id = ANY (SELECT distinct works.id
-					FROM members m
-					LEFT JOIN variable_storage vs ON vs.work_id = works.id
-					LEFT JOIN works ON works.id = vs.work_id
-				WHERE 
-					vs.status NOT IN ('running', 'idle', 'ready') AND 
-					vs.step_type='%s' AND 
-					m.login IN %s AND 
-					m.acted = true)`, blockType, buildInExpression(logins),
-		)
-	}
-
-	switch selectAs {
-	case entity.SelectAsValFinishedApprover:
-		return makeFilter(blockGoApproverID, logins)
-	case entity.SelectAsValFinishedExecutor:
-		return makeFilter(blockGoExecutionID, logins)
-	case entity.SelectAsValFinishedFormExecutor:
-		return makeFilter(blockGoFormID, logins)
-	case entity.SelectAsValFinishedSignerPhys:
-		return makeFilter("", logins)
-	case entity.SelectAsValFinishedSignerJur:
-		return makeFilter("", logins)
-	case entity.SelectAsValFinishedGroupExecutor:
-		return makeFilter(blockGoExecutionID, logins)
-	}
-
-	return ""
 }
 
 func getProcessingSteps(q string, fl *entity.TaskFilter, delegations []string) string {
