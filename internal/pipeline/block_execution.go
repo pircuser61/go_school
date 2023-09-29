@@ -50,12 +50,50 @@ func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {
 
 func (gb *GoExecutionBlock) Members() []Member {
 	members := []Member{}
+	addedMembers := make(map[string]struct{}, 0)
 	for login := range gb.State.Executors {
 		members = append(members, Member{
 			Login:   login,
 			Actions: gb.executionActions(),
 			IsActed: gb.isExecutionActed(login),
 		})
+		addedMembers[login] = struct{}{}
+	}
+	for i := 0; i < len(gb.State.EditingAppLog); i++ {
+		log := gb.State.EditingAppLog[i]
+		if _, ok := addedMembers[log.Executor]; !ok {
+			continue
+		}
+		members = append(members, Member{
+			Login:   log.Executor,
+			Actions: []MemberAction{},
+			IsActed: true,
+		})
+		addedMembers[log.Executor] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.RequestExecutionInfoLogs); i++ {
+		log := gb.State.RequestExecutionInfoLogs[i]
+		if _, ok := addedMembers[log.Login]; !ok {
+			continue
+		}
+		if log.ReqType == RequestInfoQuestion {
+			members = append(members, Member{
+				Login:   log.Login,
+				Actions: []MemberAction{},
+				IsActed: true,
+			})
+			addedMembers[log.Login] = struct{}{}
+		}
+	}
+	if gb.State.ActualExecutor != nil {
+		if _, ok := addedMembers[*gb.State.ActualExecutor]; !ok {
+			members = append(members, Member{
+				Login:   *gb.State.ActualExecutor,
+				Actions: []MemberAction{},
+				IsActed: true,
+			})
+		}
 	}
 	return members
 }

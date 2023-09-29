@@ -44,12 +44,14 @@ func (gb *GoApproverBlock) GetNewEvents() []entity.NodeEvent {
 
 func (gb *GoApproverBlock) Members() []Member {
 	members := make([]Member, 0)
+	addedMembers := make(map[string]struct{}, 0)
 	for login := range gb.State.Approvers {
 		members = append(members, Member{
 			Login:   login,
 			Actions: gb.approvementBaseActions(login),
 			IsActed: gb.isApprovementActed(login),
 		})
+		addedMembers[login] = struct{}{}
 	}
 
 	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
@@ -59,6 +61,48 @@ func (gb *GoApproverBlock) Members() []Member {
 			Actions: gb.approvementAddActions(&addApprover),
 			IsActed: gb.isApprovementActed(addApprover.ApproverLogin),
 		})
+		addedMembers[addApprover.ApproverLogin] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.ApproverLog); i++ {
+		log := gb.State.ApproverLog[i]
+		if _, ok := addedMembers[log.Login]; ok {
+			continue
+		}
+		members = append(members, Member{
+			Login:   log.Login,
+			Actions: []MemberAction{},
+			IsActed: true,
+		})
+		addedMembers[log.Login] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.EditingAppLog); i++ {
+		log := gb.State.EditingAppLog[i]
+		if _, ok := addedMembers[log.Approver]; ok {
+			continue
+		}
+		members = append(members, Member{
+			Login:   log.Approver,
+			Actions: []MemberAction{},
+			IsActed: true,
+		})
+		addedMembers[log.Approver] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.AddInfo); i++ {
+		log := gb.State.AddInfo[i]
+		if _, ok := addedMembers[log.Login]; ok {
+			continue
+		}
+		if log.Type == RequestAddInfoType {
+			members = append(members, Member{
+				Login:   log.Login,
+				Actions: []MemberAction{},
+				IsActed: true,
+			})
+			addedMembers[log.Login] = struct{}{}
+		}
 	}
 	return members
 }
