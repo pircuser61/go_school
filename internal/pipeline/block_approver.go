@@ -43,46 +43,44 @@ func (gb *GoApproverBlock) GetNewEvents() []entity.NodeEvent {
 }
 
 func (gb *GoApproverBlock) Members() []Member {
-	addedMembers := make(map[string]struct{})
 	members := make([]Member, 0)
 	for login := range gb.State.Approvers {
 		members = append(members, Member{
-			Login:     login,
-			Actions:   gb.approvementBaseActions(login),
-			UserActed: gb.isApprovementBaseActed(login),
+			Login:   login,
+			Actions: gb.approvementBaseActions(login),
+			IsActed: gb.isApprovementActed(login),
 		})
-		addedMembers[login] = struct{}{}
 	}
-	// Что по Доп согласующим? у них тоже только при выполнении хотя бы какого-нибудь действия только выводить
+
 	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
 		addApprover := gb.State.AdditionalApprovers[i]
 		members = append(members, Member{
-			Login:     addApprover.ApproverLogin,
-			Actions:   gb.approvementAddActions(&addApprover),
-			UserActed: gb.isApprovementAddActed(&addApprover),
+			Login:   addApprover.ApproverLogin,
+			Actions: gb.approvementAddActions(&addApprover),
+			IsActed: gb.isApprovementActed(addApprover.ApproverLogin),
 		})
-		addedMembers[addApprover.ApproverLogin] = struct{}{}
-	}
-
-	for i := 0; i < len(gb.State.ApproverLog); i++ {
-		approverLog := gb.State.ApproverLog[i]
-		if _, ok := addedMembers[approverLog.Login]; ok == true {
-			continue
-		}
-		members = append(members, Member{
-			Login:     approverLog.Login,
-			Actions:   []MemberAction{},
-			UserActed: true,
-		})
-		addedMembers[approverLog.Login] = struct{}{}
 	}
 	return members
 }
 
-func (gb *GoApproverBlock) isApprovementBaseActed(login string) bool {
+func (gb *GoApproverBlock) isApprovementActed(login string) bool {
 	for i := 0; i < len(gb.State.ApproverLog); i++ {
 		log := gb.State.ApproverLog[i]
-		if (log.Login == login || log.DelegateFor == login) && (log.LogType == ApproverLogDecision || log.LogType == ApproverLogAddApprover) {
+		if log.Login == login || log.DelegateFor == login {
+			return true
+		}
+	}
+
+	for i := 0; i < len(gb.State.EditingAppLog); i++ {
+		log := gb.State.EditingAppLog[i]
+		if log.Approver == login || log.DelegateFor == login {
+			return true
+		}
+	}
+
+	for i := 0; i < len(gb.State.AddInfo); i++ {
+		log := gb.State.AddInfo[i]
+		if (log.Login == login || log.DelegateFor == login) && log.Type == RequestAddInfoType {
 			return true
 		}
 	}
@@ -113,13 +111,6 @@ func (gb *GoApproverBlock) approvementBaseActions(login string) []MemberAction {
 		Id:   approverRequestAddInfoAction,
 		Type: ActionTypeOther,
 	})
-}
-
-func (gb *GoApproverBlock) isApprovementAddActed(a *AdditionalApprover) bool {
-	if a.Decision != nil {
-		return true
-	}
-	return false
 }
 
 func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []MemberAction {

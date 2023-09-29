@@ -29,7 +29,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 	memberFinished := ""
 	if finished {
 		statuses = "('finished', 'cancel', 'no_success', 'error')"
-		memberFinished = "AND m.user_acted = true"
+		memberFinished = "AND m.is_acted = true"
 	}
 
 	return fmt.Sprintf(`WITH actions AS (

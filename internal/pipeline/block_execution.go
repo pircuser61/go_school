@@ -52,16 +52,40 @@ func (gb *GoExecutionBlock) Members() []Member {
 	members := []Member{}
 	for login := range gb.State.Executors {
 		members = append(members, Member{
-			Login:      login,
-			IsFinished: gb.isExecutionFinished(),
-			Actions:    gb.executionActions(),
+			Login:   login,
+			Actions: gb.executionActions(),
+			IsActed: gb.isExecutionActed(login),
 		})
 	}
 	return members
 }
 
-func (gb *GoExecutionBlock) isExecutionFinished() bool {
-	return gb.State.Decision != nil
+func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
+
+	if *gb.State.ActualExecutor == login && gb.State.Decision != nil {
+		return true
+	}
+
+	for i := 0; i < len(gb.State.EditingAppLog); i++ {
+		log := gb.State.EditingAppLog[i]
+		if log.Executor == login || log.DelegateFor == login {
+			return true
+		}
+	}
+	for i := 0; i < len(gb.State.ChangedExecutorsLogs); i++ {
+		log := gb.State.ChangedExecutorsLogs[i]
+		if log.OldLogin == login {
+			return true
+		}
+	}
+
+	for i := 0; i < len(gb.State.RequestExecutionInfoLogs); i++ {
+		log := gb.State.RequestExecutionInfoLogs[i]
+		if (log.Login == login || log.DelegateFor == login) && log.ReqType == RequestInfoQuestion {
+			return true
+		}
+	}
+	return false
 }
 
 func (gb *GoExecutionBlock) executionActions() []MemberAction {

@@ -23,9 +23,9 @@ type MemberAction struct {
 	Params map[string]interface{}
 }
 type Member struct {
-	Login     string
-	Actions   []MemberAction
-	UserActed bool
+	Login   string
+	Actions []MemberAction
+	IsActed bool
 }
 
 type Deadline struct {
