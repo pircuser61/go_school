@@ -4,9 +4,9 @@ import (
 	c "context"
 	"encoding/json"
 	"errors"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 )
 
 type signSignatureParams struct {
