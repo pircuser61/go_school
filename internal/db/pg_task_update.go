@@ -66,7 +66,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 	}
 
 	switch status {
-	case RunStatusFinished, RunStatusStopped, RunStatusError:
+	case RunStatusCanceled, RunStatusFinished, RunStatusStopped, RunStatusError:
 		if delErr := db.deleteFinishedPipelineDeadlines(ctx, taskID); delErr != nil {
 			return delErr
 		}
@@ -74,6 +74,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 			return delErr
 		}
 	}
+
 	return nil
 }
 
