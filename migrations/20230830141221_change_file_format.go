@@ -589,7 +589,7 @@ type SignData struct {
 	Attachments      []entity.Attachment `json:"attachments,omitempty"`
 	SigningRule      json.RawMessage     `json:"signing_rule,omitempty"`
 	SignatureCarrier json.RawMessage     `json:"signature_carrier,omitempty"`
-	SignLog          []SignLogEntry      `json:"sign_log,omitempty"`
+	SignLog          ArrSignLogEntry     `json:"sign_log,omitempty"`
 
 	FormsAccessibility json.RawMessage `json:"forms_accessibility,omitempty"`
 
