@@ -112,14 +112,6 @@ func (m *membersExecutionData) getMembers(blockId string) (res []member) {
 					Finished: true,
 					IsActed:  true,
 				})
-
-				res = append(res, member{
-					Id:       uuid.New().String(),
-					BlockId:  blockId,
-					Login:    m.ChangedExecutorsLogs[i].NewLogin,
-					Finished: true,
-					IsActed:  true,
-				})
 			}
 		}
 	}
