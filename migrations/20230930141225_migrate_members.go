@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/pressly/goose/v3"
 	"strings"
+
+	"github.com/google/uuid"
+
+	"github.com/pressly/goose/v3"
 )
 
 func init() {
@@ -14,11 +16,12 @@ func init() {
 }
 
 type member struct {
-	Id       string `json:"id"`
-	BlockId  string `json:"block_id"`
-	Login    string `json:"login"`
-	Finished bool   `json:"finished"`
-	IsActed  bool   `json:"is_acted"`
+	Id       string
+	WorkId   string
+	StepName string
+	Login    string
+	Finished bool
+	IsActed  bool
 }
 
 type membersFormData struct {
@@ -27,12 +30,13 @@ type membersFormData struct {
 	ActualExecutor *string             `json:"actual_executor,omitempty"`
 }
 
-func (m *membersFormData) getMembers(blockId string) (res []member) {
+func (m *membersFormData) getMembers(wId, sName string) (res []member) {
 	if m.IsFilled {
 		for login := range m.Executors {
 			res = append(res, member{
 				Id:       uuid.New().String(),
-				BlockId:  blockId,
+				WorkId:   wId,
+				StepName: sName,
 				Login:    login,
 				Finished: true,
 				IsActed:  true,
@@ -53,11 +57,12 @@ type signLogEntry struct {
 	Login string `json:"login"`
 }
 
-func (m *membersSignData) getMembers(blockId string) (res []member) {
+func (m *membersSignData) getMembers(wId, sName string) (res []member) {
 	for i := range m.SignLog {
 		res = append(res, member{
 			Id:       uuid.New().String(),
-			BlockId:  blockId,
+			WorkId:   wId,
+			StepName: sName,
 			Login:    m.SignLog[i].Login,
 			Finished: true,
 			IsActed:  true,
@@ -89,13 +94,14 @@ type changeExecutorsLogs struct {
 	NewLogin string `json:"new_login"`
 }
 
-func (m *membersExecutionData) getMembers(blockId string) (res []member) {
+func (m *membersExecutionData) getMembers(wId, sName string) (res []member) {
 	if m.Decision != nil {
 		for i := range m.RequestExecutionInfoLogs {
 			if m.RequestExecutionInfoLogs[i].ReqType == "question" {
 				res = append(res, member{
 					Id:       uuid.New().String(),
-					BlockId:  blockId,
+					WorkId:   wId,
+					StepName: sName,
 					Login:    m.RequestExecutionInfoLogs[i].Login,
 					Finished: true,
 					IsActed:  true,
@@ -107,7 +113,8 @@ func (m *membersExecutionData) getMembers(blockId string) (res []member) {
 			if m.RequestExecutionInfoLogs[i].ReqType == "question" {
 				res = append(res, member{
 					Id:       uuid.New().String(),
-					BlockId:  blockId,
+					WorkId:   wId,
+					StepName: sName,
 					Login:    m.ChangedExecutorsLogs[i].OldLogin,
 					Finished: true,
 					IsActed:  true,
@@ -135,7 +142,7 @@ type additionalApprover struct {
 	Decision          *string `json:"decision"`
 }
 
-func (m *membersApproverData) getMembers(blockId string) (res []member) {
+func (m *membersApproverData) getMembers(wId, sName string) (res []member) {
 	if m.Decision != nil {
 		for i := range m.ApproverLog {
 			if m.ApproverLog[i].Login == "" {
@@ -143,7 +150,8 @@ func (m *membersApproverData) getMembers(blockId string) (res []member) {
 			}
 			res = append(res, member{
 				Id:       uuid.New().String(),
-				BlockId:  blockId,
+				WorkId:   wId,
+				StepName: sName,
 				Login:    m.ApproverLog[i].Login,
 				Finished: true,
 				IsActed:  true,
@@ -157,7 +165,8 @@ func (m *membersApproverData) getMembers(blockId string) (res []member) {
 			}
 			res = append(res, member{
 				Id:       uuid.New().String(),
-				BlockId:  blockId,
+				WorkId:   wId,
+				StepName: sName,
 				Login:    m.AdditionalApprovers[i].ApproverLogin,
 				Finished: true,
 				IsActed:  true,
@@ -165,7 +174,8 @@ func (m *membersApproverData) getMembers(blockId string) (res []member) {
 
 			res = append(res, member{
 				Id:       uuid.New().String(),
-				BlockId:  blockId,
+				WorkId:   wId,
+				StepName: sName,
 				Login:    m.AdditionalApprovers[i].BaseApproverLogin,
 				Finished: true,
 				IsActed:  true,
@@ -177,7 +187,7 @@ func (m *membersApproverData) getMembers(blockId string) (res []member) {
 }
 
 type memberExtractor interface {
-	getMembers(blockId string) (res []member)
+	getMembers(wId, sName string) (res []member)
 }
 
 func upMembers(tx *sql.Tx) error {
@@ -185,7 +195,7 @@ func upMembers(tx *sql.Tx) error {
 		select 
 			w.id,
 			vs.content->>'State'
-		from members w
+		from works w
 		left join variable_storage vs on vs.work_id = w.id
 		where w.status in (2, 4, 6) and 
 			vs.content is not null and
@@ -203,15 +213,17 @@ func upMembers(tx *sql.Tx) error {
 
 	for rows.Next() {
 		workState := map[string]json.RawMessage{}
-		var state, workId, stepName string
+		var state, workId string
 
-		if scanErr := rows.Scan(&workId, &state, &stepName); scanErr != nil {
+		if scanErr := rows.Scan(&workId, &state); scanErr != nil {
 			return scanErr
 		}
 
 		if err := json.Unmarshal([]byte(state), &workState); err != nil {
 			return err
 		}
+
+		fmt.Println("work id: " + workId)
 
 		for key, val := range workState {
 			var data memberExtractor
@@ -231,25 +243,12 @@ func upMembers(tx *sql.Tx) error {
 			}
 			if data != nil {
 				if err := json.Unmarshal(val, &data); err != nil {
-					fmt.Println("json.Unmarshal error, block_id:", workId)
+					fmt.Println("json.Unmarshal error, work id:", workId)
 					return err
 				}
 
-				const getBlockId = `
-				select id from variable_storage where work_id = $1 and 
-					step_name = $2
-					time = (select max(time) 
-						from variable_storage 
-						where work_id = $1 and step_name = $2
-				)`
+				members = append(members, data.getMembers(workId, key)...)
 
-				blockId := ""
-				row := tx.QueryRow(getBlockId, workId, key)
-				if err := row.Scan(&blockId); err != nil {
-					return err
-				}
-
-				members = append(members, data.getMembers(blockId)...)
 			} else {
 				fmt.Printf("key: %s is not recognized \n", key)
 			}
@@ -259,16 +258,19 @@ func upMembers(tx *sql.Tx) error {
 	members = uniqMembers(members)
 
 	for i := range members {
-		insert := `
-			insert into members(id, block_id, login, finished, actions, is_acted) 
-				values($1, $2, $3, $4, '{}', $5)
+		const insertQ = `
+			insert into members(id, block_id, login, finished, is_acted) 
+				values($1, 
+				       (select vs.id from variable_storage vs
+						where vs.work_id = $2 and vs.step_name = $3), $4, $5, $6)
 			on conflict do nothing
 		`
 
 		_, execErr := tx.Exec(
-			insert,
+			insertQ,
 			members[i].Id,
-			members[i].BlockId,
+			members[i].WorkId,
+			members[i].StepName,
 			members[i].Login,
 			members[i].Finished,
 			members[i].IsActed,
@@ -284,9 +286,9 @@ func uniqMembers(in []member) (out []member) {
 	mapMembers := make(map[string]interface{})
 
 	for i := range in {
-		if _, exists := mapMembers[in[i].BlockId+in[i].Login]; !exists {
+		if _, exists := mapMembers[in[i].StepName+in[i].Login]; !exists {
 			out = append(out, in[i])
-			mapMembers[in[i].BlockId+in[i].Login] = true
+			mapMembers[in[i].StepName+in[i].Login] = true
 		}
 	}
 
