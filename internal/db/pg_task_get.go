@@ -240,6 +240,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		args = append(args, fl.TaskIDs)
 		q = fmt.Sprintf("%s AND w.work_number = ANY($%d)", q, len(args))
 	}
+
 	if fl.Name != nil {
 		name := strings.Replace(*fl.Name, "_", "!_", -1)
 		name = strings.Replace(name, "%", "!%", -1)
@@ -250,6 +251,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 		args = append(args, time.Unix(int64(fl.Created.Start), 0).UTC(), time.Unix(int64(fl.Created.End), 0).UTC())
 		q = fmt.Sprintf("%s AND w.started_at BETWEEN $%d AND $%d", q, len(args)-1, len(args))
 	}
+
 	if fl.Archived != nil {
 		switch *fl.Archived {
 		case true:
