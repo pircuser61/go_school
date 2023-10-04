@@ -260,7 +260,7 @@ func upMembers(tx *sql.Tx) error {
 			insert into members(id, block_id, login, finished, is_acted) 
 				values($1, 
 				       (select vs.id from variable_storage vs
-						where vs.work_id = $2 and vs.step_name = $3), $4, $5, $6)
+						where vs.work_id = $2 and vs.step_name = $3 order by time desc limit 1), $4, $5, $6)
 			on conflict do nothing
 		`
 
