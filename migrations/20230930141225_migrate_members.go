@@ -110,16 +110,14 @@ func (m *membersExecutionData) getMembers(wId, sName string) (res []member) {
 		}
 
 		for i := range m.ChangedExecutorsLogs {
-			if m.RequestExecutionInfoLogs[i].ReqType == "question" {
-				res = append(res, member{
-					Id:       uuid.New().String(),
-					WorkId:   wId,
-					StepName: sName,
-					Login:    m.ChangedExecutorsLogs[i].OldLogin,
-					Finished: true,
-					IsActed:  true,
-				})
-			}
+			res = append(res, member{
+				Id:       uuid.New().String(),
+				WorkId:   wId,
+				StepName: sName,
+				Login:    m.ChangedExecutorsLogs[i].OldLogin,
+				Finished: true,
+				IsActed:  true,
+			})
 		}
 	}
 
