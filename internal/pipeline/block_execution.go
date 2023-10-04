@@ -100,7 +100,7 @@ func (gb *GoExecutionBlock) Members() []Member {
 
 func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
 
-	if *gb.State.ActualExecutor == login && gb.State.Decision != nil {
+	if (gb.State.ActualExecutor != nil && *gb.State.ActualExecutor == login) && gb.State.Decision != nil {
 		return true
 	}
 
