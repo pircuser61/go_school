@@ -1760,8 +1760,7 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 	// language=PostgreSQL
 	const qMembersDelete = `
 		DELETE FROM members 
-		WHERE block_id = $1
-`
+		WHERE block_id = $1`
 	_, err = db.Connection.Exec(
 		ctx,
 		qMembersDelete,
@@ -1792,9 +1791,9 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			id,
 			block_id,
 			login,
-			finished,
 			actions,
-		    params                 
+		    params,
+		    is_acted
 		)
 		VALUES (
 			$1, 
@@ -1825,9 +1824,9 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			membersId,
 			id,
 			val.Login,
-			val.Finished,
 			actions,
 			paramsData,
+			val.IsActed,
 		)
 		if err != nil {
 			return err

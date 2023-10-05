@@ -50,18 +50,80 @@ func (gb *GoExecutionBlock) GetNewEvents() []entity.NodeEvent {
 
 func (gb *GoExecutionBlock) Members() []Member {
 	members := []Member{}
+	addedMembers := make(map[string]struct{}, 0)
 	for login := range gb.State.Executors {
 		members = append(members, Member{
-			Login:      login,
-			IsFinished: gb.isExecutionFinished(),
-			Actions:    gb.executionActions(),
+			Login:   login,
+			Actions: gb.executionActions(),
+			IsActed: gb.isExecutionActed(login),
 		})
+		addedMembers[login] = struct{}{}
+	}
+	for i := 0; i < len(gb.State.EditingAppLog); i++ {
+		log := gb.State.EditingAppLog[i]
+		if _, ok := addedMembers[log.Executor]; !ok {
+			continue
+		}
+		members = append(members, Member{
+			Login:   log.Executor,
+			Actions: []MemberAction{},
+			IsActed: true,
+		})
+		addedMembers[log.Executor] = struct{}{}
+	}
+
+	for i := 0; i < len(gb.State.RequestExecutionInfoLogs); i++ {
+		log := gb.State.RequestExecutionInfoLogs[i]
+		if _, ok := addedMembers[log.Login]; !ok {
+			continue
+		}
+		if log.ReqType == RequestInfoQuestion {
+			members = append(members, Member{
+				Login:   log.Login,
+				Actions: []MemberAction{},
+				IsActed: true,
+			})
+			addedMembers[log.Login] = struct{}{}
+		}
+	}
+	if gb.State.ActualExecutor != nil {
+		if _, ok := addedMembers[*gb.State.ActualExecutor]; !ok {
+			members = append(members, Member{
+				Login:   *gb.State.ActualExecutor,
+				Actions: []MemberAction{},
+				IsActed: true,
+			})
+		}
 	}
 	return members
 }
 
-func (gb *GoExecutionBlock) isExecutionFinished() bool {
-	return gb.State.Decision != nil
+func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
+
+	if (gb.State.ActualExecutor != nil && *gb.State.ActualExecutor == login) && gb.State.Decision != nil {
+		return true
+	}
+
+	for i := 0; i < len(gb.State.EditingAppLog); i++ {
+		log := gb.State.EditingAppLog[i]
+		if log.Executor == login || log.DelegateFor == login {
+			return true
+		}
+	}
+	for i := 0; i < len(gb.State.ChangedExecutorsLogs); i++ {
+		log := gb.State.ChangedExecutorsLogs[i]
+		if log.OldLogin == login {
+			return true
+		}
+	}
+
+	for i := 0; i < len(gb.State.RequestExecutionInfoLogs); i++ {
+		log := gb.State.RequestExecutionInfoLogs[i]
+		if (log.Login == login || log.DelegateFor == login) && log.ReqType == RequestInfoQuestion {
+			return true
+		}
+	}
+	return false
 }
 
 func (gb *GoExecutionBlock) executionActions() []MemberAction {

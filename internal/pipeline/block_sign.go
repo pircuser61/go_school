@@ -115,11 +115,7 @@ func (gb *GoSignBlock) UpdateManual() bool {
 	return true
 }
 
-func (gb *GoSignBlock) isSignerFinished(login string) bool {
-	if gb.State.Decision != nil {
-		return true
-	}
-
+func (gb *GoSignBlock) isSignerActed(login string) bool {
 	for _, s := range gb.State.SignLog {
 		if s.Login == login {
 			return true
@@ -163,9 +159,9 @@ func (gb *GoSignBlock) Members() []Member {
 	members := make([]Member, 0)
 	for login := range gb.State.Signers {
 		members = append(members, Member{
-			Login:      login,
-			IsFinished: gb.isSignerFinished(login),
-			Actions:    gb.signActions(login),
+			Login:   login,
+			Actions: gb.signActions(login),
+			IsActed: gb.isSignerActed(login),
 		})
 	}
 	return members

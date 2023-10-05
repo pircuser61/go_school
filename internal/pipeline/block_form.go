@@ -91,17 +91,22 @@ func (gb *GoFormBlock) Members() []Member {
 	members := []Member{}
 	for login := range gb.State.Executors {
 		members = append(members, Member{
-			Login:      login,
-			IsFinished: gb.isFormFinished(),
-			Actions:    gb.formActions(),
+			Login:   login,
+			Actions: gb.formActions(),
+			IsActed: gb.isFormUserActed(login),
 		})
 	}
 
 	return members
 }
 
-func (gb *GoFormBlock) isFormFinished() bool {
-	return gb.State.IsFilled
+func (gb *GoFormBlock) isFormUserActed(login string) bool {
+	for i := range gb.State.ChangesLog {
+		if gb.State.ChangesLog[i].Executor == login {
+			return true
+		}
+	}
+	return false
 }
 
 func (gb *GoFormBlock) formActions() []MemberAction {

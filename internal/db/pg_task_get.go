@@ -26,14 +26,17 @@ import (
 
 func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 	statuses := "('running', 'idle', 'ready')"
+	memberFinished := ""
 	if finished {
 		statuses = "('finished', 'cancel', 'no_success', 'error')"
+		memberFinished = "AND m.is_acted = true"
 	}
+
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                                 AS work_id
          , vs.step_name                                                                               AS block_id
-         , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.actions ELSE '{}' END AS action
-         , CASE WHEN vs.status IN ('running', 'idle') AND NOT m.finished THEN m.params ELSE '{}' END  AS params
+         , CASE WHEN vs.status IN ('running', 'idle','ready') THEN m.actions ELSE '{}' END AS action
+         , CASE WHEN vs.status IN ('running', 'idle','ready') THEN m.params ELSE '{}' END  AS params
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
@@ -41,6 +44,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
       AND vs.step_type = '%s'
       AND vs.status IN %s
       AND w.child_id IS NULL
+	 %s
       --unique-actions-filter--
 )
      , unique_actions AS (
@@ -51,7 +55,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
                                                'actions', actions.action,
                                                'params', actions.params) as actions) jsonb_actions ON TRUE
     GROUP BY actions.work_id
-)`, loginsIn, stepType, statuses)
+)`, loginsIn, stepType, statuses, memberFinished)
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {

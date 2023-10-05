@@ -386,9 +386,9 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 			})
 		}
 		dbPeople = append(dbPeople, db.DbMember{
-			Login:    pl[i].Login,
-			Finished: pl[i].IsFinished,
-			Actions:  actions,
+			Login:   pl[i].Login,
+			Actions: actions,
+			IsActed: pl[i].IsActed,
 		})
 	}
 
@@ -430,9 +430,9 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 			})
 		}
 		dbPeople = append(dbPeople, db.DbMember{
-			Login:    pl[i].Login,
-			Finished: pl[i].IsFinished,
-			Actions:  actions,
+			Login:   pl[i].Login,
+			Actions: actions,
+			IsActed: pl[i].IsActed,
 		})
 	}
 	for i := range deadlines {
