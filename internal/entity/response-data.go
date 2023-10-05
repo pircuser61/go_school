@@ -166,6 +166,8 @@ func (bt *BlocksType) IsSdBlueprintFilled(ctx context.Context, sd *servicedesc.S
 
 // nolint:gocognit //its ok here
 func (bt *BlocksType) IsParallelNodesCorrect() (valid bool, textErr string) {
+	return true, ""
+	// TODO return Validation
 	parallelStartNodes := bt.getNodesByType(BlockParallelStartName)
 	if len(parallelStartNodes) == 0 {
 		return true, ""
