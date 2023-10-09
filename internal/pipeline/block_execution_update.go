@@ -131,11 +131,15 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
 	defer func() {
 		oldExecutors[updateParams.NewExecutorLogin] = struct{}{}
 		gb.State.Executors = oldExecutors
+		gb.State.IsTakenInWork = true
 	}()
 
 	gb.State.Executors = map[string]struct{}{
 		updateParams.NewExecutorLogin: {},
 	}
+
+	gb.State.IsTakenInWork = false
+
 	// do notif only for the new person
 	if notifErr := gb.handleNotifications(ctx); notifErr != nil {
 		return notifErr
