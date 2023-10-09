@@ -103,7 +103,7 @@ func (gb *GoExecutionBlock) handleNotifications(ctx c.Context) error {
 					Mailto:      gb.RunContext.Services.Sender.FetchEmail,
 					Login:       login,
 					LastWorks:   lastWorksForUser,
-					IsGroup:     len(gb.State.Executors) > 0,
+					IsGroup:     len(gb.State.Executors) > 1,
 				},
 			)
 		} else {
