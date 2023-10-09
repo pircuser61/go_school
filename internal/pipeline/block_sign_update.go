@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
@@ -155,7 +156,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		return NewUserIsNotPartOfProcessErr()
 	}
 
-	if gb.State.IsTakenInWork && gb.State.WorkerLogin == login && status.Status == "start" {
+	if gb.State.IsTakenInWork && gb.State.WorkerLogin == login && status.Status == string(api.ChangeWorkStatusParamsStatusStart) {
 		gb.State.IsTakenInWork = true
 		gb.State.WorkerLogin = login
 	} else {

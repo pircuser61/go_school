@@ -32,8 +32,9 @@ const (
 	SignDecisionRejected SignDecision = "rejected"
 	SignDecisionError    SignDecision = "error"
 
-	signActionSign   = "sign_sign"
-	signActionReject = "sign_reject"
+	signActionSign       = "sign_sign"
+	signActionReject     = "sign_reject"
+	signActionTakeInWork = "take_in_work"
 
 	signatureTypeActionParamsKey    = "signature_type"
 	signatureCarrierActionParamsKey = "signature_carrier"
@@ -143,8 +144,8 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
 		if gb.State.IsTakenInWork == false {
 			takeInWorkAction := MemberAction{
-				Id:   "take_in_work",
-				Type: "primary",
+				Id:   signActionTakeInWork,
+				Type: ActionTypePrimary,
 				Params: map[string]interface{}{
 					signatureTypeActionParamsKey:    gb.State.SignatureType,
 					signatureCarrierActionParamsKey: gb.State.SignatureCarrier,
@@ -160,8 +161,8 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		}
 
 		takeInWorkAction := MemberAction{
-			Id:   "take_in_work",
-			Type: "primary",
+			Id:   signActionTakeInWork,
+			Type: ActionTypePrimary,
 			Params: map[string]interface{}{
 				signatureTypeActionParamsKey:    gb.State.SignatureType,
 				signatureCarrierActionParamsKey: gb.State.SignatureCarrier,
