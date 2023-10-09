@@ -7,11 +7,14 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
-	"gitlab.services.mts.ru/jocasta/pipeliner/internal/api"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
+)
+
+const (
+	_changeWorkStatusTimeout = 5 * time.Minute
 )
 
 type signSignatureParams struct {
@@ -32,11 +35,12 @@ func (gb *GoSignBlock) handleSignature(login string) error {
 		return errors.New("can't assert provided update data")
 	}
 
-	if gb.State.SignatureType == script.SignatureTypeUKEP && gb.State.IsTakenInWork {
-		return errors.New("is already taken in work")
+	if gb.State.SignatureType == script.SignatureTypeUKEP && !gb.State.IsTakenInWork {
+		return errors.New("is not taken in work")
 	}
 
-	if updateParams.Decision != SignDecisionRejected && !gb.isValidLogin(login) {
+	if gb.State.SignatureType == script.SignatureTypeUKEP &&
+		updateParams.Decision != SignDecisionRejected && !gb.isValidLogin(login) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
@@ -145,18 +149,25 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error {
 	log := logger.GetLogger(ctx)
 
-	status := &changeStatusSignatureParams{}
+	status := &changeStatusSignatureParams{Status: "end"}
+
+	if gb.RunContext.UpdateData.Parameters != nil {
+		err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, status)
+		if err != nil {
+			return errors.New("can't assert provided update data")
+		}
+	}
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, status)
 	if err != nil {
 		return errors.New("can't assert provided update data")
 	}
 
-	if gb.State.WorkerLogin != login {
+	if gb.State.IsTakenInWork && gb.State.WorkerLogin != login {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
-	if gb.State.IsTakenInWork && gb.State.WorkerLogin == login && status.Status == string(api.ChangeWorkStatusParamsStatusStart) {
+	if !gb.State.IsTakenInWork && status.Status == "start" {
 		gb.State.IsTakenInWork = true
 		gb.State.WorkerLogin = login
 	} else {
@@ -170,7 +181,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionSignChangeWorkStatus),
-		WaitSeconds: int(time.Minute * 5),
+		WaitSeconds: int(_changeWorkStatusTimeout),
 	})
 	if err != nil {
 		log.WithError(err).Error("cannot create signChangeWorkStatus timer")

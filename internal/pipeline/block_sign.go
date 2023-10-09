@@ -34,7 +34,7 @@ const (
 
 	signActionSign       = "sign_sign"
 	signActionReject     = "sign_reject"
-	signActionTakeInWork = "take_in_work"
+	signActionTakeInWork = "sign_start_work"
 
 	signatureTypeActionParamsKey    = "signature_type"
 	signatureCarrierActionParamsKey = "signature_carrier"
@@ -142,24 +142,6 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 	}
 
 	if gb.State.SignatureType == script.SignatureTypeUKEP {
-		if gb.State.IsTakenInWork == false {
-			takeInWorkAction := MemberAction{
-				Id:   signActionTakeInWork,
-				Type: ActionTypePrimary,
-				Params: map[string]interface{}{
-					signatureTypeActionParamsKey:    gb.State.SignatureType,
-					signatureCarrierActionParamsKey: gb.State.SignatureCarrier,
-				},
-			}
-
-			rejectAction := MemberAction{
-				Id:   signActionReject,
-				Type: ActionTypeSecondary,
-			}
-
-			return []MemberAction{takeInWorkAction, rejectAction}
-		}
-
 		takeInWorkAction := MemberAction{
 			Id:   signActionTakeInWork,
 			Type: ActionTypePrimary,
@@ -170,14 +152,13 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		}
 
 		rejectAction := MemberAction{
-			Id:     signActionReject,
-			Type:   ActionTypeSecondary,
-			Params: make(map[string]interface{}),
+			Id:   signActionReject,
+			Type: ActionTypeSecondary,
 		}
 
-		if login != gb.State.WorkerLogin {
+		if gb.State.IsTakenInWork && login != gb.State.WorkerLogin {
 			takeInWorkAction.Params["disabled"] = true
-			rejectAction.Params["disabled"] = true
+			rejectAction.Params = map[string]interface{}{"disabled": true}
 		}
 
 		return []MemberAction{takeInWorkAction, rejectAction}
