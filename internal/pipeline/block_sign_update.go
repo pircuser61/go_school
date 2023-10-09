@@ -148,6 +148,8 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context) error {
 		return nil
 	}
 
+	gb.State.IsTakenInWork = true
+
 	_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
