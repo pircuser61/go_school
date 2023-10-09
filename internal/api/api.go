@@ -304,6 +304,8 @@ const (
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
 
 	TaskUpdateActionSign TaskUpdateAction = "sign"
+
+	TaskUpdateActionSignChangeWorkStatus TaskUpdateAction = "sign_change_work_status"
 )
 
 // Defines values for WorkType.
@@ -709,6 +711,11 @@ type BooleanOperandOperandType string
 // CancelAppParams defines model for CancelAppParams.
 type CancelAppParams struct {
 	Comment string `json:"comment"`
+}
+
+// Sign update params
+type ChangeWorkStatusParams struct {
+	Status *string `json:"status,omitempty"`
 }
 
 // Compare operands using operator

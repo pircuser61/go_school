@@ -189,6 +189,7 @@ const (
 	TaskUpdateActionSign                       TaskUpdateAction = "sign"
 	TaskUpdateActionFinishTimer                TaskUpdateAction = "finish_timer"
 	TaskUpdateActionFuncSLAExpired             TaskUpdateAction = "func_sla_expired"
+	TaskUpdateActionSignChangeWorkStatus       TaskUpdateAction = "sign_change_work_status"
 )
 
 var (

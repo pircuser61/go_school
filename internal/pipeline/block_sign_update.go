@@ -4,9 +4,13 @@ import (
 	c "context"
 	"encoding/json"
 	"errors"
+	"time"
 
+	"gitlab.services.mts.ru/abp/myosotis/logger"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
+	"gitlab.services.mts.ru/jocasta/pipeliner/internal/script"
 )
 
 type signSignatureParams struct {
@@ -15,7 +19,17 @@ type signSignatureParams struct {
 	Attachments []entity.Attachment `json:"attachments"`
 }
 
-func (gb *GoSignBlock) handleSignature() error {
+func (gb *GoSignBlock) handleSignature(ctx c.Context) error {
+	if gb.State.SignatureType == script.SignatureTypeUKEP {
+		if gb.State.IsTakenInWork {
+			return errors.New("is already taken in work")
+		}
+
+		if err := gb.handleChangeWorkStatus(ctx); err != nil {
+			return err
+		}
+	}
+
 	updateParams := &signSignatureParams{}
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, updateParams)
@@ -46,7 +60,11 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSign):
-		if errUpdate := gb.handleSignature(); errUpdate != nil {
+		if errUpdate := gb.handleSignature(ctx); errUpdate != nil {
+			return nil, errUpdate
+		}
+	case string(entity.TaskUpdateActionSignChangeWorkStatus):
+		if errUpdate := gb.handleChangeWorkStatus(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
@@ -116,6 +134,29 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context) error {
+	log := logger.GetLogger(ctx)
+
+	if gb.State.IsTakenInWork {
+		gb.State.IsTakenInWork = false
+
+		return nil
+	}
+
+	_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+		WorkNumber:  gb.RunContext.WorkNumber,
+		WorkID:      gb.RunContext.TaskID.String(),
+		ActionName:  string(entity.TaskUpdateActionSignChangeWorkStatus),
+		WaitSeconds: int(time.Minute * 5),
+	})
+	if err != nil {
+		log.WithError(err).Error("cannot create signChangeWorkStatus timer")
+		return err
 	}
 
 	return nil
