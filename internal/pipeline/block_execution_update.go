@@ -131,7 +131,6 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
 	defer func() {
 		oldExecutors[updateParams.NewExecutorLogin] = struct{}{}
 		gb.State.Executors = oldExecutors
-		gb.State.IsTakenInWork = true
 	}()
 
 	gb.State.Executors = map[string]struct{}{
