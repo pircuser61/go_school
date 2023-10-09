@@ -37,7 +37,8 @@ type SignData struct {
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
-	IsTakenInWork bool `json:"is_taken_in_work"`
+	IsTakenInWork bool   `json:"is_taken_in_work"`
+	WorkerLogin   string `json:"worker_login"`
 
 	SignerGroupID   string `json:"signer_group_id,omitempty"`
 	SignerGroupName string `json:"signer_group_name,omitempty"`

@@ -3973,6 +3973,9 @@ components:
       properties:
         status:
             type: string
+            enum:
+              - start
+              - end
       required:
         - status
 

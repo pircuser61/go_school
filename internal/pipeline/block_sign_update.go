@@ -19,22 +19,24 @@ type signSignatureParams struct {
 	Attachments []entity.Attachment `json:"attachments"`
 }
 
-func (gb *GoSignBlock) handleSignature(ctx c.Context) error {
-	if gb.State.SignatureType == script.SignatureTypeUKEP {
-		if gb.State.IsTakenInWork {
-			return errors.New("is already taken in work")
-		}
+type changeStatusSignatureParams struct {
+	Status string `json:"status"`
+}
 
-		if err := gb.handleChangeWorkStatus(ctx); err != nil {
-			return err
-		}
-	}
-
+func (gb *GoSignBlock) handleSignature(login string) error {
 	updateParams := &signSignatureParams{}
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, updateParams)
 	if err != nil {
 		return errors.New("can't assert provided update data")
+	}
+
+	if gb.State.SignatureType == script.SignatureTypeUKEP && gb.State.IsTakenInWork {
+		return errors.New("is already taken in work")
+	}
+
+	if updateParams.Decision != SignDecisionRejected && !gb.isValidLogin(login) {
+		return NewUserIsNotPartOfProcessErr()
 	}
 
 	if setErr := gb.setSignerDecision(updateParams); setErr != nil {
@@ -60,11 +62,11 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSign):
-		if errUpdate := gb.handleSignature(ctx); errUpdate != nil {
+		if errUpdate := gb.handleSignature(data.ByLogin); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSignChangeWorkStatus):
-		if errUpdate := gb.handleChangeWorkStatus(ctx); errUpdate != nil {
+		if errUpdate := gb.handleChangeWorkStatus(ctx, data.ByLogin); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
@@ -139,18 +141,31 @@ func (gb *GoSignBlock) handleBreachedSLA(ctx c.Context) error {
 	return nil
 }
 
-func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context) error {
+func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error {
 	log := logger.GetLogger(ctx)
 
-	if gb.State.IsTakenInWork {
+	status := &changeStatusSignatureParams{}
+
+	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, status)
+	if err != nil {
+		return errors.New("can't assert provided update data")
+	}
+
+	if gb.State.WorkerLogin != login {
+		return NewUserIsNotPartOfProcessErr()
+	}
+
+	if gb.State.IsTakenInWork && gb.State.WorkerLogin == login && status.Status == "start" {
+		gb.State.IsTakenInWork = true
+		gb.State.WorkerLogin = login
+	} else {
 		gb.State.IsTakenInWork = false
+		gb.State.WorkerLogin = ""
 
 		return nil
 	}
 
-	gb.State.IsTakenInWork = true
-
-	_, err := gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
+	_, err = gb.RunContext.Services.Scheduler.CreateTask(ctx, &scheduler.CreateTask{
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionSignChangeWorkStatus),
@@ -181,4 +196,15 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 	}
 
 	return nil
+}
+
+func (gb *GoSignBlock) isValidLogin(login string) bool {
+	if gb.State.WorkerLogin != login &&
+		(login != ServiceAccount &&
+			login != ServiceAccountStage &&
+			login != ServiceAccountDev) {
+		return false
+	}
+
+	return true
 }
