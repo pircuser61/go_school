@@ -32,8 +32,9 @@ const (
 	SignDecisionRejected SignDecision = "rejected"
 	SignDecisionError    SignDecision = "error"
 
-	signActionSign   = "sign_sign"
-	signActionReject = "sign_reject"
+	signActionSign       = "sign_sign"
+	signActionReject     = "sign_reject"
+	signActionTakeInWork = "sign_start_work"
 
 	signatureTypeActionParamsKey    = "signature_type"
 	signatureCarrierActionParamsKey = "signature_carrier"
@@ -136,15 +137,35 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		}
 	}
 
+	if gb.State.SignatureType == script.SignatureTypeUKEP {
+		takeInWorkAction := MemberAction{
+			Id:   signActionTakeInWork,
+			Type: ActionTypePrimary,
+			Params: map[string]interface{}{
+				signatureTypeActionParamsKey:    gb.State.SignatureType,
+				signatureCarrierActionParamsKey: gb.State.SignatureCarrier,
+			},
+		}
+
+		rejectAction := MemberAction{
+			Id:   signActionReject,
+			Type: ActionTypeSecondary,
+		}
+
+		if gb.State.IsTakenInWork && login != gb.State.WorkerLogin {
+			takeInWorkAction.Params["disabled"] = true
+			rejectAction.Params = map[string]interface{}{"disabled": true}
+		}
+
+		return []MemberAction{takeInWorkAction, rejectAction}
+	}
+
 	signAction := MemberAction{
 		Id:   signActionSign,
 		Type: ActionTypePrimary,
 		Params: map[string]interface{}{
 			signatureTypeActionParamsKey: gb.State.SignatureType,
 		},
-	}
-	if gb.State.SignatureType == script.SignatureTypeUKEP {
-		signAction.Params[signatureCarrierActionParamsKey] = gb.State.SignatureCarrier
 	}
 
 	return []MemberAction{

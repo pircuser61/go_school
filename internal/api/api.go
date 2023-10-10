@@ -47,6 +47,13 @@ const (
 	BooleanOperandOperandTypeVariableOperand BooleanOperandOperandType = "variableOperand"
 )
 
+// Defines values for ChangeWorkStatusParamsStatus.
+const (
+	ChangeWorkStatusParamsStatusEnd ChangeWorkStatusParamsStatus = "end"
+
+	ChangeWorkStatusParamsStatusStart ChangeWorkStatusParamsStatus = "start"
+)
+
 // Defines values for ConditionGroupLogicalOperator.
 const (
 	ConditionGroupLogicalOperatorAnd ConditionGroupLogicalOperator = "and"
@@ -304,6 +311,8 @@ const (
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
 
 	TaskUpdateActionSign TaskUpdateAction = "sign"
+
+	TaskUpdateActionSignChangeWorkStatus TaskUpdateAction = "sign_change_work_status"
 )
 
 // Defines values for WorkType.
@@ -710,6 +719,14 @@ type BooleanOperandOperandType string
 type CancelAppParams struct {
 	Comment string `json:"comment"`
 }
+
+// Sign update params
+type ChangeWorkStatusParams struct {
+	Status ChangeWorkStatusParamsStatus `json:"status"`
+}
+
+// ChangeWorkStatusParamsStatus defines model for ChangeWorkStatusParams.Status.
+type ChangeWorkStatusParamsStatus string
 
 // Compare operands using operator
 type Condition struct {
