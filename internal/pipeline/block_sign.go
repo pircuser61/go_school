@@ -38,6 +38,8 @@ const (
 
 	signatureTypeActionParamsKey    = "signature_type"
 	signatureCarrierActionParamsKey = "signature_carrier"
+
+	reentrySignComment = "Произошла ошибка подписания. Требуется повторное подписание"
 )
 
 type GoSignBlock struct {
@@ -82,19 +84,22 @@ func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
-func (gb *GoSignBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == SignDecisionRejected {
-			return StatusRejected
+			return StatusRejected, ""
 		}
 
 		if *gb.State.Decision == SignDecisionError {
-			return StatusProcessingError
+			return StatusProcessingError, ""
 		}
 
-		return StatusSigned
+		return StatusSigned, ""
 	}
-	return StatusSigning
+	if gb.State.Reentered {
+		return StatusSigning, reentrySignComment
+	}
+	return StatusSigning, ""
 }
 
 func (gb *GoSignBlock) GetStatus() Status {
@@ -521,8 +526,13 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 
+		if reEntry {
+			b.State.Reentered = true
+		}
+
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 			if err != nil {
 				return nil, false, err
 			}

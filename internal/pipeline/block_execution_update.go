@@ -90,7 +90,8 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}

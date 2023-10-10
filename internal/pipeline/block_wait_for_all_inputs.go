@@ -52,8 +52,8 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return StatusDone
+func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	return StatusDone, ""
 }
 
 func (gb *GoWaitForAllInputsBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -94,7 +94,8 @@ func (gb *GoWaitForAllInputsBlock) Update(ctx context.Context) (interface{}, err
 	gb.RunContext.VarStore.ReplaceState(gb.Name, state)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -154,7 +155,8 @@ func createGoWaitForAllInputsBlock(ctx context.Context, name string, ef *entity.
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 			if err != nil {
 				return nil, false, err
 			}

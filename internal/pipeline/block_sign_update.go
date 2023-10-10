@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
@@ -27,7 +28,7 @@ type changeStatusSignatureParams struct {
 	Status string `json:"status"`
 }
 
-func (gb *GoSignBlock) handleSignature(login string) error {
+func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	updateParams := &signSignatureParams{}
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, updateParams)
@@ -46,6 +47,28 @@ func (gb *GoSignBlock) handleSignature(login string) error {
 
 	if setErr := gb.setSignerDecision(updateParams); setErr != nil {
 		return setErr
+	}
+
+	if updateParams.Decision == SignDecisionError {
+		emails := make([]string, 0, len(gb.State.Signers))
+		logins := getSliceFromMapOfStrings(gb.State.Signers)
+
+		for i := range logins {
+			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
+			if err != nil {
+				continue
+			}
+			emails = append(emails, eml)
+		}
+		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
+			mail.NewSignErrorTemplate(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.Services.Sender.SdAddress,
+			),
+		)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -67,7 +90,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSign):
-		if errUpdate := gb.handleSignature(data.ByLogin); errUpdate != nil {
+		if errUpdate := gb.handleSignature(ctx, data.ByLogin); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSignChangeWorkStatus):
@@ -75,7 +98,6 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	}
-
 	var stateBytes []byte
 	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
@@ -85,7 +107,8 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}

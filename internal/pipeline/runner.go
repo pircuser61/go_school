@@ -48,7 +48,7 @@ type Runner interface {
 	GetState() interface{}
 	Next(runCtx *store.VariableStore) ([]string, bool)
 	Update(ctx context.Context) (interface{}, error)
-	GetTaskHumanStatus() TaskHumanStatus
+	GetTaskHumanStatus() (taskHumanStatus TaskHumanStatus, comment string)
 	GetStatus() Status
 	UpdateManual() bool
 	Members() []Member

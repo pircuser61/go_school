@@ -496,7 +496,7 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		return err
 	}
 
-	_, err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke))
+	_, err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke), "")
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
 			log.WithField("funcName", "UpdateTaskHumanStatus").
@@ -707,7 +707,7 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		updatedTask, updateTaskErr := txStorage.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusCancel))
+		updatedTask, updateTaskErr := txStorage.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusCancel), "")
 		if updateTaskErr != nil {
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithField("funcName", "UpdateTaskHumanStatus").

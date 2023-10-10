@@ -50,6 +50,8 @@ type SignData struct {
 
 	SLAChecked          bool `json:"sla_checked"`
 	DayBeforeSLAChecked bool `json:"before_day_sla_checked"`
+
+	Reentered bool `json:"reentered"`
 }
 
 func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams) {
