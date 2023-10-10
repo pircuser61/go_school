@@ -20,7 +20,7 @@ type PipelineStorager interface {
 	GetWorkedVersions(ctx c.Context) ([]e.EriusScenario, error)
 	GetPipeline(ctx c.Context, id uuid.UUID) (*e.EriusScenario, error)
 
-	CreatePipeline(c c.Context, p *e.EriusScenario, author string, pipelineData []byte) error
+	CreatePipeline(c c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error
 	PipelineRemovable(ctx c.Context, id uuid.UUID) (bool, error)
 	DeletePipeline(ctx c.Context, id uuid.UUID) error
 	RenamePipeline(ctx c.Context, id uuid.UUID, name string) error
