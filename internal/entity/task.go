@@ -210,6 +210,7 @@ var (
 		TaskUpdateActionSign:                  {},
 		TaskUpdateActionFinishTimer:           {},
 		TaskUpdateActionFuncSLAExpired:        {},
+		TaskUpdateActionSignChangeWorkStatus:  {},
 	}
 )
 
