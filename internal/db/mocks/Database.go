@@ -2446,6 +2446,20 @@ func (_m *MockedDatabase) UpdateTaskStatus(ctx context.Context, taskID uuid.UUID
 	return r0
 }
 
+// UpdateVersions provides a mock function with given fields: ctx, dto
+func (_m *MockedDatabase) UpdateVersions(ctx context.Context, dto *db.CreateTaskDTO) error {
+	ret := _m.Called(ctx, dto)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *db.CreateTaskDTO) error); ok {
+		r0 = rf(ctx, dto)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // VersionEditable provides a mock function with given fields: ctx, versionID
 func (_m *MockedDatabase) VersionEditable(ctx context.Context, versionID uuid.UUID) (bool, error) {
 	ret := _m.Called(ctx, versionID)

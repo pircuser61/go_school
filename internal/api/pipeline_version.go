@@ -731,6 +731,16 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
+
+	err = ep.UpdateVersions(ctx, &db.CreateTaskDTO{
+		TaskID:    runCtx.TaskID,
+		VersionID: ep.VersionID,
+	})
+	if err != nil {
+		e := PipelineRunError
+		return nil, e, err
+	}
+
 	if err = txStorage.CommitTransaction(ctx); err != nil {
 		e := PipelineRunError
 		return nil, e, err

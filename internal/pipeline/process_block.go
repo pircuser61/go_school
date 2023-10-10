@@ -276,6 +276,14 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 			}
 		}
 
+		err = epi.UpdateVersions(ctx, &db.CreateTaskDTO{
+			TaskID:    runCtx.TaskID,
+			VersionID: epi.VersionID,
+		})
+		if err != nil {
+			return nil, false, errors.Wrap(err, "can't update task version")
+		}
+
 		return &epi, false, nil
 	}
 

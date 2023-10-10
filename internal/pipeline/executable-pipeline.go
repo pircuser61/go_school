@@ -116,6 +116,10 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
+func (gb *ExecutablePipeline) UpdateVersions(ctx c.Context, dto *db.CreateTaskDTO) error {
+	return gb.Storage.UpdateVersions(ctx, dto)
+}
+
 func (gb *ExecutablePipeline) CreateTask(ctx c.Context, dto *CreateTaskDTO) error {
 	gb.TaskID = uuid.New()
 
