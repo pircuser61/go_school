@@ -2484,13 +2484,6 @@ func (_m *MockedDatabase) UpdateBlockVariablesInOthers(ctx context.Context, task
 	return r1
 }
 
-func (_m *MockedDatabase) GetBlockValues(ctx context.Context, blockName, taskId string) (map[string][]byte, error) {
-	_ = _m.Called(ctx, blockName, taskId)
-	var r1 error
-
-	return map[string][]byte{}, r1
-}
-
 // NewMockedDatabase creates a new instance of MockedDatabase. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockedDatabase(t interface {

@@ -55,7 +55,6 @@ type TaskStorager interface {
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
 	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
-	GetBlockValues(ctx c.Context, blockName, taskId string) (map[string][]byte, error)
 
 	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
 	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
@@ -65,7 +64,7 @@ type TaskStorager interface {
 	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) (*e.EriusTask, error)
 	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 	UpdateBlockStateInOthers(ctx c.Context, blockName, taskId string, blockState []byte) error
-	UpdateBlockVariablesInOthers(ctx c.Context, taskId string, values map[string][]byte) error
+	UpdateBlockVariablesInOthers(ctx c.Context, taskId string, values map[string]interface{}) error
 
 	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error

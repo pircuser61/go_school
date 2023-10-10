@@ -88,9 +88,9 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, err
 		}
 
-		blockValues, errGet := gb.RunContext.Services.Storage.GetBlockValues(ctx, gb.Name, taskId)
-		if errGet != nil {
-			return nil, errGet
+		blockValues := map[string]interface{}{
+			gb.Name + ".executor":         gb.RunContext.VarStore.GetValue(gb.Output[keyOutputFormExecutor]),
+			gb.Name + ".application_body": gb.RunContext.VarStore.GetValue(gb.Output[keyOutputFormBody]),
 		}
 
 		errBlockVariables := gb.RunContext.Services.Storage.UpdateBlockVariablesInOthers(ctx, taskId, blockValues)

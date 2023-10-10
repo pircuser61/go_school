@@ -218,7 +218,7 @@ func (db *PGCon) UpdateBlockStateInOthers(ctx c.Context, blockName, taskId strin
 	return err
 }
 
-func (db *PGCon) UpdateBlockVariablesInOthers(ctx c.Context, taskId string, values map[string][]byte) error {
+func (db *PGCon) UpdateBlockVariablesInOthers(ctx c.Context, taskId string, values map[string]interface{}) error {
 	ctx, span := trace.StartSpan(ctx, "update_block_variables_in_others")
 	defer span.End()
 
