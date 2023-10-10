@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	changeWorkStatusTimeout = 1 * time.Minute
+	changeWorkStatusTimeout = 20 * time.Minute
 )
 
 type signSignatureParams struct {
@@ -181,7 +181,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionSignChangeWorkStatus),
-		WaitSeconds: int(changeWorkStatusTimeout),
+		WaitSeconds: int(changeWorkStatusTimeout.Seconds()),
 	})
 	if err != nil {
 		log.WithError(err).Error("cannot create signChangeWorkStatus timer")
