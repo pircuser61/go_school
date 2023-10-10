@@ -2477,7 +2477,7 @@ func (_m *MockedDatabase) UpdateBlockStateInOthers(ctx context.Context, blockNam
 	return r1
 }
 
-func (_m *MockedDatabase) UpdateBlockVariablesInOthers(ctx context.Context, taskId string, values map[string][]byte) error {
+func (_m *MockedDatabase) UpdateBlockVariablesInOthers(ctx context.Context, taskId string, values map[string]interface{}) error {
 	_ = _m.Called(ctx, taskId,  values)
 	var r1 error
 

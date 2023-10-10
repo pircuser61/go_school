@@ -329,7 +329,7 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
 	if err != nil {
 		e := GetVersionError
-		return errors.New(e.errorMessage(nil))
+		return errors.New(e.errorMessage(err))
 	}
 
 	var steps entity.TaskSteps
