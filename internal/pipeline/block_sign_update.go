@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	_changeWorkStatusTimeout = 5 * time.Minute
+	changeWorkStatusTimeout = 20 * time.Minute
 )
 
 type signSignatureParams struct {
@@ -186,7 +186,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		return errors.New("can't assert provided update data")
 	}
 
-	if gb.State.IsTakenInWork && gb.State.WorkerLogin != login {
+	if gb.State.IsTakenInWork && !gb.isValidLogin(login)  {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
@@ -204,7 +204,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionSignChangeWorkStatus),
-		WaitSeconds: int(_changeWorkStatusTimeout),
+		WaitSeconds: int(changeWorkStatusTimeout.Seconds()),
 	})
 	if err != nil {
 		log.WithError(err).Error("cannot create signChangeWorkStatus timer")
