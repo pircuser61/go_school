@@ -95,9 +95,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 		}
 	case string(entity.TaskUpdateActionSignChangeWorkStatus):
 		if errUpdate := gb.handleChangeWorkStatus(ctx, data.ByLogin); errUpdate != nil {
-			if errUpdate := gb.handleSignature(ctx, data.ByLogin); errUpdate != nil {
-				return nil, errUpdate
-			}
+			return nil, errUpdate
 		}
 	}
 	var stateBytes []byte
