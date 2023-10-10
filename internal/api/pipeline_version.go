@@ -732,10 +732,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		return nil, e, err
 	}
 
-	err = ep.UpdateVersions(ctx, &db.CreateTaskDTO{
-		TaskID:    runCtx.TaskID,
-		VersionID: ep.VersionID,
-	})
+	err = ep.Storage.SetLastRunID(ctx, runCtx.TaskID, ep.VersionID)
 	if err != nil {
 		e := PipelineRunError
 		return nil, e, err

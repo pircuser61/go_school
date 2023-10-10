@@ -2254,6 +2254,20 @@ func (_m *MockedDatabase) SendTaskToArchive(ctx context.Context, taskID uuid.UUI
 	return r0
 }
 
+// SetLastRunID provides a mock function with given fields: ctx, taskID, versionID
+func (_m *MockedDatabase) SetLastRunID(ctx context.Context, taskID uuid.UUID, versionID uuid.UUID) error {
+	ret := _m.Called(ctx, taskID, versionID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = rf(ctx, taskID, versionID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // StartTransaction provides a mock function with given fields: ctx
 func (_m *MockedDatabase) StartTransaction(ctx context.Context) (db.Database, error) {
 	ret := _m.Called(ctx)
@@ -2439,20 +2453,6 @@ func (_m *MockedDatabase) UpdateTaskStatus(ctx context.Context, taskID uuid.UUID
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, int, string, string) error); ok {
 		r0 = rf(ctx, taskID, status, comment, author)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// UpdateVersions provides a mock function with given fields: ctx, dto
-func (_m *MockedDatabase) UpdateVersions(ctx context.Context, dto *db.CreateTaskDTO) error {
-	ret := _m.Called(ctx, dto)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *db.CreateTaskDTO) error); ok {
-		r0 = rf(ctx, dto)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -22,14 +22,14 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
-func (db *PGCon) UpdateVersions(c context.Context, dto *CreateTaskDTO) error {
+func (db *PGCon) SetLastRunID(c context.Context, taskID uuid.UUID, versionID uuid.UUID) error {
 	// nolint:gocritic
 	// language=PostgreSQL
 	const q = `UPDATE versions 
 		SET last_run_id = $1 
 		WHERE id = $2`
 
-	_, err := db.Connection.Exec(c, q, dto.TaskID, dto.VersionID)
+	_, err := db.Connection.Exec(c, q, taskID, versionID)
 	if err != nil {
 		return err
 	}
