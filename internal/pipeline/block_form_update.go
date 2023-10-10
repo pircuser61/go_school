@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
+	"github.com/pkg/errors"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
@@ -71,7 +72,8 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 
 	if len(gb.State.ApplicationBody) > 0 {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			status, _ := gb.GetTaskHumanStatus()
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 			if eventErr != nil {
 				return nil, eventErr
 			}

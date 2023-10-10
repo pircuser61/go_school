@@ -31,28 +31,29 @@ const (
 )
 
 type taskResp struct {
-	ID               uuid.UUID              `json:"id"`
-	VersionID        uuid.UUID              `json:"version_id"`
-	StartedAt        time.Time              `json:"started_at"`
-	LastChangedAt    time.Time              `json:"last_changed_at"`
-	FinishedAt       *time.Time             `json:"finished_at"`
-	Name             string                 `json:"name"`
-	Description      string                 `json:"description"`
-	Status           string                 `json:"status"`
-	HumanStatus      string                 `json:"human_status"`
-	Author           string                 `json:"author"`
-	IsDebugMode      bool                   `json:"debug"`
-	Parameters       map[string]interface{} `json:"parameters"`
-	Steps            taskSteps              `json:"steps"`
-	WorkNumber       string                 `json:"work_number"`
-	BlueprintID      string                 `json:"blueprint_id"`
-	Rate             *int                   `json:"rate"`
-	RateComment      *string                `json:"rate_comment"`
-	AvailableActions taskActions            `json:"available_actions"`
-	StatusComment    string                 `json:"status_comment"`
-	StatusAuthor     string                 `json:"status_author"`
-	ProcessDeadline  time.Time              `json:"process_deadline"`
-	NodeGroup        []NodeGroup            `json:"node_group"`
+	ID                 uuid.UUID              `json:"id"`
+	VersionID          uuid.UUID              `json:"version_id"`
+	StartedAt          time.Time              `json:"started_at"`
+	LastChangedAt      time.Time              `json:"last_changed_at"`
+	FinishedAt         *time.Time             `json:"finished_at"`
+	Name               string                 `json:"name"`
+	Description        string                 `json:"description"`
+	Status             string                 `json:"status"`
+	HumanStatus        string                 `json:"human_status"`
+	HumanStatusComment string                 `json:"human_status_comment"`
+	Author             string                 `json:"author"`
+	IsDebugMode        bool                   `json:"debug"`
+	Parameters         map[string]interface{} `json:"parameters"`
+	Steps              taskSteps              `json:"steps"`
+	WorkNumber         string                 `json:"work_number"`
+	BlueprintID        string                 `json:"blueprint_id"`
+	Rate               *int                   `json:"rate"`
+	RateComment        *string                `json:"rate_comment"`
+	AvailableActions   taskActions            `json:"available_actions"`
+	StatusComment      string                 `json:"status_comment"`
+	StatusAuthor       string                 `json:"status_author"`
+	ProcessDeadline    time.Time              `json:"process_deadline"`
+	NodeGroup          []NodeGroup            `json:"node_group"`
 }
 
 type step struct {
@@ -114,28 +115,29 @@ func (taskResp) toResponse(in *entity.EriusTask, usrDegSteps map[string]bool, sN
 	}
 
 	out := &taskResp{
-		ID:               in.ID,
-		VersionID:        in.VersionID,
-		StartedAt:        in.StartedAt,
-		LastChangedAt:    in.LastChangedAt,
-		FinishedAt:       in.FinishedAt,
-		Name:             in.Name,
-		Description:      in.Description,
-		Status:           in.Status,
-		HumanStatus:      in.HumanStatus,
-		Author:           in.Author,
-		IsDebugMode:      in.IsDebugMode,
-		Parameters:       in.Parameters,
-		Steps:            steps,
-		WorkNumber:       in.WorkNumber,
-		BlueprintID:      in.BlueprintID,
-		Rate:             in.Rate,
-		RateComment:      in.RateComment,
-		AvailableActions: actions,
-		StatusComment:    in.StatusComment,
-		StatusAuthor:     in.StatusAuthor,
-		ProcessDeadline:  dln,
-		NodeGroup:        groupsToResponce(in.NodeGroup),
+		ID:                 in.ID,
+		VersionID:          in.VersionID,
+		StartedAt:          in.StartedAt,
+		LastChangedAt:      in.LastChangedAt,
+		FinishedAt:         in.FinishedAt,
+		Name:               in.Name,
+		Description:        in.Description,
+		Status:             in.Status,
+		HumanStatus:        in.HumanStatus,
+		HumanStatusComment: in.HumanStatusComment,
+		Author:             in.Author,
+		IsDebugMode:        in.IsDebugMode,
+		Parameters:         in.Parameters,
+		Steps:              steps,
+		WorkNumber:         in.WorkNumber,
+		BlueprintID:        in.BlueprintID,
+		Rate:               in.Rate,
+		RateComment:        in.RateComment,
+		AvailableActions:   actions,
+		StatusComment:      in.StatusComment,
+		StatusAuthor:       in.StatusAuthor,
+		ProcessDeadline:    dln,
+		NodeGroup:          groupsToResponce(in.NodeGroup),
 	}
 
 	return out

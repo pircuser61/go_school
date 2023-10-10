@@ -15,7 +15,7 @@ type signSignatureParams struct {
 	Attachments []entity.Attachment `json:"attachments"`
 }
 
-func (gb *GoSignBlock) handleSignature() error {
+func (gb *GoSignBlock) handleSignature(ctx c.Context) error {
 	updateParams := &signSignatureParams{}
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, updateParams)
@@ -25,6 +25,29 @@ func (gb *GoSignBlock) handleSignature() error {
 
 	if setErr := gb.setSignerDecision(updateParams); setErr != nil {
 		return setErr
+	}
+
+	if updateParams.Decision == "error" {
+		emails := make([]string, 0, len(gb.State.Signers))
+		logins := getSliceFromMapOfStrings(gb.State.Signers)
+
+		for i := range logins {
+			eml, err := gb.RunContext.Services.People.GetUserEmail(ctx, logins[i])
+			if err != nil {
+				continue
+			}
+			emails = append(emails, eml)
+		}
+		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
+			mail.NewSignErrorTemplate(
+				gb.RunContext.WorkNumber,
+				gb.RunContext.WorkTitle,
+				gb.RunContext.Services.Sender.SdAddress,
+			),
+		)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -46,7 +69,7 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSign):
-		if errUpdate := gb.handleSignature(); errUpdate != nil {
+		if errUpdate := gb.handleSignature(ctx); errUpdate != nil {
 			return nil, errUpdate
 		}
 	}
@@ -60,7 +83,8 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}

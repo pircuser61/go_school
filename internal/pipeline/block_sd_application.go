@@ -69,8 +69,8 @@ func (gb *GoSdApplicationBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoSdApplicationBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return StatusNew
+func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+	return StatusNew, ""
 }
 
 func (gb *GoSdApplicationBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -122,7 +122,8 @@ func (gb *GoSdApplicationBlock) Update(ctx context.Context) (interface{}, error)
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -218,7 +219,8 @@ func createGoSdApplicationBlock(ctx context.Context, name string, ef *entity.Eri
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		status, _ := b.GetTaskHumanStatus()
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 		if err != nil {
 			return nil, false, err
 		}

@@ -2392,25 +2392,25 @@ func (_m *MockedDatabase) UpdateTaskBlocksData(ctx context.Context, dto *db.Upda
 	return r0
 }
 
-// UpdateTaskHumanStatus provides a mock function with given fields: ctx, taskID, status
-func (_m *MockedDatabase) UpdateTaskHumanStatus(ctx context.Context, taskID uuid.UUID, status string) (*entity.EriusTask, error) {
-	ret := _m.Called(ctx, taskID, status)
+// UpdateTaskHumanStatus provides a mock function with given fields: ctx, taskID, status, comment
+func (_m *MockedDatabase) UpdateTaskHumanStatus(ctx context.Context, taskID uuid.UUID, status string, comment string) (*entity.EriusTask, error) {
+	ret := _m.Called(ctx, taskID, status, comment)
 
 	var r0 *entity.EriusTask
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (*entity.EriusTask, error)); ok {
-		return rf(ctx, taskID, status)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) (*entity.EriusTask, error)); ok {
+		return rf(ctx, taskID, status, comment)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *entity.EriusTask); ok {
-		r0 = rf(ctx, taskID, status)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) *entity.EriusTask); ok {
+		r0 = rf(ctx, taskID, status, comment)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusTask)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
-		r1 = rf(ctx, taskID, status)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string) error); ok {
+		r1 = rf(ctx, taskID, status, comment)
 	} else {
 		r1 = ret.Error(1)
 	}

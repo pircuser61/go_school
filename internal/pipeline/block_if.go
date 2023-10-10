@@ -59,8 +59,8 @@ func (gb *IF) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *IF) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+func (gb *IF) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+	return "", ""
 }
 
 func (gb *IF) Next(_ *store.VariableStore) ([]string, bool) {
@@ -108,7 +108,8 @@ func (gb *IF) Update(ctx context.Context) (interface{}, error) {
 	gb.State.ChosenGroupID = chosenGroupID
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -180,7 +181,8 @@ func createGoIfBlock(ctx context.Context, name string, ef *entity.EriusFunc, run
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		status, _ := b.GetTaskHumanStatus()
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 		if err != nil {
 			return nil, false, err
 		}

@@ -49,7 +49,7 @@ type TaskStorager interface {
 	GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error)
 	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
 	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
-	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) (*e.EriusTask, error)
+	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, comment string) (*e.EriusTask, error)
 	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
 	GetTaskStepsToWait(ctx c.Context, workNumber, blockName string) ([]string, error)
 	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)

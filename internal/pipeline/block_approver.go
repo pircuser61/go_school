@@ -290,36 +290,36 @@ func (gb *GoApproverBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoApproverBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *GoApproverBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.EditingApp != nil {
-		return StatusWait
+		return StatusWait, ""
 	}
 
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ApproverDecisionRejected {
-			return StatusApprovementRejected
+			return StatusApprovementRejected, ""
 		}
 
 		if *gb.State.Decision == ApproverDecisionSentToEdit {
-			return StatusApprovementRejected
+			return StatusApprovementRejected, ""
 		}
 
-		return getPositiveFinishStatus(*gb.State.Decision)
+		return getPositiveFinishStatus(*gb.State.Decision), ""
 	}
 
 	if gb.State != nil && len(gb.State.AddInfo) != 0 {
 		if gb.State.checkEmptyLinkIdAddInfo() {
-			return StatusWait
+			return StatusWait, ""
 		}
-		return getPositiveProcessingStatus(gb.State.ApproveStatusName)
+		return getPositiveProcessingStatus(gb.State.ApproveStatusName), ""
 	}
 
 	var lastIdx = len(gb.State.AddInfo) - 1
 	if len(gb.State.AddInfo) > 0 && gb.State.AddInfo[lastIdx].Type == RequestAddInfoType {
-		return StatusWait
+		return StatusWait, ""
 	}
 
-	return getPositiveProcessingStatus(gb.State.ApproveStatusName)
+	return getPositiveProcessingStatus(gb.State.ApproveStatusName), ""
 }
 
 func (gb *GoApproverBlock) Next(_ *store.VariableStore) ([]string, bool) {

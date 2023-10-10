@@ -95,20 +95,20 @@ func (gb *ExecutableFunctionBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
 	if gb.State.TimeExpired {
-		return StatusDone
+		return StatusDone, ""
 	}
 
 	if gb.State.Async && gb.State.HasAck && !gb.State.HasResponse {
-		return StatusWait
+		return StatusWait, ""
 	}
 
 	if gb.State.HasResponse {
-		return StatusDone
+		return StatusDone, ""
 	}
 
-	return StatusExecution
+	return StatusExecution, ""
 }
 
 func (gb *ExecutableFunctionBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -224,7 +224,8 @@ func (gb *ExecutableFunctionBlock) Update(ctx c.Context) (interface{}, error) {
 
 	if gb.State.HasResponse || gb.State.TimeExpired {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			status, _ := gb.GetTaskHumanStatus()
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 			if eventErr != nil {
 				return nil, eventErr
 			}
@@ -327,7 +328,8 @@ func createExecutableFunctionBlock(ctx c.Context, name string, ef *entity.EriusF
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 			if err != nil {
 				return nil, false, err
 			}

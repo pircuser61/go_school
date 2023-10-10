@@ -151,8 +151,8 @@ func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 	}
 
-	taskHumanStatus := block.GetTaskHumanStatus()
-	err = runCtx.updateStatusByStep(ctx, taskHumanStatus)
+	taskHumanStatus, statusComment := block.GetTaskHumanStatus()
+	err = runCtx.updateStatusByStep(ctx, taskHumanStatus, statusComment)
 	if err != nil {
 		return err
 	}

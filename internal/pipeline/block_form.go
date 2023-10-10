@@ -183,12 +183,12 @@ func (gb *GoFormBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoFormBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *GoFormBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.IsFilled {
-		return StatusDone
+		return StatusDone, ""
 	}
 
-	return StatusExecution
+	return StatusExecution, ""
 }
 
 func (gb *GoFormBlock) GetState() interface{} {

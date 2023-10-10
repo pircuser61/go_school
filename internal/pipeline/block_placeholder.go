@@ -59,8 +59,8 @@ func (gb *GoPlaceholderBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoPlaceholderBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+func (gb *GoPlaceholderBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+	return "", ""
 }
 
 func (gb *GoPlaceholderBlock) GetType() string {
@@ -97,7 +97,8 @@ func (gb *GoPlaceholderBlock) GetState() interface{} {
 
 func (gb *GoPlaceholderBlock) Update(ctx context.Context) (interface{}, error) {
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -136,7 +137,8 @@ func createGoPlaceholderBlock(ctx context.Context, name string, ef *entity.Erius
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		status, _ := b.GetTaskHumanStatus()
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 		if err != nil {
 			return nil, false, err
 		}

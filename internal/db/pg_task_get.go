@@ -876,7 +876,8 @@ func (db *PGCon) GetTask(
  			w.status_comment,
 			w.status_author,
  			v.content,
- 			v.node_groups
+ 			v.node_groups,
+ 			w.human_status_comment
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -937,6 +938,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.StatusAuthor,
 		&et.VersionContent,
 		&nodeGroups,
+		&et.HumanStatusComment,
 	)
 	if err != nil {
 		return nil, err

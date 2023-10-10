@@ -56,7 +56,8 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 			b.RunContext.VarStore.AddStep(b.Name)
 
 			if _, ok := b.expectedEvents[eventStart]; ok {
-				event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+				status, _ := b.GetTaskHumanStatus()
+				event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 				if err != nil {
 					return nil, false, err
 				}
@@ -70,7 +71,8 @@ func createGoFormBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 			if err != nil {
 				return nil, false, err
 			}

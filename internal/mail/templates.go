@@ -783,6 +783,21 @@ func getApprovementActionNameByStatus(status, defaultActionName string) (res str
 		return defaultActionName
 	}
 }
+func NewSignErrorTemplate(workNumber, workTitle, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("По заявке № %s %s- возникла ошибка подписания", workNumber, workTitle),
+		Text:    "Уважаемый коллега, по заявке <a href={{.Link}}>ссылке</a> произошла ошибка подписания. Документ не был подписан. Необходимо повторно подписать заявку.",
+		Variables: struct {
+			Id   string `json:"id"`
+			Name string `json:"name"`
+			Link string `json:"link"`
+		}{
+			Id:   workNumber,
+			Name: workTitle,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+		},
+	}
+}
 
 type Action struct {
 	Title              string
