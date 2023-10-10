@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitlab.services.mts.ru/abp/myosotis/logger"
+
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/mail"
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/scheduler"
@@ -27,8 +28,7 @@ type changeStatusSignatureParams struct {
 	Status string `json:"status"`
 }
 
-func (gb *GoSignBlock) handleSignature(login string) error {
-func (gb *GoSignBlock) handleSignature(ctx c.Context) error {
+func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 	updateParams := &signSignatureParams{}
 
 	err := json.Unmarshal(gb.RunContext.UpdateData.Parameters, updateParams)
@@ -90,16 +90,16 @@ func (gb *GoSignBlock) Update(ctx c.Context) (interface{}, error) {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSign):
-		if errUpdate := gb.handleSignature(data.ByLogin); errUpdate != nil {
+		if errUpdate := gb.handleSignature(ctx, data.ByLogin); errUpdate != nil {
 			return nil, errUpdate
 		}
 	case string(entity.TaskUpdateActionSignChangeWorkStatus):
 		if errUpdate := gb.handleChangeWorkStatus(ctx, data.ByLogin); errUpdate != nil {
-		if errUpdate := gb.handleSignature(ctx); errUpdate != nil {
-			return nil, errUpdate
+			if errUpdate := gb.handleSignature(ctx, data.ByLogin); errUpdate != nil {
+				return nil, errUpdate
+			}
 		}
 	}
-
 	var stateBytes []byte
 	stateBytes, err := json.Marshal(gb.State)
 	if err != nil {
@@ -233,4 +233,15 @@ func (gb *GoSignBlock) setSignerDecision(u *signSignatureParams) error {
 	}
 
 	return nil
+}
+
+func (gb *GoSignBlock) isValidLogin(login string) bool {
+	if gb.State.WorkerLogin != login &&
+		(login != ServiceAccount &&
+			login != ServiceAccountStage &&
+			login != ServiceAccountDev) {
+		return false
+	}
+
+	return true
 }
