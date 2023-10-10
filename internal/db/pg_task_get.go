@@ -1846,3 +1846,32 @@ func (db *PGCon) GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context,
 	}
 	return executors, nil
 }
+
+func (db *PGCon) GetBlockValues(ctx c.Context, blockName, taskId string) (map[string][]byte, error) {
+	ctx, span := trace.StartSpan(ctx, "get_block_values")
+	defer span.End()
+
+	allValues := make(map[string][]byte, 0)
+	blockValues := make(map[string][]byte, 0)
+
+	q := `
+		SELECT content-> 'State' -> 'Values'
+		FROM variable_storage
+		WHERE work_id = $1 AND step_name = $2 ORDER BY time DESC LIMIT 1`
+
+	if err := db.Connection.QueryRow(ctx, q, taskId, blockName).Scan(&allValues); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return allValues, nil
+		}
+
+		return allValues, err
+	}
+
+	for varName := range allValues {
+		if strings.Contains(blockName+".", varName) {
+			blockValues[varName] = allValues[varName]
+		}
+	}
+
+	return blockValues, nil
+}
