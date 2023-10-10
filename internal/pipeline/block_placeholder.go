@@ -59,7 +59,7 @@ func (gb *GoPlaceholderBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoPlaceholderBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoPlaceholderBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	return "", ""
 }
 

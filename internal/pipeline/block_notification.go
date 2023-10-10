@@ -59,7 +59,7 @@ func (gb *GoNotificationBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoNotificationBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoNotificationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	return "", ""
 }
 

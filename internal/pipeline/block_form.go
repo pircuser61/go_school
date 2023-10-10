@@ -183,7 +183,7 @@ func (gb *GoFormBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoFormBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoFormBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.IsFilled {
 		return StatusDone, ""
 	}

@@ -42,7 +42,7 @@ func (gb *GoBeginParallelTaskBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoBeginParallelTaskBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	return StatusExecution, ""
 }
 

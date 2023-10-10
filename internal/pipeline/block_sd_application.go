@@ -69,7 +69,7 @@ func (gb *GoSdApplicationBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoSdApplicationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	return StatusNew, ""
 }
 

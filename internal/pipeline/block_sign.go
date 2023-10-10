@@ -83,7 +83,7 @@ func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
-func (gb *GoSignBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == SignDecisionRejected {
 			return StatusRejected, ""

@@ -43,7 +43,7 @@ func (gb *GoStartBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoStartBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoStartBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	return "", ""
 }
 

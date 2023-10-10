@@ -59,7 +59,7 @@ func (gb *TimerBlock) GetStatus() Status {
 	}
 }
 
-func (gb *TimerBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *TimerBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	return "", ""
 }
 

@@ -59,7 +59,7 @@ func (gb *IF) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *IF) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *IF) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	return "", ""
 }
 

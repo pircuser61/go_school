@@ -265,7 +265,7 @@ func (gb *GoExecutionBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func (gb *GoExecutionBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
 			return StatusDone, ""

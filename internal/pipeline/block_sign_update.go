@@ -27,7 +27,7 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context) error {
 		return setErr
 	}
 
-	if updateParams.Decision == "error" {
+	if updateParams.Decision == SignDecisionError {
 		emails := make([]string, 0, len(gb.State.Signers))
 		logins := getSliceFromMapOfStrings(gb.State.Signers)
 
@@ -41,7 +41,6 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context) error {
 		err := gb.RunContext.Services.Sender.SendNotification(ctx, emails, nil,
 			mail.NewSignErrorTemplate(
 				gb.RunContext.WorkNumber,
-				gb.RunContext.WorkTitle,
 				gb.RunContext.Services.Sender.SdAddress,
 			),
 		)

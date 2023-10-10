@@ -290,7 +290,7 @@ func (gb *GoApproverBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoApproverBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoApproverBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.EditingApp != nil {
 		return StatusWait, ""
 	}

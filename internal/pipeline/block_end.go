@@ -42,7 +42,7 @@ func (gb *GoEndBlock) UpdateManual() bool {
 	return false
 }
 
-func (gb *GoEndBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoEndBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	// should not change status returned by worker nodes like approvement, execution, etc.
 	return "", ""
 }

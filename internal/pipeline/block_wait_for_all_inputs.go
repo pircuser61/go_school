@@ -52,7 +52,7 @@ func (gb *GoWaitForAllInputsBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *GoWaitForAllInputsBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	return StatusDone, ""
 }
 

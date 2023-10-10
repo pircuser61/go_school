@@ -95,7 +95,7 @@ func (gb *ExecutableFunctionBlock) GetStatus() Status {
 	return StatusRunning
 }
 
-func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() (TaskHumanStatus TaskHumanStatus, comment string) {
+func (gb *ExecutableFunctionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State.TimeExpired {
 		return StatusDone, ""
 	}
