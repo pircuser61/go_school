@@ -1351,6 +1351,14 @@ func (m *MockDB) GetTaskRunContext(_ context.Context, _ string) (entity.TaskRunC
 	return entity.TaskRunContext{}, errNotImplemented
 }
 
+func (_m *MockDB) UpdateBlockStateInOthers(_ context.Context, _, _ string, _ []byte) error {
+	return nil
+}
+
+func (_m *MockDB) UpdateBlockVariablesInOthers(_ context.Context, _ string, _ map[string]interface{}) error {
+	return nil
+}
+
 func (m *MockDB) GetUsersWithReadWriteFormAccess(
 	_ context.Context,
 	_ string,
