@@ -227,7 +227,7 @@ func (db *PGCon) UpdateBlockVariablesInOthers(ctx c.Context, taskId string, valu
 	for varName := range values {
 		const q = `
 		UPDATE variable_storage 
-		SET content = jsonb_set(content, array['State', 'Values', $1]::varchar[], $2::jsonb, false)
+		SET content = jsonb_set(content, array['Values', $1]::varchar[], $2::jsonb, false)
 		WHERE work_id = $3`
 
 		_, err := db.Connection.Exec(ctx, q, varName, values[varName], taskId)
