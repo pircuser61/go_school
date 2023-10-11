@@ -427,6 +427,7 @@ func TestGoFormBlock_Update(t *testing.T) {
 		mock.MatchedBy(func(string) bool { return true }),
 		mock.MatchedBy(func(string) bool { return true }),
 	).Return(false, nil)
+
 	currCall := mockedDb.ExpectedCalls[len(mockedDb.ExpectedCalls)-1]
 	currCall = currCall.Run(func(args mock.Arguments) {
 		switch args.Get(3).(string) {
@@ -440,8 +441,20 @@ func TestGoFormBlock_Update(t *testing.T) {
 			currCall.ReturnArguments[0] = false
 			currCall.ReturnArguments[1] = errors.New("mock error")
 		}
-
 	})
+
+	mockedDb.On("UpdateBlockStateInOthers",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+		mock.MatchedBy(func([]byte) bool { return true }),
+	).Return(nil)
+
+	mockedDb.On("UpdateBlockVariablesInOthers",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+		mock.MatchedBy(func(map[string]interface{}) bool { return true }),
+	).Return(nil)
 
 	type args struct {
 		Name       string

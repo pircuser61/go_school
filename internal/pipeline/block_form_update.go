@@ -32,6 +32,7 @@ func (a *updateFillFormParams) Validate() error {
 
 //nolint:gocyclo //ok
 func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
+	updateInOtherBlocks := false
 	data := gb.RunContext.UpdateData
 	if data == nil {
 		return nil, errors.New("empty data")
@@ -53,6 +54,7 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 		if errFill := gb.handleRequestFillForm(ctx, data); errFill != nil {
 			return nil, errFill
 		}
+		updateInOtherBlocks = true
 	case string(entity.TaskUpdateActionFormExecutorStartWork):
 		if gb.State.IsTakenInWork {
 			return nil, errors.New("is already taken in work")
@@ -78,6 +80,27 @@ func (gb *GoFormBlock) Update(ctx c.Context) (interface{}, error) {
 				return nil, eventErr
 			}
 			gb.happenedEvents = append(gb.happenedEvents, event)
+		}
+	}
+
+	if updateInOtherBlocks {
+		taskId := gb.RunContext.TaskID.String()
+		err = gb.RunContext.Services.Storage.UpdateBlockStateInOthers(ctx, gb.Name, taskId, stateBytes)
+		if err != nil {
+			return nil, err
+		}
+
+		executor, _ := gb.RunContext.VarStore.GetValue(gb.Output[keyOutputFormExecutor])
+		body, _ := gb.RunContext.VarStore.GetValue(gb.Output[keyOutputFormBody])
+
+		blockValues := map[string]interface{}{
+			gb.Name + ".executor":         executor,
+			gb.Name + ".application_body": body,
+		}
+
+		errBlockVariables := gb.RunContext.Services.Storage.UpdateBlockVariablesInOthers(ctx, taskId, blockValues)
+		if errBlockVariables != nil {
+			return nil, errBlockVariables
 		}
 	}
 

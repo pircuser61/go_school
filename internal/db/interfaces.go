@@ -42,31 +42,34 @@ type TaskStorager interface {
 	GetCanceledTaskSteps(ctx c.Context, taskID uuid.UUID) ([]e.Step, error)
 	GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*e.EriusTasks, error)
 	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
-
-	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
-	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
 	GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error)
 	GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error)
 	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
-	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
-	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, comment string) (*e.EriusTask, error)
-	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
 	GetTaskStepsToWait(ctx c.Context, workNumber, blockName string) ([]string, error)
-	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
 	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
-	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
-	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
-	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
-	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
-
 	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
+
+	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
+
+	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
+	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
+	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
+	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
+	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
+	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
+
+	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
+	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, comment string) (*e.EriusTask, error)
+	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
+	UpdateBlockStateInOthers(ctx c.Context, blockName, taskId string, blockState []byte) error
+	UpdateBlockVariablesInOthers(ctx c.Context, taskId string, values map[string]interface{}) error
 }
 
 type UpdateTaskRate struct {

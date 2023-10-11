@@ -2484,6 +2484,30 @@ func (_m *MockedDatabase) VersionEditable(ctx context.Context, versionID uuid.UU
 	return r0, r1
 }
 
+func (_m *MockedDatabase) UpdateBlockStateInOthers(ctx context.Context, blockName, taskId string, blockState []byte) error {
+	ret := _m.Called(ctx, blockName, taskId,  blockState)
+
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, []byte) error); ok {
+		_ = rf(ctx, blockName, taskId, blockState)
+	} else {
+		_ = ret.Error(0)
+	}
+
+	return nil
+}
+
+func (_m *MockedDatabase) UpdateBlockVariablesInOthers(ctx context.Context, taskId string, values map[string]interface{}) error {
+	ret := _m.Called(ctx, taskId,  values)
+
+	if rf, ok := ret.Get(0).(func(context.Context, string, map[string]interface{}) error); ok {
+		_ = rf(ctx, taskId, values)
+	} else {
+		_ = ret.Error(0)
+	}
+
+	return nil
+}
+
 // NewMockedDatabase creates a new instance of MockedDatabase. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockedDatabase(t interface {
