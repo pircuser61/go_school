@@ -24,10 +24,14 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
+func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
 	statuses := "('running', 'idle', 'ready')"
 	if finished {
 		statuses = "('finished', 'cancel', 'no_success', 'error')"
+	}
+	memberActed := ""
+	if acted {
+		memberActed = "AND m.is_acted = true"
 	}
 
 	return fmt.Sprintf(`WITH actions AS (
@@ -42,6 +46,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
       AND vs.step_type = '%s'
       AND vs.status IN %s
       AND w.child_id IS NULL
+		%s
       --unique-actions-filter--
 )
      , unique_actions AS (
@@ -52,7 +57,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
                                                'actions', actions.action,
                                                'params', actions.params) as actions) jsonb_actions ON TRUE
     GROUP BY actions.work_id
-)`, loginsIn, stepType, statuses)
+)`, loginsIn, stepType, statuses, memberActed)
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
@@ -116,32 +121,31 @@ func getUniqueActions(selectFilter string, logins []string) string {
 
 	switch selectFilter {
 	case entity.SelectAsValApprover:
-		return uniqueActionsByRole(loginsIn, "approver", false)
+		return uniqueActionsByRole(loginsIn, "approver", false, false)
 	case entity.SelectAsValFinishedApprover:
-		return uniqueActionsByRole(loginsIn, "approver", true)
+		return uniqueActionsByRole(loginsIn, "approver", true, true)
 	case entity.SelectAsValExecutor:
-		return uniqueActionsByRole(loginsIn, "execution", false)
+		return uniqueActionsByRole(loginsIn, "execution", false, false)
 	case entity.SelectAsValFinishedExecutor:
-		return uniqueActionsByRole(loginsIn, "execution", true)
+		return uniqueActionsByRole(loginsIn, "execution", true, true)
 	case entity.SelectAsValFormExecutor:
-		return uniqueActionsByRole(loginsIn, "form", false)
+		return uniqueActionsByRole(loginsIn, "form", false, false)
 	case entity.SelectAsValFinishedFormExecutor:
-		q := uniqueActionsByRole(loginsIn, "execution", true)
-		return strings.Replace(q, "--unique-actions-filter--", "AND m.is_acted = true", 1)
+		return uniqueActionsByRole(loginsIn, "execution", true, true)
 	case entity.SelectAsValSignerPhys:
-		q := uniqueActionsByRole(loginsIn, "sign", false)
+		q := uniqueActionsByRole(loginsIn, "sign", false, false)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValFinishedSignerPhys:
-		q := uniqueActionsByRole(loginsIn, "sign", true)
+		q := uniqueActionsByRole(loginsIn, "sign", true, true)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValSignerJur:
-		q := uniqueActionsByRole(loginsIn, "sign", false)
+		q := uniqueActionsByRole(loginsIn, "sign", false, false)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValFinishedSignerJur:
-		q := uniqueActionsByRole(loginsIn, "sign", true)
+		q := uniqueActionsByRole(loginsIn, "sign", true, true)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValInitiators:
@@ -157,7 +161,7 @@ func getUniqueActions(selectFilter string, logins []string) string {
 			WHERE status = 1 AND child_id IS NULL
 		)`
 	case entity.SelectAsValFinishedGroupExecutor:
-		q := uniqueActionsByRole(loginsIn, "execution", true)
+		q := uniqueActionsByRole(loginsIn, "execution", true, false)
 		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
