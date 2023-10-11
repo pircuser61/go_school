@@ -108,6 +108,16 @@ func (gb *GoExecutionBlock) Members() []Member {
 			})
 		}
 	}
+
+	if gb.State.DelegateFor != "" {
+		if _, ok := addedMembers[*gb.State.ActualExecutor]; !ok {
+			members = append(members, Member{
+				Login:   *gb.State.ActualExecutor,
+				Actions: []MemberAction{},
+				IsActed: true,
+			})
+		}
+	}
 	return members
 }
 
