@@ -22,7 +22,7 @@ type CreateTaskDTO struct {
 	RunCtx     entity.TaskRunContext
 }
 
-func (db *PGCon) SetLastRunID(c context.Context, taskID uuid.UUID, versionID uuid.UUID) error {
+func (db *PGCon) SetLastRunID(c context.Context, taskID, versionID uuid.UUID) error {
 	// nolint:gocritic
 	// language=PostgreSQL
 	const q = `UPDATE versions 

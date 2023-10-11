@@ -278,7 +278,7 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 
 		err = epi.Storage.SetLastRunID(ctx, runCtx.TaskID, epi.VersionID)
 		if err != nil {
-			return nil, false, errors.Wrap(err, "can't update task version")
+			return nil, false, errors.Wrap(err, "can’t set id of the last runned task")
 		}
 
 		return &epi, false, nil
