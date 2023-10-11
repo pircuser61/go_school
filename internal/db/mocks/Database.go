@@ -2254,6 +2254,20 @@ func (_m *MockedDatabase) SendTaskToArchive(ctx context.Context, taskID uuid.UUI
 	return r0
 }
 
+// SetLastRunID provides a mock function with given fields: ctx, taskID, versionID
+func (_m *MockedDatabase) SetLastRunID(ctx context.Context, taskID uuid.UUID, versionID uuid.UUID) error {
+	ret := _m.Called(ctx, taskID, versionID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = rf(ctx, taskID, versionID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // StartTransaction provides a mock function with given fields: ctx
 func (_m *MockedDatabase) StartTransaction(ctx context.Context) (db.Database, error) {
 	ret := _m.Called(ctx)

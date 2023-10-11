@@ -186,6 +186,7 @@ type Database interface {
 	GetExecutableScenarios(ctx c.Context) ([]e.EriusScenario, error)
 	GetExecutableByName(ctx c.Context, name string) (*e.EriusScenario, error)
 
+	SetLastRunID(ctx c.Context, taskID, versionID uuid.UUID) error
 	ActiveAlertNGSA(ctx c.Context, sever int,
 		state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error
 	ClearAlertNGSA(ctx c.Context, name string) error
