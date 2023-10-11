@@ -88,6 +88,9 @@ func (gb *GoExecutionBlock) Members() []Member {
 	}
 
 	for i := range gb.State.ChangedExecutorsLogs {
+		if _, ok := addedMembers[gb.State.ChangedExecutorsLogs[i].OldLogin]; !ok {
+			continue
+		}
 		members = append(members, Member{
 			Login:   gb.State.ChangedExecutorsLogs[i].OldLogin,
 			Actions: []MemberAction{},
@@ -132,6 +135,9 @@ func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
 		if (log.Login == login || log.DelegateFor == login) && log.ReqType == RequestInfoQuestion {
 			return true
 		}
+	}
+	if gb.State.IsTakenInWork {
+		return true
 	}
 	return false
 }
