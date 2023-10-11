@@ -26,10 +26,8 @@ import (
 
 func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
 	statuses := "('running', 'idle', 'ready')"
-	memberFinished := ""
 	if finished {
 		statuses = "('finished', 'cancel', 'no_success', 'error')"
-		memberFinished = "AND m.is_acted = true"
 	}
 
 	return fmt.Sprintf(`WITH actions AS (
@@ -44,7 +42,6 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
       AND vs.step_type = '%s'
       AND vs.status IN %s
       AND w.child_id IS NULL
-	 %s
       --unique-actions-filter--
 )
      , unique_actions AS (
@@ -55,7 +52,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
                                                'actions', actions.action,
                                                'params', actions.params) as actions) jsonb_actions ON TRUE
     GROUP BY actions.work_id
-)`, loginsIn, stepType, statuses, memberFinished)
+)`, loginsIn, stepType, statuses)
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
@@ -129,7 +126,8 @@ func getUniqueActions(selectFilter string, logins []string) string {
 	case entity.SelectAsValFormExecutor:
 		return uniqueActionsByRole(loginsIn, "form", false)
 	case entity.SelectAsValFinishedFormExecutor:
-		return uniqueActionsByRole(loginsIn, "form", true)
+		q := uniqueActionsByRole(loginsIn, "execution", true)
+		return strings.Replace(q, "--unique-actions-filter--", "AND m.is_acted = true", 1)
 	case entity.SelectAsValSignerPhys:
 		q := uniqueActionsByRole(loginsIn, "sign", false)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
@@ -159,11 +157,8 @@ func getUniqueActions(selectFilter string, logins []string) string {
 			WHERE status = 1 AND child_id IS NULL
 		)`
 	case entity.SelectAsValFinishedGroupExecutor:
-		return `WITH unique_actions AS (
-			SELECT id AS work_id, '[]' AS actions
-			FROM works
-			WHERE status in(2,3,4,6) AND child_id IS NULL
-		)`
+		q := uniqueActionsByRole(loginsIn, "execution", true)
+		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
     SELECT id AS work_id, '[]' AS actions
