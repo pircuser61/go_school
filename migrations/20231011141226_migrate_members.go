@@ -74,6 +74,7 @@ func (m *membersSignData) getMembers(wId, sName string) (res []member) {
 
 type membersExecutionData struct {
 	Decision                 *string                   `json:"decision,omitempty"`
+	Executors                map[string]struct{}       `json:"executors"`
 	ActualExecutor           *string                   `json:"actual_executor,omitempty"`
 	EditingAppLog            []executorEditApp         `json:"editing_app_log,omitempty"`
 	ChangedExecutorsLogs     []changeExecutorsLogs     `json:"change_executors_logs,omitempty"`
@@ -95,30 +96,39 @@ type changeExecutorsLogs struct {
 }
 
 func (m *membersExecutionData) getMembers(wId, sName string) (res []member) {
-	if m.Decision != nil {
-		for i := range m.RequestExecutionInfoLogs {
-			if m.RequestExecutionInfoLogs[i].ReqType == "question" {
-				res = append(res, member{
-					Id:       uuid.New().String(),
-					WorkId:   wId,
-					StepName: sName,
-					Login:    m.RequestExecutionInfoLogs[i].Login,
-					Finished: true,
-					IsActed:  true,
-				})
-			}
-		}
+	for login := range m.Executors {
+		res = append(res, member{
+			Id:       uuid.New().String(),
+			WorkId:   wId,
+			StepName: sName,
+			Login:    login,
+			Finished: true,
+			IsActed:  true,
+		})
+	}
 
-		for i := range m.ChangedExecutorsLogs {
+	for i := range m.RequestExecutionInfoLogs {
+		if m.RequestExecutionInfoLogs[i].ReqType == "question" {
 			res = append(res, member{
 				Id:       uuid.New().String(),
 				WorkId:   wId,
 				StepName: sName,
-				Login:    m.ChangedExecutorsLogs[i].OldLogin,
+				Login:    m.RequestExecutionInfoLogs[i].Login,
 				Finished: true,
 				IsActed:  true,
 			})
 		}
+	}
+
+	for i := range m.ChangedExecutorsLogs {
+		res = append(res, member{
+			Id:       uuid.New().String(),
+			WorkId:   wId,
+			StepName: sName,
+			Login:    m.ChangedExecutorsLogs[i].OldLogin,
+			Finished: true,
+			IsActed:  true,
+		})
 	}
 
 	return
@@ -126,6 +136,7 @@ func (m *membersExecutionData) getMembers(wId, sName string) (res []member) {
 
 type membersApproverData struct {
 	Decision            *string              `json:"decision,omitempty"`
+	Approvers           map[string]struct{}  `json:"approvers"`
 	ApproverLog         []approverLogEntry   `json:"approver_log,omitempty"`
 	AdditionalApprovers []additionalApprover `json:"additional_approvers"`
 }
@@ -141,44 +152,53 @@ type additionalApprover struct {
 }
 
 func (m *membersApproverData) getMembers(wId, sName string) (res []member) {
-	if m.Decision != nil {
-		for i := range m.ApproverLog {
-			if m.ApproverLog[i].Login == "" {
-				continue
-			}
-			res = append(res, member{
-				Id:       uuid.New().String(),
-				WorkId:   wId,
-				StepName: sName,
-				Login:    m.ApproverLog[i].Login,
-				Finished: true,
-				IsActed:  true,
-			})
-		}
+	for login := range m.Approvers {
+		res = append(res, member{
+			Id:       uuid.New().String(),
+			WorkId:   wId,
+			StepName: sName,
+			Login:    login,
+			Finished: true,
+			IsActed:  true,
+		})
+	}
 
-		for i := range m.AdditionalApprovers {
-			if m.AdditionalApprovers[i].ApproverLogin == "" ||
-				m.AdditionalApprovers[i].Decision == nil {
-				continue
-			}
-			res = append(res, member{
-				Id:       uuid.New().String(),
-				WorkId:   wId,
-				StepName: sName,
-				Login:    m.AdditionalApprovers[i].ApproverLogin,
-				Finished: true,
-				IsActed:  true,
-			})
-
-			res = append(res, member{
-				Id:       uuid.New().String(),
-				WorkId:   wId,
-				StepName: sName,
-				Login:    m.AdditionalApprovers[i].BaseApproverLogin,
-				Finished: true,
-				IsActed:  true,
-			})
+	for i := range m.ApproverLog {
+		if m.ApproverLog[i].Login == "" {
+			continue
 		}
+		res = append(res, member{
+			Id:       uuid.New().String(),
+			WorkId:   wId,
+			StepName: sName,
+			Login:    m.ApproverLog[i].Login,
+			Finished: true,
+			IsActed:  true,
+		})
+	}
+
+	for i := range m.AdditionalApprovers {
+		if m.AdditionalApprovers[i].ApproverLogin == "" ||
+			m.AdditionalApprovers[i].Decision == nil {
+			continue
+		}
+		res = append(res, member{
+			Id:       uuid.New().String(),
+			WorkId:   wId,
+			StepName: sName,
+			Login:    m.AdditionalApprovers[i].ApproverLogin,
+			Finished: true,
+			IsActed:  true,
+		})
+
+		res = append(res, member{
+			Id:       uuid.New().String(),
+			WorkId:   wId,
+			StepName: sName,
+			Login:    m.AdditionalApprovers[i].BaseApproverLogin,
+			Finished: true,
+			IsActed:  true,
+		})
 	}
 
 	return
@@ -198,8 +218,7 @@ func upMembers(tx *sql.Tx) error {
 		where w.status in (2, 4, 6) and 
 			vs.content is not null and
 			vs.time = (select max(time) from variable_storage 
-						where work_id = w.id)
-	`
+						where work_id = w.id)`
 
 	rows, queryErr := tx.Query(q)
 	if queryErr != nil {
@@ -208,7 +227,7 @@ func upMembers(tx *sql.Tx) error {
 	defer rows.Close()
 
 	var members = make([]member, 0)
-
+	var countWorks = 0
 	for rows.Next() {
 		workState := map[string]json.RawMessage{}
 		var state, workId string
@@ -246,15 +265,14 @@ func upMembers(tx *sql.Tx) error {
 				}
 
 				members = append(members, data.getMembers(workId, key)...)
-
-			} else {
-				fmt.Printf("key: %s is not recognized \n", key)
 			}
 		}
+		countWorks++
 	}
 
 	members = uniqMembers(members)
 
+	fmt.Printf("total tasks: %d \n", countWorks)
 	fmt.Printf("total members: %d \n", len(members))
 
 	for i := range members {
