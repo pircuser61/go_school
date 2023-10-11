@@ -37,6 +37,9 @@ type SignData struct {
 
 	FormsAccessibility []script.FormAccessibility `json:"forms_accessibility,omitempty"`
 
+	IsTakenInWork bool   `json:"is_taken_in_work"`
+	WorkerLogin   string `json:"worker_login"`
+
 	SignerGroupID   string `json:"signer_group_id,omitempty"`
 	SignerGroupName string `json:"signer_group_name,omitempty"`
 
@@ -47,6 +50,8 @@ type SignData struct {
 
 	SLAChecked          bool `json:"sla_checked"`
 	DayBeforeSLAChecked bool `json:"before_day_sla_checked"`
+
+	Reentered bool `json:"reentered"`
 }
 
 func (s *SignData) handleAnyOfDecision(login string, params *signSignatureParams) {

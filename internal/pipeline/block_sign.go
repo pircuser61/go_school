@@ -32,11 +32,14 @@ const (
 	SignDecisionRejected SignDecision = "rejected"
 	SignDecisionError    SignDecision = "error"
 
-	signActionSign   = "sign_sign"
-	signActionReject = "sign_reject"
+	signActionSign       = "sign_sign"
+	signActionReject     = "sign_reject"
+	signActionTakeInWork = "sign_start_work"
 
 	signatureTypeActionParamsKey    = "signature_type"
 	signatureCarrierActionParamsKey = "signature_carrier"
+
+	reentrySignComment = "Произошла ошибка подписания. Требуется повторное подписание"
 )
 
 type GoSignBlock struct {
@@ -81,19 +84,22 @@ func (gb *GoSignBlock) Next(_ *store.VariableStore) ([]string, bool) {
 	return nexts, true
 }
 
-func (gb *GoSignBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *GoSignBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == SignDecisionRejected {
-			return StatusRejected
+			return StatusRejected, ""
 		}
 
 		if *gb.State.Decision == SignDecisionError {
-			return StatusProcessingError
+			return StatusProcessingError, ""
 		}
 
-		return StatusSigned
+		return StatusSigned, ""
 	}
-	return StatusSigning
+	if gb.State.Reentered {
+		return StatusSigning, reentrySignComment
+	}
+	return StatusSigning, ""
 }
 
 func (gb *GoSignBlock) GetStatus() Status {
@@ -136,15 +142,35 @@ func (gb *GoSignBlock) signActions(login string) []MemberAction {
 		}
 	}
 
+	if gb.State.SignatureType == script.SignatureTypeUKEP {
+		takeInWorkAction := MemberAction{
+			Id:   signActionTakeInWork,
+			Type: ActionTypePrimary,
+			Params: map[string]interface{}{
+				signatureTypeActionParamsKey:    gb.State.SignatureType,
+				signatureCarrierActionParamsKey: gb.State.SignatureCarrier,
+			},
+		}
+
+		rejectAction := MemberAction{
+			Id:   signActionReject,
+			Type: ActionTypeSecondary,
+		}
+
+		if gb.State.IsTakenInWork && login != gb.State.WorkerLogin {
+			takeInWorkAction.Params["disabled"] = true
+			rejectAction.Params = map[string]interface{}{"disabled": true}
+		}
+
+		return []MemberAction{takeInWorkAction, rejectAction}
+	}
+
 	signAction := MemberAction{
 		Id:   signActionSign,
 		Type: ActionTypePrimary,
 		Params: map[string]interface{}{
 			signatureTypeActionParamsKey: gb.State.SignatureType,
 		},
-	}
-	if gb.State.SignatureType == script.SignatureTypeUKEP {
-		signAction.Params[signatureCarrierActionParamsKey] = gb.State.SignatureCarrier
 	}
 
 	return []MemberAction{
@@ -500,8 +526,13 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 
+		if reEntry {
+			b.State.Reentered = true
+		}
+
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 			if err != nil {
 				return nil, false, err
 			}

@@ -47,6 +47,13 @@ const (
 	BooleanOperandOperandTypeVariableOperand BooleanOperandOperandType = "variableOperand"
 )
 
+// Defines values for ChangeWorkStatusParamsStatus.
+const (
+	ChangeWorkStatusParamsStatusEnd ChangeWorkStatusParamsStatus = "end"
+
+	ChangeWorkStatusParamsStatusStart ChangeWorkStatusParamsStatus = "start"
+)
+
 // Defines values for ConditionGroupLogicalOperator.
 const (
 	ConditionGroupLogicalOperatorAnd ConditionGroupLogicalOperator = "and"
@@ -304,6 +311,8 @@ const (
 	TaskUpdateActionRequestExecutionInfo TaskUpdateAction = "request_execution_info"
 
 	TaskUpdateActionSign TaskUpdateAction = "sign"
+
+	TaskUpdateActionSignChangeWorkStatus TaskUpdateAction = "sign_change_work_status"
 )
 
 // Defines values for WorkType.
@@ -711,6 +720,14 @@ type CancelAppParams struct {
 	Comment string `json:"comment"`
 }
 
+// Sign update params
+type ChangeWorkStatusParams struct {
+	Status ChangeWorkStatusParamsStatus `json:"status"`
+}
+
+// ChangeWorkStatusParamsStatus defines model for ChangeWorkStatusParams.Status.
+type ChangeWorkStatusParamsStatus string
+
 // Compare operands using operator
 type Condition struct {
 	// Operand for comparison
@@ -899,18 +916,19 @@ type EriusTask struct {
 	Description      string  `json:"description"`
 
 	// Task human readable status
-	HumanStatus   TaskHumanStatus        `json:"human_status"`
-	Id            string                 `json:"id"`
-	LastChangedAt string                 `json:"last_changed_at"`
-	Name          string                 `json:"name"`
-	NodeGroup     *[]NodeGroup           `json:"node_group,omitempty"`
-	Parameters    map[string]interface{} `json:"parameters"`
-	Rate          *int                   `json:"rate,omitempty"`
-	StartedAt     string                 `json:"started_at"`
-	Status        string                 `json:"status"`
-	Steps         []Step                 `json:"steps"`
-	VersionId     string                 `json:"version_id"`
-	WorkNumber    string                 `json:"work_number"`
+	HumanStatus        TaskHumanStatus        `json:"human_status"`
+	HumanStatusComment *string                `json:"human_status_comment,omitempty"`
+	Id                 string                 `json:"id"`
+	LastChangedAt      string                 `json:"last_changed_at"`
+	Name               string                 `json:"name"`
+	NodeGroup          *[]NodeGroup           `json:"node_group,omitempty"`
+	Parameters         map[string]interface{} `json:"parameters"`
+	Rate               *int                   `json:"rate,omitempty"`
+	StartedAt          string                 `json:"started_at"`
+	Status             string                 `json:"status"`
+	Steps              []Step                 `json:"steps"`
+	VersionId          string                 `json:"version_id"`
+	WorkNumber         string                 `json:"work_number"`
 }
 
 // EriusTasks defines model for EriusTasks.

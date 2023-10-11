@@ -67,7 +67,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 	}
 
 	switch status {
-	case RunStatusFinished, RunStatusStopped, RunStatusError:
+	case RunStatusCanceled, RunStatusFinished, RunStatusStopped, RunStatusError:
 		if delErr := db.deleteFinishedPipelineDeadlines(ctx, taskID); delErr != nil {
 			return delErr
 		}
@@ -75,10 +75,11 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 			return delErr
 		}
 	}
+
 	return nil
 }
 
-func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) (*entity.EriusTask, error) {
+func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, comment string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "update_task_human_status")
 	defer span.End()
 
@@ -104,10 +105,11 @@ func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status s
 					   			WHEN $1 != 'cancel' AND $1 != 'revoke' AND (SELECT result FROM is_parallel) 
 					   			    THEN 'processing'
 					   			ELSE $1
-						   END
+						   END,
+		    human_status_comment = $3
 		WHERE id = $2 RETURNING human_status, finished_at, work_number`
 
-	row := db.Connection.QueryRow(ctx, q, status, taskID)
+	row := db.Connection.QueryRow(ctx, q, status, taskID, comment)
 
 	et := entity.EriusTask{}
 

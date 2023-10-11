@@ -1091,7 +1091,7 @@ func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ uuid.UUID, _ string) (*entity.EriusTask, error) {
+func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ uuid.UUID, _, _ string) (*entity.EriusTask, error) {
 	return &entity.EriusTask{}, nil
 }
 

@@ -731,6 +731,13 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
+
+	err = ep.Storage.SetLastRunID(ctx, runCtx.TaskID, ep.VersionID)
+	if err != nil {
+		e := PipelineRunError
+		return nil, e, err
+	}
+
 	if err = txStorage.CommitTransaction(ctx); err != nil {
 		e := PipelineRunError
 		return nil, e, err

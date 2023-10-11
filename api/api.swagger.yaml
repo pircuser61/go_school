@@ -3488,6 +3488,8 @@ components:
           type: string
         human_status:
           $ref: '#/components/schemas/taskHumanStatus'
+        human_status_comment:
+          type: string
         id:
           type: string
         last_changed_at:
@@ -3783,6 +3785,7 @@ components:
             - add_approvers
             - form_executor_start_work
             - sign
+            - sign_change_work_status
         parameters:
           type: object
           description: Task update params
@@ -3797,6 +3800,7 @@ components:
             - $ref: '#/components/schemas/AddApproversParams'
             - $ref: '#/components/schemas/CancelAppParams'
             - $ref: '#/components/schemas/SignUpdateParams'
+            - $ref: '#/components/schemas/ChangeWorkStatusParams'
       required:
         - action
         - parameters
@@ -3964,6 +3968,18 @@ components:
           type: string
       required:
         - comment
+
+    ChangeWorkStatusParams:
+      type: object
+      description: Sign update params
+      properties:
+        status:
+            type: string
+            enum:
+              - start
+              - end
+      required:
+        - status
 
     signDecision:
       type: string

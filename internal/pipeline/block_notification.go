@@ -59,8 +59,8 @@ func (gb *GoNotificationBlock) GetStatus() Status {
 	return StatusFinished
 }
 
-func (gb *GoNotificationBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+func (gb *GoNotificationBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	return "", ""
 }
 
 func (gb *GoNotificationBlock) compileText(ctx context.Context) (string, []email.Attachment, error) {
@@ -158,7 +158,8 @@ func (gb *GoNotificationBlock) Update(ctx context.Context) (interface{}, error) 
 	})
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -234,7 +235,8 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 	b.RunContext.VarStore.AddStep(b.Name)
 
 	if _, ok := b.expectedEvents[eventStart]; ok {
-		event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+		status, _ := b.GetTaskHumanStatus()
+		event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 		if err != nil {
 			return nil, false, err
 		}

@@ -13,10 +13,10 @@ func (runCtx *BlockRunContext) updateTaskStatus(ctx c.Context, taskStatus int, c
 	return nil
 }
 
-func (runCtx *BlockRunContext) updateStatusByStep(ctx c.Context, status TaskHumanStatus) error {
+func (runCtx *BlockRunContext) updateStatusByStep(ctx c.Context, status TaskHumanStatus, statusComment string) error {
 	if status == "" {
 		return nil
 	}
-	_, err := runCtx.Services.Storage.UpdateTaskHumanStatus(ctx, runCtx.TaskID, string(status))
+	_, err := runCtx.Services.Storage.UpdateTaskHumanStatus(ctx, runCtx.TaskID, string(status), statusComment)
 	return err
 }

@@ -741,7 +741,7 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 }
 
 func (db *PGCon) CreatePipeline(c context.Context,
-	p *entity.EriusScenario, author string, pipelineData []byte) error {
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_create_pipeline")
 	defer span.End()
 
@@ -768,7 +768,7 @@ func (db *PGCon) CreatePipeline(c context.Context,
 		return err
 	}
 
-	return db.CreateVersion(c, p, author, pipelineData, uuid.Nil)
+	return db.CreateVersion(c, p, author, pipelineData, oldVersionID)
 }
 
 func (db *PGCon) CreateVersion(c context.Context,
