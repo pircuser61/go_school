@@ -526,7 +526,7 @@ func createGoSignBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx 
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
 
-		if reEntry {
+		if reEntry && ok {
 			b.State.Reentered = true
 		}
 
