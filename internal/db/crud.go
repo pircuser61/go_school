@@ -1793,7 +1793,8 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			login,
 			actions,
 		    params,
-		    is_acted
+		    is_acted,
+		    execution_group_member
 		)
 		VALUES (
 			$1, 
@@ -1801,7 +1802,8 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			$3, 
 			$4, 
 			$5,
-		    $6
+		    $6,
+		    $7
 		)
 `
 	for _, val := range members {
@@ -1827,6 +1829,7 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			actions,
 			paramsData,
 			val.IsActed,
+			val.ExecutionGroupMember,
 		)
 		if err != nil {
 			return err

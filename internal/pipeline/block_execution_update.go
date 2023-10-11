@@ -590,7 +590,7 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	var currentLogin = gb.RunContext.UpdateData.ByLogin
 	_, executorFound := gb.State.Executors[currentLogin]
 
-	delegateFor, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin,
+	_, isDelegate := gb.RunContext.Delegations.FindDelegatorFor(currentLogin,
 		getSliceFromMapOfStrings(gb.State.Executors))
 	if !(executorFound || isDelegate) {
 		return NewUserIsNotPartOfProcessErr()
@@ -604,7 +604,6 @@ func (gb *GoExecutionBlock) executorStartWork(ctx c.Context) (err error) {
 	gb.State.Executors = map[string]struct{}{
 		gb.RunContext.UpdateData.ByLogin: {},
 	}
-	gb.State.DelegateFor = delegateFor
 
 	gb.State.IsTakenInWork = true
 

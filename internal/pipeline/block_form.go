@@ -91,9 +91,10 @@ func (gb *GoFormBlock) Members() []Member {
 	members := []Member{}
 	for login := range gb.State.Executors {
 		members = append(members, Member{
-			Login:   login,
-			Actions: gb.formActions(),
-			IsActed: gb.isFormUserActed(login),
+			Login:                login,
+			Actions:              gb.formActions(),
+			IsActed:              gb.isFormUserActed(login),
+			ExecutionGroupMember: false,
 		})
 	}
 

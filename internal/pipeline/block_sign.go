@@ -185,9 +185,10 @@ func (gb *GoSignBlock) Members() []Member {
 	members := make([]Member, 0)
 	for login := range gb.State.Signers {
 		members = append(members, Member{
-			Login:   login,
-			Actions: gb.signActions(login),
-			IsActed: gb.isSignerActed(login),
+			Login:                login,
+			Actions:              gb.signActions(login),
+			IsActed:              gb.isSignerActed(login),
+			ExecutionGroupMember: false,
 		})
 	}
 	return members

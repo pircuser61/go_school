@@ -47,6 +47,7 @@ type ChangeExecutorLog struct {
 type ExecutionData struct {
 	ExecutionType       script.ExecutionType `json:"execution_type"`
 	Executors           map[string]struct{}  `json:"executors"`
+	InitialExecutors    map[string]struct{}  `json:"initial_executors"`
 	Decision            *ExecutionDecision   `json:"decision,omitempty"`
 	DecisionAttachments []entity.Attachment  `json:"decision_attachments,omitempty"`
 	DecisionComment     *string              `json:"comment,omitempty"`

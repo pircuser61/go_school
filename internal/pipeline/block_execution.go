@@ -53,9 +53,10 @@ func (gb *GoExecutionBlock) Members() []Member {
 	addedMembers := make(map[string]struct{}, 0)
 	for login := range gb.State.Executors {
 		members = append(members, Member{
-			Login:   login,
-			Actions: gb.executionActions(),
-			IsActed: gb.isExecutionActed(login),
+			Login:                login,
+			Actions:              gb.executionActions(),
+			IsActed:              gb.isExecutionActed(login),
+			ExecutionGroupMember: gb.isPartOfExecutionGroup(login),
 		})
 		addedMembers[login] = struct{}{}
 	}
@@ -65,9 +66,10 @@ func (gb *GoExecutionBlock) Members() []Member {
 			continue
 		}
 		members = append(members, Member{
-			Login:   log.Executor,
-			Actions: []MemberAction{},
-			IsActed: true,
+			Login:                log.Executor,
+			Actions:              []MemberAction{},
+			IsActed:              true,
+			ExecutionGroupMember: gb.isPartOfExecutionGroup(log.Executor),
 		})
 		addedMembers[log.Executor] = struct{}{}
 	}
@@ -79,9 +81,10 @@ func (gb *GoExecutionBlock) Members() []Member {
 		}
 		if log.ReqType == RequestInfoQuestion {
 			members = append(members, Member{
-				Login:   log.Login,
-				Actions: []MemberAction{},
-				IsActed: true,
+				Login:                log.Login,
+				Actions:              []MemberAction{},
+				IsActed:              true,
+				ExecutionGroupMember: gb.isPartOfExecutionGroup(log.Login),
 			})
 			addedMembers[log.Login] = struct{}{}
 		}
@@ -92,9 +95,10 @@ func (gb *GoExecutionBlock) Members() []Member {
 			continue
 		}
 		members = append(members, Member{
-			Login:   gb.State.ChangedExecutorsLogs[i].OldLogin,
-			Actions: []MemberAction{},
-			IsActed: true,
+			Login:                gb.State.ChangedExecutorsLogs[i].OldLogin,
+			Actions:              []MemberAction{},
+			IsActed:              true,
+			ExecutionGroupMember: gb.isPartOfExecutionGroup(gb.State.ChangedExecutorsLogs[i].OldLogin),
 		})
 		addedMembers[gb.State.ChangedExecutorsLogs[i].OldLogin] = struct{}{}
 	}
@@ -102,21 +106,25 @@ func (gb *GoExecutionBlock) Members() []Member {
 	if gb.State.ActualExecutor != nil {
 		if _, ok := addedMembers[*gb.State.ActualExecutor]; !ok {
 			members = append(members, Member{
-				Login:   *gb.State.ActualExecutor,
-				Actions: []MemberAction{},
-				IsActed: true,
+				Login:                *gb.State.ActualExecutor,
+				Actions:              []MemberAction{},
+				IsActed:              true,
+				ExecutionGroupMember: gb.isPartOfExecutionGroup(*gb.State.ActualExecutor),
 			})
 		}
 	}
 
-	if gb.State.DelegateFor != "" {
-		if _, ok := addedMembers[*gb.State.ActualExecutor]; !ok {
-			members = append(members, Member{
-				Login:   *gb.State.ActualExecutor,
-				Actions: []MemberAction{},
-				IsActed: true,
-			})
+	for key := range gb.State.InitialExecutors {
+		if _, ok := addedMembers[key]; !ok {
+			continue
 		}
+		members = append(members, Member{
+			Login:                key,
+			Actions:              []MemberAction{},
+			IsActed:              !gb.isPartOfExecutionGroup(key),
+			ExecutionGroupMember: gb.isPartOfExecutionGroup(key),
+		})
+		addedMembers[key] = struct{}{}
 	}
 	return members
 }
@@ -147,6 +155,16 @@ func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
 		}
 	}
 	if gb.State.IsTakenInWork {
+		return true
+	}
+	return false
+}
+
+func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
+	if gb.State.ExecutionType != script.ExecutionTypeGroup {
+		return false
+	}
+	if _, ok := gb.State.InitialExecutors[login]; ok {
 		return true
 	}
 	return false

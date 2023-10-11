@@ -47,9 +47,10 @@ func (gb *GoApproverBlock) Members() []Member {
 	addedMembers := make(map[string]struct{}, 0)
 	for login := range gb.State.Approvers {
 		members = append(members, Member{
-			Login:   login,
-			Actions: gb.approvementBaseActions(login),
-			IsActed: gb.isApprovementActed(login),
+			Login:                login,
+			Actions:              gb.approvementBaseActions(login),
+			IsActed:              gb.isApprovementActed(login),
+			ExecutionGroupMember: false,
 		})
 		addedMembers[login] = struct{}{}
 	}
@@ -57,9 +58,10 @@ func (gb *GoApproverBlock) Members() []Member {
 	for i := 0; i < len(gb.State.AdditionalApprovers); i++ {
 		addApprover := gb.State.AdditionalApprovers[i]
 		members = append(members, Member{
-			Login:   addApprover.ApproverLogin,
-			Actions: gb.approvementAddActions(&addApprover),
-			IsActed: gb.isApprovementActed(addApprover.ApproverLogin),
+			Login:                addApprover.ApproverLogin,
+			Actions:              gb.approvementAddActions(&addApprover),
+			IsActed:              gb.isApprovementActed(addApprover.ApproverLogin),
+			ExecutionGroupMember: false,
 		})
 		addedMembers[addApprover.ApproverLogin] = struct{}{}
 	}
@@ -70,9 +72,10 @@ func (gb *GoApproverBlock) Members() []Member {
 			continue
 		}
 		members = append(members, Member{
-			Login:   log.Login,
-			Actions: []MemberAction{},
-			IsActed: true,
+			Login:                log.Login,
+			Actions:              []MemberAction{},
+			IsActed:              true,
+			ExecutionGroupMember: false,
 		})
 		addedMembers[log.Login] = struct{}{}
 	}
@@ -83,9 +86,10 @@ func (gb *GoApproverBlock) Members() []Member {
 			continue
 		}
 		members = append(members, Member{
-			Login:   log.Approver,
-			Actions: []MemberAction{},
-			IsActed: true,
+			Login:                log.Approver,
+			Actions:              []MemberAction{},
+			IsActed:              true,
+			ExecutionGroupMember: false,
 		})
 		addedMembers[log.Approver] = struct{}{}
 	}
@@ -97,9 +101,10 @@ func (gb *GoApproverBlock) Members() []Member {
 		}
 		if log.Type == RequestAddInfoType {
 			members = append(members, Member{
-				Login:   log.Login,
-				Actions: []MemberAction{},
-				IsActed: true,
+				Login:                log.Login,
+				Actions:              []MemberAction{},
+				IsActed:              true,
+				ExecutionGroupMember: false,
 			})
 			addedMembers[log.Login] = struct{}{}
 		}

@@ -92,10 +92,11 @@ type DbTaskAction struct {
 }
 
 type DbMember struct {
-	Login   string
-	Actions []DbMemberAction
-	Type    string
-	IsActed bool
+	Login                string
+	Actions              []DbMemberAction
+	Type                 string
+	IsActed              bool
+	ExecutionGroupMember bool
 }
 
 type DbDeadline struct {
