@@ -33,7 +33,8 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
 	if acted {
 		memberActed = "AND m.is_acted = true"
 	}
-
+	// nolint:gocritic
+	// language=PostgreSQL
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                                 AS work_id
          , vs.step_name                                                                               AS block_id
@@ -42,6 +43,11 @@ func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
+    JOIN lateral (SELECT vs2.step_name, max(vs2.time) mt
+                                        from variable_storage vs2
+                                        where vs2.work_id = w.id
+                                        group by vs2.step_name) ab 
+                               on ab.mt = vs.time AND ab.step_name = vs.step_name
     WHERE m.login IN %s
       AND vs.step_type = '%s'
       AND vs.status IN %s
