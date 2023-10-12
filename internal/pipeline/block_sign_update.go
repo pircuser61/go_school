@@ -36,13 +36,13 @@ func (gb *GoSignBlock) handleSignature(ctx c.Context, login string) error {
 		return errors.New("can't assert provided update data")
 	}
 
-	if gb.State.SignatureType == script.SignatureTypeUKEP && !gb.State.IsTakenInWork {
-		return errors.New("is not taken in work")
-	}
-
-	if gb.State.SignatureType == script.SignatureTypeUKEP &&
-		updateParams.Decision != SignDecisionRejected && !gb.isValidLogin(login) {
-		return NewUserIsNotPartOfProcessErr()
+	if gb.State.SignatureType == script.SignatureTypeUKEP {
+		if !gb.isValidLogin(login) {
+			return NewUserIsNotPartOfProcessErr()
+		}
+		if updateParams.Decision != SignDecisionRejected && !gb.State.IsTakenInWork {
+			return errors.New("is not taken in work")
+		}
 	}
 
 	if setErr := gb.setSignerDecision(updateParams); setErr != nil {
