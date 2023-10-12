@@ -161,11 +161,19 @@ func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
 }
 
 func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
-	if gb.State.ExecutionType != script.ExecutionTypeGroup {
+	switch gb.State.ExecutionType {
+	case script.ExecutionTypeGroup:
+		if _, ok := gb.State.InitialExecutors[login]; ok {
+			return true
+		}
+	case script.ExecutionTypeFromSchema:
+		if len(gb.State.InitialExecutors) > 1 {
+			if _, ok := gb.State.InitialExecutors[login]; ok {
+				return true
+			}
+		}
+	default:
 		return false
-	}
-	if _, ok := gb.State.InitialExecutors[login]; ok {
-		return true
 	}
 	return false
 }
