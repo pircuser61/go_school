@@ -111,11 +111,12 @@ func (gb *GoExecutionBlock) Members() []Member {
 				IsActed:              true,
 				ExecutionGroupMember: gb.isPartOfExecutionGroup(*gb.State.ActualExecutor),
 			})
+			addedMembers[*gb.State.ActualExecutor] = struct{}{}
 		}
 	}
 
 	for key := range gb.State.InitialExecutors {
-		if _, ok := addedMembers[key]; !ok {
+		if _, ok := addedMembers[key]; ok {
 			continue
 		}
 		members = append(members, Member{
