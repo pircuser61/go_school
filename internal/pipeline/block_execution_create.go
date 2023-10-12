@@ -285,6 +285,7 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		gb.State.ExecutorsGroupID = dto.GroupID
 		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
+	gb.State.InitialExecutors = gb.State.Executors
 	return nil
 }
 

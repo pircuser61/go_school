@@ -34,7 +34,7 @@ func (db *PGCon) deleteFinishedPipelineMembers(ctx c.Context, taskID uuid.UUID) 
 		DELETE 
 		FROM members
 		WHERE block_id IN (SELECT id FROM variable_storage WHERE work_id = $1)
-		AND is_acted = false
+		AND is_acted = false AND execution_group_member = false
 	`
 	_, err := db.Connection.Exec(ctx, q, taskID)
 	return err
