@@ -2079,7 +2079,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 
 	var stepNamesQ string
 	if len(in.StepNames) > 0 {
-		stepNamesQ = "vs.step_name IN ($4) AND"
+		stepNamesQ = "vs.step_name = ANY($4) AND"
 		args = append(args, in.StepNames)
 	}
 
