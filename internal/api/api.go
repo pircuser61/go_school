@@ -1824,6 +1824,9 @@ type TaskUpdate struct {
 
 	// Task update params
 	Parameters interface{} `json:"parameters"`
+
+	// Array of step names
+	StepNames []string `json:"step_names"`
 }
 
 // TaskUpdateAction defines model for TaskUpdate.Action.
