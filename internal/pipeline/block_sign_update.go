@@ -186,7 +186,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		return errors.New("can't assert provided update data")
 	}
 
-	if gb.State.IsTakenInWork && !gb.isValidLogin(login)  {
+	if gb.State.IsTakenInWork && !gb.isValidLogin(login) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 

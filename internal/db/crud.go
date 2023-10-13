@@ -2052,19 +2052,9 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 
 	el := entity.TaskSteps{}
 
-	tx, err := db.Connection.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer tx.Rollback(ctx) //nolint: Useless error check
-
+	var stepNamesQ string
 	if len(in.StepNames) > 0 {
-		if err = db.updateTasksStatuses(ctx, tx, id, in); err != nil {
-			return nil, err
-		}
-
-		return el, nil
+		stepNamesQ = "vs.step_name IN ($4) AND"
 	}
 
 	var notInStatuses []string
@@ -2085,7 +2075,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
+	q := fmt.Sprintf(`
 	SELECT 
 	    vs.id,
 	    vs.step_type,
@@ -2100,10 +2090,18 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	    work_id = $1 AND 
 	    step_type = $2 AND 
 	    NOT status = ANY($3) AND 
+		%s
 	    vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $1 AND step_name = vs.step_name)
-	    ORDER BY vs.time ASC`
+	    ORDER BY vs.time ASC`, stepNamesQ)
 
-	rows, err := tx.Query(ctx, q, id, stepType, notInStatuses)
+	var rows pgx.Rows
+	var err error
+	if len(in.StepNames) > 0 {
+		rows, err = db.Connection.Query(ctx, q, id, stepType, notInStatuses, in.StepNames)
+	} else {
+		rows, err = db.Connection.Query(ctx, q, id, stepType, notInStatuses)
+	}
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -2145,24 +2143,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 		el = append(el, &s)
 	}
 
-	return el, tx.Commit(ctx)
-}
-
-// TODO: Implement this
-func (db *PGCon) updateTasksStatuses(
-	ctx context.Context, tx pgx.Tx, id uuid.UUID, in *entity.TaskUpdate) error {
-	for _, stepName := range in.StepNames {
-		q := `UPDATE variable_storage
-			SET ... = $1
-			WHERE ... = $2`
-
-		_, err := tx.Exec(ctx, q, stepName, id)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return el, nil
 }
 
 func (db *PGCon) GetTaskStepsToWait(ctx context.Context, workNumber, blockName string) ([]string, error) {
