@@ -386,6 +386,7 @@ func (gb *ExecutableFunctionBlock) createState(ef *entity.EriusFunc) error {
 			WorkNumber:  gb.RunContext.WorkNumber,
 			WorkID:      gb.RunContext.TaskID.String(),
 			ActionName:  string(entity.TaskUpdateActionFuncSLAExpired),
+			StepName:    gb.Name,
 			WaitSeconds: gb.State.SLA,
 		})
 		if err != nil {

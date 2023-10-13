@@ -621,6 +621,7 @@ gitlab.services.mts.ru/jocasta/msg-kit v0.1.1 h1:+cqIlLRKbmJmBwzGsvdtwzXkUaui8Kh
 gitlab.services.mts.ru/jocasta/msg-kit v0.1.1/go.mod h1:yXp0u760CmAViHEQ6ZgIRZl/fO7oblf98t3N1O+IYac=
 gitlab.services.mts.ru/jocasta/scheduler v0.0.0-20230807081758-579091e60b77 h1:0qXpFPWOjeoFGg+kGNjqu6nrt/6A4w1nhnIgO1+sn/Q=
 gitlab.services.mts.ru/jocasta/scheduler v0.0.0-20230807081758-579091e60b77/go.mod h1:Ri3G/AocVrNrWn1q1bxQNWadhCfaOoNdKY8RC4wyg90=
+gitlab.services.mts.ru/jocasta/scheduler v1.5.0-rc.1/go.mod h1:Ri3G/AocVrNrWn1q1bxQNWadhCfaOoNdKY8RC4wyg90=
 gitlab.services.mts.ru/prodboard/infra v0.3.0 h1:i1owlG5nvYcyNHx7fjTKvaeQm+aW3KeyxHbrapVgxFk=
 gitlab.services.mts.ru/prodboard/infra v0.3.0/go.mod h1:qhvIauTZaXNwzGqQhrHxvs7j+nr9LIcTFoZqNnveOdo=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=

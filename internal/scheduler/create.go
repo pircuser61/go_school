@@ -14,6 +14,7 @@ func (s *Service) CreateTask(ctx c.Context, task *CreateTask) (id string, err er
 			WorkNumber:  task.WorkNumber,
 			TaskId:      task.WorkID,
 			ActionName:  task.ActionName,
+			StepName:    task.StepName,
 			WaitSeconds: int32(task.WaitSeconds),
 		},
 	)
@@ -23,4 +24,19 @@ func (s *Service) CreateTask(ctx c.Context, task *CreateTask) (id string, err er
 	}
 
 	return res.TaskId, nil
+}
+
+func (s *Service) DeleteTask(ctx c.Context, task *DeleteTask) error {
+	_, err := s.cli.DeleteTask(ctx,
+		&scheduler_v1.DeleteTaskRequest{
+			WorkId:   task.WorkID,
+			StepName: task.StepName,
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

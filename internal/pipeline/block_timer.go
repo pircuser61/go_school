@@ -122,6 +122,7 @@ func (gb *TimerBlock) startTimer(ctx c.Context) error {
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionFinishTimer),
+		StepName:    gb.Name,
 		WaitSeconds: int(gb.State.Duration.Seconds()),
 	})
 
