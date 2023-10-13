@@ -2052,11 +2052,6 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 
 	el := entity.TaskSteps{}
 
-	var stepNamesQ string
-	if len(in.StepNames) > 0 {
-		stepNamesQ = "vs.step_name IN ($4) AND"
-	}
-
 	var notInStatuses []string
 
 	isAddInfoReq := slices.Contains([]entity.TaskUpdateAction{
@@ -2071,6 +2066,18 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 		notInStatuses = []string{"skipped"}
 	} else {
 		notInStatuses = []string{"skipped", "finished"}
+	}
+
+	args := []interface{}{
+		id,
+		stepType,
+		notInStatuses,
+	}
+
+	var stepNamesQ string
+	if len(in.StepNames) > 0 {
+		stepNamesQ = "vs.step_name IN ($4) AND"
+		args = append(args, in.StepNames)
 	}
 
 	// nolint:gocritic
@@ -2094,14 +2101,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	    vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $1 AND step_name = vs.step_name)
 	    ORDER BY vs.time ASC`, stepNamesQ)
 
-	var rows pgx.Rows
-	var err error
-	if len(in.StepNames) > 0 {
-		rows, err = db.Connection.Query(ctx, q, id, stepType, notInStatuses, in.StepNames)
-	} else {
-		rows, err = db.Connection.Query(ctx, q, id, stepType, notInStatuses)
-	}
-
+	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
