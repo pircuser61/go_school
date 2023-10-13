@@ -2268,6 +2268,46 @@ func (_m *MockedDatabase) SetLastRunID(ctx context.Context, taskID uuid.UUID, ve
 	return r0
 }
 
+// Acquire provides a mock function with given fields: ctx
+func (_m *MockedDatabase) Acquire(ctx context.Context) (db.Database, error) {
+	ret := _m.Called(ctx)
+
+	var r0 db.Database
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (db.Database, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) db.Database); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(db.Database)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Release provides a mock function with given fields: ctx
+func (_m *MockedDatabase) Release(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // StartTransaction provides a mock function with given fields: ctx
 func (_m *MockedDatabase) StartTransaction(ctx context.Context) (db.Database, error) {
 	ret := _m.Called(ctx)
@@ -2485,7 +2525,7 @@ func (_m *MockedDatabase) VersionEditable(ctx context.Context, versionID uuid.UU
 }
 
 func (_m *MockedDatabase) UpdateBlockStateInOthers(ctx context.Context, blockName, taskId string, blockState []byte) error {
-	ret := _m.Called(ctx, blockName, taskId,  blockState)
+	ret := _m.Called(ctx, blockName, taskId, blockState)
 
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, []byte) error); ok {
 		_ = rf(ctx, blockName, taskId, blockState)
@@ -2497,7 +2537,7 @@ func (_m *MockedDatabase) UpdateBlockStateInOthers(ctx context.Context, blockNam
 }
 
 func (_m *MockedDatabase) UpdateBlockVariablesInOthers(ctx context.Context, taskId string, values map[string]interface{}) error {
-	ret := _m.Called(ctx, taskId,  values)
+	ret := _m.Called(ctx, taskId, values)
 
 	if rf, ok := ret.Get(0).(func(context.Context, string, map[string]interface{}) error); ok {
 		_ = rf(ctx, taskId, values)

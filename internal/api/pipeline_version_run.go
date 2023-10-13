@@ -68,6 +68,7 @@ func (ae *APIEnv) RunNewVersionByPrevVersion(w http.ResponseWriter, r *http.Requ
 	}
 
 	started, execErr := ae.execVersion(ctx, &execVersionDTO{
+		storage:     ae.DB,
 		version:     version,
 		withStop:    false,
 		w:           w,
@@ -131,6 +132,7 @@ func (ae *APIEnv) RunVersion(w http.ResponseWriter, req *http.Request, versionID
 	}
 
 	runResponse, err := ae.execVersion(ctx, &execVersionDTO{
+		storage:  ae.DB,
 		version:  p,
 		withStop: false,
 		w:        w,
@@ -196,7 +198,17 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	version, err := ae.DB.GetVersionByPipelineID(ctx, req.PipelineId)
+	storage, acquireErr := ae.DB.Acquire(ctx)
+	if acquireErr != nil {
+		e := PipelineExecutionError
+		log.Error(e.errorMessage(acquireErr))
+		_ = e.sendError(w)
+		return
+	}
+
+	defer storage.Release(ctx)
+
+	version, err := storage.GetVersionByPipelineID(ctx, req.PipelineId)
 	if err != nil {
 		e := GetVersionsByBlueprintIdError
 		log.Error(e.errorMessage(err))
@@ -216,7 +228,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 
 	var externalSystem *entity.ExternalSystem
-	externalSystem, err = ae.getExternalSystem(ctx, clientID, version.VersionID.String())
+	externalSystem, err = ae.getExternalSystem(ctx, storage, clientID, version.VersionID.String())
 	if err != nil {
 		e := GetExternalSystemsError
 		log.Error(e.errorMessage(err))
@@ -249,6 +261,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 
 	v, execErr := ae.execVersion(ctx, &execVersionDTO{
+		storage:          storage,
 		version:          version,
 		withStop:         false,
 		w:                w,
