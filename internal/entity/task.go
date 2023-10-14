@@ -224,6 +224,7 @@ var (
 type TaskUpdate struct {
 	Action     TaskUpdateAction `json:"action"`
 	Parameters json.RawMessage  `json:"parameters" swaggertype:"object"`
+	StepNames  []string         `json:"step_names"`
 }
 
 type CancelAppParams struct {

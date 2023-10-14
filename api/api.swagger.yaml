@@ -3786,6 +3786,11 @@ components:
             - form_executor_start_work
             - sign
             - sign_change_work_status
+        step_names:
+          type: array
+          description: Array of step names
+          items:
+            type: string
         parameters:
           type: object
           description: Task update params
@@ -3804,6 +3809,7 @@ components:
       required:
         - action
         - parameters
+        - step_names
 
     TaskMeanSolveTime:
       type: object

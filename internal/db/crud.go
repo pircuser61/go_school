@@ -2078,7 +2078,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 }
 
 func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
-	action entity.TaskUpdateAction) (entity.TaskSteps, error) {
+	in *entity.TaskUpdate) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
 	defer span.End()
 
@@ -2089,7 +2089,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	isAddInfoReq := slices.Contains([]entity.TaskUpdateAction{
 		entity.TaskUpdateActionRequestApproveInfo,
 		entity.TaskUpdateActionSLABreachRequestAddInfo,
-		entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, action)
+		entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, in.Action)
 
 	// nolint:gocritic,goconst
 	if stepType == "form" {
@@ -2100,9 +2100,21 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 		notInStatuses = []string{"skipped", "finished"}
 	}
 
+	args := []interface{}{
+		id,
+		stepType,
+		notInStatuses,
+	}
+
+	var stepNamesQ string
+	if len(in.StepNames) > 0 {
+		stepNamesQ = "vs.step_name = ANY($4) AND"
+		args = append(args, in.StepNames)
+	}
+
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
+	q := fmt.Sprintf(`
 	SELECT 
 	    vs.id,
 	    vs.step_type,
@@ -2117,10 +2129,11 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	    work_id = $1 AND 
 	    step_type = $2 AND 
 	    NOT status = ANY($3) AND 
+		%s
 	    vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $1 AND step_name = vs.step_name)
-	    ORDER BY vs.time ASC`
+	    ORDER BY vs.time ASC`, stepNamesQ)
 
-	rows, err := db.Connection.Query(ctx, q, id, stepType, notInStatuses)
+	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -42,19 +43,84 @@ func (m *membersFormData) getMembers(wId, sName string) (res []member) {
 				IsActed:  true,
 			})
 		}
+
+		if m.ActualExecutor != nil {
+			res = append(res, member{
+				Id:       uuid.New().String(),
+				WorkId:   wId,
+				StepName: sName,
+				Login:    *m.ActualExecutor,
+				Finished: true,
+				IsActed:  true,
+			})
+		}
 	}
 
 	return
 }
 
 type membersSignData struct {
-	Decision     *string        `json:"decision,omitempty"`
-	ActualSigner *string        `json:"actual_signer,omitempty"`
-	SignLog      []signLogEntry `json:"sign_log,omitempty"`
+	Decision     *string         `json:"decision,omitempty"`
+	ActualSigner *string         `json:"actual_signer,omitempty"`
+	SignLog      arrSignLogEntry `json:"sign_log,omitempty"`
 }
+
+type arrSignLogEntry []signLogEntry
 
 type signLogEntry struct {
 	Login string `json:"login"`
+}
+
+func (at *arrSignLogEntry) UnmarshalJSON(b []byte) error {
+	var arrTemp []signLogEntry
+	var atTemp signLogEntry
+	var stTemp []string
+	if err := json.Unmarshal(b, &arrTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		for i := range stTemp {
+			s, _ := strconv.Unquote(stTemp[i])
+
+			err := json.Unmarshal([]byte(s), &atTemp)
+			if err != nil {
+				return err
+			}
+			*at = append(*at, atTemp)
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	*at = arrTemp
+	return nil
+}
+
+func (at *signLogEntry) UnmarshalJSON(b []byte) error {
+	var atTemp struct {
+		Login string `json:"login"`
+	}
+
+	var stTemp string
+	if err := json.Unmarshal(b, &atTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		*at = atTemp
+		return nil
+	}
+	*at = atTemp
+	return nil
 }
 
 func (m *membersSignData) getMembers(wId, sName string) (res []member) {
@@ -73,17 +139,182 @@ func (m *membersSignData) getMembers(wId, sName string) (res []member) {
 }
 
 type membersExecutionData struct {
-	Decision                 *string                   `json:"decision,omitempty"`
-	Executors                map[string]struct{}       `json:"executors"`
-	ActualExecutor           *string                   `json:"actual_executor,omitempty"`
-	EditingAppLog            []executorEditApp         `json:"editing_app_log,omitempty"`
-	ChangedExecutorsLogs     []changeExecutorsLogs     `json:"change_executors_logs,omitempty"`
-	RequestExecutionInfoLogs []requestExecutionInfoLog `json:"request_execution_info_logs,omitempty"`
+	Decision                 *string                    `json:"decision,omitempty"`
+	Executors                map[string]struct{}        `json:"executors"`
+	ActualExecutor           *string                    `json:"actual_executor,omitempty"`
+	EditingAppLog            arrExecutorEditApp         `json:"editing_app_log,omitempty"`
+	ChangedExecutorsLogs     arrChangeExecutorLog       `json:"change_executors_logs,omitempty"`
+	RequestExecutionInfoLogs arrRequestExecutionInfoLog `json:"request_execution_info_logs,omitempty"`
+}
+
+type arrExecutorEditApp []executorEditApp
+
+func (at *arrExecutorEditApp) UnmarshalJSON(b []byte) error {
+	var arrTemp []executorEditApp
+	var atTemp executorEditApp
+	var stTemp []string
+	if err := json.Unmarshal(b, &arrTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		for i := range stTemp {
+			s, _ := strconv.Unquote(stTemp[i])
+
+			err := json.Unmarshal([]byte(s), &atTemp)
+			if err != nil {
+				return err
+			}
+			*at = append(*at, atTemp)
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	*at = arrTemp
+	return nil
+}
+
+func (at *executorEditApp) UnmarshalJSON(b []byte) error {
+	var atTemp struct {
+		Executor string `json:"executor"`
+	}
+
+	var stTemp string
+	if err := json.Unmarshal(b, &atTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		*at = atTemp
+		return nil
+	}
+	*at = atTemp
+	return nil
+}
+
+type arrChangeExecutorLog []changeExecutorsLogs
+
+func (at *arrChangeExecutorLog) UnmarshalJSON(b []byte) error {
+	var arrTemp []changeExecutorsLogs
+	var atTemp changeExecutorsLogs
+	stTemp := make([]string, 0)
+	if err := json.Unmarshal(b, &arrTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return errStr
+		}
+		for i := range stTemp {
+			stTemp[i] = strings.Trim(stTemp[i], "\"")
+			var bt = []byte(stTemp[i])
+			fmt.Println(bt)
+			err := json.Unmarshal([]byte(stTemp[i]), &atTemp)
+			if err != nil {
+				return err
+			}
+			*at = append(*at, atTemp)
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	*at = arrTemp
+	return nil
+}
+
+func (at *changeExecutorsLogs) UnmarshalJSON(b []byte) error {
+	var atTemp struct {
+		OldLogin string `json:"old_login"`
+		NewLogin string `json:"new_login"`
+	}
+
+	var stTemp string
+	if err := json.Unmarshal(b, &atTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		*at = atTemp
+		return nil
+	}
+	*at = atTemp
+	return nil
 }
 
 type requestExecutionInfoLog struct {
 	Login   string `json:"login"`
 	ReqType string `json:"req_type"`
+}
+
+type arrRequestExecutionInfoLog []requestExecutionInfoLog
+
+func (at *arrRequestExecutionInfoLog) UnmarshalJSON(b []byte) error {
+	var arrTemp []requestExecutionInfoLog
+	var atTemp requestExecutionInfoLog
+	var stTemp []string
+	if err := json.Unmarshal(b, &arrTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		for i := range stTemp {
+			s, _ := strconv.Unquote(stTemp[i])
+
+			err := json.Unmarshal([]byte(s), &atTemp)
+			if err != nil {
+				return err
+			}
+			*at = append(*at, atTemp)
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	*at = arrTemp
+	return nil
+}
+
+func (at *requestExecutionInfoLog) UnmarshalJSON(b []byte) error {
+	var atTemp struct {
+		Login   string `json:"login"`
+		ReqType string `json:"req_type"`
+	}
+
+	var stTemp string
+	if err := json.Unmarshal(b, &atTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		*at = atTemp
+		return nil
+	}
+	*at = atTemp
+	return nil
 }
 
 type executorEditApp struct {
@@ -135,20 +366,131 @@ func (m *membersExecutionData) getMembers(wId, sName string) (res []member) {
 }
 
 type membersApproverData struct {
-	Decision            *string              `json:"decision,omitempty"`
-	Approvers           map[string]struct{}  `json:"approvers"`
-	ApproverLog         []approverLogEntry   `json:"approver_log,omitempty"`
-	AdditionalApprovers []additionalApprover `json:"additional_approvers"`
+	Decision            *string               `json:"decision,omitempty"`
+	Approvers           map[string]struct{}   `json:"approvers"`
+	ApproverLog         arrApproverLogEntry   `json:"approver_log,omitempty"`
+	AdditionalApprovers arrAdditionalApprover `json:"additional_approvers"`
 }
 
 type approverLogEntry struct {
 	Login string `json:"login"`
 }
 
+type arrApproverLogEntry []approverLogEntry
+
+func (at *arrApproverLogEntry) UnmarshalJSON(b []byte) error {
+	var arrTemp []approverLogEntry
+	var atTemp approverLogEntry
+	stTemp := make([]string, 0)
+	if err := json.Unmarshal(b, &arrTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return errStr
+		}
+		for i := range stTemp {
+			stTemp[i] = strings.Trim(stTemp[i], "\"")
+			var bt = []byte(stTemp[i])
+			fmt.Println(bt)
+			err := json.Unmarshal([]byte(stTemp[i]), &atTemp)
+			if err != nil {
+				return err
+			}
+			*at = append(*at, atTemp)
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	*at = arrTemp
+	return nil
+}
+
+func (at *approverLogEntry) UnmarshalJSON(b []byte) error {
+	var atTemp struct {
+		Login string `json:"login"`
+	}
+
+	var stTemp string
+	if err := json.Unmarshal(b, &atTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		*at = atTemp
+		return nil
+	}
+	*at = atTemp
+	return nil
+}
+
 type additionalApprover struct {
 	ApproverLogin     string  `json:"approver_login"`
 	BaseApproverLogin string  `json:"base_approver_login"`
 	Decision          *string `json:"decision"`
+}
+
+type arrAdditionalApprover []additionalApprover
+
+func (at *arrAdditionalApprover) UnmarshalJSON(b []byte) error {
+	var arrTemp []additionalApprover
+	var atTemp additionalApprover
+	var stTemp []string
+	if err := json.Unmarshal(b, &arrTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		for i := range stTemp {
+			s, _ := strconv.Unquote(stTemp[i])
+
+			err := json.Unmarshal([]byte(s), &atTemp)
+			if err != nil {
+				return err
+			}
+			*at = append(*at, atTemp)
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	*at = arrTemp
+	return nil
+}
+
+func (at *additionalApprover) UnmarshalJSON(b []byte) error {
+	var atTemp struct {
+		ApproverLogin     string  `json:"approver_login"`
+		BaseApproverLogin string  `json:"base_approver_login"`
+		Decision          *string `json:"decision"`
+	}
+
+	var stTemp string
+	if err := json.Unmarshal(b, &atTemp); err != nil {
+		if errStr := json.Unmarshal(b, &stTemp); errStr != nil {
+			return err
+		}
+		s, _ := strconv.Unquote(string(b))
+
+		err := json.Unmarshal([]byte(s), &atTemp)
+		if err != nil {
+			return err
+		}
+		*at = atTemp
+		return nil
+	}
+	*at = atTemp
+	return nil
 }
 
 func (m *membersApproverData) getMembers(wId, sName string) (res []member) {

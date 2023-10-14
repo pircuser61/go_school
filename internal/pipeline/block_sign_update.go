@@ -186,7 +186,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		return errors.New("can't assert provided update data")
 	}
 
-	if gb.State.IsTakenInWork && !gb.isValidLogin(login)  {
+	if gb.State.IsTakenInWork && !gb.isValidLogin(login) {
 		return NewUserIsNotPartOfProcessErr()
 	}
 
@@ -197,6 +197,16 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		gb.State.IsTakenInWork = false
 		gb.State.WorkerLogin = ""
 
+		err = gb.RunContext.Services.Scheduler.DeleteTask(ctx,
+			&scheduler.DeleteTask{
+				WorkID:   gb.RunContext.TaskID.String(),
+				StepName: gb.Name,
+			})
+		if err != nil {
+			log.WithError(err).Error("cannot delete signChangeWorkStatus timer")
+			return err
+		}
+
 		return nil
 	}
 
@@ -204,6 +214,7 @@ func (gb *GoSignBlock) handleChangeWorkStatus(ctx c.Context, login string) error
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionSignChangeWorkStatus),
+		StepName:    gb.Name,
 		WaitSeconds: int(changeWorkStatusTimeout.Seconds()),
 	})
 	if err != nil {
