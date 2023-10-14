@@ -522,6 +522,8 @@ func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario,
 		return nil, err
 	}
 
+	defer rows.Close()
+
 	pipes := make([]entity.EriusScenario, 0)
 
 	for rows.Next() {
@@ -1960,6 +1962,8 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 		return nil, err
 	}
 
+	defer rows.Close()
+
 	pipes := make([]entity.EriusScenario, 0)
 
 	for rows.Next() {
@@ -2198,6 +2202,9 @@ WHERE value ? $2`
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
+
 	for rows.Next() {
 		var b string
 		if scanErr := rows.Scan(&b); scanErr != nil {
