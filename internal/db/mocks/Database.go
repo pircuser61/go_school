@@ -1732,16 +1732,16 @@ func (_m *MockedDatabase) GetTasksForMonitoring(ctx context.Context, filters *en
 }
 
 // GetUnfinishedTaskStepsByWorkIdAndStepType provides a mock function with given fields: ctx, id, stepType, action
-func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string, action entity.TaskUpdateAction) (entity.TaskSteps, error) {
-	ret := _m.Called(ctx, id, stepType, action)
+func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string, in *entity.TaskUpdate) (entity.TaskSteps, error) {
+	ret := _m.Called(ctx, id, stepType, in.Action)
 
 	var r0 entity.TaskSteps
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, entity.TaskUpdateAction) (entity.TaskSteps, error)); ok {
-		return rf(ctx, id, stepType, action)
+		return rf(ctx, id, stepType, in.Action)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, entity.TaskUpdateAction) entity.TaskSteps); ok {
-		r0 = rf(ctx, id, stepType, action)
+		r0 = rf(ctx, id, stepType, in.Action)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(entity.TaskSteps)
@@ -1749,7 +1749,7 @@ func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, entity.TaskUpdateAction) error); ok {
-		r1 = rf(ctx, id, stepType, action)
+		r1 = rf(ctx, id, stepType, in.Action)
 	} else {
 		r1 = ret.Error(1)
 	}
