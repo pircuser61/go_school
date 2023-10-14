@@ -53,6 +53,35 @@ func (db *PGCon) Ping(ctx context.Context) error {
 	return errors.New("can't ping dn")
 }
 
+func (db *PGCon) Acquire(ctx context.Context) (Database, error) {
+	_, span := trace.StartSpan(ctx, "acquire_conn")
+	defer span.End()
+
+	if acConn, ok := db.Connection.(interface {
+		Acquire(ctx context.Context) (*pgxpool.Conn, error)
+	}); ok {
+		ac, err := acConn.Acquire(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &PGCon{Connection: ac}, nil
+	}
+	return nil, errors.New("can't acquire connection")
+}
+
+func (db *PGCon) Release(ctx context.Context) error {
+	_, span := trace.StartSpan(ctx, "release_conn")
+	defer span.End()
+
+	if releaseConn, ok := db.Connection.(interface {
+		Release()
+	}); ok {
+		releaseConn.Release()
+		return nil
+	}
+	return errors.New("can't release connection")
+}
+
 func (db *PGCon) StartTransaction(ctx context.Context) (Database, error) {
 	_, span := trace.StartSpan(ctx, "start_transaction")
 	defer span.End()

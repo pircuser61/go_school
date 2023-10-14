@@ -163,6 +163,9 @@ type Database interface {
 
 	Ping(ctx c.Context) error
 
+	Acquire(ctx c.Context) (Database, error)
+	Release(ctx c.Context) error
+
 	StartTransaction(ctx c.Context) (Database, error)
 	CommitTransaction(ctx c.Context) error
 	RollbackTransaction(ctx c.Context) error

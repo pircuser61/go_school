@@ -367,6 +367,7 @@ func (ae *APIEnv) RunPipeline(w http.ResponseWriter, req *http.Request, pipeline
 	}
 
 	runResponse, err := ae.execVersion(ctx, &execVersionDTO{
+		storage:  ae.DB,
 		version:  p,
 		withStop: withStop,
 		w:        w,
