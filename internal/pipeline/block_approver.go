@@ -255,9 +255,12 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 			})
 		}
 
+		timeOnAddInfo := addInfo.CreatedAt.Sub(gb.State.CreatedAt)
+
 		deadlines = append(deadlines, Deadline{
-			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(addInfo.CreatedAt, 3*8, nil),
-			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
+			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(addInfo.CreatedAt, 3*8, nil).
+				Add(timeOnAddInfo),
+			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}
 
