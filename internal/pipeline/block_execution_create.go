@@ -413,11 +413,13 @@ func (gb *GoExecutionBlock) setPreviousExecutors(ctx c.Context) {
 	data, ok := parentStep.State[gb.Name]
 	if !ok {
 		l.Error(funcName, "parent step state is not found: "+gb.Name)
+		return
 	}
 
 	var parentState ExecutionData
 	if err = json.Unmarshal(data, &parentState); err != nil {
 		l.Error(funcName, "invalid format of go-execution-block state")
+		return
 	}
 
 	if parentState.Executors != nil {
