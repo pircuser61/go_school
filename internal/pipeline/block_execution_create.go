@@ -408,6 +408,7 @@ func (gb *GoExecutionBlock) setPreviousExecutors(ctx c.Context) {
 	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
 	if err != nil || parentStep == nil {
 		l.Error(err)
+		return
 	}
 
 	data, ok := parentStep.State[gb.Name]
