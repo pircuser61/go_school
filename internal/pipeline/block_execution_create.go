@@ -364,12 +364,6 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 		return false
 	}
 
-	if parentState.Executors != nil {
-		for login := range parentState.Executors {
-			gb.State.Executors[login] = struct{}{}
-		}
-	}
-
 	if parentState.Decision != nil {
 		var actualExecutor, comment string
 
