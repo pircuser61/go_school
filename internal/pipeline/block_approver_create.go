@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -32,6 +33,8 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		expectedEvents: expectedEvents,
 		happenedEvents: make([]entity.NodeEvent, 0),
 	}
+
+	b.State.CreatedAt = time.Now()
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
