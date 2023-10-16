@@ -233,7 +233,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	} else if fl.SelectAs != nil {
 		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
 	} else if fl.SelectFor != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, []string{}), q)
+		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, delegations), q)
 	} else {
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
 	}
