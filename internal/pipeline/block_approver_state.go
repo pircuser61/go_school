@@ -188,8 +188,6 @@ type ApproverData struct {
 	CheckDayBeforeSLARequestInfo bool   `json:"check_day_before_sla_request_info"`
 	WorkType                     string `json:"work_type"`
 
-	UpdatedAt time.Time `json:"updated_at"`
-
 	AutoAction *ApproverAction `json:"auto_action,omitempty"`
 
 	ActionList []Action `json:"action_list"`

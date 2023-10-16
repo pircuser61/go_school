@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -74,8 +73,6 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 			return nil, false, err
 		}
 		b.RunContext.VarStore.AddStep(b.Name)
-
-		b.State.UpdatedAt = time.Now()
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
 			status, _ := b.GetTaskHumanStatus()

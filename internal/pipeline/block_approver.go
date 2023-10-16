@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -189,7 +190,6 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	addInfo := gb.State.AddInfo[len(gb.State.AddInfo)-1]
-	addInfoDuration := addInfo.CreatedAt.Sub(gb.State.UpdatedAt)
 
 	if gb.State.Decision != nil && len(gb.State.AddInfo) > 0 && addInfo.Type == RequestAddInfoType {
 		if gb.State.CheckDayBeforeSLARequestInfo {
@@ -200,9 +200,8 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(addInfo.CreatedAt, 3*8, nil).
-				Add(addInfoDuration),
-			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
+			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(addInfo.CreatedAt, 3*8, nil),
+			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 
 		return deadlines, nil
@@ -215,24 +214,29 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
+		newSLA, err := gb.calculateReplyDuration()
+		if err != nil {
+			return []Deadline{}, err
+		}
+
 		if getSlaInfoErr != nil {
 			return nil, getSlaInfoErr
 		}
 		if !gb.State.SLAChecked {
-			deadlines = append(deadlines,
-				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
-					Action: entity.TaskUpdateActionSLABreach,
-				},
+			deadlines = append(deadlines, Deadline{
+				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
+					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA), slaInfoPtr).Add(newSLA),
+				Action: entity.TaskUpdateActionSLABreach,
+			},
 			)
 		}
 
 		if !gb.State.HalfSLAChecked {
-			deadlines = append(deadlines,
-				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr),
-					Action: entity.TaskUpdateActionHalfSLABreach,
-				},
+			deadlines = append(deadlines, Deadline{
+				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
+					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr).Add(newSLA),
+				Action: entity.TaskUpdateActionHalfSLABreach,
+			},
 			)
 		}
 	}
@@ -255,14 +259,10 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(addInfo.CreatedAt, 3*8, nil).
-				Add(addInfoDuration),
-			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
+			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(addInfo.CreatedAt, 3*8, nil),
+			Action:   entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}
-
-	// Add starting point for next additional infos
-	gb.State.UpdatedAt = time.Now()
 
 	return deadlines, nil
 }
@@ -396,6 +396,48 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			script.RejectSocket,
 		},
 	}
+}
+
+func (gb *GoApproverBlock) calculateReplyDuration() (time.Duration, error) {
+	var newSLA int64
+	var requestPtr int
+	var replyCount, reqCount uint8
+
+out:
+	for _, info := range gb.State.AddInfo {
+		// Check if there is excess reply
+		if info.Type == ReplyAddInfoType {
+			replyCount++
+		} else if info.Type == RequestAddInfoType {
+			reqCount++
+		}
+
+		if replyCount > reqCount {
+			return time.Duration(newSLA), errors.New("invalid input: there are no requests to reply")
+		}
+
+		// Add duration of reply to total duration
+		if info.Type == ReplyAddInfoType {
+			newSLA += info.CreatedAt.Sub(gb.State.AddInfo[requestPtr].CreatedAt).Nanoseconds()
+
+			// Increment pointer till the next request
+			for {
+				if requestPtr == len(gb.State.AddInfo) {
+					break out
+				}
+
+				requestPtr++
+
+				if gb.State.AddInfo[requestPtr].Type == RequestAddInfoType {
+					break
+				}
+			}
+
+			continue
+		}
+	}
+
+	return time.Duration(newSLA), nil
 }
 
 //nolint:gocyclo //its ok here
