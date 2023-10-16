@@ -105,6 +105,18 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	gb.State.ActualExecutor = nil
 	gb.State.IsTakenInWork = false
 
+	if gb.State.UseActualExecutor {
+		execs, prevErr := gb.RunContext.Services.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
+		if prevErr != nil {
+			return prevErr
+		}
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+		}
+
+		return gb.handleNotifications(ctx)
+	}
+
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -122,16 +134,6 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 			return errors.New("can't find group id in variables")
 		}
 		params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
-	}
-
-	if gb.State.UseActualExecutor {
-		execs, prevErr := gb.RunContext.Services.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
-		if prevErr != nil {
-			return prevErr
-		}
-		if len(execs) == 1 {
-			gb.State.Executors = execs
-		}
 	}
 
 	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
