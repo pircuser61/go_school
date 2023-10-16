@@ -438,9 +438,9 @@ func (ae *APIEnv) GetTasks(w http.ResponseWriter, req *http.Request, params GetT
 
 	if filters.SelectAs != nil {
 		switch *filters.SelectAs {
-		case entity.SelectAsValApprover, entity.SelectAsValFinishedApprover:
+		case entity.SelectAsValApprover:
 			delegations = delegations.FilterByType("approvement")
-		case entity.SelectAsValExecutor, entity.SelectAsValFinishedExecutor:
+		case entity.SelectAsValExecutor:
 			delegations = delegations.FilterByType("execution")
 		default:
 			delegations = delegations[:0]
