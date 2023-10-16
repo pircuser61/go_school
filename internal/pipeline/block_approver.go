@@ -189,6 +189,7 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
 	addInfo := gb.State.AddInfo[len(gb.State.AddInfo)-1]
+	addInfoDuration := addInfo.CreatedAt.Sub(gb.State.UpdatedAt)
 
 	if gb.State.Decision != nil && len(gb.State.AddInfo) > 0 && addInfo.Type == RequestAddInfoType {
 		if gb.State.CheckDayBeforeSLARequestInfo {
@@ -197,8 +198,6 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
-
-		addInfoDuration := addInfo.CreatedAt.Sub(gb.State.UpdatedAt)
 
 		deadlines = append(deadlines, Deadline{
 			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(addInfo.CreatedAt, 3*8, nil).
@@ -254,8 +253,6 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 				Action:   entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
-
-		addInfoDuration := addInfo.CreatedAt.Sub(gb.State.UpdatedAt)
 
 		deadlines = append(deadlines, Deadline{
 			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(addInfo.CreatedAt, 3*8, nil).
