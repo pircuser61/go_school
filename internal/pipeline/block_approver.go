@@ -264,6 +264,7 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		})
 	}
 
+	// Add starting point for next additional infos
 	gb.State.UpdatedAt = time.Now()
 
 	return deadlines, nil
