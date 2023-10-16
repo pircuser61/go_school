@@ -34,7 +34,7 @@ func createGoApproverBlock(ctx c.Context, name string, ef *entity.EriusFunc, run
 		happenedEvents: make([]entity.NodeEvent, 0),
 	}
 
-	b.State.CreatedAt = time.Now()
+	b.State.UpdatedAt = time.Now()
 
 	for _, v := range ef.Input {
 		b.Input[v.Name] = v.Global
