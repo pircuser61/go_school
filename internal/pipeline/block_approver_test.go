@@ -945,3 +945,78 @@ func TestGoApproverBlock_Update(t *testing.T) {
 		})
 	}
 }
+
+func TestGoApproverBlock_calculateReplyDuration(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid input", func(t *testing.T) {
+		t.Parallel()
+
+		ai1, _ := time.Parse("02 Jan 06 15:04 MST", "15 Oct 23 10:00 MST")
+		ai2, _ := time.Parse("02 Jan 06 15:04 MST", "16 Oct 23 14:00 MST")
+		ai3, _ := time.Parse("02 Jan 06 15:04 MST", "17 Oct 23 15:00 MST")
+		ai4, _ := time.Parse("02 Jan 06 15:04 MST", "17 Oct 23 17:00 MST")
+
+		gb := &GoApproverBlock{
+			State: &ApproverData{
+				AddInfo: []AdditionalInfo{
+					{
+						Type:      RequestAddInfoType,
+						CreatedAt: ai1,
+					},
+					{
+						Type:      RequestAddInfoType,
+						CreatedAt: ai2,
+					},
+					{
+						Type:      ReplyAddInfoType,
+						CreatedAt: ai3,
+					},
+					{
+						Type:      ReplyAddInfoType,
+						CreatedAt: ai4,
+					},
+				},
+			},
+		}
+
+		got, err := gb.calculateReplyDuration()
+
+		dur1 := ai3.Sub(ai1)
+		dur2 := ai4.Sub(ai2)
+
+		assert.NoError(t, err)
+		assert.Equal(t, dur1+dur2, got)
+	})
+
+	t.Run("invalid reply count", func(t *testing.T) {
+		t.Parallel()
+
+		ai1, _ := time.Parse("02 Jan 06 15:04 MST", "15 Oct 23 10:00 MST")
+		ai2, _ := time.Parse("02 Jan 06 15:04 MST", "16 Oct 23 14:00 MST")
+		ai3, _ := time.Parse("02 Jan 06 15:04 MST", "17 Oct 23 15:00 MST")
+
+		gb := &GoApproverBlock{
+			State: &ApproverData{
+				AddInfo: []AdditionalInfo{
+					{
+						Type:      RequestAddInfoType,
+						CreatedAt: ai1,
+					},
+					{
+						Type:      ReplyAddInfoType,
+						CreatedAt: ai2,
+					},
+					{
+						Type:      ReplyAddInfoType,
+						CreatedAt: ai3,
+					},
+				},
+			},
+		}
+
+		_, err := gb.calculateReplyDuration()
+
+		assert.Error(t, err)
+	})
+}
