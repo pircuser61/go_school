@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	_workingHours = 8
+	workingHours = 8
 )
 
 type approverUpdateEditingParams struct {
@@ -508,7 +508,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 
 		gb.State.CheckDayBeforeSLARequestInfo = true
 
-		gb.State.SLA += 3 * _workingHours
+		gb.State.SLA += 3 * workingHours
 	}
 
 	if updateParams.Type == ReplyAddInfoType {
@@ -540,7 +540,7 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 				break
 			}
 
-			gb.State.SLA -= 3 * _workingHours
+			gb.State.SLA -= 3 * workingHours
 
 			lastRequestTime = info.CreatedAt
 		}
