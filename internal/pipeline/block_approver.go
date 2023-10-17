@@ -403,7 +403,6 @@ func (gb *GoApproverBlock) calculateReplyDuration() (time.Duration, error) {
 	var requestPtr int
 	var replyCount, reqCount uint8
 
-out:
 	for _, info := range gb.State.AddInfo {
 		// Check if there is excess reply
 		if info.Type == ReplyAddInfoType {
@@ -422,13 +421,9 @@ out:
 
 			// Increment pointer till the next request
 			for {
-				if requestPtr == len(gb.State.AddInfo) {
-					break out
-				}
-
 				requestPtr++
 
-				if gb.State.AddInfo[requestPtr].Type == RequestAddInfoType {
+				if requestPtr == len(gb.State.AddInfo) || gb.State.AddInfo[requestPtr].Type == RequestAddInfoType {
 					break
 				}
 			}
