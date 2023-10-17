@@ -956,6 +956,8 @@ func TestGoApproverBlock_calculateReplyDuration(t *testing.T) {
 		ai2, _ := time.Parse("02 Jan 06 15:04 MST", "16 Oct 23 14:00 MST")
 		ai3, _ := time.Parse("02 Jan 06 15:04 MST", "17 Oct 23 15:00 MST")
 		ai4, _ := time.Parse("02 Jan 06 15:04 MST", "17 Oct 23 17:00 MST")
+		ai5, _ := time.Parse("02 Jan 06 15:04 MST", "18 Oct 23 11:00 MST")
+		ai6, _ := time.Parse("02 Jan 06 15:04 MST", "18 Oct 23 14:00 MST")
 
 		gb := &GoApproverBlock{
 			State: &ApproverData{
@@ -973,8 +975,16 @@ func TestGoApproverBlock_calculateReplyDuration(t *testing.T) {
 						CreatedAt: ai3,
 					},
 					{
-						Type:      ReplyAddInfoType,
+						Type:      RequestAddInfoType,
 						CreatedAt: ai4,
+					},
+					{
+						Type:      ReplyAddInfoType,
+						CreatedAt: ai5,
+					},
+					{
+						Type:      ReplyAddInfoType,
+						CreatedAt: ai6,
 					},
 				},
 			},
@@ -983,10 +993,12 @@ func TestGoApproverBlock_calculateReplyDuration(t *testing.T) {
 		got, err := gb.calculateReplyDuration()
 
 		dur1 := ai3.Sub(ai1)
-		dur2 := ai4.Sub(ai2)
+		dur2 := ai5.Sub(ai2)
+		dur3 := ai6.Sub(ai4)
 
 		assert.NoError(t, err)
-		assert.Equal(t, dur1+dur2, got)
+		assert.Equal(t, dur1+dur2+dur3, got) // Check if replies map to correct requests
+		assert.Equal(t, 119.0, got.Hours())  // Check if got correct amount of hours
 	})
 
 	t.Run("invalid reply count", func(t *testing.T) {
