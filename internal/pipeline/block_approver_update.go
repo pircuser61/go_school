@@ -66,14 +66,19 @@ func (a *additionalApproverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproverDecision(u approverUpdateParams) error {
+func (gb *GoApproverBlock) setApproverDecision(c c.Context, u approverUpdateParams) error {
 	if errUpdate := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.internalDecision,
 		u.Comment, u.Attachments, gb.RunContext.Delegations); errUpdate != nil {
 		return errUpdate
 	}
 
 	if gb.State.Decision != nil {
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], gb.State.ActualApprover)
+		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(c, *gb.State.ActualApprover)
+		if personErr != nil {
+			return personErr
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
 	}
@@ -141,7 +146,7 @@ func (gb *GoApproverBlock) handleBreachedSLA(ctx c.Context) error {
 	}
 	if gb.State.AutoAction != nil {
 		gb.RunContext.UpdateData.ByLogin = AutoApprover
-		if setErr := gb.setApproverDecision(
+		if setErr := gb.setApproverDecision(ctx,
 			approverUpdateParams{
 				internalDecision: gb.State.AutoAction.ToDecision(),
 				Comment:          AutoActionComment,
@@ -454,7 +459,12 @@ func (gb *GoApproverBlock) toEditApplication(ctx c.Context, updateParams approve
 			return editErr
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], gb.RunContext.UpdateData.ByLogin)
+		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, gb.RunContext.UpdateData.ByLogin)
+		if personErr != nil {
+			return personErr
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], ApproverDecisionSentToEdit)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], updateParams.Comment)
 	}
@@ -612,7 +622,7 @@ func (gb *GoApproverBlock) Update(ctx c.Context) (interface{}, error) {
 
 		updateParams.internalDecision = updateParams.Decision.ToDecision()
 
-		if errUpdate := gb.setApproverDecision(updateParams); errUpdate != nil {
+		if errUpdate := gb.setApproverDecision(ctx, updateParams); errUpdate != nil {
 			return nil, errUpdate
 		}
 

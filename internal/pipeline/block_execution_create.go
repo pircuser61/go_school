@@ -377,7 +377,13 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 			comment = *parentState.DecisionComment
 		}
 
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], actualExecutor)
+		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, actualExecutor)
+		if personErr != nil {
+			l.Error(funcName, "service couldn't get person by login: "+actualExecutor)
+			return false
+		}
+
+		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputExecutionLogin], person)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], &parentState.Decision)
 		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], comment)
 
