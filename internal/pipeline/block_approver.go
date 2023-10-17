@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"gitlab.services.mts.ru/jocasta/pipeliner/internal/entity"
@@ -214,18 +213,13 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
-		newSLA, err := gb.countReplyDuration()
-		if err != nil {
-			return []Deadline{}, err
-		}
-
 		if getSlaInfoErr != nil {
 			return nil, getSlaInfoErr
 		}
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines, Deadline{
 				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA)+float32(newSLA.Hours()), slaInfoPtr),
+					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
 				Action: entity.TaskUpdateActionSLABreach,
 			},
 			)
@@ -234,7 +228,7 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines, Deadline{
 				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA)/2+float32(newSLA.Hours()), slaInfoPtr),
+					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr),
 				Action: entity.TaskUpdateActionHalfSLABreach,
 			},
 			)
@@ -396,43 +390,6 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			script.RejectSocket,
 		},
 	}
-}
-
-func (gb *GoApproverBlock) countReplyDuration() (time.Duration, error) {
-	var newSLA int64
-	var requestPtr int
-	var replyCount, reqCount uint8
-
-	for _, info := range gb.State.AddInfo {
-		// Check if there is excess reply
-		if info.Type == ReplyAddInfoType {
-			replyCount++
-		} else if info.Type == RequestAddInfoType {
-			reqCount++
-		}
-
-		if replyCount > reqCount {
-			return time.Duration(newSLA), errors.New("invalid input: there are no requests to reply")
-		}
-
-		// Add duration of reply to total duration
-		if info.Type == ReplyAddInfoType {
-			newSLA += info.CreatedAt.Sub(gb.State.AddInfo[requestPtr].CreatedAt).Nanoseconds()
-
-			// Increment pointer till the next request
-			for {
-				requestPtr++
-
-				if requestPtr == len(gb.State.AddInfo) || gb.State.AddInfo[requestPtr].Type == RequestAddInfoType {
-					break
-				}
-			}
-
-			continue
-		}
-	}
-
-	return time.Duration(newSLA), nil
 }
 
 //nolint:gocyclo //its ok here

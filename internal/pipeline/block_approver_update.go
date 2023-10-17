@@ -18,6 +18,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	_workingHours = 8
+)
+
 type approverUpdateEditingParams struct {
 	Comment     string              `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
@@ -503,6 +507,8 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 		}
 
 		gb.State.CheckDayBeforeSLARequestInfo = true
+
+		gb.State.SLA += 3 * _workingHours
 	}
 
 	if updateParams.Type == ReplyAddInfoType {
@@ -527,8 +533,20 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return linkErr
 		}
 
+		lastRequestTime := time.Time{}
+		for i := len(gb.State.AddInfo) - 1; i <= 0; i-- {
+			info := gb.State.AddInfo[i]
+			if info.Type == ReplyAddInfoType {
+				break
+			}
+
+			gb.State.SLA -= 3 * _workingHours
+
+			lastRequestTime = info.CreatedAt
+		}
+
 		workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
-			gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt,
+			lastRequestTime,
 			time.Now(),
 			nil,
 		)
