@@ -946,7 +946,7 @@ func TestGoApproverBlock_Update(t *testing.T) {
 	}
 }
 
-func TestGoApproverBlock_calculateReplyDuration(t *testing.T) {
+func TestGoApproverBlock_countReplyDuration(t *testing.T) {
 	t.Parallel()
 
 	t.Run("valid input", func(t *testing.T) {
@@ -990,7 +990,7 @@ func TestGoApproverBlock_calculateReplyDuration(t *testing.T) {
 			},
 		}
 
-		got, err := gb.calculateReplyDuration()
+		got, err := gb.countReplyDuration()
 
 		dur1 := ai3.Sub(ai1)
 		dur2 := ai5.Sub(ai2)
@@ -1027,7 +1027,7 @@ func TestGoApproverBlock_calculateReplyDuration(t *testing.T) {
 			},
 		}
 
-		_, err := gb.calculateReplyDuration()
+		_, err := gb.countReplyDuration()
 
 		assert.Error(t, err)
 	})

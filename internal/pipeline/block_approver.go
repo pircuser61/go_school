@@ -214,7 +214,7 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 			WorkType: sla.WorkHourType(gb.State.WorkType),
 		})
 
-		newSLA, err := gb.calculateReplyDuration()
+		newSLA, err := gb.countReplyDuration()
 		if err != nil {
 			return []Deadline{}, err
 		}
@@ -398,7 +398,7 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 	}
 }
 
-func (gb *GoApproverBlock) calculateReplyDuration() (time.Duration, error) {
+func (gb *GoApproverBlock) countReplyDuration() (time.Duration, error) {
 	var newSLA int64
 	var requestPtr int
 	var replyCount, reqCount uint8
