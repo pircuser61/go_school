@@ -365,7 +365,7 @@ func (gb *GoApproverBlock) Model() script.FunctionModel {
 			Properties: script.JSONSchemaProperties{
 				keyOutputApprover: {
 					Type:        "object",
-					Description: "person object from sso",
+					Description: "approver login which made a decision",
 					Format:      "SsoPerson",
 					Properties:  people.GetSsoPersonSchemaProperties(),
 				},

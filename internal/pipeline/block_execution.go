@@ -392,7 +392,7 @@ func (gb *GoExecutionBlock) Model() script.FunctionModel {
 			Properties: script.JSONSchemaProperties{
 				keyOutputExecutionLogin: {
 					Type:        "object",
-					Description: "person object from sso",
+					Description: "executor login",
 					Format:      "SsoPerson",
 					Properties:  people.GetSsoPersonSchemaProperties(),
 				},
