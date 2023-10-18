@@ -66,22 +66,24 @@ func (a *additionalApproverUpdateParams) Validate() error {
 	return nil
 }
 
-func (gb *GoApproverBlock) setApproverDecision(c c.Context, u approverUpdateParams) error {
-	if errUpdate := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.internalDecision,
-		u.Comment, u.Attachments, gb.RunContext.Delegations); errUpdate != nil {
-		return errUpdate
+func (gb *GoApproverBlock) setApproverDecision(ctx c.Context, u approverUpdateParams) error {
+	if err := gb.State.SetDecision(gb.RunContext.UpdateData.ByLogin, u.internalDecision,
+		u.Comment, u.Attachments, gb.RunContext.Delegations); err != nil {
+		return err
 	}
 
-	if gb.State.Decision != nil {
-		person, personErr := gb.RunContext.Services.ServiceDesc.GetSsoPerson(c, *gb.State.ActualApprover)
-		if personErr != nil {
-			return personErr
-		}
-
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
-		gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
+	if gb.State.Decision == nil {
+		return nil
 	}
+
+	person, err := gb.RunContext.Services.ServiceDesc.GetSsoPerson(ctx, *gb.State.ActualApprover)
+	if err != nil {
+		return err
+	}
+
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputApprover], person)
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputDecision], gb.State.Decision.String())
+	gb.RunContext.VarStore.SetValue(gb.Output[keyOutputComment], gb.State.Comment)
 
 	return nil
 }
