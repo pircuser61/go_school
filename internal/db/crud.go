@@ -1787,6 +1787,9 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		return err
 	}
 
+	_, delSpan := trace.StartSpan(ctx, "pg_delete_block_members")
+	defer delSpan.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const qMembersDelete = `
@@ -1815,6 +1818,9 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 }
 
 func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id uuid.UUID) error {
+	_, span := trace.StartSpan(ctx, "pg_insert_into_members")
+	defer span.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryMembers = `
@@ -1870,6 +1876,9 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 }
 
 func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline, id uuid.UUID) error {
+	_, span := trace.StartSpan(ctx, "pg_create_block_deadlines")
+	defer span.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryDeadlines = `
@@ -1904,6 +1913,9 @@ func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline
 }
 
 func (db *PGCon) deleteDeadlines(ctx context.Context, id uuid.UUID) error {
+	_, span := trace.StartSpan(ctx, "pg_delete_block_deadlines")
+	defer span.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryDeadlines = `
