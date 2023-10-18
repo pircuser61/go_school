@@ -285,9 +285,16 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 
 		return
 	}
+	scenario, getVersionErr := ae.DB.GetVersionByWorkNumber(ctx, dbTask.WorkNumber)
+	if getVersionErr != nil {
+		e := UnknownError
+		log.Error(e.errorMessage(getVersionErr))
+		_ = e.sendError(w)
 
-	if dbTask.Author == ui.Username { // If initiator equals to user who made request
-		hideErr := ae.hideExecutorsFromInitiator(dbTask.Steps, ui.Username)
+		return
+	}
+	if ui.Username != scenario.Author {
+		hideErr := ae.hideExecutorsFromInitiator(dbTask.Steps, ui.Username, dbTask.Author, currentUserDelegateSteps)
 		if hideErr != nil {
 			e := UnknownError
 			log.Error(e.errorMessage(hideErr))
@@ -296,7 +303,6 @@ func (ae *APIEnv) GetTask(w http.ResponseWriter, req *http.Request, workNumber s
 			return
 		}
 	}
-
 	versionSettings, errSla := ae.DB.GetSlaVersionSettings(ctx, dbTask.VersionID.String())
 	if errSla != nil {
 		e := GetProcessSlaSettingsError
@@ -873,7 +879,7 @@ func (ae *APIEnv) GetTaskMeanSolveTime(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (ae *APIEnv) hideExecutorsFromInitiator(steps entity.TaskSteps, requesterLogin string) error {
+func (ae *APIEnv) hideExecutorsFromInitiator(steps entity.TaskSteps, requesterLogin, author string, delegates map[string]bool) error {
 	for stepIndex := range steps {
 		currentStep := steps[stepIndex]
 		if currentStep.State == nil {
@@ -881,29 +887,72 @@ func (ae *APIEnv) hideExecutorsFromInitiator(steps entity.TaskSteps, requesterLo
 		}
 		switch currentStep.Type {
 		case pipeline.BlockGoFormID:
-			var formBlock pipeline.FormData
-			unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
-			if unmarshalErr != nil {
-				return unmarshalErr
-			}
+			{
+				if author == requesterLogin {
+					var formBlock pipeline.FormData
+					unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &formBlock)
+					if unmarshalErr != nil {
+						return unmarshalErr
+					}
 
-			if !formBlock.HideExecutorFromInitiator || slices.Contains(maps.Keys(formBlock.Executors), requesterLogin) {
-				continue
-			}
-			formBlock.Executors = map[string]struct{}{
-				hiddenUserLogin: {},
-			}
-			formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+					if !formBlock.HideExecutorFromInitiator || slices.Contains(maps.Keys(formBlock.Executors), requesterLogin) {
+						continue
+					}
+					formBlock.Executors = map[string]struct{}{
+						hiddenUserLogin: {},
+					}
+					formBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
 
-			for historyIdx := range formBlock.ChangesLog {
-				formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
-				formBlock.ChangesLog[historyIdx].DelegateFor = hiddenUserLogin
+					for historyIdx := range formBlock.ChangesLog {
+						formBlock.ChangesLog[historyIdx].Executor = hiddenUserLogin
+						formBlock.ChangesLog[historyIdx].DelegateFor = hiddenUserLogin
+					}
+					data, marshalErr := json.Marshal(formBlock)
+					if marshalErr != nil {
+						return marshalErr
+					}
+					currentStep.State[currentStep.Name] = data
+				}
 			}
-			data, marshalErr := json.Marshal(formBlock)
-			if marshalErr != nil {
-				return marshalErr
+		case pipeline.BlockGoExecutionID:
+			{
+				if delegates[currentStep.Name] {
+					continue
+				}
+				var execBlock pipeline.ExecutionData
+				unmarshalErr := json.Unmarshal(currentStep.State[currentStep.Name], &execBlock)
+				if unmarshalErr != nil {
+					return unmarshalErr
+				}
+				if execBlock.ShowExecutor || slices.Contains(maps.Keys(execBlock.Executors), requesterLogin) {
+					continue
+				}
+				execBlock.Executors = map[string]struct{}{
+					hiddenUserLogin: {},
+				}
+				execBlock.ActualExecutor = utils.GetAddressOfValue(hiddenUserLogin)
+
+				for i := range execBlock.ChangedExecutorsLogs {
+					execBlock.ChangedExecutorsLogs[i].OldLogin = hiddenUserLogin
+					execBlock.ChangedExecutorsLogs[i].NewLogin = hiddenUserLogin
+				}
+
+				for i := range execBlock.RequestExecutionInfoLogs {
+					execBlock.RequestExecutionInfoLogs[i].Login = hiddenUserLogin
+					execBlock.RequestExecutionInfoLogs[i].DelegateFor = hiddenUserLogin
+				}
+
+				for i := range execBlock.EditingAppLog {
+					execBlock.EditingAppLog[i].Executor = hiddenUserLogin
+					execBlock.EditingAppLog[i].DelegateFor = hiddenUserLogin
+				}
+
+				data, marshalErr := json.Marshal(execBlock)
+				if marshalErr != nil {
+					return marshalErr
+				}
+				currentStep.State[currentStep.Name] = data
 			}
-			currentStep.State[currentStep.Name] = data
 		}
 	}
 

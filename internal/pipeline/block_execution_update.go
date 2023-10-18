@@ -715,12 +715,17 @@ func (gb *GoExecutionBlock) emailGroupExecutors(ctx c.Context, loginTakenInWork 
 		}
 	}
 
+	executorName := typedAuthor.GetFullName()
+	if !gb.State.ShowExecutor {
+		executorName = ""
+	}
+
 	tpl := mail.NewExecutionTakenInWorkTpl(&mail.ExecutorNotifTemplate{
 		WorkNumber:   gb.RunContext.WorkNumber,
 		Name:         gb.RunContext.NotifName,
 		SdUrl:        gb.RunContext.Services.Sender.SdAddress,
 		Description:  description,
-		ExecutorName: typedAuthor.GetFullName(),
+		ExecutorName: executorName,
 		Initiator:    gb.RunContext.Initiator,
 		LastWorks:    lastWorksForUser,
 		Mailto:       gb.RunContext.Services.Sender.FetchEmail,
