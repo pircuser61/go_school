@@ -75,26 +75,27 @@ type TaskMeanSolveTime struct {
 }
 
 type EriusTask struct {
-	ID             uuid.UUID              `json:"id"`
-	VersionID      uuid.UUID              `json:"version_id"`
-	StartedAt      time.Time              `json:"started_at"`
-	LastChangedAt  time.Time              `json:"last_changed_at"`
-	FinishedAt     *time.Time             `json:"finished_at"`
-	Name           string                 `json:"name"`
-	VersionContent string                 `json:"-"`
-	Description    string                 `json:"description"`
-	Status         string                 `json:"status"`
-	HumanStatus    string                 `json:"human_status"`
-	Author         string                 `json:"author"`
-	IsDebugMode    bool                   `json:"debug"`
-	Parameters     map[string]interface{} `json:"parameters"`
-	Steps          TaskSteps              `json:"steps"`
-	WorkNumber     string                 `json:"work_number"`
-	BlueprintID    string                 `json:"blueprint_id"`
-	Rate           *int                   `json:"rate"`
-	RateComment    *string                `json:"rate_comment"`
-	Actions        []TaskAction           `json:"available_actions"`
-	IsDelegate     bool                   `json:"is_delegate"`
+	ID                 uuid.UUID              `json:"id"`
+	VersionID          uuid.UUID              `json:"version_id"`
+	StartedAt          time.Time              `json:"started_at"`
+	LastChangedAt      time.Time              `json:"last_changed_at"`
+	FinishedAt         *time.Time             `json:"finished_at"`
+	Name               string                 `json:"name"`
+	VersionContent     string                 `json:"-"`
+	Description        string                 `json:"description"`
+	Status             string                 `json:"status"`
+	HumanStatus        string                 `json:"human_status"`
+	HumanStatusComment string                 `json:"human_status_comment"`
+	Author             string                 `json:"author"`
+	IsDebugMode        bool                   `json:"debug"`
+	Parameters         map[string]interface{} `json:"parameters"`
+	Steps              TaskSteps              `json:"steps"`
+	WorkNumber         string                 `json:"work_number"`
+	BlueprintID        string                 `json:"blueprint_id"`
+	Rate               *int                   `json:"rate"`
+	RateComment        *string                `json:"rate_comment"`
+	Actions            []TaskAction           `json:"available_actions"`
+	IsDelegate         bool                   `json:"is_delegate"`
 
 	ActiveBlocks           map[string]struct{} `json:"active_blocks"`
 	SkippedBlocks          map[string]struct{} `json:"skipped_blocks"`
@@ -190,6 +191,7 @@ const (
 	TaskUpdateActionSign                       TaskUpdateAction = "sign"
 	TaskUpdateActionFinishTimer                TaskUpdateAction = "finish_timer"
 	TaskUpdateActionFuncSLAExpired             TaskUpdateAction = "func_sla_expired"
+	TaskUpdateActionSignChangeWorkStatus       TaskUpdateAction = "sign_change_work_status"
 )
 
 var (
@@ -209,6 +211,7 @@ var (
 		TaskUpdateActionSign:                  {},
 		TaskUpdateActionFinishTimer:           {},
 		TaskUpdateActionFuncSLAExpired:        {},
+		TaskUpdateActionSignChangeWorkStatus:  {},
 	}
 )
 
@@ -221,6 +224,7 @@ var (
 type TaskUpdate struct {
 	Action     TaskUpdateAction `json:"action"`
 	Parameters json.RawMessage  `json:"parameters" swaggertype:"object"`
+	StepNames  []string         `json:"step_names"`
 }
 
 type CancelAppParams struct {

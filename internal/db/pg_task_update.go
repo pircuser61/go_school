@@ -34,7 +34,7 @@ func (db *PGCon) deleteFinishedPipelineMembers(ctx c.Context, taskID uuid.UUID) 
 		DELETE 
 		FROM members
 		WHERE block_id IN (SELECT id FROM variable_storage WHERE work_id = $1)
-		AND is_acted = false
+		AND is_acted = false AND execution_group_member = false
 	`
 	_, err := db.Connection.Exec(ctx, q, taskID)
 	return err
@@ -67,7 +67,7 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 	}
 
 	switch status {
-	case RunStatusFinished, RunStatusStopped, RunStatusError:
+	case RunStatusCanceled, RunStatusFinished, RunStatusStopped, RunStatusError:
 		if delErr := db.deleteFinishedPipelineDeadlines(ctx, taskID); delErr != nil {
 			return delErr
 		}
@@ -75,10 +75,11 @@ func (db *PGCon) UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, c
 			return delErr
 		}
 	}
+
 	return nil
 }
 
-func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) (*entity.EriusTask, error) {
+func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, comment string) (*entity.EriusTask, error) {
 	ctx, span := trace.StartSpan(ctx, "update_task_human_status")
 	defer span.End()
 
@@ -104,10 +105,11 @@ func (db *PGCon) UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status s
 					   			WHEN $1 != 'cancel' AND $1 != 'revoke' AND (SELECT result FROM is_parallel) 
 					   			    THEN 'processing'
 					   			ELSE $1
-						   END
+						   END,
+		    human_status_comment = $3
 		WHERE id = $2 RETURNING human_status, finished_at, work_number`
 
-	row := db.Connection.QueryRow(ctx, q, status, taskID)
+	row := db.Connection.QueryRow(ctx, q, status, taskID, comment)
 
 	et := entity.EriusTask{}
 
@@ -202,4 +204,37 @@ func (db *PGCon) SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error) 
 	_, err = db.Connection.Exec(ctx, q, taskID)
 
 	return err
+}
+
+func (db *PGCon) UpdateBlockStateInOthers(ctx c.Context, blockName, taskId string, blockState []byte) error {
+	ctx, span := trace.StartSpan(ctx, "update_block_state_in_others")
+	defer span.End()
+
+	const q = `
+		UPDATE variable_storage 
+		SET content = jsonb_set(content, array['State', $1]::varchar[], $2::jsonb, false)
+		WHERE work_id = $3`
+
+	_, err := db.Connection.Exec(ctx, q, blockName, blockState, taskId)
+
+	return err
+}
+
+func (db *PGCon) UpdateBlockVariablesInOthers(ctx c.Context, taskId string, values map[string]interface{}) error {
+	ctx, span := trace.StartSpan(ctx, "update_block_variables_in_others")
+	defer span.End()
+
+	for varName := range values {
+		const q = `
+		UPDATE variable_storage 
+		SET content = jsonb_set(content, array['Values', $1]::varchar[], $2::jsonb, false)
+		WHERE work_id = $3`
+
+		_, err := db.Connection.Exec(ctx, q, varName, values[varName], taskId)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

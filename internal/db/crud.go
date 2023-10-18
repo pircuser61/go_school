@@ -53,6 +53,35 @@ func (db *PGCon) Ping(ctx context.Context) error {
 	return errors.New("can't ping dn")
 }
 
+func (db *PGCon) Acquire(ctx context.Context) (Database, error) {
+	_, span := trace.StartSpan(ctx, "acquire_conn")
+	defer span.End()
+
+	if acConn, ok := db.Connection.(interface {
+		Acquire(ctx context.Context) (*pgxpool.Conn, error)
+	}); ok {
+		ac, err := acConn.Acquire(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &PGCon{Connection: ac}, nil
+	}
+	return nil, errors.New("can't acquire connection")
+}
+
+func (db *PGCon) Release(ctx context.Context) error {
+	_, span := trace.StartSpan(ctx, "release_conn")
+	defer span.End()
+
+	if releaseConn, ok := db.Connection.(interface {
+		Release()
+	}); ok {
+		releaseConn.Release()
+		return nil
+	}
+	return errors.New("can't release connection")
+}
+
 func (db *PGCon) StartTransaction(ctx context.Context) (Database, error) {
 	_, span := trace.StartSpan(ctx, "start_transaction")
 	defer span.End()
@@ -493,6 +522,8 @@ func (db *PGCon) GetWorkedVersions(ctx context.Context) ([]entity.EriusScenario,
 		return nil, err
 	}
 
+	defer rows.Close()
+
 	pipes := make([]entity.EriusScenario, 0)
 
 	for rows.Next() {
@@ -741,7 +772,7 @@ func (db *PGCon) PipelineRemovable(c context.Context, id uuid.UUID) (bool, error
 }
 
 func (db *PGCon) CreatePipeline(c context.Context,
-	p *entity.EriusScenario, author string, pipelineData []byte) error {
+	p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
 	c, span := trace.StartSpan(c, "pg_create_pipeline")
 	defer span.End()
 
@@ -768,7 +799,7 @@ func (db *PGCon) CreatePipeline(c context.Context,
 		return err
 	}
 
-	return db.CreateVersion(c, p, author, pipelineData, uuid.Nil)
+	return db.CreateVersion(c, p, author, pipelineData, oldVersionID)
 }
 
 func (db *PGCon) CreateVersion(c context.Context,
@@ -1756,6 +1787,9 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 		return err
 	}
 
+	_, delSpan := trace.StartSpan(ctx, "pg_delete_block_members")
+	defer delSpan.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const qMembersDelete = `
@@ -1784,6 +1818,9 @@ func (db *PGCon) UpdateStepContext(ctx context.Context, dto *UpdateStepRequest) 
 }
 
 func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id uuid.UUID) error {
+	_, span := trace.StartSpan(ctx, "pg_insert_into_members")
+	defer span.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryMembers = `
@@ -1793,7 +1830,8 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			login,
 			actions,
 		    params,
-		    is_acted
+		    is_acted,
+		    execution_group_member
 		)
 		VALUES (
 			$1, 
@@ -1801,7 +1839,8 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			$3, 
 			$4, 
 			$5,
-		    $6
+		    $6,
+		    $7
 		)
 `
 	for _, val := range members {
@@ -1827,6 +1866,7 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 			actions,
 			paramsData,
 			val.IsActed,
+			val.ExecutionGroupMember,
 		)
 		if err != nil {
 			return err
@@ -1836,6 +1876,9 @@ func (db *PGCon) insertIntoMembers(ctx context.Context, members []DbMember, id u
 }
 
 func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline, id uuid.UUID) error {
+	_, span := trace.StartSpan(ctx, "pg_create_block_deadlines")
+	defer span.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryDeadlines = `
@@ -1870,6 +1913,9 @@ func (db *PGCon) insertIntoDeadlines(ctx context.Context, deadlines []DbDeadline
 }
 
 func (db *PGCon) deleteDeadlines(ctx context.Context, id uuid.UUID) error {
+	_, span := trace.StartSpan(ctx, "pg_delete_block_deadlines")
+	defer span.End()
+
 	// nolint:gocritic
 	// language=PostgreSQL
 	const queryDeadlines = `
@@ -1927,6 +1973,8 @@ func (db *PGCon) GetExecutableScenarios(c context.Context) ([]entity.EriusScenar
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	pipes := make([]entity.EriusScenario, 0)
 
@@ -2046,7 +2094,7 @@ func (db *PGCon) GetExecutableByName(c context.Context, name string) (*entity.Er
 }
 
 func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string,
-	action entity.TaskUpdateAction) (entity.TaskSteps, error) {
+	in *entity.TaskUpdate) (entity.TaskSteps, error) {
 	ctx, span := trace.StartSpan(ctx, "pg_get_unfinished_task_steps_by_work_id_and_step_type")
 	defer span.End()
 
@@ -2057,7 +2105,7 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	isAddInfoReq := slices.Contains([]entity.TaskUpdateAction{
 		entity.TaskUpdateActionRequestApproveInfo,
 		entity.TaskUpdateActionSLABreachRequestAddInfo,
-		entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, action)
+		entity.TaskUpdateActionDayBeforeSLARequestAddInfo}, in.Action)
 
 	// nolint:gocritic,goconst
 	if stepType == "form" {
@@ -2068,9 +2116,21 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 		notInStatuses = []string{"skipped", "finished"}
 	}
 
+	args := []interface{}{
+		id,
+		stepType,
+		notInStatuses,
+	}
+
+	var stepNamesQ string
+	if len(in.StepNames) > 0 {
+		stepNamesQ = "vs.step_name = ANY($4) AND"
+		args = append(args, in.StepNames)
+	}
+
 	// nolint:gocritic
 	// language=PostgreSQL
-	q := `
+	q := fmt.Sprintf(`
 	SELECT 
 	    vs.id,
 	    vs.step_type,
@@ -2085,10 +2145,11 @@ func (db *PGCon) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, 
 	    work_id = $1 AND 
 	    step_type = $2 AND 
 	    NOT status = ANY($3) AND 
+		%s
 	    vs.time = (SELECT max(time) FROM variable_storage WHERE work_id = $1 AND step_name = vs.step_name)
-	    ORDER BY vs.time ASC`
+	    ORDER BY vs.time ASC`, stepNamesQ)
 
-	rows, err := db.Connection.Query(ctx, q, id, stepType, notInStatuses)
+	rows, err := db.Connection.Query(ctx, q, args...)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -2153,6 +2214,9 @@ WHERE value ? $2`
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
+
 	for rows.Next() {
 		var b string
 		if scanErr := rows.Scan(&b); scanErr != nil {

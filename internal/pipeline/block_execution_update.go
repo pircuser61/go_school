@@ -90,7 +90,8 @@ func (gb *GoExecutionBlock) Update(ctx c.Context) (interface{}, error) {
 	gb.RunContext.VarStore.ReplaceState(gb.Name, stateBytes)
 
 	if _, ok := gb.expectedEvents[eventEnd]; ok {
-		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+		status, _ := gb.GetTaskHumanStatus()
+		event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 		if eventErr != nil {
 			return nil, eventErr
 		}
@@ -136,6 +137,9 @@ func (gb *GoExecutionBlock) changeExecutor(ctx c.Context) (err error) {
 	gb.State.Executors = map[string]struct{}{
 		updateParams.NewExecutorLogin: {},
 	}
+
+	gb.State.IsTakenInWork = false
+
 	// do notif only for the new person
 	if notifErr := gb.handleNotifications(ctx); notifErr != nil {
 		return notifErr

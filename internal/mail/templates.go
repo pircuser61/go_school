@@ -39,6 +39,7 @@ type ExecutorNotifTemplate struct {
 	BlockID      string
 	Mailto       string
 	Login        string
+	IsGroup      bool
 	LastWorks    []*entity.EriusTask
 }
 
@@ -480,21 +481,33 @@ func NewExecutionNeedTakeInWorkTpl(dto *ExecutorNotifTemplate) Template {
 	actionSubject := fmt.Sprintf(subjectTpl, dto.BlockID, "", dto.WorkNumber, executionStartWorkAction, dto.Login)
 	actionBtn := getButton(dto.Mailto, actionSubject, "Взять в работу")
 
-	textPart := `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>
-{{end}}Уважаемый коллега, заявка {{.Id}} {{.Name}} <b>назначена на Группу исполнителей</b><br>
- Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
- <b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`
+	text := ""
+	subject := ""
+
+	if dto.IsGroup {
+		text = `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>
+				{{end}}Уважаемый коллега, заявка {{.Id}} {{.Name}} <b>назначена на Группу исполнителей</b><br>
+				Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
+				<b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`
+		subject = fmt.Sprintf("Заявка №%s %s назначена на Группу исполнителей", dto.WorkNumber, dto.Name)
+	} else {
+		text = `{{range .LastWorks}}Внимание! Предыдущая заявка была подана {{.DaysAgo}} дней назад. {{.WorkURL}}<br>
+				{{end}}Уважаемый коллега, заявка {{.Id}} {{.Name}} <b>ожидает исполнения</b><br>
+				Для просмотра перейти по <a href={{.Link}}>ссылке</a></br>
+				<b>Действия с заявкой</b></br>{{.ActionBtn}}</br>`
+		subject = fmt.Sprintf("Заявка №%s %s назначена на исполнение", dto.WorkNumber, dto.Name)
+	}
 
 	if dto.Description != "" {
-		textPart += ` ------------ Описание ------------  </br>
+		text += ` ------------ Описание ------------  </br>
 <pre style="white-space: pre-wrap; word-break: keep-all; font-family: inherit;">{{.Description}}</pre>`
 	}
 
 	lastWorksTemplate := getLastWorksForTemplate(dto.LastWorks, dto.SdUrl)
 
 	return Template{
-		Subject: fmt.Sprintf("Заявка №%s %s назначена на Группу исполнителей", dto.WorkNumber, dto.Name),
-		Text: textPart + `<style>
+		Subject: subject,
+		Text: text + `<style>
     p {
         font-family: Arial;
         font-size: 11px;
@@ -768,6 +781,19 @@ func getApprovementActionNameByStatus(status, defaultActionName string) (res str
 		return "подписания УКЭП"
 	default:
 		return defaultActionName
+	}
+}
+func NewSignErrorTemplate(workNumber, sdUrl string) Template {
+	return Template{
+		Subject: fmt.Sprintf("По заявке № %s - возникла ошибка подписания", workNumber),
+		Text:    "Уважаемый коллега, по заявке № {{.Id}} произошла ошибка подписания. Документ не был подписан. Необходимо повторно подписать заявку.",
+		Variables: struct {
+			Id   string `json:"id"`
+			Link string `json:"link"`
+		}{
+			Id:   workNumber,
+			Link: fmt.Sprintf(TaskUrlTemplate, sdUrl, workNumber),
+		},
 	}
 }
 

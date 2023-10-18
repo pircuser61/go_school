@@ -61,7 +61,8 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 			b.RunContext.VarStore.AddStep(b.Name)
 
 			if _, ok := b.expectedEvents[eventStart]; ok {
-				event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+				status, _ := b.GetTaskHumanStatus()
+				event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 				if err != nil {
 					return nil, false, err
 				}
@@ -75,7 +76,8 @@ func createGoExecutionBlock(ctx c.Context, name string, ef *entity.EriusFunc, ru
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 			if err != nil {
 				return nil, false, err
 			}
@@ -103,6 +105,18 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 	gb.State.ActualExecutor = nil
 	gb.State.IsTakenInWork = false
 
+	if gb.State.UseActualExecutor {
+		execs, prevErr := gb.RunContext.Services.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
+		if prevErr != nil {
+			return prevErr
+		}
+		if len(execs) == 1 {
+			gb.State.Executors = execs
+		}
+
+		return gb.handleNotifications(ctx)
+	}
+
 	var params script.ExecutionParams
 	err := json.Unmarshal(ef.Params, &params)
 	if err != nil {
@@ -120,16 +134,6 @@ func (gb *GoExecutionBlock) reEntry(ctx c.Context, ef *entity.EriusFunc) error {
 			return errors.New("can't find group id in variables")
 		}
 		params.ExecutorsGroupID = fmt.Sprintf("%v", groupId)
-	}
-
-	if gb.State.UseActualExecutor {
-		execs, prevErr := gb.RunContext.Services.Storage.GetExecutorsFromPrevExecutionBlockRun(ctx, gb.RunContext.TaskID, gb.Name)
-		if prevErr != nil {
-			return prevErr
-		}
-		if len(execs) == 1 {
-			gb.State.Executors = execs
-		}
 	}
 
 	err = gb.setExecutorsByParams(ctx, &setExecutorsByParamsDTO{
@@ -283,6 +287,7 @@ func (gb *GoExecutionBlock) setExecutorsByParams(ctx c.Context, dto *setExecutor
 		gb.State.ExecutorsGroupID = dto.GroupID
 		gb.State.ExecutorsGroupName = workGroup.GroupName
 	}
+	gb.State.InitialExecutors = gb.State.Executors
 	return nil
 }
 
@@ -293,6 +298,8 @@ func (gb *GoExecutionBlock) setPrevDecision(ctx c.Context) error {
 	if decision == nil && len(gb.State.EditingAppLog) == 0 && gb.State.GetIsEditable() {
 		gb.setEditingAppLogFromPreviousBlock(ctx)
 	}
+
+	gb.setPreviousExecutors(ctx)
 
 	if decision == nil && gb.State.GetRepeatPrevDecision() {
 		if gb.trySetPreviousDecision(ctx) {
@@ -379,7 +386,8 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 		gb.State.Decision = parentState.Decision
 
 		if _, ok = gb.expectedEvents[eventEnd]; ok {
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			status, _ := gb.GetTaskHumanStatus()
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 			if eventErr != nil {
 				return false
 			}
@@ -389,4 +397,37 @@ func (gb *GoExecutionBlock) trySetPreviousDecision(ctx c.Context) (isPrevDecisio
 	}
 
 	return true
+}
+
+// nolint:dupl // not dupl
+func (gb *GoExecutionBlock) setPreviousExecutors(ctx c.Context) {
+	const funcName = "pipeline.execution.setPreviousExecutors"
+	l := logger.GetLogger(ctx)
+
+	var parentStep *entity.Step
+	var err error
+
+	parentStep, err = gb.RunContext.Services.Storage.GetParentTaskStepByName(ctx, gb.RunContext.TaskID, gb.Name)
+	if err != nil || parentStep == nil {
+		l.Error(err)
+		return
+	}
+
+	data, ok := parentStep.State[gb.Name]
+	if !ok {
+		l.Error(funcName, "parent step state is not found: "+gb.Name)
+		return
+	}
+
+	var parentState ExecutionData
+	if err = json.Unmarshal(data, &parentState); err != nil {
+		l.Error(funcName, "invalid format of go-execution-block state")
+		return
+	}
+
+	if parentState.Executors != nil {
+		for login := range parentState.Executors {
+			gb.State.Executors[login] = struct{}{}
+		}
+	}
 }

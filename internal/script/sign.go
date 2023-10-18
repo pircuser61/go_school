@@ -120,10 +120,7 @@ func (s *SignParams) checkSignerTypeValid() error {
 func (s *SignParams) Validate() error {
 	switch s.SignatureType {
 	case SignatureTypePEP:
-		if s.Type != SignerTypeUser {
-			return fmt.Errorf("bad signer type: %s", s.Type)
-		}
-		if err := s.checkSignerTypeUserValid(); err != nil {
+		if err := s.checkSignerTypeValid(); err != nil {
 			return err
 		}
 	case SignatureTypeUNEP:

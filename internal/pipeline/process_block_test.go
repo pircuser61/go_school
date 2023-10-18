@@ -57,6 +57,7 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		uuid.UUID{},
 		mock.MatchedBy(func(status string) bool { return true }),
+		mock.MatchedBy(func(comment string) bool { return true }),
 	).Return(nil, nil)
 
 	res.On("SaveStepContext",
@@ -103,6 +104,12 @@ func makeStorage() *mocks.MockedDatabase {
 		mock.MatchedBy(func(ctx context.Context) bool { return true }),
 		mock.MatchedBy(func(taskID uuid.UUID) bool { return true }),
 	).Return(nil, nil)
+
+	res.On("GetParentTaskStepByName",
+		mock.MatchedBy(func(ctx context.Context) bool { return true }),
+		mock.MatchedBy(func(taskID uuid.UUID) bool { return true }),
+		mock.MatchedBy(func(string) bool { return true }),
+	).Return(&entity.Step{State: map[string]json.RawMessage{}}, nil)
 
 	return res
 }

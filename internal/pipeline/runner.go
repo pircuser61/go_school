@@ -23,9 +23,10 @@ type MemberAction struct {
 	Params map[string]interface{}
 }
 type Member struct {
-	Login   string
-	Actions []MemberAction
-	IsActed bool
+	Login                string
+	Actions              []MemberAction
+	IsActed              bool
+	ExecutionGroupMember bool
 }
 
 type Deadline struct {
@@ -48,7 +49,7 @@ type Runner interface {
 	GetState() interface{}
 	Next(runCtx *store.VariableStore) ([]string, bool)
 	Update(ctx context.Context) (interface{}, error)
-	GetTaskHumanStatus() TaskHumanStatus
+	GetTaskHumanStatus() (taskHumanStatus TaskHumanStatus, comment string)
 	GetStatus() Status
 	UpdateManual() bool
 	Members() []Member

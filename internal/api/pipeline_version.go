@@ -160,7 +160,8 @@ func (ae *APIEnv) CreatePipelineVersion(w http.ResponseWriter, req *http.Request
 	}
 }
 
-func (ae *APIEnv) getExternalSystem(ctx c.Context, clientID, versionID string) (*entity.ExternalSystem, error) {
+func (ae *APIEnv) getExternalSystem(ctx c.Context, storage db.Database, clientID, versionID string) (
+	*entity.ExternalSystem, error) {
 	system, err := ae.Integrations.RpcIntCli.GetIntegrationByClientId(ctx, &integration_v1.GetIntegrationByClientIdRequest{
 		ClientId: clientID,
 	})
@@ -172,7 +173,7 @@ func (ae *APIEnv) getExternalSystem(ctx c.Context, clientID, versionID string) (
 		return nil, err
 	}
 
-	externalSystem, err := ae.DB.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)
+	externalSystem, err := storage.GetExternalSystemSettings(ctx, versionID, system.Integration.IntegrationId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) { // TODO: delete
 			return nil, nil
@@ -516,6 +517,8 @@ type execVersionDTO struct {
 	version  *entity.EriusScenario
 	withStop bool
 
+	storage db.Database
+
 	w   http.ResponseWriter
 	req *http.Request
 
@@ -560,6 +563,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 	}
 
 	arg := &execVersionInternalDTO{
+		storage:        dto.storage,
 		reqID:          reqID,
 		p:              dto.version,
 		vars:           pipelineVars,
@@ -590,6 +594,7 @@ func (ae *APIEnv) execVersion(ctx c.Context, dto *execVersionDTO) (*entity.RunRe
 }
 
 type execVersionInternalDTO struct {
+	storage        db.Database
 	reqID          string
 	p              *entity.EriusScenario
 	vars           map[string]interface{}
@@ -607,7 +612,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 
 	log := logger.GetLogger(ctx).WithField("mainFuncName", "execVersionInternal")
 
-	txStorage, transactionErr := ae.DB.StartTransaction(ctx)
+	txStorage, transactionErr := dto.storage.StartTransaction(ctx)
 	if transactionErr != nil {
 		e := PipelineRunError
 		return nil, e, transactionErr
@@ -731,6 +736,7 @@ func (ae *APIEnv) execVersionInternal(ctx c.Context, dto *execVersionInternalDTO
 		e := PipelineRunError
 		return nil, e, err
 	}
+
 	if err = txStorage.CommitTransaction(ctx); err != nil {
 		e := PipelineRunError
 		return nil, e, err

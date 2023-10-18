@@ -49,10 +49,11 @@ func TestSignParams_Validate(t *testing.T) {
 		{
 			name: "PEP - group",
 			fields: fields{
-				SignatureType: SignatureTypePEP,
-				Type:          SignerTypeGroup,
+				SignatureType:     SignatureTypePEP,
+				Type:              SignerTypeGroup,
+				SignerGroupIDPath: "test",
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "PEP - schema",
@@ -61,7 +62,7 @@ func TestSignParams_Validate(t *testing.T) {
 				Type:          SignerTypeFromSchema,
 				Signer:        "test",
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "UNEP - user",

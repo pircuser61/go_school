@@ -204,13 +204,13 @@ func (_m *MockedDatabase) CommitTransaction(ctx context.Context) error {
 	return r0
 }
 
-// CreatePipeline provides a mock function with given fields: c, p, author, pipelineData
-func (_m *MockedDatabase) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte) error {
-	ret := _m.Called(c, p, author, pipelineData)
+// CreatePipeline provides a mock function with given fields: c, p, author, pipelineData, oldVersionID
+func (_m *MockedDatabase) CreatePipeline(c context.Context, p *entity.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error {
+	ret := _m.Called(c, p, author, pipelineData, oldVersionID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, string, []byte) error); ok {
-		r0 = rf(c, p, author, pipelineData)
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.EriusScenario, string, []byte, uuid.UUID) error); ok {
+		r0 = rf(c, p, author, pipelineData, oldVersionID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1732,16 +1732,16 @@ func (_m *MockedDatabase) GetTasksForMonitoring(ctx context.Context, filters *en
 }
 
 // GetUnfinishedTaskStepsByWorkIdAndStepType provides a mock function with given fields: ctx, id, stepType, action
-func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string, action entity.TaskUpdateAction) (entity.TaskSteps, error) {
-	ret := _m.Called(ctx, id, stepType, action)
+func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.Context, id uuid.UUID, stepType string, in *entity.TaskUpdate) (entity.TaskSteps, error) {
+	ret := _m.Called(ctx, id, stepType, in.Action)
 
 	var r0 entity.TaskSteps
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, entity.TaskUpdateAction) (entity.TaskSteps, error)); ok {
-		return rf(ctx, id, stepType, action)
+		return rf(ctx, id, stepType, in.Action)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, entity.TaskUpdateAction) entity.TaskSteps); ok {
-		r0 = rf(ctx, id, stepType, action)
+		r0 = rf(ctx, id, stepType, in.Action)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(entity.TaskSteps)
@@ -1749,7 +1749,7 @@ func (_m *MockedDatabase) GetUnfinishedTaskStepsByWorkIdAndStepType(ctx context.
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, entity.TaskUpdateAction) error); ok {
-		r1 = rf(ctx, id, stepType, action)
+		r1 = rf(ctx, id, stepType, in.Action)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2254,6 +2254,60 @@ func (_m *MockedDatabase) SendTaskToArchive(ctx context.Context, taskID uuid.UUI
 	return r0
 }
 
+// SetLastRunID provides a mock function with given fields: ctx, taskID, versionID
+func (_m *MockedDatabase) SetLastRunID(ctx context.Context, taskID uuid.UUID, versionID uuid.UUID) error {
+	ret := _m.Called(ctx, taskID, versionID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = rf(ctx, taskID, versionID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Acquire provides a mock function with given fields: ctx
+func (_m *MockedDatabase) Acquire(ctx context.Context) (db.Database, error) {
+	ret := _m.Called(ctx)
+
+	var r0 db.Database
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (db.Database, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) db.Database); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(db.Database)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Release provides a mock function with given fields: ctx
+func (_m *MockedDatabase) Release(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // StartTransaction provides a mock function with given fields: ctx
 func (_m *MockedDatabase) StartTransaction(ctx context.Context) (db.Database, error) {
 	ret := _m.Called(ctx)
@@ -2392,25 +2446,25 @@ func (_m *MockedDatabase) UpdateTaskBlocksData(ctx context.Context, dto *db.Upda
 	return r0
 }
 
-// UpdateTaskHumanStatus provides a mock function with given fields: ctx, taskID, status
-func (_m *MockedDatabase) UpdateTaskHumanStatus(ctx context.Context, taskID uuid.UUID, status string) (*entity.EriusTask, error) {
-	ret := _m.Called(ctx, taskID, status)
+// UpdateTaskHumanStatus provides a mock function with given fields: ctx, taskID, status, comment
+func (_m *MockedDatabase) UpdateTaskHumanStatus(ctx context.Context, taskID uuid.UUID, status string, comment string) (*entity.EriusTask, error) {
+	ret := _m.Called(ctx, taskID, status, comment)
 
 	var r0 *entity.EriusTask
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (*entity.EriusTask, error)); ok {
-		return rf(ctx, taskID, status)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) (*entity.EriusTask, error)); ok {
+		return rf(ctx, taskID, status, comment)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *entity.EriusTask); ok {
-		r0 = rf(ctx, taskID, status)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) *entity.EriusTask); ok {
+		r0 = rf(ctx, taskID, status, comment)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.EriusTask)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
-		r1 = rf(ctx, taskID, status)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string) error); ok {
+		r1 = rf(ctx, taskID, status, comment)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2468,6 +2522,30 @@ func (_m *MockedDatabase) VersionEditable(ctx context.Context, versionID uuid.UU
 	}
 
 	return r0, r1
+}
+
+func (_m *MockedDatabase) UpdateBlockStateInOthers(ctx context.Context, blockName, taskId string, blockState []byte) error {
+	ret := _m.Called(ctx, blockName, taskId, blockState)
+
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, []byte) error); ok {
+		_ = rf(ctx, blockName, taskId, blockState)
+	} else {
+		_ = ret.Error(0)
+	}
+
+	return nil
+}
+
+func (_m *MockedDatabase) UpdateBlockVariablesInOthers(ctx context.Context, taskId string, values map[string]interface{}) error {
+	ret := _m.Called(ctx, taskId, values)
+
+	if rf, ok := ret.Get(0).(func(context.Context, string, map[string]interface{}) error); ok {
+		_ = rf(ctx, taskId, values)
+	} else {
+		_ = ret.Error(0)
+	}
+
+	return nil
 }
 
 // NewMockedDatabase creates a new instance of MockedDatabase. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

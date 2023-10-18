@@ -20,7 +20,7 @@ type PipelineStorager interface {
 	GetWorkedVersions(ctx c.Context) ([]e.EriusScenario, error)
 	GetPipeline(ctx c.Context, id uuid.UUID) (*e.EriusScenario, error)
 
-	CreatePipeline(c c.Context, p *e.EriusScenario, author string, pipelineData []byte) error
+	CreatePipeline(c c.Context, p *e.EriusScenario, author string, pipelineData []byte, oldVersionID uuid.UUID) error
 	PipelineRemovable(ctx c.Context, id uuid.UUID) (bool, error)
 	DeletePipeline(ctx c.Context, id uuid.UUID) error
 	RenamePipeline(ctx c.Context, id uuid.UUID, name string) error
@@ -35,38 +35,41 @@ type TaskStorager interface {
 	GetPipelineTasks(ctx c.Context, pipelineID uuid.UUID) (*e.EriusTasks, error)
 	GetTask(ctx c.Context, delegationsApprover, delegationsExecution []string, currentUser, workNumber string) (*e.EriusTask, error)
 	GetTaskSteps(ctx c.Context, id uuid.UUID) (e.TaskSteps, error)
-	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string, action e.TaskUpdateAction) (e.TaskSteps, error)
+	GetUnfinishedTaskStepsByWorkIdAndStepType(ctx c.Context, id uuid.UUID, stepType string, in *e.TaskUpdate) (e.TaskSteps, error)
 	GetTaskStepById(ctx c.Context, id uuid.UUID) (*e.Step, error)
 	GetParentTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetTaskStepByName(ctx c.Context, workID uuid.UUID, stepName string) (*e.Step, error)
 	GetCanceledTaskSteps(ctx c.Context, taskID uuid.UUID) ([]e.Step, error)
 	GetVersionTasks(ctx c.Context, versionID uuid.UUID) (*e.EriusTasks, error)
 	GetLastDebugTask(ctx c.Context, versionID uuid.UUID, author string) (*e.EriusTask, error)
-
-	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
-	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
 	GetTaskStatus(ctx c.Context, taskID uuid.UUID) (int, error)
 	GetTaskHumanStatus(ctx c.Context, taskID uuid.UUID) (string, error)
 	GetTaskStatusWithReadableString(ctx c.Context, taskID uuid.UUID) (int, string, error)
-	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
-	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status string) (*e.EriusTask, error)
-	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
 	GetTaskStepsToWait(ctx c.Context, workNumber, blockName string) ([]string, error)
-	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
 	GetTaskRunContext(ctx c.Context, workNumber string) (e.TaskRunContext, error)
 	GetBlockDataFromVersion(ctx c.Context, workNumber, blockName string) (*e.EriusFunc, error)
 	GetVariableStorageForStep(ctx c.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error)
 	GetBlocksBreachedSLA(ctx c.Context) ([]StepBreachedSLA, error)
-	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
 	GetMeanTaskSolveTime(ctx c.Context, pipelineId string) ([]e.TaskCompletionInterval, error)
-	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
-	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
-	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
 	GetTaskInWorkTime(ctx c.Context, workNumber string) (*e.TaskCompletionInterval, error)
 	GetExecutorsFromPrevExecutionBlockRun(ctx c.Context, taskID uuid.UUID, name string) (exec map[string]struct{}, err error)
 	GetExecutorsFromPrevWorkVersionExecutionBlockRun(ctx c.Context, workNumber, name string) (exec map[string]struct{}, err error)
-
 	GetTaskForMonitoring(ctx c.Context, workNumber string) ([]e.MonitoringTaskNode, error)
+
+	CreateTask(ctx c.Context, dto *CreateTaskDTO) (*e.EriusTask, error)
+
+	CheckUserCanEditForm(ctx c.Context, workNumber string, stepName string, login string) (bool, error)
+	SendTaskToArchive(ctx c.Context, taskID uuid.UUID) (err error)
+	CheckIsArchived(ctx c.Context, taskID uuid.UUID) (bool, error)
+	CheckIsTest(ctx c.Context, taskID uuid.UUID) (bool, error)
+	StopTaskBlocks(ctx c.Context, taskID uuid.UUID) error
+	ParallelIsFinished(ctx c.Context, workNumber, blockName string) (bool, error)
+
+	UpdateTaskRate(ctx c.Context, req *UpdateTaskRate) error
+	UpdateTaskHumanStatus(ctx c.Context, taskID uuid.UUID, status, comment string) (*e.EriusTask, error)
+	UpdateTaskStatus(ctx c.Context, taskID uuid.UUID, status int, comment, author string) error
+	UpdateBlockStateInOthers(ctx c.Context, blockName, taskId string, blockState []byte) error
+	UpdateBlockVariablesInOthers(ctx c.Context, taskId string, values map[string]interface{}) error
 }
 
 type UpdateTaskRate struct {
@@ -89,10 +92,11 @@ type DbTaskAction struct {
 }
 
 type DbMember struct {
-	Login   string
-	Actions []DbMemberAction
-	Type    string
-	IsActed bool
+	Login                string
+	Actions              []DbMemberAction
+	Type                 string
+	IsActed              bool
+	ExecutionGroupMember bool
 }
 
 type DbDeadline struct {
@@ -159,6 +163,9 @@ type Database interface {
 
 	Ping(ctx c.Context) error
 
+	Acquire(ctx c.Context) (Database, error)
+	Release(ctx c.Context) error
+
 	StartTransaction(ctx c.Context) (Database, error)
 	CommitTransaction(ctx c.Context) error
 	RollbackTransaction(ctx c.Context) error
@@ -186,6 +193,7 @@ type Database interface {
 	GetExecutableScenarios(ctx c.Context) ([]e.EriusScenario, error)
 	GetExecutableByName(ctx c.Context, name string) (*e.EriusScenario, error)
 
+	SetLastRunID(ctx c.Context, taskID, versionID uuid.UUID) error
 	ActiveAlertNGSA(ctx c.Context, sever int,
 		state, source, eventType, cause, addInf, addTxt, moID, specProb, notID, usertext, moi, moc string) error
 	ClearAlertNGSA(ctx c.Context, name string) error

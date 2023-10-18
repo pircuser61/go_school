@@ -24,14 +24,17 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
-func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
+func uniqueActionsByRole(loginsIn, stepType string, finished, acted bool) string {
 	statuses := "('running', 'idle', 'ready')"
-	memberFinished := ""
 	if finished {
 		statuses = "('finished', 'cancel', 'no_success', 'error')"
-		memberFinished = "AND m.is_acted = true"
 	}
-
+	memberActed := ""
+	if acted {
+		memberActed = "AND m.is_acted = true"
+	}
+	// nolint:gocritic
+	// language=PostgreSQL
 	return fmt.Sprintf(`WITH actions AS (
     SELECT vs.work_id                                                                                 AS work_id
          , vs.step_name                                                                               AS block_id
@@ -40,11 +43,16 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
     FROM members m
              JOIN variable_storage vs on vs.id = m.block_id
              JOIN works w on vs.work_id = w.id
+    JOIN lateral (SELECT vs2.step_name, max(vs2.time) mt
+                                        from variable_storage vs2
+                                        where vs2.work_id = w.id
+                                        group by vs2.step_name) ab 
+                               on ab.mt = vs.time AND ab.step_name = vs.step_name
     WHERE m.login IN %s
       AND vs.step_type = '%s'
       AND vs.status IN %s
       AND w.child_id IS NULL
-	 %s
+		%s
       --unique-actions-filter--
 )
      , unique_actions AS (
@@ -55,7 +63,7 @@ func uniqueActionsByRole(loginsIn, stepType string, finished bool) string {
                                                'actions', actions.action,
                                                'params', actions.params) as actions) jsonb_actions ON TRUE
     GROUP BY actions.work_id
-)`, loginsIn, stepType, statuses, memberFinished)
+)`, loginsIn, stepType, statuses, memberActed)
 }
 
 func uniqueActiveActions(approverLogins, executionLogins []string, currentUser, workNumber string) string {
@@ -119,31 +127,31 @@ func getUniqueActions(selectFilter string, logins []string) string {
 
 	switch selectFilter {
 	case entity.SelectAsValApprover:
-		return uniqueActionsByRole(loginsIn, "approver", false)
+		return uniqueActionsByRole(loginsIn, "approver", false, false)
 	case entity.SelectAsValFinishedApprover:
-		return uniqueActionsByRole(loginsIn, "approver", true)
+		return uniqueActionsByRole(loginsIn, "approver", true, true)
 	case entity.SelectAsValExecutor:
-		return uniqueActionsByRole(loginsIn, "execution", false)
+		return uniqueActionsByRole(loginsIn, "execution", false, false)
 	case entity.SelectAsValFinishedExecutor:
-		return uniqueActionsByRole(loginsIn, "execution", true)
+		return uniqueActionsByRole(loginsIn, "execution", true, true)
 	case entity.SelectAsValFormExecutor:
-		return uniqueActionsByRole(loginsIn, "form", false)
+		return uniqueActionsByRole(loginsIn, "form", false, false)
 	case entity.SelectAsValFinishedFormExecutor:
-		return uniqueActionsByRole(loginsIn, "form", true)
+		return uniqueActionsByRole(loginsIn, "form", true, true)
 	case entity.SelectAsValSignerPhys:
-		q := uniqueActionsByRole(loginsIn, "sign", false)
+		q := uniqueActionsByRole(loginsIn, "sign", false, false)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValFinishedSignerPhys:
-		q := uniqueActionsByRole(loginsIn, "sign", true)
+		q := uniqueActionsByRole(loginsIn, "sign", true, true)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' in ('pep', 'unep') --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValSignerJur:
-		q := uniqueActionsByRole(loginsIn, "sign", false)
+		q := uniqueActionsByRole(loginsIn, "sign", false, false)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValFinishedSignerJur:
-		q := uniqueActionsByRole(loginsIn, "sign", true)
+		q := uniqueActionsByRole(loginsIn, "sign", true, true)
 		q = strings.Replace(q, "--unique-actions-filter--", "AND vs.content -> 'State' -> vs.step_name ->> 'signature_type' = 'ukep' --unique-actions-filter--", 1)
 		return q
 	case entity.SelectAsValInitiators:
@@ -159,11 +167,8 @@ func getUniqueActions(selectFilter string, logins []string) string {
 			WHERE status = 1 AND child_id IS NULL
 		)`
 	case entity.SelectAsValFinishedGroupExecutor:
-		return `WITH unique_actions AS (
-			SELECT id AS work_id, '[]' AS actions
-			FROM works
-			WHERE status in(2,3,4,6) AND child_id IS NULL
-		)`
+		q := uniqueActionsByRole(loginsIn, "execution", true, false)
+		return strings.Replace(q, "--unique-actions-filter--", "AND m.execution_group_member = true", 1)
 	default:
 		return fmt.Sprintf(`WITH unique_actions AS (
     SELECT id AS work_id, '[]' AS actions
@@ -228,7 +233,7 @@ func compileGetTasksQuery(fl entity.TaskFilter, delegations []string) (q string,
 	} else if fl.SelectAs != nil {
 		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectAs, delegations), q)
 	} else if fl.SelectFor != nil {
-		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, []string{}), q)
+		q = fmt.Sprintf("%s %s", getUniqueActions(*fl.SelectFor, delegations), q)
 	} else {
 		q = fmt.Sprintf("%s %s", getUniqueActions("", delegations), q)
 	}
@@ -876,7 +881,8 @@ func (db *PGCon) GetTask(
  			w.status_comment,
 			w.status_author,
  			v.content,
- 			v.node_groups
+ 			v.node_groups,
+ 			w.human_status_comment
 		FROM works w 
 		JOIN versions v ON v.id = w.version_id
 		JOIN pipelines p ON p.id = v.pipeline_id
@@ -937,6 +943,7 @@ func (db *PGCon) getTask(ctx c.Context, delegators []string, q, workNumber strin
 		&et.StatusAuthor,
 		&et.VersionContent,
 		&nodeGroups,
+		&et.HumanStatusComment,
 	)
 	if err != nil {
 		return nil, err

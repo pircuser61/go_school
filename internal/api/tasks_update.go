@@ -93,7 +93,7 @@ func (ae *APIEnv) UpdateTasksByMails(w http.ResponseWriter, req *http.Request) {
 			Parameters: jsonBody,
 		}
 
-		errUpdate := ae.updateTaskInternal(ctx, emails[i].Action.WorkNumber, emails[i].Action.Login, &updateData)
+		errUpdate := ae.updateTaskBlockInternal(ctx, emails[i].Action.WorkNumber, emails[i].Action.Login, &updateData)
 		if errUpdate != nil {
 			log.WithField("action", *emails[i].Action).
 				WithField("workNumber", emails[i].Action.WorkNumber).
@@ -155,9 +155,9 @@ func (ae *APIEnv) UpdateTask(w http.ResponseWriter, req *http.Request, workNumbe
 	}
 
 	if updateData.IsApplicationAction() {
-		err = ae.updateApplicationInternal(ctx, workNumber, ui.Username, &updateData)
-	} else {
 		err = ae.updateTaskInternal(ctx, workNumber, ui.Username, &updateData)
+	} else {
+		err = ae.updateTaskBlockInternal(ctx, workNumber, ui.Username, &updateData)
 	}
 
 	if err != nil {
@@ -289,7 +289,7 @@ func (ae *APIEnv) updateStepInternal(ctx c.Context, data updateStepData) bool {
 }
 
 //nolint:gocyclo // ok here
-func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+func (ae *APIEnv) updateTaskBlockInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_task_internal")
 	defer span.End()
 
@@ -329,12 +329,12 @@ func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string
 	scenario, err := ae.DB.GetPipelineVersion(ctxLocal, dbTask.VersionID, false)
 	if err != nil {
 		e := GetVersionError
-		return errors.New(e.errorMessage(nil))
+		return errors.New(e.errorMessage(err))
 	}
 
 	var steps entity.TaskSteps
 	for _, blockType := range blockTypes {
-		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType, in.Action)
+		stepsByBlock, stepErr := ae.DB.GetUnfinishedTaskStepsByWorkIdAndStepType(ctxLocal, dbTask.ID, blockType, in)
 		if stepErr != nil {
 			e := GetTaskError
 			return errors.New(e.errorMessage(nil))
@@ -422,11 +422,11 @@ func (ae *APIEnv) getAuthorAndMembersToNotify(ctx c.Context, workNumber, userLog
 	return res, nil
 }
 
-func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
+func (ae *APIEnv) updateTaskInternal(ctx c.Context, workNumber, userLogin string, in *entity.TaskUpdate) (err error) {
 	ctxLocal, span := trace.StartSpan(ctx, "update_application_internal")
 	defer span.End()
 
-	log := ae.Log.WithField("mainFuncName", "updateApplicationInternal")
+	log := ae.Log.WithField("mainFuncName", "updateTaskInternal")
 
 	dbTask, err := ae.DB.GetTask(ctxLocal, []string{userLogin}, []string{userLogin}, userLogin, workNumber)
 	if err != nil {
@@ -466,7 +466,7 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			log = log.WithField("funcName", "updateApplicationInternal").
+			log = log.WithField("funcName", "updateTaskInternal").
 				WithField("panic handle", true)
 			log.Error(r)
 			if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
@@ -496,7 +496,7 @@ func (ae *APIEnv) updateApplicationInternal(ctx c.Context, workNumber, userLogin
 		return err
 	}
 
-	_, err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke))
+	_, err = ae.DB.UpdateTaskHumanStatus(ctxLocal, dbTask.ID, string(pipeline.StatusRevoke), "")
 	if err != nil {
 		if txErr := txStorage.RollbackTransaction(ctxLocal); txErr != nil {
 			log.WithField("funcName", "UpdateTaskHumanStatus").
@@ -707,7 +707,7 @@ func (ae *APIEnv) StopTasks(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		updatedTask, updateTaskErr := txStorage.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusCancel))
+		updatedTask, updateTaskErr := txStorage.UpdateTaskHumanStatus(ctx, dbTask.ID, string(pipeline.StatusCancel), "")
 		if updateTaskErr != nil {
 			if txErr := txStorage.RollbackTransaction(ctx); txErr != nil {
 				log.WithField("funcName", "UpdateTaskHumanStatus").

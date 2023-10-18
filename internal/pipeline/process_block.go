@@ -151,8 +151,8 @@ func processBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Bloc
 		}
 	}
 
-	taskHumanStatus := block.GetTaskHumanStatus()
-	err = runCtx.updateStatusByStep(ctx, taskHumanStatus)
+	taskHumanStatus, statusComment := block.GetTaskHumanStatus()
+	err = runCtx.updateStatusByStep(ctx, taskHumanStatus, statusComment)
 	if err != nil {
 		return err
 	}
@@ -276,6 +276,11 @@ func CreateBlock(ctx c.Context, name string, bl *entity.EriusFunc, runCtx *Block
 			}
 		}
 
+		err = epi.Storage.SetLastRunID(ctx, runCtx.TaskID, epi.VersionID)
+		if err != nil {
+			return nil, false, errors.Wrap(err, "can’t set id of the last runned task")
+		}
+
 		return &epi, false, nil
 	}
 
@@ -386,9 +391,10 @@ func (runCtx *BlockRunContext) saveStepInDB(ctx c.Context, name, stepType, statu
 			})
 		}
 		dbPeople = append(dbPeople, db.DbMember{
-			Login:   pl[i].Login,
-			Actions: actions,
-			IsActed: pl[i].IsActed,
+			Login:                pl[i].Login,
+			Actions:              actions,
+			IsActed:              pl[i].IsActed,
+			ExecutionGroupMember: pl[i].ExecutionGroupMember,
 		})
 	}
 
@@ -430,9 +436,10 @@ func (runCtx *BlockRunContext) updateStepInDB(ctx c.Context, name string, id uui
 			})
 		}
 		dbPeople = append(dbPeople, db.DbMember{
-			Login:   pl[i].Login,
-			Actions: actions,
-			IsActed: pl[i].IsActed,
+			Login:                pl[i].Login,
+			Actions:              actions,
+			IsActed:              pl[i].IsActed,
+			ExecutionGroupMember: pl[i].ExecutionGroupMember,
 		})
 	}
 	for i := range deadlines {

@@ -53,9 +53,10 @@ func (gb *GoExecutionBlock) Members() []Member {
 	addedMembers := make(map[string]struct{}, 0)
 	for login := range gb.State.Executors {
 		members = append(members, Member{
-			Login:   login,
-			Actions: gb.executionActions(),
-			IsActed: gb.isExecutionActed(login),
+			Login:                login,
+			Actions:              gb.executionActions(),
+			IsActed:              gb.isExecutionActed(login),
+			ExecutionGroupMember: gb.isPartOfExecutionGroup(login),
 		})
 		addedMembers[login] = struct{}{}
 	}
@@ -65,9 +66,10 @@ func (gb *GoExecutionBlock) Members() []Member {
 			continue
 		}
 		members = append(members, Member{
-			Login:   log.Executor,
-			Actions: []MemberAction{},
-			IsActed: true,
+			Login:                log.Executor,
+			Actions:              []MemberAction{},
+			IsActed:              true,
+			ExecutionGroupMember: gb.isPartOfExecutionGroup(log.Executor),
 		})
 		addedMembers[log.Executor] = struct{}{}
 	}
@@ -79,21 +81,51 @@ func (gb *GoExecutionBlock) Members() []Member {
 		}
 		if log.ReqType == RequestInfoQuestion {
 			members = append(members, Member{
-				Login:   log.Login,
-				Actions: []MemberAction{},
-				IsActed: true,
+				Login:                log.Login,
+				Actions:              []MemberAction{},
+				IsActed:              true,
+				ExecutionGroupMember: gb.isPartOfExecutionGroup(log.Login),
 			})
 			addedMembers[log.Login] = struct{}{}
 		}
 	}
+
+	for i := range gb.State.ChangedExecutorsLogs {
+		if _, ok := addedMembers[gb.State.ChangedExecutorsLogs[i].OldLogin]; !ok {
+			continue
+		}
+		members = append(members, Member{
+			Login:                gb.State.ChangedExecutorsLogs[i].OldLogin,
+			Actions:              []MemberAction{},
+			IsActed:              true,
+			ExecutionGroupMember: gb.isPartOfExecutionGroup(gb.State.ChangedExecutorsLogs[i].OldLogin),
+		})
+		addedMembers[gb.State.ChangedExecutorsLogs[i].OldLogin] = struct{}{}
+	}
+
 	if gb.State.ActualExecutor != nil {
 		if _, ok := addedMembers[*gb.State.ActualExecutor]; !ok {
 			members = append(members, Member{
-				Login:   *gb.State.ActualExecutor,
-				Actions: []MemberAction{},
-				IsActed: true,
+				Login:                *gb.State.ActualExecutor,
+				Actions:              []MemberAction{},
+				IsActed:              true,
+				ExecutionGroupMember: gb.isPartOfExecutionGroup(*gb.State.ActualExecutor),
 			})
+			addedMembers[*gb.State.ActualExecutor] = struct{}{}
 		}
+	}
+
+	for key := range gb.State.InitialExecutors {
+		if _, ok := addedMembers[key]; ok {
+			continue
+		}
+		members = append(members, Member{
+			Login:                key,
+			Actions:              []MemberAction{},
+			IsActed:              !gb.isPartOfExecutionGroup(key),
+			ExecutionGroupMember: gb.isPartOfExecutionGroup(key),
+		})
+		addedMembers[key] = struct{}{}
 	}
 	return members
 }
@@ -122,6 +154,27 @@ func (gb *GoExecutionBlock) isExecutionActed(login string) bool {
 		if (log.Login == login || log.DelegateFor == login) && log.ReqType == RequestInfoQuestion {
 			return true
 		}
+	}
+	if gb.State.IsTakenInWork {
+		return true
+	}
+	return false
+}
+
+func (gb *GoExecutionBlock) isPartOfExecutionGroup(login string) bool {
+	switch gb.State.ExecutionType {
+	case script.ExecutionTypeGroup:
+		if _, ok := gb.State.InitialExecutors[login]; ok {
+			return true
+		}
+	case script.ExecutionTypeFromSchema:
+		if len(gb.State.InitialExecutors) > 1 {
+			if _, ok := gb.State.InitialExecutors[login]; ok {
+				return true
+			}
+		}
+	default:
+		return false
 	}
 	return false
 }
@@ -255,24 +308,24 @@ func (gb *GoExecutionBlock) UpdateManual() bool {
 }
 
 // nolint:dupl // another block
-func (gb *GoExecutionBlock) GetTaskHumanStatus() TaskHumanStatus {
+func (gb *GoExecutionBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
 	if gb.State != nil && gb.State.Decision != nil {
 		if *gb.State.Decision == ExecutionDecisionExecuted {
-			return StatusDone
+			return StatusDone, ""
 		}
-		return StatusExecutionRejected
+		return StatusExecutionRejected, ""
 	}
 
 	if gb.State.EditingApp != nil {
-		return StatusWait
+		return StatusWait, ""
 	}
 
 	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
 		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
-		return StatusWait
+		return StatusWait, ""
 	}
 
-	return StatusExecution
+	return StatusExecution, ""
 }
 
 // nolint:dupl // another block

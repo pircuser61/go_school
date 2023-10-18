@@ -37,7 +37,7 @@ require (
 	gitlab.services.mts.ru/jocasta/human-tasks v1.0.0-alpha.3
 	gitlab.services.mts.ru/jocasta/integrations v1.6.0
 	gitlab.services.mts.ru/jocasta/msg-kit v0.1.1
-	gitlab.services.mts.ru/jocasta/scheduler v0.0.0-20230807081758-579091e60b77
+	gitlab.services.mts.ru/jocasta/scheduler v1.5.0-rc.1
 	gitlab.services.mts.ru/prodboard/infra v0.3.0
 	go.opencensus.io v0.24.0
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771

@@ -59,8 +59,8 @@ func (gb *TimerBlock) GetStatus() Status {
 	}
 }
 
-func (gb *TimerBlock) GetTaskHumanStatus() TaskHumanStatus {
-	return ""
+func (gb *TimerBlock) GetTaskHumanStatus() (status TaskHumanStatus, comment string) {
+	return "", ""
 }
 
 func (gb *TimerBlock) Next(_ *store.VariableStore) ([]string, bool) {
@@ -105,7 +105,8 @@ func (gb *TimerBlock) Update(ctx c.Context) (interface{}, error) {
 
 	if gb.State.Expired {
 		if _, ok := gb.expectedEvents[eventEnd]; ok {
-			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, gb.GetTaskHumanStatus(), gb.GetStatus())
+			status, _ := gb.GetTaskHumanStatus()
+			event, eventErr := gb.RunContext.MakeNodeEndEvent(ctx, gb.Name, status, gb.GetStatus())
 			if eventErr != nil {
 				return nil, eventErr
 			}
@@ -121,6 +122,7 @@ func (gb *TimerBlock) startTimer(ctx c.Context) error {
 		WorkNumber:  gb.RunContext.WorkNumber,
 		WorkID:      gb.RunContext.TaskID.String(),
 		ActionName:  string(entity.TaskUpdateActionFinishTimer),
+		StepName:    gb.Name,
 		WaitSeconds: int(gb.State.Duration.Seconds()),
 	})
 
@@ -202,7 +204,8 @@ func createTimerBlock(ctx c.Context, name string, ef *entity.EriusFunc, runCtx *
 		b.RunContext.VarStore.AddStep(b.Name)
 
 		if _, ok := b.expectedEvents[eventStart]; ok {
-			event, err := runCtx.MakeNodeStartEvent(ctx, name, b.GetTaskHumanStatus(), b.GetStatus())
+			status, _ := b.GetTaskHumanStatus()
+			event, err := runCtx.MakeNodeStartEvent(ctx, name, status, b.GetStatus())
 			if err != nil {
 				return nil, false, err
 			}

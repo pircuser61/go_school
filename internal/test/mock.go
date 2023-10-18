@@ -1091,7 +1091,7 @@ func (m *MockDB) GetLastDebugTask(c context.Context, versionID uuid.UUID, author
 	return nil, errNotImplemented
 }
 
-func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ uuid.UUID, _ string) (*entity.EriusTask, error) {
+func (m *MockDB) UpdateTaskHumanStatus(_ context.Context, _ uuid.UUID, _, _ string) (*entity.EriusTask, error) {
 	return &entity.EriusTask{}, nil
 }
 
@@ -1349,6 +1349,14 @@ func (m *MockDB) CheckUserCanEditForm(_ context.Context, _ string, _ string, _ s
 
 func (m *MockDB) GetTaskRunContext(_ context.Context, _ string) (entity.TaskRunContext, error) {
 	return entity.TaskRunContext{}, errNotImplemented
+}
+
+func (_m *MockDB) UpdateBlockStateInOthers(_ context.Context, _, _ string, _ []byte) error {
+	return nil
+}
+
+func (_m *MockDB) UpdateBlockVariablesInOthers(_ context.Context, _ string, _ map[string]interface{}) error {
+	return nil
 }
 
 func (m *MockDB) GetUsersWithReadWriteFormAccess(
