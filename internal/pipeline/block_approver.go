@@ -184,30 +184,70 @@ func (gb *GoApproverBlock) approvementAddActions(a *AdditionalApprover) []Member
 		}}
 }
 
+type qna struct {
+	qCrAt time.Time
+	aCrAt *time.Time
+}
+
+func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool) time.Time {
+	qq := make(map[string]qna)
+	for _, item := range gb.State.AddInfo {
+		if item.Type == RequestAddInfoType {
+			qq[item.Id] = qna{qCrAt: item.CreatedAt}
+		}
+	}
+	for _, item := range gb.State.AddInfo {
+		if item.Type == ReplyAddInfoType && item.LinkId != nil {
+			data, ok := qq[*item.LinkId]
+			if !ok {
+				continue
+			}
+			data.aCrAt = &item.CreatedAt
+			qq[*item.LinkId] = data
+		}
+	}
+
+	newSLA := gb.State.SLA
+	if half {
+		newSLA /= 2
+	}
+
+	deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(newSLA), slaInfoPtr)
+	for _, q := range qq {
+		if q.aCrAt == nil {
+			continue
+		}
+		additionalHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(q.qCrAt, *q.aCrAt, nil)
+		deadline = gb.RunContext.Services.SLAService.ComputeMaxDate(deadline, float32(additionalHours), nil)
+	}
+	return deadline
+}
+
 //nolint:dupl,gocyclo //Need here
 func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
-	if gb.State.Decision != nil && len(gb.State.AddInfo) > 0 &&
-		gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
+	latestUnansweredRequest := gb.State.latestUnansweredAddInfoLogEntry()
+
+	if gb.State.Decision != nil && latestUnansweredRequest != nil {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
 				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil),
+					latestUnansweredRequest.CreatedAt, 2*8, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
 			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-				gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil),
+				latestUnansweredRequest.CreatedAt, 3*8, nil),
 			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 
 		return deadlines, nil
 	}
 
-	if gb.State.CheckSLA {
+	if gb.State.CheckSLA && latestUnansweredRequest == nil {
 		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
 				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
@@ -219,9 +259,8 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		}
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines, Deadline{
-				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
-				Action: entity.TaskUpdateActionSLABreach,
+				Deadline: gb.getNewSLADeadline(slaInfoPtr, false),
+				Action:   entity.TaskUpdateActionSLABreach,
 			},
 			)
 		}
@@ -245,19 +284,18 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		)
 	}
 
-	if len(gb.State.AddInfo) > 0 &&
-		gb.State.AddInfo[len(gb.State.AddInfo)-1].Type == RequestAddInfoType {
+	if latestUnansweredRequest != nil {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
 				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 2*8, nil),
+					latestUnansweredRequest.CreatedAt, 2*8, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
 			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-				gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt, 3*8, nil),
+				latestUnansweredRequest.CreatedAt, 3*8, nil),
 			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}

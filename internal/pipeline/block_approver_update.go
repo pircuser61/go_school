@@ -537,13 +537,6 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return linkErr
 		}
 
-		workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
-			parentEntry.CreatedAt,
-			time.Now(),
-			nil,
-		)
-		gb.State.IncreaseSLA(workHours)
-
 		if err = gb.notifyNewInfoReceived(ctx, approverLogin); err != nil {
 			return err
 		}
