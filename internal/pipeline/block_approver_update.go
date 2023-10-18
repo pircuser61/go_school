@@ -507,8 +507,6 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 		}
 
 		gb.State.CheckDayBeforeSLARequestInfo = true
-
-		gb.State.SLA += 3 * workingHours
 	}
 
 	if updateParams.Type == ReplyAddInfoType {
@@ -527,26 +525,20 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return errors.New("linkId is null when reply")
 		}
 
+		parentEntry := gb.State.findAddInfoLogEntry(*updateParams.LinkId)
+		if parentEntry == nil || parentEntry.Type == ReplyAddInfoType ||
+			gb.State.addInfoLogEntryHasResponse(*updateParams.LinkId) {
+			return errors.New("bad linkId to submit an answer")
+		}
+
 		linkId = updateParams.LinkId
 		approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkId, gb.State.AddInfo)
 		if linkErr != nil {
 			return linkErr
 		}
 
-		lastRequestTime := time.Time{}
-		for i := len(gb.State.AddInfo) - 1; i <= 0; i-- {
-			info := gb.State.AddInfo[i]
-			if info.Type == ReplyAddInfoType {
-				break
-			}
-
-			gb.State.SLA -= 3 * workingHours
-
-			lastRequestTime = info.CreatedAt
-		}
-
 		workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
-			lastRequestTime,
+			parentEntry.CreatedAt,
 			time.Now(),
 			nil,
 		)

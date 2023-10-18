@@ -533,3 +533,21 @@ func (a *ApproverData) checkEmptyLinkIdAddInfo() bool {
 func (a *ApproverData) IncreaseSLA(addSla int) {
 	a.SLA += addSla
 }
+
+func (a *ApproverData) findAddInfoLogEntry(linkID string) *AdditionalInfo {
+	for _, item := range a.AddInfo {
+		if item.Id == linkID {
+			return &item
+		}
+	}
+	return nil
+}
+
+func (a *ApproverData) addInfoLogEntryHasResponse(linkID string) bool {
+	for _, item := range a.AddInfo {
+		if item.LinkId != nil && *item.LinkId == linkID {
+			return true
+		}
+	}
+	return false
+}
