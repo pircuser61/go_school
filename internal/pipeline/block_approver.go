@@ -191,12 +191,14 @@ type qna struct {
 
 func (gb *GoApproverBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool) time.Time {
 	qq := make(map[string]qna)
-	for _, item := range gb.State.AddInfo {
+	for i := range gb.State.AddInfo {
+		item := gb.State.AddInfo[i]
 		if item.Type == RequestAddInfoType {
 			qq[item.Id] = qna{qCrAt: item.CreatedAt}
 		}
 	}
-	for _, item := range gb.State.AddInfo {
+	for i := range gb.State.AddInfo {
+		item := gb.State.AddInfo[i]
 		if item.Type == ReplyAddInfoType && item.LinkId != nil {
 			data, ok := qq[*item.LinkId]
 			if !ok {
@@ -233,14 +235,14 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
 				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					latestUnansweredRequest.CreatedAt, 2*8, nil),
+					latestUnansweredRequest.CreatedAt, 2*workingHours, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
 			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-				latestUnansweredRequest.CreatedAt, 3*8, nil),
+				latestUnansweredRequest.CreatedAt, 3*workingHours, nil),
 			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 
@@ -287,14 +289,14 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
 				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					latestUnansweredRequest.CreatedAt, 2*8, nil),
+					latestUnansweredRequest.CreatedAt, 2*workingHours, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
 			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-				latestUnansweredRequest.CreatedAt, 3*8, nil),
+				latestUnansweredRequest.CreatedAt, 3*workingHours, nil),
 			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}

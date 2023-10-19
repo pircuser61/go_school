@@ -539,7 +539,8 @@ func (a *ApproverData) latestUnansweredAddInfoLogEntry() *AdditionalInfo {
 		}
 	}
 
-	for _, item := range a.AddInfo {
+	for i := range a.AddInfo {
+		item := a.AddInfo[i]
 		if item.Type == ReplyAddInfoType && item.LinkId != nil {
 			delete(qq, *item.LinkId)
 		}
@@ -555,7 +556,8 @@ func (a *ApproverData) latestUnansweredAddInfoLogEntry() *AdditionalInfo {
 }
 
 func (a *ApproverData) findAddInfoLogEntry(linkID string) *AdditionalInfo {
-	for _, item := range a.AddInfo {
+	for i := range a.AddInfo {
+		item := a.AddInfo[i]
 		if item.Id == linkID {
 			return &item
 		}
@@ -564,7 +566,8 @@ func (a *ApproverData) findAddInfoLogEntry(linkID string) *AdditionalInfo {
 }
 
 func (a *ApproverData) addInfoLogEntryHasResponse(linkID string) bool {
-	for _, item := range a.AddInfo {
+	for i := range a.AddInfo {
+		item := a.AddInfo[i]
 		if item.LinkId != nil && *item.LinkId == linkID {
 			return true
 		}

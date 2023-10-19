@@ -251,14 +251,14 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
 				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(latestInfoRequest.CreatedAt,
-					2*8, nil),
+					2*workingHours, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
 			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(latestInfoRequest.CreatedAt,
-				3*8, nil),
+				3*workingHours, nil),
 			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 
@@ -305,14 +305,14 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
 				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(latestInfoRequest.CreatedAt,
-					2*8, nil),
+					2*workingHours, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
 			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(latestInfoRequest.CreatedAt,
-				3*8, nil),
+				3*workingHours, nil),
 			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}
