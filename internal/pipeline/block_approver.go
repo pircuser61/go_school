@@ -267,9 +267,8 @@ func (gb *GoApproverBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines, Deadline{
-				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr),
-				Action: entity.TaskUpdateActionHalfSLABreach,
+				Deadline: gb.getNewSLADeadline(slaInfoPtr, true),
+				Action:   entity.TaskUpdateActionHalfSLABreach,
 			},
 			)
 		}

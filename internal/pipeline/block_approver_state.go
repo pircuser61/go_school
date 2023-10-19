@@ -532,11 +532,13 @@ func (a *ApproverData) checkEmptyLinkIdAddInfo() bool {
 
 func (a *ApproverData) latestUnansweredAddInfoLogEntry() *AdditionalInfo {
 	qq := make(map[string]*AdditionalInfo)
-	for _, item := range a.AddInfo {
+	for i := range a.AddInfo {
+		item := a.AddInfo[i]
 		if item.Type == RequestAddInfoType {
 			qq[item.Id] = &item
 		}
 	}
+
 	for _, item := range a.AddInfo {
 		if item.Type == ReplyAddInfoType && item.LinkId != nil {
 			delete(qq, *item.LinkId)
