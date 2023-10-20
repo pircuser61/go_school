@@ -59,6 +59,8 @@ func (db *PGCon) CreateTask(c context.Context, dto *CreateTaskDTO) (*entity.Eriu
 		if err != nil {
 			return nil, err
 		}
+
+		db.FinishTaskBlocks(c, dto.TaskID, nil, true)
 	}
 
 	return db.GetTask(c, []string{dto.Author}, []string{dto.Author}, dto.Author, workNumber)

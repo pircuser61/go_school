@@ -2801,6 +2801,32 @@ func (db *PGCon) StopTaskBlocks(ctx context.Context, taskID uuid.UUID) error {
 	return err
 }
 
+func (db *PGCon) FinishTaskBlocks(ctx context.Context, taskID uuid.UUID, ignoreSteps []string, updateParent bool) (err error) {
+	ctx, span := trace.StartSpan(ctx, "finish_task_blocks")
+	defer span.End()
+
+	var filter string
+	if updateParent {
+		filter = "(SELECT id FROM works WHERE child_id = $1)"
+	} else {
+		filter = "$1"
+	}
+
+	q := fmt.Sprintf(`
+		UPDATE variable_storage
+		SET status = 'finished', updated_at = now()
+		WHERE work_id = %s AND status IN ('ready', 'idle', 'running')`, filter)
+
+	if len(ignoreSteps) > 0 {
+		q += " AND step_name NOT IN ('" + strings.Join(ignoreSteps, "','") + "')"
+		_, err = db.Connection.Exec(ctx, q, taskID, ignoreSteps)
+	} else {
+		_, err = db.Connection.Exec(ctx, q, taskID)
+	}
+
+	return err
+}
+
 func (db *PGCon) GetVariableStorageForStep(ctx context.Context, taskID uuid.UUID, stepType string) (*store.VariableStore, error) {
 	ctx, span := trace.StartSpan(ctx, "get_variable_storage_for_step")
 	defer span.End()
