@@ -18,6 +18,10 @@ import (
 	"gitlab.services.mts.ru/jocasta/pipeliner/utils"
 )
 
+const (
+	workingHours = 8
+)
+
 type approverUpdateEditingParams struct {
 	Comment     string              `json:"comment"`
 	Attachments []entity.Attachment `json:"attachments"`
@@ -521,18 +525,17 @@ func (gb *GoApproverBlock) updateRequestApproverInfo(ctx c.Context) (err error) 
 			return errors.New("linkId is null when reply")
 		}
 
+		parentEntry := gb.State.findAddInfoLogEntry(*updateParams.LinkId)
+		if parentEntry == nil || parentEntry.Type == ReplyAddInfoType ||
+			gb.State.addInfoLogEntryHasResponse(*updateParams.LinkId) {
+			return errors.New("bad linkId to submit an answer")
+		}
+
 		linkId = updateParams.LinkId
 		approverLogin, linkErr := setLinkIdRequest(id, *updateParams.LinkId, gb.State.AddInfo)
 		if linkErr != nil {
 			return linkErr
 		}
-
-		workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
-			gb.State.AddInfo[len(gb.State.AddInfo)-1].CreatedAt,
-			time.Now(),
-			nil,
-		)
-		gb.State.IncreaseSLA(workHours)
 
 		if err = gb.notifyNewInfoReceived(ctx, approverLogin); err != nil {
 			return err

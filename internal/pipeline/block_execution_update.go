@@ -526,21 +526,6 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 		return errSet
 	}
 
-	if updateParams.ReqType == RequestInfoAnswer {
-		if gb.RunContext.UpdateData.ByLogin != gb.RunContext.Initiator {
-			return NewUserIsNotPartOfProcessErr()
-		}
-
-		if len(gb.State.RequestExecutionInfoLogs) > 0 {
-			workHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(
-				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
-				time.Now(),
-				nil,
-			)
-			gb.State.IncreaseSLA(workHours)
-		}
-	}
-
 	if updateParams.ReqType == RequestInfoQuestion {
 		err = gb.notifyNeedMoreInfo(ctx)
 		if err != nil {
@@ -551,6 +536,10 @@ func (gb *GoExecutionBlock) updateRequestInfo(ctx c.Context) (err error) {
 	}
 
 	if updateParams.ReqType == RequestInfoAnswer {
+		if gb.RunContext.UpdateData.ByLogin != gb.RunContext.Initiator {
+			return NewUserIsNotPartOfProcessErr()
+		}
+
 		err = gb.notifyNewInfoReceived(ctx)
 		if err != nil {
 			return err

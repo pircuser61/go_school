@@ -530,6 +530,47 @@ func (a *ApproverData) checkEmptyLinkIdAddInfo() bool {
 	return false
 }
 
-func (a *ApproverData) IncreaseSLA(addSla int) {
-	a.SLA += addSla
+func (a *ApproverData) latestUnansweredAddInfoLogEntry() *AdditionalInfo {
+	qq := make(map[string]*AdditionalInfo)
+	for i := range a.AddInfo {
+		item := a.AddInfo[i]
+		if item.Type == RequestAddInfoType {
+			qq[item.Id] = &item
+		}
+	}
+
+	for i := range a.AddInfo {
+		item := a.AddInfo[i]
+		if item.Type == ReplyAddInfoType && item.LinkId != nil {
+			delete(qq, *item.LinkId)
+		}
+	}
+
+	var latest *AdditionalInfo
+	for _, q := range qq {
+		if latest == nil || q.CreatedAt.After(latest.CreatedAt) {
+			latest = q
+		}
+	}
+	return latest
+}
+
+func (a *ApproverData) findAddInfoLogEntry(linkID string) *AdditionalInfo {
+	for i := range a.AddInfo {
+		item := a.AddInfo[i]
+		if item.Id == linkID {
+			return &item
+		}
+	}
+	return nil
+}
+
+func (a *ApproverData) addInfoLogEntryHasResponse(linkID string) bool {
+	for i := range a.AddInfo {
+		item := a.AddInfo[i]
+		if item.LinkId != nil && *item.LinkId == linkID {
+			return true
+		}
+	}
+	return false
 }

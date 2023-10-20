@@ -220,32 +220,52 @@ func (gb *GoExecutionBlock) executionActions() []MemberAction {
 	return actions
 }
 
+func (gb *GoExecutionBlock) getNewSLADeadline(slaInfoPtr *sla.SLAInfo, half bool) time.Time {
+	newSLA := gb.State.SLA
+	if half {
+		newSLA /= 2
+	}
+	deadline := gb.RunContext.Services.SLAService.ComputeMaxDate(gb.RunContext.CurrBlockStartTime, float32(newSLA), slaInfoPtr)
+
+	var qTime time.Time
+	for _, item := range gb.State.RequestExecutionInfoLogs {
+		if qTime.IsZero() {
+			qTime = item.CreatedAt
+			continue
+		}
+
+		additionalHours := gb.RunContext.Services.SLAService.GetWorkHoursBetweenDates(qTime, item.CreatedAt, nil)
+		deadline = gb.RunContext.Services.SLAService.ComputeMaxDate(deadline, float32(additionalHours), nil)
+		qTime = time.Time{}
+	}
+	return deadline
+}
+
 //nolint:dupl,gocyclo //Need here
 func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 	deadlines := make([]Deadline, 0, 2)
 
-	if gb.State.Decision != nil && len(gb.State.RequestExecutionInfoLogs) > 0 &&
-		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
+	latestInfoRequest := gb.State.latestUnansweredAddInfoLogEntry()
+
+	if gb.State.Decision != nil && latestInfoRequest != nil && latestInfoRequest.ReqType == RequestInfoQuestion {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
-					2*8, nil),
+				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(latestInfoRequest.CreatedAt,
+					2*workingHours, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt,
-				3*8, nil),
+			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(latestInfoRequest.CreatedAt,
+				3*workingHours, nil),
 			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 
 		return deadlines, nil
 	}
 
-	if gb.State.CheckSLA {
+	if gb.State.CheckSLA && (latestInfoRequest == nil || latestInfoRequest.ReqType == RequestInfoAnswer) {
 		slaInfoPtr, getSlaInfoErr := gb.RunContext.Services.SLAService.GetSLAInfoPtr(ctx, sla.InfoDto{
 			TaskCompletionIntervals: []entity.TaskCompletionInterval{{StartedAt: gb.RunContext.CurrBlockStartTime,
 				FinishedAt: gb.RunContext.CurrBlockStartTime.Add(time.Hour * 24 * 100)}},
@@ -257,8 +277,7 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		}
 		if !gb.State.SLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA), slaInfoPtr),
+				Deadline{Deadline: gb.getNewSLADeadline(slaInfoPtr, false),
 					Action: entity.TaskUpdateActionSLABreach,
 				},
 			)
@@ -266,8 +285,7 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 
 		if !gb.State.HalfSLAChecked {
 			deadlines = append(deadlines,
-				Deadline{Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.RunContext.CurrBlockStartTime, float32(gb.State.SLA)/2, slaInfoPtr),
+				Deadline{Deadline: gb.getNewSLADeadline(slaInfoPtr, true),
 					Action: entity.TaskUpdateActionHalfSLABreach,
 				},
 			)
@@ -283,19 +301,18 @@ func (gb *GoExecutionBlock) Deadlines(ctx context.Context) ([]Deadline, error) {
 		)
 	}
 
-	if len(gb.State.RequestExecutionInfoLogs) > 0 &&
-		gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].ReqType == RequestInfoQuestion {
+	if latestInfoRequest != nil && latestInfoRequest.ReqType == RequestInfoQuestion {
 		if gb.State.CheckDayBeforeSLARequestInfo {
 			deadlines = append(deadlines, Deadline{
-				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-					gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 2*8, nil),
+				Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(latestInfoRequest.CreatedAt,
+					2*workingHours, nil),
 				Action: entity.TaskUpdateActionDayBeforeSLARequestAddInfo,
 			})
 		}
 
 		deadlines = append(deadlines, Deadline{
-			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(
-				gb.State.RequestExecutionInfoLogs[len(gb.State.RequestExecutionInfoLogs)-1].CreatedAt, 3*8, nil),
+			Deadline: gb.RunContext.Services.SLAService.ComputeMaxDate(latestInfoRequest.CreatedAt,
+				3*workingHours, nil),
 			Action: entity.TaskUpdateActionSLABreachRequestAddInfo,
 		})
 	}

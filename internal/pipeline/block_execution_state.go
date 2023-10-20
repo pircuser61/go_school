@@ -150,3 +150,11 @@ func (a *ExecutionData) setEditToNextBlock(executor string, delegateFor string, 
 func (a *ExecutionData) GetIsEditable() bool {
 	return a.IsEditable
 }
+
+func (a *ExecutionData) latestUnansweredAddInfoLogEntry() *RequestExecutionInfoLog {
+	if len(a.RequestExecutionInfoLogs) == 0 {
+		return nil
+	}
+
+	return &a.RequestExecutionInfoLogs[len(a.RequestExecutionInfoLogs)-1]
+}
