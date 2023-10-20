@@ -1022,6 +1022,9 @@ type ExecutionParams struct {
 	// Execution rework SLA (in working hours)
 	ReworkSla int `json:"rework_sla"`
 
+	// flag to show executor
+	ShowExecutor *bool `json:"show_executor,omitempty"`
+
 	// Execution SLA (in working hours)
 	Sla int `json:"sla"`
 

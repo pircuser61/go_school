@@ -4916,6 +4916,9 @@ components:
           description: flag to use actual executor
         work_type:
           $ref: "#/components/schemas/WorkType"
+        show_executor:
+          type: boolean
+          description: flag to show executor
       required:
         - type
         - executors
