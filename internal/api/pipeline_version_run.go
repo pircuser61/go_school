@@ -218,7 +218,7 @@ func (ae *APIEnv) RunVersionsByPipelineId(w http.ResponseWriter, r *http.Request
 	}
 
 	var clientID string
-	clientID, err = ae.getClietIDFromToken(r.Header.Get(AuthorizationHeader))
+	clientID, err = ae.getClientIDFromToken(r.Header.Get(AuthorizationHeader))
 	if err != nil {
 		e := GetClientIDError
 		log.Error(e.errorMessage(err))

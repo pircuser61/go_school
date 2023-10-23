@@ -1529,6 +1529,9 @@ type NotificationParams struct {
 
 	// Notification body
 	Text string `json:"text"`
+
+	// UsersFromSchema to get notifications
+	UsersFromSchema []string `json:"usersFromSchema"`
 }
 
 // Basic number operand, can provide working compare types for this type

@@ -4836,6 +4836,13 @@ components:
           items:
             type: string
             description: Emails
+        usersFromSchema:
+          type: array
+          description: UsersFromSchema to get notifications
+          example: form_0.UserFromSchema.username;form_1.UserFromSchema.username (format for many signers from schema)
+          items:
+            type: string
+            description: Users
         subject:
           type: string
           description: Notification subject
@@ -4845,6 +4852,7 @@ components:
       required:
         - people
         - emails
+        - usersFromSchema
         - subject
         - text
 
