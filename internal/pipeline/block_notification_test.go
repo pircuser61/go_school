@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -336,7 +335,6 @@ func Test_createGoNotificationBlock(t *testing.T) {
 				got.RunContext = nil
 			}
 
-			fmt.Println(err)
 			assert.Equalf(t, tt.wantErr, err != nil, "createGoNotificationBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 			assert.Equalf(t, tt.want, got, "createGoNotificationBlock(%v, %v, %v)", tt.args.name, tt.args.ef, nil)
 		})
