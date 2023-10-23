@@ -1521,6 +1521,9 @@ type NotificationParams struct {
 	// People to get notifications
 	People []string `json:"people"`
 
+	// UsersFromSchema to get users from schema
+	UsersFromSchema string `json:"usersFromSchema"`
+
 	// Notification subject
 	Subject string `json:"subject"`
 

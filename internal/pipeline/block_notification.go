@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -19,10 +20,11 @@ import (
 )
 
 type NotificationData struct {
-	People  []string `json:"people"`
-	Emails  []string `json:"emails"`
-	Subject string   `json:"subject"`
-	Text    string   `json:"text"`
+	People          []string            `json:"people"`
+	Emails          []string            `json:"emails"`
+	UsersFromSchema map[string]struct{} `json:"usersFromSchema"`
+	Subject         string              `json:"subject"`
+	Text            string              `json:"text"`
 }
 
 type GoNotificationBlock struct {
@@ -178,10 +180,11 @@ func (gb *GoNotificationBlock) Model() script.FunctionModel {
 		Params: &script.FunctionParams{
 			Type: BlockGoNotificationID,
 			Params: &script.NotificationParams{
-				People:  []string{},
-				Emails:  []string{},
-				Subject: "",
-				Text:    "",
+				People:          []string{},
+				Emails:          []string{},
+				UsersFromSchema: "",
+				Subject:         "",
+				Text:            "",
 			},
 		},
 		Sockets: []script.Socket{script.DefaultSocket},
@@ -226,11 +229,36 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 		return nil, reEntry, errors.Wrap(err, "invalid notification parameters")
 	}
 
+	variableStorage, grabStorageErr := b.RunContext.VarStore.GrabStorage()
+	if grabStorageErr != nil {
+		return nil, reEntry, errors.Wrap(err, "can not create GrabStorage")
+	}
+
+	usersFromSchema := make(map[string]struct{})
+
+	usersVars := strings.Split(params.UsersFromSchema, ";")
+	for i := range usersVars {
+		resolvedEntities, resolveErr := getUsersFromVars(
+			variableStorage,
+			map[string]struct{}{
+				usersVars[i]: {},
+			},
+		)
+		if resolveErr != nil {
+			return nil, reEntry, errors.Wrap(err, "can not get users from vars")
+		}
+
+		for userLogin := range resolvedEntities {
+			usersFromSchema[userLogin] = struct{}{}
+		}
+	}
+
 	b.State = &NotificationData{
-		People:  params.People,
-		Emails:  params.Emails,
-		Text:    params.Text,
-		Subject: params.Subject,
+		People:          params.People,
+		Emails:          params.Emails,
+		Text:            params.Text,
+		Subject:         params.Subject,
+		UsersFromSchema: usersFromSchema,
 	}
 	b.RunContext.VarStore.AddStep(b.Name)
 
