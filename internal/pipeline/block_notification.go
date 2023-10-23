@@ -246,20 +246,22 @@ func createGoNotificationBlock(ctx context.Context, name string, ef *entity.Eriu
 
 	usersFromSchema := make(map[string]struct{})
 
-	usersVars := strings.Split(params.UsersFromSchema, ";")
-	for i := range usersVars {
-		resolvedEntities, resolveErr := getUsersFromVars(
-			variableStorage,
-			map[string]struct{}{
-				usersVars[i]: {},
-			},
-		)
-		if resolveErr != nil {
-			return nil, reEntry, errors.Wrap(resolveErr, "can not get users from vars")
-		}
+	if params.UsersFromSchema != "" {
+		usersVars := strings.Split(params.UsersFromSchema, ";")
+		for i := range usersVars {
+			resolvedEntities, resolveErr := getUsersFromVars(
+				variableStorage,
+				map[string]struct{}{
+					usersVars[i]: {},
+				},
+			)
+			if resolveErr != nil {
+				return nil, reEntry, errors.Wrap(resolveErr, "can not get users from vars")
+			}
 
-		for userLogin := range resolvedEntities {
-			usersFromSchema[userLogin] = struct{}{}
+			for userLogin := range resolvedEntities {
+				usersFromSchema[userLogin] = struct{}{}
+			}
 		}
 	}
 
